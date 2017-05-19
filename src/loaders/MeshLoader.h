@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 #include <GL/glew.h>
-#include "../graphics/3D/AABB.h"
+class FileReader;
 
 namespace graphics {
 
@@ -12,11 +12,22 @@ namespace graphics {
 
 
 	/**
-	 * Class MeshLoader, it's used to create meshes from raw data
+	 * Class MeshLoader, it's used to create meshes from raw data or from the
+	 * given files
 	 */
 	class MeshLoader
 	{
 	private:	// Nested types
+		/** Struct FILE_FORMAT, it holds the name, version and other data of
+		 * our Mesh file format */
+		struct FILE_FORMAT
+		{
+			static const std::string	FILE_NAME;
+			static const std::string	FILE_EXTENSION;
+			static const unsigned int	VERSION = 1;
+			static const unsigned int	REVISION = 3;
+		};
+
 		/** The attribute indices of the Meshes */
 		enum ATTRIBUTES
 		{
@@ -74,6 +85,15 @@ namespace graphics {
 			const std::vector<GLushort>& jointIndices,
 			const std::vector<GLushort>& faceIndices
 		);
+
+		/** Parses the Meshes in the given file and returns them
+		 * 
+		 * @note	the cursor of the file reader will be moved after parsing
+		 *			the file
+		 * @param	fileReader the file reader with the Meshes that we want
+		 *			to parse
+		 * @return	a vector with the parsed Meshes */
+		std::vector<MeshUPtr> load(FileReader* fileReader);
 		
 		/** Calculates the Normals of the given vertices
 		 * 
@@ -85,6 +105,46 @@ namespace graphics {
 			const std::vector<GLfloat>& positions,
 			const std::vector<GLushort>& faceIndices
 		) const;
+	private:
+		/** Checks the header of the given file
+		 *
+		 * @param	fileReader the reader of the file with the header we want
+		 *			to check
+		 * @return	true if the file and version is ok, false otherwise */
+		bool checkHeader(FileReader* fileReader);
+
+		/** Parses the Meshes in the given file and returns them
+		 * 
+		 * @param	fileReader the file reader with the meshes that we want to
+		 *			parse
+		 * @return	a vector with the parsed meshes */
+		std::vector<MeshUPtr> parseMeshes(FileReader* fileReader);
+
+		/** Parses the Mesh at the current position of the given file and
+		 * returns it
+		 *
+		 * @param	fileReader the file reader with the file that we want
+		 *			to read
+		 * @return	a pointer to the parsed Mesh */
+		MeshUPtr parseMesh(FileReader* fileReader);
+
+		/** With the positions, uvs and the vectors of indices given
+		 * calculates the vertices and its indices for each face of the mesh
+		 * 
+		 * @param	name the name of the new mesh
+		 * @param	positions the positions of the readed vertices
+		 * @param	uvs the UV positions of the readed vertices
+		 * @param	posIndices the indices to the positions of the vertices
+		 *			of each face
+		 * @param	posIndices the indices to the UV positions of the vertices
+		 *			of each face */
+		MeshUPtr processMeshData(
+			const std::string& name,
+			const std::vector<GLfloat>& positions,
+			const std::vector<GLfloat>& uvs,
+			const std::vector<GLushort>& posIndices,
+			const std::vector<GLushort>& uvIndices
+		);
 	};
 
 }

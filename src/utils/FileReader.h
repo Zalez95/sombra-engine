@@ -76,6 +76,12 @@ template<typename T> bool FileReader::getParam(T& token)
 		// Read the next lines recursively until we find a not empty line
 		std::string stringLine;
 		std::getline(mInputFStream, stringLine);
+
+		// Remove the carriage return character located at the end of line if it exists
+		if ((!stringLine.empty()) && (stringLine[stringLine.size() - 1] == '\r')) {
+			stringLine = stringLine.substr(0, stringLine.size() - 1);
+		}
+
 		mCurLineStream = std::stringstream(stringLine);
 		++mNumLines;
 
