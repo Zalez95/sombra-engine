@@ -1,10 +1,10 @@
-#version 330 core
+#version 130
 
 // Input data from the vertex shader
 in vec2			fin_UV;			// The Vertex UV Coordinates from the Vertex Shader
 
 // Output data
-out vec4		gl_FragColor;		// Output color
+//out vec4		gl_FragColor;		// Output color
 
 // Uniform variables
 uniform sampler2D u_TextureSampler;

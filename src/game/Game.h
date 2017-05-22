@@ -2,8 +2,12 @@
 #define GAME_H
 
 #include <vector>
+#include <memory>
+#include "Entity.h"
+#include "Player.h"
 
 namespace window { class WindowSystem; }
+namespace physics { class PhysicsEngine; }
 namespace graphics {
 	class GraphicsSystem;
 	class Renderable2D;
@@ -26,11 +30,21 @@ namespace game {
 	    static const float Z_NEAR;
 	    static const float Z_FAR;
 
+	private:	// Nested Types
+		typedef std::unique_ptr<Entity> EntityUPtr;
+
 	private:	// Attributes
 		bool mEnd;
-
+		
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
+		physics::PhysicsEngine* mPhysicsEngine;
+
+		/** The player entity */
+		Player* mPlayer;
+
+		/** The Entities that currently are in the game */
+		std::vector<EntityUPtr> mEntities;
 
 	public:		// Functions
 		/** Creates a new Game */
@@ -44,8 +58,10 @@ namespace game {
 		 * @return	true if the Game exited succesfully, false otherwise */
 		bool run();
 	private:
-		/** Updates the input data */
-		void input();
+		/** Updates the input data
+		 *
+		 * @param	delta the elapsed time since the last update */
+		void input(float delta);
 
 		/** Updates the Entities and systems of the Game
 		 * 

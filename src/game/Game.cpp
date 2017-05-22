@@ -21,6 +21,13 @@
 
 #include "../loaders/MeshLoader.h"
 
+#include "../physics/PhysicsEngine.h"
+#include "../physics/PhysicsEntity.h"
+#include "../physics/RigidBody.h"
+#include "../physics/collision/Plane.h"
+#include "../physics/collision/BoundingSphere.h"
+#include "../physics/collision/AxisAlignedBoundingBox.h"
+
 namespace game {
 
 // Static variables definition
@@ -34,12 +41,20 @@ namespace game {
 		// Window
 		if (!(mWindowSystem = new window::WindowSystem("< FAZE >", WIDTH, HEIGHT))) {
 			Logger::writeLog(LogType::ERROR, "Error initializing the window system");
+			return;
 		}
 		mWindowSystem->setMousePosition(WIDTH / (float)2, HEIGHT / (float)2);
 
 		// Graphics
 		if (!(mGraphicsSystem = new graphics::GraphicsSystem())) {
 			Logger::writeLog(LogType::ERROR, "Error initializing the graphics system");
+			return;
+		}
+
+		// Physics
+		if (!(mPhysicsEngine = new physics::PhysicsEngine())) {
+			Logger::writeLog(LogType::ERROR, "Error initializing the physics engine");
+			return;
 		}
 	}
 
@@ -98,35 +113,43 @@ namespace game {
 			Logger::writeLog(LogType::ERROR, e.what());
 		}
 
-		auto material1 = std::make_shared<graphics::Material>(
-			"material1",
+		auto material_green = std::make_shared<graphics::Material>(
+			"material_green",
 			graphics::RGBColor{ 0.2f, 1.0f, 0.2f },
 			graphics::RGBColor{ 0.2f, 1.0f, 0.2f },
 			graphics::RGBColor{ 0.1f, 1.0f, 0.1f },
 			0.1f
 		);
 
-		auto material2 = std::make_shared<graphics::Material>(
-			"material2",
+		auto material_blue = std::make_shared<graphics::Material>(
+			"material_blue",
 			graphics::RGBColor{ 0.2f, 0.2f, 1.0f },
 			graphics::RGBColor{ 0.2f, 0.2f, 1.0f },
 			graphics::RGBColor{ 0.1f, 0.1f, 1.0f },
 			0.1f
 		);
 
-		auto material3 = std::make_shared<graphics::Material>(
-			"material3",
+		auto material_red = std::make_shared<graphics::Material>(
+			"material_red",
 			graphics::RGBColor{ 1.0f, 0.2f, 0.2f },
 			graphics::RGBColor{ 1.0f, 0.2f, 0.2f },
 			graphics::RGBColor{ 1.0f, 0.1f, 0.1f },
 			0.1f
 		);
 
-		auto material4 = std::make_shared<graphics::Material>(
-			"material4",
+		auto material_white = std::make_shared<graphics::Material>(
+			"material_white",
 			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
 			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
 			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
+			0.1f
+		);
+
+		auto material_orange = std::make_shared<graphics::Material>(
+			"material_orange",
+			graphics::RGBColor{ 1.0f, 0.5f, 0.1f },
+			graphics::RGBColor{ 0.2f, 0.2f, 0.1f },
+			graphics::RGBColor{ 0.1f, 0.1f, 0.2f },
 			0.1f
 		);
 
@@ -153,7 +176,7 @@ namespace game {
 		// Renderable3Ds
 		std::vector<const graphics::Renderable3D*> renderable3Ds;
 		for (unsigned int i = 0; i < 500; ++i) {
-			auto renderable3D1 = new graphics::Renderable3D(mesh1, material1, nullptr, false);
+			auto renderable3D1 = new graphics::Renderable3D(mesh1, material_orange, nullptr, false);
 			renderable3D1->setModelMatrix(glm::translate(glm::vec3(
 				100 * (static_cast<float>(rand()) / RAND_MAX) - 50,
 				100 * (static_cast<float>(rand()) / RAND_MAX) - 50,
@@ -162,19 +185,19 @@ namespace game {
 			renderable3Ds.push_back(renderable3D1);
 		}
 
-		graphics::Renderable3D* renderable3D_centro = new graphics::Renderable3D(mesh1, material4, nullptr, false);
+		graphics::Renderable3D* renderable3D_centro = new graphics::Renderable3D(mesh1, material_white, nullptr, false);
 		renderable3D_centro->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 0, -10)));
 		renderable3Ds.push_back(renderable3D_centro);
 
-		graphics::Renderable3D* renderable3D_derecha = new graphics::Renderable3D(mesh1, material3, nullptr, false);
+		graphics::Renderable3D* renderable3D_derecha = new graphics::Renderable3D(mesh1, material_red, nullptr, false);
 		renderable3D_derecha->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(2, 0, -10)));
 		renderable3Ds.push_back(renderable3D_derecha);
 
-		graphics::Renderable3D* renderable3D_arriba = new graphics::Renderable3D(mesh1, material1, nullptr, false);
+		graphics::Renderable3D* renderable3D_arriba = new graphics::Renderable3D(mesh1, material_green, nullptr, false);
 		renderable3D_arriba->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 2, -10)));
 		renderable3Ds.push_back(renderable3D_arriba);
 
-		graphics::Renderable3D* renderable3D_frente = new graphics::Renderable3D(mesh1, material2, nullptr, false);
+		graphics::Renderable3D* renderable3D_frente = new graphics::Renderable3D(mesh1, material_blue, nullptr, false);
 		renderable3D_frente->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 0, -8)));
 		renderable3Ds.push_back(renderable3D_frente);
 
@@ -192,6 +215,55 @@ namespace game {
 			renderable3Ds.push_back(renderable3D1);
 			fileRenderables.push_back(renderable3D1);
 		}
+
+
+		/*********************************************************************
+		 * PHYSICS DATA
+		 *********************************************************************/
+		// Walls
+		physics::PhysicsEntity wall1(
+			std::make_unique<physics::RigidBody>(glm::vec3(10, 0, 5), glm::quat(-0.7f, 0, 0, 0.7f)),
+			std::make_unique<physics::Plane>(), glm::mat4()
+		);
+		physics::PhysicsEntity wall2(
+			std::make_unique<physics::RigidBody>(glm::vec3(-10, 0, 5), glm::quat(0.7f, 0, 0, 0.7f)),
+			std::make_unique<physics::Plane>(), glm::mat4()
+		);
+		//mPhysicsEngine->addPhysicsEntity(&wall1);
+		//mPhysicsEngine->addPhysicsEntity(&wall2);
+
+		// Objects
+		physics::PhysicsEntity physicsEntity1(
+			std::make_unique<physics::RigidBody>(
+				10.0f, 0.1f,
+				glm::mat3(), 0.1f,
+				glm::vec3(0,0,10), glm::quat()
+			),
+			std::make_unique<physics::BoundingSphere>(2.0f), glm::mat4()
+		);
+		mPhysicsEngine->addPhysicsEntity(&physicsEntity1);
+
+		physics::PhysicsEntity physicsEntity2(
+			std::make_unique<physics::RigidBody>(
+				10.0f, 0.0f,
+				glm::mat3(), 1.0f,
+				glm::vec3(0, 0, -10), glm::quat()
+			),
+			std::make_unique<physics::AxisAlignedBoundingBox>(glm::vec3(1, 1, 1)), glm::mat4()
+		);
+		mPhysicsEngine->addPhysicsEntity(&physicsEntity2);
+		physicsEntity2.getRigidBody()->setAngularVelocity(glm::vec3(0, 10, 0));
+
+
+		/*********************************************************************
+		 * GAME DATA
+		 *********************************************************************/
+		auto player	= std::make_unique<Player>("player", &physicsEntity1, &camera1, nullptr, nullptr, glm::vec2(WIDTH, HEIGHT));
+		mPlayer = player.get();
+		mEntities.push_back(std::move(player));
+
+		auto cube1	= std::make_unique<Entity>("cube", &physicsEntity2, nullptr, nullptr, renderable3D_centro);
+		mEntities.push_back(std::move(cube1));
 
 
 		/*********************************************************************
@@ -213,9 +285,9 @@ namespace game {
 				fps = 0;
 			}
 
-			input();
+			input(delta);
 			update(delta);
-			render(&camera1, renderable3Ds, renderable2Ds, pointLights);
+			render(mPlayer->getCamera(), renderable3Ds, renderable2Ds, pointLights);
 		}
 
 		for (const graphics::Renderable3D* r3d : renderable3Ds) {
@@ -226,17 +298,23 @@ namespace game {
 	}
 
 // Private functions
-	void Game::input()
+	void Game::input(float delta)
 	{
 		mWindowSystem->update();
 
 		window::InputData inputData = mWindowSystem->getInputData();
 		if (inputData.mKeys[GLFW_KEY_ESCAPE] || mWindowSystem->isClosed()) { mEnd = true; }
+		if (mPlayer) { mPlayer->doInput(&inputData, delta); }
+		mWindowSystem->setMousePosition(WIDTH / (float)2, HEIGHT / (float)2);
 	}
 
 
 	void Game::update(float delta)
 	{
+		mPhysicsEngine->update(delta);
+		for (auto it = mEntities.begin(); it != mEntities.end(); ++it) {
+			(*it)->synch();
+		}
 	}
 
 

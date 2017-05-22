@@ -1,7 +1,7 @@
-#version 330 core
+#version 130
 
 // Input data
-layout (location = 0) in vec2 a_VertexPosition;		// Position attribute
+in vec2 a_VertexPosition;		// Position attribute
 
 // Output data
 out vec2		fin_UV;								// Vertex UV Coordinates for the Fragment Shader

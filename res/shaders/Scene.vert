@@ -1,4 +1,4 @@
-#version 330 core
+#version 130
 
 // ____ CONSTANTS ____
 const int MAX_POINT_LIGHTS = 4;
@@ -6,9 +6,9 @@ const int MAX_POINT_LIGHTS = 4;
 
 // ____ GLOBAL VARIABLES ____
 // Input data
-layout (location = 0) in vec3 a_VertexPosition;			// Position attribute
-layout (location = 1) in vec3 a_VertexNormal;			// Normal attribute
-layout (location = 2) in vec2 a_VertexUV;				// Vertex UV Coords attribute
+in vec3 a_VertexPosition;								// Position attribute
+in vec3 a_VertexNormal;									// Normal attribute
+in vec2 a_VertexUV;										// Vertex UV Coords attribute
 
 // Uniform variables
 uniform mat4 u_ModelViewMatrix;							// Model space to View space Matrix
@@ -18,11 +18,11 @@ uniform int u_NumPointLights;							// Number of lights to process
 uniform vec3 u_PointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions in world space
 
 // Output data in view space
-out VertexData {
-	vec3 mPosition;
-	vec3 mNormal;
-	vec2 mUV;
-} vs_Vertex;
+//out VertexData {
+	vec3 vs_Position;
+	vec3 vs_Normal;
+	vec2 vs_UV;
+//} vs_Vertex;
 
 flat out int vs_NumPointLights;
 out vec3 vs_PointLightsPositions[MAX_POINT_LIGHTS];
@@ -32,13 +32,13 @@ out vec3 vs_PointLightsPositions[MAX_POINT_LIGHTS];
 void main()
 {
 	vec4 vertexView			= u_ModelViewMatrix * vec4(a_VertexPosition, 1.0f);
-	mat4 inverseTranspose	= transpose(inverse(u_ModelViewMatrix));
+	mat4 inverseTranspose	= transpose(transpose(u_ModelViewMatrix));
 	gl_Position				= u_ProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in view space
-	vs_Vertex.mPosition		= vertexView.xyz;
-	vs_Vertex.mNormal		= normalize(inverseTranspose * vec4(a_VertexNormal, 0.0f)).xyz;
-	vs_Vertex.mUV			= a_VertexUV;
+	vs_Position		= vertexView.xyz;
+	vs_Normal		= normalize(inverseTranspose * vec4(a_VertexNormal, 0.0f)).xyz;
+	vs_UV			= a_VertexUV;
 
 	// Calculate the PointLights coordinates in view space
 	vs_NumPointLights = (u_NumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : u_NumPointLights;
