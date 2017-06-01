@@ -107,7 +107,7 @@ namespace graphics {
 			return parseMeshes(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Mesh in the file \"" + fileReader->getCurrentFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Mesh in the file \"" + fileReader->getFilePath() + "\":\n" + e.what());
 		}
 	}
 
@@ -166,8 +166,8 @@ namespace graphics {
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getParam(fileName)
-			&& fileReader->getParam(fileVersion)
+		if (fileReader->getValue(fileName)
+			&& fileReader->getValue(fileVersion)
 			&& fileName == FILE_FORMAT::FILE_NAME
 			&& fileVersion == FILE_VERSION)
 		{
@@ -185,9 +185,9 @@ namespace graphics {
 
 		while (!fileReader->eof()) {
 			std::string token;
-			if (fileReader->getParam(token)) {
+			if (fileReader->getValue(token)) {
 				if (token == "num_meshes") {
-					fileReader->getParam(numMeshes);
+					fileReader->getValue(numMeshes);
 					meshes.resize(numMeshes);
 				}
 				else if (token == "mesh") {
@@ -219,60 +219,60 @@ namespace graphics {
 		unsigned int positionIndex = 0, uvIndex = 0, faceIndex = 0, jointIndex = 0;
 		
 		std::string trash;
-		fileReader->getParam(name);
-		fileReader->getParam(trash);
+		fileReader->getValue(name);
+		fileReader->getValue(trash);
 
 		bool end = false;
 		while (!end) {
 			std::string token;
-			fileReader->getParam(token);
+			fileReader->getValue(token);
 
 			if (token == "num_positions") {
-				fileReader->getParam(numPositions);
+				fileReader->getValue(numPositions);
 				positions.resize(3 * numPositions);
 			}
 			else if (token == "num_uvs") {
-				fileReader->getParam(numUVs);
+				fileReader->getValue(numUVs);
 				uvs.resize(2 * numUVs);
 			}
 			else if (token == "num_faces") {
-				fileReader->getParam(numFaces);
+				fileReader->getValue(numFaces);
 				posIndices.resize(3 * numFaces);
 				if (numUVs > 0) { uvIndices.resize(3 * numFaces); }
 			}
 			else if (token == "num_joints") {
-				fileReader->getParam(numJoints);
+				fileReader->getValue(numJoints);
 			}
 			else if (token == "v") {
 				if (positionIndex < numPositions) {
-					fileReader->getParam(positions[3 * positionIndex]);
-					fileReader->getParam(positions[3 * positionIndex + 1]);
-					fileReader->getParam(positions[3 * positionIndex + 2]);
+					fileReader->getValue(positions[3 * positionIndex]);
+					fileReader->getValue(positions[3 * positionIndex + 1]);
+					fileReader->getValue(positions[3 * positionIndex + 2]);
 				}
 				++positionIndex;
 			}
 			else if (token == "uv"){
 				unsigned int vi;
-				fileReader->getParam(vi);
+				fileReader->getValue(vi);
 				if (vi < numPositions) {
-					fileReader->getParam(uvs[2 * vi]);
-					fileReader->getParam(uvs[2 * vi + 1]);
+					fileReader->getValue(uvs[2 * vi]);
+					fileReader->getValue(uvs[2 * vi + 1]);
 				}
 				++uvIndex;
 			}
 			else if (token == "f") {
 				if (faceIndex < numFaces) {
-					fileReader->getParam(trash);
-					fileReader->getParam(posIndices[3 * faceIndex]);
-					fileReader->getParam(posIndices[3 * faceIndex + 1]);
-					fileReader->getParam(posIndices[3 * faceIndex + 2]);
-					fileReader->getParam(trash);
+					fileReader->getValue(trash);
+					fileReader->getValue(posIndices[3 * faceIndex]);
+					fileReader->getValue(posIndices[3 * faceIndex + 1]);
+					fileReader->getValue(posIndices[3 * faceIndex + 2]);
+					fileReader->getValue(trash);
 					if (numUVs > 0) {
-						fileReader->getParam(trash);
-						fileReader->getParam(uvIndices[3 * faceIndex]);
-						fileReader->getParam(uvIndices[3 * faceIndex + 1]);
-						fileReader->getParam(uvIndices[3 * faceIndex + 2]);
-						fileReader->getParam(trash);
+						fileReader->getValue(trash);
+						fileReader->getValue(uvIndices[3 * faceIndex]);
+						fileReader->getValue(uvIndices[3 * faceIndex + 1]);
+						fileReader->getValue(uvIndices[3 * faceIndex + 2]);
+						fileReader->getValue(trash);
 					}
 				}
 				++faceIndex;

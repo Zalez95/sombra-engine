@@ -1,4 +1,4 @@
-#include "SceneRenderer.h"
+#include "Renderer3D.h"
 #include "../Texture.h"
 #include "Renderable3D.h"
 #include "Mesh.h"
@@ -6,7 +6,7 @@
 
 namespace graphics {
 
-	void SceneRenderer::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
+	void Renderer3D::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
 	{
 		if (!camera) return;
 

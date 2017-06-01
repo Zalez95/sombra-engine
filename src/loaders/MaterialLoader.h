@@ -1,5 +1,5 @@
-#ifndef MESH_LOADER_H
-#define MESH_LOADER_H
+#ifndef MATERIAL_LOADER_H
+#define MATERIAL_LOADER_H
 
 #include <memory>
 #include <vector>
@@ -70,4 +70,4 @@ namespace graphics {
 
 }
 
-#endif		// MESH_LOADER_H
+#endif		// MATERIAL_LOADER_H

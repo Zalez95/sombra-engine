@@ -14,7 +14,7 @@ namespace graphics {
 
 
 	/**
-	 * Class Renderer2D, it's a Forward Renderer used for rendering 2D 2D
+	 * Class Renderer2D, it's a Forward Renderer used for rendering 2D
 	 * graphics elements
 	 */
 	class Renderer2D
@@ -24,7 +24,8 @@ namespace graphics {
 		 * so we don't have to get them in each render call */
 		struct UniformLocations
 		{
-			GLuint u_ModelMatrix;
+			GLuint mModelMatrix;
+			GLuint mProjectionMatrix;
 		};
 
 		/** Class 2DQuad, it holds all the needed data for rendering the 2D
@@ -77,21 +78,28 @@ namespace graphics {
 		/** The locations of uniform variables in the shader */
 		UniformLocations mUniformLocations;
 
-		/** The Renderables that we want to render */
-		std::queue<const Renderable2D*> mRenderable2Ds;
-
 		/** The quad needed for rendering all the 2D elements */
 		Quad2D mQuad;
 
+		/** The projection matrix of the renderer that transforms from Model
+		 * Space to Projection Space */
+		glm::mat4 mProjectionMatrix;
+
+		/** The Renderable2Ds that we want to render */
+		std::queue<const Renderable2D*> mRenderable2Ds;
+
 	public:		// Functions
-		/** Creates a new Renderer2D and sets all the GL data like depth
-		 * testing, face culling and the window clear color
+		/** Creates a new Renderer2D
 		 *
-		 * @param	program the Program with which the renderer will render */
-		Renderer2D();
+		 * @param	projectionMatrix the projectionMatrix of the renderer */
+		Renderer2D(const glm::mat4& projectionMatrix);
 
 		/** Class destructor */
 		~Renderer2D();
+
+		/** Sets the projection matrix */
+		inline void setProjectionMatrix(const glm::mat4& projectionMatrix)
+		{ mProjectionMatrix = projectionMatrix; };
 
 		/** Submits the given Renderable 2D to the queue of Renderable2Ds to
 		 * render

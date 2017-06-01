@@ -12,7 +12,7 @@ in vec2 a_VertexUV;										// Vertex UV Coords attribute
 
 // Uniform variables
 uniform mat4 u_ModelViewMatrix;							// Model space to View space Matrix
-uniform mat4 u_ProjectionMatrix;						// View space to Perspective space Matrix
+uniform mat4 u_ProjectionMatrix;						// View space to NDC space Matrix
 
 uniform int u_NumPointLights;							// Number of lights to process
 uniform vec3 u_PointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions in world space
@@ -36,9 +36,9 @@ void main()
 	gl_Position				= u_ProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in view space
-	vs_Position		= vertexView.xyz;
-	vs_Normal		= normalize(inverseTranspose * vec4(a_VertexNormal, 0.0f)).xyz;
-	vs_UV			= a_VertexUV;
+	vs_Position				= vertexView.xyz;
+	vs_Normal				= normalize(inverseTranspose * vec4(a_VertexNormal, 0.0f)).xyz;
+	vs_UV					= a_VertexUV;
 
 	// Calculate the PointLights coordinates in view space
 	vs_NumPointLights = (u_NumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : u_NumPointLights;

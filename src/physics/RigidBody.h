@@ -107,9 +107,9 @@ namespace physics {
 		/** Class destructor */
 		~RigidBody() {};
 
-		/** @return	the mass of the RigidBody */
-//		inline float getMass() const
-//		{ return 1.0f / mLinearData.mInvertedMass; };
+		/** @return	the inverted mass (1/mass) of the RigidBody */
+		inline float getInvertedMass() const
+		{ return mLinearData.mInvertedMass; };
 
 		/** @return	true if the RigidBody has Finite Mass, false otherwise  */
 		inline bool hasFiniteMass() const
@@ -117,6 +117,12 @@ namespace physics {
 
 		/** @return	the current linear position of the RigidBody */
 		inline glm::vec3 getPosition() const { return mLinearData.mPosition; };
+
+		/** Sets the position of the RigidBody
+		 *
+		 * @param	position the new position of the RigidBody */
+		inline void setPosition(const glm::vec3& position)
+		{ mLinearData.mPosition = position; };
 
 		/** @return	the current linear velocity of the RigidBody */
 		inline glm::vec3 getVelocity() const { return mLinearData.mVelocity; };
@@ -127,9 +133,19 @@ namespace physics {
 		inline void setVelocity(const glm::vec3& velocity)
 		{ mLinearData.mVelocity = velocity; };
 
+		/** @return	the inverted inertiaTensor matrix of the RigidBody */
+		inline glm::mat3 getInvertedInertiaTensor() const
+		{ return mAngularData.mInvertedInertiaTensor; };
+
 		/** @return	the current orientation of the RigidBody */
 		inline glm::quat getOrientation() const
 		{ return mAngularData.mOrientation; };
+
+		/** Sets the orientation of the RigidBody
+		 *
+		 * @param	orientation the new orientation of the RigidBody */
+		inline void setOrientation(const glm::quat& orientation)
+		{ mAngularData.mOrientation = orientation; };
 
 		/** @return	the current angular velocity of the RigidBody */
 		inline glm::vec3 getAngularVelocity() const
@@ -165,7 +181,7 @@ namespace physics {
 		 *			apply the force in Local Space */
 		void addForceAtLocalPoint(
 			const glm::vec3& force,
-		   	const glm::vec3& point
+			const glm::vec3& point
 		);
 
 		/** Cleans all the forces applied to the current RigidBody si they will

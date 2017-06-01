@@ -9,9 +9,7 @@ namespace physics {
 	{
 		mForceManager.applyForces();
 		integrate(delta);
-		// TODO: coarseCollisionDetection();
-		// TODO: fineCollisionDetection();
-		collide();
+		collide(delta);
 	}
 
 
@@ -63,28 +61,25 @@ namespace physics {
 	}
 
 
-	void PhysicsEngine::collide()
+	void PhysicsEngine::collide(float delta)
 	{
-		for (auto it1 = mPhysicsEntities.begin(); it1 != mPhysicsEntities.end(); it1++) {
-			for (auto it2 = it1 + 1; it2 != mPhysicsEntities.end(); it2++) {
-				const Collider* collider1 = (*it1)->getCollider();
-				const Collider* collider2 = (*it2)->getCollider();
+		// TODO: coarseCollisionDetection();
+		// TODO: particle collision
+		for (auto it1 = mPhysicsEntities.begin(); it1 != mPhysicsEntities.end(); ++it1) {
+			for (auto it2 = it1 + 1; it2 != mPhysicsEntities.end(); ++it2) {
+				if (((*it1)->getType() == PhysicsEntityType::RIGID_BODY)
+						&& ((*it2)->getType() == PhysicsEntityType::RIGID_BODY)) {
+					const Collider* collider1 = (*it1)->getCollider();
+					const Collider* collider2 = (*it2)->getCollider();
 
-				if (mCollisionDetector.collide(collider1, collider2).size() > 0) {
-					// TODO: Collision resolution
-					Logger::writeLog(LogType::DEBUG, "collision");
-
-					if ((*it1)->getType() == PhysicsEntityType::RIGID_BODY
-						&& (*it2)->getType() == PhysicsEntityType::RIGID_BODY
-					) {
-						RigidBody* rb1 = (*it1)->getRigidBody();
-						RigidBody* rb2 = (*it2)->getRigidBody();
-						rb1->setVelocity(-rb1->getVelocity());
-						rb2->setVelocity(-rb2->getVelocity());
+        	        std::vector<Contact> contacts = mCollisionDetector.collide(collider1, collider2);
+            	    for (Contact contact : contacts) {
+                	    mCollisionResolver.addContact(&contact, (*it1)->getRigidBody(), (*it2)->getRigidBody());
 					}
 				}
 			}
 		}
+		mCollisionResolver.resolve(delta);
 	}
 
 }

@@ -9,7 +9,7 @@ namespace physics {
 	class Collider;
 	class Plane;
 	class BoundingSphere;
-	class AxisAlignedBoundingBox;
+	class BoundingBox;
 
 	/**
 	 * Class CollisionDetector, is the class that calculates the CollisionData
@@ -51,7 +51,7 @@ namespace physics {
 		) const;
 
 		/** Returns the data of the collision happened between the given
-		 * sphere and the given plane
+		 * BoundingSphere and the given Plane
 		 * 
 		 * @note	the BoundingSphere can collide with the plane only if it
 		 *			crosses the plane in the opposite direction of the
@@ -67,45 +67,48 @@ namespace physics {
 		) const;
 
 		/** Returns the data of the collision happened between the given
-		* AABBs
-		*
-		* @param	aabb1 a pointer to the first AxisAlignedBoundingBox with
-		*			which we will calculate the data of the collision
-		* @param	aabb2 a pointer to the second AxisAlignedBoundingBox with
-		*			which we will calculate the data of the collision
-		* @return	the data of the collision */
-		std::vector<Contact> collideAABBs(
-			const AxisAlignedBoundingBox* aabb1,
-			const AxisAlignedBoundingBox* aabb2
+		 * BoundingBoxes
+		 *
+		 * @param	box1 a pointer to the first BoundingBox with which we
+		 * 			will calculate the data of the collision
+		 * @param	box2 a pointer to the second BoundingBox with which we
+		 * 			will calculate the data of the collision
+		 * @return	the data of the collision */
+		std::vector<Contact> collideBoxes(
+			const BoundingBox* box1,
+			const BoundingBox* box2
 		) const;
 		
 		/** Returns the data of the collision happened between the given
-		 * AABB and the given plane
+		 * BoudingBox and the given Plane
 		 * 
-		 * @note	the AABB can collide with the plane only if it crosses the
-		 * 			plane in the opposite direction of the plane's normal
-		 * @param	aabb a pointer to the AxisAlignedBoundingBox with which we
-		 *			will calculate the data of the collision
+		 * @note	the BoundingBox can collide with the plane only if it
+		 * 			crosses the plane in the opposite direction of the plane's
+		 * 			normal
+		 * @param	box a pointer to the BoundingBox with which we will
+		 * 			calculate the data of the collision
 		 * @param	plane a pointer to the plane with which we will calculate
 		 *			the data of the collision
 		 * @return	the data of the collision */
-		std::vector<Contact> collideAABBAndPlane(
-			const AxisAlignedBoundingBox* aabb,
+		std::vector<Contact> collideBoxAndPlane(
+			const BoundingBox* box,
 			const Plane* plane
 		) const;
 
 		/** Returns the data of the collision happened between the given
-		 * AABB and the given Sphere
+		 * BoundingBox and the given BoundingSphere
 		 *  
 		 * @param	sphere a pointer to the BoundingSphere with which we will
 		 *			calculate the data of the collision
-		 * @param	aabb a pointer to the AxisAlignedBoundingBox with which we
-		 *			will calculate the data of the collision
+		 * @param	box a pointer to the BoundingBox with which we will
+		 * 			calculate the data of the collision
 		 * @return	the data of the collision */
-		std::vector<Contact> collideSphereAndAABB(
+		std::vector<Contact> collideSphereAndBox(
 			const BoundingSphere* sphere,
-			const AxisAlignedBoundingBox* aabb
+			const BoundingBox* box
 		) const;
+
+
 	};
 
 }

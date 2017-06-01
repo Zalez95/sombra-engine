@@ -1,5 +1,5 @@
-#ifndef SCENE_PROGRAM
-#define SCENE_PROGRAM
+#ifndef PROGRAM_3D_H
+#define PROGRAM_3D_H
 
 #include <vector>
 #include <GL/glew.h>
@@ -12,10 +12,10 @@ namespace graphics {
 	class PointLight;
 
 
-	/** SceneProgram class, it's a high level Program used by the
+	/** Program3D class, it's a high level Program used by the
 	 * SceneRenderer so it doesn't need to search and set the uniform
 	 * variables */
-	class SceneProgram
+	class Program3D
 	{
 	private:	// Nested types
 		/** The maximum number of point lights in the program */
@@ -66,11 +66,11 @@ namespace graphics {
 		UniformLocations mUniformLocations;
 
 	public:		// Functions
-		/** Creates a new SceneProgram */
-		SceneProgram();
+		/** Creates a new Program3D */
+		Program3D();
 
 		/** Class destructor */
-		~SceneProgram();
+		~Program3D();
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
@@ -118,4 +118,4 @@ namespace graphics {
 
 }
 
-#endif		// SCENE_PROGRAM
+#endif		// PROGRAM_3D_H

@@ -12,6 +12,7 @@ namespace graphics {
 	class GraphicsSystem;
 	class Renderable2D;
 	class Renderable3D;
+	class RenderableText;
 	class PointLight;
 	class Camera;
 }
@@ -71,8 +72,9 @@ namespace game {
 		/** Renders the Entities */
 		void render(
 			const graphics::Camera* camera,
-			const std::vector<const graphics::Renderable3D*>& renderable3Ds,
 			const std::vector<const graphics::Renderable2D*>& renderable2Ds,
+			const std::vector<const graphics::Renderable3D*>& renderable3Ds,
+			const std::vector<const graphics::RenderableText*>& renderableTexts,
 			const std::vector<const graphics::PointLight*>& pointLights
 		);
 	};

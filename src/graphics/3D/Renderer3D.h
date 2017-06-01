@@ -1,9 +1,9 @@
-#ifndef SCENE_RENDERER_H
-#define SCENE_RENDERER_H
+#ifndef RENDERER_3D_H
+#define RENDERER_3D_H
 
 #include <queue>
 #include <glm/glm.hpp>
-#include "SceneProgram.h"
+#include "Program3D.h"
 
 namespace graphics {
 
@@ -13,32 +13,31 @@ namespace graphics {
 
 
 	/**
-	 * Class SceneRenderer, it's a Forward Renderer used for rendering
+	 * Class Renderer3D, it's a Forward Renderer used for rendering
 	 * Renderable3Ds without skeletal animation
 	 */
-	class SceneRenderer
+	class Renderer3D
 	{
 	private:	// Attributes
 		/** The Program of the renderer */
-		SceneProgram mProgram;
+		Program3D mProgram;
 
 		/** The projection matrix of the renderer that transforms from View
 		 * Space to Projection Space */
 		glm::mat4 mProjectionMatrix;
 
-		/** The Renderables that we want to render */
+		/** The Renderable3Ds that we want to render */
 		std::queue<const Renderable3D*> mRenderable3Ds;
 
 	public:		// Functions
-		/** Creates a new SceneRenderer and sets all the uniform locations
-		 * for the renderer
+		/** Creates a new Renderer3D
 		 *
 		 * @param	projectionMatrix the projectionMatrix of the renderer */
-		SceneRenderer(const glm::mat4& projectionMatrix) :
+		Renderer3D(const glm::mat4& projectionMatrix) :
 			mProjectionMatrix(projectionMatrix) {};
 
 		/** Class destructor */
-		~SceneRenderer() {};
+		~Renderer3D() {};
 		
 		/** Sets the projection matrix */
 		inline void setProjectionMatrix(const glm::mat4& projectionMatrix)
@@ -67,4 +66,4 @@ namespace graphics {
 
 }
 
-#endif		// SCENE_RENDERER_H
+#endif		// RENDERER_3D_H

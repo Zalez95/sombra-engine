@@ -68,8 +68,11 @@ namespace physics {
 		 *			PhysicsEngine */
 		void integrate(float delta);
 
-		/** Collision detections of the PhysicsEntities */
-		void collide();
+		/** Collision detections of the PhysicsEntities
+		 *
+		 * @param	delta the elapsed time since the last Update of the
+		 *			PhysicsEngine */
+		void collide(float delta);
 	};
 
 }

@@ -3,12 +3,14 @@
 
 #include <vector>
 #include "2D/Renderer2D.h"
-#include "3D/SceneRenderer.h"
+#include "3D/Renderer3D.h"
+#include "text/RendererText.h"
 
 namespace graphics {
 
-	class Renderable3D;
 	class Renderable2D;
+	class Renderable3D;
+	class RenderableText;
 	class Camera;
 	class PointLight;
 
@@ -25,11 +27,11 @@ namespace graphics {
 		static const float Z_NEAR;
 		static const float Z_FAR;
 
-		glm::mat4 mProjectionMatrix;
-
 		Renderer2D mRenderer2D;
 
-		SceneRenderer mSceneRenderer;
+		Renderer3D mRenderer3D;
+
+//		RendererText mRendererText;
 
 	public:		// Functions
 		/** Creates a new Graphics System */
@@ -41,8 +43,9 @@ namespace graphics {
 		/** Draws the scene */
 		void render(
 			const Camera* camera,
-			const std::vector<const Renderable3D*>& renderable3Ds,
 			const std::vector<const Renderable2D*>& renderable2Ds,
+			const std::vector<const Renderable3D*>& renderable3Ds,
+			const std::vector<const RenderableText*>& renderableTexts,
 			const std::vector<const PointLight*>& pointLights
 		);
 	};

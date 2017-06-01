@@ -2,7 +2,7 @@
 
 namespace physics {
 
-	glm::mat3 Contact::getContactMatrix() const
+	glm::mat3 Contact::getContactToWorldMatrix() const
 	{
 		// Two of the tangent vectors of the Contact that
 		// with the normal vector create an orthonormal basis

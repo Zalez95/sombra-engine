@@ -3,12 +3,14 @@
 
 #include <memory>
 #include <glm/glm.hpp>
-#include "../Texture.h"
 
 namespace graphics {
 
+	class Texture;
+
+
 	/**
-	 * Class Renderable2D, is a 2D graphics entity that holds a position,
+	 * Class Renderable2D, it's a 2D graphic entity that holds a position,
 	 * scale and texture
 	 */
 	class Renderable2D
@@ -33,11 +35,9 @@ namespace graphics {
 		 * @param	scale the 2D scale of the Renderable2D
 		 * @param	texture a pointer to the texture of the Renderable2D */
 		Renderable2D(
-			const glm::vec2& position,
-			const glm::vec2& scale,
-			const std::shared_ptr<Texture> texture
-		) :	mPosition(position), mScale(scale),
-			mTexture(std::move(texture)) {};
+			const glm::vec2& position, const glm::vec2& scale,
+			const TextureSPtr texture
+		) :	mPosition(position), mScale(scale), mTexture(texture) {};
 
 		/** Class destructor */
 		~Renderable2D() {};
@@ -49,7 +49,7 @@ namespace graphics {
 		inline glm::vec2 getScale() const { return mScale; };
 
 		/** @return the texture of the Renderable 2D */
-		inline TextureSPtr getTexture() const { return mTexture; };
+		inline const TextureSPtr getTexture() const { return mTexture; };
 	};
 
 }

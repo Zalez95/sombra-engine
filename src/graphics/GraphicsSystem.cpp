@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "3D/Camera.h"
 #include "3D/Renderable3D.h"
+#include "text/RenderableText.h"
 
 namespace graphics {
 
@@ -13,9 +14,9 @@ namespace graphics {
 
 // Public functions
 	GraphicsSystem::GraphicsSystem() :
-		mRenderer2D(),
-		mProjectionMatrix(glm::perspective(FOV, (float)WIDTH / (float)HEIGHT, Z_NEAR, Z_FAR)),
-		mSceneRenderer(mProjectionMatrix)
+		mRenderer2D(glm::ortho(0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, Z_NEAR, Z_FAR)),
+		mRenderer3D(glm::perspective(FOV, (float)WIDTH / (float)HEIGHT, Z_NEAR, Z_FAR))//,
+//		mRendererText()
 	{
 		// Enable depth-testing
 		glEnable(GL_DEPTH_TEST);
@@ -36,21 +37,27 @@ namespace graphics {
 
 	void GraphicsSystem::render(
 		const Camera* camera,
-		const std::vector<const Renderable3D*>& renderable3Ds,
 		const std::vector<const Renderable2D*>& renderable2Ds,
+		const std::vector<const Renderable3D*>& renderable3Ds,
+		const std::vector<const RenderableText*>& renderableTexts,
 		const std::vector<const PointLight*>& pointLights
 	) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		for (const Renderable3D* renderable3D : renderable3Ds) {
-			mSceneRenderer.submit(renderable3D);
-		}
-		mSceneRenderer.render(camera, pointLights);
 
 		for (const Renderable2D* renderable2D : renderable2Ds) {
 			mRenderer2D.submit(renderable2D);
 		}
 		mRenderer2D.render();
+
+		for (const Renderable3D* renderable3D : renderable3Ds) {
+			mRenderer3D.submit(renderable3D);
+		}
+		mRenderer3D.render(camera, pointLights);
+
+//		for (const RenderableText* renderableText : renderableTexts) {
+//			mRendererText.submit(renderableText);
+//		}
+//		mRendererText.render();
 	}
 
 }

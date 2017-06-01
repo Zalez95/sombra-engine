@@ -37,29 +37,55 @@ public:
 	~FileReader() { mInputFStream.close(); };
 
 	/** @return	the path of the file that the Reader is currently reading */
-	inline std::string getCurrentFilePath() const { return mPath; };
+	inline std::string getFilePath() const { return mPath; };
+
+	/** @return the name of the current file with its extension */
+	inline std::string getFileName() const
+	{ return mPath.substr(mPath.find_last_of("/\\") + 1, std::string::npos); };
+
+	/** @return	the path of the directory where is located the current file */
+	inline std::string getDirectory() const
+	{ return mPath.substr(0, mPath.find_last_of("/\\")); };
 
 	/** @return	the number of readed lines in the current file */
 	inline unsigned int getNumLines() const { return mNumLines; };
-
-	/** Reads the next value and stores it in the given parameter
-	 * 
-	 * @param	token the variables where we are going to store the readed
-	 *			value
-	 * @return	true if the value was readed and loaded succesfully, false
-	 * otherwise */
-	template<typename T> bool getParam(T& token);
 
 	/** @return	true if we reached the end of file */
 	inline bool eof() const { return mInputFStream.eof(); };
 
 	/** @return	true if there was an error reading the file */
 	inline bool fail() const { return mInputFStream.fail(); };
+
+	/** Reads the next value and stores it in the given parameter
+	 * 
+	 * @param	token the variables where we are going to store the readed
+	 *			value
+	 * @return	true if the value was readed and loaded succesfully, false
+	 * 			otherwise */
+	template<typename T>
+	bool getValue(T& token);
+
+	/** Reads the next value and splits it by the given separator, storing the
+	 * two resulting values in the given params
+	 *
+	 * @param	first the first of the tokens where we are going the first
+	 * 			readed value
+	 * @param	separator the string that is between the values to read
+	 * @param	second the second of the tokens where we are going the second
+	 * 			readed value
+	 * @return	true if the values were readed and loaded succesfully, false
+	 * 			otherwise */
+	template<typename T1, typename T2>
+	bool getValuePair(T1& first, const std::string& separator, T2& second);
+
+	/** Discards the content of the current line */
+	inline void discardLine() { mCurLineStream = std::stringstream(); };
 };
 
 
-// Template function definitions
-template<typename T> bool FileReader::getParam(T& token)
+// Template functions definition
+template<typename T>
+bool FileReader::getValue(T& token)
 {
 	bool ret = true;
 
@@ -85,9 +111,35 @@ template<typename T> bool FileReader::getParam(T& token)
 		mCurLineStream = std::stringstream(stringLine);
 		++mNumLines;
 
-		ret = getParam(token);
+		ret = getValue(token);
 	}
 	else {
+		ret = false;
+	}
+
+	return ret;
+};
+
+
+template<typename T1, typename T2>
+bool FileReader::getValuePair(T1& first, const std::string& separator, T2& second)
+{
+	bool ret = true;
+	
+	try {
+		// Get the pair
+		std::string valuePairStr;
+		ret = getValue(valuePairStr);
+
+		// Parse the first param
+		std::string firstStr = valuePairStr.substr(0, valuePairStr.find(separator));
+		std::stringstream(firstStr) >> first;
+
+		// Parse the second param
+		std::string secondStr = valuePairStr.substr(first.length() + separator.length(), std::string::npos);
+	   	std::stringstream(secondStr) >> second;
+	}
+	catch (std::exception& e) {
 		ret = false;
 	}
 

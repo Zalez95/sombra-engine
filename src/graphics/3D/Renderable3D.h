@@ -13,7 +13,7 @@ namespace graphics {
 
 
 	/**
-	 * Class Renderable3D, is a 3D GraphicsEntity that holds a Mesh,
+	 * Class Renderable3D, it's a 3D graphic entity that holds a Mesh,
 	 * its Material and its transforms
 	 */
 	class Renderable3D

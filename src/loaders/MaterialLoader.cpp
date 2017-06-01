@@ -28,7 +28,7 @@ namespace graphics{
 			return parseMaterials(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Material in the file \"" + fileReader->getCurrentFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Material in the file \"" + fileReader->getFilePath() + "\":\n" + e.what());
 		}
 	}
 
@@ -39,8 +39,8 @@ namespace graphics{
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getParam(fileName)
-			&& fileReader->getParam(fileVersion)
+		if (fileReader->getValue(fileName)
+			&& fileReader->getValue(fileVersion)
 			&& fileName == FILE_FORMAT::FILE_NAME
 			&& fileVersion == FILE_VERSION)
 		{
@@ -58,9 +58,9 @@ namespace graphics{
 
 		while (!fileReader->eof()) {
 			std::string token;
-			if (fileReader->getParam(token)) {
+			if (fileReader->getValue(token)) {
 				if (token == "num_materials") {
-					fileReader->getParam(numMaterials);
+					fileReader->getValue(numMaterials);
 					materials.resize(numMaterials);
 				}
 				else if (token == "material") {
@@ -90,31 +90,31 @@ namespace graphics{
 		float shininess;
 		
 		std::string trash;
-		fileReader->getParam(name);
-		fileReader->getParam(trash);
+		fileReader->getValue(name);
+		fileReader->getValue(trash);
 
 		bool end = false;
 		while (!end) {
 			std::string token;
-			fileReader->getParam(token);
+			fileReader->getValue(token);
 
 			if (token == "ambient_color") {
-				fileReader->getParam(ambientColor.r);
-				fileReader->getParam(ambientColor.g);
-				fileReader->getParam(ambientColor.b);
+				fileReader->getValue(ambientColor.r);
+				fileReader->getValue(ambientColor.g);
+				fileReader->getValue(ambientColor.b);
 			}
 			else if (token == "diffuse_color") {
-				fileReader->getParam(diffuseColor.r);
-				fileReader->getParam(diffuseColor.g);
-				fileReader->getParam(diffuseColor.b);
+				fileReader->getValue(diffuseColor.r);
+				fileReader->getValue(diffuseColor.g);
+				fileReader->getValue(diffuseColor.b);
 			}
 			else if (token == "specular_color") {
-				fileReader->getParam(specularColor.r);
-				fileReader->getParam(specularColor.g);
-				fileReader->getParam(specularColor.b);
+				fileReader->getValue(specularColor.r);
+				fileReader->getValue(specularColor.g);
+				fileReader->getValue(specularColor.b);
 			}
 			else if (token == "specular_shininess") {
-				fileReader->getParam(shininess);
+				fileReader->getValue(shininess);
 			}
 			else if (token == "}") { end = true; }
 			else {

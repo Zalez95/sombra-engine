@@ -1,16 +1,16 @@
-#ifndef AXIS_ALIGNED_BOUNDING_BOX_H
-#define AXIS_ALIGNED_BOUNDING_BOX_H
+#ifndef BOUNDING_BOX_H
+#define BOUNDING_BOX_H
 
-#include "Collider.h"
 #include <vector>
+#include "Collider.h"
 
 namespace physics {
 
 	/**
-	 * Class AxisAlignedBoundingBox, an Axis-Aligned Bounding Box (AABB) is
-	 * a bounding volume with the shape of a box
+	 * Class BoundingBox, an Bounding Box is a bounding volume with the shape
+	 * of a box
 	 */
-	class AxisAlignedBoundingBox : public Collider
+	class BoundingBox : public Collider
 	{
 	private:	// Attributes
 		/** The lenght in each aixs of the BoundingBox */
@@ -20,15 +20,15 @@ namespace physics {
 		std::vector<glm::vec3> mVertices;
 
 	public:		// Functions
-		/** Creates a new AxisAlignedBoundingBox located at the origin of
+		/** Creates a new BoundingBox located at the origin of
 		 * coordinates
 		 * 
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
-		AxisAlignedBoundingBox(const glm::vec3& lengths) :
+		BoundingBox(const glm::vec3& lengths) :
 			mLengths(lengths), mVertices(8) {};
 
 		/** Class destructor */
-		~AxisAlignedBoundingBox() {};
+		~BoundingBox() {};
 
 		/** @return the coordinates of the BoundingBox's vertices in world
 		 *			space */
@@ -45,4 +45,4 @@ namespace physics {
 
 }
 
-#endif		// AXIS_ALIGNED_BOUNDING_BOX_H
+#endif		// BOUNDING_BOX_H

@@ -7,7 +7,7 @@ namespace game {
 // Static variables intialization
 	const float Player::STEP_LENGTH			= 0.15f;
 	const float Player::JUMP_HEIGHT			= 0.2f;
-	const float Player::MOUSE_SENSIBILITY	= 10.0f;
+	const float Player::MOUSE_SENSIBILITY	= 1.0f;
 
 // Public functions
 	void Player::doInput(const window::InputData* inputData, float delta)
@@ -19,14 +19,15 @@ namespace game {
 // Private functions
 	void Player::doMouseInput(const window::InputData* inputData, float delta)
 	{
-		glm::vec2 mousePosition(inputData->mMouseX, inputData->mMouseY);
-		glm::vec2 mouseDelta = mousePosition / mWindowDimensions - glm::vec2(0.5f, 0.5f);
+		glm::vec2 mouseDelta;
+		mouseDelta.x = inputData->mMouseX / mWindowDimensions.x - 0.5f;
+		mouseDelta.y = inputData->mMouseY / mWindowDimensions.y - 0.5f;
 
 		float yaw	= glm::radians(MOUSE_SENSIBILITY * mouseDelta.x) / delta;
 		float pitch = glm::radians(MOUSE_SENSIBILITY * mouseDelta.y) / delta;
 
 		physics::RigidBody* rigidBody = mPhysicsEntity->getRigidBody();
-		glm::vec3 angularVelocity;// = rigidBody->getAngularVelocity();
+		glm::vec3 angularVelocity = rigidBody->getAngularVelocity();
 
 		// Rotate around the y-axis
 		glm::vec3 vAxis = mDefaultUpVector;

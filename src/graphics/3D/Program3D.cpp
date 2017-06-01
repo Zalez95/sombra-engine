@@ -1,4 +1,4 @@
-#include "SceneProgram.h"
+#include "Program3D.h"
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -9,44 +9,44 @@
 
 namespace graphics {
 
-	SceneProgram::SceneProgram()
+	Program3D::Program3D()
 	{
 		initShaders();
 		initUniformLocations();
 	}
 
 
-	SceneProgram::~SceneProgram()
+	Program3D::~Program3D()
 	{
 		delete mProgram;
 	}
 
 
-	void SceneProgram::enable() const
+	void Program3D::enable() const
 	{
 		mProgram->enable();
 	}
 
 
-	void SceneProgram::disable() const
+	void Program3D::disable() const
 	{
 		Program::disable();
 	}
 
 
-	void SceneProgram::setProjectionMatrix(const glm::mat4& projectionMatrix)
+	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix)
 	{
 		mProgram->setUniform(mUniformLocations.mProjectionMatrix, projectionMatrix);
 	}
 
 
-	void SceneProgram::setModelViewMatrix(const glm::mat4& modelViewMatrix)
+	void Program3D::setModelViewMatrix(const glm::mat4& modelViewMatrix)
 	{
 		mProgram->setUniform(mUniformLocations.mModelViewMatrix, modelViewMatrix);
 	}
 
 
-	void SceneProgram::setMaterial(const Material* material)
+	void Program3D::setMaterial(const Material* material)
 	{
 		mProgram->setUniform(mUniformLocations.mMaterial.mAmbientColor, material->getAmbientColor());
 		mProgram->setUniform(mUniformLocations.mMaterial.mDiffuseColor, material->getDiffuseColor());
@@ -55,7 +55,7 @@ namespace graphics {
 	}
 
 
-	void SceneProgram::setLights(const std::vector<const PointLight*>& pointLights)
+	void Program3D::setLights(const std::vector<const PointLight*>& pointLights)
 	{
 		int numPointLights = (pointLights.size() > MAX_POINT_LIGHTS) ? MAX_POINT_LIGHTS : pointLights.size();
 		glUniform1i(mUniformLocations.mNumPointLights, numPointLights);
@@ -75,21 +75,21 @@ namespace graphics {
 	}
 
 // Private functions
-	void SceneProgram::initShaders()
+	void Program3D::initShaders()
 	{
 		// 1. Read the shader text from the shader files
 		std::ifstream reader;
 
 		std::string vertexShaderText;
 		std::stringstream vertexShaderStream;
-		reader.open("res/shaders/Scene.vert");
+		reader.open("res/shaders/3D.vert");
 		vertexShaderStream << reader.rdbuf();
 		vertexShaderText = vertexShaderStream.str();
 		reader.close();
 
 		std::string fragmentShaderText;
 		std::stringstream fragmentShaderStream;
-		reader.open("res/shaders/Scene.frag");
+		reader.open("res/shaders/3D.frag");
 		fragmentShaderStream << reader.rdbuf();
 		fragmentShaderText = fragmentShaderStream.str();
 		reader.close();
@@ -103,7 +103,7 @@ namespace graphics {
 	}
 
 
-	void SceneProgram::initUniformLocations()
+	void Program3D::initUniformLocations()
 	{
 		mUniformLocations.mModelViewMatrix			= mProgram->getUniformLocation("u_ModelViewMatrix");
 		mUniformLocations.mProjectionMatrix			= mProgram->getUniformLocation("u_ProjectionMatrix");

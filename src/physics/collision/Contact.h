@@ -1,7 +1,6 @@
 #ifndef CONTACT_H
 #define CONTACT_H
 
-#include <vector>
 #include <glm/glm.hpp>
 
 namespace physics {
@@ -16,26 +15,25 @@ namespace physics {
 		/** The penetration depth of the Contact */
 		float mPenetration;
 
-		/** The point where the Contact is happening in world space */
-		glm::vec3 mPoint;
+		/** The position where the Contact is happening in world space */
+		glm::vec3 mPosition;
 
-		/** The normal direction of the Contact in wolrd space */
+		/** The normal direction of the Contact in world space */
 		glm::vec3 mNormal;
 
 	public:		// Functions
 		/** Creates a new Contact
 		 *
 		 * @param	penetration the penetration depth of the Contact
-		 * @param	point the point where the Contact is happening in world
+		 * @param	position the position where the Contact is located in world
 		 *			space
 		 * @param	normal the normal direction of the Contact in world
 		 *			space
 		 * @note	the normal must be normalized */
 		Contact(
 			float penetration,
-			const glm::vec3& point, const glm::vec3& normal
-		) : mPenetration(penetration),
-			mPoint(point), mNormal(normal) {};
+			const glm::vec3& position, const glm::vec3& normal
+		) : mPenetration(penetration), mPosition(position), mNormal(normal) {};
 
 		/** Class destructor */
 		~Contact() {};
@@ -43,18 +41,25 @@ namespace physics {
 		/** @return	the penetration depth of the Contact */
 		inline float getPenetration() const { return mPenetration; };
 
-		/** @return	the position where the Contact is happening in world
+		/** Sets the penetration depth of the Contact
+		 * 
+		 * @param	penetration the new penetration of the Contact */
+		inline void setPenetration(float penetration)
+		{ mPenetration = penetration; };
+
+		/** @return	the position where the Contact is position in world
 		 *			space */
-		inline glm::vec3 getPoint() const { return mPoint; };
+		inline glm::vec3 getPosition() const { return mPosition; };
 
 		/** @return	the normal direction of the Contact in world space */
-		inline glm::vec3 getNormalDirection() const { return mNormal; };
+		inline glm::vec3 getNormal() const { return mNormal; };
 
-		/** @return a matrix used to transform the coordinates from World
-		 * space to Contact space
-		 * @note	we generate the normal each time this functions is called
-		 *			with the normal of the Contact */
-		glm::mat3 getContactMatrix() const;
+		/** @return a matrix used to transform the coordinates from Contact
+		 * space to World space
+		 *
+		 * @note	the matrix is generated each time this function is
+		 * 			called */
+		glm::mat3 getContactToWorldMatrix() const;
 	};
 
 }
