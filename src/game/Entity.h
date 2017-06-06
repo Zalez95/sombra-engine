@@ -71,6 +71,7 @@ namespace game {
 		inline graphics::Camera* getCamera() const { return mGraphicsData.mCamera; };
 		inline graphics::PointLight* getPointLight() const { return mGraphicsData.mPointLight; };
 		inline graphics::Renderable3D* getRenderable3D() const { return mGraphicsData.mRenderable3D; };
+		inline physics::PhysicsEntity* getPhysicsEntity() const { return mPhysicsEntity; };
 
 		/** @return a pointer to the parent Entity of the current one */
 //		inline Entity* getParent() const { return mParent; };

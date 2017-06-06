@@ -62,10 +62,9 @@ namespace graphics {
 			glActiveTexture(GL_TEXTURE0);
 			renderableText->getFont()->getTextureAtlas()->bind();
 
-			for (char c : renderableText->getText()) {
-
+//			for (char c : renderableText->getText()) {
 //				glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
-			}
+//			}
 		}
 		glBindTexture(GL_TEXTURE_2D, 0);
 

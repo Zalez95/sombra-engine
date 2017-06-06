@@ -25,7 +25,7 @@ namespace window {
 		float mMouseY;
 
 		/** Creates a new InputData */
-		InputData()
+		InputData() : mMouseX(0.0f), mMouseY(0.0f)
 		{
 			for (unsigned int i = 0; i < MAX_KEYS; ++i) {
 				mKeys[i] = false;

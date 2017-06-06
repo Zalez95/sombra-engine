@@ -39,11 +39,11 @@ namespace graphics{
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getValue(fileName)
-			&& fileReader->getValue(fileVersion)
-			&& fileName == FILE_FORMAT::FILE_NAME
-			&& fileVersion == FILE_VERSION)
-		{
+		if (fileReader->getValue(fileName) &&
+			fileReader->getValue(fileVersion) &&
+			fileName == FILE_FORMAT::FILE_NAME &&
+			fileVersion == FILE_VERSION
+		) {
 			ret = true;
 		}
 
@@ -64,8 +64,9 @@ namespace graphics{
 					materials.resize(numMaterials);
 				}
 				else if (token == "material") {
+					auto curMaterial = parseMaterial(fileReader);
 					if (materialIndex < numMaterials) {
-						materials[materialIndex] = parseMaterial(fileReader);
+						materials[materialIndex] = std::move(curMaterial);
 					}
 					++materialIndex;
 				}

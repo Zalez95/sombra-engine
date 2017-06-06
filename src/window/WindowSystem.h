@@ -9,14 +9,14 @@
 namespace window {
 
 	// GLFW Callbacks
-    static void error_callback(int error, const char* description);
-    static void key_callback(
+    void error_callback(int error, const char* description);
+    void key_callback(
 		GLFWwindow* window, int key, int scancode, int action, int mods
 	);
-	static void mouse_button_callback(
+	void mouse_button_callback(
 		GLFWwindow* window, int button, int action, int mods
 	);
-	static void cursor_position_callback(
+	void cursor_position_callback(
 		GLFWwindow* window, double xpos, double ypos
 	);
 
@@ -70,7 +70,7 @@ namespace window {
 		/** @return	the current data of the input inserted by the player,
 		 *			like the pressed mouse buttons, keyboard keys and the
 		 *			position of the mouse */
-		inline InputData getInputData() const { return mInputData; };
+		inline const InputData* getInputData() const { return &mInputData; };
 
 		/** Sets the mouse position in the window
 		 * 
@@ -98,8 +98,8 @@ namespace window {
 		 * displayed and the back buffer contains the new rendered frame */
 		void swapBuffers();
 
-		/** Print the OpenGL version info */
-		void printGLInfo() const;
+		/** @return	the OpenGL version info */
+		std::string getGLInfo() const;
 	private:
 		/** Creates a viewport with the same size of the window */
 		void setViewport();

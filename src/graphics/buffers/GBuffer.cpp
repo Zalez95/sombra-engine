@@ -1,4 +1,5 @@
 #include "GBuffer.h"
+#include <string>
 
 namespace graphics {
 
@@ -24,10 +25,10 @@ namespace graphics {
 		GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 		glDrawBuffers(4, drawBuffers);
 
-		GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-		if (Status != GL_FRAMEBUFFER_COMPLETE) {
-			throw ("FB error, status: 0x%x\n", Status);
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			throw ("FB error, status: 0x" + std::to_string(status) + "\n");
 		}
 
 		// restore default FBO

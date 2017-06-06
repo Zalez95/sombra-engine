@@ -38,7 +38,7 @@ namespace physics {
             switch ((*it)->getType()) {
 				case PhysicsEntityType::PARTICLE:
 				{
-					RigidBody* particle		= (*it)->getRigidBody();
+					RigidBody* particle			= (*it)->getRigidBody();
 					Collider* collider			= (*it)->getCollider();
 					glm::mat4 colliderOffset	= (*it)->getColliderOffset();
 
@@ -67,8 +67,9 @@ namespace physics {
 		// TODO: particle collision
 		for (auto it1 = mPhysicsEntities.begin(); it1 != mPhysicsEntities.end(); ++it1) {
 			for (auto it2 = it1 + 1; it2 != mPhysicsEntities.end(); ++it2) {
-				if (((*it1)->getType() == PhysicsEntityType::RIGID_BODY)
-						&& ((*it2)->getType() == PhysicsEntityType::RIGID_BODY)) {
+				if (((*it1)->getType() == PhysicsEntityType::RIGID_BODY) &&
+					((*it2)->getType() == PhysicsEntityType::RIGID_BODY)
+				) {
 					const Collider* collider1 = (*it1)->getCollider();
 					const Collider* collider2 = (*it2)->getCollider();
 

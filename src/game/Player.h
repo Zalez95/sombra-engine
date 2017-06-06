@@ -15,9 +15,9 @@ namespace game {
 	class Player : public Entity
 	{
 	protected:	// Attributes
-		static const float STEP_LENGTH;
-		static const float JUMP_HEIGHT;
-		static const float MOUSE_SENSIBILITY;
+		static const float RUN_SPEED;
+		static const float JUMP_SPEED;
+		static const float MOUSE_SPEED;
 		float mFirst;
 		const glm::vec2 mWindowDimensions;
 

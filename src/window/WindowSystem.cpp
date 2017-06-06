@@ -1,5 +1,4 @@
 #include "WindowSystem.h"
-#include <iostream>
 #include "../utils/Logger.h"
 
 namespace window {
@@ -133,12 +132,12 @@ namespace window {
 	}
 
 	
-	void WindowSystem::printGLInfo() const
+	std::string WindowSystem::getGLInfo() const
 	{
-		std::cout	<< "OpenGL Renderer: " + std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)))
-					<< "\nOpenGL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION)))
-					<< "\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)))
-					<< '\n';
+		return	"OpenGL Renderer: " + std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER))) +
+				"\nOpenGL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))) +
+				"\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION))) +
+				"\n";
 	}
 
 // Private functions

@@ -13,7 +13,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
 
 
 # Compiler flags
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "${CMAKE_GXX_FLAGS} -Wall -Werror -std=c++14")
 
 
 # Find the external libraries needed by the exectuable

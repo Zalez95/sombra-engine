@@ -17,14 +17,10 @@ namespace game {
 			if (mGraphicsData.mCamera) {
 				glm::vec3 forwardVector = mDefaultForwardVector * orientation;
 				glm::vec3 upVector		= mDefaultUpVector;
-				//glm::inverse()
+				
 				mGraphicsData.mCamera->setPosition(position);
 				mGraphicsData.mCamera->setTarget(position + forwardVector);
 				mGraphicsData.mCamera->setUp(upVector);
-
-//				mGraphicsData.mCamera->setPosition(glm::vec3());
-//				mGraphicsData.mCamera->setForwardVector(mDefaultForwardVector);
-//				mGraphicsData.mCamera->setUpVector(mDefaultUpVector);
 			}
 			if (mGraphicsData.mPointLight) {
 				mGraphicsData.mPointLight->setPosition(position);

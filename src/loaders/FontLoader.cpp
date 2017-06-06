@@ -47,8 +47,9 @@ namespace graphics {
 					characters.resize(numCharacters);
 				}
 				else if (token == "char") {
+					Character curChar = parseCharacter(fileReader);
 					if (characterIndex < numCharacters) {
-						characters[characterIndex] = parseCharacter(fileReader);
+						characters[characterIndex] = curChar;
 					}
 					++characterIndex;
 				}

@@ -89,8 +89,12 @@ bool FileReader::getValue(T& token)
 {
 	bool ret = true;
 
-	if (mCurLineStream.rdbuf()->in_avail() > 0) {
-		// If the current line isn't empty we parse the token
+	if ((!mCurLineStream.eof()) &&
+		(mCurLineStream.str().substr(
+				mCurLineStream.tellg()
+			).find_first_not_of(" \t") != std::string::npos)
+	) {
+		// If the current line has still some tokens we parse the next one
 		try {
 			mCurLineStream >> token;
 		}
@@ -103,8 +107,11 @@ bool FileReader::getValue(T& token)
 		std::string stringLine;
 		std::getline(mInputFStream, stringLine);
 
-		// Remove the carriage return character located at the end of line if it exists
-		if ((!stringLine.empty()) && (stringLine[stringLine.size() - 1] == '\r')) {
+		// Remove the carriage return character located at the end of line if
+		// it exists
+		if ((!stringLine.empty()) &&
+			(stringLine[stringLine.size() - 1] == '\r')
+		) {
 			stringLine = stringLine.substr(0, stringLine.size() - 1);
 		}
 

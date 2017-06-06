@@ -25,11 +25,13 @@ namespace game {
 	class Game
 	{
     private:    // Constants
-	    static const unsigned int WIDTH	    = 1280;
-	    static const unsigned int HEIGHT    = 720;
+	    static const unsigned int WIDTH = 1280;
+	    static const unsigned int HEIGHT = 720;
 	    static const float FOV;
 	    static const float Z_NEAR;
 	    static const float Z_FAR;
+	    static const float UPDATE_TIME;
+		static const unsigned int NUM_CUBES = 50;
 
 	private:	// Nested Types
 		typedef std::unique_ptr<Entity> EntityUPtr;

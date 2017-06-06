@@ -131,7 +131,7 @@ namespace graphics {
 			GLfloat v2_x = positions[3 * faceIndices[i]]		- positions[3 * faceIndices[i+2]];
 			GLfloat v2_y = positions[3 * faceIndices[i] + 1]	- positions[3 * faceIndices[i+2] + 1];
 			GLfloat v2_z = positions[3 * faceIndices[i] + 2]	- positions[3 * faceIndices[i+2] + 2];
-			glm::vec3 v2(v2_x, v2_y, v1_z);
+			glm::vec3 v2(v2_x, v2_y, v2_z);
 
 			glm::vec3 normal = glm::cross(v1, v2);
 
@@ -166,11 +166,11 @@ namespace graphics {
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getValue(fileName)
-			&& fileReader->getValue(fileVersion)
-			&& fileName == FILE_FORMAT::FILE_NAME
-			&& fileVersion == FILE_VERSION)
-		{
+		if (fileReader->getValue(fileName) &&
+			fileReader->getValue(fileVersion) &&
+			fileName == FILE_FORMAT::FILE_NAME &&
+			fileVersion == FILE_VERSION
+		) {
 			ret = true;
 		}
 
@@ -191,8 +191,9 @@ namespace graphics {
 					meshes.resize(numMeshes);
 				}
 				else if (token == "mesh") {
+					auto curMesh = parseMesh(fileReader);
 					if (meshIndex < numMeshes) {
-						meshes[meshIndex] = parseMesh(fileReader);
+						meshes[meshIndex] = std::move(curMesh);
 					}
 					++meshIndex;
 				}
@@ -216,7 +217,7 @@ namespace graphics {
 		std::vector<GLfloat> positions, uvs;
 		std::vector<GLushort> posIndices, uvIndices;
 		unsigned int numPositions = 0, numUVs = 0, numFaces = 0, numJoints = 0;
-		unsigned int positionIndex = 0, uvIndex = 0, faceIndex = 0, jointIndex = 0;
+		unsigned int positionIndex = 0, uvIndex = 0, faceIndex = 0;
 		
 		std::string trash;
 		fileReader->getValue(name);
@@ -249,6 +250,7 @@ namespace graphics {
 					fileReader->getValue(positions[3 * positionIndex + 1]);
 					fileReader->getValue(positions[3 * positionIndex + 2]);
 				}
+				else { fileReader->discardLine(); }
 				++positionIndex;
 			}
 			else if (token == "uv"){
@@ -258,6 +260,7 @@ namespace graphics {
 					fileReader->getValue(uvs[2 * vi]);
 					fileReader->getValue(uvs[2 * vi + 1]);
 				}
+				else { fileReader->discardLine(); }
 				++uvIndex;
 			}
 			else if (token == "f") {
@@ -275,6 +278,7 @@ namespace graphics {
 						fileReader->getValue(trash);
 					}
 				}
+				else { fileReader->discardLine(); }
 				++faceIndex;
 			}
 			else if (token == "}") { end = true; }

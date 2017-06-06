@@ -3,8 +3,10 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
-#define RESTITUTION 1.0f
+#define RESTITUTION 0.3f
+#define ANGULAR_LIMIT 0.2f
 
 namespace physics {
 
@@ -51,7 +53,7 @@ namespace physics {
 
 			/** The change in orientation that we have to apply to both
 			 * RigidBodies */
-			glm::vec3 mOrientationChange[2];
+			glm::quat mOrientationChange[2];
 		};
 
     private:    // Attributes
@@ -95,8 +97,10 @@ namespace physics {
          * RigidBodies due to the collision
          * 
          * @param   contactData a pointer to the ContactData whose RigidBodies'
-		 * 			velocities have to change */
-		void calculateVelocityChanges(ContactData* contactData);
+		 * 			velocities have to change
+		 * @param	delta the elapsed time since the last Update of the
+		 * 			CollisionResolver */
+		void calculateVelocityChanges(ContactData* contactData, float delta);
 
 		/** Updates the penetration of the contacts that have at least one
 		 * RigidBody equal to one of RigidBodies in the given ContactData
