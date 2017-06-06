@@ -1,5 +1,7 @@
 #include "Game.h"
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -193,27 +195,6 @@ namespace game {
 
 		// Renderable3Ds
 		std::vector<const graphics::Renderable3D*> renderable3Ds;
-		graphics::Renderable3D* renderable3D_centro = new graphics::Renderable3D(mesh1, material_white, nullptr, false);
-		renderable3D_centro->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 0, -10)));
-		renderable3Ds.push_back(renderable3D_centro);
-
-		graphics::Renderable3D* renderable3D_derecha = new graphics::Renderable3D(mesh1, material_red, nullptr, false);
-		renderable3D_derecha->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(2, 0, -10)));
-		renderable3Ds.push_back(renderable3D_derecha);
-
-		graphics::Renderable3D* renderable3D_arriba = new graphics::Renderable3D(mesh1, material_green, nullptr, false);
-		renderable3D_arriba->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 2, -10)));
-		renderable3Ds.push_back(renderable3D_arriba);
-
-		graphics::Renderable3D* renderable3D_frente = new graphics::Renderable3D(mesh1, material_blue, nullptr, false);
-		renderable3D_frente->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(0, 0, -8)));
-		renderable3Ds.push_back(renderable3D_frente);
-
-		graphics::Renderable3D* renderable3D_izquierda = new graphics::Renderable3D(mesh1, material_blue, nullptr, false);
-		renderable3D_izquierda->setModelMatrix(glm::translate(glm::mat4(), glm::vec3(-10, 0, -10)));
-		renderable3Ds.push_back(renderable3D_izquierda);
-
-		std::vector<graphics::Renderable3D*> fileRenderables;
 		for (auto it = fileMeshes.begin(); it != fileMeshes.end(); ++it) {
 			auto tmpMaterial = std::make_shared<graphics::Material>(
 				"tmp_material",
@@ -225,59 +206,54 @@ namespace game {
 			graphics::Renderable3D* renderable3D1 = new graphics::Renderable3D(*it, tmpMaterial, nullptr, false);
 			renderable3D1->setModelMatrix( glm::rotate(glm::mat4(), -glm::half_pi<float>(), glm::vec3(1,0,0)) );
 			renderable3Ds.push_back(renderable3D1);
-			fileRenderables.push_back(renderable3D1);
 		}
-
-
-		/*********************************************************************
-		 * PHYSICS DATA
-		 *********************************************************************/
-		std::vector<physics::PhysicsEntity*> physicsEntities;		
-       	physics::PhysicsEntity* physicsEntity1 = new physics::PhysicsEntity(
-       		std::make_unique<physics::RigidBody>(
-       			20.0f, 0.01f,
-       			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f,
-       			glm::vec3(0, 0, 10), glm::quat()
-       		),
-       		std::make_unique<physics::BoundingSphere>(2.0f), glm::mat4()
-       	);
-		physicsEntities.push_back(physicsEntity1);
-		mPhysicsEngine->addPhysicsEntity(physicsEntity1);
-
-       	physics::PhysicsEntity* physicsEntity2 = new physics::PhysicsEntity(
-			std::make_unique<physics::RigidBody>(
-				10.0f, 1.0f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 1.0f,
-				glm::vec3(0, 0, -10), glm::quat()
-			),
-			std::make_unique<physics::BoundingSphere>(0.5f), glm::mat4()
-		);
-		physicsEntity2->getRigidBody()->addAngularVelocity(glm::vec3(0, 10, 0));
-		physicsEntities.push_back(physicsEntity2);
-		mPhysicsEngine->addPhysicsEntity(physicsEntity2);
-
-		physics::PhysicsEntity* physicsEntity3 = new physics::PhysicsEntity(
-			std::make_unique<physics::RigidBody>(
-				10.0f, 1.0f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 1.0f,
-				glm::vec3(-10, 0, -10), glm::quat()
-			),
-			std::make_unique<physics::BoundingSphere>(0.5f), glm::mat4()
-		);
-		physicsEntity3->getRigidBody()->addLinearVelocity(glm::vec3(0.5f, 0, 0));
-		physicsEntities.push_back(physicsEntity3);
-		mPhysicsEngine->addPhysicsEntity(physicsEntity3);
 
 
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
+		std::vector<physics::PhysicsEntity*> physicsEntities;
+
 		// Player
-		auto player	= std::make_unique<Player>("player", physicsEntity1, &camera1, nullptr, nullptr, glm::vec2(WIDTH, HEIGHT));
+       	physics::PhysicsEntity* physicsEntityPlayer = new physics::PhysicsEntity(
+       		std::make_unique<physics::RigidBody>(
+       			40.0f, 0.01f,
+       			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f,
+       			glm::vec3(0, 0, 10), glm::quat()
+       		),
+       		std::make_unique<physics::BoundingSphere>(2.0f), glm::mat4()
+       	);
+		physicsEntities.push_back(physicsEntityPlayer);
+		mPhysicsEngine->addPhysicsEntity(physicsEntityPlayer);
+
+		auto player	= std::make_unique<Player>("player", physicsEntityPlayer, &camera1, nullptr, nullptr, glm::vec2(WIDTH, HEIGHT));
 		mPlayer = player.get();
 		mEntities.push_back(std::move(player));
 
 		// Cubes
+        glm::vec3 cubePositions[5]							= { glm::vec3(-10, 0, -10), glm::vec3(0, 0, -10), glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8) };
+        std::shared_ptr<graphics::Material> materials[5]	= { material_white, material_white, material_green, material_blue, material_orange };
+        for (unsigned int i = 0; i < 5; ++i) {
+        	physics::PhysicsEntity* physicsEntityCube = new physics::PhysicsEntity(
+        		std::make_unique<physics::RigidBody>(
+        			20.0f, 1.0f,
+        			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.5f,
+        			cubePositions[i], glm::quat()
+        		),
+        		std::make_unique<physics::BoundingSphere>(1.0f), glm::mat4()
+        	);
+			if (i == 0) { physicsEntityCube->getRigidBody()->addLinearVelocity(glm::vec3(0.5f, 0, 0)); }
+			if (i == 1) { physicsEntityCube->getRigidBody()->addAngularVelocity(glm::vec3(0, 10, 0)); }
+        	physicsEntities.push_back(physicsEntityCube);
+        	mPhysicsEngine->addPhysicsEntity(physicsEntityCube);
+
+			graphics::Renderable3D* renderable3DCube = new graphics::Renderable3D(mesh1, materials[i], nullptr, false);
+        	renderable3Ds.push_back(renderable3DCube);
+        
+			auto cube = std::make_unique<Entity>("not random cube", physicsEntityCube, nullptr, nullptr, renderable3DCube);
+			mEntities.push_back(std::move(cube));
+        }
+
 		for (unsigned int i = 0; i < NUM_CUBES; ++i) {
 			glm::vec3 randomPosition(
 				100 * (static_cast<float>(rand()) / RAND_MAX) - 50,
@@ -285,29 +261,23 @@ namespace game {
 				100 * (static_cast<float>(rand()) / RAND_MAX) - 50
 			);
 
-			physics::PhysicsEntity* physicsEntity4 = new physics::PhysicsEntity(
+			physics::PhysicsEntity* physicsEntityCube = new physics::PhysicsEntity(
 				std::make_unique<physics::RigidBody>(
 					10.0f, 1.0f,
 					2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.05f,
 					randomPosition, glm::quat()
 				),
-				std::make_unique<physics::BoundingSphere>(2.0f), glm::mat4()
+				std::make_unique<physics::BoundingSphere>(1.0f), glm::mat4()
 			);
-			physicsEntities.push_back(physicsEntity4);
-			mPhysicsEngine->addPhysicsEntity(physicsEntity4);
+			physicsEntities.push_back(physicsEntityCube);
+			mPhysicsEngine->addPhysicsEntity(physicsEntityCube);
 
-			graphics::Renderable3D* renderable3D1 = new graphics::Renderable3D(mesh1, material_orange, nullptr, false);
-			renderable3Ds.push_back(renderable3D1);
+			graphics::Renderable3D* renderable3DCube = new graphics::Renderable3D(mesh1, material_orange, nullptr, false);
+			renderable3Ds.push_back(renderable3DCube);
 
-			auto cube1 = std::make_unique<Entity>("random cube", physicsEntity4, nullptr, nullptr, renderable3D1);
-			mEntities.push_back(std::move(cube1));
+			auto cube = std::make_unique<Entity>("random cube", physicsEntityCube, nullptr, nullptr, renderable3DCube);
+			mEntities.push_back(std::move(cube));
 		}
-
-		auto cube2	= std::make_unique<Entity>("cube2 (angular)", physicsEntity2, nullptr, nullptr, renderable3D_centro);
-		mEntities.push_back(std::move(cube2));
-
-		auto cube3	= std::make_unique<Entity>("cube3 (linear)", physicsEntity3, nullptr, nullptr, renderable3D_izquierda);
-		mEntities.push_back(std::move(cube3));
 
 
 		/*********************************************************************
@@ -323,15 +293,18 @@ namespace game {
 			lastTime		= curTime;
 			timeSinceUpdate += delta;
 
-			//if (timeSinceUpdate >= UPDATE_TIME) {
+			if (timeSinceUpdate >= UPDATE_TIME) {
 				std::cout << delta << "ms\r";
 			
-				input(delta);
+				input(timeSinceUpdate);
 				update(timeSinceUpdate);
 				render(mPlayer->getCamera(), renderable2Ds, renderable3Ds, renderableTexts, pointLights);
-			
-				timeSinceUpdate = 0;
-			//}
+
+				timeSinceUpdate = 0.0f;
+			}
+			else {
+				std::this_thread::sleep_for( std::chrono::duration<float>(UPDATE_TIME - timeSinceUpdate) );
+			}
 		}
 
 		for (const graphics::Renderable3D* r3d : renderable3Ds) {
