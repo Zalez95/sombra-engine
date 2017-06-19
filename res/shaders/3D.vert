@@ -19,9 +19,9 @@ uniform vec3 u_PointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions 
 
 // Output data in view space
 //out VertexData {
-	vec3 vs_Position;
-	vec3 vs_Normal;
-	vec2 vs_UV;
+out vec3 vs_Position;
+out vec3 vs_Normal;
+out vec2 vs_UV;
 //} vs_Vertex;
 
 flat out int vs_NumPointLights;

@@ -91,7 +91,7 @@ namespace physics {
 		updateInertiaTensorWorld();
 	}
 
-// Private functions
+
 	void RigidBody::updateTransformsMatrix()
 	{
 		glm::mat4 translation	= glm::translate(glm::mat4(), mPosition);

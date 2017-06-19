@@ -30,6 +30,7 @@
 #include "../physics/PhysicsEntity.h"
 #include "../physics/RigidBody.h"
 #include "../physics/collision/BoundingSphere.h"
+#include "../physics/collision/BoundingBox.h"
 
 namespace game {
 
@@ -190,7 +191,7 @@ namespace game {
 
 		// Renderable2Ds
 		std::vector<const graphics::Renderable2D*> renderable2Ds;
-		graphics::Renderable2D renderable2D1(glm::vec2(/*80.0f, 75.0f*/), glm::vec2(1,1/*0.15f, 0.2f*/), texture1);
+		graphics::Renderable2D renderable2D1(glm::vec2(/*80.0f, 75.0f*/), glm::vec2(0.15f, 0.2f), texture1);
 		renderable2Ds.push_back(&renderable2D1);
 
 		// Renderable3Ds
@@ -221,7 +222,7 @@ namespace game {
        			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f,
        			glm::vec3(0, 0, 10), glm::quat()
        		),
-       		std::make_unique<physics::BoundingSphere>(2.0f), glm::mat4()
+			std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
        	);
 		physicsEntities.push_back(physicsEntityPlayer);
 		mPhysicsEngine->addPhysicsEntity(physicsEntityPlayer);
@@ -231,18 +232,18 @@ namespace game {
 		mEntities.push_back(std::move(player));
 
 		// Cubes
-        glm::vec3 cubePositions[5]							= { glm::vec3(-10, 0, -10), glm::vec3(0, 0, -10), glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8) };
-        std::shared_ptr<graphics::Material> materials[5]	= { material_white, material_white, material_green, material_blue, material_orange };
+        glm::vec3 cubePositions[5] = { glm::vec3(-10, 0, -10), glm::vec3(0, 0, -10), glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8) };
+        std::shared_ptr<graphics::Material> materials[5] = { material_white, material_white, material_green, material_blue, material_orange };
         for (unsigned int i = 0; i < 5; ++i) {
         	physics::PhysicsEntity* physicsEntityCube = new physics::PhysicsEntity(
         		std::make_unique<physics::RigidBody>(
         			20.0f, 1.0f,
-        			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.5f,
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.5f,
         			cubePositions[i], glm::quat()
         		),
-        		std::make_unique<physics::BoundingSphere>(1.0f), glm::mat4()
+				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
         	);
-			if (i == 0) { physicsEntityCube->getRigidBody()->addLinearVelocity(glm::vec3(0.5f, 0, 0)); }
+			if (i == 0) { physicsEntityCube->getRigidBody()->addLinearVelocity(glm::vec3(1, 0, 0)); }
 			if (i == 1) { physicsEntityCube->getRigidBody()->addAngularVelocity(glm::vec3(0, 10, 0)); }
         	physicsEntities.push_back(physicsEntityCube);
         	mPhysicsEngine->addPhysicsEntity(physicsEntityCube);
@@ -267,7 +268,7 @@ namespace game {
 					2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.05f,
 					randomPosition, glm::quat()
 				),
-				std::make_unique<physics::BoundingSphere>(1.0f), glm::mat4()
+				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
 			);
 			physicsEntities.push_back(physicsEntityCube);
 			mPhysicsEngine->addPhysicsEntity(physicsEntityCube);

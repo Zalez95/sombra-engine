@@ -111,6 +111,10 @@ namespace physics {
 		inline bool hasFiniteMass() const
 		{ return mInvertedMass > 0; };
 
+		/** @return	the transformations matrix of the Rigid Body */
+		inline glm::mat4 getTransformsMatrix() const
+		{ return mTransformsMatrix; };
+
 		/** @return	the current position of the RigidBody */
 		inline glm::vec3 getPosition() const { return mPosition; };
 
@@ -144,10 +148,6 @@ namespace physics {
 		/** @return	the current angular velocity of the RigidBody */
 		inline glm::vec3 getAngularVelocity() const
 		{ return mAngularVelocity; };
-
-		/** @return	the transformations matrix of the Rigid Body */
-		inline glm::mat4 getTransformsMatrix() const
-		{ return mTransformsMatrix; };
 
 		/** Adds the given linear velocity to the RigidBody
 		 *

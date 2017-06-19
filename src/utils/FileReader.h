@@ -146,7 +146,7 @@ bool FileReader::getValuePair(T1& first, const std::string& separator, T2& secon
 		std::string secondStr = valuePairStr.substr(first.length() + separator.length(), std::string::npos);
 	   	std::stringstream(secondStr) >> second;
 	}
-	catch (std::exception& e) {
+	catch (std::exception&) {
 		ret = false;
 	}
 

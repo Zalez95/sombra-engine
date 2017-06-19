@@ -25,7 +25,7 @@ namespace physics {
 		 * 
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
 		BoundingBox(const glm::vec3& lengths) :
-			mLengths(lengths), mVertices(8) {};
+			mLengths(lengths), mVertices(8) { setTransforms(glm::mat4()); };
 
 		/** Class destructor */
 		~BoundingBox() {};

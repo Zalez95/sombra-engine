@@ -14,7 +14,7 @@ namespace physics {
 		mVertices[7] = glm::vec3( mLengths.x,  mLengths.y,  mLengths.z) / 2.0f;
 
 		for (unsigned int i = 0; i < mVertices.size(); ++i) {
-			mVertices[i] = glm::vec3(transforms * glm::vec4(mVertices[i], 0));
+			mVertices[i] = glm::vec3(transforms * glm::vec4(mVertices[i], 1.0f));
 		}
 	}
 

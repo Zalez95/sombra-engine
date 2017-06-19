@@ -24,6 +24,16 @@ namespace physics {
 
 			/** The force that we want to pair with the entity */
 			Force* mForce;
+
+			/** Creates a new EntityForce
+			 * 
+			 * @param	entity a pointer to the PhysicsEntity of EntityForce
+			 * @param	force a pointer to the Force of EntityForce */
+			EntityForce(PhysicsEntity* entity, Force* force) :
+				mEntity(entity), mForce(force) {};
+
+			/** Class destructor */
+			~EntityForce() {};
 		};
 
 	private:	// Attributes

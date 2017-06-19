@@ -6,7 +6,7 @@ namespace physics {
 	
 	void ForceManager::addEntity(PhysicsEntity* entity, Force* force)
 	{
-		mEntityForces.push_back({ entity, force });
+		mEntityForces.emplace_back(entity, force);
 	}
 
 	

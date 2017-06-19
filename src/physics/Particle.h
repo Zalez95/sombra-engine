@@ -30,6 +30,11 @@ namespace physics {
 		 * particle in each integrate call so it doesn't move forever */
 		float mSlowDown;
 
+		/** The matrix that holds all the current tranformations of the
+		 * Particle (only translation) in world space to avoid recalculating
+		 * it */
+		glm::mat4 mTransformsMatrix;
+
 	public:		// Functions
 		/** Creates a new Particle
 		 * 
@@ -45,31 +50,16 @@ namespace physics {
 		/** @return	the mass of the Particle */
 		inline float getMass() const { return 1.0f / mInvertedMass; };
 
-		
 		/** @return	true if the Particle has Finite Mass, false otherwise */
 		inline bool hasFiniteMass() const
 		{ return mInvertedMass > 0; };
+		
+		/** @return	the transformations matrix of the Particle */
+		inline glm::mat4 getTransformsMatrix() const
+		{ return mTransformsMatrix; };
 
 		/** @return the current position of the Particle */
 		inline glm::vec3 getPosition() const { return mPosition; };
-
-//		/** @return	the current velocity of the Particle */
-//		inline glm::vec3 getVelocity() const { return mVelocity; };
-//
-//		/** Sets the velocity of the Particle
-//		 * 
-//		 * @param	velocity the new velocity of the Particle */
-//		inline void setVelocity(const glm::vec3& velocity)
-//		{ mVelocity = velocity; };
-//
-//		/** @return	the current acceleration of the Particle */
-//		inline glm::vec3 getAcceleration() const { return mAcceleration; };
-//
-//		/** Sets the acceleration of the Particle
-//		 *
-//		 * @param	acceleration the new acceleration of the Particle */
-//		inline void setAcceleration(const glm::vec3& acceleration)
-//		{ mAcceleration = acceleration; };
  
 		/** Adds the given force to the particle
 		 * 
@@ -86,6 +76,10 @@ namespace physics {
 		 * @param	delta the time by we will integrate the attributes of the
 		 *			Particle */
 		void integrate(float delta);
+
+		/** Updates the transformations matrix with the current data of the
+		 * Particle */
+		void updateTransformsMatrix();
 	};
 
 }

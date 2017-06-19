@@ -37,9 +37,9 @@ struct PointLight
 // ____ GLOBAL VARIABLES ____
 // Input data in view space from the vertex shader
 //in VertexData {
-	vec3 vs_Position;
-	vec3 vs_Normal;
-	vec2 vs_UV;
+in vec3 vs_Position;
+in vec3 vs_Normal;
+in vec2 vs_UV;
 //} vs_Vertex;
 
 flat in int vs_NumPointLights;

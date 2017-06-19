@@ -35,25 +35,21 @@ namespace physics {
 	void PhysicsEngine::integrate(float delta)
 	{
 		for (auto it = mPhysicsEntities.begin(); it != mPhysicsEntities.end(); ++it) {
+			Collider* collider			= (*it)->getCollider();
+			glm::mat4 colliderOffset	= (*it)->getColliderOffset();
             switch ((*it)->getType()) {
 				case PhysicsEntityType::PARTICLE:
 				{
-					RigidBody* particle			= (*it)->getRigidBody();
-					Collider* collider			= (*it)->getCollider();
-					glm::mat4 colliderOffset	= (*it)->getColliderOffset();
-
+					Particle* particle = (*it)->getParticle();
 					particle->integrate(delta);
-					collider->setTransforms(colliderOffset * glm::translate(glm::mat4(), particle->getPosition()));
+					collider->setTransforms(particle->getTransformsMatrix() * colliderOffset);
 					break;
-				}
-	            case PhysicsEntityType::RIGID_BODY:
+	            }
+				case PhysicsEntityType::RIGID_BODY:
 				{
-					RigidBody* rigidBody		= (*it)->getRigidBody();
-					Collider* collider			= (*it)->getCollider();
-					glm::mat4 colliderOffset	= (*it)->getColliderOffset();
-
+					RigidBody* rigidBody = (*it)->getRigidBody();
 					rigidBody->integrate(delta);
-					collider->setTransforms(colliderOffset * glm::translate(glm::mat4(), rigidBody->getPosition()));
+					collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
 					break;
 				}
 			}
