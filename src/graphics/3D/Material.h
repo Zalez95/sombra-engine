@@ -20,10 +20,10 @@ namespace graphics {
 		/** The ambient color of the Material */
 		RGBColor mAmbientColor;
 
-		/** The diffuse color of the Material */
+		/** The color of the diffuse reflected light the Material */
 		RGBColor mDiffuseColor;
 
-		/** The specular color of the Material */
+		/** The color of the specular reflected light the Material */
 		RGBColor mSpecularColor;
 
 		/** The specular shininess of the Material */

@@ -12,20 +12,26 @@ namespace graphics {
 	class PointLight;
 
 
-	/** Program3D class, it's a high level Program used by the
+	/**
+	 * Program3D class, it's a high level Program used by the
 	 * SceneRenderer so it doesn't need to search and set the uniform
-	 * variables */
+	 * variables
+	 */
 	class Program3D
 	{
-	private:	// Nested types
+	private:	// Attributes
 		/** The maximum number of point lights in the program */
 		static const unsigned int MAX_POINT_LIGHTS = 4;
 
-		/** Struct UniformLocations, it holds the uniform variables location
-		 * so we don't have to get them in each render call */
+		/** The Program of the renderer */
+		Program* mProgram;
+
+		/** Holds the uniform variables location so we don't have to get them
+		 * in each render call */
 		struct UniformLocations
 		{
-			GLuint mModelViewMatrix;
+			GLuint mModelMatrix;
+			GLuint mViewMatrix;
 			GLuint mProjectionMatrix;
 
 			struct
@@ -38,8 +44,8 @@ namespace graphics {
 
 			struct BaseLight
 			{
-				GLuint mAmbientIntensity;
-				GLuint mIntensity;
+				GLuint mDiffuseColor;
+				GLuint mSpecularColor;
 			};
 
 			struct Attenuation
@@ -56,14 +62,7 @@ namespace graphics {
 				Attenuation mAttenuation;
 			} mPointLights[MAX_POINT_LIGHTS];
 			GLuint mPointLightsPositions[MAX_POINT_LIGHTS];
-		};
-
-	private:	// Attributes
-		/** The Program of the renderer */
-		Program* mProgram;
-
-		/** The locations of uniform variables in the shader */
-		UniformLocations mUniformLocations;
+		} mUniformLocations;
 
 	public:		// Functions
 		/** Creates a new Program3D */
@@ -79,17 +78,23 @@ namespace graphics {
 		/** Resets the current shader object */
 		void disable() const;
 
-		/** Sets the uniform variables fot the given Projection matrix
+		/** Sets the uniform variables fot the given Model matrix
+		 * 
+		 * @param	modelMatrix the matrix that we want to set as the
+		 *			Model matrix in the shaders */
+		void setModelMatrix(const glm::mat4& modelMatrix);
+
+		/** Sets the uniform variables for the given View matrix
+		 * 
+		 * @param	viewMatrix the matrix that we want to set as the
+		 *			View matrix in the shaders */
+		void setViewMatrix(const glm::mat4& viewMatrix);
+
+		/** Sets the uniform variables for the given Projection matrix
 		 *
 		 * @param	projectionMatrix the matrix that we want to set as the
 		 *			Projection matrix in the shaders */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
-
-		/** Sets the uniform variables fot the given ModelView matrix
-		 * 
-		 * @param	modelViewMatrix the matrix that we want to set as the
-		 *			ModelView matrix in the shaders */
-		void setModelViewMatrix(const glm::mat4& modelViewMatrix);
 
 		/** Sets the uniform variables for the given material
 		 * 

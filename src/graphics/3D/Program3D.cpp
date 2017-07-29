@@ -34,15 +34,21 @@ namespace graphics {
 	}
 
 
-	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix)
+	void Program3D::setModelMatrix(const glm::mat4& modelMatrix)
 	{
-		mProgram->setUniform(mUniformLocations.mProjectionMatrix, projectionMatrix);
+		mProgram->setUniform(mUniformLocations.mModelMatrix, modelMatrix);
 	}
 
 
-	void Program3D::setModelViewMatrix(const glm::mat4& modelViewMatrix)
+	void Program3D::setViewMatrix(const glm::mat4& viewMatrix)
 	{
-		mProgram->setUniform(mUniformLocations.mModelViewMatrix, modelViewMatrix);
+		mProgram->setUniform(mUniformLocations.mViewMatrix, viewMatrix);
+	}
+
+
+	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix)
+	{
+		mProgram->setUniform(mUniformLocations.mProjectionMatrix, projectionMatrix);
 	}
 
 
@@ -65,8 +71,8 @@ namespace graphics {
 			glm::vec3 position	= pointLights[i]->getPosition();
 			Attenuation att		= pointLights[i]->getAttenuation();
 
-			mProgram->setUniform(mUniformLocations.mPointLights[i].mBaseLight.mAmbientIntensity, base.getAmbientIntensity());
-			mProgram->setUniform(mUniformLocations.mPointLights[i].mBaseLight.mIntensity, base.getAmbientIntensity());
+			mProgram->setUniform(mUniformLocations.mPointLights[i].mBaseLight.mDiffuseColor, base.getDiffuseColor());
+			mProgram->setUniform(mUniformLocations.mPointLights[i].mBaseLight.mSpecularColor, base.getSpecularColor());
 			mProgram->setUniform(mUniformLocations.mPointLights[i].mAttenuation.mConstant, att.mConstant);
 			mProgram->setUniform(mUniformLocations.mPointLights[i].mAttenuation.mLinear, att.mLinear);
 			mProgram->setUniform(mUniformLocations.mPointLights[i].mAttenuation.mExponential, att.mExponential);
@@ -105,7 +111,8 @@ namespace graphics {
 
 	void Program3D::initUniformLocations()
 	{
-		mUniformLocations.mModelViewMatrix			= mProgram->getUniformLocation("u_ModelViewMatrix");
+		mUniformLocations.mModelMatrix				= mProgram->getUniformLocation("u_ModelMatrix");
+		mUniformLocations.mViewMatrix				= mProgram->getUniformLocation("u_ViewMatrix");
 		mUniformLocations.mProjectionMatrix			= mProgram->getUniformLocation("u_ProjectionMatrix");
 		
 		mUniformLocations.mMaterial.mAmbientColor	= mProgram->getUniformLocation("u_Material.mAmbientColor");
@@ -115,11 +122,11 @@ namespace graphics {
 		
 		mUniformLocations.mNumPointLights			= mProgram->getUniformLocation("u_NumPointLights");
 		for (unsigned int i = 0; i < MAX_POINT_LIGHTS; ++i) {
-			mUniformLocations.mPointLights[i].mBaseLight.mAmbientIntensity = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mAmbientIntensity").c_str()
+			mUniformLocations.mPointLights[i].mBaseLight.mDiffuseColor = mProgram->getUniformLocation(
+				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mDiffuseColor").c_str()
 			);
-			mUniformLocations.mPointLights[i].mBaseLight.mIntensity = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mIntensity").c_str()
+			mUniformLocations.mPointLights[i].mBaseLight.mSpecularColor = mProgram->getUniformLocation(
+				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mSpecularColor").c_str()
 			);
 			mUniformLocations.mPointLights[i].mAttenuation.mConstant = mProgram->getUniformLocation(
 				("u_PointLights[" + std::to_string(i) + "].mAttenuation.mConstant").c_str()

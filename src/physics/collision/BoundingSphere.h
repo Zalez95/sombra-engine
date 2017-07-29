@@ -46,6 +46,10 @@ namespace physics {
 		 * @param	transforms the transformations matrix used to set the
 		 *			position of the BoundingSphere */
 		virtual void setTransforms(const glm::mat4& transforms);
+
+		/** @return the Axis Aligned Bounding Box that contains the
+		 *			BoundingBox */
+		virtual AABB getAABB() const;
 	};
 
 }

@@ -11,13 +11,26 @@ namespace graphics {
 	struct RGBColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		float		r;
+		float		mR;
 
 		/** The green value of the color in the range [0, 1] */
-		float		g;
+		float		mG;
 
 		/** The blue value of the color in the range [0, 1] */
-		float		b;
+		float		mB;
+
+		/** Creates a new RGBColor */
+		RGBColor() {};
+
+		/** Creates a new RGBColor
+		 * 
+		 * @param	r the red value of the color in the range [0, 1]
+		 * @param	g the green value of the color in the range [0, 1]
+		 * @param	b the blue value of the color in the range [0, 1] */
+		RGBColor(float r, float g, float b) : mR(r), mG(g), mB(b) {};
+
+		/** Destructor */
+		~RGBColor() {};
 	};
 
 
@@ -25,16 +38,31 @@ namespace graphics {
 	struct RGBAColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		float		r;
+		float		mR;
 
 		/** The green value of the color in the range [0, 1] */
-		float		g;
+		float		mG;
 		
 		/** The blue value of the color in the range [0, 1] */
-		float		b;
+		float		mB;
 
 		/** The alpha value of the color in the range [0, 1] */
-		float		a;
+		float		mA;
+
+		/** Creates a new RGBAColor */
+		RGBAColor() {};
+
+		/** Creates a new RGBAColor
+		 * 
+		 * @param	r the red value of the color in the range [0, 1]
+		 * @param	g the green value of the color in the range [0, 1]
+		 * @param	b the blue value of the color in the range [0, 1]
+		 * @param	a the alpha value of the color in the range [0, 1] */
+		RGBAColor(float r, float g, float b, float a) :
+			mR(r), mG(g), mB(b), mA(a) {};
+
+		/** Destructor */
+		~RGBAColor() {};
 	};
 
 

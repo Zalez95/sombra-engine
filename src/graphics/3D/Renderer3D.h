@@ -39,7 +39,10 @@ namespace graphics {
 		/** Class destructor */
 		~Renderer3D() {};
 		
-		/** Sets the projection matrix */
+		/** Sets the projection matrix of the Renderer
+		 * 
+		 * @param	projectionMatrix the perspective matrix used to project
+		 *			the 3D scene */
 		inline void setProjectionMatrix(const glm::mat4& projectionMatrix)
 		{ mProjectionMatrix = projectionMatrix; };
 
@@ -48,18 +51,17 @@ namespace graphics {
 		 * 
 		 * @param	renderable3D a pointer to the Renderable3D that we want
 		 *			to render */
-		inline void submit(const Renderable3D* renderable3D)
-		{ mRenderable3Ds.push(renderable3D); };
+		void submit(const Renderable3D* renderable3D);
 
 		/** Renders the Renderable3Ds that currently are in the render queue
 		 * 
-		 * @note	after calling this method the render queue will be empty
-		 * @param	camera a pointer to the camera with which we will render
-		 *			the scene
+		 * @param	camera the Camera used to set the perspective from where
+		 *			we are going to render the scene
 		 * @param	lights a vector with pointers to the lights that will
-		 *			affect to the next renders */
+		 *			affect to the next renders
+		 * @note	after calling this method the render queue will be empty */
 		void render(
-			const Camera* camera,
+			const Camera& camera,
 			const std::vector<const PointLight*>& pointLights
 		);
 	};

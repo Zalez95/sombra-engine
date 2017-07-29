@@ -2,18 +2,10 @@
 #define GRAPHICS_SYSTEM_H
 
 #include <vector>
-#include "2D/Renderer2D.h"
-#include "3D/Renderer3D.h"
-#include "text/RendererText.h"
+#include "2D/Layer2D.h"
+#include "3D/Layer3D.h"
 
 namespace graphics {
-
-	class Renderable2D;
-	class Renderable3D;
-	class RenderableText;
-	class Camera;
-	class PointLight;
-
 
 	/**
 	 * Class GraphicsSystem
@@ -21,17 +13,13 @@ namespace graphics {
 	class GraphicsSystem
 	{
 	private:	// Attributes
-		static const unsigned int WIDTH = 640;
-		static const unsigned int HEIGHT = 480;
-		static const float FOV;
-		static const float Z_NEAR;
-		static const float Z_FAR;
+		/** The Layer used by the Graphics System to render all the 2D
+		 * elements */
+		Layer2D mLayer2D;
 
-		Renderer2D mRenderer2D;
-
-		Renderer3D mRenderer3D;
-
-//		RendererText mRendererText;
+		/** The Layer used by the Graphics System to render all the 3D
+		 * elements */
+		Layer3D mLayer3D;
 
 	public:		// Functions
 		/** Creates a new Graphics System */
@@ -40,14 +28,14 @@ namespace graphics {
 		/** Class destructor */
 		~GraphicsSystem() {};
 
+		/** @return a pointer to the Graphics System's 2D layer */
+		Layer2D* getLayer2D() { return &mLayer2D; };
+
+		/** @return a pointer to the Graphics System's 3D layer */
+		Layer3D* getLayer3D() { return &mLayer3D; };
+
 		/** Draws the scene */
-		void render(
-			const Camera* camera,
-			const std::vector<const Renderable2D*>& renderable2Ds,
-			const std::vector<const Renderable3D*>& renderable3Ds,
-			const std::vector<const RenderableText*>& renderableTexts,
-			const std::vector<const PointLight*>& pointLights
-		);
+		void render();
 	};
 
 }

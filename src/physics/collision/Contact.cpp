@@ -28,6 +28,6 @@ namespace physics {
 		// Create the matrix from the basis vectors and return it's inverse
 		// Note that the inverse of a rotation matrix is the same than it's transpose
 		return glm::transpose( glm::mat3(mNormal, tangents[0], tangents[1]) );
-	};
+	}
 
 }

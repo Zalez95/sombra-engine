@@ -3,13 +3,10 @@
 
 #include <memory>
 #include <vector>
-class FileReader;
+namespace utils { class FileReader; }
+namespace graphics { class Font; struct Character; }
 
-namespace graphics {
-
-	class Font;
-    struct Character;
-
+namespace loaders {
 
 	/**
 	 * Class FontLoader, it's used to load the Fonts from the given
@@ -25,7 +22,7 @@ namespace graphics {
 			static const std::string	FILE_EXTENSION;
 		};
 
-		typedef std::unique_ptr<Font> FontUPtr;
+		typedef std::unique_ptr<graphics::Font> FontUPtr;
 
 	public:		// Functions
 		/** Creates a new FontLoader */
@@ -41,14 +38,14 @@ namespace graphics {
 		 * @param	fileReader the file reader with the Font that we want
 		 *			to parse
 		 * @return	the parsed Font */
-		FontUPtr load(FileReader* fileReader);
+		FontUPtr load(utils::FileReader& fileReader) const;
 	private:
 		/** Parses the Font in the given file and returns it
 		 * 
 		 * @param	fileReader the file reader with the Font that we want
 		 *			to parse
 		 * @return	a pointer to the parsed Font */
-		FontUPtr parseFont(FileReader* fileReader);
+		FontUPtr parseFont(utils::FileReader& fileReader) const;
 
 		/** Parses the Character at the current position of the given file and
 		 * returns it
@@ -56,7 +53,7 @@ namespace graphics {
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
 		 * @return	the parsed Character */
-		Character parseCharacter(FileReader* fileReader);
+		graphics::Character parseCharacter(utils::FileReader& fileReader) const;
 	};
 
 }

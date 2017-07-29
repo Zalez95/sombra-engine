@@ -4,7 +4,7 @@
 #include <vector>
 #include "forces/ForceManager.h"
 #include "collision/CollisionDetector.h"
-#include "collision/CollisionResolver.h"
+#include "CollisionResolver.h"
 
 namespace physics {
 

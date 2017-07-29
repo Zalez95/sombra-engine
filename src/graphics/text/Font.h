@@ -24,18 +24,18 @@ namespace graphics {
         
 		/** The position of the top left corner of the Character in the Font
 		 * texture */
-        glm::vec2 mPosition;
+        glm::tvec2<int> mPosition;
 
 		/** The size in pixels of the Character */
-        glm::vec2 mSize;
+        glm::tvec2<int> mSize;
 
 		/** The offset distance of top left corner of the Character in relation
 		 * to the cursor position */
-        glm::vec2 mOffset;
+        glm::tvec2<int> mOffset;
 
 		/** The horizontal advance to the next Character after adding the
 		 * current Character to a text */
-        float mAdvance;
+        int mAdvance;
 
 		/** Creates a new Character */
 		Character() {};

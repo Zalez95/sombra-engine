@@ -11,7 +11,8 @@ in vec3 a_VertexNormal;									// Normal attribute
 in vec2 a_VertexUV;										// Vertex UV Coords attribute
 
 // Uniform variables
-uniform mat4 u_ModelViewMatrix;							// Model space to View space Matrix
+uniform mat4 u_ModelMatrix;								// Model space to World space Matrix
+uniform mat4 u_ViewMatrix;								// World space to View space Matrix
 uniform mat4 u_ProjectionMatrix;						// View space to NDC space Matrix
 
 uniform int u_NumPointLights;							// Number of lights to process
@@ -31,8 +32,10 @@ out vec3 vs_PointLightsPositions[MAX_POINT_LIGHTS];
 // Functions
 void main()
 {
-	vec4 vertexView			= u_ModelViewMatrix * vec4(a_VertexPosition, 1.0f);
-	mat4 inverseTranspose	= transpose(transpose(u_ModelViewMatrix));
+	mat4 modelViewMatrix	= u_ViewMatrix * u_ModelMatrix;
+	mat4 inverseTranspose	= transpose(transpose(modelViewMatrix));
+
+	vec4 vertexView			= modelViewMatrix * vec4(a_VertexPosition, 1.0f);
 	gl_Position				= u_ProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in view space
@@ -43,6 +46,6 @@ void main()
 	// Calculate the PointLights coordinates in view space
 	vs_NumPointLights = (u_NumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : u_NumPointLights;
 	for (int i = 0; i < vs_NumPointLights; ++i) {
-		vs_PointLightsPositions[i] = (u_ModelViewMatrix * vec4(u_PointLightsPositions[i], 1.0f)).xyz;
+		vs_PointLightsPositions[i] = (u_ViewMatrix * vec4(u_PointLightsPositions[i], 1.0f)).xyz;
 	}
 }

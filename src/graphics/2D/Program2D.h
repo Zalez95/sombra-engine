@@ -1,5 +1,5 @@
-#ifndef PROGRAM_3D_H
-#define PROGRAM_3D_H
+#ifndef PROGRAM_2D_H
+#define PROGRAM_2D_H
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -9,35 +9,28 @@ namespace graphics {
 	class Program;
 
 
-	/** Program3D class, it's a high level Program used by the
+	/** Program2D class, it's a high level Program used by the
 	 * SceneRenderer so it doesn't need to search and set the uniform
 	 * variables */
-	class Program3D
+	class Program2D
 	{
-	private:	// Nested types
-		/** The maximum number of point lights in the program */
-		static const unsigned int MAX_POINT_LIGHTS = 4;
-
-		/** Struct UniformLocations, it holds the uniform variables location
-		 * so we don't have to get them in each render call */
-		struct UniformLocations
-		{
-			GLuint mModelViewMatrix;
-		};
-
 	private:	// Attributes
 		/** The Program of the renderer */
 		Program* mProgram;
 
-		/** The locations of uniform variables in the shader */
-		UniformLocations mUniformLocations;
+		/** Holds the uniform variables location so we don't have to get them
+		 * in each render call */
+		struct UniformLocations
+		{
+			GLuint mModelMatrix;
+		} mUniformLocations;
 
 	public:		// Functions
-		/** Creates a new Program3D */
-		Program3D();
+		/** Creates a new Program2D */
+		Program2D();
 
 		/** Class destructor */
-		~Program3D();
+		~Program2D();
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
@@ -45,12 +38,12 @@ namespace graphics {
 
 		/** Resets the current shader object */
 		void disable() const;
-
-		/** Sets the uniform variables fot the given ModelView matrix
+		
+		/** Sets the uniform variables fot the given Model matrix
 		 * 
-		 * @param	modelViewMatrix the matrix that we want to set as the
-		 *			ModelView matrix in the shaders */
-		void setModelViewMatrix(const glm::mat4& modelViewMatrix);
+		 * @param	modelMatrix the matrix that we want to set as the
+		 *			Model matrix in the shaders */
+		void setModelMatrix(const glm::mat4& modelMatrix);
 	private:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables */
@@ -63,4 +56,4 @@ namespace graphics {
 
 }
 
-#endif		// PROGRAM_3D_H
+#endif		// PROGRAM_2D_H

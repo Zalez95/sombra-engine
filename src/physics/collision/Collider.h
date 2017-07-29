@@ -5,6 +5,9 @@
 
 namespace physics {
 
+	struct AABB;
+
+
 	/**
 	 * Class Collider, a Collider is used to store the basic data of an object
 	 * that can collide with other Colliders
@@ -21,6 +24,10 @@ namespace physics {
 		 * @param	transforms the transformations matrix used to update the
 		 *			position and orientation of the Collider */
 		virtual void setTransforms(const glm::mat4& transforms) = 0;
+
+		/** @return the Axis Aligned Bounding Box that contains the
+		 *			Collider */
+		virtual AABB getAABB() const = 0;
 	};
 
 }

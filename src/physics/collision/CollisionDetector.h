@@ -8,70 +8,22 @@
 namespace physics {
 
 	class Collider;
+	struct AABB;
 	class Plane;
 	class BoundingSphere;
-	class BoundingBox;
+	class ConvexPolyhedron;
 
 
 	/**
-	 * Class CollisionDetector, is the class that calculates the CollisionData
-	 * generated from the collision of the Colliders
+	 * Class CollisionDetector, is the class that calculates the data
+	 * generated from the intersection (collision) of volumes (Colliders)
 	 */
 	class CollisionDetector
 	{
 	private:	// Nested types
-		struct SupportPoint
-		{
-			glm::vec3 mV;
-			glm::vec3 mP1;
-			glm::vec3 mP2;
-
-			SupportPoint() {};
-
-			SupportPoint(
-				const glm::vec3& v,
-				const glm::vec3& p1, const glm::vec3& p2
-			) : mV(v), mP1(p1), mP2(p2) {};
-
-			~SupportPoint() {};
-
-			bool operator==(const SupportPoint& other) const
-			{ return other.mV == mV; };
-		};
-
-		struct Triangle
-		{
-			SupportPoint mA;
-			SupportPoint mB;
-			SupportPoint mC;
-			glm::vec3 mNormal;
-
-			Triangle() {};
-
-			Triangle(
-				const SupportPoint& a,
-				const SupportPoint& b,
-				const SupportPoint& c
-			) : mA(a), mB(b), mC(c)
-			{ mNormal = glm::normalize(glm::cross(b.mV - a.mV, c.mV - a.mV)); };
-
-			~Triangle() {};
-		};
-
-		struct Edge
-		{
-			SupportPoint mA;
-			SupportPoint mB;
-
-			Edge(
-				const SupportPoint& a,
-				const SupportPoint& b
-			) : mA(a), mB(b) {};
-
-			~Edge() {};
-
-			bool operator==(Edge e) { return (mA == e.mA) && (mB == e.mB); };
-		};
+		struct SupportPoint;
+		struct Triangle;
+		struct Edge;
 
 		static const float TOLERANCE;
 
@@ -82,101 +34,115 @@ namespace physics {
 		/** Class destructor */
 		~CollisionDetector() {};
 
-		/** Returns the data of the collision happened between the given
+		/** Returns the data of the collision that happened between the given
 		 * Colliders
 		 * 
-		 * @param	collider1 a pointer to the first Collider with which we 
-		 *			will calculate the collision data
-		 * @param	collider2 a pointer to the second Collider with which we
-		 *			will calculate the collision data
+		 * @param	collider1 the first Collider with which we will calculate
+		 *			the collision data
+		 * @param	collider2 the second Collider with which we will calculate
+		 *			the collision data
 		 * @return	the data of the Collision */
 		std::vector<Contact> collide(
-			const Collider* collider1,
-			const Collider* collider2
+			const Collider& collider1,
+			const Collider& collider2
 		) const;
 	private:
-		/** Returns the data of the collision happened between the given
-		 * BoundingSpheres
-		 *  
-		 * @param	sphere1 a pointer to the first BoundingSphere with which
-		 *			we will calculate the data of the collision
-		 * @param	sphere2 a pointer to the second BoundingSphere with which
-		 *			we will calculate the data of the collision
-		 * @return	the data of the collision */
-		std::vector<Contact> collideSpheres(
-			const BoundingSphere* sphere1,
-			const BoundingSphere* sphere2
+		/** Board phase of the collision detection process.
+		 * 
+		 * @param	collider1 the first Collider that we want to check if
+		 *			it's intersecting
+		 * @param	collider2 the second Collider that we want to check if
+		 *			it's intersecting
+		 * @return	true if both colliders are intersecting between them,
+		 *			false otherwise */
+		bool coarseCollisionDetection(
+			const Collider& collider1,
+			const Collider& collider2
 		) const;
 
-		/** Returns the data of the collision happened between the given
-		 * BoundingSphere and the given Plane
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given Colliders
+		 *
+		 * @param	collider1 the first Collider with which we will calculate
+		 *			the collision data
+		 * @param	collider2 the second Collider with which we will calculate
+		 *			the collision data
+		 * @return	the contact points of the Collision */
+		std::vector<Contact> fineCollisionDetection(
+			const Collider& collider1,
+			const Collider& collider2
+		) const;
+
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given BoundingSpheres
+		 *  
+		 * @param	sphere1 the first BoundingSphere with which we will
+		 *			calculate the data of the collision
+		 * @param	sphere2 the second BoundingSphere with which we will
+		 *			calculate the data of the collision
+		 * @return	the data of the collision */
+		std::vector<Contact> collideSpheres(
+			const BoundingSphere& sphere1,
+			const BoundingSphere& sphere2
+		) const;
+
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given BoundingSphere and the given Plane
 		 * 
 		 * @note	the BoundingSphere can collide with the plane only if it
 		 *			crosses the plane in the opposite direction of the
 		 *			plane's normal
-		 * @param	sphere a pointer to the BoundingSphere with which we will
-		 *			calculate the data of the collision
-		 * @param	plane a pointer to the plane with which we will calculate
+		 * @param	sphere the BoundingSphere with which we will calculate
 		 *			the data of the collision
+		 * @param	plane the Plane with which we will calculate the data
+		 *			of the collision
 		 * @return	the data of the collision */
 		std::vector<Contact> collideSphereAndPlane(
-			const BoundingSphere* sphere,
-			const Plane* plane
+			const BoundingSphere& sphere,
+			const Plane& plane
 		) const;
 
-		/** Returns the data of the collision happened between the given
-		 * BoundingBoxes
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given ConvexPolyhedrones
 		 *
-		 * @param	box1 a pointer to the first BoundingBox with which we
-		 * 			will calculate the data of the collision
-		 * @param	box2 a pointer to the second BoundingBox with which we
-		 * 			will calculate the data of the collision
+		 * @param	cp1 the first ConvexPolyhedron with which we will
+		 * 			calculate the data of the collision
+		 * @param	cp2 the second ConvexPolyhedron with which we will
+		 * 			calculate the data of the collision
 		 * @return	the data of the collision */
-		std::vector<Contact> collideBoxes(
-			const BoundingBox* box1,
-			const BoundingBox* box2
+		std::vector<Contact> collideConvexPolys(
+			const ConvexPolyhedron& cp1,
+			const ConvexPolyhedron& cp2
 		) const;
 		
-		/** Returns the data of the collision happened between the given
-		 * BoudingBox and the given Plane
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given BoudingBox and the given Plane
 		 * 
-		 * @note	the BoundingBox can collide with the plane only if it
+		 * @param	cp the ConvexPolyhedron with which we will calculate
+		 * 			the data of the collision
+		 * @param	plane the Plane with which we will calculate the data
+		 *			of the collision
+		 * @return	the data of the collision
+		 * @note	the ConvexPolyhedron can collide with the plane only if it
 		 * 			crosses the plane in the opposite direction of the plane's
-		 * 			normal
-		 * @param	box a pointer to the BoundingBox with which we will
-		 * 			calculate the data of the collision
-		 * @param	plane a pointer to the plane with which we will calculate
+		 * 			normal */
+		std::vector<Contact> collideConvexPolyAndPlane(
+			const ConvexPolyhedron& cp,
+			const Plane& plane
+		) const;
+
+		/** Calculates and returns the contact points of the collision that
+		 * happened between the given ConvexPolyhedron and the given
+		 * BoundingSphere
+		 *  
+		 * @param	cp the ConvexPolyhedron with which we will calculate
+		 *			the data of the collision
+		 * @param	sphere the BoundingSphere with which we will calculate
 		 *			the data of the collision
 		 * @return	the data of the collision */
-		std::vector<Contact> collideBoxAndPlane(
-			const BoundingBox* box,
-			const Plane* plane
-		) const;
-
-		/** Returns the data of the collision happened between the given
-		 * BoundingBox and the given BoundingSphere
-		 *  
-		 * @param	sphere a pointer to the BoundingSphere with which we will
-		 *			calculate the data of the collision
-		 * @param	box a pointer to the BoundingBox with which we will
-		 * 			calculate the data of the collision
-		 * @return	the data of the collision */
-		std::vector<Contact> collideSphereAndBox(
-			const BoundingSphere* sphere,
-			const BoundingBox* box
-		) const;
-
-		/** Returns the data of the collision happened between the given
-		 * meshes 
-		 *  
-		 * @param	mesh1 the vertices of the first mesh with which we want to
-		 *			calculate the data of the collision
-		 * @param	mesh2 the vertices of the second mesh with which we want to
-		 *			calculate the data of the collision
-		 * @return	the data of the collision */
-		std::vector<Contact> collideMeshes(
-			const std::vector<glm::vec3>& mesh1,
-			const std::vector<glm::vec3>& mesh2
+		std::vector<Contact> collideConvexPolyAndSphere(
+			const ConvexPolyhedron& cp,
+			const BoundingSphere& sphere
 		) const;
 		
 		/** Calculates if the two meshes are intersecting with the GJK
@@ -199,16 +165,16 @@ namespace physics {
 		 *
 		 * @param	mesh1 the first of the convex meshes that collides
 		 * @param	mesh2 the second of the convex meshes that collides
-		 * @param	polytope a pointer to the convex shape to expand with EPA.
-		 * @param	closestFace a pointer to the Triangle where we will store
-		 * 			the closest one
-		 * @param	closestFaceDist a pointer to the float where we will store
-		 * 			the distance of the closest face to the origin */
+		 * @param	polytope the convex shape to expand with EPA
+		 * @param	closestFace the Triangle where we will store the closest
+		 *			face
+		 * @param	closestFaceDist the float where we will store the distance
+		 * 			of the closest face to the origin */
 		void calculateEPA(
 			const std::vector<glm::vec3>& mesh1,
 			const std::vector<glm::vec3>& mesh2,
-			std::vector<Triangle>* polytope,
-			Triangle* closestFace, float* closestFaceDist
+			std::vector<Triangle>& polytope,
+			Triangle& closestFace, float& closestFaceDist
 		) const;
 
 		/** @return	a point in the Minkowski difference of the two meshes

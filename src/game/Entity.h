@@ -1,13 +1,17 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include <memory>
 #include <string>
-#include "../physics/PhysicsEntity.h"
-#include "../graphics/3D/Camera.h"
-#include "../graphics/3D/Lights.h"
-#include "../graphics/3D/Renderable3D.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace game {
+
+	class InputComponent;
+	class PhysicsComponent;
+	class GraphicsComponent;
+
 
 	/**
 	 * Class GameEntity, a GameEntity is a game object that holds all the
@@ -15,12 +19,17 @@ namespace game {
 	 */
 	class Entity
 	{
-	protected:	// Attributes
-		static const glm::vec3 mDefaultForwardVector;
-		static const glm::vec3 mDefaultUpVector;
-
+	public:		// Attributes
 		/** the name of the Entity */
 		std::string mName;
+
+		/** Common data of the Entity */
+		glm::vec3 mPosition;
+		glm::quat mOrientation;
+
+		std::unique_ptr<InputComponent> mInputComponent;
+		std::unique_ptr<PhysicsComponent> mPhysicsComponent;
+		std::unique_ptr<GraphicsComponent> mGraphicsComponent;
 
 		//		/** The parent Entity of the current one */
 		//		Entity* mParent;
@@ -32,46 +41,24 @@ namespace game {
 		//		/** The Children Entities of the current one */
 		//		std::vector<Entity*> mChildren;
 
-		physics::PhysicsEntity* mPhysicsEntity;
-
-		struct
-		{
-			graphics::Camera* mCamera;
-			graphics::PointLight* mPointLight;
-			graphics::Renderable3D* mRenderable3D;
-		} mGraphicsData;
-
 	public:		// Functions
 		/** Class constructor, creates a new Entity
 		 *
-		 * @param	name the name of the Entity
-		 * @param	parent a pointer to the parent Entity of the current one
-		 * @param	parentJointName the name of the parent joint in case of
-		 *			the parent Entity is a Skeleton, empty string by default */
+		 * @param	name the name of the Entity */
 		Entity(
 			const std::string& name,
-			physics::PhysicsEntity* physicsEntity,
-			graphics::Camera* camera,
-			graphics::PointLight* pointLight,
-			graphics::Renderable3D* renderable3D
-		) : mName(name), mPhysicsEntity(physicsEntity)
-			//mParent(parent), mParentJointName(parentJointName) {};
-		{
-			mGraphicsData.mCamera = camera;
-			mGraphicsData.mPointLight = pointLight;
-			mGraphicsData.mRenderable3D = renderable3D;
-		};
+			std::unique_ptr<InputComponent> inputComponent,
+			std::unique_ptr<PhysicsComponent> physicsComponent,
+			std::unique_ptr<GraphicsComponent> graphicsComponent
+		);
 
 		/** Class destructor */
-		~Entity() {};
+		~Entity();
 
 		/** @return	the name of the Entity */
 		inline std::string getName() const { return mName; };
 
-		inline graphics::Camera* getCamera() const { return mGraphicsData.mCamera; };
-		inline graphics::PointLight* getPointLight() const { return mGraphicsData.mPointLight; };
-		inline graphics::Renderable3D* getRenderable3D() const { return mGraphicsData.mRenderable3D; };
-		inline physics::PhysicsEntity* getPhysicsEntity() const { return mPhysicsEntity; };
+		void update(float delta);
 
 		/** @return a pointer to the parent Entity of the current one */
 //		inline Entity* getParent() const { return mParent; };
@@ -105,8 +92,6 @@ namespace game {
 //				}
 //			}
 //		};
-
-		void synch();
 	};
 
 }

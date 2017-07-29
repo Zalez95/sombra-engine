@@ -81,26 +81,26 @@ namespace graphics {
 	void Program::setUniform(const char* name, const RGBColor& color) const
 	{
 		glUniform3f(glGetUniformLocation(mProgramID, name),
-					color.r, color.g, color.b);
+					color.mR, color.mG, color.mB);
 	}
 
 
 	void Program::setUniform(GLuint location, const RGBColor& color) const
 	{
-		glUniform3f(location, color.r, color.g, color.b);
+		glUniform3f(location, color.mR, color.mG, color.mB);
 	}
 
 
 	void Program::setUniform(const char* name, const RGBAColor& color) const
 	{
 		glUniform4f(glGetUniformLocation(mProgramID, name),
-					color.r, color.g, color.b, color.a);
+					color.mR, color.mG, color.mB, color.mA);
 	}
 
 
 	void Program::setUniform(GLuint location, const RGBAColor& color) const
 	{
-		glUniform4f(location, color.r, color.g, color.b, color.a);
+		glUniform4f(location, color.mR, color.mG, color.mB, color.mA);
 	}
 
 

@@ -4,18 +4,18 @@
 #include "../utils/FileReader.h"
 #include "../graphics/3D/Material.h"
 
-namespace graphics{
+namespace loaders {
 
 // Static variables definition
 	const std::string MaterialLoader::FILE_FORMAT::FILE_NAME				= "FAZE_MAT_FILE";
 	const std::string MaterialLoader::FILE_FORMAT::MATERIAL_FILE_EXTENSION	= ".fzmat";
 
 // Public functions
-	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::load(FileReader* fileReader)
+	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::load(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
-			if (!fileReader || fileReader->fail()) {
+			if (fileReader.fail()) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -28,19 +28,19 @@ namespace graphics{
 			return parseMaterials(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Material in the file \"" + fileReader->getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Material in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
 		}
 	}
 
 // Private functions
-	bool MaterialLoader::checkHeader(FileReader* fileReader)
+	bool MaterialLoader::checkHeader(utils::FileReader& fileReader) const
 	{
 		const std::string FILE_VERSION = std::to_string(FILE_FORMAT::VERSION) + '.' + std::to_string(FILE_FORMAT::REVISION);
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getValue(fileName) &&
-			fileReader->getValue(fileVersion) &&
+		fileReader >> fileName >> fileVersion;
+		if (!fileReader.fail() &&
 			fileName == FILE_FORMAT::FILE_NAME &&
 			fileVersion == FILE_VERSION
 		) {
@@ -51,28 +51,29 @@ namespace graphics{
 	}
 
 	
-	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::parseMaterials(FileReader* fileReader)
+	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::parseMaterials(utils::FileReader& fileReader) const
 	{
 		std::vector<MaterialUPtr> materials;
 		unsigned int numMaterials = 0, materialIndex = 0;
 
-		while (!fileReader->eof()) {
-			std::string token;
-			if (fileReader->getValue(token)) {
-				if (token == "num_materials") {
-					fileReader->getValue(numMaterials);
-					materials.resize(numMaterials);
+		while (!fileReader.isEmpty()) {
+			std::string token; fileReader >> token;
+
+			if (token == "num_materials") {
+				fileReader >> numMaterials;
+				if (!fileReader.fail()) {
+					materials.reserve(numMaterials);
 				}
-				else if (token == "material") {
-					auto curMaterial = parseMaterial(fileReader);
-					if (materialIndex < numMaterials) {
-						materials[materialIndex] = std::move(curMaterial);
-					}
-					++materialIndex;
+			}
+			else if (token == "material") {
+				auto curMaterial = parseMaterial(fileReader);
+				if (materialIndex < numMaterials) {
+					materials.push_back(std::move(curMaterial));
 				}
-				else {
-					throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader->getNumLines()) + '\n');
-				}
+				++materialIndex;
+			}
+			else {
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
@@ -84,46 +85,38 @@ namespace graphics{
 	}
 
 
-	MaterialLoader::MaterialUPtr MaterialLoader::parseMaterial(FileReader* fileReader)
+	MaterialLoader::MaterialUPtr MaterialLoader::parseMaterial(utils::FileReader& fileReader) const
 	{
 		std::string name;
-		RGBColor ambientColor, diffuseColor, specularColor;
+		graphics::RGBColor ambientColor, diffuseColor, specularColor;
 		float shininess;
 		
 		std::string trash;
-		fileReader->getValue(name);
-		fileReader->getValue(trash);
+		fileReader >> name >> trash;
 
 		bool end = false;
 		while (!end) {
-			std::string token;
-			fileReader->getValue(token);
+			std::string token; fileReader >> token;
 
 			if (token == "ambient_color") {
-				fileReader->getValue(ambientColor.r);
-				fileReader->getValue(ambientColor.g);
-				fileReader->getValue(ambientColor.b);
+				fileReader >> ambientColor.mR >> ambientColor.mG >> ambientColor.mB;
 			}
 			else if (token == "diffuse_color") {
-				fileReader->getValue(diffuseColor.r);
-				fileReader->getValue(diffuseColor.g);
-				fileReader->getValue(diffuseColor.b);
+				fileReader >> diffuseColor.mR >> diffuseColor.mG >> diffuseColor.mB;
 			}
 			else if (token == "specular_color") {
-				fileReader->getValue(specularColor.r);
-				fileReader->getValue(specularColor.g);
-				fileReader->getValue(specularColor.b);
+				fileReader >> specularColor.mR >> specularColor.mG >> specularColor.mB;
 			}
 			else if (token == "specular_shininess") {
-				fileReader->getValue(shininess);
+				fileReader >> shininess;
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader->getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
-		return std::make_unique<Material>(name, ambientColor, diffuseColor, specularColor, shininess);
+		return std::make_unique<graphics::Material>(name, ambientColor, diffuseColor, specularColor, shininess);
 	}
 
 }

@@ -4,7 +4,6 @@
 #include <vector>
 #include <memory>
 #include "Entity.h"
-#include "Player.h"
 
 namespace window { class WindowSystem; }
 namespace physics { class PhysicsEngine; }
@@ -25,11 +24,8 @@ namespace game {
 	class Game
 	{
     private:    // Constants
-	    static const unsigned int WIDTH = 1280;
-	    static const unsigned int HEIGHT = 720;
-	    static const float FOV;
-	    static const float Z_NEAR;
-	    static const float Z_FAR;
+	    static const unsigned int WIDTH = 640;
+	    static const unsigned int HEIGHT = 480;
 	    static const float UPDATE_TIME;
 		static const unsigned int NUM_CUBES = 50;
 
@@ -42,9 +38,6 @@ namespace game {
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
 		physics::PhysicsEngine* mPhysicsEngine;
-
-		/** The player entity */
-		Player* mPlayer;
 
 		/** The Entities that currently are in the game */
 		std::vector<EntityUPtr> mEntities;
@@ -60,25 +53,6 @@ namespace game {
 		 * 
 		 * @return	true if the Game exited succesfully, false otherwise */
 		bool run();
-	private:
-		/** Updates the input data
-		 *
-		 * @param	delta the elapsed time since the last update */
-		void input(float delta);
-
-		/** Updates the Entities and systems of the Game
-		 * 
-		 * @param	delta the elapsed time since the last update */
-		void update(float delta);
-
-		/** Renders the Entities */
-		void render(
-			const graphics::Camera* camera,
-			const std::vector<const graphics::Renderable2D*>& renderable2Ds,
-			const std::vector<const graphics::Renderable3D*>& renderable3Ds,
-			const std::vector<const graphics::RenderableText*>& renderableTexts,
-			const std::vector<const graphics::PointLight*>& pointLights
-		);
 	};
 
 }

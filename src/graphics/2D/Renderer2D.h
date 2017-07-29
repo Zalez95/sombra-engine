@@ -4,7 +4,7 @@
 #include <queue>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include "../Program.h"
+#include "Program2D.h"
 #include "../buffers/VertexArray.h"
 #include "../buffers/VertexBuffer.h"
 
@@ -19,17 +19,11 @@ namespace graphics {
 	 */
 	class Renderer2D
 	{
-	private:	// Nested Types
-		/** Struct UniformLocations, it holds the uniform variables location
-		 * so we don't have to get them in each render call */
-		struct UniformLocations
-		{
-			GLuint mModelMatrix;
-			GLuint mProjectionMatrix;
-		};
+	private:	// Attributes
+		/** The Program of the renderer */
+		Program2D mProgram;
 
-		/** Class 2DQuad, it holds all the needed data for rendering the 2D
-		 * elements */
+		/** Holds all the needed data for rendering the 2D elements */
 		class Quad2D
 		{
 		private:	// Attributes
@@ -69,21 +63,7 @@ namespace graphics {
 
 			/** Binds the VAO of the 2DQuad */
 			inline void bindVAO() const { mVAO.bind(); };
-		};
-
-	private:	// Attributes
-		/** The Program of the renderer */
-		Program* mProgram;
-
-		/** The locations of uniform variables in the shader */
-		UniformLocations mUniformLocations;
-
-		/** The quad needed for rendering all the 2D elements */
-		Quad2D mQuad;
-
-		/** The projection matrix of the renderer that transforms from Model
-		 * Space to Projection Space */
-		glm::mat4 mProjectionMatrix;
+		} mQuad;
 
 		/** The Renderable2Ds that we want to render */
 		std::queue<const Renderable2D*> mRenderable2Ds;
@@ -92,22 +72,17 @@ namespace graphics {
 		/** Creates a new Renderer2D
 		 *
 		 * @param	projectionMatrix the projectionMatrix of the renderer */
-		Renderer2D(const glm::mat4& projectionMatrix);
+		Renderer2D() {};
 
 		/** Class destructor */
-		~Renderer2D();
-
-		/** Sets the projection matrix */
-		inline void setProjectionMatrix(const glm::mat4& projectionMatrix)
-		{ mProjectionMatrix = projectionMatrix; };
+		~Renderer2D() {};
 
 		/** Submits the given Renderable 2D to the queue of Renderable2Ds to
 		 * render
 		 *
-		 * @param	renderable a pointer to the Renderable2D that we want to
+		 * @param	renderable2D a pointer to the Renderable2D that we want to
 		 *			render */
-		inline void submit(const Renderable2D* renderable)
-		{ mRenderable2Ds.push(renderable); };
+		void submit(const Renderable2D* renderable2D);
 
 		/** Renders the Renderable2Ds that currently are in the render queue
 		 * 

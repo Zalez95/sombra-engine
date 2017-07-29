@@ -13,7 +13,7 @@ namespace graphics {
 	 */
 	class VertexBuffer
 	{
-	private:	// Attribute
+	private:	// Attributes
 		/** The ID of the Buffer Array */
 		GLuint mBufferID;
 

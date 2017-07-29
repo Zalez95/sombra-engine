@@ -34,44 +34,29 @@ namespace physics {
 // Private functions
 	void PhysicsEngine::integrate(float delta)
 	{
-		for (auto it = mPhysicsEntities.begin(); it != mPhysicsEntities.end(); ++it) {
-			Collider* collider			= (*it)->getCollider();
-			glm::mat4 colliderOffset	= (*it)->getColliderOffset();
-            switch ((*it)->getType()) {
-				case PhysicsEntityType::PARTICLE:
-				{
-					Particle* particle = (*it)->getParticle();
-					particle->integrate(delta);
-					collider->setTransforms(particle->getTransformsMatrix() * colliderOffset);
-					break;
-	            }
-				case PhysicsEntityType::RIGID_BODY:
-				{
-					RigidBody* rigidBody = (*it)->getRigidBody();
-					rigidBody->integrate(delta);
-					collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
-					break;
-				}
-			}
+		for (PhysicsEntity* physicsEntity : mPhysicsEntities) {
+			// Update the RigidBody data
+			RigidBody* rigidBody = physicsEntity->getRigidBody();
+			rigidBody->integrate(delta);
+
+			// Update the Collider data
+			Collider* collider = physicsEntity->getCollider();
+			glm::mat4 colliderOffset = physicsEntity->getColliderOffset();
+			collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
 		}
 	}
 
 
 	void PhysicsEngine::collide(float delta)
 	{
-		// TODO: coarseCollisionDetection();
-		// TODO: particle collision
 		for (auto it1 = mPhysicsEntities.begin(); it1 != mPhysicsEntities.end(); ++it1) {
 			for (auto it2 = it1 + 1; it2 != mPhysicsEntities.end(); ++it2) {
-				if (((*it1)->getType() == PhysicsEntityType::RIGID_BODY) &&
-					((*it2)->getType() == PhysicsEntityType::RIGID_BODY)
-				) {
-					const Collider* collider1 = (*it1)->getCollider();
-					const Collider* collider2 = (*it2)->getCollider();
-
-        	        std::vector<Contact> contacts = mCollisionDetector.collide(collider1, collider2);
-            	    for (Contact contact : contacts) {
-                	    mCollisionResolver.addContact(&contact, (*it1)->getRigidBody(), (*it2)->getRigidBody());
+				const Collider* collider1 = (*it1)->getCollider();
+				const Collider* collider2 = (*it2)->getCollider();
+				if (collider1 && collider2) {
+        	        std::vector<Contact> contacts = mCollisionDetector.collide(*collider1, *collider2);
+            	    for (Contact& contact : contacts) {
+                	    mCollisionResolver.addContact(contact, (*it1)->getRigidBody(), (*it2)->getRigidBody());
 					}
 				}
 			}

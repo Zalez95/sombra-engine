@@ -3,12 +3,11 @@
 
 #include <memory>
 #include <vector>
-class FileReader;
 
-namespace graphics {
+namespace utils { class FileReader; }
+namespace graphics { class Material; }
 
-	class Material;
-
+namespace loaders {
 
 	/**
 	 * Class MaterialLoader, it's used to load the materials from the given
@@ -27,7 +26,7 @@ namespace graphics {
 			static const unsigned int	REVISION = 3;
 		};
 
-		typedef std::unique_ptr<Material> MaterialUPtr;
+		typedef std::unique_ptr<graphics::Material> MaterialUPtr;
 
 	public:		// Functions
 		/** Creates a new MaterialLoader */
@@ -43,21 +42,23 @@ namespace graphics {
 		 * @param	fileReader the file reader with the Materials that we want
 		 *			to parse
 		 * @return	a vector with the parsed Materials */
-		std::vector<MaterialUPtr> load(FileReader* fileReader);
+		std::vector<MaterialUPtr> load(utils::FileReader& fileReader) const;
 	private:
 		/** Checks the header of the given file
 		 *
 		 * @param	fileReader the reader of the file with the header we want
 		 *			to check
 		 * @return	true if the file and version is ok, false otherwise */
-		bool checkHeader(FileReader* fileReader);
+		bool checkHeader(utils::FileReader& fileReader) const;
 
 		/** Parses the Materials in the given file and returns them
 		 * 
 		 * @param	fileReader the file reader with the materials that we want
 		 *			to parse
 		 * @return	a vector with the parsed materials */
-		std::vector<MaterialUPtr> parseMaterials(FileReader* fileReader);
+		std::vector<MaterialUPtr> parseMaterials(
+			utils::FileReader& fileReader
+		) const;
 
 		/** Parses the Material at the current position of the given file and
 		 * returns it
@@ -65,7 +66,7 @@ namespace graphics {
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
 		 * @return	a pointer to the parsed Material */
-		MaterialUPtr parseMaterial(FileReader* fileReader);
+		MaterialUPtr parseMaterial(utils::FileReader& fileReader) const;
 	};
 
 }

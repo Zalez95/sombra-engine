@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "AABB.h"
 
 namespace graphics {
 
@@ -37,9 +36,6 @@ namespace graphics {
 		/** The VAO of the Mesh */
 		VertexArrayUPtr mVAO;
 
-		/** The bounds of the Mesh in global space stored as an AABB */
-		AABB mBounds;
-
 	public:		// Functions
 		/** Creates a new Mesh from the given data
 		 *
@@ -65,15 +61,6 @@ namespace graphics {
 
 		/** @return the number of Indices of the faces of the Mesh */
 		unsigned int getIndexCount() const;
-
-		/** @return a struct AABB with the maximum and minimum coordinates in
-		 * Global Space of the vertices of the mesh in each axis */
-		inline AABB getBounds() const { return mBounds; };
-
-		/** Sets the bounds of the Mesh
-		 *
-		 * @param	bounds the new bounds of the Mesh stored as an AABB */
-		inline void setBounds(const AABB& bounds) { mBounds = bounds; };
 
 		/** Binds the VAO of the Mesh */
 		void bindVAO() const;

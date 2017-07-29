@@ -3,13 +3,13 @@
 #include "../graphics/text/Font.h"
 #include "../graphics/Texture.h"
 
-namespace graphics {
+namespace loaders {
 
-	FontLoader::FontUPtr FontLoader::load(FileReader* fileReader)
+	FontLoader::FontUPtr FontLoader::load(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
-			if (!fileReader || fileReader->fail()) {
+			if (fileReader.fail()) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -17,45 +17,46 @@ namespace graphics {
 			return parseFont(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Font in the file \"" + fileReader->getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Font in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
 		}
 	}
 
 // Private functions
-	FontLoader::FontUPtr FontLoader::parseFont(FileReader* fileReader)
+	FontLoader::FontUPtr FontLoader::parseFont(utils::FileReader& fileReader) const
 	{
 		std::string fontName, fontTextureName, trash;
-		std::vector<Character> characters;
+		std::vector<graphics::Character> characters;
 		unsigned int numCharacters = 0, characterIndex = 0;
 
-		while (!fileReader->eof()) {
-			std::string token;
-			if (fileReader->getValue(token)) {
-				if (token == "info") {
-					fileReader->getValuePair(trash, "=", fontName);
-					fileReader->discardLine();
+		while (!fileReader.isEmpty()) {
+			std::string token; fileReader >> token;
+
+			if (token == "info") {
+				fileReader.getValuePair(trash, "=", fontName);
+				fileReader.discardLine();
+			}
+			else if (token == "common") {
+				fileReader.discardLine();
+			}
+			else if (token == "page") {
+				fileReader >> trash;
+				fileReader.getValuePair(trash, "=", fontTextureName);
+			}
+			else if (token == "chars") {
+				fileReader.getValuePair(trash, "=", numCharacters);
+				if (!fileReader.fail()) {
+					characters.reserve(numCharacters);
 				}
-				else if (token == "common") {
-					fileReader->discardLine();
+			}
+			else if (token == "char") {
+				graphics::Character curChar = parseCharacter(fileReader);
+				if (characterIndex < numCharacters) {
+					characters.push_back(curChar);
 				}
-				else if (token == "page") {
-					fileReader->getValue(trash);
-					fileReader->getValuePair(trash, "=", fontTextureName);
-				}
-				else if (token == "chars") {
-					fileReader->getValuePair(trash, "=", numCharacters);
-					characters.resize(numCharacters);
-				}
-				else if (token == "char") {
-					Character curChar = parseCharacter(fileReader);
-					if (characterIndex < numCharacters) {
-						characters[characterIndex] = curChar;
-					}
-					++characterIndex;
-				}
-				else {
-					throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader->getNumLines()) + '\n');
-				}
+				++characterIndex;
+			}
+			else {
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
@@ -63,20 +64,20 @@ namespace graphics {
 			throw std::runtime_error("Error: expected " + std::to_string(numCharacters) + " characters, parsed " + std::to_string(characterIndex) + '\n');
 		}
 
-		auto textureAtlas = std::make_shared<Texture>(fileReader->getDirectory() + fontTextureName, GL_TEXTURE_2D);
-		return std::make_unique<Font>(fontName, characters, textureAtlas);
+		auto textureAtlas = std::make_shared<graphics::Texture>(fileReader.getDirectory() + fontTextureName, GL_TEXTURE_2D);
+		return std::make_unique<graphics::Font>(fontName, characters, textureAtlas);
 	}
 
 
-	Character FontLoader::parseCharacter(FileReader* fileReader)
+	graphics::Character FontLoader::parseCharacter(utils::FileReader& fileReader) const
 	{
-		Character ret;
+		graphics::Character ret;
 		std::string name, trash;
 		int intValue;
 
 		bool flag = true;
 		while (flag) {
-			fileReader->getValuePair(name, "=", intValue);
+			fileReader.getValuePair(name, "=", intValue);
 			if (name == "id") {
 				ret.mId = intValue;
 			}
@@ -108,7 +109,7 @@ namespace graphics {
 				flag = false;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + name + "\" at line " + std::to_string(fileReader->getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + name + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 

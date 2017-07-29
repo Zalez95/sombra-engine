@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 #include "InputData.h"
 
+struct GLFWwindow;
+
 namespace window {
 
 	// GLFW Callbacks
@@ -69,7 +71,7 @@ namespace window {
 
 		/** @return	the current data of the input inserted by the player,
 		 *			like the pressed mouse buttons, keyboard keys and the
-		 *			position of the mouse */
+		 *			position of the mouse (Key polling) */
 		inline const InputData* getInputData() const { return &mInputData; };
 
 		/** Sets the mouse position in the window

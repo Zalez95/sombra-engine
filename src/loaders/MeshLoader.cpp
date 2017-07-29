@@ -9,7 +9,7 @@
 #include "../graphics/buffers/IndexBuffer.h"
 #include "../graphics/buffers/VertexArray.h"
 
-namespace graphics {
+namespace loaders {
 
 // Static variables definition
 	const std::string MeshLoader::FILE_FORMAT::FILE_NAME		= "FAZE_MSH_FILE";
@@ -22,21 +22,21 @@ namespace graphics {
 		const std::vector<GLfloat>& normals,
 		const std::vector<GLfloat>& uvs,
 		const std::vector<GLushort>& faceIndices
-	) {
-		auto vao = std::make_unique<VertexArray>();
-		auto ibo = std::make_unique<IndexBuffer>(faceIndices.data(), faceIndices.size());
-		std::vector<std::unique_ptr<VertexBuffer>> vbos;
-		std::unique_ptr<VertexBuffer> tmp;
+	) const {
+		auto vao = std::make_unique<graphics::VertexArray>();
+		auto ibo = std::make_unique<graphics::IndexBuffer>(faceIndices.data(), faceIndices.size());
+		std::vector<std::unique_ptr<graphics::VertexBuffer>> vbos;
+		std::unique_ptr<graphics::VertexBuffer> tmp;
 
-		tmp = std::make_unique<VertexBuffer>(positions.data(), positions.size(), 3);
+		tmp = std::make_unique<graphics::VertexBuffer>(positions.data(), positions.size(), 3);
 		vao->addBuffer(tmp.get(), POSITION_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(normals.data(), normals.size(), 3);
+		tmp = std::make_unique<graphics::VertexBuffer>(normals.data(), normals.size(), 3);
 		vao->addBuffer(tmp.get(), NORMAL_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(uvs.data(), uvs.size(), 2);
+		tmp = std::make_unique<graphics::VertexBuffer>(uvs.data(), uvs.size(), 2);
 		vao->addBuffer(tmp.get(), UV_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
@@ -44,7 +44,7 @@ namespace graphics {
 		ibo->bind();
 		vao->unbind();
 
-		return std::make_unique<Mesh>(name, std::move(vbos), std::move(ibo), std::move(vao));
+		return std::make_unique<graphics::Mesh>(name, std::move(vbos), std::move(ibo), std::move(vao));
 	}
 
 
@@ -56,29 +56,29 @@ namespace graphics {
 		const std::vector<GLfloat>& jointWeights,
 		const std::vector<GLushort>& jointIndices,
 		const std::vector<GLushort>& faceIndices
-	) {
-		std::vector<std::unique_ptr<VertexBuffer>> vbos;
-		auto ibo = std::make_unique<IndexBuffer>(faceIndices.data(), faceIndices.size());
-		auto vao = std::make_unique<VertexArray>();
+	) const {
+		std::vector<std::unique_ptr<graphics::VertexBuffer>> vbos;
+		auto ibo = std::make_unique<graphics::IndexBuffer>(faceIndices.data(), faceIndices.size());
+		auto vao = std::make_unique<graphics::VertexArray>();
 
-		std::unique_ptr<VertexBuffer> tmp;
-		tmp = std::make_unique<VertexBuffer>(positions.data(), positions.size(), 3);
+		std::unique_ptr<graphics::VertexBuffer> tmp;
+		tmp = std::make_unique<graphics::VertexBuffer>(positions.data(), positions.size(), 3);
 		vao->addBuffer(tmp.get(), POSITION_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(normals.data(), normals.size(), 3);
+		tmp = std::make_unique<graphics::VertexBuffer>(normals.data(), normals.size(), 3);
 		vao->addBuffer(tmp.get(), NORMAL_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(uvs.data(), uvs.size(), 2);
+		tmp = std::make_unique<graphics::VertexBuffer>(uvs.data(), uvs.size(), 2);
 		vao->addBuffer(tmp.get(), UV_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(jointWeights.data(), jointWeights.size(), 4);
+		tmp = std::make_unique<graphics::VertexBuffer>(jointWeights.data(), jointWeights.size(), 4);
 		vao->addBuffer(tmp.get(), JOINT_WEIGHT_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
-		tmp = std::make_unique<VertexBuffer>(jointIndices.data(), jointIndices.size(), 4);
+		tmp = std::make_unique<graphics::VertexBuffer>(jointIndices.data(), jointIndices.size(), 4);
 		vao->addBuffer(tmp.get(), JOINT_INDEX_ATTRIBUTE);
 		vbos.push_back(std::move(tmp));
 
@@ -86,15 +86,15 @@ namespace graphics {
 		ibo->bind();
 		vao->unbind();
 
-		return std::make_unique<Mesh>(name, std::move(vbos), std::move(ibo), std::move(vao));
+		return std::make_unique<graphics::Mesh>(name, std::move(vbos), std::move(ibo), std::move(vao));
 	}
 
 
-	std::vector<MeshLoader::MeshUPtr> MeshLoader::load(FileReader* fileReader)
+	std::vector<MeshLoader::MeshUPtr> MeshLoader::load(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
-			if (!fileReader || fileReader->fail()) {
+			if (fileReader.fail()) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -107,7 +107,7 @@ namespace graphics {
 			return parseMeshes(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Mesh in the file \"" + fileReader->getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Mesh in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
 		}
 	}
 
@@ -160,14 +160,14 @@ namespace graphics {
 	}
 
 // Private functions
-	bool MeshLoader::checkHeader(FileReader* fileReader)
+	bool MeshLoader::checkHeader(utils::FileReader& fileReader) const
 	{
 		const std::string FILE_VERSION = std::to_string(FILE_FORMAT::VERSION) + '.' + std::to_string(FILE_FORMAT::REVISION);
 		bool ret = false;
 
 		std::string fileName, fileVersion;
-		if (fileReader->getValue(fileName) &&
-			fileReader->getValue(fileVersion) &&
+		fileReader >> fileName >> fileVersion;
+		if (!fileReader.fail() &&
 			fileName == FILE_FORMAT::FILE_NAME &&
 			fileVersion == FILE_VERSION
 		) {
@@ -178,28 +178,29 @@ namespace graphics {
 	}
 
 	
-	std::vector<MeshLoader::MeshUPtr> MeshLoader::parseMeshes(FileReader* fileReader)
+	std::vector<MeshLoader::MeshUPtr> MeshLoader::parseMeshes(utils::FileReader& fileReader) const
 	{
 		std::vector<MeshUPtr> meshes;
 		unsigned int numMeshes = 0, meshIndex = 0;
 
-		while (!fileReader->eof()) {
-			std::string token;
-			if (fileReader->getValue(token)) {
-				if (token == "num_meshes") {
-					fileReader->getValue(numMeshes);
-					meshes.resize(numMeshes);
+		while (!fileReader.isEmpty()) {
+			std::string token; fileReader >> token;
+
+			if (token == "num_meshes") {
+				fileReader >> numMeshes;
+				if (!fileReader.fail()) {
+					meshes.reserve(numMeshes);
 				}
-				else if (token == "mesh") {
-					auto curMesh = parseMesh(fileReader);
-					if (meshIndex < numMeshes) {
-						meshes[meshIndex] = std::move(curMesh);
-					}
-					++meshIndex;
+			}
+			else if (token == "mesh") {
+				auto curMesh = parseMesh(fileReader);
+				if (meshIndex < numMeshes) {
+					meshes.push_back(std::move(curMesh));
 				}
-				else {
-					throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader->getNumLines()) + '\n');
-				}
+				++meshIndex;
+			}
+			else {
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
@@ -211,7 +212,7 @@ namespace graphics {
 	}
 
 
-	MeshLoader::MeshUPtr MeshLoader::parseMesh(FileReader* fileReader)
+	MeshLoader::MeshUPtr MeshLoader::parseMesh(utils::FileReader& fileReader) const
 	{
 		std::string name;
 		std::vector<GLfloat> positions, uvs;
@@ -220,70 +221,70 @@ namespace graphics {
 		unsigned int positionIndex = 0, uvIndex = 0, faceIndex = 0;
 		
 		std::string trash;
-		fileReader->getValue(name);
-		fileReader->getValue(trash);
+		fileReader >> name >> trash;
 
 		bool end = false;
 		while (!end) {
-			std::string token;
-			fileReader->getValue(token);
+			std::string token; fileReader >> token;
 
 			if (token == "num_positions") {
-				fileReader->getValue(numPositions);
-				positions.resize(3 * numPositions);
+				fileReader >> numPositions;
+				if (!fileReader.fail()) {
+					positions.resize(3 * numPositions);
+				}
 			}
 			else if (token == "num_uvs") {
-				fileReader->getValue(numUVs);
-				uvs.resize(2 * numUVs);
+				fileReader >> numUVs;
+				if (!fileReader.fail()) {
+					uvs.resize(2 * numUVs);
+				}
 			}
 			else if (token == "num_faces") {
-				fileReader->getValue(numFaces);
-				posIndices.resize(3 * numFaces);
-				if (numUVs > 0) { uvIndices.resize(3 * numFaces); }
+				fileReader >> numFaces;
+				if (!fileReader.fail()) {
+					posIndices.resize(3 * numFaces);
+					if (numUVs > 0) { uvIndices.resize(3 * numFaces); }
+				}
 			}
 			else if (token == "num_joints") {
-				fileReader->getValue(numJoints);
+				fileReader >> numJoints;
 			}
 			else if (token == "v") {
 				if (positionIndex < numPositions) {
-					fileReader->getValue(positions[3 * positionIndex]);
-					fileReader->getValue(positions[3 * positionIndex + 1]);
-					fileReader->getValue(positions[3 * positionIndex + 2]);
+					fileReader	>> positions[3 * positionIndex]
+								>> positions[3 * positionIndex + 1]
+								>> positions[3 * positionIndex + 2];
 				}
-				else { fileReader->discardLine(); }
+				else { fileReader.discardLine(); }
 				++positionIndex;
 			}
 			else if (token == "uv"){
 				unsigned int vi;
-				fileReader->getValue(vi);
-				if (vi < numPositions) {
-					fileReader->getValue(uvs[2 * vi]);
-					fileReader->getValue(uvs[2 * vi + 1]);
+				fileReader >> vi;
+				if (!fileReader.fail() && vi < numPositions) {
+					fileReader	>> uvs[2 * vi]
+								>> uvs[2 * vi + 1];
 				}
-				else { fileReader->discardLine(); }
+				else { fileReader.discardLine(); }
 				++uvIndex;
 			}
 			else if (token == "f") {
 				if (faceIndex < numFaces) {
-					fileReader->getValue(trash);
-					fileReader->getValue(posIndices[3 * faceIndex]);
-					fileReader->getValue(posIndices[3 * faceIndex + 1]);
-					fileReader->getValue(posIndices[3 * faceIndex + 2]);
-					fileReader->getValue(trash);
+					fileReader	>> trash >> posIndices[3 * faceIndex]
+								>> posIndices[3 * faceIndex + 1]
+								>> posIndices[3 * faceIndex + 2] >> trash;
 					if (numUVs > 0) {
-						fileReader->getValue(trash);
-						fileReader->getValue(uvIndices[3 * faceIndex]);
-						fileReader->getValue(uvIndices[3 * faceIndex + 1]);
-						fileReader->getValue(uvIndices[3 * faceIndex + 2]);
-						fileReader->getValue(trash);
+						fileReader	>> trash >> uvIndices[3 * faceIndex]
+									>> uvIndices[3 * faceIndex + 1]
+									>> uvIndices[3 * faceIndex + 2] >> trash;
 					}
 				}
-				else { fileReader->discardLine(); }
+				else { fileReader.discardLine(); }
 				++faceIndex;
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader->getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
@@ -307,7 +308,7 @@ namespace graphics {
 		const std::vector<GLfloat>& uvs,
 		const std::vector<GLushort>& posIndices,
 		const std::vector<GLushort>& uvIndices
-	) {
+	) const {
 		std::vector<GLfloat> positions2, uvs2, normals;
 		std::vector<GLushort> faceIndices;
 

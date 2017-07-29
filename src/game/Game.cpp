@@ -4,8 +4,12 @@
 #include <thread>
 
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
+#include <glm/gtc/random.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include "InputComponent.h"
+#include "PhysicsComponent.h"
+#include "GraphicsComponent.h"
 
 #include "../utils/Logger.h"
 #include "../utils/FileReader.h"
@@ -29,26 +33,28 @@
 #include "../physics/PhysicsEngine.h"
 #include "../physics/PhysicsEntity.h"
 #include "../physics/RigidBody.h"
-#include "../physics/collision/BoundingSphere.h"
 #include "../physics/collision/BoundingBox.h"
+#include "../physics/collision/BoundingSphere.h"
+
+#define GRAPHICS
+#define GAME
 
 namespace game {
 
 // Static variables definition
-    const float Game::FOV       	= 45.0f;
-    const float Game::Z_NEAR		= 1.0f;
-    const float Game::Z_FAR			= 500.0f;
-    const float Game::UPDATE_TIME	= 0.016f;
+    const float Game::UPDATE_TIME = 0.016f;
 
 // Public functions
 	Game::Game() : mEnd(false)
 	{
+		using namespace utils;
+
 		// Window
 		if (!(mWindowSystem = new window::WindowSystem("< FAZE >", WIDTH, HEIGHT))) {
 			Logger::writeLog(LogType::ERROR, "Error initializing the window system");
 			return;
 		}
-		mWindowSystem->setMousePosition(WIDTH / (float)2, HEIGHT / (float)2);
+		mWindowSystem->setMousePosition(WIDTH / float(2), HEIGHT / float(2));
 		std::cout << mWindowSystem->getGLInfo() << std::endl;
 
 		// Graphics
@@ -67,24 +73,25 @@ namespace game {
 
 	Game::~Game()
 	{
-		delete mWindowSystem;
+		delete mPhysicsEngine;
 		delete mGraphicsSystem;
+		delete mWindowSystem;
 	}
 
 
 	bool Game::run()
 	{
-		/*********************************************************************
-		 * LOADERS
-		 *********************************************************************/
-		graphics::MeshLoader meshLoader;
-		graphics::FontLoader fontLoader;
+		using namespace utils;
 
-
+#ifdef GRAPHICS
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		// Graphics Primitives
+		// Loaders
+		loaders::MeshLoader meshLoader;
+		loaders::FontLoader fontLoader;
+
+		// Meshes
 		std::vector<GLfloat> positions = {
 			-0.5f,	-0.5f,	-0.5f,
 			-0.5f,	-0.5f,	0.5f,
@@ -113,246 +120,227 @@ namespace game {
 		std::shared_ptr<graphics::Mesh> mesh1 = std::move(meshLoader.createMesh("Cubo", positions, normals, std::vector<GLfloat>(16), indices));
 
 		std::vector<std::shared_ptr<graphics::Mesh>> fileMeshes;
-		std::shared_ptr<graphics::Font> arial = nullptr;
 		try {
 			FileReader fileReader1("res/models/test.fzmsh");
-			auto tmp = meshLoader.load(&fileReader1);
-
-			for (auto it = tmp.begin(); it != tmp.end(); ++it) {
-				fileMeshes.push_back(std::move(*it));
+			auto loadedMeshes = meshLoader.load(fileReader1);
+			for (std::unique_ptr<graphics::Mesh>& meshUPtr : loadedMeshes) {
+				fileMeshes.push_back(std::move(meshUPtr));
 			}
-
-			FileReader fileReader2("res/fonts/arial.fnt");
-			arial = std::move(fontLoader.load(&fileReader2));
 		}
 		catch (std::exception& e) {
 			Logger::writeLog(LogType::ERROR, e.what());
 		}
 
+		// Material
+		auto material_red = std::make_shared<graphics::Material>(
+			"material_red",
+			graphics::RGBColor(1.0f, 0.2f, 0.2f),
+			graphics::RGBColor(1.0f, 0.2f, 0.2f),
+			graphics::RGBColor(1.0f, 0.1f, 0.1f),
+			0.1f
+		);
+
 		auto material_green = std::make_shared<graphics::Material>(
 			"material_green",
-			graphics::RGBColor{ 0.2f, 1.0f, 0.2f },
-			graphics::RGBColor{ 0.2f, 1.0f, 0.2f },
-			graphics::RGBColor{ 0.1f, 1.0f, 0.1f },
+			graphics::RGBColor(0.2f, 1.0f, 0.2f),
+			graphics::RGBColor(0.2f, 1.0f, 0.2f),
+			graphics::RGBColor(0.1f, 1.0f, 0.1f),
 			0.1f
 		);
 
 		auto material_blue = std::make_shared<graphics::Material>(
 			"material_blue",
-			graphics::RGBColor{ 0.2f, 0.2f, 1.0f },
-			graphics::RGBColor{ 0.2f, 0.2f, 1.0f },
-			graphics::RGBColor{ 0.1f, 0.1f, 1.0f },
-			0.1f
-		);
-
-		auto material_red = std::make_shared<graphics::Material>(
-			"material_red",
-			graphics::RGBColor{ 1.0f, 0.2f, 0.2f },
-			graphics::RGBColor{ 1.0f, 0.2f, 0.2f },
-			graphics::RGBColor{ 1.0f, 0.1f, 0.1f },
+			graphics::RGBColor(0.2f, 0.2f, 1.0f),
+			graphics::RGBColor(0.2f, 0.2f, 1.0f),
+			graphics::RGBColor(0.1f, 0.1f, 1.0f),
 			0.1f
 		);
 
 		auto material_white = std::make_shared<graphics::Material>(
 			"material_white",
-			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
-			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
-			graphics::RGBColor{ 1.0f, 1.0f, 1.0f },
+			graphics::RGBColor(1.0f, 1.0f, 1.0f),
+			graphics::RGBColor(1.0f, 1.0f, 1.0f),
+			graphics::RGBColor(1.0f, 1.0f, 1.0f),
 			0.1f
 		);
 
 		auto material_orange = std::make_shared<graphics::Material>(
 			"material_orange",
-			graphics::RGBColor{ 1.0f, 0.5f, 0.1f },
-			graphics::RGBColor{ 0.2f, 0.2f, 0.1f },
-			graphics::RGBColor{ 0.1f, 0.1f, 0.2f },
+			graphics::RGBColor(1.0f, 0.5f, 0.1f),
+			graphics::RGBColor(0.2f, 0.2f, 0.1f),
+			graphics::RGBColor(0.1f, 0.1f, 0.2f),
 			0.1f
 		);
 
+		// Textures
 		auto texture1 = std::make_shared<graphics::Texture>("res/images/test.png", GL_TEXTURE_2D);
 
-		graphics::BaseLight baseLight1(4.0f, 24.0f);
-		graphics::Attenuation attenuation1{ 0.5f, 0.25f, 0.2f };
-
 		// Cameras
-		graphics::Camera camera1(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+		auto camera1 = std::make_unique<graphics::Camera>(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
 
 		// Lights
-		std::vector<const graphics::PointLight*> pointLights;
-		graphics::PointLight pointLight1(baseLight1, attenuation1, glm::vec3(2, 1, 5));
-		graphics::PointLight pointLight2(baseLight1, attenuation1, glm::vec3(-3, 1, 5));
-		pointLights.push_back(&pointLight1);
-		pointLights.push_back(&pointLight2);
+		graphics::BaseLight baseLight1(graphics::RGBColor(0.5f, 0.6f, 0.3f), graphics::RGBColor(0.1f, 0.5f, 0.6f));
+		graphics::Attenuation attenuation1{ 0.5f, 0.25f, 0.2f };
+		auto pointLight1 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
+		auto pointLight2 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 
 		// RenderableTexts
-		std::vector<const graphics::RenderableText*> renderableTexts;
+		std::shared_ptr<graphics::Font> arial = nullptr;
+		try {
+			FileReader fileReader2("res/fonts/arial.fnt");
+			arial = std::move(fontLoader.load(fileReader2));
+		}
+		catch (std::exception& e) {
+			Logger::writeLog(LogType::ERROR, e.what());
+		}
 		graphics::RenderableText renderableText1("First try rendering text", arial, 10, glm::vec2());
-		renderableTexts.push_back(&renderableText1);
 
 		// Renderable2Ds
-		std::vector<const graphics::Renderable2D*> renderable2Ds;
-		graphics::Renderable2D renderable2D1(glm::vec2(/*80.0f, 75.0f*/), glm::vec2(0.15f, 0.2f), texture1);
-		renderable2Ds.push_back(&renderable2D1);
+		graphics::Renderable2D renderable2D1(glm::vec2(0.75f, 0.75f), glm::vec2(0.15f, 0.2f), texture1);
+#endif		// GRAPHICS
 
-		// Renderable3Ds
-		std::vector<const graphics::Renderable3D*> renderable3Ds;
-		for (auto it = fileMeshes.begin(); it != fileMeshes.end(); ++it) {
-			auto tmpMaterial = std::make_shared<graphics::Material>(
-				"tmp_material",
-				graphics::RGBColor{ static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX },
-				graphics::RGBColor{ static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX },
-				graphics::RGBColor{ static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX, static_cast<float>(rand()) / RAND_MAX },
-				0.2f
-			);
-			graphics::Renderable3D* renderable3D1 = new graphics::Renderable3D(*it, tmpMaterial, nullptr, false);
-			renderable3D1->setModelMatrix( glm::rotate(glm::mat4(), -glm::half_pi<float>(), glm::vec3(1,0,0)) );
-			renderable3Ds.push_back(renderable3D1);
-		}
-
-
+#ifdef GAME
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
-		std::vector<physics::PhysicsEntity*> physicsEntities;
+		mGraphicsSystem->getLayer2D()->addRenderable2D(&renderable2D1);
 
 		// Player
-       	physics::PhysicsEntity* physicsEntityPlayer = new physics::PhysicsEntity(
-       		std::make_unique<physics::RigidBody>(
-       			40.0f, 0.01f,
-       			2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f,
-       			glm::vec3(0, 0, 10), glm::quat()
-       		),
-			std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-       	);
-		physicsEntities.push_back(physicsEntityPlayer);
-		mPhysicsEngine->addPhysicsEntity(physicsEntityPlayer);
-
-		auto player	= std::make_unique<Player>("player", physicsEntityPlayer, &camera1, nullptr, nullptr, glm::vec2(WIDTH, HEIGHT));
-		mPlayer = player.get();
+       	auto pCompPlayer = std::make_unique<PhysicsComponent>(
+			*mPhysicsEngine,
+			std::make_unique<physics::PhysicsEntity>(
+       			physics::RigidBody(
+       				40.0f, 0.01f,
+       				2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f
+       			),
+				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+       		)
+		);
+		auto iCompPlayer = std::make_unique<InputComponent>(*mWindowSystem);
+		auto gCompPlayer = std::make_unique<GraphicsComponent>(*mGraphicsSystem, std::move(camera1), nullptr, nullptr);
+		auto player	= std::make_unique<Entity>("player", std::move(iCompPlayer), std::move(pCompPlayer), std::move(gCompPlayer));
+		player->mPosition = glm::vec3(0, 1, 10);
+		player->update(0.0f);
 		mEntities.push_back(std::move(player));
 
-		// Cubes
-        glm::vec3 cubePositions[5] = { glm::vec3(-10, 0, -10), glm::vec3(0, 0, -10), glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8) };
-        std::shared_ptr<graphics::Material> materials[5] = { material_white, material_white, material_green, material_blue, material_orange };
-        for (unsigned int i = 0; i < 5; ++i) {
-        	physics::PhysicsEntity* physicsEntityCube = new physics::PhysicsEntity(
-        		std::make_unique<physics::RigidBody>(
-        			20.0f, 1.0f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.5f,
-        			cubePositions[i], glm::quat()
-        		),
-				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-        	);
-			if (i == 0) { physicsEntityCube->getRigidBody()->addLinearVelocity(glm::vec3(1, 0, 0)); }
-			if (i == 1) { physicsEntityCube->getRigidBody()->addAngularVelocity(glm::vec3(0, 10, 0)); }
-        	physicsEntities.push_back(physicsEntityCube);
-        	mPhysicsEngine->addPhysicsEntity(physicsEntityCube);
-
-			graphics::Renderable3D* renderable3DCube = new graphics::Renderable3D(mesh1, materials[i], nullptr, false);
-        	renderable3Ds.push_back(renderable3DCube);
-        
-			auto cube = std::make_unique<Entity>("not random cube", physicsEntityCube, nullptr, nullptr, renderable3DCube);
-			mEntities.push_back(std::move(cube));
-        }
-
-		for (unsigned int i = 0; i < NUM_CUBES; ++i) {
-			glm::vec3 randomPosition(
-				100 * (static_cast<float>(rand()) / RAND_MAX) - 50,
-				100 * (static_cast<float>(rand()) / RAND_MAX) - 50,
-				100 * (static_cast<float>(rand()) / RAND_MAX) - 50
+		// Buildings
+		for (auto it = fileMeshes.begin(); it != fileMeshes.end(); ++it) {
+			auto tmpMaterial = std::make_shared<graphics::Material>(
+				"tmp_material",
+				graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				0.2f
 			);
+			auto renderable3D1 = std::make_unique<graphics::Renderable3D>(*it, tmpMaterial, nullptr, false);
+			auto gCompBuilding = std::make_unique<GraphicsComponent>(*mGraphicsSystem, nullptr, nullptr, std::move(renderable3D1));
 
-			physics::PhysicsEntity* physicsEntityCube = new physics::PhysicsEntity(
-				std::make_unique<physics::RigidBody>(
-					10.0f, 1.0f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.05f,
-					randomPosition, glm::quat()
-				),
-				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-			);
-			physicsEntities.push_back(physicsEntityCube);
-			mPhysicsEngine->addPhysicsEntity(physicsEntityCube);
-
-			graphics::Renderable3D* renderable3DCube = new graphics::Renderable3D(mesh1, material_orange, nullptr, false);
-			renderable3Ds.push_back(renderable3DCube);
-
-			auto cube = std::make_unique<Entity>("random cube", physicsEntityCube, nullptr, nullptr, renderable3DCube);
-			mEntities.push_back(std::move(cube));
+			auto building = std::make_unique<Entity>("player", nullptr, nullptr, std::move(gCompBuilding));
+			building->mOrientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+			building->update(0.0f);
+			mEntities.push_back(std::move(building));
 		}
 
+		// Lights
+		auto gCompL1 = std::make_unique<GraphicsComponent>(*mGraphicsSystem, nullptr, std::move(pointLight1), nullptr);
+		auto eL1 = std::make_unique<Entity>("PointLight1", nullptr, nullptr, std::move(gCompL1));
+		eL1->mPosition = glm::vec3(2, 1, 5);
+		eL1->update(0.0f);
+		mEntities.push_back(std::move(eL1));
+
+		auto gCompL2 = std::make_unique<GraphicsComponent>(*mGraphicsSystem, nullptr, std::move(pointLight2), nullptr);
+		auto eL2 = std::make_unique<Entity>("PointLight2", nullptr, nullptr, std::move(gCompL2));
+		eL2->mPosition = glm::vec3(-3, 1, 5);
+		eL2->update(0.0f);
+		mEntities.push_back(std::move(eL2));
+
+		// Cubes
+		std::shared_ptr<graphics::Material> materials[5] = { material_red, material_green, material_blue, material_white, material_orange };
+		glm::vec3 cubePositions[5] = { glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8), glm::vec3(0, 0, -10), glm::vec3(10, 0, -10) };
+		for (unsigned int i = 0; i < 5; ++i) {
+			auto physicsEntityCube = std::make_unique<physics::PhysicsEntity>(
+        		physics::RigidBody(
+        			20.0f, 1.0f,
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.5f
+        		),
+				std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+			);
+			if (i == 3) { physicsEntityCube->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
+			if (i == 4) { physicsEntityCube->getRigidBody()->mLinearVelocity += glm::vec3(-1, 0, 0); }
+        	auto pCompCube = std::make_unique<PhysicsComponent>(*mPhysicsEngine, std::move(physicsEntityCube));
+		
+			auto renderable3D1 = std::make_unique<graphics::Renderable3D>(mesh1, materials[i], nullptr, false);
+			auto gCompCube = std::make_unique<GraphicsComponent>( *mGraphicsSystem, nullptr, nullptr, std::move(renderable3D1) );
+        
+			auto cube = std::make_unique<Entity>("not random cube", nullptr, std::move(pCompCube), std::move(gCompCube));
+			cube->mPosition = cubePositions[i];
+			cube->update(0.0f);
+			mEntities.push_back(std::move(cube));
+        }
+		
+		for (unsigned int i = 0; i < NUM_CUBES; ++i) {
+			glm::vec3 randomPosition = glm::ballRand(50.0f);
+			auto pCompCube = std::make_unique<PhysicsComponent>(
+				*mPhysicsEngine,
+				std::make_unique<physics::PhysicsEntity>(
+					physics::RigidBody(
+						10.0f, 1.0f,
+						2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.05f
+					),
+					std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+				)
+			);
+
+			auto renderable3D1 = std::make_unique<graphics::Renderable3D>(mesh1, material_orange, nullptr, false);
+			auto gCompCube = std::make_unique<GraphicsComponent>(*mGraphicsSystem, nullptr, nullptr, std::move(renderable3D1));
+			
+			auto cube = std::make_unique<Entity>("random cube", nullptr, std::move(pCompCube), std::move(gCompCube));
+			cube->mPosition = randomPosition;
+			cube->update(0.0f);
+			mEntities.push_back(std::move(cube));
+		}
+#endif		// GAME
 
 		/*********************************************************************
 		 * MAIN LOOP
 		 *********************************************************************/
 		float lastTime = mWindowSystem->getTime();
-		float timeSinceUpdate = 0;
-
 		while ( !mEnd ) {
-			// Calculate delta (elapsed time)
+			// Calculate the elapsed time since the last update
 			float curTime	= mWindowSystem->getTime();
-			float delta		= curTime - lastTime;
-			lastTime		= curTime;
-			timeSinceUpdate += delta;
+			float deltaTime	= curTime - lastTime;
 
-			if (timeSinceUpdate >= UPDATE_TIME) {
-				std::cout << delta << "ms\r";
-			
-				input(timeSinceUpdate);
-				update(timeSinceUpdate);
-				render(mPlayer->getCamera(), renderable2Ds, renderable3Ds, renderableTexts, pointLights);
+			if (deltaTime >= UPDATE_TIME) {
+				lastTime = curTime;
+				std::cout << deltaTime << "ms\r";
 
-				timeSinceUpdate = 0.0f;
+				// Update the Systems
+				mWindowSystem->update();
+				if (mWindowSystem->getInputData()->mKeys[GLFW_KEY_ESCAPE]) {
+					// Stop the game loop if the escape key was pressed
+					mEnd = true;
+				}
+
+				mPhysicsEngine->update(deltaTime);
+
+				// Update the entities
+				for (std::unique_ptr<Entity>& entity : mEntities) {
+					entity->update(deltaTime);
+				}
+
+				// Draw
+				mGraphicsSystem->render();
+				mWindowSystem->swapBuffers();
 			}
 			else {
-				std::this_thread::sleep_for( std::chrono::duration<float>(UPDATE_TIME - timeSinceUpdate) );
+				std::this_thread::sleep_for( std::chrono::duration<float>(UPDATE_TIME - deltaTime) );
 			}
 		}
 
-		for (const graphics::Renderable3D* r3d : renderable3Ds) {
-			delete r3d;
-		}
-
-		for (const physics::PhysicsEntity* pe : physicsEntities) {
-			delete pe;
-		}
+		// Delete the entities
+		mEntities.clear();
 
 		return true;
-	}
-
-// Private functions
-	void Game::input(float delta)
-	{
-		mWindowSystem->update();
-
-		const window::InputData* inputData = mWindowSystem->getInputData();
-		if (inputData->mKeys[GLFW_KEY_ESCAPE] || mWindowSystem->isClosed()) {
-			mEnd = true;
-		}
-		else {
-			if (mPlayer) { mPlayer->doInput(inputData, delta); }
-			mWindowSystem->setMousePosition(WIDTH / (float)2, HEIGHT / (float)2);
-		}
-	}
-
-
-	void Game::update(float delta)
-	{
-		mPhysicsEngine->update(delta);
-		for (auto it = mEntities.begin(); it != mEntities.end(); ++it) {
-			(*it)->synch();
-		}
-	}
-
-
-	void Game::render(
-		const graphics::Camera* camera,
-		const std::vector<const graphics::Renderable2D*>& renderable2Ds,
-		const std::vector<const graphics::Renderable3D*>& renderable3Ds,
-		const std::vector<const graphics::RenderableText*>& renderableTexts,
-		const std::vector<const graphics::PointLight*>& pointLights
-	) {
-		mGraphicsSystem->render(camera, renderable2Ds, renderable3Ds, renderableTexts, pointLights);
-		mWindowSystem->swapBuffers();
 	}
 
 }

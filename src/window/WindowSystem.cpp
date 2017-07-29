@@ -3,10 +3,10 @@
 
 namespace window {
 	
-// Callbacks
+// Callback functions
 	void error_callback(int error, const char* description)
 	{
-		Logger::writeLog(LogType::ERROR, "Window System: Error " + std::to_string(error) + ": " + description);
+		utils::Logger::writeLog(utils::LogType::ERROR, "Window System: Error " + std::to_string(error) + ": " + description);
 	}
 
 
@@ -40,8 +40,8 @@ namespace window {
 	{
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
-		userWindow->mInputData.mMouseX = (float)xpos;
-		userWindow->mInputData.mMouseY = (float)ypos;
+		userWindow->mInputData.mMouseX = float(xpos);
+		userWindow->mInputData.mMouseY = float(ypos);
 	}
 
 // Public functions
@@ -50,14 +50,14 @@ namespace window {
 	{
 		// 1. Init GLFW
 		if (!glfwInit()) {
-			Logger::writeLog(LogType::ERROR, "Failed to initialize GLFW");
+			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to initialize GLFW");
 			return;
 		}
 
 		// 2. Create the window
 		mWindow = glfwCreateWindow( mWidth, mHeight, mTitle.c_str(), nullptr, nullptr );
 		if (!mWindow) {
-			Logger::writeLog(LogType::ERROR, "Failed to create the Window");
+			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to create the Window");
 			glfwTerminate();
 			return;
 		}
@@ -74,7 +74,7 @@ namespace window {
 
 		// 4. Init GLEW
 		if (glewInit() != GLEW_OK) {
-			Logger::writeLog(LogType::ERROR, "Failed to initialize GLEW");
+			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to initialize GLEW");
 			glfwDestroyWindow(mWindow);
 			glfwTerminate();
 			return;
@@ -110,6 +110,8 @@ namespace window {
 
 	void WindowSystem::setMousePosition(float x, float y)
 	{
+		mInputData.mMouseX = x;
+		mInputData.mMouseY = y;
 		glfwSetCursorPos(mWindow, x, y);
 	}
 
@@ -122,7 +124,7 @@ namespace window {
 
 	float WindowSystem::getTime() const
 	{
-		return (float)glfwGetTime();
+		return float(glfwGetTime());
 	}
 
 
@@ -136,8 +138,7 @@ namespace window {
 	{
 		return	"OpenGL Renderer: " + std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER))) +
 				"\nOpenGL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))) +
-				"\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION))) +
-				"\n";
+				"\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 	}
 
 // Private functions

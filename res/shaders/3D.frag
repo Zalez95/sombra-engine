@@ -1,7 +1,9 @@
 #version 130
 
 // ____ CONSTANTS ____
-const int MAX_POINT_LIGHTS = 4;
+const int	MAX_POINT_LIGHTS	= 4;
+const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
+const vec3	SCENE_AMBIENT_COLOR = vec3(0.2, 0.2, 0.2);
 
 
 // ____ DATATYPES ____
@@ -16,8 +18,8 @@ struct Material
 
 struct BaseLight
 {
-	float	mAmbientIntensity;
-	float	mIntensity;
+	vec3	mDiffuseColor;
+	vec3	mSpecularColor;
 };
 
 struct Attenuation
@@ -56,28 +58,29 @@ uniform sampler3D	u_VoxelTexture;
 
 
 // ____ FUNCTION DEFINITIONS ____
-vec3 calcPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDirection)
+vec3 calcBlinnPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDirection)
 {
 	// Calculate the ambient color
-	vec3 ambientColor	= u_Material.mAmbientColor * light.mAmbientIntensity;
+	vec3 ambientColor	= u_Material.mAmbientColor * SCENE_AMBIENT_COLOR;
 
 	// Calculate the diffuse color
 	vec3 diffuseColor	= vec3(0,0,0);
-	float diffuseAngle	= dot(lightDirection, vs_Normal);
-	if (diffuseAngle > 0) {
-		diffuseColor	= u_Material.mDiffuseColor * diffuseAngle;
+	float diffuseDot	= dot(lightDirection, vs_Normal);
+	if (diffuseDot > 0) {
+		diffuseColor	= u_Material.mDiffuseColor * light.mDiffuseColor * diffuseDot;
 	}
 
 	// Calculate the specular color
 	vec3 specularColor	= vec3(0,0,0);
-	vec3 lightReflect	= normalize(reflect(lightDirection, vs_Normal));
-	float specularAngle	= dot(viewDirection, lightReflect);
-	if (specularAngle > 0) {
-		specularColor	= u_Material.mSpecularColor * pow(specularAngle, u_Material.mShininess);
+	vec3 halfDirection	= normalize(lightDirection + viewDirection);
+	float specularDot	= dot(vs_Normal, halfDirection);
+	if (specularDot > 0) {
+		float spec		= pow(specularDot, u_Material.mShininess);
+		specularColor	= u_Material.mSpecularColor * light.mSpecularColor * spec;
 	}
 
 	// Add all the light colors and return
-	return ambientColor + light.mIntensity * (diffuseColor + specularColor);
+	return ambientColor + diffuseColor + specularColor;
 }
 
 
@@ -93,15 +96,16 @@ vec3 calcPointLight(PointLight pointLight, vec3 pointLightPosition)
 
 	// Calculate the direct lighting of the current light with the Phong
 	// reflection model
-	vec3 lightColor		= calcPhongReflection(pointLight.mBaseLight, lightDirection, viewDirection);
+	vec3 lightColor		= calcBlinnPhongReflection(pointLight.mBaseLight, lightDirection, viewDirection);
 
 	// Calculate the attenuation of the point light
 	float attenuation	= pointLight.mAttenuation.mConstant
 						+ pointLight.mAttenuation.mLinear * distance
 						+ pointLight.mAttenuation.mExponential * pow(distance, 2);
+	attenuation			= (attenuation != 0)? 1.0 / attenuation : 1.0;
 
 	// Apply the attenuation to the light color and return it
-	return lightColor / attenuation;
+	return attenuation * lightColor;
 }
 
 
@@ -119,6 +123,8 @@ vec3 calcDirectLight()
 // ____ MAIN PROGRAM ____
 void main()
 {
-	vec3 lightColor = calcDirectLight();
-	gl_FragColor = /*texture2D(u_ColorTexture, vs_UV) */ vec4(lightColor, 1.0f);
+	vec4 lightColor = vec4(calcDirectLight(), 1.0);
+	vec4 texColor	= texture2D(u_ColorTexture, vs_UV);
+	gl_FragColor	= pow(/*texColor */ lightColor, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
 }
+

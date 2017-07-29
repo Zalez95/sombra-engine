@@ -1,46 +1,46 @@
 #ifndef BOUNDING_BOX_H
 #define BOUNDING_BOX_H
 
-#include <vector>
-#include "Collider.h"
+#include "ConvexPolyhedron.h"
 
 namespace physics {
 
 	/**
-	 * Class BoundingBox, an Bounding Box is a bounding volume with the shape
-	 * of a box
+	 * Class BoundingBox, a Bounding Box is a convex bounding volume with the
+	 * shape of a box
 	 */
-	class BoundingBox : public Collider
+	class BoundingBox : public ConvexPolyhedron
 	{
-	private:	// Attributes
-		/** The lenght in each aixs of the BoundingBox */
-		glm::vec3 mLengths;
-
-		/** The coordinates in world space of the BoudingBox's vertices */
-		std::vector<glm::vec3> mVertices;
-
 	public:		// Functions
 		/** Creates a new BoundingBox located at the origin of
 		 * coordinates
 		 * 
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
 		BoundingBox(const glm::vec3& lengths) :
-			mLengths(lengths), mVertices(8) { setTransforms(glm::mat4()); };
+			ConvexPolyhedron(verticesFromLengths(lengths)) {};
 
 		/** Class destructor */
 		~BoundingBox() {};
-
-		/** @return the coordinates of the BoundingBox's vertices in world
-		 *			space */
-		inline std::vector<glm::vec3> getVertices() const
-		{ return mVertices; };
-
-		/** Updates the position of the BoundingBox with the data of the
-		 * given transformation matrix
+	private:
+		/** Calculates the vertices of the BoundingBox from its lenghts in
+		 * each axis
 		 * 
-		 * @param	transforms the transformations matrix used to set the
-		 *			position and rotation of the BoundingBox */
-		virtual void setTransforms(const glm::mat4& transforms);
+		 * @param	lengths the lenght in each aixs of the BoundingBox */
+		std::vector<glm::vec3> verticesFromLengths(const glm::vec3& lengths)
+		{
+			std::vector<glm::vec3> ret = {
+				glm::vec3(-lengths.x, -lengths.y, -lengths.z) / 2.0f,
+				glm::vec3(-lengths.x, -lengths.y,  lengths.z) / 2.0f,
+				glm::vec3(-lengths.x,  lengths.y, -lengths.z) / 2.0f,
+				glm::vec3(-lengths.x,  lengths.y,  lengths.z) / 2.0f,
+				glm::vec3( lengths.x, -lengths.y, -lengths.z) / 2.0f,
+				glm::vec3( lengths.x, -lengths.y,  lengths.z) / 2.0f,
+				glm::vec3( lengths.x,  lengths.y, -lengths.z) / 2.0f,
+				glm::vec3( lengths.x,  lengths.y,  lengths.z) / 2.0f
+			};
+
+			return ret;
+		};
 	};
 
 }

@@ -12,11 +12,7 @@ namespace physics {
 	 */
 	class RigidBody
 	{
-	private:	// Attributes
-		/** The inverse of the mass. We store the mass inverted because
-		 * it's more useful for storing object with infinite mass */
-		float mInvertedMass;
-
+	public:		// Attributes
 		/** The linear position of the origin (center of mass) of the
 		 * RigidBody in world space */
 		glm::vec3 mPosition;
@@ -26,6 +22,10 @@ namespace physics {
 
 		/** The linear acceleration of the RigidBody in world space */
 		glm::vec3 mLinearAcceleration;
+	private:
+		/** The inverse of the mass. We store the mass inverted because
+		 * it's more useful for storing object with infinite mass */
+		float mInvertedMass;
 		
 		/** The factor by the linear velocity of the RigidBody is going to
 		 * be slowed down each time the integrate method is called so the
@@ -35,7 +35,16 @@ namespace physics {
 		/** A vector with the sum of all the forces currently applied to
 		 * the RigidBody */
 		glm::vec3 mForceSum;
+	public:
+		/** The orientation of the RigidBody in world space */
+		glm::quat mOrientation;
 
+		/** The angular velocity of the RigidBody in world space */
+		glm::vec3 mAngularVelocity;
+
+		/** The angular acceleration of the RigidBody in world space */
+		glm::vec3 mAngularAcceleration;
+	private:
 		/** The inertia tensor of the RigidBody. It is a 3x3 matrix in
 		 * Body Space that stores all the moments of inertia of a
 		 * RigidBody.
@@ -48,15 +57,6 @@ namespace physics {
 		 * @note	is a mat3 because it doesn't matter the location, only
 		 *			the orientation */
 		glm::mat3 mInvertedInertiaTensorWorld;
-
-		/** The orientation of the RigidBody in world space */
-		glm::quat mOrientation;
-
-		/** The angular velocity of the RigidBody in world space */
-		glm::vec3 mAngularVelocity;
-
-		/** The angular acceleration of the RigidBody in world space */
-		glm::vec3 mAngularAcceleration;
 
 		/** The factor by the angular velocity of the RigidBody is going to
 		 * be slowed down each time the integrate method is called so the
@@ -73,15 +73,11 @@ namespace physics {
 		glm::mat4 mTransformsMatrix;
 
 	public:		// Functions
-		/** Creates a new RigidBody with infinite mass
-		 * 
-		 * @param	position position the initial position of the RigidBody
-		 *			in world space
-		 * @param	orientation the initial orientation of the RigidBody
-		 *			in world space */
-		RigidBody(const glm::vec3& position, const glm::quat& orientation);
+		/** Creates a new RigidBody with infinite mass located at the origin
+		 * of coordinates */
+		RigidBody() {};
 
-		/** Creates a new RigidBody
+		/** Creates a new RigidBody located at the origin of coordinates
 		 *
 		 * @param	mass the mass of the RigidBody
 		 * @param	linearSlowDown the factor by we are going to slow down the
@@ -89,15 +85,10 @@ namespace physics {
 		 * @param	inertiaTensor a 3x3 matrix that stores all the moments of
 		 *			inertia of the RigidBody
 		 * @param	angularSlowDown the factor by we are going to slow down the
-		 *			angular velocity
-		 * @param	position the initial position of the RigidBody in world
-		 *			space
-		 * @param	orientation the initial orientation of the RigidBody in
-		 *			world space */
+		 *			angular velocity */
 		RigidBody(
 			float mass, float linearSlowDown,
-			const glm::mat3& inertiaTensor, float angularSlowDown,
-			const glm::vec3& position, const glm::quat& orientation
+			const glm::mat3& inertiaTensor, float angularSlowDown
 		);
 
 		/** Class destructor */
@@ -115,50 +106,9 @@ namespace physics {
 		inline glm::mat4 getTransformsMatrix() const
 		{ return mTransformsMatrix; };
 
-		/** @return	the current position of the RigidBody */
-		inline glm::vec3 getPosition() const { return mPosition; };
-
-		/** Sets the position of the RigidBody
-		 *
-		 * @param	position the new position of the RigidBody */
-		inline void setPosition(const glm::vec3& position)
-		{ mPosition = position; };
-
-		/** @return	the current linear velocity of the RigidBody */
-		inline glm::vec3 getLinearVelocity() const { return mLinearVelocity; };
-
-		/** @return	the current linear acceleration of the RigidBody */
-		inline glm::vec3 getLinearAcceleration() const
-		{ return mLinearAcceleration; };
-
 		/** @return	the inverted inertiaTensor matrix of the RigidBody */
 		inline glm::mat3 getInvertedInertiaTensor() const
 		{ return mInvertedInertiaTensor; };
-
-		/** @return	the current orientation of the RigidBody */
-		inline glm::quat getOrientation() const
-		{ return mOrientation; };
-
-		/** Sets the orientation of the RigidBody
-		 *
-		 * @param	orientation the new orientation of the RigidBody */
-		inline void setOrientation(const glm::quat& orientation)
-		{ mOrientation = orientation; };
-
-		/** @return	the current angular velocity of the RigidBody */
-		inline glm::vec3 getAngularVelocity() const
-		{ return mAngularVelocity; };
-
-		/** Adds the given linear velocity to the RigidBody
-		 *
-		 * @param	velocity the linear velocity to add to the RigidBody */
-		void addLinearVelocity(const glm::vec3& velocity);
-
-		/** Adds the given angular velocity to the RigidBody
-		 *
-		 * @param	angularVelocity the angular velocity to add to the
-		 * 			RigidBody */
-		void addAngularVelocity(const glm::vec3& angularVelocity);
 
 		/** Applies the given force to the center of mass of the RigidBody
 		 * 
@@ -193,7 +143,7 @@ namespace physics {
 		 * @param	delta the time by we will integrate the attributes of the
 		 *			RigidBody */
 		void integrate(float delta);
-	
+
 		/** Updates the transformations matrix with the current data of the
 		 * RigidBody */
 		void updateTransformsMatrix();

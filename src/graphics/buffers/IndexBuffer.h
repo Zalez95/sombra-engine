@@ -13,7 +13,7 @@ namespace graphics {
 	 */
 	class IndexBuffer
 	{
-	private:	// Attribute
+	private:	// Attributes
 		/** The ID of the index buffer */
 		GLuint mBufferID;
 

@@ -28,7 +28,7 @@ namespace graphics {
 		/** Creates a new Camera
 		 * 
 		 * @param	position the position of the new camera in world space 
-		 * @param	target the vector where the Camera is pointing towards in
+		 * @param	target the point where the Camera is pointing towards in
 		 *			world space
 		 * @param	up the up vector of the camera */
 		Camera(

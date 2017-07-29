@@ -4,17 +4,20 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "collision/Contact.h"
 
 #define RESTITUTION 0.3f
 #define ANGULAR_LIMIT 0.2f
 
 namespace physics {
 
-    class Contact;
-    class RigidBody;
+	class Contact;
+	class RigidBody;
 
 
-	/** Class CollisionResolver */
+	/**
+	 * Class CollisionResolver
+	 */
 	class CollisionResolver
 	{
 	private:	// Nested types
@@ -22,8 +25,8 @@ namespace physics {
 		 * created a collision, it also holds other data calculated during the
 		 * collision resolution steps */
 		struct ContactData {
-			/** A pointer to the Contact that  */
-			Contact* mContact;
+			/** The Contact data of the intersection between the RigidBodies */
+			Contact mContact;
 
 			/** The RigidBodies whose collision generated the current
 			 * Contact */
@@ -54,6 +57,18 @@ namespace physics {
 			/** The change in orientation that we have to apply to both
 			 * RigidBodies */
 			glm::quat mOrientationChange[2];
+
+			/** Creates a new ContactData
+			 * 
+			 * @param	contact the Contact of the ContactData
+			 * @param	rb1 a pointer to the first RigidBody of the ContactData
+			 * @param	rb1 a pointer to the second RigidBody of the
+			 *			ContactData */
+			ContactData(Contact& contact, RigidBody* rb1, RigidBody* rb2) :
+				mContact(contact), mContactBodies{rb1, rb2} {};
+
+			/** Destructor */
+			~ContactData() {};
 		};
 
     private:    // Attributes
@@ -69,10 +84,10 @@ namespace physics {
 
         /** Adds the given Contact to the queue of Contacts to resolve
          *
-         * @param   contact a pointer to the Contact that we want to add
-		 * @param	rb1 a pointer to the first RigidBody that collided
-		 * @param	rb2 a pointer to the second RigidBody that collided */
-        void addContact(Contact* contact, RigidBody* rb1, RigidBody* rb2);
+         * @param   contact the Contact that we want to add
+		 * @param	rb1 the first RigidBody that collided
+		 * @param	rb2 the second RigidBody that collided */
+        void addContact(Contact& contact, RigidBody* rb1, RigidBody* rb2);
 
         /** Resolves all the collisions submited to the CollisionResolver
 		 *
@@ -83,31 +98,31 @@ namespace physics {
         /** Precalculates all the needed data of the given ContactData for the
 		 * next steps in the collision resolution
          * 
-         * @param   contactData a pointer to the ContactData to prepare */
-        void prepareContact(ContactData* contactData);
+         * @param   contactData the ContactData to prepare */
+        void prepareContact(ContactData& contactData);
 
 		/** Calculate the change in the position and orientation of the
 		 * RigidBodies due to the collision using nonlinear projection
          * 
-         * @param   contactData a pointer to the ContactData whose RigidBodies'
-		 * 			positions have to change */
-		void calculatePositionChanges(ContactData* contactData);
+         * @param   contactData the ContactData whose RigidBodies' positions
+		 *			have to change */
+		void calculatePositionChanges(ContactData& contactData);
 
 		/** Calculates the change in the linear and angular velocity of the
          * RigidBodies due to the collision
          * 
-         * @param   contactData a pointer to the ContactData whose RigidBodies'
-		 * 			velocities have to change
+         * @param   contactData the ContactData whose RigidBodies' velocities
+		 *			have to change
 		 * @param	delta the elapsed time since the last Update of the
 		 * 			CollisionResolver */
-		void calculateVelocityChanges(ContactData* contactData, float delta);
+		void calculateVelocityChanges(ContactData& contactData, float delta);
 
 		/** Updates the penetration of the contacts that have at least one
 		 * RigidBody equal to one of RigidBodies in the given ContactData
 		 * 
-         * @param   contactData a pointer to the ContactData whose RigidBodies'
-		 * 			has been changed */
-		void updateOtherContacts(ContactData* contactData);
+         * @param   contactData the ContactData whose RigidBodies' has been
+		 *			changed */
+		void updateOtherContacts(ContactData& contactData);
 	};
 
 }

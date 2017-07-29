@@ -12,27 +12,27 @@ namespace graphics {
 	class BaseLight
 	{
 	private:	// Attributes
-		float		mAmbientIntensity;
-		float		mIntensity;
+		RGBColor	mDiffuseColor;
+		RGBColor	mSpecularColor;
 
 	public:		// Functions
 		/** Creates a new BaseLight
 		 *
-		 * @param	ambientIntensity the intensity of the ambient light of the
-		 *			Base Light
-		 * @param	intensity the intensity of the Base Light */
-		BaseLight(float ambientIntensity, float intensity) :
-			mAmbientIntensity(ambientIntensity),
-			mIntensity(intensity) {};
+		 * @param	diffuseColor the diffuse color that emits the light
+		 * @param	specularColor the specular color that emits the light */
+		BaseLight(
+			const RGBColor& diffuseColor,
+		   	const RGBColor& specularColor
+		) : mDiffuseColor(diffuseColor), mSpecularColor(specularColor) {};
 
 		/** Class destructor */
 		~BaseLight() {};
 
-		/** @return the ambient intensity of the light */
-		inline float getAmbientIntensity() const { return mAmbientIntensity; };
+		/** @return the specular color that emits the light */
+		inline RGBColor getSpecularColor() const { return mSpecularColor; };
 
-		/** @return the intensity of the light */
-		inline float getIntensity() const { return mIntensity; };
+		/** @return the diffuse color that emits the light */
+		inline RGBColor getDiffuseColor() const { return mDiffuseColor; };
 	};
 
 
