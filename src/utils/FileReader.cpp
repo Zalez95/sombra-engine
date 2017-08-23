@@ -29,7 +29,7 @@ namespace utils {
 
 	std::string FileReader::getDirectory() const
 	{
-		return mPath.substr(0, mPath.find_last_of("/\\"));
+		return mPath.substr(0, mPath.find_last_of("/\\") + 1);
 	}
 
 

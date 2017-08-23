@@ -1,22 +1,17 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <vector>
 #include <memory>
-#include "Entity.h"
+#include <vector>
 
 namespace window { class WindowSystem; }
-namespace physics { class PhysicsEngine; }
-namespace graphics {
-	class GraphicsSystem;
-	class Renderable2D;
-	class Renderable3D;
-	class RenderableText;
-	class PointLight;
-	class Camera;
-}
-
 namespace game {
+
+	struct Entity;
+	class InputManager;
+	class PhysicsManager;
+	class GraphicsManager;
+
 
 	/**
 	 * Class Engine
@@ -27,7 +22,7 @@ namespace game {
 	    static const unsigned int WIDTH = 640;
 	    static const unsigned int HEIGHT = 480;
 	    static const float UPDATE_TIME;
-		static const unsigned int NUM_CUBES = 50;
+		static const unsigned int NUM_CUBES;
 
 	private:	// Nested Types
 		typedef std::unique_ptr<Entity> EntityUPtr;
@@ -36,8 +31,9 @@ namespace game {
 		bool mEnd;
 		
 		window::WindowSystem* mWindowSystem;
-		graphics::GraphicsSystem* mGraphicsSystem;
-		physics::PhysicsEngine* mPhysicsEngine;
+		InputManager* mInputManager;
+		PhysicsManager* mPhysicsManager;
+		GraphicsManager* mGraphicsManager;
 
 		/** The Entities that currently are in the game */
 		std::vector<EntityUPtr> mEntities;

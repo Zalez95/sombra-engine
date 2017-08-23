@@ -58,7 +58,7 @@ namespace physics {
 		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
 		mAngularVelocity *= glm::pow(mAngularSlowDown, delta);
 		mAngularVelocity += mAngularAcceleration * delta;
-		mOrientation *= glm::quat(mAngularVelocity) * delta;
+		mOrientation = glm::quat(mAngularVelocity * delta) * mOrientation;
 		mOrientation = glm::normalize(mOrientation);
 
 		// Update the derived data

@@ -21,6 +21,12 @@ namespace graphics {
 		/** The target to which the texture is bound */
 		const GLuint mTextureTarget;
 
+		/** The width of the texture */
+		GLint mWidth;
+
+		/** The height of the texture */
+		GLint mHeight;
+
 	public:		// Functions
 		/** Creates a new Texture
 		 * 
@@ -33,6 +39,18 @@ namespace graphics {
 
 		/** @return	the path of the Texture */
 		inline std::string getTexturePath() const { return mTexturePath; };
+
+		/** @return the width of the Texture */
+		inline GLint getWidth() const { return mWidth; };
+
+		/** @return the height of the Texture */
+		inline GLint getHeight() const { return mHeight; };
+
+		/** Gets the Texture's pixel data
+		 * 
+		 * @param	data a pointer to the array where we will store the
+		 *			texture data */
+		void getPixels(GLfloat* data) const;
 
 		/** Binds the Texture */
 		void bind() const;

@@ -1,5 +1,5 @@
-#ifndef MATERIAL_LOADER_H
-#define MATERIAL_LOADER_H
+#ifndef MATERIAL_READER_H
+#define MATERIAL_READER_H
 
 #include <memory>
 #include <vector>
@@ -10,12 +10,14 @@ namespace graphics { class Material; }
 namespace loaders {
 
 	/**
-	 * Class MaterialLoader, it's used to load the materials from the given
+	 * Class MaterialReader, it's used to load the materials from the given
 	 * files
 	 */
-	class MaterialLoader
+	class MaterialReader
 	{
 	private:	// Nested types
+		typedef std::unique_ptr<graphics::Material> MaterialUPtr;
+				
 		/** Struct FILE_FORMAT, it holds the name, version and other data of
 		 * our material file format */
 		struct FILE_FORMAT
@@ -26,14 +28,12 @@ namespace loaders {
 			static const unsigned int	REVISION = 3;
 		};
 
-		typedef std::unique_ptr<graphics::Material> MaterialUPtr;
-
 	public:		// Functions
-		/** Creates a new MaterialLoader */
-		MaterialLoader() {};
+		/** Creates a new MaterialReader */
+		MaterialReader() {};
 
 		/** Class destructor */
-		~MaterialLoader() {};
+		~MaterialReader() {};
 
 		/** Parses the Materials in the given file and returns them
 		 * 
@@ -71,4 +71,4 @@ namespace loaders {
 
 }
 
-#endif		// MATERIAL_LOADER_H
+#endif		// MATERIAL_READER_H

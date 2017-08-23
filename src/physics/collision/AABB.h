@@ -11,12 +11,12 @@ namespace physics {
 	 */
 	struct AABB
 	{
-		/** The minimum coordinates of the vertices of the Mesh in World
-		 * Space */
+		/** The minimum coordinates in each axis of the Mesh's vertices in
+		 * World Space */
 		glm::vec3 mMinimum;
 
-		/** The maximum coordinates of the vertices of the Mesh in World
-		 * Space */
+		/** The maximum coordinates in each Axis of the Mesh's vertices in
+		 * World Space */
 		glm::vec3 mMaximum;
 
 		/** Creates a new AABB

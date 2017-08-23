@@ -121,7 +121,7 @@ namespace graphics {
 		mUniformLocations.mMaterial.mShininess		= mProgram->getUniformLocation("u_Material.mShininess");
 		
 		mUniformLocations.mNumPointLights			= mProgram->getUniformLocation("u_NumPointLights");
-		for (unsigned int i = 0; i < MAX_POINT_LIGHTS; ++i) {
+		for (std::size_t i = 0; i < MAX_POINT_LIGHTS; ++i) {
 			mUniformLocations.mPointLights[i].mBaseLight.mDiffuseColor = mProgram->getUniformLocation(
 				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mDiffuseColor").c_str()
 			);

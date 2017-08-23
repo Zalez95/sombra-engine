@@ -1,5 +1,5 @@
-#ifndef FONT_LOADER_H
-#define FONT_LOADER_H
+#ifndef FONT_READER_H
+#define FONT_READER_H
 
 #include <memory>
 #include <vector>
@@ -9,27 +9,20 @@ namespace graphics { class Font; struct Character; }
 namespace loaders {
 
 	/**
-	 * Class FontLoader, it's used to load the Fonts from the given
+	 * Class FontReader, it's used to load the Fonts from the given
 	 * files
 	 */
-	class FontLoader
+	class FontReader
 	{
 	private:	// Nested types
-		/** Struct FILE_FORMAT, it holds the name, version and other data of
-		 * our Font file format */
-		struct FILE_FORMAT
-		{
-			static const std::string	FILE_EXTENSION;
-		};
-
 		typedef std::unique_ptr<graphics::Font> FontUPtr;
 
 	public:		// Functions
-		/** Creates a new FontLoader */
-		FontLoader() {};
+		/** Creates a new FontReader */
+		FontReader() {};
 
 		/** Class destructor */
-		~FontLoader() {};
+		~FontReader() {};
 
 		/** Parses the Font in the given file and returns it
 		 * 
@@ -58,4 +51,4 @@ namespace loaders {
 
 }
 
-#endif		// FONT_LOADER_H
+#endif		// FONT_READER_H

@@ -18,20 +18,22 @@ namespace window {
 		/** An array with the mouse pressed keys */
 		bool mMouseButtons[MAX_MOUSE_BUTTONS];
 
-		/** The Mouse X coordinate */
+		/** The Mouse X coordinate relative to the top left corner of the
+		 * window*/
 		float mMouseX;
 
-		/** The Mouse Y coordinate */
+		/** The Mouse Y coordinate relative to the top left corner of the
+		 * window */
 		float mMouseY;
 
 		/** Creates a new InputData */
 		InputData() : mMouseX(0.0f), mMouseY(0.0f)
 		{
-			for (unsigned int i = 0; i < MAX_KEYS; ++i) {
+			for (size_t i = 0; i < MAX_KEYS; ++i) {
 				mKeys[i] = false;
 			}
 
-			for (unsigned int i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
+			for (size_t i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
 				mMouseButtons[i] = false;
 			}
 		};

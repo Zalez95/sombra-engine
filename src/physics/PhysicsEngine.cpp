@@ -1,4 +1,5 @@
 #include "PhysicsEngine.h"
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../utils/Logger.h"
 #include "PhysicsEntity.h"
@@ -15,18 +16,29 @@ namespace physics {
 
 	void PhysicsEngine::addPhysicsEntity(PhysicsEntity* entity)
 	{
-		if (entity != nullptr) {
+		if (entity) {
+			Collider* collider = entity->getCollider();
+
 			mPhysicsEntities.push_back(entity);
+			mColliderEntityMap.emplace(collider, entity);
 		}
 	}
 
 
 	void PhysicsEngine::removePhysicsEntity(PhysicsEntity* entity)
 	{
-		for (auto it = mPhysicsEntities.begin(); it != mPhysicsEntities.end(); ++it) {
-			if ((*it) == entity) {
-				mPhysicsEntities.erase(it);
+		mPhysicsEntities.erase(
+			std::remove(mPhysicsEntities.begin(), mPhysicsEntities.end(), entity),
+			mPhysicsEntities.end()
+		);
+
+		for (auto it = mColliderEntityMap.begin(); it != mColliderEntityMap.end(); ) {
+			if (it->second == entity) {
+				mColliderEntityMap.erase(it);
 				break;
+			}
+			else {
+				++it;
 			}
 		}
 	}
@@ -49,16 +61,21 @@ namespace physics {
 
 	void PhysicsEngine::collide(float delta)
 	{
-		for (auto it1 = mPhysicsEntities.begin(); it1 != mPhysicsEntities.end(); ++it1) {
-			for (auto it2 = it1 + 1; it2 != mPhysicsEntities.end(); ++it2) {
-				const Collider* collider1 = (*it1)->getCollider();
-				const Collider* collider2 = (*it2)->getCollider();
-				if (collider1 && collider2) {
-        	        std::vector<Contact> contacts = mCollisionDetector.collide(*collider1, *collider2);
-            	    for (Contact& contact : contacts) {
-                	    mCollisionResolver.addContact(contact, (*it1)->getRigidBody(), (*it2)->getRigidBody());
-					}
-				}
+		for (PhysicsEntity* physicsEntity : mPhysicsEntities) {
+			mCoarseCollisionDetector.submit( physicsEntity->getCollider() );
+		}
+		auto intersectingColliders = mCoarseCollisionDetector.getIntersectingColliders();
+
+		for (std::pair<const Collider*, const Collider*> pair : intersectingColliders) {
+			const Collider* collider1 = pair.first;
+			RigidBody* rb1 = mColliderEntityMap[collider1]->getRigidBody();
+
+			const Collider* collider2 = pair.second;
+			RigidBody* rb2 = mColliderEntityMap[collider2]->getRigidBody();
+
+			std::vector<Contact> contacts = mFineCollisionDetector.collide(*collider1, *collider2);
+			for (Contact& contact : contacts) {
+				mCollisionResolver.addContact(contact, rb1, rb2);
 			}
 		}
 		mCollisionResolver.resolve(delta);

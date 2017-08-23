@@ -6,12 +6,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include "collision/Contact.h"
 
-#define RESTITUTION 0.3f
-#define ANGULAR_LIMIT 0.2f
+#define RESTITUTION		0.3f
+#define ANGULAR_LIMIT	0.2f
 
 namespace physics {
 
-	class Contact;
 	class RigidBody;
 
 
@@ -100,6 +99,15 @@ namespace physics {
          * 
          * @param   contactData the ContactData to prepare */
         void prepareContact(ContactData& contactData);
+
+		/** Calculates the matrix used to transform the coordinates from
+		 * Contact space to World space
+		 * 
+		 * @param	contact the Contact whose coordinates will be used to
+		 *			generate the matrix
+		 * @return	the matrix that transforms the coordinates from Contact
+		 *			Space to World Space */
+		glm::mat3 getContactToWorldMatrix(Contact& contact) const;
 
 		/** Calculate the change in the position and orientation of the
 		 * RigidBodies due to the collision using nonlinear projection

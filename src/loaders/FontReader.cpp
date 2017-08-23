@@ -1,11 +1,11 @@
-#include "FontLoader.h"
+#include "FontReader.h"
 #include "../utils/FileReader.h"
 #include "../graphics/text/Font.h"
 #include "../graphics/Texture.h"
 
 namespace loaders {
 
-	FontLoader::FontUPtr FontLoader::load(utils::FileReader& fileReader) const
+	FontReader::FontUPtr FontReader::load(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
@@ -22,7 +22,7 @@ namespace loaders {
 	}
 
 // Private functions
-	FontLoader::FontUPtr FontLoader::parseFont(utils::FileReader& fileReader) const
+	FontReader::FontUPtr FontReader::parseFont(utils::FileReader& fileReader) const
 	{
 		std::string fontName, fontTextureName, trash;
 		std::vector<graphics::Character> characters;
@@ -41,6 +41,10 @@ namespace loaders {
 			else if (token == "page") {
 				fileReader >> trash;
 				fileReader.getValuePair(trash, "=", fontTextureName);
+				if (fontTextureName.size() > 2) {
+					if (fontTextureName.front() == '\"') { fontTextureName.erase(0, 1); }
+					if (fontTextureName.back() == '\"') { fontTextureName.pop_back(); }
+				}
 			}
 			else if (token == "chars") {
 				fileReader.getValuePair(trash, "=", numCharacters);
@@ -69,7 +73,7 @@ namespace loaders {
 	}
 
 
-	graphics::Character FontLoader::parseCharacter(utils::FileReader& fileReader) const
+	graphics::Character FontReader::parseCharacter(utils::FileReader& fileReader) const
 	{
 		graphics::Character ret;
 		std::string name, trash;

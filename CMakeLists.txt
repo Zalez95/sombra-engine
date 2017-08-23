@@ -13,7 +13,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
 
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_GXX_FLAGS} -Wall -Wpedantic -Werror -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_GXX_FLAGS} -Wall -Wextra -Wpedantic -Werror -std=c++14")
 
 
 # Find the external libraries needed by the exectuable
@@ -42,11 +42,11 @@ if(GLFW3_FOUND)
 	set(LIBS ${LIBS} "${GLFW3_LIBRARIES}")
 endif(GLFW3_FOUND)
 
-find_package(FreeImage REQUIRED)
-if (FreeImage_FOUND)
-    include_directories("${FreeImage_INCLUDE_DIRS}")
-	set(LIBS ${LIBS} "${FreeImage_LIBRARIES}")
-endif (FreeImage_FOUND)
+find_package(SOIL REQUIRED)
+if (SOIL_FOUND)
+	include_directories("${SOIL_INCLUDE_DIRS}")
+	set(LIBS ${LIBS} "${SOIL_LIBRARIES}")
+endif (SOIL_FOUND)
 
 
 # Copy the resource files to the output directory

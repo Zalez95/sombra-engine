@@ -2,14 +2,17 @@
 #define PHYSICS_SYSTEM_H
 
 #include <vector>
+#include <unordered_map>
 #include "forces/ForceManager.h"
-#include "collision/CollisionDetector.h"
+#include "collision/CoarseCollisionDetector.h"
+#include "collision/FineCollisionDetector.h"
 #include "CollisionResolver.h"
 
 namespace physics {
 
 	class PhysicsEntity;
-	
+	class Collider;
+
 
 	/**
 	 * Class PhysicsEngine, it's used to update the position and orientation
@@ -21,16 +24,25 @@ namespace physics {
 		/** All the PhysicsEntities that must be updated */
 		std::vector<PhysicsEntity*> mPhysicsEntities;
 
-		/** The force Manager used to store the relationships between the
-		 * PhysicsEntities and the Forces */
+		/**  */
+		std::unordered_map<const Collider*, PhysicsEntity*> mColliderEntityMap;
+
+		/** The ForceManager of the PhysicsEngine. It's used to store the
+		 * relationships between the PhysicsEntities and the Forces and
+		 * applying them */
 		ForceManager mForceManager;
 
-		/** We will delegate all the collision data calculation to this
-         * CollisionDetector */
-		CollisionDetector mCollisionDetector;
+		/** The CoarseCollisionDetector of the PhysicsEngine. We will use it
+		 * to filter some of the PhysiscsEntities' Colliders during the
+		 * collision detection step */
+		CoarseCollisionDetector mCoarseCollisionDetector;
 
-		/** We will delegate all the collision resolution to this
-         * CollisionResolver */
+		/** The FineCollisionDetector of the PhysicsEngine. We will delegate
+		 * all the collision data calculation to it */
+		FineCollisionDetector mFineCollisionDetector;
+
+		/** The CollisionResolver of the PhysicsEngine. We will delegate all
+		 * the collision response calculation to it */
 		CollisionResolver mCollisionResolver;
 
 	public:		// Functions

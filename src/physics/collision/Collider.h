@@ -28,6 +28,14 @@ namespace physics {
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			Collider */
 		virtual AABB getAABB() const = 0;
+
+		/** @return	the coordinates in world space of Collider's furthest point
+		 *			in the given direction
+		 * @param	direction the direction towards we want to get the furthest
+		 *			point */
+		virtual glm::vec3 getFurthestPointInDirection(
+		   	const glm::vec3& direction
+		) const = 0;
 	};
 
 }

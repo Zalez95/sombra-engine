@@ -1,18 +1,19 @@
-#include "CollisionDetector.h"
-#include "Collider.h"
-#include "AABB.h"
-#include "Plane.h"
-#include "BoundingSphere.h"
-#include "ConvexPolyhedron.h"
+#include "FineCollisionDetector.h"
 #include <limits>
 #include <cassert>
 #include <algorithm>
+#include <stdexcept>
+#include <glm/gtc/random.hpp>
 #include <glm/gtx/intersect.hpp>
+#include "Contact.h"
+#include "Collider.h"
+#include "BoundingSphere.h"
+#include "ConvexPolyhedron.h"
 
 namespace physics {
 
 // Nested types definition
-	struct CollisionDetector::SupportPoint
+	struct FineCollisionDetector::SupportPoint
 	{
 		glm::vec3 mV;
 		glm::vec3 mP1;
@@ -33,7 +34,7 @@ namespace physics {
 		};
 	};
 
-	struct CollisionDetector::Triangle
+	struct FineCollisionDetector::Triangle
 	{
 		SupportPoint mA;
 		SupportPoint mB;
@@ -54,7 +55,7 @@ namespace physics {
 		~Triangle() {};
 	};
 
-	struct CollisionDetector::Edge
+	struct FineCollisionDetector::Edge
 	{
 		SupportPoint mA;
 		SupportPoint mB;
@@ -70,130 +71,19 @@ namespace physics {
 	};
 
 // Static variables definition
-	const float CollisionDetector::TOLERANCE = 0.001f;
+	const float FineCollisionDetector::TOLERANCE = 0.001f;
 
 // Public functions
-	std::vector<Contact> CollisionDetector::collide(
+	std::vector<Contact> FineCollisionDetector::collide(
 		const Collider& collider1,
 		const Collider& collider2
 	) const
 	{
 		std::vector<Contact> ret;
-
-		if ( coarseCollisionDetection(collider1, collider2) ) {
-			ret = fineCollisionDetection(collider1, collider2);
-		}
-
-		return ret;
-	}
-
-// Private functions
-	bool CollisionDetector::coarseCollisionDetection(
-		const Collider& collider1,
-		const Collider& collider2
-	) const
-	{
-		// Dynamic AABB tree
-		return true;
-	}
-
-
-	std::vector<Contact> CollisionDetector::fineCollisionDetection(
-		const Collider& collider1,
-		const Collider& collider2
-	) const
-	{
-		std::vector<Contact> ret;
-
-		if (auto bs1 = dynamic_cast<const BoundingSphere*>(&collider1)) {
-			if (const BoundingSphere* bs2 = dynamic_cast<const BoundingSphere*>(&collider2)) {
-				ret = collideSpheres(*bs1, *bs2);
-			}
-			else if (const ConvexPolyhedron* cp1 = dynamic_cast<const ConvexPolyhedron*>(&collider2)) {
-				ret = collideConvexPolyAndSphere(*cp1, *bs1);
-			}
-			else if (const Plane* p2 = dynamic_cast<const Plane*>(&collider2)) {
-				ret = collideSphereAndPlane(*bs1, *p2);
-			}
-		}
-		else if (const ConvexPolyhedron* cp1 = dynamic_cast<const ConvexPolyhedron*>(&collider1)) {
-			if (const BoundingSphere* bs1 = dynamic_cast<const BoundingSphere*>(&collider2)) {
-				ret = collideConvexPolyAndSphere(*cp1, *bs1);
-			}
-			else if (const ConvexPolyhedron* cp2 = dynamic_cast<const ConvexPolyhedron*>(&collider2)) {
-				ret = collideConvexPolys(*cp1, *cp2);
-			}
-			else if (const Plane* p1 = dynamic_cast<const Plane*>(&collider2)) {
-				ret = collideConvexPolyAndPlane(*cp1, *p1);
-			}
-		}
-		else if (const Plane* p1 = dynamic_cast<const Plane*>(&collider1)) {
-			if (const BoundingSphere* bs1 = dynamic_cast<const BoundingSphere*>(&collider2)) {
-				ret = collideSphereAndPlane(*bs1, *p1);
-			}
-			else if (const ConvexPolyhedron* cp1 = dynamic_cast<const ConvexPolyhedron*>(&collider2)) {
-				ret = collideConvexPolyAndPlane(*cp1, *p1);
-			}
-		}
-
-		return ret;
-	}
-
-
-	std::vector<Contact> CollisionDetector::collideSpheres(
-		const BoundingSphere& sphere1,
-		const BoundingSphere& sphere2
-	) const
-	{
-		std::vector<Contact> ret;
-
-		glm::vec3 centersLine = sphere1.getCenter() - sphere2.getCenter();
-		float distance = glm::length(centersLine);
-
-		if (distance >= sphere1.getRadius() + sphere2.getRadius()) { return ret; }
-
-		glm::vec3 position		= sphere1.getCenter() + 0.5f * centersLine;
-		glm::vec3 normal		= centersLine / distance;
-		float penetration		= sphere1.getRadius() + sphere2.getRadius() - distance;
-		ret.emplace_back(penetration, position, normal);
-
-		return ret;
-	}
-
-
-	std::vector<Contact> CollisionDetector::collideSphereAndPlane(
-		const BoundingSphere& sphere,
-		const Plane& plane
-	) const
-	{
-		std::vector<Contact> ret;
-		
-		float centerDistance = glm::dot(plane.getNormal(), sphere.getCenter()) + plane.getDistance();
-
-		if (centerDistance >= sphere.getRadius()) { return ret; }
-
-		glm::vec3 position = sphere.getCenter() - plane.getNormal() * (centerDistance + sphere.getRadius());
-		glm::vec3 normal = plane.getNormal();
-		float penetration = sphere.getRadius() - centerDistance;
-		ret.emplace_back(penetration, position, normal);
-
-		return ret;
-	}
-
-
-	std::vector<Contact> CollisionDetector::collideConvexPolys(
-		const ConvexPolyhedron& cp1,
-		const ConvexPolyhedron& cp2
-	) const
-	{
-		std::vector<Contact> ret;
-
-		const std::vector<glm::vec3>& vertices1 = cp1.getVertices();
-		const std::vector<glm::vec3>& vertices2 = cp2.getVertices();
 
 		// GJK algorithm
 		std::vector<SupportPoint> simplex;
-		if (!calculateGJK(vertices1, vertices2, simplex)) { return ret; }
+		if (!calculateGJK(collider1, collider2, simplex)) { return ret; }
 
 		// EPA Algorithm
 		// Initialize the polytope with the simplex points
@@ -202,11 +92,11 @@ namespace physics {
 
 		Triangle closestFace;
 		float closestFaceDist;
-		calculateEPA(vertices1, vertices2, polytope, closestFace, closestFaceDist);
+		calculateEPA(collider1, collider2, polytope, closestFace, closestFaceDist);
 
 		// Create the contact
 		glm::vec3 position;
-		glm::intersectRayTriangle(
+		glm::intersectLineTriangle(
 			glm::vec3(), closestFace.mNormal * closestFaceDist,
 			closestFace.mA.mV, closestFace.mB.mV, closestFace.mC.mV, position
 		);
@@ -219,62 +109,28 @@ namespace physics {
 		return ret;
 	}
 
-
-	std::vector<Contact> CollisionDetector::collideConvexPolyAndPlane(
-		const ConvexPolyhedron& cp,
-		const Plane& plane
-	) const
-	{
-		std::vector<Contact> ret;
-		glm::vec3 planeNormal = plane.getNormal();
-		float planeDistance = plane.getDistance();
-
-		for (const glm::vec3& vertex : cp.getVertices()) {
-			float distance = glm::dot(vertex, planeNormal);
-
-			if (distance < planeDistance) {
-				float penetration = planeDistance - distance;
-
-				// The contact is located at the vertex minus the
-				// penetration in the direction of the Plane's normal
-				glm::vec3 position = vertex - penetration * planeNormal;
-				ret.emplace_back(penetration, position, planeNormal);
-			}
-		}
-
-		return ret;
-	}
-
-
-	std::vector<Contact> CollisionDetector::collideConvexPolyAndSphere(
-		const ConvexPolyhedron& cp,
-		const BoundingSphere& sphere
-	) const
-	{
-		return std::vector<Contact>();
-	}
-
-
-	bool CollisionDetector::calculateGJK(
-		const std::vector<glm::vec3>& mesh1, const std::vector<glm::vec3>& mesh2,
+// Private functions
+	bool FineCollisionDetector::calculateGJK(
+		const Collider& collider1, const Collider& collider2,
 		std::vector<SupportPoint>& simplex
 	) const
 	{
-		glm::vec3 direction = glm::vec3(rand(), rand(), rand());
-		simplex = { getSupportPoint(mesh1, mesh2, direction) };
+		// 1. Get an arbitrary point
+		glm::vec3 direction = glm::sphericalRand(1.0f);
+		simplex = { getSupportPoint(collider1, collider2, direction) };
 
 		bool flag = !doSimplex(simplex, direction);
 		while (flag) {
-			// Get a support point along the current direction
-			SupportPoint supportPoint = getSupportPoint(mesh1, mesh2, direction);
-			if (glm::dot(supportPoint.mV, direction) <= 0) {
-				// There is no collision, exit without finishing the simplex
-				return false;
-			}
-			else {
-				// Add the point and update the simplex
+			// 2. Get a support point along the current direction
+			SupportPoint supportPoint = getSupportPoint(collider1, collider2, direction);
+			if (glm::dot(supportPoint.mV, direction) > 0) {
+				// 3.1 Add the point and update the simplex
 				simplex.push_back(supportPoint);
 				flag = !doSimplex(simplex, direction);
+			}
+			else {
+				// 3.2 There is no collision, exit without finishing the simplex
+				return false;
 			}
 		}
 
@@ -282,8 +138,8 @@ namespace physics {
 	}
 
 
-	void CollisionDetector::calculateEPA(
-		const std::vector<glm::vec3>& mesh1, const std::vector<glm::vec3>& mesh2,
+	void FineCollisionDetector::calculateEPA(
+		const Collider& collider1, const Collider& collider2,
 		std::vector<Triangle>& polytope, Triangle& closestFace, float& closestFaceDist
 	) const
 	{
@@ -300,7 +156,7 @@ namespace physics {
 			}
 
 			// 2. Get the support point along the face normal
-			SupportPoint supportPoint = getSupportPoint(mesh1, mesh2, closestF->mNormal);
+			SupportPoint supportPoint = getSupportPoint(collider1, collider2, closestF->mNormal);
 
 			// 3. If we already evaluated this triangle or the change is
 			// smaller than TOLERANCE we found the closest triangle
@@ -343,50 +199,19 @@ namespace physics {
 	}
 
 
-	CollisionDetector::SupportPoint CollisionDetector::getSupportPoint(
-		const std::vector<glm::vec3>& mesh1, const std::vector<glm::vec3>& mesh2,
+	FineCollisionDetector::SupportPoint FineCollisionDetector::getSupportPoint(
+		const Collider& collider1, const Collider& collider2,
 		const glm::vec3& direction
 	) const
 	{
-		glm::vec3 p1 = getFurthestPointInDirection(mesh1, direction);
-		glm::vec3 p2 = getFurthestPointInDirection(mesh2, -direction);
+		glm::vec3 p1 = collider1.getFurthestPointInDirection(direction);
+		glm::vec3 p2 = collider2.getFurthestPointInDirection(-direction);
 
 		return SupportPoint(p1 - p2, p1, p2);
 	}
 
 
-	glm::vec3 CollisionDetector::getFurthestPointInDirection(
-		const std::vector<glm::vec3>& mesh,
-		const glm::vec3& direction
-	) const
-	{
-		assert(!mesh.empty() && "The Mesh has to have at least one vertex");
-
-		glm::vec3 ret;
-
-		float lastDot = -std::numeric_limits<float>::max();
-		for (const glm::vec3& point : mesh) {
-			float curDot = glm::dot(point, direction);
-			if (curDot > lastDot) {
-				lastDot = curDot;
-				ret = point;
-			}
-		}
-
-		return ret;
-	}
-
-
-	glm::vec3 getFurthestPointInDirection(
-		const BoundingSphere* bs,
-		const glm::vec3& direction
-	) //const
-	{
-		return bs->getCenter() + direction * bs->getRadius();
-	}
-
-
-	bool CollisionDetector::doSimplex(
+	bool FineCollisionDetector::doSimplex(
 		std::vector<SupportPoint>& simplex,
 		glm::vec3& direction
 	) const
@@ -415,7 +240,7 @@ namespace physics {
 	}
 
 
-	bool CollisionDetector::doSimplex0D(
+	bool FineCollisionDetector::doSimplex0D(
 		std::vector<SupportPoint>& simplex,
 		glm::vec3& direction
 	) const
@@ -428,7 +253,7 @@ namespace physics {
 	}
 
 
-	bool CollisionDetector::doSimplex1D(
+	bool FineCollisionDetector::doSimplex1D(
 		std::vector<SupportPoint>& simplex,
 		glm::vec3& direction
 	) const
@@ -451,7 +276,7 @@ namespace physics {
 	}
 
 
-	bool CollisionDetector::doSimplex2D(
+	bool FineCollisionDetector::doSimplex2D(
 		std::vector<SupportPoint>& simplex,
 		glm::vec3& direction
 	) const
@@ -495,7 +320,7 @@ namespace physics {
 	}
 
 
-	bool CollisionDetector::doSimplex3D(
+	bool FineCollisionDetector::doSimplex3D(
 		std::vector<SupportPoint>& simplex,
 		glm::vec3& direction
 	) const

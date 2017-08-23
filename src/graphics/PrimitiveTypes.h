@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include <GL/glew.h>
 
 namespace graphics {
 
@@ -11,13 +12,13 @@ namespace graphics {
 	struct RGBColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		float		mR;
+		GLfloat		mR;
 
 		/** The green value of the color in the range [0, 1] */
-		float		mG;
+		GLfloat		mG;
 
 		/** The blue value of the color in the range [0, 1] */
-		float		mB;
+		GLfloat		mB;
 
 		/** Creates a new RGBColor */
 		RGBColor() {};
@@ -27,7 +28,7 @@ namespace graphics {
 		 * @param	r the red value of the color in the range [0, 1]
 		 * @param	g the green value of the color in the range [0, 1]
 		 * @param	b the blue value of the color in the range [0, 1] */
-		RGBColor(float r, float g, float b) : mR(r), mG(g), mB(b) {};
+		RGBColor(GLfloat r, GLfloat g, GLfloat b) : mR(r), mG(g), mB(b) {};
 
 		/** Destructor */
 		~RGBColor() {};
@@ -38,16 +39,16 @@ namespace graphics {
 	struct RGBAColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		float		mR;
+		GLfloat		mR;
 
 		/** The green value of the color in the range [0, 1] */
-		float		mG;
+		GLfloat		mG;
 		
 		/** The blue value of the color in the range [0, 1] */
-		float		mB;
+		GLfloat		mB;
 
 		/** The alpha value of the color in the range [0, 1] */
-		float		mA;
+		GLfloat		mA;
 
 		/** Creates a new RGBAColor */
 		RGBAColor() {};
@@ -58,7 +59,7 @@ namespace graphics {
 		 * @param	g the green value of the color in the range [0, 1]
 		 * @param	b the blue value of the color in the range [0, 1]
 		 * @param	a the alpha value of the color in the range [0, 1] */
-		RGBAColor(float r, float g, float b, float a) :
+		RGBAColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a) :
 			mR(r), mG(g), mB(b), mA(a) {};
 
 		/** Destructor */
@@ -75,7 +76,7 @@ namespace graphics {
 
 		/** The Weight of a Bone on the current vertex in the range [0,1].
 		 * It measures the influence of a Bone on the current vertex */
-		float mWeight;
+		GLfloat mWeight;
 	};
 
 }

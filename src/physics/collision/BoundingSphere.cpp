@@ -11,7 +11,15 @@ namespace physics {
 
 	AABB BoundingSphere::getAABB() const
 	{
-		return AABB(mCenter + glm::vec3(-mRadius), mCenter + glm::vec3(-mRadius));
+		return AABB(mCenter - glm::vec3(mRadius), mCenter + glm::vec3(mRadius));
+	}
+
+
+	glm::vec3 BoundingSphere::getFurthestPointInDirection(
+		const glm::vec3& direction
+	) const
+	{
+		return (mCenter + mRadius * glm::normalize(direction));
 	}
 
 }

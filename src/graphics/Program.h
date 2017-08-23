@@ -24,7 +24,7 @@ namespace graphics {
 	public:		// Functions
 		/** Creates and compiles a OpenGL program from the specified shaders
 		 *
-		 * @param	shaders a list with the shaders that compose the GLSL
+		 * @param	shaders a vector with the shaders that compose the GLSL
 		 *			Program */
 		Program(const std::vector<const Shader*>& shaders);
 

@@ -24,13 +24,6 @@ namespace physics {
 		 * @param	radius the Radius of the new BoundingSphere */
 		BoundingSphere(float radius) : mRadius(radius) {};
 
-		/** Creates a new BoundingSphere
-		 * 
-		 * @param	center the Center position of the new BoundingSphere
-		 * @param	radius the Radius of the new BoundingSphere */
-		BoundingSphere(const glm::vec3& center, float radius) :
-			mCenter(center), mRadius(radius) {};
-
 		/** Class destructor */
 		~BoundingSphere() {};
 
@@ -50,6 +43,14 @@ namespace physics {
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			BoundingBox */
 		virtual AABB getAABB() const;
+
+		/** @return	the coordinates in world space of BoundingSphere's
+		 *			furthest point in the given direction
+		 * @param	direction the direction towards we want to get the furthest
+		 *			point */
+		virtual glm::vec3 getFurthestPointInDirection(
+		   	const glm::vec3& direction
+		) const;
 	};
 
 }

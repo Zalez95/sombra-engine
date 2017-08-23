@@ -1,4 +1,4 @@
-#include "MaterialLoader.h"
+#include "MaterialReader.h"
 #include <string>
 #include <sstream>
 #include "../utils/FileReader.h"
@@ -7,11 +7,11 @@
 namespace loaders {
 
 // Static variables definition
-	const std::string MaterialLoader::FILE_FORMAT::FILE_NAME				= "FAZE_MAT_FILE";
-	const std::string MaterialLoader::FILE_FORMAT::MATERIAL_FILE_EXTENSION	= ".fzmat";
+	const std::string MaterialReader::FILE_FORMAT::FILE_NAME				= "FAZE_MAT_FILE";
+	const std::string MaterialReader::FILE_FORMAT::MATERIAL_FILE_EXTENSION	= ".fzmat";
 
 // Public functions
-	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::load(utils::FileReader& fileReader) const
+	std::vector<MaterialReader::MaterialUPtr> MaterialReader::load(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
@@ -33,7 +33,7 @@ namespace loaders {
 	}
 
 // Private functions
-	bool MaterialLoader::checkHeader(utils::FileReader& fileReader) const
+	bool MaterialReader::checkHeader(utils::FileReader& fileReader) const
 	{
 		const std::string FILE_VERSION = std::to_string(FILE_FORMAT::VERSION) + '.' + std::to_string(FILE_FORMAT::REVISION);
 		bool ret = false;
@@ -51,7 +51,7 @@ namespace loaders {
 	}
 
 	
-	std::vector<MaterialLoader::MaterialUPtr> MaterialLoader::parseMaterials(utils::FileReader& fileReader) const
+	std::vector<MaterialReader::MaterialUPtr> MaterialReader::parseMaterials(utils::FileReader& fileReader) const
 	{
 		std::vector<MaterialUPtr> materials;
 		unsigned int numMaterials = 0, materialIndex = 0;
@@ -85,7 +85,7 @@ namespace loaders {
 	}
 
 
-	MaterialLoader::MaterialUPtr MaterialLoader::parseMaterial(utils::FileReader& fileReader) const
+	MaterialReader::MaterialUPtr MaterialReader::parseMaterial(utils::FileReader& fileReader) const
 	{
 		std::string name;
 		graphics::RGBColor ambientColor, diffuseColor, specularColor;

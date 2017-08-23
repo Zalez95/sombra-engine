@@ -10,7 +10,7 @@ namespace window {
 	}
 
 
-	void key_callback(GLFWwindow* window, int button, int scancode, int action, int mods)
+	void key_callback(GLFWwindow* window, int button, int /*scancode*/, int action, int /*mods*/)
 	{
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
@@ -23,7 +23,7 @@ namespace window {
 	}
 
 
-	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+	void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
 	{
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
@@ -94,13 +94,13 @@ namespace window {
 
 	void WindowSystem::update()
 	{
-		for (unsigned int i = 0; i < MAX_KEYS; ++i) {
+		for (size_t i = 0; i < MAX_KEYS; ++i) {
 			if (mInputData.mKeys[i] == true) {
 				mInputData.mKeys[i] = false;
 			}
 		}
 
-		for (unsigned int i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
+		for (size_t i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
 			if (mInputData.mMouseButtons[i] == true) { mInputData.mMouseButtons[i] = false; }
 		}
 
