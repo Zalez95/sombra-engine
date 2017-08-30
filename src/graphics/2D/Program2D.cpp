@@ -28,7 +28,7 @@ namespace graphics {
 
 	void Program2D::disable() const
 	{
-		Program::disable();
+		mProgram->disable();
 	}
 
 

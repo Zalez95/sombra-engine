@@ -1,7 +1,6 @@
 #include "PhysicsEngine.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../utils/Logger.h"
 #include "PhysicsEntity.h"
 
 namespace physics {

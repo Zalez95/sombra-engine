@@ -2,6 +2,7 @@
 #define LAYER_2D_H
 
 #include <vector>
+#include "../ILayer.h"
 #include "Renderer2D.h"
 
 namespace graphics {
@@ -10,10 +11,10 @@ namespace graphics {
 
 
 	/**
-	 * Class Layer2D, it's a class that holds all the 3D elements that the
+	 * Class Layer2D, it's a class that holds all the 2D elements that the
 	 * Renderer2D must render
 	 */
-	class Layer2D
+	class Layer2D : public ILayer
 	{
 	private:	// Attributes
 		/** The Renderer used by the layer to render the Scene */
@@ -43,7 +44,7 @@ namespace graphics {
 		void removeRenderable2D(const Renderable2D* renderable2D);
 
 		/** Draws the scene */
-		void render();
+		virtual void render();
 	};
 
 }

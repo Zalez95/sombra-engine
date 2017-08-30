@@ -3,6 +3,7 @@
 
 #include <map>
 #include "../graphics/GraphicsSystem.h"
+#include "../graphics/3D/Layer3D.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Lights.h"
 #include "../graphics/3D/Renderable3D.h"
@@ -27,13 +28,16 @@ namespace game {
 		/** The System used for rendering the data of the Entities */
 		graphics::GraphicsSystem mGraphicsSystem;
 
+		/** The 3DLayer used by the GraphicsSystem */
+		graphics::Layer3D mLayer3D;
+
 		std::map<Entity*, CameraUPtr> mCameraEntities;
 		std::map<Entity*, Renderable3DUPtr> mRenderable3DEntities;
 		std::map<Entity*, PointLightUPtr> mPointLightEntities;
 
 	public:		// Functions
 		/** Creates a new GraphicsManager */
-		GraphicsManager() {};
+		GraphicsManager() { mGraphicsSystem.addLayer(&mLayer3D); };
 
 		/** Class destructor */
 		~GraphicsManager() {};

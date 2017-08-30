@@ -47,7 +47,7 @@ namespace game {
 	const unsigned int Game::NUM_CUBES	= 50;
 
 // Public functions
-	Game::Game() : mEnd(false)
+	Game::Game() : mState(GameState::STOPPED)
 	{
 		using namespace utils;
 
@@ -57,29 +57,29 @@ namespace game {
 			std::cout << mWindowSystem->getGLInfo() << std::endl;
 		}
 		catch(std::exception& e) {
+			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the window system: " + std::string(e.what()));
-			return;
 		}
 
 		// Input
 		try { mInputManager = new InputManager(*mWindowSystem); }
 		catch (std::exception& e) {
+			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the input manager: " + std::string(e.what()));
-			return;
 		}
 
 		// Physics
 		try { mPhysicsManager = new PhysicsManager(); }
 		catch (std::exception& e) {
+			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the physics manager: " + std::string(e.what()));
-			return;
 		}
 
 		// Graphics
 		try { mGraphicsManager = new GraphicsManager(); }
 		catch (std::exception& e) {
+			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the graphics manager: " + std::string(e.what()));
-			return;
 		}
 	}
 
@@ -96,6 +96,11 @@ namespace game {
 	bool Game::run()
 	{
 		using namespace utils;
+
+		if (mState != GameState::STOPPED) {
+			Logger::writeLog(LogType::ERROR, "Bad game state");
+			return false;
+		}
 
 #ifdef GAME
 #ifdef GRAPHICS
@@ -293,8 +298,9 @@ namespace game {
 		/*********************************************************************
 		 * MAIN LOOP
 		 *********************************************************************/
+		mState = GameState::RUNNING;
 		float lastTime = mWindowSystem->getTime();
-		while ( !mEnd ) {
+		while (mState == GameState::RUNNING) {
 			// Calculate the elapsed time since the last update
 			float curTime	= mWindowSystem->getTime();
 			float deltaTime	= curTime - lastTime;
@@ -305,7 +311,9 @@ namespace game {
 
 				// Update the Systems
 				mWindowSystem->update();
-				mEnd = mWindowSystem->getInputData()->mKeys[GLFW_KEY_ESCAPE];
+				if (mWindowSystem->getInputData()->mKeys[GLFW_KEY_ESCAPE]) {
+					mState = GameState::STOPPED;
+				}
 				mInputManager->update(deltaTime);
 				mPhysicsManager->update(deltaTime);
 				mGraphicsManager->update();

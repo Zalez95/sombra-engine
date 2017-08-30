@@ -24,7 +24,7 @@ namespace physics {
 		/** All the PhysicsEntities that must be updated */
 		std::vector<PhysicsEntity*> mPhysicsEntities;
 
-		/**  */
+		/** Maps each Collider with the Entity that holds it */
 		std::unordered_map<const Collider*, PhysicsEntity*> mColliderEntityMap;
 
 		/** The ForceManager of the PhysicsEngine. It's used to store the
@@ -61,14 +61,14 @@ namespace physics {
 		/** Adds the given PhysicsEntity to the PhysicsEngine so it will
 		 * be updated in each Update call
 		 * 
-		 * @param	component a pointer to the PhysicsEntity that we want
+		 * @param	entity a pointer to the PhysicsEntity that we want
 		 *			to update */
-		void addPhysicsEntity(PhysicsEntity* component);
+		void addPhysicsEntity(PhysicsEntity* entity);
 
 		/** Removes the given PhysicsEntity from the PhysicsEngine so it
 		 * won't longer be updated
 		 * 
-		 * @param	component a pointer to the PhysicsEntity that we want
+		 * @param	entity a pointer to the PhysicsEntity that we want
 		 *			to update
 		 * @note	you must call this function before deleting the
 		 *			PhysicsEntity */

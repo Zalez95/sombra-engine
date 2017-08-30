@@ -1,4 +1,5 @@
 #include "GraphicsSystem.h"
+#include <algorithm>
 #include <GL/glew.h>
 
 namespace graphics {
@@ -22,10 +23,28 @@ namespace graphics {
 	}
 
 
+	void GraphicsSystem::addLayer(ILayer* layer)
+	{
+		if (layer) {
+			mLayers.push_back(layer);
+		}
+	}
+
+
+	void GraphicsSystem::removeLayer(ILayer* layer)
+	{
+		mLayers.erase(
+			std::remove(mLayers.begin(), mLayers.end(), layer),
+			mLayers.end()
+		);
+	}
+
+
 	void GraphicsSystem::render() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		mLayer3D.render();
-		mLayer2D.render();
+		for (ILayer* layer : mLayers) {
+			layer->render();
+		}
 	}
 
 }

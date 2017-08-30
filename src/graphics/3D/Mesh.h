@@ -13,8 +13,8 @@ namespace graphics {
 
 
 	/**
-	 * Class Mesh, it holds the vertex, indices and the weights of its
-	 * bones. Also it holds the indices to its buffers
+	 * Class Mesh, it holds the buffers that creates a 3D mesh
+	 * TODO
 	 */
 	class Mesh
 	{

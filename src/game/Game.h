@@ -27,16 +27,24 @@ namespace game {
 	private:	// Nested Types
 		typedef std::unique_ptr<Entity> EntityUPtr;
 
+		/** The different states in which the game could be */
+		enum GameState {
+			ERROR,
+			RUNNING,
+			STOPPED
+		};
+
 	private:	// Attributes
-		bool mEnd;
-		
+		/** The state of the game */
+		GameState mState;
+
+		/** The Entities that currently are in the game */
+		std::vector<EntityUPtr> mEntities;
+
 		window::WindowSystem* mWindowSystem;
 		InputManager* mInputManager;
 		PhysicsManager* mPhysicsManager;
 		GraphicsManager* mGraphicsManager;
-
-		/** The Entities that currently are in the game */
-		std::vector<EntityUPtr> mEntities;
 
 	public:		// Functions
 		/** Creates a new Game */

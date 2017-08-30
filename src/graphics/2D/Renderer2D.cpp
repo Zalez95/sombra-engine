@@ -3,7 +3,6 @@
 #include <sstream>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../Shader.h"
 #include "../Texture.h"
 #include "Renderable2D.h"
 

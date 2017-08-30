@@ -8,7 +8,7 @@ namespace game {
 	{
 		if (!entity || !camera) return;
 
-		mGraphicsSystem.getLayer3D()->setCamera(camera.get());
+		mLayer3D.setCamera(camera.get());
 		mCameraEntities.emplace(entity, std::move(camera));
 	}
 
@@ -17,7 +17,7 @@ namespace game {
 	{
 		if (!entity || !renderable3D) return;
 
-		mGraphicsSystem.getLayer3D()->addRenderable3D(renderable3D.get());
+		mLayer3D.addRenderable3D(renderable3D.get());
 		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
 	}
 
@@ -26,7 +26,7 @@ namespace game {
 	{
 		if (!entity || !pointLight) return;
 
-		mGraphicsSystem.getLayer3D()->addPointLight(pointLight.get());
+		mLayer3D.addPointLight(pointLight.get());
 		mPointLightEntities.emplace(entity, std::move(pointLight));
 	}
 
@@ -35,19 +35,19 @@ namespace game {
 	{
 		auto itCamera = mCameraEntities.find(entity);
 		if (itCamera != mCameraEntities.end()) {
-			mGraphicsSystem.getLayer3D()->setCamera(nullptr);
+			mLayer3D.setCamera(nullptr);
 			mCameraEntities.erase(itCamera);
 		}
 
 		auto itRenderable3D = mRenderable3DEntities.find(entity);
 		if (itRenderable3D != mRenderable3DEntities.end()) {
-			mGraphicsSystem.getLayer3D()->removeRenderable3D(itRenderable3D->second.get());
+			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
 			mRenderable3DEntities.erase(itRenderable3D);
 		}
 
 		auto itPointLight = mPointLightEntities.find(entity);
 		if (itPointLight != mPointLightEntities.end()) {
-			mGraphicsSystem.getLayer3D()->removePointLight(itPointLight->second.get());
+			mLayer3D.removePointLight(itPointLight->second.get());
 			mPointLightEntities.erase(itPointLight);
 		}
 	}

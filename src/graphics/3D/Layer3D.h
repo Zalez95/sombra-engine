@@ -2,6 +2,7 @@
 #define LAYER_3D_H
 
 #include <vector>
+#include "../ILayer.h"
 #include "Renderer3D.h"
 
 namespace graphics {
@@ -15,7 +16,7 @@ namespace graphics {
 	 * Class Layer3D, it's a class that holds all the 3D elements that the
 	 * Renderer3D must render
 	 */
-	class Layer3D
+	class Layer3D : public ILayer
 	{
 	private:	// Attributes
 		static const unsigned int WIDTH = 640;
@@ -73,7 +74,7 @@ namespace graphics {
 		void setCamera(Camera* camera) { mCamera = camera; };
 
 		/** Draws the scene */
-		void render();
+		virtual void render();
 	};
 
 }

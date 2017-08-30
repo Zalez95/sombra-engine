@@ -3,7 +3,6 @@
 
 #include <queue>
 #include <GL/glew.h>
-#include <glm/glm.hpp>
 #include "Program2D.h"
 #include "../buffers/VertexArray.h"
 #include "../buffers/VertexBuffer.h"

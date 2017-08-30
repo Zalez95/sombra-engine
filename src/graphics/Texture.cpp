@@ -1,6 +1,6 @@
 #include "Texture.h"
+#include <stdexcept>
 #include <SOIL.h>
-#include "../utils/Logger.h"
 
 namespace graphics {
 
@@ -17,10 +17,7 @@ namespace graphics {
 
 		// Error checking
 		if (mTextureID == 0) {
-			utils::Logger::writeLog(
-				utils::LogType::ERROR,
-				"Error loading the texture \"" + mTexturePath + "\"."
-			);
+			throw std::runtime_error("Error loading the texture \"" + mTexturePath + "\".");
 		}
 
 		// Get the width and height of the texture

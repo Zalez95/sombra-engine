@@ -1,12 +1,12 @@
 #include "WindowSystem.h"
-#include "../utils/Logger.h"
+#include <stdexcept>
 
 namespace window {
 	
 // Callback functions
 	void error_callback(int error, const char* description)
 	{
-		utils::Logger::writeLog(utils::LogType::ERROR, "Window System: Error " + std::to_string(error) + ": " + description);
+		throw std::runtime_error("Window System: Error " + std::to_string(error) + ": " + description);
 	}
 
 
@@ -50,16 +50,14 @@ namespace window {
 	{
 		// 1. Init GLFW
 		if (!glfwInit()) {
-			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to initialize GLFW");
-			return;
+			throw std::runtime_error("Failed to initialize GLFW");
 		}
 
 		// 2. Create the window
 		mWindow = glfwCreateWindow( mWidth, mHeight, mTitle.c_str(), nullptr, nullptr );
 		if (!mWindow) {
-			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to create the Window");
 			glfwTerminate();
-			return;
+			throw std::runtime_error("Failed to create the Window");
 		}
 
 		glfwMakeContextCurrent(mWindow);
@@ -74,10 +72,9 @@ namespace window {
 
 		// 4. Init GLEW
 		if (glewInit() != GLEW_OK) {
-			utils::Logger::writeLog(utils::LogType::ERROR, "Failed to initialize GLEW");
 			glfwDestroyWindow(mWindow);
 			glfwTerminate();
-			return;
+			throw std::runtime_error("Failed to initialize GLEW");
 		}
 
 		// 5. Set the viewport

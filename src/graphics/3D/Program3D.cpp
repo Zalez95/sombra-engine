@@ -30,7 +30,7 @@ namespace graphics {
 
 	void Program3D::disable() const
 	{
-		Program::disable();
+		mProgram->disable();
 	}
 
 
@@ -63,8 +63,8 @@ namespace graphics {
 
 	void Program3D::setLights(const std::vector<const PointLight*>& pointLights)
 	{
-		int numPointLights = (pointLights.size() > MAX_POINT_LIGHTS) ? MAX_POINT_LIGHTS : pointLights.size();
-		glUniform1i(mUniformLocations.mNumPointLights, numPointLights);
+		int numPointLights = (pointLights.size() > MAX_POINT_LIGHTS) ? static_cast<int>(MAX_POINT_LIGHTS) : static_cast<int>(pointLights.size());
+		mProgram->setUniform(mUniformLocations.mNumPointLights, numPointLights);
 
 		for (int i = 0; i < numPointLights; ++i) {
 			BaseLight base		= pointLights[i]->getBaseLight();

@@ -70,7 +70,7 @@ namespace graphics {
 		void enable() const;
 		
 		/** Resets the current shader object */
-		static void disable();
+		void disable();
 	};
 
 }

@@ -2,24 +2,19 @@
 #define GRAPHICS_SYSTEM_H
 
 #include <vector>
-#include "2D/Layer2D.h"
-#include "3D/Layer3D.h"
+#include "ILayer.h"
 
 namespace graphics {
 
 	/**
-	 * Class GraphicsSystem
+	 * Class GraphicsSystem. It prepares all the OpenGL data and holds all the
+	 * Layers to render
 	 */
 	class GraphicsSystem
 	{
 	private:	// Attributes
-		/** The Layer used by the Graphics System to render all the 2D
-		 * elements */
-		Layer2D mLayer2D;
-
-		/** The Layer used by the Graphics System to render all the 3D
-		 * elements */
-		Layer3D mLayer3D;
+		/** The Layers that the GraphicsSystem will render */
+		std::vector<ILayer*> mLayers;
 
 	public:		// Functions
 		/** Creates a new Graphics System */
@@ -28,11 +23,20 @@ namespace graphics {
 		/** Class destructor */
 		~GraphicsSystem() {};
 
-		/** @return a pointer to the Graphics System's 2D layer */
-		Layer2D* getLayer2D() { return &mLayer2D; };
+		/** Adds the given ILayer to the GraphicsSystem so it will
+		 * be rendered in each render call
+		 * 
+		 * @param	layer a pointer to the ILayer that we want
+		 *			to add to the GraphicsSystem */
+		void addLayer(ILayer* layer);
 
-		/** @return a pointer to the Graphics System's 3D layer */
-		Layer3D* getLayer3D() { return &mLayer3D; };
+		/** Removes the given ILayer from the GraphicsSystem
+		 * 
+		 * @param	layer a pointer to the ILayer that we want to remove from
+		 *			the GraphicsSystem
+		 * @note	you must call this function before deleting the
+		 *			Layer */
+		void removeLayer(ILayer* layer);
 
 		/** Draws the scene */
 		void render();

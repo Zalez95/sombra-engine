@@ -2,14 +2,10 @@
 #define RENDERER_TEXT_H
 
 #include <queue>
-#include <GL/glew.h>
-#include <glm/glm.hpp>
-#include "../Program.h"
-#include "../buffers/VertexArray.h"
-#include "../buffers/VertexBuffer.h"
 
 namespace graphics {
 
+	class Program;
 	class RenderableText;
 
 
@@ -45,7 +41,7 @@ namespace graphics {
 		/** Class destructor */
 		~RendererText();
 
-		/** Submits the given Renderable 2D to the queue of RenderableTexts to
+		/** Submits the given RenderableTexts to the queue of RenderableTexts to
 		 * render
 		 *
 		 * @param	renderable a pointer to the RenderableText that we want to

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../Shader.h"
+#include "../Program.h"
 #include "../Texture.h"
 #include "RenderableText.h"
 
