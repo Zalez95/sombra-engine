@@ -4,7 +4,7 @@
 #include <vector>
 #include "Collider.h"
 
-namespace physics {
+namespace collision {
 
 	/**
 	 * Class ConvexPolyhedron, it's a Collider whose vertices form a convex

@@ -16,7 +16,7 @@ namespace physics {
 	void PhysicsEngine::addPhysicsEntity(PhysicsEntity* entity)
 	{
 		if (entity) {
-			Collider* collider = entity->getCollider();
+			collision::Collider* collider = entity->getCollider();
 
 			mPhysicsEntities.push_back(entity);
 			mColliderEntityMap.emplace(collider, entity);
@@ -51,7 +51,7 @@ namespace physics {
 			rigidBody->integrate(delta);
 
 			// Update the Collider data
-			Collider* collider = physicsEntity->getCollider();
+			collision::Collider* collider = physicsEntity->getCollider();
 			glm::mat4 colliderOffset = physicsEntity->getColliderOffset();
 			collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
 		}
@@ -65,15 +65,15 @@ namespace physics {
 		}
 		auto intersectingColliders = mCoarseCollisionDetector.getIntersectingColliders();
 
-		for (std::pair<const Collider*, const Collider*> pair : intersectingColliders) {
-			const Collider* collider1 = pair.first;
+		for (std::pair<const collision::Collider*, const collision::Collider*> pair : intersectingColliders) {
+			const collision::Collider* collider1 = pair.first;
 			RigidBody* rb1 = mColliderEntityMap[collider1]->getRigidBody();
 
-			const Collider* collider2 = pair.second;
+			const collision::Collider* collider2 = pair.second;
 			RigidBody* rb2 = mColliderEntityMap[collider2]->getRigidBody();
 
-			std::vector<Contact> contacts = mFineCollisionDetector.collide(*collider1, *collider2);
-			for (Contact& contact : contacts) {
+			std::vector<collision::Contact> contacts = mFineCollisionDetector.collide(*collider1, *collider2);
+			for (collision::Contact& contact : contacts) {
 				mCollisionResolver.addContact(contact, rb1, rb2);
 			}
 		}

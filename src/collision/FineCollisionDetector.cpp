@@ -10,7 +10,7 @@
 #include "BoundingSphere.h"
 #include "ConvexPolyhedron.h"
 
-namespace physics {
+namespace collision {
 
 // Nested types definition
 	struct FineCollisionDetector::SupportPoint

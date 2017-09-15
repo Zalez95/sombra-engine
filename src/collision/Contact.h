@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-namespace physics {
+namespace collision {
 	
 	/**
 	 * Struct Contact. It holds the data of a contact created as a result of

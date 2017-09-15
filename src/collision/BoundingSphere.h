@@ -3,7 +3,7 @@
 
 #include "Collider.h"
 
-namespace physics {
+namespace collision {
 
 	/**
 	 * Class BoundingSphere, a BoundingSphere is a Collider with the

@@ -3,9 +3,9 @@
 
 #include <glm/glm.hpp>
 
-namespace physics {
-	
-	/** 
+namespace collision {
+
+	/**
 	 * Struct AABB, it's an Axis Aligned Bounding Box that holds the maximum
 	 * and the minimum coordinates in each axis of a Box in World Space
 	 */
@@ -20,14 +20,14 @@ namespace physics {
 		glm::vec3 mMaximum;
 
 		/** Creates a new AABB
-		 * 
+		 *
 		 * @param	minimum the minimum coordinates in each axis of the
 		 *			AABB in World Space
 		 * @param	maximum the maximum coordinates in each axis of the
 		 *			AABB in World Space */
 		AABB(const glm::vec3& minimum, const glm::vec3& maximum)
 			: mMinimum(minimum), mMaximum(maximum) {};
-		
+
 		/** Destructor */
 		~AABB() {};
 	};

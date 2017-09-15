@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "RigidBody.h"
-#include "collision/Collider.h"
+#include "../collision/Collider.h"
 
 namespace physics {
 
@@ -30,7 +30,7 @@ namespace physics {
 		RigidBody mRigidBody;
 
 		/** The Collider of the PhysicsEntity */
-		std::unique_ptr<Collider> mCollider;
+		std::unique_ptr<collision::Collider> mCollider;
 
 		/** The matrix that holds the offset of the Collider from the
 		 * Particle / RigidBody of the PhysicsEntity */
@@ -49,11 +49,11 @@ namespace physics {
 
 		/** Creates a new PhysicsEntity of RigidBody type */
 		PhysicsEntity(
-            const RigidBody& rigidBody,
-			std::unique_ptr<Collider> collider,
+			const RigidBody& rigidBody,
+			std::unique_ptr<collision::Collider> collider,
 			const glm::mat4& colliderOffset
 		) : //mType(PhysicsEntityType::RIGID_BODY),
-            mRigidBody(rigidBody),
+			mRigidBody(rigidBody),
 			mCollider(std::move(collider)),
 			mColliderOffset(colliderOffset) {};
 
@@ -73,7 +73,7 @@ namespace physics {
 		{ return &mRigidBody; };
 
 		/** @return	a pointer to the Collider of the PhysicsEntity */
-		inline Collider* getCollider()
+		inline collision::Collider* getCollider()
 		{ return mCollider.get(); };
 
 		/** @return	the offset of the Collider from the Particle / RigidBody

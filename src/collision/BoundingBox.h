@@ -3,7 +3,7 @@
 
 #include "ConvexPolyhedron.h"
 
-namespace physics {
+namespace collision {
 
 	/**
 	 * Class BoundingBox, a Bounding Box is a convex bounding volume with the

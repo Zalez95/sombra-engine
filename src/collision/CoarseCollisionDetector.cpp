@@ -2,7 +2,7 @@
 #include <algorithm>
 #include "Collider.h"
 
-namespace physics {
+namespace collision {
 
 	void CoarseCollisionDetector::submit(const Collider* collider)
 	{

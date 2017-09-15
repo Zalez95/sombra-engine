@@ -2,7 +2,7 @@
 #include <cassert>
 #include "AABB.h"
 
-namespace physics {
+namespace collision {
 
 	ConvexPolyhedron::ConvexPolyhedron(const std::vector<glm::vec3>& vertices) :
 		mVertices(vertices), mVerticesWorld(vertices)

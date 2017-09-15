@@ -2,10 +2,10 @@
 #define PHYSICS_SYSTEM_H
 
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include "forces/ForceManager.h"
-#include "collision/CoarseCollisionDetector.h"
-#include "collision/FineCollisionDetector.h"
+#include "../collision/CoarseCollisionDetector.h"
+#include "../collision/FineCollisionDetector.h"
 #include "CollisionResolver.h"
 
 namespace physics {
@@ -25,7 +25,7 @@ namespace physics {
 		std::vector<PhysicsEntity*> mPhysicsEntities;
 
 		/** Maps each Collider with the Entity that holds it */
-		std::unordered_map<const Collider*, PhysicsEntity*> mColliderEntityMap;
+		std::map<const collision::Collider*, PhysicsEntity*> mColliderEntityMap;
 
 		/** The ForceManager of the PhysicsEngine. It's used to store the
 		 * relationships between the PhysicsEntities and the Forces and
@@ -35,11 +35,11 @@ namespace physics {
 		/** The CoarseCollisionDetector of the PhysicsEngine. We will use it
 		 * to filter some of the PhysiscsEntities' Colliders during the
 		 * collision detection step */
-		CoarseCollisionDetector mCoarseCollisionDetector;
+		collision::CoarseCollisionDetector mCoarseCollisionDetector;
 
 		/** The FineCollisionDetector of the PhysicsEngine. We will delegate
 		 * all the collision data calculation to it */
-		FineCollisionDetector mFineCollisionDetector;
+		collision::FineCollisionDetector mFineCollisionDetector;
 
 		/** The CollisionResolver of the PhysicsEngine. We will delegate all
 		 * the collision response calculation to it */
@@ -51,7 +51,7 @@ namespace physics {
 
 		/** Class destructor */
 		~PhysicsEngine() {};
-		
+
 		/** Updates the PhysicsEntities added to the System each time you
 		 * call this function
 		 *
@@ -60,14 +60,14 @@ namespace physics {
 
 		/** Adds the given PhysicsEntity to the PhysicsEngine so it will
 		 * be updated in each Update call
-		 * 
+		 *
 		 * @param	entity a pointer to the PhysicsEntity that we want
 		 *			to update */
 		void addPhysicsEntity(PhysicsEntity* entity);
 
 		/** Removes the given PhysicsEntity from the PhysicsEngine so it
 		 * won't longer be updated
-		 * 
+		 *
 		 * @param	entity a pointer to the PhysicsEntity that we want
 		 *			to update
 		 * @note	you must call this function before deleting the
@@ -75,7 +75,7 @@ namespace physics {
 		void removePhysicsEntity(PhysicsEntity* entity);
 	private:
 		/** Updates the positions of the PhysicsEntities added to the System
-		 * 
+		 *
 		 * @param	delta the elapsed time since the last Update of the
 		 *			PhysicsEngine */
 		void integrate(float delta);

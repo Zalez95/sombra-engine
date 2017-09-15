@@ -1,7 +1,7 @@
 #include "BoundingSphere.h"
 #include "AABB.h"
 
-namespace physics {
+namespace collision {
 
 	void BoundingSphere::setTransforms(const glm::mat4& transforms)
 	{

@@ -4,7 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-namespace physics {
+namespace collision {
 
 	struct Contact;
 	class Collider;

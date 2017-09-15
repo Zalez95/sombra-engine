@@ -5,7 +5,7 @@
 #include <vector>
 #include "AABB.h"
 
-namespace physics {
+namespace collision {
 
 	class Collider;
 
