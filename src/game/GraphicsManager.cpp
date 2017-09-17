@@ -4,6 +4,16 @@
 
 namespace game {
 
+	GraphicsManager::GraphicsManager(graphics::GraphicsSystem& graphicsSystem) :
+		mGraphicsSystem(graphicsSystem)
+	{
+		mGraphicsSystem.addLayer(&mLayer3D);
+	}
+
+
+	GraphicsManager::~GraphicsManager() {}
+
+
 	void GraphicsManager::addEntity(Entity* entity, CameraUPtr camera)
 	{
 		if (!entity || !camera) return;

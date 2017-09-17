@@ -1,20 +1,20 @@
-#version 130
+#version 330 core
 
 // Input data
-in vec2 a_VertexPosition;		// Position attribute
+layout (location = 0) in vec2 aVertexPosition;		// Position attribute
 
 // Output data
-out vec2		fin_UV;								// Vertex UV Coordinates for the Fragment Shader
+out vec2		vsUV;								// Vertex UV Coordinates for the Fragment Shader
 
 // Uniform variables
-uniform mat4	u_ModelMatrix;						// Model space to World space Matrix
+uniform mat4	uModelMatrix;						// Model space to World space Matrix
 
 // Functions
 void main()
 {
-	gl_Position = u_ModelMatrix * vec4(a_VertexPosition, 0.0f, 1.0f);
-	fin_UV = vec2(
-		(a_VertexPosition.x + 1.0) / 2.0,
-		(a_VertexPosition.y + 1.0) / 2.0
+	gl_Position = uModelMatrix * vec4(aVertexPosition, 0.0f, 1.0f);
+	vsUV = vec2(
+		(aVertexPosition.x + 1.0) / 2.0,
+		(aVertexPosition.y + 1.0) / 2.0
 	);
 }

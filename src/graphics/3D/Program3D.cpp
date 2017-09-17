@@ -52,6 +52,12 @@ namespace graphics {
 	}
 
 
+	void Program3D::setColorTexture(int unit)
+	{
+		mProgram->setUniform(mUniformLocations.mColorTexture, unit);
+	}
+
+
 	void Program3D::setMaterial(const Material* material)
 	{
 		mProgram->setUniform(mUniformLocations.mMaterial.mAmbientColor, material->getAmbientColor());
@@ -111,34 +117,36 @@ namespace graphics {
 
 	void Program3D::initUniformLocations()
 	{
-		mUniformLocations.mModelMatrix				= mProgram->getUniformLocation("u_ModelMatrix");
-		mUniformLocations.mViewMatrix				= mProgram->getUniformLocation("u_ViewMatrix");
-		mUniformLocations.mProjectionMatrix			= mProgram->getUniformLocation("u_ProjectionMatrix");
+		mUniformLocations.mModelMatrix				= mProgram->getUniformLocation("uModelMatrix");
+		mUniformLocations.mViewMatrix				= mProgram->getUniformLocation("uViewMatrix");
+		mUniformLocations.mProjectionMatrix			= mProgram->getUniformLocation("uProjectionMatrix");
 		
-		mUniformLocations.mMaterial.mAmbientColor	= mProgram->getUniformLocation("u_Material.mAmbientColor");
-		mUniformLocations.mMaterial.mDiffuseColor	= mProgram->getUniformLocation("u_Material.mDiffuseColor");
-		mUniformLocations.mMaterial.mSpecularColor	= mProgram->getUniformLocation("u_Material.mSpecularColor");
-		mUniformLocations.mMaterial.mShininess		= mProgram->getUniformLocation("u_Material.mShininess");
+		mUniformLocations.mColorTexture				= mProgram->getUniformLocation("uColorTexture");
+
+		mUniformLocations.mMaterial.mAmbientColor	= mProgram->getUniformLocation("uMaterial.mAmbientColor");
+		mUniformLocations.mMaterial.mDiffuseColor	= mProgram->getUniformLocation("uMaterial.mDiffuseColor");
+		mUniformLocations.mMaterial.mSpecularColor	= mProgram->getUniformLocation("uMaterial.mSpecularColor");
+		mUniformLocations.mMaterial.mShininess		= mProgram->getUniformLocation("uMaterial.mShininess");
 		
-		mUniformLocations.mNumPointLights			= mProgram->getUniformLocation("u_NumPointLights");
+		mUniformLocations.mNumPointLights			= mProgram->getUniformLocation("uNumPointLights");
 		for (std::size_t i = 0; i < MAX_POINT_LIGHTS; ++i) {
 			mUniformLocations.mPointLights[i].mBaseLight.mDiffuseColor = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mDiffuseColor").c_str()
+				("uPointLights[" + std::to_string(i) + "].mBaseLight.mDiffuseColor").c_str()
 			);
 			mUniformLocations.mPointLights[i].mBaseLight.mSpecularColor = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mBaseLight.mSpecularColor").c_str()
+				("uPointLights[" + std::to_string(i) + "].mBaseLight.mSpecularColor").c_str()
 			);
 			mUniformLocations.mPointLights[i].mAttenuation.mConstant = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mAttenuation.mConstant").c_str()
+				("uPointLights[" + std::to_string(i) + "].mAttenuation.mConstant").c_str()
 			);
 			mUniformLocations.mPointLights[i].mAttenuation.mLinear = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mAttenuation.mLinear").c_str()
+				("uPointLights[" + std::to_string(i) + "].mAttenuation.mLinear").c_str()
 			);
 			mUniformLocations.mPointLights[i].mAttenuation.mExponential = mProgram->getUniformLocation(
-				("u_PointLights[" + std::to_string(i) + "].mAttenuation.mExponential").c_str()
+				("uPointLights[" + std::to_string(i) + "].mAttenuation.mExponential").c_str()
 			);
 			mUniformLocations.mPointLightsPositions[i] = mProgram->getUniformLocation(
-				("u_PointLightsPositions[" + std::to_string(i) + "]").c_str()
+				("uPointLightsPositions[" + std::to_string(i) + "]").c_str()
 			);
 		}
 	}

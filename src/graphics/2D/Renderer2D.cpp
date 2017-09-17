@@ -34,14 +34,15 @@ namespace graphics {
 
 			glm::mat4 transforms = glm::translate(glm::mat4(), glm::vec3(renderable2D->getPosition(), 0));
 			transforms *= glm::scale(glm::mat4(), glm::vec3(renderable2D->getScale(), 1));
-			mProgram.setModelMatrix(transforms);
+			auto texture = renderable2D->getTexture();
 
-			glActiveTexture(GL_TEXTURE0);
-			renderable2D->getTexture()->bind();
-	
+			mProgram.setModelMatrix(transforms);
+			mProgram.setTextureSampler(0);
+
+			texture->bind(0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
+			texture->unbind();
 		}
-		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glBindVertexArray(0);
 		mProgram.disable();

@@ -23,6 +23,7 @@ namespace graphics {
 		struct UniformLocations
 		{
 			GLuint mModelMatrix;
+			GLuint mTextureSampler;
 		} mUniformLocations;
 
 	public:		// Functions
@@ -44,6 +45,8 @@ namespace graphics {
 		 * @param	modelMatrix the matrix that we want to set as the
 		 *			Model matrix in the shaders */
 		void setModelMatrix(const glm::mat4& modelMatrix);
+
+		void setTextureSampler(int unit);
 	private:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables */

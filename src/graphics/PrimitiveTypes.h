@@ -1,24 +1,28 @@
 #ifndef PRIMITIVE_TYPES_H
 #define PRIMITIVE_TYPES_H
 
-#include <string>
-#include <vector>
-#include <glm/glm.hpp>
-#include <GL/glew.h>
-
 namespace graphics {
+
+	/** The different render ways to render */
+	enum RenderFlags
+	{
+		DEFAULT				= 1 << 0,
+		WIREFRAME			= 1 << 1,
+		DISABLE_DEPTH_TEST	= 1 << 2
+	};
+
 
 	/** Struct RGBColor, represents a Color with 3 components */
 	struct RGBColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		GLfloat		mR;
+		float mR;
 
 		/** The green value of the color in the range [0, 1] */
-		GLfloat		mG;
+		float mG;
 
 		/** The blue value of the color in the range [0, 1] */
-		GLfloat		mB;
+		float mB;
 
 		/** Creates a new RGBColor */
 		RGBColor() {};
@@ -28,7 +32,7 @@ namespace graphics {
 		 * @param	r the red value of the color in the range [0, 1]
 		 * @param	g the green value of the color in the range [0, 1]
 		 * @param	b the blue value of the color in the range [0, 1] */
-		RGBColor(GLfloat r, GLfloat g, GLfloat b) : mR(r), mG(g), mB(b) {};
+		RGBColor(float r, float g, float b) : mR(r), mG(g), mB(b) {};
 
 		/** Destructor */
 		~RGBColor() {};
@@ -39,16 +43,16 @@ namespace graphics {
 	struct RGBAColor
 	{
 		/** The red value of the color in the range [0, 1] */
-		GLfloat		mR;
+		float mR;
 
 		/** The green value of the color in the range [0, 1] */
-		GLfloat		mG;
+		float mG;
 		
 		/** The blue value of the color in the range [0, 1] */
-		GLfloat		mB;
+		float mB;
 
 		/** The alpha value of the color in the range [0, 1] */
-		GLfloat		mA;
+		float mA;
 
 		/** Creates a new RGBAColor */
 		RGBAColor() {};
@@ -59,7 +63,7 @@ namespace graphics {
 		 * @param	g the green value of the color in the range [0, 1]
 		 * @param	b the blue value of the color in the range [0, 1]
 		 * @param	a the alpha value of the color in the range [0, 1] */
-		RGBAColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a) :
+		RGBAColor(float r, float g, float b, float a) :
 			mR(r), mG(g), mB(b), mA(a) {};
 
 		/** Destructor */
@@ -76,7 +80,7 @@ namespace graphics {
 
 		/** The Weight of a Bone on the current vertex in the range [0,1].
 		 * It measures the influence of a Bone on the current vertex */
-		GLfloat mWeight;
+		float mWeight;
 	};
 
 }

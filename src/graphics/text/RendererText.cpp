@@ -60,14 +60,14 @@ namespace graphics {
 			const RenderableText* renderableText = mRenderableTexts.front();
 			mRenderableTexts.pop();
 
-			glActiveTexture(GL_TEXTURE0);
-			renderableText->getFont()->getTextureAtlas()->bind();
+			auto textureAtlas = renderableText->getFont()->getTextureAtlas();
 
+			textureAtlas->bind();
 //			for (char c : renderableText->getText()) {
 //				glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
 //			}
+			textureAtlas->unbind();
 		}
-		glBindTexture(GL_TEXTURE_2D, 0);
 
 		mProgram->disable();
 		

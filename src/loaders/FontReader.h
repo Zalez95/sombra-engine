@@ -3,6 +3,8 @@
 
 #include <memory>
 #include <vector>
+#include "ImageReader.h"
+
 namespace utils { class FileReader; }
 namespace graphics { class Font; struct Character; }
 
@@ -17,9 +19,13 @@ namespace loaders {
 	private:	// Nested types
 		typedef std::unique_ptr<graphics::Font> FontUPtr;
 
+	private:	// Nested types
+		/** The ImageReader used to read the texture atlases of the fonts */
+		ImageReader& mImageReader;
+
 	public:		// Functions
 		/** Creates a new FontReader */
-		FontReader() {};
+		FontReader(ImageReader& imageReader) : mImageReader(imageReader) {};
 
 		/** Class destructor */
 		~FontReader() {};

@@ -51,11 +51,9 @@ namespace graphics {
 
 	void Layer3D::render()
 	{
-		if (!mCamera) return;
-
 		for (const Renderable3D* renderable3D : mRenderable3Ds)
 			mRenderer3D.submit(renderable3D);
-		mRenderer3D.render(*mCamera, mPointLights);
+		mRenderer3D.render(mCamera, mPointLights);
 	}
 
 }

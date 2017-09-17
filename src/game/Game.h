@@ -5,6 +5,7 @@
 #include <vector>
 
 namespace window { class WindowSystem; }
+namespace graphics { class GraphicsSystem; }
 namespace game {
 
 	struct Entity;
@@ -19,8 +20,8 @@ namespace game {
 	class Game
 	{
     private:    // Constants
-	    static const unsigned int WIDTH = 640;
-	    static const unsigned int HEIGHT = 480;
+	    static const unsigned int WIDTH		= 640;
+	    static const unsigned int HEIGHT	= 480;
 	    static const float UPDATE_TIME;
 		static const unsigned int NUM_CUBES;
 
@@ -28,7 +29,8 @@ namespace game {
 		typedef std::unique_ptr<Entity> EntityUPtr;
 
 		/** The different states in which the game could be */
-		enum GameState {
+		enum GameState
+		{
 			ERROR,
 			RUNNING,
 			STOPPED
@@ -38,10 +40,13 @@ namespace game {
 		/** The state of the game */
 		GameState mState;
 
+		window::WindowSystem* mWindowSystem;
+		graphics::GraphicsSystem* mGraphicsSystem;
+
 		/** The Entities that currently are in the game */
 		std::vector<EntityUPtr> mEntities;
 
-		window::WindowSystem* mWindowSystem;
+		/** The manager that holds the data of the entities */
 		InputManager* mInputManager;
 		PhysicsManager* mPhysicsManager;
 		GraphicsManager* mGraphicsManager;

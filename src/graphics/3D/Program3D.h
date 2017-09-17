@@ -34,6 +34,8 @@ namespace graphics {
 			GLuint mViewMatrix;
 			GLuint mProjectionMatrix;
 
+			GLuint mColorTexture;
+
 			struct
 			{
 				GLuint mAmbientColor;
@@ -95,6 +97,8 @@ namespace graphics {
 		 * @param	projectionMatrix the matrix that we want to set as the
 		 *			Projection matrix in the shaders */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
+
+		void setColorTexture(int unit);
 
 		/** Sets the uniform variables for the given material
 		 * 

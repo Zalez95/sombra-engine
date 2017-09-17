@@ -63,7 +63,10 @@ namespace graphics {
 		unsigned int getIndexCount() const;
 
 		/** Binds the VAO of the Mesh */
-		void bindVAO() const;
+		void bind() const;
+
+		/** Unbinds the VAO of the Mesh */
+		void unbind() const;
 	};
 
 }

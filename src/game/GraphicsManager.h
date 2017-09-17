@@ -26,9 +26,9 @@ namespace game {
 
 	private:	// Attributes
 		/** The System used for rendering the data of the Entities */
-		graphics::GraphicsSystem mGraphicsSystem;
+		graphics::GraphicsSystem& mGraphicsSystem;
 
-		/** The 3DLayer used by the GraphicsSystem */
+		/** The Layer3D used by the GraphicsSystem */
 		graphics::Layer3D mLayer3D;
 
 		std::map<Entity*, CameraUPtr> mCameraEntities;
@@ -36,11 +36,14 @@ namespace game {
 		std::map<Entity*, PointLightUPtr> mPointLightEntities;
 
 	public:		// Functions
-		/** Creates a new GraphicsManager */
-		GraphicsManager() { mGraphicsSystem.addLayer(&mLayer3D); };
+		/** Creates a new GraphicsManager
+		 *
+		 * @param	graphicsSystem a reference to the GraphicsSystem used by
+		 * 			the GraphicsManager to render the entities */
+		GraphicsManager(graphics::GraphicsSystem& graphicsSystem);
 
 		/** Class destructor */
-		~GraphicsManager() {};
+		~GraphicsManager();
 
 		/** Adds the given Entity and its Camera data to the GraphicsManager
 		 * 

@@ -1,5 +1,7 @@
 #include "WindowSystem.h"
 #include <stdexcept>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 namespace window {
 	
@@ -45,8 +47,8 @@ namespace window {
 	}
 
 // Public functions
-	WindowSystem::WindowSystem(const std::string& title, int width, int height, bool fullscreen) :
-		mTitle(title), mWidth(width), mHeight(height), mFullscreen(fullscreen), mWindow(nullptr), mInputData()
+	WindowSystem::WindowSystem(const std::string& title, const WindowData& windowData) :
+		mTitle(title), mWindowData(windowData), mWindow(nullptr), mInputData()
 	{
 		// 1. Init GLFW
 		if (!glfwInit()) {
@@ -54,7 +56,13 @@ namespace window {
 		}
 
 		// 2. Create the window
-		mWindow = glfwCreateWindow( mWidth, mHeight, mTitle.c_str(), nullptr, nullptr );
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+		glfwWindowHint(GLFW_RESIZABLE, mWindowData.mResizable);
+
+		mWindow = glfwCreateWindow( mWindowData.mWidth, mWindowData.mHeight, mTitle.c_str(), nullptr, nullptr );
 		if (!mWindow) {
 			glfwTerminate();
 			throw std::runtime_error("Failed to create the Window");
@@ -71,6 +79,7 @@ namespace window {
 		glfwSetCursorPosCallback(mWindow, cursor_position_callback);
 
 		// 4. Init GLEW
+		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {
 			glfwDestroyWindow(mWindow);
 			glfwTerminate();

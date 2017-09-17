@@ -1,5 +1,6 @@
 #include "InputManager.h"
 #include <algorithm>
+#include <GLFW/glfw3.h>
 #include "Entity.h"
 
 namespace game {

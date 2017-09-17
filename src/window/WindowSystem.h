@@ -2,44 +2,44 @@
 #define WINDOW_SYSTEM_H
 
 #include <string>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include "InputData.h"
 
 struct GLFWwindow;
 
 namespace window {
 
-	// GLFW Callbacks
-    void error_callback(int error, const char* description);
-    void key_callback(
-		GLFWwindow* window, int key, int scancode, int action, int mods
-	);
-	void mouse_button_callback(
-		GLFWwindow* window, int button, int action, int mods
-	);
-	void cursor_position_callback(
-		GLFWwindow* window, double xpos, double ypos
-	);
-
-
 	/**
-	 * WindowSystem Class
+	 * Struct Window Data, it holds the raw data used to create a window,
+	 * like its flags and size
 	 */
-	class WindowSystem
+	struct WindowData
 	{
-	private:	// Attributes
-		/** The Window title */
-		std::string mTitle;
-
-		/** The Window width */
+		/** The window width */
 		int mWidth;
 
-		/** The Window height */
+		/** The window height */
 		int mHeight;
 
 		/** If the window is in fullscreen mode or not */
 		bool mFullscreen;
+
+		/** If the window is resizable or not */
+		bool mResizable;
+	};
+
+
+	/**
+	 * Class WindowSystem, It's used to create and manage windows and checking
+	 * the user input data (polling)
+	 */
+	class WindowSystem
+	{
+	private:	// Attributes
+		/** The window title */
+		std::string mTitle;
+
+		/** The data of the window, like its flags and size */
+		WindowData mWindowData;
 
 		/** A pointer to the GLFW Window */
 		GLFWwindow*	mWindow;
@@ -53,14 +53,8 @@ namespace window {
 		 *
 		 * @param	title the title we want to show in the title bar of the
 		 *			window
-		 * @param	width the width of the window
-		 * @param	height the height of the window
-		 * @param	fullscreen true if the window must be in fullscreen mode,
-		 *			false if it must be in windowed mode (by default) */
-		WindowSystem(
-			const std::string& title, int width, int height,
-			bool fullscreen = false
-		);
+		 * @param	windowData the window data used to create the Window */
+		WindowSystem(const std::string& title, const WindowData& windowData);
 		
 		/** Class destructor, destroys the window and stops GLFW */
 		~WindowSystem();
@@ -81,13 +75,10 @@ namespace window {
 		void setMousePosition(float x, float y);
 
 		/** @return	the width of the window */
-		inline int getWidth() const { return mWidth; };
+		inline int getWidth() const { return mWindowData.mWidth; };
 
 		/** @return	the height of the window */
-		inline int getHeight() const { return mHeight; };
-		
-		/** @return	true if the window is in fullsize mode */
-		inline bool isFullscreen() const { return mFullscreen; };
+		inline int getHeight() const { return mWindowData.mHeight; };
 
 		/** @return	true if the window is closed */
 		bool isClosed() const;

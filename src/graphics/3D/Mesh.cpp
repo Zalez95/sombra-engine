@@ -22,9 +22,15 @@ namespace graphics {
 	}
 
 
-	void Mesh::bindVAO() const
+	void Mesh::bind() const
 	{
 		mVAO->bind();
+	}
+
+
+	void Mesh::unbind() const
+	{
+		mVAO->unbind();
 	}
 
 }

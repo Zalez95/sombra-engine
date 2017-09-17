@@ -19,7 +19,7 @@ namespace graphics {
 		glFrontFace(GL_CCW);		// Render only the counter-clockwise faces
 
 		// The Clear Color of the window
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.0f, 0.05f, 0.1f, 1.0f);
 	}
 
 

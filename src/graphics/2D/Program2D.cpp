@@ -37,6 +37,13 @@ namespace graphics {
 		mProgram->setUniform(mUniformLocations.mModelMatrix, modelMatrix);
 	}
 
+
+	void Program2D::setTextureSampler(int unit)
+	{
+		mProgram->setUniform(mUniformLocations.mTextureSampler, unit);
+	}
+
+
 // Private functions
 	void Program2D::initShaders()
 	{
@@ -68,7 +75,8 @@ namespace graphics {
 
 	void Program2D::initUniformLocations()
 	{
-		mUniformLocations.mModelMatrix = mProgram->getUniformLocation("u_ModelMatrix");
+		mUniformLocations.mModelMatrix		= mProgram->getUniformLocation("uModelMatrix");
+		mUniformLocations.mTextureSampler	= mProgram->getUniformLocation("uTextureSampler");
 	}
 
 }

@@ -55,13 +55,13 @@ namespace graphics {
 
 		/** Renders the Renderable3Ds that currently are in the render queue
 		 * 
-		 * @param	camera the Camera used to set the perspective from where
-		 *			we are going to render the scene
+		 * @param	camera a pointer to the Camera used to set the perspective
+		 * 			from where we are going to render the scene
 		 * @param	lights a vector with pointers to the lights that will
 		 *			affect to the next renders
 		 * @note	after calling this method the render queue will be empty */
 		void render(
-			const Camera& camera,
+			const Camera* camera,
 			const std::vector<const PointLight*>& pointLights
 		);
 	};

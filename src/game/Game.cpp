@@ -15,14 +15,16 @@
 #include "../window/WindowSystem.h"
 
 #include "../graphics/Texture.h"
+#include "../graphics/GraphicsSystem.h"
+#include "../graphics/2D/Layer2D.h"
 #include "../graphics/2D/Renderable2D.h"
-#include "../graphics/text/Font.h"
-#include "../graphics/text/RenderableText.h"
-#include "../graphics/3D/Mesh.h"
-#include "../graphics/3D/Material.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Lights.h"
+#include "../graphics/3D/Mesh.h"
+#include "../graphics/3D/Material.h"
 #include "../graphics/3D/Renderable3D.h"
+#include "../graphics/text/Font.h"
+#include "../graphics/text/RenderableText.h"
 
 #include "../collision/BoundingBox.h"
 #include "../collision/BoundingSphere.h"
@@ -32,11 +34,15 @@
 
 #include "../loaders/MeshLoader.h"
 #include "../loaders/MeshReader.h"
-#include "../loaders/FontReader.h"
 #include "../loaders/MaterialReader.h"
+#include "../loaders/ImageReader.h"
+#include "../loaders/FontReader.h"
 
+#include "../utils/Image.h"
 #include "../utils/Logger.h"
 #include "../utils/FileReader.h"
+
+#include <GLFW/glfw3.h>
 
 #define GRAPHICS
 #define GAME
@@ -54,7 +60,7 @@ namespace game {
 
 		// Window
 		try {
-			mWindowSystem = new window::WindowSystem("< FAZE >", WIDTH, HEIGHT);
+			mWindowSystem = new window::WindowSystem("< FAZE >", { WIDTH, HEIGHT, false, false });
 			std::cout << mWindowSystem->getGLInfo() << std::endl;
 		}
 		catch(std::exception& e) {
@@ -77,7 +83,10 @@ namespace game {
 		}
 
 		// Graphics
-		try { mGraphicsManager = new GraphicsManager(); }
+		try {
+			mGraphicsSystem = new graphics::GraphicsSystem();
+			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+		}
 		catch (std::exception& e) {
 			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the graphics manager: " + std::string(e.what()));
@@ -88,6 +97,7 @@ namespace game {
 	Game::~Game()
 	{
 		delete mGraphicsManager;
+		delete mGraphicsSystem;
 		delete mPhysicsManager;
 		delete mInputManager;
 		delete mWindowSystem;
@@ -112,97 +122,132 @@ namespace game {
 		loaders::MeshLoader meshLoader;
 		loaders::MeshReader meshReader(meshLoader);
 		loaders::MaterialReader materialReader;
-		loaders::FontReader fontReader;
+		loaders::ImageReader imageReader;
+		loaders::FontReader fontReader(imageReader);
 
-		// Meshes
-		std::vector<GLfloat> positions = {
-			-0.5f,	-0.5f,	-0.5f,
-			-0.5f,	-0.5f,	0.5f,
-			-0.5f,	0.5f,	-0.5f,
-			-0.5f,	0.5f,	0.5f,
-			0.5f,	-0.5f,	-0.5f,
-			0.5f,	-0.5f,	0.5f,
-			0.5f,	0.5f,	-0.5f,
-			0.5f,	0.5f,	0.5f
-		};
-		std::vector<GLushort> indices = {
-			0, 1, 2,
-			1, 3, 2,
-			0, 2, 4,
-			2, 6, 4,
-			4, 6, 5,
-			5, 6, 7,
-			1, 5, 3,
-			3, 5, 7,
-			0, 4, 1,
-			1, 4, 5,
-			2, 3, 6,
-			3, 7, 6
-		};
-		std::vector<GLfloat> normals = meshReader.calculateNormals(positions, indices);
-		std::shared_ptr<graphics::Mesh> mesh1 = std::move(meshLoader.createMesh("Cubo", positions, normals, std::vector<GLfloat>(16), indices));
-
+		std::shared_ptr<graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<graphics::Mesh>> fileMeshes;
+		std::vector<std::shared_ptr<graphics::Material>> fileMaterials;
+		std::shared_ptr<graphics::Texture> texture1 = nullptr, texture2 = nullptr;
+		std::unique_ptr<graphics::Camera> camera1 = nullptr;
+		std::unique_ptr<graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr;
+		std::shared_ptr<graphics::Font> arial = nullptr;
 		try {
+			// Meshes
+			std::vector<GLfloat> positions1 = {
+				-0.5f,	-0.5f,	-0.5f,
+				-0.5f,	-0.5f,	0.5f,
+				-0.5f,	0.5f,	-0.5f,
+				-0.5f,	0.5f,	0.5f,
+				0.5f,	-0.5f,	-0.5f,
+				0.5f,	-0.5f,	0.5f,
+				0.5f,	0.5f,	-0.5f,
+				0.5f,	0.5f,	0.5f
+			};
+			std::vector<GLushort> indices1 = {
+				0, 1, 2,
+				1, 3, 2,
+				0, 2, 4,
+				2, 6, 4,
+				4, 6, 5,
+				5, 6, 7,
+				1, 5, 3,
+				3, 5, 7,
+				0, 4, 1,
+				1, 4, 5,
+				2, 3, 6,
+				3, 7, 6
+			};
+			std::vector<GLfloat> normals1 = meshReader.calculateNormals(positions1, indices1);
+			std::vector<GLfloat> uvs1(16);
+			mesh1 = std::move(meshLoader.createMesh("Cubo", positions1, normals1, uvs1, indices1));
+
+			std::vector<GLfloat> positions2 = {
+				-0.5f,	-0.5f,	0.0f,
+				 0.5f,	-0.5f,	0.0f,
+				-0.5f,	0.5f,	0.0f,
+				 0.5f,	0.5f,	0.0f
+			};
+			std::vector<GLfloat> normals2 = {
+				0.0f,	0.0f,	1.0f,
+				0.0f,	0.0f,	1.0f,
+				0.0f,	0.0f,	1.0f,
+				0.0f,	0.0f,	1.0f
+			};
+			std::vector<GLfloat> uvs2 = {
+				0.0f,	0.0f,
+				1.0f,	0.0f,
+				0.0f,	1.0f,
+				1.0f,	1.0f
+			};
+			std::vector<GLushort> indices2 = {
+				0, 1, 2,
+				1, 3, 2,
+			};
+			mesh2 = std::move(meshLoader.createMesh("plane", positions2, normals2, uvs2, indices2));
+
 			FileReader fileReader1("res/meshes/test.fzmsh");
-			auto loadedMeshes = meshReader.load(fileReader1);
+			auto loadedMeshes = std::move( meshReader.load(fileReader1) );
 			for (std::unique_ptr<graphics::Mesh>& meshUPtr : loadedMeshes) {
 				fileMeshes.push_back(std::move(meshUPtr));
 			}
-		}
-		catch (std::exception& e) {
-			Logger::writeLog(LogType::ERROR, e.what());
-		}
 
-		// Materials
-		std::vector<std::shared_ptr<graphics::Material>> fileMaterials;
-		try {
-			FileReader fileReader1("res/materials/game_materials.fzmat");
-			auto loadedMaterials = materialReader.load(fileReader1);
+			// Materials
+			FileReader fileReader2("res/materials/game_materials.fzmat");
+			auto loadedMaterials = materialReader.load(fileReader2);
 			for (std::unique_ptr<graphics::Material>& materialUPtr : loadedMaterials) {
 				fileMaterials.push_back(std::move(materialUPtr));
 			}
+
+			// Textures
+			std::unique_ptr<utils::Image> image1( imageReader.read("res/images/test.png", utils::ImageFormat::RGBA_IMAGE) );
+			texture1 = std::make_shared<graphics::Texture>();
+			texture1->setImage(
+				image1->getPixels(), graphics::TexturePixelType::U_BYTE, graphics::TextureFormat::RGBA,
+				image1->getWidth(), image1->getHeight()
+			);
+
+			float pixels[] = {
+			    0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
+			    1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
+			};
+			texture2 = std::make_shared<graphics::Texture>();
+			texture2->setImage(pixels, graphics::TexturePixelType::FLOAT, graphics::TextureFormat::RGB, 2, 2);
+
+			// Cameras
+			camera1 = std::make_unique<graphics::Camera>(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+
+			// Lights
+			graphics::BaseLight baseLight1(graphics::RGBColor(0.5f, 0.6f, 0.3f), graphics::RGBColor(0.1f, 0.5f, 0.6f));
+			graphics::Attenuation attenuation1{ 0.5f, 0.25f, 0.2f };
+			pointLight1 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
+			pointLight2 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
+
+			FileReader fileReader3("res/fonts/arial.fnt");
+			arial = std::move(fontReader.load(fileReader3));
 		}
 		catch (std::exception& e) {
 			Logger::writeLog(LogType::ERROR, e.what());
 		}
-
-		// Textures
-		auto texture1 = std::make_shared<graphics::Texture>("res/images/test.png", GL_TEXTURE_2D);
-
-		// Cameras
-		auto camera1 = std::make_unique<graphics::Camera>(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
-
-		// Lights
-		graphics::BaseLight baseLight1(graphics::RGBColor(0.5f, 0.6f, 0.3f), graphics::RGBColor(0.1f, 0.5f, 0.6f));
-		graphics::Attenuation attenuation1{ 0.5f, 0.25f, 0.2f };
-		auto pointLight1 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
-		auto pointLight2 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 
 		// RenderableTexts
-		std::shared_ptr<graphics::Font> arial = nullptr;
-		try {
-			FileReader fileReader2("res/fonts/arial.fnt");
-			arial = std::move(fontReader.load(fileReader2));
-		}
-		catch (std::exception& e) {
-			Logger::writeLog(LogType::ERROR, e.what());
-		}
 		graphics::RenderableText renderableText1("First try rendering text", arial, 10, glm::vec2());
 
-		// Renderable2Ds
+	// Renderable2Ds
+		graphics::Layer2D layer2D;
+		mGraphicsSystem->addLayer(&layer2D);
+
 		graphics::Renderable2D renderable2D1(glm::vec2(0.75f, 0.75f), glm::vec2(0.15f, 0.2f), texture1);
+		layer2D.addRenderable2D(&renderable2D1);
 #endif		// GRAPHICS
 
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
-		//mGraphicsSystem->getLayer2D()->addRenderable2D(&renderable2D1);
-
 		// Player
 		auto player	= std::make_unique<Entity>("player");
 		player->mPosition = glm::vec3(0, 1, 10);
-
+       	
 		mInputManager->addEntity(player.get());
 		mPhysicsManager->addEntity(
 			player.get(),
@@ -211,7 +256,7 @@ namespace game {
        				40.0f, 0.01f,
        				2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f
        			),
-				//std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+				//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
 				std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
        		)
 		);
@@ -219,45 +264,43 @@ namespace game {
 
 		mEntities.push_back(std::move(player));
 
-		// Lights
-		auto eL1 = std::make_unique<Entity>("PointLight1");
-		eL1->mPosition = glm::vec3(2, 1, 5);
-		mGraphicsManager->addEntity(eL1.get(), std::move(pointLight1));
-		mEntities.push_back(std::move(eL1));
+		// Plane
+		auto plane = std::make_unique<Entity>("Plane");
+		plane->mPosition = glm::vec3(-5.0f, 1.0f, -5.0f);
 
-		auto eL2 = std::make_unique<Entity>("PointLight2");
-		eL2->mPosition = glm::vec3(-3, 1, 5);
-		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
-		mEntities.push_back(std::move(eL2));
+		auto renderable3D1 = std::make_unique<graphics::Renderable3D>(mesh2, fileMaterials[4], texture2);
+		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
 
+		mEntities.push_back(std::move(plane));
+ 
 		// Cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8), glm::vec3(0, 0, -10), glm::vec3(10, 0, -10) };
 		for (size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<Entity>("random cube");
 			cube->mPosition = cubePositions[i];
-
+			
 			auto physicsEntityCube = std::make_unique<physics::PhysicsEntity>(
 				physics::RigidBody(
 					20.0f, 1.0f,
 					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
 				),
-				//std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+				//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
 				std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 			);
 			if (i == 3) { physicsEntityCube->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
 			if (i == 4) { physicsEntityCube->getRigidBody()->mLinearVelocity += glm::vec3(-1, 0, 0); }
 			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube));
-
-			auto renderable3D = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr, false);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D));
+			
+			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
         }
-
+		
 		for (size_t i = 0; i < NUM_CUBES; ++i) {
 			auto cube = std::make_unique<Entity>("random cube");
 			cube->mPosition = glm::ballRand(50.0f);
-
+			
 			mPhysicsManager->addEntity(
 				cube.get(),
 				std::make_unique<physics::PhysicsEntity>(
@@ -265,13 +308,13 @@ namespace game {
 						10.0f, 1.0f,
 						2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
 					),
-					//std::make_unique<physics::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+					//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
 					std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 				)
 			);
-
-			auto renderable3D = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr, false);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D));
+			
+			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
 		}
@@ -288,12 +331,23 @@ namespace game {
 				graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				0.2f
 			);
-
-			auto renderable3D = std::make_unique<graphics::Renderable3D>(*it, tmpMaterial, nullptr, false);
-			mGraphicsManager->addEntity(building.get(), std::move(renderable3D));
-
+			
+			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(*it, tmpMaterial, nullptr);
+			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
+			
 			mEntities.push_back(std::move(building));
 		}
+		
+		// Lights
+		auto eL1 = std::make_unique<Entity>("PointLight1");
+		eL1->mPosition = glm::vec3(2, 1, 5);
+		mGraphicsManager->addEntity(eL1.get(), std::move(pointLight1));
+		mEntities.push_back(std::move(eL1));
+
+		auto eL2 = std::make_unique<Entity>("PointLight2");
+		eL2->mPosition = glm::vec3(-3, 1, 5);
+		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
+		mEntities.push_back(std::move(eL2));
 #endif		// GAME
 
 		/*********************************************************************

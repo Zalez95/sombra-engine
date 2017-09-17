@@ -1,4 +1,5 @@
 #include "FontReader.h"
+#include "../utils/Image.h"
 #include "../utils/FileReader.h"
 #include "../graphics/text/Font.h"
 #include "../graphics/Texture.h"
@@ -24,8 +25,9 @@ namespace loaders {
 // Private functions
 	FontReader::FontUPtr FontReader::parseFont(utils::FileReader& fileReader) const
 	{
-		std::string fontName, fontTextureName, trash;
+		std::string fontName, trash;
 		std::vector<graphics::Character> characters;
+		auto textureAtlas = std::make_shared<graphics::Texture>();
 		unsigned int numCharacters = 0, characterIndex = 0;
 
 		while (!fileReader.isEmpty()) {
@@ -40,11 +42,15 @@ namespace loaders {
 			}
 			else if (token == "page") {
 				fileReader >> trash;
+				std::string fontTextureName;
 				fileReader.getValuePair(trash, "=", fontTextureName);
-				if (fontTextureName.size() > 2) {
-					if (fontTextureName.front() == '\"') { fontTextureName.erase(0, 1); }
-					if (fontTextureName.back() == '\"') { fontTextureName.pop_back(); }
-				}
+				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
+
+				std::unique_ptr<utils::Image> atlasImg( mImageReader.read(fontTexturePath, utils::ImageFormat::L_IMAGE) );
+				textureAtlas->setImage(
+					atlasImg->getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::L,
+					atlasImg->getWidth(), atlasImg->getHeight()
+				);
 			}
 			else if (token == "chars") {
 				fileReader.getValuePair(trash, "=", numCharacters);
@@ -68,7 +74,6 @@ namespace loaders {
 			throw std::runtime_error("Error: expected " + std::to_string(numCharacters) + " characters, parsed " + std::to_string(characterIndex) + '\n');
 		}
 
-		auto textureAtlas = std::make_shared<graphics::Texture>(fileReader.getDirectory() + fontTextureName, GL_TEXTURE_2D);
 		return std::make_unique<graphics::Font>(fontName, characters, textureAtlas);
 	}
 

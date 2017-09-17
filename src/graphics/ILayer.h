@@ -10,7 +10,7 @@ namespace graphics {
 	class ILayer {
 	public:		// Functions
 		/** Class destructor */
-		ILayer() {};
+		virtual ~ILayer() {};
 
 		/** Draws the Layer */
 		virtual void render() = 0;
