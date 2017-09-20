@@ -37,6 +37,7 @@
 #include "../loaders/MaterialReader.h"
 #include "../loaders/ImageReader.h"
 #include "../loaders/FontReader.h"
+#include "../loaders/TerrainLoader.h"
 
 #include "../utils/Image.h"
 #include "../utils/Logger.h"
@@ -124,10 +125,12 @@ namespace game {
 		loaders::MaterialReader materialReader;
 		loaders::ImageReader imageReader;
 		loaders::FontReader fontReader(imageReader);
+		loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager);
 
 		std::shared_ptr<graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<graphics::Mesh>> fileMeshes;
 		std::vector<std::shared_ptr<graphics::Material>> fileMaterials;
+		std::shared_ptr<utils::Image> heightMap1 = nullptr;
 		std::shared_ptr<graphics::Texture> texture1 = nullptr, texture2 = nullptr;
 		std::unique_ptr<graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr;
@@ -199,8 +202,11 @@ namespace game {
 				fileMaterials.push_back(std::move(materialUPtr));
 			}
 
-			// Textures
+			// Images
 			std::unique_ptr<utils::Image> image1( imageReader.read("res/images/test.png", utils::ImageFormat::RGBA_IMAGE) );
+			heightMap1 = std::unique_ptr<utils::Image>( imageReader.read("res/images/terrain.png", utils::ImageFormat::L_IMAGE) );
+
+			// Textures
 			texture1 = std::make_shared<graphics::Texture>();
 			texture1->setImage(
 				image1->getPixels(), graphics::TexturePixelType::U_BYTE, graphics::TextureFormat::RGBA,
@@ -228,12 +234,13 @@ namespace game {
 		}
 		catch (std::exception& e) {
 			Logger::writeLog(LogType::ERROR, e.what());
+			return false;
 		}
 
 		// RenderableTexts
 		graphics::RenderableText renderableText1("First try rendering text", arial, 10, glm::vec2());
 
-	// Renderable2Ds
+		// Renderable2Ds
 		graphics::Layer2D layer2D;
 		mGraphicsSystem->addLayer(&layer2D);
 
@@ -263,6 +270,9 @@ namespace game {
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
 
 		mEntities.push_back(std::move(player));
+
+		// Terrain
+		mEntities.push_back( terrainLoader.createTerrain("terrain", 100.0f, *heightMap1, 10.0f) );
 
 		// Plane
 		auto plane = std::make_unique<Entity>("Plane");
@@ -337,7 +347,7 @@ namespace game {
 			
 			mEntities.push_back(std::move(building));
 		}
-		
+
 		// Lights
 		auto eL1 = std::make_unique<Entity>("PointLight1");
 		eL1->mPosition = glm::vec3(2, 1, 5);

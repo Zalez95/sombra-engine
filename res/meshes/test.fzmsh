@@ -1,6 +1,6 @@
 FAZE_MSH_FILE 1.3
 
-num_meshes 6
+num_meshes 5
 
 mesh Plane {
 	num_positions 2792
@@ -9322,20 +9322,6 @@ mesh Cube.002 {
 	f ( 128 132 130 )
 	f ( 116 121 129 )
 	f ( 136 121 116 )
-}
-
-mesh Plane.002 {
-	num_positions 4
-	num_uvs 0
-	num_faces 2
-	num_joints 0
-
-	v -10.000000000 -10.000000000 0.000000000
-	v 10.000000000 -10.000000000 0.000000000
-	v -10.000000000 10.000000000 0.000000000
-	v 10.000000000 10.000000000 0.000000000
-	f ( 1 2 0 )
-	f ( 1 3 2 )
 }
 
 mesh Cylinder {
