@@ -17,7 +17,7 @@ namespace loaders {
 	{
 		try {
 			// 1. Get the input file
-			if (fileReader.fail()) {
+			if (fileReader.getState() != utils::FileState::OK) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -90,9 +90,9 @@ namespace loaders {
 
 		std::string fileName, fileVersion;
 		fileReader >> fileName >> fileVersion;
-		if (!fileReader.fail() &&
-			fileName == FILE_FORMAT::FILE_NAME &&
-			fileVersion == FILE_VERSION
+		if ((fileReader.getState() == utils::FileState::OK) &&
+			(fileName == FILE_FORMAT::FILE_NAME) &&
+			(fileVersion == FILE_VERSION)
 		) {
 			ret = true;
 		}
@@ -106,12 +106,11 @@ namespace loaders {
 		std::vector<MeshUPtr> meshes;
 		unsigned int numMeshes = 0, meshIndex = 0;
 
-		while (!fileReader.isEmpty()) {
-			std::string token; fileReader >> token;
+		std::string token;
+		while (fileReader.getValue(token) == utils::FileState::OK) {
 
 			if (token == "num_meshes") {
-				fileReader >> numMeshes;
-				if (!fileReader.fail()) {
+				if (fileReader.getValue(numMeshes) == utils::FileState::OK) {
 					meshes.reserve(numMeshes);
 				}
 			}
@@ -151,20 +150,17 @@ namespace loaders {
 			std::string token; fileReader >> token;
 
 			if (token == "num_positions") {
-				fileReader >> numPositions;
-				if (!fileReader.fail()) {
+				if (fileReader.getValue(numPositions) == utils::FileState::OK) {
 					positions.resize(3 * numPositions);
 				}
 			}
 			else if (token == "num_uvs") {
-				fileReader >> numUVs;
-				if (!fileReader.fail()) {
+				if (fileReader.getValue(numUVs) == utils::FileState::OK) {
 					uvs.resize(2 * numUVs);
 				}
 			}
 			else if (token == "num_faces") {
-				fileReader >> numFaces;
-				if (!fileReader.fail()) {
+				if (fileReader.getValue(numFaces) == utils::FileState::OK) {
 					posIndices.resize(3 * numFaces);
 					if (numUVs > 0) { uvIndices.resize(3 * numFaces); }
 				}
@@ -183,8 +179,9 @@ namespace loaders {
 			}
 			else if (token == "uv"){
 				unsigned int vi;
-				fileReader >> vi;
-				if (!fileReader.fail() && vi < numPositions) {
+				if ((fileReader.getValue(vi) == utils::FileState::OK) &&
+					(vi < numPositions)
+				) {
 					fileReader	>> uvs[2 * vi]
 								>> uvs[2 * vi + 1];
 				}

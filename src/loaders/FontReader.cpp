@@ -10,7 +10,7 @@ namespace loaders {
 	{
 		try {
 			// 1. Get the input file
-			if (fileReader.fail()) {
+			if (fileReader.getState() != utils::FileState::OK) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -29,10 +29,9 @@ namespace loaders {
 		std::vector<graphics::Character> characters;
 		auto textureAtlas = std::make_shared<graphics::Texture>();
 		unsigned int numCharacters = 0, characterIndex = 0;
-
-		while (!fileReader.isEmpty()) {
-			std::string token; fileReader >> token;
-
+		
+		std::string token;
+		while (fileReader.getValue(token) == utils::FileState::OK) {
 			if (token == "info") {
 				fileReader.getValuePair(trash, "=", fontName);
 				fileReader.discardLine();
@@ -53,15 +52,13 @@ namespace loaders {
 				);
 			}
 			else if (token == "chars") {
-				fileReader.getValuePair(trash, "=", numCharacters);
-				if (!fileReader.fail()) {
+				if (fileReader.getValuePair(trash, "=", numCharacters) == utils::FileState::OK) {
 					characters.reserve(numCharacters);
 				}
 			}
 			else if (token == "char") {
-				graphics::Character curChar = parseCharacter(fileReader);
 				if (characterIndex < numCharacters) {
-					characters.push_back(curChar);
+					characters.push_back(parseCharacter(fileReader));
 				}
 				++characterIndex;
 			}

@@ -25,7 +25,7 @@ namespace loaders {
 	{
 		try {
 			// 1. Get the input file
-			if (fileReader.fail()) {
+			if (fileReader.getState() != utils::FileState::OK) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
@@ -53,9 +53,9 @@ namespace loaders {
 
 		std::string fileName, fileVersion;
 		fileReader >> fileName >> fileVersion;
-		if (!fileReader.fail() &&
-			fileName == FILE_FORMAT::FILE_NAME &&
-			fileVersion == FILE_VERSION
+		if ((fileReader.getState() == utils::FileState::OK) &&
+			(fileName == FILE_FORMAT::FILE_NAME) &&
+			(fileVersion == FILE_VERSION)
 		) {
 			ret = true;
 		}
@@ -115,12 +115,10 @@ namespace loaders {
 		std::vector<EntityUPtr> entities;
 		unsigned int numEntities = 0, entityIndex = 0;
 
-		while (!fileReader.isEmpty()) {
-			std::string token; fileReader >> token;
-
+		std::string token;
+		while (fileReader.getValue(token) == utils::FileState::OK) {
 			if (token == "num_entities") {
-				fileReader >> numEntities;
-				if (!fileReader.fail()) {
+				if (fileReader.getValue(numEntities) == utils::FileState::OK) {
 					entities.reserve(numEntities);
 				}
 			}
@@ -154,9 +152,8 @@ namespace loaders {
 		std::string trash;
 		fileReader >> name >> trash;
 
-		while (!fileReader.isEmpty()) {
-			std::string token; fileReader >> token;
-			
+		std::string token;
+		while (fileReader.getValue(token) == utils::FileState::OK) {
 			if (token == "position") {
 				fileReader >> position.x >> position.y >> position.z;
 			}

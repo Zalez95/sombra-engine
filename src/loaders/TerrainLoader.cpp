@@ -54,7 +54,7 @@ namespace loaders {
 				uvs.insert(uvs.end(), {	j / static_cast<GLfloat>(width), i / static_cast<GLfloat>(height) });
 
 				if ((i > 0) && (j > 0)) {
-					// Calculate the indices of the faces
+					// Calculate the indices of the vertices that creates the faces
 					GLushort topRight		= i * width + j;
 					GLushort topLeft		= topRight - 1;
 					GLushort bottomRight	= (i - 1) * width + j;
@@ -68,9 +68,9 @@ namespace loaders {
 
 					glm::vec3 n1 = glm::cross(tr - tl, tr - bl);
 					glm::vec3 n2 = glm::cross(tr - bl, tr - br);
+					glm::vec3 normal = n1 + n2;
 
 					// Set the normal vector of the current vertex
-					glm::vec3 normal = n1 + n2;
 					normals.insert(normals.end(), { normal.x, normal.y, normal.z });
 
 					// update the normals of the other vertices
@@ -78,16 +78,19 @@ namespace loaders {
 					normals[3 * bottomLeft] += normal.x;	normals[3 * bottomLeft + 1] += normal.y;	normals[3 * bottomLeft + 2] += normal.z;
 					normals[3 * bottomRight] += n2.x;		normals[3 * bottomRight + 1] += n2.y;		normals[3 * bottomRight + 2] += n2.z;
 
+					// Normalize the normal of the bottom left vertex
 					int norm = 6;
 					if (i == 1) { norm -= 3; }
 					if (j == 1) { norm -= 3; }
 					if (norm > 0) {
-						// Normalize the normal of the bottom left vertex
 						normals[3 * bottomLeft] /= norm;	normals[3 * bottomLeft + 1] /= norm;		normals[3 * bottomLeft + 2] /= norm;
-					} 
+					}
 
-					// Set the indices
+					// Set the indices of the faces
 					indices.insert(indices.end(), { topRight, bottomLeft, topLeft, topRight, bottomRight, bottomLeft });
+				}
+				else {
+					normals.insert(normals.end(), { 0, 0, 0 });
 				}
 			}
 		}
@@ -98,7 +101,7 @@ namespace loaders {
 // Private functions
 	float TerrainLoader::getHeight(
 		const utils::Image& heightMap, float maxHeight,
-		unsigned int x, unsigned int z
+		size_t x, size_t z
 	) const
 	{
 		assert(x < heightMap.getWidth() && "x must be smaller than the image width");

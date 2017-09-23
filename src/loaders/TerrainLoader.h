@@ -89,7 +89,7 @@ namespace loaders {
 		 * @param	z the position in the Z axis that we want to read */
 		float getHeight(
 			const utils::Image& heightMap, float maxHeight,
-			unsigned int x, unsigned int z
+			size_t x, size_t z
 		) const;
 	};
 

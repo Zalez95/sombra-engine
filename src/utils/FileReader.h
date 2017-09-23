@@ -7,6 +7,14 @@
 
 namespace utils {
 
+	enum FileState
+	{
+		OK,
+		ENDED,
+		FAILED
+	};
+
+
 	/**
 	 * Class FileReader reads a file line by line
 	 */
@@ -28,11 +36,11 @@ namespace utils {
 		/** The current line (string) */
 		std::string mCurLineString;
 
+		/** The state of the current file */
+		FileState mCurrentState;
+
 		/** The number of lines readed in the current file */
 		unsigned int mNumLines;
-
-		/** If there was an error while parsing */
-		bool mFailed;
 
 	public:
 		/** Creates a new FileLineReader
@@ -54,15 +62,11 @@ namespace utils {
 		 *			file */
 		std::string getDirectory() const;
 
+		/** @return	the state of the file */
+		inline FileState getState() const { return mCurrentState; };
+
 		/** @return	the number of readed lines in the current file */
 		inline unsigned int getNumLines() const { return mNumLines; };
-
-		/** @return	true if we reached the end of file */
-		bool eof() const;
-
-		/** @return	true if there was an error parsinga value or reading the
-		 *			file */
-		inline bool fail() const { return mFailed; };
 
 		/** Reads the next value and stores it in the given parameter
 		 * 
@@ -71,7 +75,7 @@ namespace utils {
 		 * @note	if there was an error parsing the parameter, the fail
 		 *			function will return true */
 		template<typename T>
-		void getValue(T& token);
+		FileState getValue(T& token);
 
 		/** Extraction operator. It does the same than the @see getValue
 		 * function, but allowing concatenation
@@ -94,46 +98,44 @@ namespace utils {
 		 * @return	true if the values were readed and loaded succesfully,
 		 *			false otherwise */
 		template<typename T1, typename T2>
-		void getValuePair(T1& first, const std::string& separator, T2& second);
+		FileState getValuePair(
+			T1& first, const std::string& separator, T2& second
+		);
 
-		/** @return	true if there aren't any tokens left in the file, false
-		 *			otherwise */
-		bool isEmpty();
-
-		/** Discards the content of the current line */
+		/** Discards the contents of the current line and moves to the next
+		 * one */
 		void discardLine();
 	};
 
 
 // Template functions definition
 	template<typename T>
-	void FileReader::getValue(T& token)
+	FileState FileReader::getValue(T& token)
 	{
 		int t = mCurLineStream.tellg();
 		if ((t != -1) &&
-			(mCurLineString.find_first_not_of(" \t\n", t) != std::string::npos)
+			(mCurLineString.find_first_not_of(" \t\r\n", t) !=
+				std::string::npos)
 		) {
 			// If the current line has still some tokens we parse the next one
 			mCurLineStream >> token;
-			if (mCurLineStream.fail()) { mFailed = true; }
+			if (mCurLineStream.fail()) {
+				mCurrentState = FileState::FAILED;
+			}
 		}
 		else if (!mInputFStream.eof()) {
 			// Read the next lines recursively until we find a not empty line
 			std::getline(mInputFStream, mCurLineString);
-
-			// Remove the carriage return character located at the end of line
-			// if it exists
-			if ((!mCurLineString.empty()) &&
-				(mCurLineString[mCurLineString.size() - 1] == '\r')
-			) {
-				mCurLineString = mCurLineString.substr(0, mCurLineString.size() - 1);
-			}
-
 			mCurLineStream = std::stringstream(mCurLineString);
 			++mNumLines;
 
 			getValue(token);
 		}
+		else {
+			mCurrentState = FileState::ENDED;
+		}
+
+		return mCurrentState;
 	}
 
 
@@ -146,31 +148,37 @@ namespace utils {
 
 
 	template<typename T1, typename T2>
-	void FileReader::getValuePair(
+	FileState FileReader::getValuePair(
 		T1& first, const std::string& separator, T2& second
 	) {
-		// Get the pair
-		std::string valuePairStr;
-		getValue(valuePairStr);
-		if (mFailed) return;
-
-		// Get the position of the separator in the string
-		size_t separatorPosition = valuePairStr.find(separator);
-		if (separatorPosition == std::string::npos) {
-			mFailed = true;
-			return;
+		// Get the token
+		std::string token;
+		if (getValue(token) != FileState::OK) {
+			return mCurrentState;
 		}
 
-		// Parse the first param
-		std::string firstStr = valuePairStr.substr(0, separatorPosition);
-		std::stringstream(firstStr) >> first;
+		// Get the position of the separator in the token
+		size_t separatorPosition = token.find(separator);
+		if (separatorPosition == std::string::npos) {
+			mCurrentState = FileState::FAILED;
+			return mCurrentState;
+		}
 
-		// Parse the second param
-		std::string secondStr = valuePairStr.substr(
+		// Split the token
+		std::string firstStr = token.substr(0, separatorPosition);
+		std::string secondStr = token.substr(
 			separatorPosition + separator.length(),
 			std::string::npos
 		);
+
+		// Parse the data
+		std::stringstream(firstStr) >> first;
 	   	std::stringstream(secondStr) >> second;
+		if (mCurLineStream.fail()) {
+			mCurrentState = FileState::FAILED;
+		}
+
+		return mCurrentState;
 	}
 
 }

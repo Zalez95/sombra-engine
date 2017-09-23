@@ -9,7 +9,7 @@ namespace loaders {
 	{
 		try {
 			// 1. Get the input file
-			if (fileReader.fail()) {
+			if (fileReader.getState() != utils::FileState::OK) {
 				throw std::runtime_error("Error reading the file\n");
 			}
 
