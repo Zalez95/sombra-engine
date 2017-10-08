@@ -50,16 +50,13 @@ namespace physics {
 	{
 		// Update the Position
 		mLinearAcceleration = mInvertedMass * mForceSum;
-		mLinearVelocity *= glm::pow(mLinearSlowDown, delta);
-		mLinearVelocity += mLinearAcceleration * delta;
+		mLinearVelocity = mLinearVelocity * glm::pow(mLinearSlowDown, delta) + mLinearAcceleration * delta;
 		mPosition += mLinearVelocity * delta;
 
 		// Update the Orientation
 		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
-		mAngularVelocity *= glm::pow(mAngularSlowDown, delta);
-		mAngularVelocity += mAngularAcceleration * delta;
-		mOrientation = glm::quat(mAngularVelocity * delta) * mOrientation;
-		mOrientation = glm::normalize(mOrientation);
+		mAngularVelocity = mAngularVelocity * glm::pow(mAngularSlowDown, delta) + mAngularAcceleration * delta;
+		mOrientation = glm::normalize(glm::quat(mAngularVelocity * delta) * mOrientation);
 
 		// Update the derived data
 		updateTransformsMatrix();

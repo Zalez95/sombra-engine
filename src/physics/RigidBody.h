@@ -31,10 +31,6 @@ namespace physics {
 		 * be slowed down each time the integrate method is called so the
 		 * RigidBody doesn't move forever */
 		float mLinearSlowDown;
-		
-		/** A vector with the sum of all the forces currently applied to
-		 * the RigidBody */
-		glm::vec3 mForceSum;
 	public:
 		/** The orientation of the RigidBody in world space */
 		glm::quat mOrientation;
@@ -62,6 +58,10 @@ namespace physics {
 		 * be slowed down each time the integrate method is called so the
 		 * RigidBody doesn't move forever */
 		float mAngularSlowDown;
+		
+		/** A vector with the sum of all the forces currently applied to
+		 * the RigidBody */
+		glm::vec3 mForceSum;
 
 		/** A vector with the sum of all the torques currently applied to
 		 * the RigidBody */
@@ -94,21 +94,23 @@ namespace physics {
 		/** Class destructor */
 		~RigidBody() {};
 
+		/** @return	the mass of the RigidBody */
+		inline float getMass() const { return 1.0f / mInvertedMass; };
+
 		/** @return	the inverted mass (1/mass) of the RigidBody */
-		inline float getInvertedMass() const
-		{ return mInvertedMass; };
+		inline float getInvertedMass() const { return mInvertedMass; };
 
 		/** @return	true if the RigidBody has Finite Mass, false otherwise  */
 		inline bool hasFiniteMass() const
 		{ return mInvertedMass > 0; };
 
-		/** @return	the transformations matrix of the Rigid Body */
-		inline glm::mat4 getTransformsMatrix() const
-		{ return mTransformsMatrix; };
-
 		/** @return	the inverted inertiaTensor matrix of the RigidBody */
 		inline glm::mat3 getInvertedInertiaTensor() const
 		{ return mInvertedInertiaTensor; };
+
+		/** @return	the transformations matrix of the Rigid Body */
+		inline glm::mat4 getTransformsMatrix() const
+		{ return mTransformsMatrix; };
 
 		/** Applies the given force to the center of mass of the RigidBody
 		 * 

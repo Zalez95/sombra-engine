@@ -1,11 +1,12 @@
 #ifndef INPUT_DATA_H
 #define INPUT_DATA_H
 
-// Input constants
-#define MAX_MOUSE_BUTTONS	32
-#define MAX_KEYS			1024
-
 namespace window {
+
+	// Input constants
+	const size_t MAX_MOUSE_BUTTONS	= 32;
+	const size_t MAX_KEYS			= 1024;
+
 
 	/**
 	 * Struct InputData, it holds all the current data of the player input

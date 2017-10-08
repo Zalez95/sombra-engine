@@ -29,8 +29,10 @@
 #include "../collision/BoundingBox.h"
 #include "../collision/BoundingSphere.h"
 
+#include "../physics/PhysicsEngine.h"
 #include "../physics/PhysicsEntity.h"
 #include "../physics/RigidBody.h"
+#include "../physics/forces/Gravity.h"
 
 #include "../loaders/MeshLoader.h"
 #include "../loaders/MeshReader.h"
@@ -61,7 +63,7 @@ namespace game {
 
 		// Window
 		try {
-			mWindowSystem = new window::WindowSystem("< FAZE >", { WIDTH, HEIGHT, false, false });
+			mWindowSystem = new window::WindowSystem({"< FAZE Engine >", WIDTH, HEIGHT, false, false });
 			std::cout << mWindowSystem->getGLInfo() << std::endl;
 		}
 		catch(std::exception& e) {
@@ -77,7 +79,10 @@ namespace game {
 		}
 
 		// Physics
-		try { mPhysicsManager = new PhysicsManager(); }
+		try {
+			mPhysicsEngine = new physics::PhysicsEngine();
+			mPhysicsManager = new PhysicsManager(*mPhysicsEngine);
+		}
 		catch (std::exception& e) {
 			mState = GameState::ERROR;
 			Logger::writeLog(LogType::ERROR, "Error initializing the physics manager: " + std::string(e.what()));
@@ -225,7 +230,7 @@ namespace game {
 
 			// Lights
 			graphics::BaseLight baseLight1(graphics::RGBColor(0.5f, 0.6f, 0.3f), graphics::RGBColor(0.1f, 0.5f, 0.6f));
-			graphics::Attenuation attenuation1{ 0.5f, 0.25f, 0.2f };
+			graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
 			pointLight1 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 			pointLight2 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 
@@ -251,22 +256,22 @@ namespace game {
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
+
 		// Player
 		auto player	= std::make_unique<Entity>("player");
 		player->mPosition = glm::vec3(0, 1, 10);
        	
-		mInputManager->addEntity(player.get());
-		mPhysicsManager->addEntity(
-			player.get(),
-			std::make_unique<physics::PhysicsEntity>(
-       			physics::RigidBody(
-       				40.0f, 0.01f,
-       				2.0f / 5.0f * 10.0f * glm::pow(2.0f,2.0f) * glm::mat3(), 0.01f
-       			),
-				//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-				std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
-       		)
+		auto physicsEntity1 = std::make_unique<physics::PhysicsEntity>(
+			physics::RigidBody(
+				40.0f, 0.01f,
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.01f
+			),
+			std::make_unique<collision::BoundingBox>(glm::vec3(1, 1, 1)), glm::mat4()
+			//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 		);
+
+		mInputManager->addEntity(player.get());
+		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1), true);
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
 
 		mEntities.push_back(std::move(player));
@@ -275,56 +280,56 @@ namespace game {
 		mEntities.push_back( terrainLoader.createTerrain("terrain", 100.0f, *heightMap1, 10.0f) );
 
 		// Plane
-		auto plane = std::make_unique<Entity>("Plane");
+		auto plane = std::make_unique<Entity>("plane");
 		plane->mPosition = glm::vec3(-5.0f, 1.0f, -5.0f);
 
 		auto renderable3D1 = std::make_unique<graphics::Renderable3D>(mesh2, fileMaterials[4], texture2);
-		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
+		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1), glm::mat4());
 
 		mEntities.push_back(std::move(plane));
- 
-		// Cubes
-		glm::vec3 cubePositions[5] = { glm::vec3(2, 0, -10), glm::vec3(0, 2, -10), glm::vec3(0, 0, -8), glm::vec3(0, 0, -10), glm::vec3(10, 0, -10) };
+
+		// Fixed cubes
+		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
 		for (size_t i = 0; i < 5; ++i) {
-			auto cube = std::make_unique<Entity>("random cube");
+			auto cube = std::make_unique<Entity>("non-random-cube");
 			cube->mPosition = cubePositions[i];
 			
-			auto physicsEntityCube = std::make_unique<physics::PhysicsEntity>(
+			auto physicsEntityCube2 = std::make_unique<physics::PhysicsEntity>(
 				physics::RigidBody(
 					20.0f, 1.0f,
 					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
 				),
-				//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-				std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
+				std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+				//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 			);
-			if (i == 3) { physicsEntityCube->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
-			if (i == 4) { physicsEntityCube->getRigidBody()->mLinearVelocity += glm::vec3(-1, 0, 0); }
-			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube));
+			if (i == 3) { physicsEntityCube2->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
+			if (i == 4) { cube->mVelocity += glm::vec3(-1, 0, 0); }
+
+			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2), false);
 			
 			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4());
 
 			mEntities.push_back(std::move(cube));
         }
-		
+
+		// Random cubes
 		for (size_t i = 0; i < NUM_CUBES; ++i) {
-			auto cube = std::make_unique<Entity>("random cube");
+			auto cube = std::make_unique<Entity>("random-cube");
 			cube->mPosition = glm::ballRand(50.0f);
 			
-			mPhysicsManager->addEntity(
-				cube.get(),
-				std::make_unique<physics::PhysicsEntity>(
-					physics::RigidBody(
-						10.0f, 1.0f,
-						2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
-					),
-					//std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-					std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
-				)
+			auto physicsEntityCube2 = std::make_unique<physics::PhysicsEntity>(
+				physics::RigidBody(
+					10.0f, 1.0f,
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
+				),
+				std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
+				//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 			);
+			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2), false);
 			
 			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4());
 
 			mEntities.push_back(std::move(cube));
 		}
@@ -343,18 +348,18 @@ namespace game {
 			);
 			
 			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(*it, tmpMaterial, nullptr);
-			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
+			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4());
 			
 			mEntities.push_back(std::move(building));
 		}
 
 		// Lights
-		auto eL1 = std::make_unique<Entity>("PointLight1");
+		auto eL1 = std::make_unique<Entity>("point-light1");
 		eL1->mPosition = glm::vec3(2, 1, 5);
 		mGraphicsManager->addEntity(eL1.get(), std::move(pointLight1));
 		mEntities.push_back(std::move(eL1));
 
-		auto eL2 = std::make_unique<Entity>("PointLight2");
+		auto eL2 = std::make_unique<Entity>("point-light2");
 		eL2->mPosition = glm::vec3(-3, 1, 5);
 		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
 		mEntities.push_back(std::move(eL2));
@@ -379,7 +384,7 @@ namespace game {
 				if (mWindowSystem->getInputData()->mKeys[GLFW_KEY_ESCAPE]) {
 					mState = GameState::STOPPED;
 				}
-				mInputManager->update(deltaTime);
+				mInputManager->update();
 				mPhysicsManager->update(deltaTime);
 				mGraphicsManager->update();
 

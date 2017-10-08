@@ -32,8 +32,9 @@ namespace game {
 		graphics::Layer3D mLayer3D;
 
 		std::map<Entity*, CameraUPtr> mCameraEntities;
-		std::map<Entity*, Renderable3DUPtr> mRenderable3DEntities;
 		std::map<Entity*, PointLightUPtr> mPointLightEntities;
+		std::map<Entity*, std::pair<Renderable3DUPtr, glm::mat4>>
+			mRenderable3DEntities;
 
 	public:		// Functions
 		/** Creates a new GraphicsManager
@@ -59,8 +60,13 @@ namespace game {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			GraphicsManager
 		 * @param	renderable3D a pointer to the Renderable3D to add to the
-		 *			GraphicsManager */
-		void addEntity(Entity* entity, Renderable3DUPtr renderable3D);
+		 *			GraphicsManager
+		 * @param	offset the offset matrix of the Renderable3D relative to
+		 * 			the Entity */
+		void addEntity(
+			Entity* entity,
+			Renderable3DUPtr renderable3D, const glm::mat4& offset
+		);
 
 		/** Adds the given Entity and its PointLight data to the
 		 * GraphicsManager

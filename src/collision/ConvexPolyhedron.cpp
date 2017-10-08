@@ -1,5 +1,6 @@
 #include "ConvexPolyhedron.h"
 #include <cassert>
+#include <algorithm>
 #include "AABB.h"
 
 namespace collision {
@@ -39,15 +40,14 @@ namespace collision {
 		const glm::vec3& direction
 	) const
 	{
-		glm::vec3 furthestPoint = mVerticesWorld[0];
-
-		for (const glm::vec3 p : mVerticesWorld) {
-			if (glm::dot(p, direction) > glm::dot(furthestPoint, direction)) {
-				furthestPoint = p;
+		return *std::max_element(
+			mVerticesWorld.begin(),
+			mVerticesWorld.end(),
+			[direction](const glm::vec3& p1, const glm::vec3& p2)
+			{
+				return glm::dot(p1, direction) < glm::dot(p2, direction);
 			}
-		}
-
-		return furthestPoint;
+		);
 	}
 
 }

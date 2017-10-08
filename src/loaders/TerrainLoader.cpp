@@ -19,7 +19,7 @@ namespace loaders {
 
 		auto mesh = createMesh(name, size, heightMap, maxHeight);
 		auto renderable3D = std::make_unique<graphics::Renderable3D>(std::move(mesh), nullptr, nullptr);
-		mGraphicsManager.addEntity(terrain.get(), std::move(renderable3D));
+		mGraphicsManager.addEntity(terrain.get(), std::move(renderable3D), glm::mat4());
 
 		return terrain;
 	}

@@ -6,6 +6,7 @@
 
 namespace window { class WindowSystem; }
 namespace graphics { class GraphicsSystem; }
+namespace physics { class PhysicsEngine; }
 namespace game {
 
 	struct Entity;
@@ -20,8 +21,8 @@ namespace game {
 	class Game
 	{
     private:    // Constants
-	    static const unsigned int WIDTH		= 640;
-	    static const unsigned int HEIGHT	= 480;
+	    static const unsigned int WIDTH		= 1280;
+	    static const unsigned int HEIGHT	= 720;
 	    static const float UPDATE_TIME;
 		static const unsigned int NUM_CUBES;
 
@@ -42,6 +43,7 @@ namespace game {
 
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
+		physics::PhysicsEngine* mPhysicsEngine;
 
 		/** The Entities that currently are in the game */
 		std::vector<EntityUPtr> mEntities;

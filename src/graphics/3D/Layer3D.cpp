@@ -6,9 +6,9 @@
 namespace graphics {
 
 // Static variables definition
-	const float Layer3D::FOV = glm::radians(50.0f);
-	const float Layer3D::Z_NEAR = 1.0f;
-	const float Layer3D::Z_FAR = 250.0f;
+	const float Layer3D::FOV	= glm::radians(60.0f);
+	const float Layer3D::Z_NEAR	= 1.0f;
+	const float Layer3D::Z_FAR	= 250.0f;
 
 // Public functions
 	Layer3D::Layer3D() :

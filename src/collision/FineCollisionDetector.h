@@ -6,9 +6,8 @@
 
 namespace collision {
 
-	struct Contact;
+	class Contact;
 	class Collider;
-//	class Plane;
 	class BoundingSphere;
 	class ConvexPolyhedron;
 
@@ -45,7 +44,7 @@ namespace collision {
 			const Collider& collider2
 		) const;
 	private:
-		/** Calculates if the two meshes are intersecting with the GJK
+		/** Calculates if the two Colliders are intersecting with the GJK
 		 * algorithm
 		 *
 		 * @param	collider1 the first convex Colliders that we want to check
@@ -60,29 +59,28 @@ namespace collision {
 			std::vector<SupportPoint>& simplex
 		) const;
 
-		/** Calculates the closest Triangle, its normal and distance to the
-		 * origin from the given data using the EPA algorithm
+		/** Calculates the contact points using the EPA algorithm
 		 *
 		 * @param	collider1 the first of the convex Colliders that collides
 		 * @param	collider2 the second of the convex Colliders that collides
-		 * @param	polytope the convex shape to expand with EPA
-		 * @param	closestFace the Triangle where we will store the closest
-		 *			face
-		 * @param	closestFaceDist the float where we will store the distance
-		 * 			of the closest face to the origin */
-		void calculateEPA(
-			const Collider& collider1,
-			const Collider& collider2,
-			std::vector<Triangle>& polytope,
-			Triangle& closestFace, float& closestFaceDist
+		 * @param	polytope the convex shape to expand with EPA. Initially it
+		 *			must hold a tetrahedron.
+		 * @return	the contact point in world space */
+		Contact calculateEPA(
+			const Collider& collider1, const Collider& collider2,
+			std::vector<Triangle>& polytope
 		) const;
 
-		/** @return	a point in the Minkowski difference of the two meshes
+		/** Calculates the furthest SupportPoint in the given direction inside
+		 * the Minkowski Difference (or the Configuration Space Object) of the
+		 * given colliders
+		 * 
 		 * @param	collider1 the first convex Collider with which we want to
 		 *			calculate the support point
 		 * @param	collider2 the second convex Collider with which we want to
 		 *			calculate the support point
-		 * @param	direction a vector pointing to the direction */
+		 * @param	direction a vector pointing to the direction
+		 * @return	a point in the Minkowski difference of the two Colliders */
 		SupportPoint getSupportPoint(
 			const Collider& collider1,
 			const Collider& collider2,

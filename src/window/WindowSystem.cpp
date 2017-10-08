@@ -47,8 +47,8 @@ namespace window {
 	}
 
 // Public functions
-	WindowSystem::WindowSystem(const std::string& title, const WindowData& windowData) :
-		mTitle(title), mWindowData(windowData), mWindow(nullptr), mInputData()
+	WindowSystem::WindowSystem(const WindowData& windowData) :
+		mWindowData(windowData), mWindow(nullptr), mInputData()
 	{
 		// 1. Init GLFW
 		if (!glfwInit()) {
@@ -62,7 +62,7 @@ namespace window {
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		glfwWindowHint(GLFW_RESIZABLE, mWindowData.mResizable);
 
-		mWindow = glfwCreateWindow( mWindowData.mWidth, mWindowData.mHeight, mTitle.c_str(), nullptr, nullptr );
+		mWindow = glfwCreateWindow(mWindowData.mWidth, mWindowData.mHeight, mWindowData.mTitle.c_str(), nullptr, nullptr);
 		if (!mWindow) {
 			glfwTerminate();
 			throw std::runtime_error("Failed to create the Window");

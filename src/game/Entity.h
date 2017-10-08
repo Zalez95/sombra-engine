@@ -19,6 +19,9 @@ namespace game {
 		/** The Entity position in world space */
 		glm::vec3 mPosition;
 
+		/** The Entity velocity in world space */
+		glm::vec3 mVelocity;
+		
 		/** The Entity orientation in world space */
 		glm::quat mOrientation;
 

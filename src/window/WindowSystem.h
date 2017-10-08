@@ -14,6 +14,9 @@ namespace window {
 	 */
 	struct WindowData
 	{
+		/** The window title */
+		std::string mTitle;
+
 		/** The window width */
 		int mWidth;
 
@@ -35,9 +38,6 @@ namespace window {
 	class WindowSystem
 	{
 	private:	// Attributes
-		/** The window title */
-		std::string mTitle;
-
 		/** The data of the window, like its flags and size */
 		WindowData mWindowData;
 
@@ -50,11 +50,9 @@ namespace window {
 	public:		// Functions
 		/** Creates a new Window, the viewport and sets the callbacks for
 		 * the events
-		 *
-		 * @param	title the title we want to show in the title bar of the
-		 *			window
+		 * 
 		 * @param	windowData the window data used to create the Window */
-		WindowSystem(const std::string& title, const WindowData& windowData);
+		WindowSystem(const WindowData& windowData);
 		
 		/** Class destructor, destroys the window and stops GLFW */
 		~WindowSystem();

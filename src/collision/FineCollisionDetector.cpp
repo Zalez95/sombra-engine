@@ -15,8 +15,13 @@ namespace collision {
 // Nested types definition
 	struct FineCollisionDetector::SupportPoint
 	{
+		// The SupportPoint's coordinates in the Configuration Space Object
 		glm::vec3 mV;
+
+		// The SupportPoint's coordinates relative to the first Collider
 		glm::vec3 mP1;
+
+		// The SupportPoint's coordinates relative to the second Collider
 		glm::vec3 mP2;
 
 		SupportPoint() {};
@@ -29,10 +34,9 @@ namespace collision {
 		~SupportPoint() {};
 
 		bool operator==(const SupportPoint& other) const
-		{
-			return other.mV == mV;
-		};
+		{ return other.mV == mV; };
 	};
+
 
 	struct FineCollisionDetector::Triangle
 	{
@@ -48,12 +52,11 @@ namespace collision {
 			const SupportPoint& b,
 			const SupportPoint& c
 		) : mA(a), mB(b), mC(c)
-		{
-			mNormal = glm::normalize(glm::cross(b.mV - a.mV, c.mV - a.mV));
-		};
+		{ mNormal = glm::normalize(glm::cross(b.mV - a.mV, c.mV - a.mV)); };
 
 		~Triangle() {};
 	};
+
 
 	struct FineCollisionDetector::Edge
 	{
@@ -83,28 +86,15 @@ namespace collision {
 
 		// GJK algorithm
 		std::vector<SupportPoint> simplex;
-		if (!calculateGJK(collider1, collider2, simplex)) { return ret; }
+		if (!calculateGJK(collider1, collider2, simplex)) {
+			return ret;
+		}
 
 		// EPA Algorithm
 		// Initialize the polytope with the simplex points
-		SupportPoint d = simplex[0], c = simplex[1], b = simplex[2], a = simplex[3];
+		SupportPoint &d = simplex[0], &c = simplex[1], &b = simplex[2], &a = simplex[3];
 		std::vector<Triangle> polytope = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
-
-		Triangle closestFace;
-		float closestFaceDist;
-		calculateEPA(collider1, collider2, polytope, closestFace, closestFaceDist);
-
-		// Create the contact
-		glm::vec3 position;
-		glm::intersectLineTriangle(
-			glm::vec3(), closestFace.mNormal * closestFaceDist,
-			closestFace.mA.mV, closestFace.mB.mV, closestFace.mC.mV, position
-		);
-		position = position.x * closestFace.mA.mP1 +
-		   	position.y * closestFace.mB.mP1 +
-		   	position.z * closestFace.mC.mP1;
-
-		ret.emplace_back(closestFaceDist, position, -closestFace.mNormal);
+		ret.push_back(calculateEPA(collider1, collider2, polytope));
 
 		return ret;
 	}
@@ -138,40 +128,45 @@ namespace collision {
 	}
 
 
-	void FineCollisionDetector::calculateEPA(
+	Contact FineCollisionDetector::calculateEPA(
 		const Collider& collider1, const Collider& collider2,
-		std::vector<Triangle>& polytope, Triangle& closestFace, float& closestFaceDist
+		std::vector<Triangle>& polytope
 	) const
 	{
-		for (Triangle* lastF = nullptr;;) {
+		std::vector<Triangle>::iterator closestF;
+		float closestFDist = std::numeric_limits<float>::max();
+		while (true) {
 			// 1. Calculate the closest face to the origin of the polytope
-			Triangle* closestF		= nullptr;
-			float closestFDist		= std::numeric_limits<float>::max();
-			for (Triangle f : polytope) {
-				float fDist = abs(glm::dot(f.mNormal, f.mA.mV));
-				if (fDist <= closestFDist) {
-					closestF		= &f;
-					closestFDist	= fDist;
+			auto closestF2			= polytope.begin();
+			float closestFDist2		= std::numeric_limits<float>::max();
+			for (auto it = polytope.begin(); it != polytope.end(); ++it) {
+				float fDist = abs(glm::dot(it->mNormal, it->mA.mV));
+				if (fDist <= closestFDist2) {
+					closestF2		= it;
+					closestFDist2	= fDist;
 				}
 			}
 
-			// 2. Get the support point along the face normal
-			SupportPoint supportPoint = getSupportPoint(collider1, collider2, closestF->mNormal);
-
-			// 3. If we already evaluated this triangle or the change is
-			// smaller than TOLERANCE we found the closest triangle
-			if ((closestF == lastF) ||
-				(glm::dot(closestF->mNormal, supportPoint.mV) - closestFDist <= TOLERANCE)
-			) {
-				closestFace		= *closestF;
-				closestFaceDist	= closestFDist;
-				return;
+			// 2. If the difference of distance to the origin between the
+			// current closest face and last one is smaller than TOLERANCE
+			// we have found the closest triangle
+			if (closestFDist - closestFDist2 <= TOLERANCE) {
+				closestF			= closestF2;
+				closestFDist		= closestFDist2;
+				break;
 			}
 
-			// 4. Delete the faces that can be seen from the new point and get the edges of the created hole
+			// 3. Get a new support point along the face normal
+			SupportPoint supportPoint = getSupportPoint(collider1, collider2, closestF2->mNormal);
+
+			// 4. Remove the current closest face from the polytope
+			polytope.erase(closestF2);
+
+			// 5. Delete the faces that can be seen from the new point and get
+			// the edges of the created hole
 			std::vector<Edge> holeEdges;
 			for (auto it = polytope.begin(); it != polytope.end();) {
-				if (glm::dot(it->mNormal, supportPoint.mV - it->mA.mV) > 0) {
+				if (glm::dot(it->mNormal, supportPoint.mV) > 0) {
 					Edge e1(it->mA, it->mB);
 					auto itE1 = std::find(holeEdges.begin(), holeEdges.end(), e1);
 					if (itE1 == holeEdges.end()) holeEdges.push_back(e1); else holeEdges.erase(itE1);
@@ -191,11 +186,30 @@ namespace collision {
 				}
 			}
 
-			// 5. Add new faces connecting the edges of the hole to the support point
+			// 6. Add new faces connecting the edges of the hole to the support point
 			for (Edge e : holeEdges) { polytope.emplace_back(supportPoint, e.mA, e.mB); }
 
-			lastF = closestF;
+			closestFDist = closestFDist2;
 		}
+
+		// 7. Project The origin into the closest triangle and get its
+		// barycentric coordinates
+		glm::vec3 baryPosition;
+		glm::intersectRayTriangle(
+			glm::vec3(0), closestF->mNormal,
+			closestF->mA.mV, closestF->mB.mV, closestF->mC.mV,
+			baryPosition
+		);
+		baryPosition.z = 1.0f - baryPosition.x - baryPosition.y;
+
+		// 8. Calculate the global coordinates of the contact from the
+		// barycenter coordinates of the point
+		glm::vec3 cp;
+		cp.x = baryPosition.x * closestF->mA.mP1.x + baryPosition.y * closestF->mB.mP1.x + baryPosition.z * closestF->mC.mP1.x;
+		cp.y = baryPosition.x * closestF->mA.mP1.y + baryPosition.y * closestF->mB.mP1.y + baryPosition.z * closestF->mC.mP1.y;
+		cp.z = baryPosition.x * closestF->mA.mP1.z + baryPosition.y * closestF->mB.mP1.z + baryPosition.z * closestF->mC.mP1.z;
+
+		return Contact(closestFDist, cp, -closestF->mNormal);
 	}
 
 
@@ -301,7 +315,7 @@ namespace collision {
 				ret = doSimplex1D(simplex, direction);
 			}
 			else {
-				// Inside the triangle
+				// Inside the triangle in 2D
 				// Check if the origin is above or below the triangle
 				if (glm::dot(abc, ao) > 0) {
 					simplex = { c, b, a };

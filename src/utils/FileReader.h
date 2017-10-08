@@ -45,24 +45,24 @@ namespace utils {
 	public:
 		/** Creates a new FileLineReader
 		 *
-		 * @param	path the path of the file that we are going to read */
+		 * @param	path the path to the file that we are going to read */
 		FileReader(const std::string& path);
 
 		/** Class destructor */
 		~FileReader();
 
-		/** @return	the path of the file that the Reader is currently
+		/** @return	the path to the file that the FileReader is currently
 		 *			reading */
 		inline std::string getFilePath() const { return mPath; };
 
 		/** @return the name of the current file with its extension */
 		std::string getFileName() const;
 
-		/** @return	the path of the directory where is located the current
+		/** @return	the path to the directory where is located the current
 		 *			file */
 		std::string getDirectory() const;
 
-		/** @return	the state of the file */
+		/** @return	the current state of the file */
 		inline FileState getState() const { return mCurrentState; };
 
 		/** @return	the number of readed lines in the current file */
@@ -85,7 +85,7 @@ namespace utils {
 		 * @note	if there was an error parsing the parameter, the fail
 		 *			function will return true */
 		template<typename T>
-		FileReader& operator>>(T& token); 
+		FileReader& operator>>(T& token);
 
 		/** Reads the next value and splits it by the given separator, storing
 		 * the two resulting values in the given params

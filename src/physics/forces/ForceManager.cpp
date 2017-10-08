@@ -25,26 +25,12 @@ namespace physics {
 	{
 		// Clean the older forces
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-//			switch (it->mEntity->getType()) {
-//				case PhysicsEntityType::PARTICLE:
-//					it->mEntity->getParticle()->cleanForces();
-//					break;
-//				case PhysicsEntityType::RIGID_BODY:
-					it->mEntity->getRigidBody()->cleanForces();
-//					break;
-//			}
+			it->mEntity->getRigidBody()->cleanForces();
 		}
 
 		// Apply the current forces
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-//			switch (it->mEntity->getType()) {
-//				case PhysicsEntityType::PARTICLE:
-//					it->mForce->apply(it->mEntity->getParticle());
-//					break;
-//				case PhysicsEntityType::RIGID_BODY:
-					it->mForce->apply(it->mEntity->getRigidBody());
-//					break;
-//			}
+			it->mForce->apply(it->mEntity->getRigidBody());
 		}
 	}
 

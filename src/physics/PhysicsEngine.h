@@ -73,6 +73,9 @@ namespace physics {
 		 * @note	you must call this function before deleting the
 		 *			PhysicsEntity */
 		void removePhysicsEntity(PhysicsEntity* entity);
+
+		/** @return	the ForceManager of the PhysicsEngine */
+		inline ForceManager* getForceManager() { return &mForceManager; };
 	private:
 		/** Updates the positions of the PhysicsEntities added to the System
 		 *

@@ -3,7 +3,6 @@
 
 #include <glm/glm.hpp>
 #include "Force.h"
-#include "../Particle.h"
 #include "../RigidBody.h"
 
 namespace physics {
@@ -25,17 +24,8 @@ namespace physics {
 
 		/** Class destructor */
 		~Gravity() {};
-
-		/** Applyes the gravitational force to the given particle
-		 *
-		 * @param	particle a pointer to the Particle to which we want to
-		 *			apply the Force */
-		void apply(Particle* particle)
-		{
-			particle->addForce(mGravity * particle->getMass());
-		};
 		
-		/** Applyes the gravitational force to the given RigidBody based in the
+		/** Applies the gravitational force to the given RigidBody based in the
 		 * time
 		 *
 		 * @param	rigidBody a pointer to the RigidBody to which we want to

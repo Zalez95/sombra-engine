@@ -7,66 +7,44 @@
 
 namespace physics {
 
-//    /**
-//     * PhysicsEntityType tells us if the physics of the PhysicsEntity must be
-//     * calculated as a Particle (linear movement) or as a RigidBody
-//     * (linear and rotational movement)
-//     */
-//    enum PhysicsEntityType
-//    {
-//        PARTICLE,
-//        RIGID_BODY
-//    };
-
-
 	/**
-	 * Class PhysicsEntity
+	 * Class PhysicsEntity, 
 	 */
 	class PhysicsEntity
 	{
 	private:	// Attributes
-
 		/** The RigidBody of the PhysicsEntity */
 		RigidBody mRigidBody;
 
 		/** The Collider of the PhysicsEntity */
 		std::unique_ptr<collision::Collider> mCollider;
 
-		/** The matrix that holds the offset of the Collider from the
-		 * Particle / RigidBody of the PhysicsEntity */
+		/** The matrix that holds the offset of the Collider relative to the
+		 * RigidBody of the PhysicsEntity */
 		glm::mat4 mColliderOffset;
 
 	public:	    // Functions
-		/** Creates a new PhysicsEntity of Particle type */
-//		PhysicsEntity(
-//			Particle& particle,
-//			Collider* collider,
-//			const glm::mat4& colliderOffset
-//		) : mType(PhysicsEntityType::PARTICLE),
-//            mParticle(particle),
-//			mCollider(collider),
-//			mColliderOffset(colliderOffset) {};
+		/** Creates a new PhysicsEntity
+		 * 
+		 * @param	rigidBody the RigidBody of the PhysicsEntity */
+		PhysicsEntity(const RigidBody& rigidBody) : mRigidBody(rigidBody) {};
 
-		/** Creates a new PhysicsEntity of RigidBody type */
+		/** Creates a new PhysicsEntity with a Collider
+		 * 
+		 * @param	rigidBody the RigidBody of the PhysicsEntity
+		 * @param	collider a pointer to the Collider of the PhysicsEntity
+		 * @param	colliderOffset the offset matrix of the Collider relative
+		 *			to the rigidBody of the PhysicsEntity */
 		PhysicsEntity(
 			const RigidBody& rigidBody,
 			std::unique_ptr<collision::Collider> collider,
 			const glm::mat4& colliderOffset
-		) : //mType(PhysicsEntityType::RIGID_BODY),
-			mRigidBody(rigidBody),
+		) : mRigidBody(rigidBody),
 			mCollider(std::move(collider)),
 			mColliderOffset(colliderOffset) {};
 
 		/** Class destructor */
 		~PhysicsEntity() {};
-
-		/** @return	the type of the PhysicsEntity */
-//		inline PhysicsEntityType getType() const
-//		{ return mType; };
-
-		/** @return	a pointer to the Particle of the PhysicsEntity */
-//		inline Particle* getParticle() const
-//		{ return mParticle.get(); };
 
 		/** @return	a pointer to the RigidBody of the PhysicsEntity */
 		inline RigidBody* getRigidBody()

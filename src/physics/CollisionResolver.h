@@ -101,7 +101,7 @@ namespace physics {
 		 * next steps in the collision resolution
 		 *
 		 * @param   contactData the ContactData to prepare */
-		void prepareContact(ContactData& contactData);
+		void prepareContactData(ContactData& contactData) const;
 
 		/** Calculates the matrix used to transform the coordinates from
 		 * Contact space to World space
@@ -117,7 +117,7 @@ namespace physics {
 		 *
 		 * @param   contactData the ContactData whose RigidBodies' positions
 		 *			have to change */
-		void calculatePositionChanges(ContactData& contactData);
+		void calculatePositionChanges(ContactData& contactData) const;
 
 		/** Calculates the change in the linear and angular velocity of the
 		 * RigidBodies due to the collision
@@ -126,7 +126,9 @@ namespace physics {
 		 *			have to change
 		 * @param	delta the elapsed time since the last Update of the
 		 * 			CollisionResolver */
-		void calculateVelocityChanges(ContactData& contactData, float delta);
+		void calculateVelocityChanges(
+			ContactData& contactData, float delta
+		) const;
 
 		/** Updates the penetration of the contacts that have at least one
 		 * RigidBody equal to one of RigidBodies in the given ContactData

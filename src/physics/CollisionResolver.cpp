@@ -15,20 +15,20 @@ namespace physics {
 	void CollisionResolver::resolve(float delta)
 	{
 		for (ContactData& contactData : mContacts) {
-			prepareContact(contactData);
+			prepareContactData(contactData);
 		}
 
 		while (!mContacts.empty()) {
 			// Update the contact with the biggest penetration
 			auto maxIt = mContacts.begin();
 			for (auto it = maxIt; it != mContacts.end(); ++it) {
-				if (it->mContact.mPenetration > maxIt->mContact.mPenetration) {
+				if (it->mContact.getPenetration() > maxIt->mContact.getPenetration()) {
 					maxIt = it;
 				}
 			}
 
 			ContactData& maxContact = (*maxIt);
-			prepareContact(maxContact);
+			prepareContactData(maxContact);
 			calculatePositionChanges(maxContact);
 			calculateVelocityChanges(maxContact, delta);
 			updateOtherContacts(maxContact);
@@ -38,7 +38,7 @@ namespace physics {
 	}
 
 // Private functions
-	void CollisionResolver::prepareContact(ContactData& contactData)
+	void CollisionResolver::prepareContactData(ContactData& contactData) const
 	{
 		// If there is only one body, it must be in the first position
 		if (!contactData.mContactBodies[0]) {
@@ -50,7 +50,7 @@ namespace physics {
 
 		// Calculate the positions of the RigidBodies relative to the Contact
 		// point
-		glm::vec3 contactPosition = contactData.mContact.mPosition;
+		glm::vec3 contactPosition = contactData.mContact.getPosition();
 		for (size_t i = 0; i < 2; ++i) {
 			if (contactData.mContactBodies[i]) {
 				contactData.mRelativePositions[i] = contactPosition - contactData.mContactBodies[i]->mPosition;
@@ -76,15 +76,16 @@ namespace physics {
 		// We create the orthonormal with the normal and one generated vector
 		// (we split the code so we don't end with problems with the normal being
 		// parallel to the generated vector)
-		if (abs(contact.mNormal.x) > abs(contact.mNormal.y)) {
+		glm::vec3 contactNormal = contact.getNormal();
+		if (abs(contactNormal.x) > abs(contactNormal.y)) {
 			// The normal is nearer to the X axis so we use the Y axis as the generated vector
-			tangents[0] = glm::cross(contact.mNormal, glm::vec3(0, 1, 0));
-			tangents[1] = glm::cross(tangents[0], contact.mNormal);
+			tangents[0] = glm::cross(contactNormal, glm::vec3(0, 1, 0));
+			tangents[1] = glm::cross(tangents[0], contactNormal);
 		}
 		else {
 			// The normal is nearer to the Y axis so we use the X axis as the generated vector
-			tangents[0] = glm::cross(contact.mNormal, glm::vec3(1, 0, 0));
-			tangents[1] = glm::cross(tangents[0], contact.mNormal);
+			tangents[0] = glm::cross(contactNormal, glm::vec3(1, 0, 0));
+			tangents[1] = glm::cross(tangents[0], contactNormal);
 		}
 
 		tangents[0] = glm::normalize(tangents[0]);
@@ -92,14 +93,14 @@ namespace physics {
 
 		// Create the matrix from the basis vectors and return it's inverse
 		// Note that the inverse of a rotation matrix is the same than it's transpose
-		return glm::transpose( glm::mat3(contact.mNormal, tangents[0], tangents[1]) );
+		return glm::transpose( glm::mat3(contactNormal, tangents[0], tangents[1]) );
 	}
 
 
-	void CollisionResolver::calculatePositionChanges(ContactData& contactData)
+	void CollisionResolver::calculatePositionChanges(ContactData& contactData) const
 	{
-		glm::vec3 contactNormal	= contactData.mContact.mNormal;
-		float penetration		= contactData.mContact.mPenetration;
+		glm::vec3 contactNormal	= contactData.mContact.getNormal();
+		float penetration		= contactData.mContact.getPenetration();
 
 		// Calculate linear, angular and total inertia of both RigidBodies in
 		// the direction of the Contact normal
@@ -156,7 +157,7 @@ namespace physics {
 	}
 
 
-	void CollisionResolver::calculateVelocityChanges(ContactData& contactData, float delta)
+	void CollisionResolver::calculateVelocityChanges(ContactData& contactData, float delta) const
 	{
 		// Calculate the closing velocity at the contact point
 		glm::vec3 closingVelocity	= contactData.mContactToWorldMatrix * contactData.mRelativeVelocities[0];
@@ -167,7 +168,7 @@ namespace physics {
 		float deltaVelocity			= -(1 + RESTITUTION) * closingVelocity.x;
 
 		// Calculate the desired delta velocity
-		glm::vec3 contactNormal = contactData.mContact.mNormal;
+		glm::vec3 contactNormal = contactData.mContact.getNormal();
 		float desiredDeltaVelocity	= glm::dot(contactData.mContactBodies[0]->mLinearAcceleration, contactNormal) * delta;
 		if (contactData.mContactBodies[1]) {
 			desiredDeltaVelocity	-= glm::dot(contactData.mContactBodies[1]->mLinearAcceleration, contactNormal) * delta;
@@ -209,15 +210,15 @@ namespace physics {
 					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mRelativePositions[0]);
 					contactPoint += contactData.mVelocityChange[0];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.mNormal);
-					contactData.mContact.mPenetration += penetrationChange;
+					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
+					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
 				}
 				else if (cd.mContactBodies[0] == contactData.mContactBodies[1]) {
 					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mRelativePositions[1]);
 					contactPoint += contactData.mVelocityChange[1];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.mNormal);
-					contactData.mContact.mPenetration += penetrationChange;
+					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
+					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
 				}
 			}
 			else if (cd.mContactBodies[1]) {
@@ -225,15 +226,15 @@ namespace physics {
 					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mRelativePositions[1]);
 					contactPoint += contactData.mVelocityChange[1];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.mNormal);
-					contactData.mContact.mPenetration += penetrationChange;
+					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
+					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
 				}
 				else if (cd.mContactBodies[1] == contactData.mContactBodies[0]) {
 					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mRelativePositions[0]);
 					contactPoint += contactData.mVelocityChange[0];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.mNormal);
-					contactData.mContact.mPenetration += penetrationChange;
+					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
+					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
 				}
 			}
 		}

@@ -23,12 +23,12 @@ namespace game {
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D)
+	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D, const glm::mat4& offset)
 	{
 		if (!entity || !renderable3D) return;
 
 		mLayer3D.addRenderable3D(renderable3D.get());
-		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
+		mRenderable3DEntities.emplace(entity, std::make_pair(std::move(renderable3D), offset));
 	}
 
 
@@ -51,7 +51,7 @@ namespace game {
 
 		auto itRenderable3D = mRenderable3DEntities.find(entity);
 		if (itRenderable3D != mRenderable3DEntities.end()) {
-			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
+			mLayer3D.removeRenderable3D(itRenderable3D->second.first.get());
 			mRenderable3DEntities.erase(itRenderable3D);
 		}
 
@@ -81,7 +81,8 @@ namespace game {
 		for (auto& re : mRenderable3DEntities) {
 			glm::mat4 translation	= glm::translate(glm::mat4(), re.first->mPosition);
 			glm::mat4 rotation		= glm::mat4_cast(re.first->mOrientation);
-			re.second->setModelMatrix(translation * rotation);
+			glm::mat4 offset		= re.second.second;
+			re.second.first->setModelMatrix(offset * translation * rotation);
 		}
 	}
 

@@ -48,7 +48,6 @@ namespace collision {
 		 *			ConvexPolyhedron */
 		virtual AABB getAABB() const;
 
-		
 		/** @return	the coordinates in world space of ConvexPolyhedron's
 		 *			furthest point in the given direction
 		 * @param	direction the direction towards we want to get the furthest

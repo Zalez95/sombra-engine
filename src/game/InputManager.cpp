@@ -6,9 +6,9 @@
 namespace game {
 
 // Static variables definition
-	const float InputManager::RUN_SPEED		= 100.0f;
-	const float InputManager::JUMP_SPEED	= 50.0f;
-	const float InputManager::MOUSE_SPEED	= 15.0f;
+	const float InputManager::RUN_SPEED		= 7.5f;
+	const float InputManager::JUMP_SPEED	= 10.0f;
+	const float InputManager::MOUSE_SPEED	= 5.0f;
 
 // Public functions definition
 	void InputManager::addEntity(Entity* entity)
@@ -28,7 +28,7 @@ namespace game {
 	}
 
 
-	void InputManager::update(float delta)
+	void InputManager::update()
 	{
 		// Get the player's input data
 		const window::InputData* inputData = mWindowSystem.getInputData();
@@ -36,8 +36,8 @@ namespace game {
 		if (inputData) {
 			// Update the entities
 			for (Entity* entity : mEntities) {
-				doMouseInput(entity, *inputData, delta);
-				doKeyboardInput(entity, *inputData, delta);
+				doMouseInput(entity, *inputData);
+				doKeyboardInput(entity, *inputData);
 			}
 
 			resetMousePosition();
@@ -45,7 +45,7 @@ namespace game {
 	}
 
 // Private functions definition
-	void InputManager::doMouseInput(Entity* entity, const window::InputData& inputData, float delta) const
+	void InputManager::doMouseInput(Entity* entity, const window::InputData& inputData) const
 	{
 		float width			= static_cast<float>(mWindowSystem.getWidth());
 		float height		= static_cast<float>(mWindowSystem.getHeight());
@@ -57,11 +57,11 @@ namespace game {
 		);
 
 		// Calculate the rotation around the Entity's y-axis
-		float yaw			= (MOUSE_SPEED * delta) * mouseDelta.x;
+		float yaw			= MOUSE_SPEED * mouseDelta.x;
 		glm::quat qYaw		= glm::angleAxis(yaw, glm::vec3(0, 1, 0));
 
 		// Calculate the rotation around the Entity's x-axis
-		float pitch			= (MOUSE_SPEED * delta) * mouseDelta.y;
+		float pitch			= MOUSE_SPEED * mouseDelta.y;
 		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 		
 		// Apply the change in orientation
@@ -69,7 +69,7 @@ namespace game {
 	}
 
 
-	void InputManager::doKeyboardInput(Entity* entity, const window::InputData& inputData, float delta) const
+	void InputManager::doKeyboardInput(Entity* entity, const window::InputData& inputData) const
 	{
 		glm::vec3 forward	= glm::vec3(0, 0,-1) * entity->mOrientation;
 		glm::vec3 up		= glm::vec3(0, 1, 0);
@@ -83,15 +83,18 @@ namespace game {
 		if (inputData.mKeys[GLFW_KEY_A]) { direction -= right; }
 
 		// Normalize the direction
-		float len = glm::length(direction);
-		if (len > 0) { direction /= len; }
+		float length = glm::length(direction);
+		if (length > 0) { direction /= length; }
 
 		// Transform the direction to velocity
-		entity->mPosition += RUN_SPEED * delta * direction;
+		float velocityDiff = RUN_SPEED - glm::length(entity->mVelocity);
+		if (velocityDiff > 0) {
+			entity->mVelocity += velocityDiff * direction;
+		}
 
 		// Add the jump velocity
-		if (inputData.mKeys[GLFW_KEY_SPACE]) { entity->mPosition += JUMP_SPEED * delta * up; }
-		if (inputData.mKeys[GLFW_KEY_LEFT_CONTROL]) { entity->mPosition -= JUMP_SPEED * delta * up; }
+		if (inputData.mKeys[GLFW_KEY_SPACE]) { entity->mVelocity += JUMP_SPEED * up; }
+		if (inputData.mKeys[GLFW_KEY_LEFT_CONTROL]) { entity->mVelocity -= JUMP_SPEED * up; }
 	}
 
 

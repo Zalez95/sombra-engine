@@ -51,31 +51,25 @@ namespace game {
 		 *			InputManager */
 		void removeEntity(Entity* entity);
 
-		/** Updates the Entities with the player input
-		 * 
-		 * @param	delta the elapsed time since the last update */
-		void update(float delta);
+		/** Updates the Entities with the player input */
+		void update();
 	private:
 		/** Updates the orientation of the given Entity with the player's
 		 * mouse input
 		 * 
 		 * @param	entity a pointer to the Entity to update
-		 * @param	inputData the current player's input data
-		 * @param	delta the elapsed time since the last update */
+		 * @param	inputData the current player's input data */
 		void doMouseInput(
-			Entity* entity, const window::InputData& inputData,
-			float delta
+			Entity* entity, const window::InputData& inputData
 		) const;
 
 		/** Updates the locations of the given Entity with the player's
 		 * mouse input
 		 * 
 		 * @param	entity a pointer to the Entity to update
-		 * @param	inputData the current player's input data
-		 * @param	delta the elapsed time since the last update */
+		 * @param	inputData the current player's input data */
 		void doKeyboardInput(
-			Entity* entity, const window::InputData& inputData,
-			float delta
+			Entity* entity, const window::InputData& inputData
 		) const;
 
 		/** Resets the mouse position to the center of the screen */

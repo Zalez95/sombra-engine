@@ -3,13 +3,15 @@
 
 namespace game {
 
-	void PhysicsManager::addEntity(Entity* entity, PhysicsEntityUPtr physicsEntity)
+	void PhysicsManager::addEntity(Entity* entity, PhysicsEntityUPtr physicsEntity, bool modifiable)
 	{
 		if (!entity || !physicsEntity) return;
 
+		// The rigid body initial data is overrided by the entity one
 		physics::RigidBody* rigidBody = physicsEntity->getRigidBody();
-		rigidBody->mPosition	= entity->mPosition;
-		rigidBody->mOrientation	= entity->mOrientation;
+		rigidBody->mPosition			= entity->mPosition;
+		rigidBody->mLinearVelocity		= entity->mVelocity;
+		rigidBody->mOrientation			= entity->mOrientation;
 
 		mPhysicsEngine.addPhysicsEntity(physicsEntity.get());
 		mEntityMap.emplace(
@@ -17,8 +19,7 @@ namespace game {
 			std::forward_as_tuple(entity),
 			std::forward_as_tuple(
 				std::move(physicsEntity),
-				entity->mPosition,
-				entity->mOrientation
+				modifiable
 			)
 		);
 	}
@@ -36,31 +37,29 @@ namespace game {
 
 	void PhysicsManager::update(float delta)
 	{
+		// We update the rigid body data with the changes to the entity data
+		for (auto& entry : mEntityMap) {
+			if (entry.second.mModifiable) {
+				Entity* entity = entry.first;
+				physics::RigidBody* rigidBody = entry.second.mPhysicsEntity->getRigidBody();
+
+				rigidBody->mPosition			= entity->mPosition;
+				rigidBody->mLinearVelocity		= entity->mVelocity;
+				rigidBody->mOrientation			= entity->mOrientation;
+			}
+		}
+
+		// Update the rigid bodies
 		mPhysicsEngine.update(delta);
 
+		// We update the entity data with the changes to the rigid body data
 		for (auto& entry : mEntityMap) {
 			Entity* entity					= entry.first;
-			PhysicsData& pData				= entry.second;
-			physics::RigidBody* rigidBody	= pData.mPhysicsEntity->getRigidBody();
+			physics::RigidBody* rigidBody	= entry.second.mPhysicsEntity->getRigidBody();
 
-			// If the Entity position or orientation has been changed by other
-			// component, update the rigid body data
-			if (entity->mPosition != pData.mEntityLastPosition) {
-				rigidBody->mPosition		+= entity->mPosition - pData.mEntityLastPosition;
-			}
-			if (entity->mOrientation != pData.mEntityLastOrientation) {
-				glm::quat qDifference		= entity->mOrientation * glm::inverse(pData.mEntityLastOrientation);
-				rigidBody->mOrientation		= qDifference * rigidBody->mOrientation;
-			}
-
-			// Update the Entity position and orientation with the changes to
-			// the rigid body position and orientation
-			entity->mPosition				= rigidBody->mPosition;
-			entity->mOrientation			= rigidBody->mOrientation;
-
-			// Update the entity last position and orientation
-			pData.mEntityLastPosition		= entity->mPosition;
-			pData.mEntityLastOrientation	= entity->mOrientation;
+			entity->mPosition		= rigidBody->mPosition;
+			entity->mVelocity		= rigidBody->mLinearVelocity;
+			entity->mOrientation	= rigidBody->mOrientation;
 		}
 	}
 

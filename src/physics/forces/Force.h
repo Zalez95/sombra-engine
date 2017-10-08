@@ -3,7 +3,6 @@
 
 namespace physics {
 
-	class Particle;
 	class RigidBody;
 
 
@@ -14,12 +13,6 @@ namespace physics {
 	class Force
 	{
 	public:		// Functions
-		/** Applyes the force to the given Particle
-		 * 
-		 * @param	particle a pointer to the Particle to which we want to
-		 *			apply the Force */
-		virtual void apply(Particle* particle) = 0;
-
 		/** Applyes the force to the given RigidBody
 		 * 
 		 * @param	rigidBody a pointer to the RigidBody to which we want to
