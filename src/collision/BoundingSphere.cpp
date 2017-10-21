@@ -5,21 +5,24 @@ namespace collision {
 
 	void BoundingSphere::setTransforms(const glm::mat4& transforms)
 	{
-		mCenter = glm::vec3(transforms[3]);
+		mTransformsMatrix	= transforms;
 	}
 
 
 	AABB BoundingSphere::getAABB() const
 	{
-		return AABB(mCenter - glm::vec3(mRadius), mCenter + glm::vec3(mRadius));
+		glm::vec3 center = getCenter();
+		return AABB(center - glm::vec3(mRadius), center + glm::vec3(mRadius));
 	}
 
 
-	glm::vec3 BoundingSphere::getFurthestPointInDirection(
-		const glm::vec3& direction
+	void BoundingSphere::getFurthestPointInDirection(
+		const glm::vec3& direction,
+		glm::vec3& pointWorld, glm::vec3& pointLocal
 	) const
 	{
-		return (mCenter + mRadius * glm::normalize(direction));
+		pointWorld = getCenter() + mRadius * glm::normalize(direction);
+		pointLocal = glm::vec3();// TODO: mRadius * glm::axis(glm::quat(direction) * glm::inverse(mOrientation));
 	}
 
 }

@@ -21,6 +21,9 @@ namespace collision {
 		 * vertices */
 		std::vector<glm::vec3> mVerticesWorld;
 
+		/** The transformation matrix of the ConvexPolyhedron */
+		glm::mat4 mTransformsMatrix;
+
 	public:		// Functions
 		/** Creates a new ConvexPolyhedron located at the origin of
 		 * coordinates
@@ -44,16 +47,29 @@ namespace collision {
 		 *			position and rotation of the ConvexPolyhedron */
 		virtual void setTransforms(const glm::mat4& transforms);
 
+		/** @return	the transformations matrix currently applied to the
+		 *			ConvexPolyhedron */
+		inline virtual glm::mat4 getTransforms() const
+		{ return mTransformsMatrix; };
+
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			ConvexPolyhedron */
 		virtual AABB getAABB() const;
 
-		/** @return	the coordinates in world space of ConvexPolyhedron's
-		 *			furthest point in the given direction
+		/** Calculates the coordinates of the ConvexPolyhedron's furthest point
+		 * in the given direction
+		 * 
 		 * @param	direction the direction towards we want to get the furthest
-		 *			point */
-		virtual glm::vec3 getFurthestPointInDirection(
-		   	const glm::vec3& direction
+		 *			point
+		 * @param	pointWorld the vector where we are going to store the
+		 *			coordinates in world space of ConvexPolyhedron's
+		 *			furthest point
+		 * @param	pointLocal the vector where we are going to store the
+		 *			coordinates in local space of ConvexPolyhedron's
+		 *			furthest point */
+		virtual void getFurthestPointInDirection(
+		   	const glm::vec3& direction,
+			glm::vec3& pointWorld, glm::vec3& pointLocal
 		) const;
 	};
 

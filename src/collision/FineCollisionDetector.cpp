@@ -2,10 +2,12 @@
 #include <limits>
 #include <cassert>
 #include <algorithm>
-#include <stdexcept>
 #include <glm/gtc/random.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/intersect.hpp>
 #include "Contact.h"
+#include "Collider.h"
+#include "Manifold.h"
 #include "Collider.h"
 #include "BoundingSphere.h"
 #include "ConvexPolyhedron.h"
@@ -15,26 +17,39 @@ namespace collision {
 // Nested types definition
 	struct FineCollisionDetector::SupportPoint
 	{
-		// The SupportPoint's coordinates in the Configuration Space Object
+		/** The SupportPoint's coordinates in the Configuration Space Object */
 		glm::vec3 mV;
 
-		// The SupportPoint's coordinates relative to the first Collider
-		glm::vec3 mP1;
+		/** The coordinates of the Contact point relative to each of the
+		 * Colliders in world space */
+		glm::vec3 mWorldPos[2];
 
-		// The SupportPoint's coordinates relative to the second Collider
-		glm::vec3 mP2;
+		/** The coordinates of the Contact point relative to each of the
+		 * Colliders in local space */
+		glm::vec3 mLocalPos[2];
 
 		SupportPoint() {};
-
-		SupportPoint(
-			const glm::vec3& v,
-			const glm::vec3& p1, const glm::vec3& p2
-		) : mV(v), mP1(p1), mP2(p2) {};
 
 		~SupportPoint() {};
 
 		bool operator==(const SupportPoint& other) const
 		{ return other.mV == mV; };
+	};
+
+
+	struct FineCollisionDetector::Edge
+	{
+		SupportPoint mA;
+		SupportPoint mB;
+
+		Edge(
+			const SupportPoint& a,
+			const SupportPoint& b
+		) : mA(a), mB(b) {};
+
+		~Edge() {};
+
+		bool operator==(Edge e) { return (mA == e.mA) && (mB == e.mB); };
 	};
 
 
@@ -57,46 +72,42 @@ namespace collision {
 		~Triangle() {};
 	};
 
-
-	struct FineCollisionDetector::Edge
-	{
-		SupportPoint mA;
-		SupportPoint mB;
-
-		Edge(
-			const SupportPoint& a,
-			const SupportPoint& b
-		) : mA(a), mB(b) {};
-
-		~Edge() {};
-
-		bool operator==(Edge e) { return (mA == e.mA) && (mB == e.mB); };
-	};
-
 // Static variables definition
-	const float FineCollisionDetector::TOLERANCE = 0.001f;
+	const float FineCollisionDetector::CONTACT_TOLERANCE	= 0.0001f;
+	const float FineCollisionDetector::CONTACT_SEPARATION	= 0.0002f;
 
 // Public functions
-	std::vector<Contact> FineCollisionDetector::collide(
-		const Collider& collider1,
-		const Collider& collider2
+	bool FineCollisionDetector::collide(
+		const Collider& collider1, const Collider& collider2,
+		Manifold& manifold
 	) const
 	{
-		std::vector<Contact> ret;
-
 		// GJK algorithm
 		std::vector<SupportPoint> simplex;
+		simplex.reserve(4);
 		if (!calculateGJK(collider1, collider2, simplex)) {
-			return ret;
+			return false;
 		}
 
-		// EPA Algorithm
-		// Initialize the polytope with the simplex points
-		SupportPoint &d = simplex[0], &c = simplex[1], &b = simplex[2], &a = simplex[3];
-		std::vector<Triangle> polytope = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
-		ret.push_back(calculateEPA(collider1, collider2, polytope));
+		// Create a tetrahedron polytope from the simplex points
+		auto polytope = createPolytope(collider1, collider2, simplex);
 
-		return ret;
+		// EPA Algorithm
+		Contact newContact = calculateEPA(collider1, collider2, polytope);
+
+		// Remove the contacts that are no longer valid from the manifold
+		removeInvalidContacts(manifold);
+		
+		// Check if the new Contact is far enough to the older contacts
+		if (!isClose(newContact, manifold)) {
+			// Add the new contact to the manifold
+			manifold.mContacts.push_back(newContact);
+
+			// Limit the number of points in the manifold to 4
+			limitManifoldContacts(manifold);
+		}
+		
+		return true;
 	}
 
 // Private functions
@@ -113,18 +124,98 @@ namespace collision {
 		while (flag) {
 			// 2. Get a support point along the current direction
 			SupportPoint supportPoint = getSupportPoint(collider1, collider2, direction);
+
+			// 3. Check if the support point is further along the search direction
 			if (glm::dot(supportPoint.mV, direction) > 0) {
-				// 3.1 Add the point and update the simplex
+				// 4.1 Add the point and update the simplex
 				simplex.push_back(supportPoint);
 				flag = !doSimplex(simplex, direction);
 			}
 			else {
-				// 3.2 There is no collision, exit without finishing the simplex
+				// 4.2 There is no collision, exit without finishing the simplex
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+
+	std::vector<FineCollisionDetector::Triangle> FineCollisionDetector::createPolytope(
+		const Collider& collider1, const Collider& collider2,
+		std::vector<SupportPoint>& simplex
+	) const
+	{
+		assert(simplex.size() > 0 && "The simplex must have at least one support point.");
+
+		if (simplex.size() == 1) {
+			// Search a support point in each axis direction
+			for (unsigned int i = 0; i < 3; ++i) {
+				for (float v : {-1.0f, 1.0f}) {
+					glm::vec3 searchDir;
+					searchDir[i] = v;
+					SupportPoint sp = getSupportPoint(collider1, collider2, searchDir);
+
+					if (glm::length(sp.mV - simplex[0].mV) >= CONTACT_TOLERANCE) {
+						simplex.push_back(sp);
+						break;
+					}
+				}
+			}
+		}
+		if (simplex.size() == 2) {
+			glm::vec3 v01 = simplex[1].mV - simplex[0].mV;
+
+			// Calculate a rotation matrix of 60 degrees around the line vector
+			glm::mat3 rotate60 = glm::mat3(glm::rotate(glm::mat4(), glm::pi<float>() / 6.0f, v01));
+
+			// Find the least significant axis
+			unsigned int closestAxis = 0;
+			for (unsigned int i = 1; i < 3; ++i) {
+				if (v01[i] < v01[closestAxis]) {
+					closestAxis = i;
+				}
+			}
+
+			glm::vec3 axis(0.0f);
+			axis[closestAxis] = 1.0f;
+
+			// Calculate a normal vector to the line with the axis
+			glm::vec3 vNormal = glm::cross(v01, axis);
+
+			// Search a support point in the 6 directions around the line
+			glm::vec3 searchDir = vNormal;
+			for (size_t i = 0; i < 6; ++i) {
+				SupportPoint sp = getSupportPoint(collider1, collider2, searchDir);
+
+				if (glm::length(sp.mV) > CONTACT_TOLERANCE) {
+					simplex.push_back(sp);
+					break;
+				}
+
+				searchDir = rotate60 * searchDir;
+			}
+		}
+		if (simplex.size() == 3) {
+			// Search a support point along the simplex's triangle normal
+			glm::vec3 v01 = simplex[1].mV - simplex[0].mV;
+			glm::vec3 v02 = simplex[2].mV - simplex[0].mV;
+			glm::vec3 searchDir = glm::cross(v01, v02);
+
+			SupportPoint sp = getSupportPoint(collider1, collider2, searchDir);
+
+			if (glm::length(sp.mV) <= CONTACT_TOLERANCE) {
+				// Try the opposite direction
+				searchDir = -searchDir;
+				sp = getSupportPoint(collider1, collider2, searchDir);
+			}
+
+			simplex.push_back(sp);
+		}
+
+		// Create the polytope from the simplex's points
+		SupportPoint &d = simplex[0], &c = simplex[1], &b = simplex[2], &a = simplex[3];
+		return { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
 	}
 
 
@@ -150,7 +241,7 @@ namespace collision {
 			// 2. If the difference of distance to the origin between the
 			// current closest face and last one is smaller than TOLERANCE
 			// we have found the closest triangle
-			if (closestFDist - closestFDist2 <= TOLERANCE) {
+			if (closestFDist - closestFDist2 <= CONTACT_TOLERANCE) {
 				closestF			= closestF2;
 				closestFDist		= closestFDist2;
 				break;
@@ -202,14 +293,117 @@ namespace collision {
 		);
 		baryPosition.z = 1.0f - baryPosition.x - baryPosition.y;
 
-		// 8. Calculate the global coordinates of the contact from the
-		// barycenter coordinates of the point
-		glm::vec3 cp;
-		cp.x = baryPosition.x * closestF->mA.mP1.x + baryPosition.y * closestF->mB.mP1.x + baryPosition.z * closestF->mC.mP1.x;
-		cp.y = baryPosition.x * closestF->mA.mP1.y + baryPosition.y * closestF->mB.mP1.y + baryPosition.z * closestF->mC.mP1.y;
-		cp.z = baryPosition.x * closestF->mA.mP1.z + baryPosition.y * closestF->mB.mP1.z + baryPosition.z * closestF->mC.mP1.z;
+		// 8. Calculate the coordinates of the contact from the barycenter
+		// coordinates of the point
+		Contact ret(closestFDist, -closestF->mNormal);
+		for (unsigned int i = 0; i < 2; ++i) {
+			for (unsigned int j = 0; j < 1; ++j) {
+				ret.mWorldPos[i][j] = baryPosition.x * closestF->mA.mWorldPos[i][j]
+									+ baryPosition.y * closestF->mB.mWorldPos[i][j]
+									+ baryPosition.z * closestF->mC.mWorldPos[i][j];
+				ret.mLocalPos[i][j] = baryPosition.x * closestF->mA.mLocalPos[i][j]
+									+ baryPosition.y * closestF->mB.mLocalPos[i][j]
+									+ baryPosition.z * closestF->mC.mLocalPos[i][j];
+			}
+		}
 
-		return Contact(closestFDist, cp, -closestF->mNormal);
+		return ret;
+	}
+
+
+	void FineCollisionDetector::removeInvalidContacts(Manifold& manifold) const
+	{
+		glm::mat4 transforms1 = manifold.getFirstCollider()->getTransforms();
+		glm::mat4 transforms2 = manifold.getSecondCollider()->getTransforms();
+		
+		for (auto it = manifold.mContacts.begin(); it != manifold.mContacts.end();) {
+			glm::vec3 changedWorldPos0(transforms1 * glm::vec4(it->getLocalPosition(0), 1.0f));
+			glm::vec3 changedWorldPos1(transforms2 * glm::vec4(it->getLocalPosition(1), 1.0f));
+
+			glm::vec3 v0 = it->getWorldPosition(0) - changedWorldPos0;
+			glm::vec3 v1 = it->getWorldPosition(1) - changedWorldPos1;
+
+			if ((glm::length(v0) >= CONTACT_SEPARATION) ||
+				(glm::length(v1) >= CONTACT_SEPARATION)
+			) {
+				it = manifold.mContacts.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+	}
+
+	
+	bool FineCollisionDetector::isClose(
+		const Contact& newContact,
+		const Manifold& manifold
+	) const
+	{
+		for (const Contact& contact : manifold.getContacts()) {
+			glm::vec3 v0 = newContact.getWorldPosition(0) - contact.getWorldPosition(0);
+			glm::vec3 v1 = newContact.getWorldPosition(1) - contact.getWorldPosition(1);
+
+			if ((glm::length(v0) < CONTACT_SEPARATION) &&
+				(glm::length(v1) < CONTACT_SEPARATION)
+			) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	void FineCollisionDetector::limitManifoldContacts(Manifold& manifold) const
+	{
+		if (manifold.mContacts.size() > 4) { return; }
+
+		auto contact1 = std::max_element(
+			manifold.mContacts.begin(), manifold.mContacts.end(),
+			[](const Contact& c1, const Contact& c2) {
+				return c1.getPenetration() < c2.getPenetration();
+			}
+		);
+
+		auto contact2 = std::max_element(
+			manifold.mContacts.begin(), manifold.mContacts.end(),
+			[contact1](const Contact& c1, const Contact& c2) {
+				float d1 = glm::length(c1.getWorldPosition(0) - contact1->getWorldPosition(0));
+				float d2 = glm::length(c2.getWorldPosition(0) - contact1->getWorldPosition(0));
+				return d1 < d2;
+			}
+		);
+
+		auto contact3 = std::max_element(
+			manifold.mContacts.begin(), manifold.mContacts.end(),
+			[contact1, contact2](const Contact& c1, const Contact& c2) {
+				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
+				glm::vec3 v1c1	= c1.getWorldPosition(0) - contact1->getWorldPosition(0);
+				glm::vec3 v1c2	= c2.getWorldPosition(0) - contact1->getWorldPosition(0);
+
+				float d1 = glm::length(glm::cross(v12, v1c1));
+				float d2 = glm::length(glm::cross(v12, v1c2));
+				return d1 < d2;
+			}
+		);
+
+		auto contact4 = std::max_element(
+			manifold.mContacts.begin(), manifold.mContacts.end(),
+			[contact1, contact2, contact3](const Contact& c1, const Contact& c2) {
+				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
+				//TODO:
+				//glm::vec3 v13	= contact1->getWorldPosition(0) - contact3->getWorldPosition(0);
+				//glm::vec3 vN	= glm::cross(v12, v13);
+				glm::vec3 v1c1	= c1.getWorldPosition(0) - contact1->getWorldPosition(0);
+				glm::vec3 v1c2	= c2.getWorldPosition(0) - contact1->getWorldPosition(0);
+
+				float d1 = glm::length(glm::cross(v12, v1c1));
+				float d2 = glm::length(glm::cross(v12, v1c2));
+				return d1 < d2;
+			}
+		);
+
+		manifold.mContacts = { *contact1, *contact2, *contact3, *contact4 };
 	}
 
 
@@ -218,16 +412,19 @@ namespace collision {
 		const glm::vec3& direction
 	) const
 	{
-		glm::vec3 p1 = collider1.getFurthestPointInDirection(direction);
-		glm::vec3 p2 = collider2.getFurthestPointInDirection(-direction);
+		SupportPoint ret;
 
-		return SupportPoint(p1 - p2, p1, p2);
+		collider1.getFurthestPointInDirection(direction, ret.mWorldPos[0], ret.mLocalPos[0]);
+		collider2.getFurthestPointInDirection(-direction, ret.mWorldPos[1], ret.mLocalPos[1]);
+		ret.mV = ret.mWorldPos[0] - ret.mWorldPos[1];
+
+		return ret;
 	}
 
 
 	bool FineCollisionDetector::doSimplex(
 		std::vector<SupportPoint>& simplex,
-		glm::vec3& direction
+		glm::vec3& searchDir
 	) const
 	{
 		assert(!simplex.empty() && "The simplex has to have at least one initial point");
@@ -235,19 +432,19 @@ namespace collision {
 		bool ret;
 		switch (simplex.size() - 1) {
 			case 0:
-				ret = doSimplex0D(simplex, direction);
+				ret = doSimplex0D(simplex, searchDir);
 				break;
 			case 1:
-				ret = doSimplex1D(simplex, direction);
+				ret = doSimplex1D(simplex, searchDir);
 				break;
 			case 2:
-				ret = doSimplex2D(simplex, direction);
+				ret = doSimplex2D(simplex, searchDir);
 				break;
 			case 3:
-				ret = doSimplex3D(simplex, direction);
+				ret = doSimplex3D(simplex, searchDir);
 				break;
 			default:
-				ret = true;
+				ret = false;
 		}
 
 		return ret;
@@ -256,43 +453,54 @@ namespace collision {
 
 	bool FineCollisionDetector::doSimplex0D(
 		std::vector<SupportPoint>& simplex,
-		glm::vec3& direction
+		glm::vec3& searchDir
 	) const
 	{
+		bool ret = false;
+
 		SupportPoint a = simplex[0];
 		simplex = { a };
-		direction = -a.mV;
+		searchDir = -a.mV;
 
-		return false;
+		// Check if the support point is the origin
+		ret = (a.mV == glm::vec3(0));
+
+		return ret;
 	}
 
 
 	bool FineCollisionDetector::doSimplex1D(
 		std::vector<SupportPoint>& simplex,
-		glm::vec3& direction
+		glm::vec3& searchDir
 	) const
 	{
+		bool ret = false;
+
 		SupportPoint b = simplex[0], a = simplex[1];
 		glm::vec3 ab = b.mV - a.mV, ao = -a.mV;
 
-		if (glm::dot(ab, ao) > 0) {
+		float dot = glm::dot(ab, ao);
+		if (dot >= 0) {
 			// The origin is between b and a
 			simplex = { b, a };
-			direction = glm::cross(glm::cross(ab, ao), ab);
+			searchDir = glm::cross(glm::cross(ab, ao), ab);
+
+			// Check if the origin is on the line
+			ret = (dot == 0.0f);
 		}
 		else {
 			// Discard b and do the same than with 0 dimensions
 			simplex = { a };
-			direction = ao;
+			ret = doSimplex0D(simplex, searchDir);
 		}
 
-		return false;
+		return ret;
 	}
 
 
 	bool FineCollisionDetector::doSimplex2D(
 		std::vector<SupportPoint>& simplex,
-		glm::vec3& direction
+		glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;
@@ -305,28 +513,30 @@ namespace collision {
 			// Origin outside the triangle from the ab edge
 			// Discard c point and test the edge in 1 dimension
 			simplex = { b, a };
-			ret = doSimplex1D(simplex, direction);
+			ret = doSimplex1D(simplex, searchDir);
 		}
 		else {
 			if (glm::dot(glm::cross(abc, ac), ao) > 0) {
 				// Origin outside the triangle from the ac edge
 				// Discard b point and test the edge in 1 dimension
 				simplex = { c, a };
-				ret = doSimplex1D(simplex, direction);
+				ret = doSimplex1D(simplex, searchDir);
 			}
 			else {
 				// Inside the triangle in 2D
 				// Check if the origin is above or below the triangle
-				if (glm::dot(abc, ao) > 0) {
+				float dot = glm::dot(abc, ao);
+				if (dot >= 0) {
 					simplex = { c, b, a };
-					direction = abc;
+					searchDir = abc;
+
+					// Check if the origin is on the triangle
+					ret = (dot == 0.0f);
 				}
 				else {
 					simplex = { b, c, a };
-					direction = -abc;
+					searchDir = -abc;
 				}
-
-				ret = false;
 			}
 		}
 
@@ -336,7 +546,7 @@ namespace collision {
 
 	bool FineCollisionDetector::doSimplex3D(
 		std::vector<SupportPoint>& simplex,
-		glm::vec3& direction
+		glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;
@@ -349,21 +559,21 @@ namespace collision {
 			// Origin outside the tetrahedron from the abc face
 			// Discard d and check the triangle in 2 dimensions
 			simplex = { c, b, a };
-			ret = doSimplex2D(simplex, direction);
+			ret = doSimplex2D(simplex, searchDir);
 		}
 		else {
 			if (glm::dot(acd, ao) > 0) {
 				// Origin outside the tetrahedron from the acd face
 				// Discard b and check the triangle in 2 dimensions
 				simplex = { d, c, a };
-				ret = doSimplex2D(simplex, direction);
+				ret = doSimplex2D(simplex, searchDir);
 			}
 			else {
 				if (glm::dot(adb, ao) > 0) {
 					// Origin outside the tetrahedron from the adb face
 					// Discard c and check the triangle in 2 dimensions
 					simplex = { b, d, a };
-					ret = doSimplex2D(simplex, direction);
+					ret = doSimplex2D(simplex, searchDir);
 				}
 				else {
 					// Inside the tetrahedron

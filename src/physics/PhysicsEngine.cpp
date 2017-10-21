@@ -16,10 +16,12 @@ namespace physics {
 	void PhysicsEngine::addPhysicsEntity(PhysicsEntity* entity)
 	{
 		if (entity) {
-			collision::Collider* collider = entity->getCollider();
-
 			mPhysicsEntities.push_back(entity);
-			mColliderEntityMap.emplace(collider, entity);
+
+			if (collision::Collider* collider = entity->getCollider()) {
+				mCollisionDetector.addCollider(collider);
+				mColliderEntityMap.emplace(collider, entity);
+			}
 		}
 	}
 
@@ -31,13 +33,16 @@ namespace physics {
 			mPhysicsEntities.end()
 		);
 
-		for (auto it = mColliderEntityMap.begin(); it != mColliderEntityMap.end(); ) {
-			if (it->second == entity) {
-				mColliderEntityMap.erase(it);
-				break;
-			}
-			else {
-				++it;
+		if (collision::Collider* collider = entity->getCollider()) {
+			mCollisionDetector.removeCollider(collider);
+			for (auto it = mColliderEntityMap.begin(); it != mColliderEntityMap.end(); ) {
+				if (it->second == entity) {
+					mColliderEntityMap.erase(it);
+					break;
+				}
+				else {
+					++it;
+				}
 			}
 		}
 	}
@@ -60,20 +65,15 @@ namespace physics {
 
 	void PhysicsEngine::collide(float delta)
 	{
-		for (PhysicsEntity* physicsEntity : mPhysicsEntities) {
-			mCoarseCollisionDetector.submit( physicsEntity->getCollider() );
-		}
-		auto intersectingColliders = mCoarseCollisionDetector.getIntersectingColliders();
-
-		for (std::pair<const collision::Collider*, const collision::Collider*> pair : intersectingColliders) {
-			const collision::Collider* collider1 = pair.first;
+		mCollisionDetector.update();
+		for (collision::Manifold* manifold : mCollisionDetector.getCollisionManifolds()) {
+			const collision::Collider* collider1 = manifold->getFirstCollider();
 			RigidBody* rb1 = mColliderEntityMap[collider1]->getRigidBody();
 
-			const collision::Collider* collider2 = pair.second;
+			const collision::Collider* collider2 = manifold->getSecondCollider();
 			RigidBody* rb2 = mColliderEntityMap[collider2]->getRigidBody();
 
-			std::vector<collision::Contact> contacts = mFineCollisionDetector.collide(*collider1, *collider2);
-			for (collision::Contact& contact : contacts) {
+			for (collision::Contact& contact : manifold->getContacts()) {
 				mCollisionResolver.addContact(contact, rb1, rb2);
 			}
 		}

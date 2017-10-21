@@ -7,6 +7,7 @@ namespace collision {
 	void CoarseCollisionDetector::submit(const Collider* collider)
 	{
 		mColliders.push_back(collider);
+		mAABBs.push_back(collider->getAABB());
 	}
 
 
@@ -14,11 +15,7 @@ namespace collision {
 	{
 		std::vector<ColliderPair> ret;
 
-		for (const Collider* collider : mColliders) {
-			mAABBs.push_back( collider->getAABB() );
-		}
-
-		while ( !mAABBs.empty() ) {
+		while (!mAABBs.empty()) {
 			for (size_t i = 1; i < mAABBs.size(); ++i) {
 				AABB b1 = mAABBs[0], b2 = mAABBs[i];
 
@@ -32,7 +29,7 @@ namespace collision {
 				bool intersecZ = (b1.mMaximum.z > b2.mMinimum.z) && (b1.mMinimum.z < b2.mMaximum.z);
 
 				if (intersecX && intersecY && intersecZ) {
-					ret.push_back( std::make_pair(mColliders[0], mColliders[i]) );
+					ret.push_back(std::make_pair(mColliders[0], mColliders[i]));
 				}
 			}
 
@@ -44,4 +41,3 @@ namespace collision {
 	}
 
 }
-

@@ -4,8 +4,7 @@
 #include <vector>
 #include <map>
 #include "forces/ForceManager.h"
-#include "../collision/CoarseCollisionDetector.h"
-#include "../collision/FineCollisionDetector.h"
+#include "../collision/CollisionDetector.h"
 #include "CollisionResolver.h"
 
 namespace physics {
@@ -32,14 +31,9 @@ namespace physics {
 		 * applying them */
 		ForceManager mForceManager;
 
-		/** The CoarseCollisionDetector of the PhysicsEngine. We will use it
-		 * to filter some of the PhysiscsEntities' Colliders during the
-		 * collision detection step */
-		collision::CoarseCollisionDetector mCoarseCollisionDetector;
-
-		/** The FineCollisionDetector of the PhysicsEngine. We will delegate
-		 * all the collision data calculation to it */
-		collision::FineCollisionDetector mFineCollisionDetector;
+		/** The CollisionDetector used by the PhysicsEngine to detect all the
+		 * collisions */
+		collision::CollisionDetector mCollisionDetector;
 
 		/** The CollisionResolver of the PhysicsEngine. We will delegate all
 		 * the collision response calculation to it */

@@ -35,8 +35,8 @@ namespace physics {
 			 * space to World space */
 			glm::mat3 mContactToWorldMatrix;
 
-			/** The position of the Contact relative to both RigidBodies */
-			glm::vec3 mRelativePositions[2];
+			/** The penetration of the Contact */
+			float mPenetration;
 
 			/** The velocity of the Contact relactive to both RigidBodies */
 			glm::vec3 mRelativeVelocities[2];
@@ -65,7 +65,8 @@ namespace physics {
 			 *			ContactData */
 			ContactData(
 				collision::Contact& contact, RigidBody* rb1, RigidBody* rb2
-			) : mContact(contact), mContactBodies{rb1, rb2} {};
+			) : mContact(contact), mContactBodies{rb1, rb2}
+			{ mPenetration = contact.getPenetration(); };
 
 			/** Destructor */
 			~ContactData() {};

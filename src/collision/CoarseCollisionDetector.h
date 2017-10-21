@@ -20,7 +20,7 @@ namespace collision {
 		typedef std::pair<const Collider*, const Collider*> ColliderPair;
 
 	private:	// Attributes
-		/** The Colliders to check if they collider between each others */
+		/** The Colliders to check if they collide between each others */
 		std::deque<const Collider*> mColliders;
 
 		/** The current Axis Aligned Bounding Boxes of the Colliders */
@@ -38,7 +38,7 @@ namespace collision {
 		 *
 		 * @param	collider a pointer to the Collider to submit */
 		void submit(const Collider* collider);
-		
+
 		/** Calculates and returns the Colliders whose AABBs are currently
 		 * intersecting
 		 *

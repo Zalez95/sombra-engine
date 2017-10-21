@@ -22,7 +22,7 @@ namespace physics {
 			// Update the contact with the biggest penetration
 			auto maxIt = mContacts.begin();
 			for (auto it = maxIt; it != mContacts.end(); ++it) {
-				if (it->mContact.getPenetration() > maxIt->mContact.getPenetration()) {
+				if (it->mPenetration > maxIt->mPenetration) {
 					maxIt = it;
 				}
 			}
@@ -48,19 +48,10 @@ namespace physics {
 		// Calculate the contact space to world space matrix
 		contactData.mContactToWorldMatrix = getContactToWorldMatrix(contactData.mContact);
 
-		// Calculate the positions of the RigidBodies relative to the Contact
-		// point
-		glm::vec3 contactPosition = contactData.mContact.getPosition();
-		for (size_t i = 0; i < 2; ++i) {
-			if (contactData.mContactBodies[i]) {
-				contactData.mRelativePositions[i] = contactPosition - contactData.mContactBodies[i]->mPosition;
-			}
-		}
-
 		// Calculate the closing velocity of RigidBodies at the Contact point
 		for (size_t i = 0; i < 2; ++i) {
 			if (contactData.mContactBodies[i]) {
-				contactData.mRelativeVelocities[i] = glm::cross(contactData.mContactBodies[i]->mAngularVelocity, contactData.mRelativePositions[i]);
+				contactData.mRelativeVelocities[i] = glm::cross(contactData.mContactBodies[i]->mAngularVelocity, contactData.mContact.getLocalPosition(i));
 				contactData.mRelativeVelocities[i] += contactData.mContactBodies[i]->mLinearVelocity;
 			}
 		}
@@ -100,7 +91,7 @@ namespace physics {
 	void CollisionResolver::calculatePositionChanges(ContactData& contactData) const
 	{
 		glm::vec3 contactNormal	= contactData.mContact.getNormal();
-		float penetration		= contactData.mContact.getPenetration();
+		float penetration		= contactData.mPenetration;
 
 		// Calculate linear, angular and total inertia of both RigidBodies in
 		// the direction of the Contact normal
@@ -110,9 +101,9 @@ namespace physics {
 				linearInertia[i] = contactData.mContactBodies[i]->getInvertedMass();
 
 				glm::mat3 invertedInertiaTensor	= contactData.mContactBodies[i]->getInvertedInertiaTensor();
-				glm::vec3 angularInertiaWorld	= glm::cross(contactData.mRelativePositions[i], contactNormal);
+				glm::vec3 angularInertiaWorld	= glm::cross(contactData.mContact.getLocalPosition(i), contactNormal);
 				angularInertiaWorld				= invertedInertiaTensor * angularInertiaWorld;
-				angularInertiaWorld				= glm::cross(angularInertiaWorld, contactData.mRelativePositions[i]);
+				angularInertiaWorld				= glm::cross(angularInertiaWorld, contactData.mContact.getLocalPosition(i));
 				angularInertia[i]				= glm::dot(angularInertiaWorld, contactNormal);
 
 				totalInertia += linearInertia[i] + angularInertia[i];
@@ -127,7 +118,7 @@ namespace physics {
 				float rotationNeeded			= sign * penetration * angularInertia[i] / totalInertia;
 
 				// Check that the rotationNeeded doesn't exceed the limit
-				float limit						= ANGULAR_LIMIT * glm::length(contactData.mRelativePositions[i]);
+				float limit						= ANGULAR_LIMIT * glm::length(contactData.mContact.getLocalPosition(i));
 				if (abs(rotationNeeded) > limit) {
 					float total					= displacementNeeded + rotationNeeded;
 					rotationNeeded				= (rotationNeeded >= 0)? limit : -limit;
@@ -138,7 +129,7 @@ namespace physics {
 
 				if (rotationNeeded != 0) {			// Check if we need to rotate the RigidBodies
 					glm::mat3 invertedInertiaTensor		= contactData.mContactBodies[i]->getInvertedInertiaTensor();
-					glm::vec3 impulseTorque				= glm::cross(contactData.mRelativePositions[i], contactNormal);
+					glm::vec3 impulseTorque				= glm::cross(contactData.mContact.getLocalPosition(i), contactNormal);
 					glm::vec3 impulsePerMove			= invertedInertiaTensor * impulseTorque;
 					contactData.mOrientationChange[i]	= glm::quat(rotationNeeded * impulsePerMove / angularInertia[i]);
 				}
@@ -187,7 +178,7 @@ namespace physics {
 				contactData.mVelocityChange[i]	= sign * impulseWorld * contactData.mContactBodies[i]->getInvertedMass();
 
 				glm::mat3 invertedInertiaTensor	= contactData.mContactBodies[i]->getInvertedInertiaTensor();
-				glm::vec3 torquePerImpulse		= sign * glm::cross(impulseWorld, contactData.mRelativePositions[i]);
+				glm::vec3 torquePerImpulse		= sign * glm::cross(impulseWorld, contactData.mContact.getLocalPosition(i));
 				contactData.mRotationChange[i]	= invertedInertiaTensor * torquePerImpulse;
 			}
 		}
@@ -207,34 +198,30 @@ namespace physics {
 		for (ContactData& cd : mContacts) {
 			if (cd.mContactBodies[0]) {
 				if (cd.mContactBodies[0] == contactData.mContactBodies[0]) {
-					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mRelativePositions[0]);
+					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mContact.getLocalPosition(0));
 					contactPoint += contactData.mVelocityChange[0];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
-					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
+					contactData.mPenetration += glm::dot(contactPoint, contactData.mContact.getNormal());
 				}
 				else if (cd.mContactBodies[0] == contactData.mContactBodies[1]) {
-					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mRelativePositions[1]);
+					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mContact.getLocalPosition(1));
 					contactPoint += contactData.mVelocityChange[1];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
-					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
+					contactData.mPenetration += glm::dot(contactPoint, contactData.mContact.getNormal());
 				}
 			}
 			else if (cd.mContactBodies[1]) {
 				if (cd.mContactBodies[1] == contactData.mContactBodies[1]) {
-					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mRelativePositions[1]);
+					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[1], contactData.mContact.getLocalPosition(1));
 					contactPoint += contactData.mVelocityChange[1];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
-					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
+					contactData.mPenetration += glm::dot(contactPoint, contactData.mContact.getNormal());
 				}
 				else if (cd.mContactBodies[1] == contactData.mContactBodies[0]) {
-					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mRelativePositions[0]);
+					glm::vec3 contactPoint = glm::cross(contactData.mRotationChange[0], contactData.mContact.getLocalPosition(0));
 					contactPoint += contactData.mVelocityChange[0];
 
-					float penetrationChange = glm::dot(contactPoint, contactData.mContact.getNormal());
-					contactData.mContact.setPenetration(contactData.mContact.getPenetration() + penetrationChange);
+					contactData.mPenetration += glm::dot(contactPoint, contactData.mContact.getNormal());
 				}
 			}
 		}

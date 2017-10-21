@@ -25,16 +25,26 @@ namespace collision {
 		 *			position and orientation of the Collider */
 		virtual void setTransforms(const glm::mat4& transforms) = 0;
 
+		/** @return	the transformations matrix currently applied to the
+		 *			Collider */
+		virtual glm::mat4 getTransforms() const = 0;
+
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			Collider */
 		virtual AABB getAABB() const = 0;
 
-		/** @return	the coordinates in world space of Collider's furthest point
-		 *			in the given direction
+		/** Calculates the coordinates of the Collider's furthest point in the
+		 * given direction
+		 * 
 		 * @param	direction the direction towards we want to get the furthest
-		 *			point */
-		virtual glm::vec3 getFurthestPointInDirection(
-		   	const glm::vec3& direction
+		 *			point
+		 * @param	pointWorld the vector where we are going to store the
+		 *			coordinates in world space of Collider's furthest point
+		 * @param	pointLocal the vector where we are going to store the
+		 *			coordinates in local space of Collider's furthest point */
+		virtual void getFurthestPointInDirection(
+		   	const glm::vec3& direction,
+			glm::vec3& pointWorld, glm::vec3& pointLocal
 		) const = 0;
 	};
 
