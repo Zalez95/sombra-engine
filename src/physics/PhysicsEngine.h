@@ -1,11 +1,13 @@
 #ifndef PHYSICS_SYSTEM_H
 #define PHYSICS_SYSTEM_H
 
-#include <vector>
 #include <map>
-#include "forces/ForceManager.h"
+#include <vector>
 #include "../collision/CollisionDetector.h"
-#include "CollisionResolver.h"
+#include "forces/ForceManager.h"
+#include "constraints/ConstraintBounds.h"
+#include "constraints/NormalConstraint.h"
+#include "constraints/ConstraintManager.h"
 
 namespace physics {
 
@@ -19,13 +21,14 @@ namespace physics {
 	 */
 	class PhysicsEngine
 	{
+	private:	// Constants
+		/** The CounstraintBounds shared by all the NormalConstraints */
+		static const ConstraintBounds CONSTRAINT_BOUNDS;
+
+		/** The velocity of the constraint resolution process */
+		static const float CONSTRAINT_BETA;
+
 	private:	// Attributes
-		/** All the PhysicsEntities that must be updated */
-		std::vector<PhysicsEntity*> mPhysicsEntities;
-
-		/** Maps each Collider with the Entity that holds it */
-		std::map<const collision::Collider*, PhysicsEntity*> mColliderEntityMap;
-
 		/** The ForceManager of the PhysicsEngine. It's used to store the
 		 * relationships between the PhysicsEntities and the Forces and
 		 * applying them */
@@ -35,9 +38,19 @@ namespace physics {
 		 * collisions */
 		collision::CollisionDetector mCollisionDetector;
 
-		/** The CollisionResolver of the PhysicsEngine. We will delegate all
-		 * the collision response calculation to it */
-		CollisionResolver mCollisionResolver;
+		/** The ConstraintManager of the PhysicsEngine. We will delegate all
+		 * the constraint resolution to it */
+		ConstraintManager mConstraintManager;
+
+		/** All the PhysicsEntities that must be updated */
+		std::vector<PhysicsEntity*> mPhysicsEntities;
+
+		/** Maps each Collider with the Entity that holds it */
+		std::map<const collision::Collider*, PhysicsEntity*> mColliderEntityMap;
+
+		/** The NormalConstraints generated as a consecuence of the
+		 * PhysicsEntities collisions */
+		std::map<collision::Contact*, NormalConstraint> mContactConstraints;
 
 	public:		// Functions
 		/** Creates a new PhysicsEngine */
@@ -70,6 +83,10 @@ namespace physics {
 
 		/** @return	the ForceManager of the PhysicsEngine */
 		inline ForceManager* getForceManager() { return &mForceManager; };
+
+		/** @return	the ConstraintManager of the PhysicsEngine */
+		inline ConstraintManager* getConstraintManager()
+		{ return &mConstraintManager; };
 	private:
 		/** Updates the positions of the PhysicsEntities added to the System
 		 *

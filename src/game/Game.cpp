@@ -52,7 +52,7 @@
 
 namespace game {
 
-// Static variables definition
+// Constants definition
     const float Game::UPDATE_TIME		= 0.016f;
 	const unsigned int Game::NUM_CUBES	= 50;
 

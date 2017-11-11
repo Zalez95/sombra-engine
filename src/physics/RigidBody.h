@@ -108,9 +108,12 @@ namespace physics {
 		inline glm::mat3 getInvertedInertiaTensor() const
 		{ return mInvertedInertiaTensor; };
 
-		/** @return	the transformations matrix of the Rigid Body */
-		inline glm::mat4 getTransformsMatrix() const
-		{ return mTransformsMatrix; };
+		/** @return	the sum of forces currently applied to the RigidBody */
+		inline glm::vec3 getForceSum() const { return mForceSum; };
+
+		/** @return	the sum of torques of the forces currently applied to the
+		 *			RigidBody */
+		inline glm::vec3 getTorqueSum() const { return mTorqueSum; };
 
 		/** Applies the given force to the center of mass of the RigidBody
 		 * 
@@ -138,6 +141,10 @@ namespace physics {
 		/** Cleans all the forces applied to the current RigidBody si they will
 		 * no longer change its movement */
 		void cleanForces();
+
+		/** @return	the transformations matrix of the Rigid Body */
+		inline glm::mat4 getTransformsMatrix() const
+		{ return mTransformsMatrix; };
 		
 		/** Integrates the all the linear and angular data of the RigidBody
 		 * by the given amount of time

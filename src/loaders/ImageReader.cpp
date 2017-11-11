@@ -1,6 +1,6 @@
 #include "ImageReader.h"
 #include <stdexcept>
-#include <SOIL.h>
+#include <SOIL/SOIL.h>
 
 namespace loaders {
 

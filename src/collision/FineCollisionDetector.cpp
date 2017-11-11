@@ -356,7 +356,7 @@ namespace collision {
 
 	void FineCollisionDetector::limitManifoldContacts(Manifold& manifold) const
 	{
-		if (manifold.mContacts.size() > 4) { return; }
+		if (manifold.mContacts.size() < 4) { return; }
 
 		auto contact1 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
