@@ -52,6 +52,9 @@ namespace graphics {
 		/** Class destructor */
 		~Material() {};
 
+		/** @return the name of the material */
+		inline std::string getName() const { return mName; };
+
 		/** @return the ambient color of the Material */
 		inline RGBColor getAmbientColor() const { return mAmbientColor; };
 

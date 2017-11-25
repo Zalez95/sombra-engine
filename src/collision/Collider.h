@@ -8,6 +8,14 @@ namespace collision {
 	struct AABB;
 
 
+	/** The different types that the collider cons have */
+	enum ColliderType
+	{
+		CONVEX_COLLIDER,
+		CONCAVE_COLLIDER
+	};
+
+
 	/**
 	 * Class Collider, a Collider is used to store the basic data of an object
 	 * that can collide with other Colliders
@@ -17,6 +25,9 @@ namespace collision {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Collider() {};
+
+		/** @return the type of the Collider */
+		virtual ColliderType getType() const = 0;
 
 		/** Updates the translation and orientation of the Collider with the
 		 * data of the given transformations matrix
@@ -32,20 +43,6 @@ namespace collision {
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			Collider */
 		virtual AABB getAABB() const = 0;
-
-		/** Calculates the coordinates of the Collider's furthest point in the
-		 * given direction
-		 * 
-		 * @param	direction the direction towards we want to get the furthest
-		 *			point
-		 * @param	pointWorld the vector where we are going to store the
-		 *			coordinates in world space of Collider's furthest point
-		 * @param	pointLocal the vector where we are going to store the
-		 *			coordinates in local space of Collider's furthest point */
-		virtual void getFurthestPointInDirection(
-		   	const glm::vec3& direction,
-			glm::vec3& pointWorld, glm::vec3& pointLocal
-		) const = 0;
 	};
 
 }

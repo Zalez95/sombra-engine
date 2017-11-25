@@ -9,6 +9,8 @@ namespace collision {
 	class Contact;
 	class Manifold;
 	class Collider;
+	class ConvexCollider;
+	class ConcaveCollider;
 
 
 	/**
@@ -31,40 +33,91 @@ namespace collision {
 		/** Class destructor */
 		~FineCollisionDetector() {};
 
-		/** Returns the data of the collision that happened between the given
-		 * Colliders
+		/** Calculates the contact data of the collision that happened between
+		 * the given Colliders
 		 * 
-		 * @param	collider1 the first Collider with which we will calculate
-		 *			the collision data
-		 * @param	collider2 the second Collider with which we will calculate
-		 *			the collision data
+		 * @param	collider1 a pointer to the first Collider with which we
+		 *			will calculate the collision data
+		 * @param	collider2 a pointer to the second Collider with which we
+		 *			will calculate the collision data
 		 * @param	manifold a contact manifold where the FineCollisionDetector
-		 *			will store the Collision data
-		 * @return	if the given Colliders are intersecting or not */
+		 *			will store the collision data
+		 * @return	true if the given Colliders are intersecting, false
+		 *			otherwise */
 		bool collide(
-			const Collider& collider1, const Collider& collider2,
+			const Collider* collider1, const Collider* collider2,
 			Manifold& manifold
 		) const;
 	private:
-		/** Calculates if the two Colliders are intersecting with the GJK
-		 * algorithm
+		/** Calculates the contact data of the collision that happened between
+		 * the given ConcaveColliders
+		 * 
+		 * @param	collider1 the first of the ConcaveColliders that are
+		 *			intersecting
+		 * @param	collider2 the second of the ConcaveColliders that are
+		 *			intersecting
+		 * @param	manifold a contact manifold where the FineCollisionDetector
+		 *			will store the collision data
+		 * @return	true if the given Colliders are intersecting, false
+		 *			otherwise */
+		bool collideConcave(
+			const ConcaveCollider& collider1,
+			const ConcaveCollider& collider2,
+			Manifold& manifold
+		) const;
+
+		/** Calculates the contact data of the collision that happened between
+		 * a ConvexCollider and a ConcaveCollider
+		 * 
+		 * @param	convexCollider the ConvexCollider with which we will
+		 *			calculate the collision data
+		 * @param	concaveCollider the ConcaveCollider with which we will
+		 *			calculate the collision data
+		 * @param	manifold a contact manifold where the FineCollisionDetector
+		 *			will store the collision data
+		 * @return	true if the given Colliders are intersecting, false
+		 *			otherwise */
+		bool collideConvexConcave(
+			const ConvexCollider& convexCollider,
+			const ConcaveCollider& concaveCollider,
+			Manifold& manifold
+		) const;
+
+		/** Calculates the contact data of the collision that happened between
+		 * the given ConvexColliders
+		 * 
+		 * @param	collider1 the first ConvexCollider with which we will
+		 *			calculate the collision data
+		 * @param	collider2 the second ConvexCollider with which we will
+		 *			calculate the collision data
+		 * @param	manifold a contact manifold where the FineCollisionDetector
+		 *			will store the collision data
+		 * @return	true if the given Colliders are intersecting, false
+		 *			otherwise */
+		bool collideConvex(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
+			Manifold& manifold
+		) const;
+
+		/** Calculates if the given ConvexColliders are intersecting or not
+		 * with the GJK algorithm
 		 *
-		 * @param	collider1 the first convex Colliders that we want to check
-		 * @param	collider2 the second convex Colliders that we want to check
+		 * @param	collider1 the first ConvexColliders that we want to check
+		 * @param	collider2 the second ConvexColliders that we want to check
 		 * @param	simplex the simplex needed to check the collision.
 		 * 			If the origin is inside the simplex the two meshes are
 		 *			intersecting
-		 * @return	true if the two meshes collides, false otherwise */
+		 * @return	true if the two Colliders collides, false otherwise */
 		bool calculateGJK(
-			const Collider& collider1, const Collider& collider2,
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<SupportPoint>& simplex
 		) const;
 
 		/** Creates an initial polytope (tetrahedron) from the given simplex
 		 * 
-		 * @param	collider1 the first of the convex Colliders that are
+		 * @param	collider1 the first of the ConvexColliders that are
 		 *			intersecting
-		 * @param	collider2 the second of the convex Colliders that are
+		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	simplex the simplex needed to create the tetrahedron.
 		 *			Initially it could hold a segment, a triangle or a
@@ -73,22 +126,22 @@ namespace collision {
 		 * @note	the simplex initially must hold inside at least one
 		 *			SupportPoint */
 		std::vector<Triangle> createPolytope(
-			const Collider& collider1, const Collider& collider2,
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<SupportPoint>& simplex
 		) const;
 
 		/** Calculates the deepest contact point between the given colliders
 		 * using the EPA algorithm
 		 *
-		 * @param	collider1 the first of the convex Colliders that are
+		 * @param	collider1 the first of the ConvexColliders that are
 		 *			intersecting
-		 * @param	collider2 the second of the convex Colliders that are
+		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	polytope the convex shape to expand with EPA
 		 * @return	the deepest contact point
 		 * @note	Initially the polytope must hold a tetrahedron */
 		Contact calculateEPA(
-			const Collider& collider1, const Collider& collider2,
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<Triangle>& polytope
 		) const;
 
@@ -121,14 +174,15 @@ namespace collision {
 		 * the Minkowski Difference (or the Configuration Space Object) of the
 		 * given colliders
 		 * 
-		 * @param	collider1 the first convex Collider with which we want to
-		 *			calculate the support point
-		 * @param	collider2 the second convex Collider with which we want to
-		 *			calculate the support point
+		 * @param	collider1 the first convex ConvexCollider with which we
+		 *			want to calculate the support point
+		 * @param	collider2 the second convex ConvexCollider with which we
+		 *			want to calculate the support point
 		 * @param	searchDir the direction to search the SupportPoint
-		 * @return	a point in the Minkowski difference of the two Colliders */
+		 * @return	a point in the Minkowski difference of the two
+		 *			ConvexColliders */
 		SupportPoint getSupportPoint(
-			const Collider& collider1, const Collider& collider2,
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			const glm::vec3& searchDir
 		) const;
 

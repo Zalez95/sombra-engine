@@ -113,9 +113,9 @@ namespace utils {
 	FileState FileReader::getValue(T& token)
 	{
 		int t = mCurLineStream.tellg();
-		if ((t != -1) &&
-			(mCurLineString.find_first_not_of(" \t\r\n", t) !=
-				std::string::npos)
+		if ((t != -1)
+			&& (mCurLineString.find_first_not_of(" \t\r\n", t)
+				!= std::string::npos)
 		) {
 			// If the current line has still some tokens we parse the next one
 			mCurLineStream >> token;

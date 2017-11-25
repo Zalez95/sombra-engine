@@ -6,18 +6,15 @@ namespace collision {
 
 	void CollisionDetector::addCollider(const Collider* collider)
 	{
-		if (collider) {
-			mColliders.push_back(collider);
-		}
+		if (!collider) { return; }
+
+		mColliders.emplace(collider);
 	}
 
 
 	void CollisionDetector::removeCollider(const Collider* collider)
 	{
-		mColliders.erase(
-			std::remove(mColliders.begin(), mColliders.end(), collider),
-			mColliders.end()
-		);
+		mColliders.erase(collider);
 	}
 
 
@@ -46,9 +43,9 @@ namespace collision {
 			}
 
 			Manifold* manifold = &mMapCollidersManifolds.at(pair);
-			if (mFineCollisionDetector.collide(*c1, *c2, *manifold)) {
-				collidingManifolds.emplace(pair);
-				mManifolds.push_back(manifold);
+			if (mFineCollisionDetector.collide(c1, c2, *manifold)) {
+				collidingManifolds.insert(pair);
+				mManifolds.insert(manifold);
 			}
 		}
 

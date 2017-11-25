@@ -75,7 +75,7 @@ namespace physics {
 	public:		// Functions
 		/** Creates a new RigidBody with infinite mass located at the origin
 		 * of coordinates */
-		RigidBody() {};
+		RigidBody();
 
 		/** Creates a new RigidBody located at the origin of coordinates
 		 *
@@ -100,7 +100,7 @@ namespace physics {
 		/** @return	the inverted mass (1/mass) of the RigidBody */
 		inline float getInvertedMass() const { return mInvertedMass; };
 
-		/** @return	true if the RigidBody has Finite Mass, false otherwise  */
+		/** @return	true if the RigidBody has Finite Mass, false otherwise */
 		inline bool hasFiniteMass() const
 		{ return mInvertedMass > 0; };
 
@@ -157,8 +157,8 @@ namespace physics {
 		 * RigidBody */
 		void updateTransformsMatrix();
 
-		/** Updates the Inertia Tensor in world coordinates with the current data
-		 * of the RigidBody */
+		/** Updates the Inertia Tensor in world coordinates with the current
+		 * data of the RigidBody */
 		void updateInertiaTensorWorld();
 	};
 

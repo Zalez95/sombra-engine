@@ -6,7 +6,7 @@
 
 namespace loaders {
 
-	FontReader::FontUPtr FontReader::load(utils::FileReader& fileReader) const
+	FontReader::FontUPtr FontReader::read(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
@@ -28,7 +28,7 @@ namespace loaders {
 		std::string fontName, trash;
 		std::vector<graphics::Character> characters;
 		auto textureAtlas = std::make_shared<graphics::Texture>();
-		unsigned int numCharacters = 0, characterIndex = 0;
+		unsigned int nCharacters = 0, iCharacter = 0;
 		
 		std::string token;
 		while (fileReader.getValue(token) == utils::FileState::OK) {
@@ -52,23 +52,23 @@ namespace loaders {
 				);
 			}
 			else if (token == "chars") {
-				if (fileReader.getValuePair(trash, "=", numCharacters) == utils::FileState::OK) {
-					characters.reserve(numCharacters);
+				if (fileReader.getValuePair(trash, "=", nCharacters) == utils::FileState::OK) {
+					characters.reserve(nCharacters);
 				}
 			}
 			else if (token == "char") {
-				if (characterIndex < numCharacters) {
+				if (iCharacter < nCharacters) {
 					characters.push_back(parseCharacter(fileReader));
 				}
-				++characterIndex;
+				++iCharacter;
 			}
 			else {
 				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
-		if (characterIndex != numCharacters) {
-			throw std::runtime_error("Error: expected " + std::to_string(numCharacters) + " characters, parsed " + std::to_string(characterIndex) + '\n');
+		if (iCharacter != nCharacters) {
+			throw std::runtime_error("Error: expected " + std::to_string(nCharacters) + " characters, parsed " + std::to_string(iCharacter) + '\n');
 		}
 
 		return std::make_unique<graphics::Font>(fontName, characters, textureAtlas);

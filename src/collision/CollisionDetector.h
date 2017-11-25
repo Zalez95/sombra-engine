@@ -1,8 +1,8 @@
 #ifndef COLLISION_DETECTOR_H
 #define COLLISION_DETECTOR_H
 
+#include <set>
 #include <map>
-#include <vector>
 #include "Manifold.h"
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
@@ -21,14 +21,14 @@ namespace collision {
 
 	private:	// Attributes
 		/** All the Colliders to check */
-		std::vector<const Collider*> mColliders;
+		std::set<const Collider*> mColliders;
 
 		/** Maps a pair of Colliders with the the Manifold of it's collision */
 		std::map<ColliderPair, Manifold> mMapCollidersManifolds;
 		
 		/** The cached pointers to all the current contact Manifolds of all
 		 * the detected collisions */
-		std::vector<Manifold*> mManifolds;
+		std::set<Manifold*> mManifolds;
 
 		/** The CoarseCollisionDetector of the CollisionDetector. We will use
 		 * it to check what Colliders are intersecting in the broad phase of
@@ -47,7 +47,7 @@ namespace collision {
 		~CollisionDetector() {};
 
 		/** @return all the contact manifolds of the detected collisions */
-		inline std::vector<Manifold*> getCollisionManifolds() const
+		inline std::set<Manifold*> getCollisionManifolds() const
 		{ return mManifolds; };
 
 		/** Adds the given Collider to the CollisionDetector so it will

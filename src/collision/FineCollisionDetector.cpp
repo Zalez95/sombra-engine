@@ -5,12 +5,12 @@
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/intersect.hpp>
+#include "AABB.h"
 #include "Contact.h"
-#include "Collider.h"
 #include "Manifold.h"
 #include "Collider.h"
-#include "BoundingSphere.h"
-#include "ConvexPolyhedron.h"
+#include "ConvexCollider.h"
+#include "ConcaveCollider.h"
 
 namespace collision {
 
@@ -21,11 +21,11 @@ namespace collision {
 		glm::vec3 mV;
 
 		/** The coordinates of the Contact point relative to each of the
-		 * Colliders in world space */
+		 * ConvexColliders in world space */
 		glm::vec3 mWorldPos[2];
 
 		/** The coordinates of the Contact point relative to each of the
-		 * Colliders in local space */
+		 * ConvexColliders in local space */
 		glm::vec3 mLocalPos[2];
 
 		SupportPoint() {};
@@ -78,7 +78,74 @@ namespace collision {
 
 // Public functions
 	bool FineCollisionDetector::collide(
-		const Collider& collider1, const Collider& collider2,
+		const Collider* collider1, const Collider* collider2,
+		Manifold& manifold
+	) const
+	{
+		if (!collider1 || !collider2) { return false; }
+
+		if (collider1->getType() == ColliderType::CONCAVE_COLLIDER) {
+			auto concaveCollider1 = dynamic_cast<const ConcaveCollider*>(collider1);
+
+			if (collider2->getType() == ColliderType::CONCAVE_COLLIDER) {
+				auto concaveCollider2 = dynamic_cast<const ConcaveCollider*>(collider2);
+				return collideConcave(*concaveCollider1, *concaveCollider2, manifold);
+			}
+			else {
+				auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2);
+				// TODO: manifold order
+				return collideConvexConcave(*convexCollider2, *concaveCollider1, manifold);
+			}
+		}
+		else {
+			auto convexCollider1 = dynamic_cast<const ConvexCollider*>(collider1);
+
+			if (collider2->getType() == ColliderType::CONCAVE_COLLIDER) {
+				auto concaveCollider2 = dynamic_cast<const ConcaveCollider*>(collider2);
+				return collideConvexConcave(*convexCollider1, *concaveCollider2, manifold);
+			}
+			else {
+				auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2);
+				return collideConvex(*convexCollider1, *convexCollider2, manifold);
+			}
+		}
+	}
+
+// Private functions
+	bool FineCollisionDetector::collideConcave(
+		const ConcaveCollider& collider1, const ConcaveCollider& collider2,
+		Manifold& manifold
+	) const
+	{
+		bool collides = false;
+
+		auto overlappingParts1 = collider1.getOverlapingParts(collider2.getAABB());
+		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts1) {
+			collides = collides || collideConvexConcave(*part, collider2, manifold);
+		}
+
+		return collides;
+	}
+
+
+	bool FineCollisionDetector::collideConvexConcave(
+		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
+		Manifold& manifold
+	) const
+	{
+		bool collides = false;
+
+		auto overlappingParts = concaveCollider.getOverlapingParts(convexCollider.getAABB());
+		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts) {
+			collides = collides || collideConvex(convexCollider, *part, manifold);
+		}
+
+		return collides;
+	}
+
+
+	bool FineCollisionDetector::collideConvex(
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Manifold& manifold
 	) const
 	{
@@ -110,9 +177,9 @@ namespace collision {
 		return true;
 	}
 
-// Private functions
+
 	bool FineCollisionDetector::calculateGJK(
-		const Collider& collider1, const Collider& collider2,
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<SupportPoint>& simplex
 	) const
 	{
@@ -142,7 +209,7 @@ namespace collision {
 
 
 	std::vector<FineCollisionDetector::Triangle> FineCollisionDetector::createPolytope(
-		const Collider& collider1, const Collider& collider2,
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<SupportPoint>& simplex
 	) const
 	{
@@ -220,7 +287,7 @@ namespace collision {
 
 
 	Contact FineCollisionDetector::calculateEPA(
-		const Collider& collider1, const Collider& collider2,
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<Triangle>& polytope
 	) const
 	{
@@ -323,8 +390,8 @@ namespace collision {
 			glm::vec3 v0 = it->getWorldPosition(0) - changedWorldPos0;
 			glm::vec3 v1 = it->getWorldPosition(1) - changedWorldPos1;
 
-			if ((glm::length(v0) >= CONTACT_SEPARATION) ||
-				(glm::length(v1) >= CONTACT_SEPARATION)
+			if ((glm::length(v0) >= CONTACT_SEPARATION)
+				|| (glm::length(v1) >= CONTACT_SEPARATION)
 			) {
 				it = manifold.mContacts.erase(it);
 			}
@@ -408,12 +475,12 @@ namespace collision {
 
 
 	FineCollisionDetector::SupportPoint FineCollisionDetector::getSupportPoint(
-		const Collider& collider1, const Collider& collider2,
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		const glm::vec3& direction
 	) const
 	{
 		SupportPoint ret;
-
+		
 		collider1.getFurthestPointInDirection(direction, ret.mWorldPos[0], ret.mLocalPos[0]);
 		collider2.getFurthestPointInDirection(-direction, ret.mWorldPos[1], ret.mLocalPos[1]);
 		ret.mV = ret.mWorldPos[0] - ret.mWorldPos[1];

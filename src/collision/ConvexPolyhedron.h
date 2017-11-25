@@ -2,20 +2,20 @@
 #define CONVEX_POLYHEDRON_H
 
 #include <vector>
-#include "Collider.h"
+#include "ConvexCollider.h"
 
 namespace collision {
 
 	/**
-	 * Class ConvexPolyhedron, it's a Collider whose vertices form a convex
-	 * shape
+	 * Class ConvexPolyhedron, it's a ConvexCollider whose vertices form a
+	 * convex shape
 	 */
-	class ConvexPolyhedron : public Collider
+	class ConvexPolyhedron : public ConvexCollider
 	{
 	protected:	// Attributes
 		/** The coordinates in local space of the ConvexPolyhedron's
 		 * vertices */
-		std::vector<glm::vec3> mVertices;
+		const std::vector<glm::vec3> mVertices;
 
 		/** The coordinates in world space of the ConvexPolyhedron's
 		 * vertices */
@@ -34,11 +34,6 @@ namespace collision {
 
 		/** Class destructor */
 		~ConvexPolyhedron() {};
-
-		/** @return the coordinates of the ConvexPolyhedron's vertices in
-		 *			world space */
-		inline std::vector<glm::vec3> getVertices() const
-		{ return mVerticesWorld; };
 
 		/** Updates the position of the ConvexPolyhedron with the data of the
 		 * given transformation matrix

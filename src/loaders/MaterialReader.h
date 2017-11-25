@@ -42,7 +42,7 @@ namespace loaders {
 		 * @param	fileReader the file reader with the Materials that we want
 		 *			to parse
 		 * @return	a vector with the parsed Materials */
-		std::vector<MaterialUPtr> load(utils::FileReader& fileReader) const;
+		std::vector<MaterialUPtr> read(utils::FileReader& fileReader) const;
 	private:
 		/** Checks the header of the given file
 		 *

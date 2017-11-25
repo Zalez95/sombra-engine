@@ -37,7 +37,7 @@ namespace loaders {
 		 * @param	fileReader the file reader with the Font that we want
 		 *			to parse
 		 * @return	the parsed Font */
-		FontUPtr load(utils::FileReader& fileReader) const;
+		FontUPtr read(utils::FileReader& fileReader) const;
 	private:
 		/** Parses the Font in the given file and returns it
 		 * 

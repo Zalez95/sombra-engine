@@ -1,4 +1,5 @@
 #include "ConvexPolyhedron.h"
+#include <limits>
 #include <cassert>
 #include <algorithm>
 #include "AABB.h"
@@ -24,14 +25,14 @@ namespace collision {
 
 	AABB ConvexPolyhedron::getAABB() const
 	{
-		AABB ret(mVerticesWorld[0], mVerticesWorld[0]);
-		for (const glm::vec3 p : mVerticesWorld) {
-			if (p.x > ret.mMaximum.x) { ret.mMaximum.x = p.x; }
-			if (p.x < ret.mMinimum.x) { ret.mMinimum.x = p.x; }
-			if (p.y > ret.mMaximum.y) { ret.mMaximum.y = p.y; }
-			if (p.y < ret.mMinimum.y) { ret.mMinimum.y = p.y; }
-			if (p.z > ret.mMaximum.z) { ret.mMaximum.z = p.z; }
-			if (p.z < ret.mMinimum.z) { ret.mMinimum.z = p.z; }
+		AABB ret = AABB(
+			glm::vec3( std::numeric_limits<float>::max()),
+			glm::vec3(-std::numeric_limits<float>::max())
+		);
+
+		for (const glm::vec3& vertex : mVerticesWorld) {
+			ret.mMinimum = glm::min(ret.mMinimum, vertex);
+			ret.mMaximum = glm::max(ret.mMaximum, vertex);
 		}
 
 		return ret;

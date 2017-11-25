@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <string>
-#include <glm/glm.hpp>
 #include "MeshLoader.h"
 #include "../game/GraphicsManager.h"
 
@@ -13,6 +12,9 @@ namespace graphics { class Mesh; }
 
 namespace loaders {
 
+	struct RawMesh;
+
+
 	/**
 	 * Class TerrainLoader, it's used to create meshes from raw data or from the
 	 * given files
@@ -21,7 +23,7 @@ namespace loaders {
 	{
 	private:	// Nested types
 		typedef std::unique_ptr<game::Entity> EntityUPtr;
-		typedef std::unique_ptr<graphics::Mesh> MeshUPtr;
+		typedef std::unique_ptr<RawMesh> RawMeshUPtr;
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */
@@ -30,7 +32,7 @@ namespace loaders {
 		/** The MeshLoader used to create the meshes */
 		const MeshLoader& mMeshLoader;
 
-		/** The GraphicsSystem used to store the Renderable3Ds of the
+		/** The GraphicsManager used to store the Renderable3Ds of the
 		 * Terrains */
 		game::GraphicsManager& mGraphicsManager;
 
@@ -40,11 +42,12 @@ namespace loaders {
 		 * @param	meshLoader the MeshLoader used to load the Terrain mesh to
 		 *			a VAO
 		 * @param	graphicsManager the GraphicsManager that holds the graphics
-		 *			data of the Terrain Entities*/
+		 *			data of the Terrain Entities */
 		TerrainLoader(
 			const MeshLoader& meshLoader,
 			game::GraphicsManager& graphicsManager
-		) : mMeshLoader(meshLoader), mGraphicsManager(graphicsManager) {};
+		) : mMeshLoader(meshLoader),
+			mGraphicsManager(graphicsManager) {};
 
 		/** Class destructor */
 		~TerrainLoader() {};
@@ -59,11 +62,11 @@ namespace loaders {
 		 *			Terrain's mesh
 		 * @return	a pointer to the new Terrain entity */
 		EntityUPtr createTerrain(
-			std::string name, float size,
+			const std::string& name, float size,
 			const utils::Image& heightMap, float maxHeight
 		);
 	private:
-		/** Creates the Mesh of the Terrain from the given data
+		/** Creates the mesh of the Terrain from the given data
 		 * 
 		 * @param	name the name of the mesh
 		 * @param	size the length in the X and Z axis of the Terrain
@@ -72,8 +75,8 @@ namespace loaders {
 		 *			of the Terrain.
 		 * @param	maxHeight the maximum height in the Y axis that a vertex
 		 *			can reach.
-		 * @return	a pointer to the new Mesh */
-		MeshUPtr createMesh(
+		 * @return	a pointer to the new RawMesh */
+		RawMeshUPtr createRawMesh(
 			const std::string& name, float size,
 			const utils::Image& heightMap, float maxHeight
 		) const;

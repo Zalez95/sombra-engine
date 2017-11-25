@@ -49,7 +49,7 @@ namespace graphics {
 		 *			respective attribute indices */
 		Mesh(
 			const std::string& name,
-			std::vector<VertexBufferUPtr> vbos,
+			std::vector<VertexBufferUPtr>&& vbos,
 			IndexBufferUPtr ibo, VertexArrayUPtr vao
 		);
 

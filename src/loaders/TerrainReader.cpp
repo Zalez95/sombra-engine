@@ -5,7 +5,7 @@
 namespace loaders {
 
 // Public functions
-	TerrainReader::EntityUPtr TerrainReader::load(utils::FileReader& fileReader)
+	TerrainReader::EntityUPtr TerrainReader::read(utils::FileReader& fileReader)
 	{
 		try {
 			// 1. Get the input file

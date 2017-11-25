@@ -21,8 +21,12 @@ namespace collision {
 		glm::vec3& pointWorld, glm::vec3& pointLocal
 	) const
 	{
-		pointWorld = getCenter() + mRadius * glm::normalize(direction);
-		pointLocal = glm::vec3();// TODO: mRadius * glm::axis(glm::quat(direction) * glm::inverse(mOrientation));
+		glm::vec3 center = getCenter();
+		glm::vec3 frontLocal = glm::vec3(0, 0, 1);
+		glm::vec3 frontWorld = glm::vec3(glm::vec4(frontLocal, 0) * mTransformsMatrix);
+
+		pointWorld = center + mRadius * glm::normalize(direction);
+		pointLocal = pointWorld * frontLocal / frontWorld;
 	}
 
 }

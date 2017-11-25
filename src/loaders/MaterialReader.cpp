@@ -11,7 +11,7 @@ namespace loaders {
 	const std::string MaterialReader::FILE_FORMAT::MATERIAL_FILE_EXTENSION	= ".fzmat";
 
 // Public functions
-	std::vector<MaterialReader::MaterialUPtr> MaterialReader::load(utils::FileReader& fileReader) const
+	std::vector<MaterialReader::MaterialUPtr> MaterialReader::read(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
@@ -40,9 +40,9 @@ namespace loaders {
 
 		std::string fileName, fileVersion;
 		fileReader >> fileName >> fileVersion;
-		if ((fileReader.getState() == utils::FileState::OK) &&
-			(fileName == FILE_FORMAT::FILE_NAME) &&
-			(fileVersion == FILE_VERSION)
+		if ((fileReader.getState() == utils::FileState::OK)
+			&& (fileName == FILE_FORMAT::FILE_NAME)
+			&& (fileVersion == FILE_VERSION)
 		) {
 			ret = true;
 		}
@@ -54,29 +54,29 @@ namespace loaders {
 	std::vector<MaterialReader::MaterialUPtr> MaterialReader::parseMaterials(utils::FileReader& fileReader) const
 	{
 		std::vector<MaterialUPtr> materials;
-		unsigned int numMaterials = 0, materialIndex = 0;
+		unsigned int nMaterials = 0, iMaterial = 0;
 
 		std::string token;
 		while (fileReader.getValue(token) == utils::FileState::OK) {
 			if (token == "num_materials") {
-				if (fileReader.getValue(numMaterials) == utils::FileState::OK) {
-					materials.reserve(numMaterials);
+				if (fileReader.getValue(nMaterials) == utils::FileState::OK) {
+					materials.reserve(nMaterials);
 				}
 			}
 			else if (token == "material") {
 				auto curMaterial = parseMaterial(fileReader);
-				if (materialIndex < numMaterials) {
+				if (iMaterial < nMaterials) {
 					materials.push_back(std::move(curMaterial));
 				}
-				++materialIndex;
+				++iMaterial;
 			}
 			else {
 				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
-		if (materialIndex != numMaterials) {
-			throw std::runtime_error("Error: expected " + std::to_string(numMaterials) + " materials, parsed " + std::to_string(materialIndex) + '\n');
+		if (iMaterial != nMaterials) {
+			throw std::runtime_error("Error: expected " + std::to_string(nMaterials) + " materials, parsed " + std::to_string(iMaterial) + '\n');
 		}
 
 		return materials;

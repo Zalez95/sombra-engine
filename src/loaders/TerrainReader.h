@@ -29,10 +29,14 @@ namespace loaders {
 	public:		// Functions
 		/** Creates a new TerrainReader
 		 * 
-		 * @param	terrainLoader the TerrainLoader that we will use to create
-		 *			the Terrains */
-		TerrainReader(TerrainLoader& terrainLoader, ImageReader& imageReader) :
-			mTerrainLoader(terrainLoader), mImageReader(imageReader) {};
+		 * @param	terrainLoader a reference to the TerrainLoader that we will
+		 *			use to create the Terrains
+		 * @param	imageReader a reference to the ImageReader the that we will
+		 *			use to create the Terrains */
+		TerrainReader(
+			TerrainLoader& terrainLoader,
+			ImageReader& imageReader
+		) : mTerrainLoader(terrainLoader), mImageReader(imageReader) {};
 
 		/** Class destructor */
 		~TerrainReader() {};
@@ -44,7 +48,7 @@ namespace loaders {
 		 * @param	fileReader the file reader with the Terrain that we want
 		 *			to parse
 		 * @return	the parsed Terrain */
-		EntityUPtr load(utils::FileReader& fileReader);
+		EntityUPtr read(utils::FileReader& fileReader);
 	private:
 		/** Parses the Entity at the current position of the given file and
 		 * returns it

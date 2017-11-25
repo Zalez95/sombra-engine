@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/random.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include "Entity.h"
@@ -28,6 +29,7 @@
 
 #include "../collision/BoundingBox.h"
 #include "../collision/BoundingSphere.h"
+#include "../collision/MeshCollider.h"
 
 #include "../physics/PhysicsEngine.h"
 #include "../physics/PhysicsEntity.h"
@@ -40,6 +42,7 @@
 #include "../loaders/ImageReader.h"
 #include "../loaders/FontReader.h"
 #include "../loaders/TerrainLoader.h"
+#include "../loaders/RawMesh.h"
 
 #include "../utils/Image.h"
 #include "../utils/Logger.h"
@@ -126,13 +129,14 @@ namespace game {
 		 *********************************************************************/
 		// Loaders
 		loaders::MeshLoader meshLoader;
-		loaders::MeshReader meshReader(meshLoader);
+		loaders::MeshReader meshReader;
 		loaders::MaterialReader materialReader;
 		loaders::ImageReader imageReader;
 		loaders::FontReader fontReader(imageReader);
 		loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager);
 
 		std::shared_ptr<graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
+		std::vector<std::shared_ptr<loaders::RawMesh>> fileRawMeshes;
 		std::vector<std::shared_ptr<graphics::Mesh>> fileMeshes;
 		std::vector<std::shared_ptr<graphics::Material>> fileMaterials;
 		std::shared_ptr<utils::Image> heightMap1 = nullptr;
@@ -142,17 +146,18 @@ namespace game {
 		std::shared_ptr<graphics::Font> arial = nullptr;
 		try {
 			// Meshes
-			std::vector<GLfloat> positions1 = {
-				-0.5f,	-0.5f,	-0.5f,
-				-0.5f,	-0.5f,	0.5f,
-				-0.5f,	0.5f,	-0.5f,
-				-0.5f,	0.5f,	0.5f,
-				0.5f,	-0.5f,	-0.5f,
-				0.5f,	-0.5f,	0.5f,
-				0.5f,	0.5f,	-0.5f,
-				0.5f,	0.5f,	0.5f
+			loaders::RawMesh rawMesh1("Cube");
+			rawMesh1.mPositions = {
+				 {-0.5f,	-0.5f,	-0.5f},
+				 {-0.5f,	-0.5f,	 0.5f},
+				 {-0.5f,	 0.5f,	-0.5f},
+				 {-0.5f,	 0.5f,	 0.5f},
+				 { 0.5f,	-0.5f,	-0.5f},
+				 { 0.5f,	-0.5f,	 0.5f},
+				 { 0.5f,	 0.5f,	-0.5f},
+				 { 0.5f,	 0.5f,	 0.5f}
 			};
-			std::vector<GLushort> indices1 = {
+			rawMesh1.mFaceIndices = {
 				0, 1, 2,
 				1, 3, 2,
 				0, 2, 4,
@@ -166,43 +171,45 @@ namespace game {
 				2, 3, 6,
 				3, 7, 6
 			};
-			std::vector<GLfloat> normals1 = meshReader.calculateNormals(positions1, indices1);
-			std::vector<GLfloat> uvs1(16);
-			mesh1 = std::move(meshLoader.createMesh("Cubo", positions1, normals1, uvs1, indices1));
+			rawMesh1.mNormals = meshReader.calculateNormals(rawMesh1.mPositions, rawMesh1.mFaceIndices);
+			rawMesh1.mUVs = std::vector<glm::vec2>(8);
+			mesh1 = std::move(meshLoader.createMesh(rawMesh1));
 
-			std::vector<GLfloat> positions2 = {
-				-0.5f,	-0.5f,	0.0f,
-				 0.5f,	-0.5f,	0.0f,
-				-0.5f,	0.5f,	0.0f,
-				 0.5f,	0.5f,	0.0f
+			loaders::RawMesh rawMesh2("Plane");
+			rawMesh2.mPositions = {
+				{-0.5f,	-0.5f,	0.0f},
+				{ 0.5f,	-0.5f,	0.0f},
+				{-0.5f,	0.5f,	0.0f},
+				{ 0.5f,	0.5f,	0.0f}
 			};
-			std::vector<GLfloat> normals2 = {
-				0.0f,	0.0f,	1.0f,
-				0.0f,	0.0f,	1.0f,
-				0.0f,	0.0f,	1.0f,
-				0.0f,	0.0f,	1.0f
+			rawMesh2.mNormals = {
+				{0.0f,	0.0f,	1.0f},
+				{0.0f,	0.0f,	1.0f},
+				{0.0f,	0.0f,	1.0f},
+				{0.0f,	0.0f,	1.0f}
 			};
-			std::vector<GLfloat> uvs2 = {
-				0.0f,	0.0f,
-				1.0f,	0.0f,
-				0.0f,	1.0f,
-				1.0f,	1.0f
+			rawMesh2.mUVs = {
+				{0.0f,	0.0f},
+				{1.0f,	0.0f},
+				{0.0f,	1.0f},
+				{1.0f,	1.0f}
 			};
-			std::vector<GLushort> indices2 = {
+			rawMesh2.mFaceIndices = {
 				0, 1, 2,
 				1, 3, 2,
 			};
-			mesh2 = std::move(meshLoader.createMesh("plane", positions2, normals2, uvs2, indices2));
+			mesh2 = std::move(meshLoader.createMesh(rawMesh2));
 
 			FileReader fileReader1("res/meshes/test.fzmsh");
-			auto loadedMeshes = std::move( meshReader.load(fileReader1) );
-			for (std::unique_ptr<graphics::Mesh>& meshUPtr : loadedMeshes) {
-				fileMeshes.push_back(std::move(meshUPtr));
+			auto loadedRawMeshes = meshReader.read(fileReader1);
+			for (auto& meshRawUPtr : loadedRawMeshes) {
+				fileMeshes.push_back( meshLoader.createMesh(*meshRawUPtr) );
+				fileRawMeshes.push_back( std::move(meshRawUPtr) );
 			}
 
 			// Materials
 			FileReader fileReader2("res/materials/game_materials.fzmat");
-			auto loadedMaterials = materialReader.load(fileReader2);
+			auto loadedMaterials = materialReader.read(fileReader2);
 			for (std::unique_ptr<graphics::Material>& materialUPtr : loadedMaterials) {
 				fileMaterials.push_back(std::move(materialUPtr));
 			}
@@ -235,7 +242,7 @@ namespace game {
 			pointLight2 = std::make_unique<graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 
 			FileReader fileReader3("res/fonts/arial.fnt");
-			arial = std::move(fontReader.load(fileReader3));
+			arial = std::move(fontReader.read(fileReader3));
 		}
 		catch (std::exception& e) {
 			Logger::writeLog(LogType::ERROR, e.what());
@@ -256,7 +263,6 @@ namespace game {
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
-
 		// Player
 		auto player	= std::make_unique<Entity>("player");
 		player->mPosition = glm::vec3(0, 1, 10);
@@ -266,12 +272,12 @@ namespace game {
 				40.0f, 0.01f,
 				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.01f
 			),
-			std::make_unique<collision::BoundingBox>(glm::vec3(1, 1, 1)), glm::mat4()
 			//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
+			std::make_unique<collision::BoundingBox>(glm::vec3(1, 1, 1)), glm::mat4()
 		);
 
 		mInputManager->addEntity(player.get());
-		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1), true);
+		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1));
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
 
 		mEntities.push_back(std::move(player));
@@ -296,16 +302,15 @@ namespace game {
 			
 			auto physicsEntityCube2 = std::make_unique<physics::PhysicsEntity>(
 				physics::RigidBody(
-					20.0f, 1.0f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
+					20.0f, 0.95f,
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.95f
 				),
 				std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-				//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 			);
 			if (i == 3) { physicsEntityCube2->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
 			if (i == 4) { cube->mVelocity += glm::vec3(-1, 0, 0); }
 
-			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2), false);
+			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
 			
 			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4());
@@ -320,13 +325,12 @@ namespace game {
 			
 			auto physicsEntityCube2 = std::make_unique<physics::PhysicsEntity>(
 				physics::RigidBody(
-					10.0f, 1.0f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.25f
+					10.0f, 0.9f,
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.9f
 				),
 				std::make_unique<collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4()
-				//std::make_unique<collision::BoundingSphere>(0.5f), glm::mat4()
 			);
-			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2), false);
+			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
 			
 			auto renderable3D2 = std::make_unique<graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4());
@@ -339,6 +343,17 @@ namespace game {
 			auto building = std::make_unique<Entity>("building");
 			building->mOrientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 
+			if (it == fileMeshes.begin()) {
+				auto rawMesh = *fileRawMeshes.begin();
+				
+				auto physicsEntityMesh = std::make_unique<physics::PhysicsEntity>(
+					physics::RigidBody(),
+					std::make_unique<collision::MeshCollider>(rawMesh->mPositions, rawMesh->mFaceIndices),
+					glm::mat4()
+				);
+				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
+			}
+			
 			auto tmpMaterial = std::make_shared<graphics::Material>(
 				"tmp_material",
 				graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),

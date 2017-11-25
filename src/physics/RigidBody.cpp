@@ -4,6 +4,11 @@
 
 namespace physics {
 
+	RigidBody::RigidBody() :
+		mInvertedMass(0.0f), mLinearSlowDown(0.0f),
+		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f) {}
+
+
 	RigidBody::RigidBody(
 		float mass, float linearSlowDown,
 		const glm::mat3& inertiaTensor, float angularSlowDown

@@ -21,25 +21,10 @@ namespace game {
 	private:	// Nested types
 		typedef std::unique_ptr<physics::PhysicsEntity> PhysicsEntityUPtr;
 
-		/** Struct PhysicsData, it's used to store all the physical data
-		 * of each Entity added to the PhysicsManager */
-		struct PhysicsData
-		{
-		public:
-			PhysicsEntityUPtr mPhysicsEntity;
-			bool mModifiable;
-
-			PhysicsData(PhysicsEntityUPtr physicsEntity, bool modifiable) :
-				mPhysicsEntity(std::move(physicsEntity)),
-				mModifiable(modifiable) {};
-
-			~PhysicsData() {};
-		};
-
 	private:	// Attributes
 		/** Maps the Entries added to the PhysicsManager and its physics
 		 * data */
-		std::map<Entity*, PhysicsData> mEntityMap;
+		std::map<Entity*, PhysicsEntityUPtr> mEntityMap;
 
 		/** The Engine used for updating the data of the PhysicsEntities */
 		physics::PhysicsEngine& mPhysicsEngine;
@@ -58,14 +43,9 @@ namespace game {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			PhysicsManager
 		 * @param	physicsEntity the physics data of the Entity
-		 * @param	modifiable if the entity position and other physics data
-		 * 			could be modified externally
 		 * @note	The rigid body initial data is overrided by the entity
 		 *			one */
-		void addEntity(
-			Entity* entity, PhysicsEntityUPtr physicsEntity,
-			bool modifiable
-		);
+		void addEntity(Entity* entity, PhysicsEntityUPtr physicsEntity);
 
 		/** Removes the given Entity from the PhysicsManager so it won't
 		 * longer be updated

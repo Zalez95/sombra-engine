@@ -1,12 +1,14 @@
 #ifndef ENTITY_READER_H
 #define ENTITY_READER_H
 
+#include "MeshLoader.h"
 #include "MeshReader.h"
 #include "MaterialReader.h"
 #include "../game/GraphicsManager.h"
+#include "../game/PhysicsManager.h"
 
-namespace utils { class FileReader; }
 namespace game { struct Entity; }
+namespace utils { class FileReader; }
 
 namespace loaders {
 
@@ -49,13 +51,21 @@ namespace loaders {
 		/** The GraphicsManager that will store the readed graphics data */
 		game::GraphicsManager& mGraphicsManager;
 
+		/** The PhysicsManager that will store the readed physics data */
+		game::PhysicsManager& mPhysicsManager;
+
 	public:		// Functions
 		/** Creates a new EntityReader
 		 * 
 		 * @param	graphicsManager the GraphicsManager where we will store
-		 *			the readed graphics data */
-		EntityReader(game::GraphicsManager& graphicsManager) :
-			mMeshReader(mMeshLoader), mGraphicsManager(graphicsManager) {};
+		 *			the readed graphics data
+		 * @param	physicsManager the PhysicsManager where we will store
+		 *			the readed physics data */
+		EntityReader(
+			game::GraphicsManager& graphicsManager,
+			game::PhysicsManager& physicsManager
+		) : mGraphicsManager(graphicsManager),
+			mPhysicsManager(physicsManager) {};
 
 		/** Class destructor */
 		~EntityReader() {};

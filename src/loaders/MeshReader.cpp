@@ -1,10 +1,6 @@
 #include "MeshReader.h"
 #include <map>
-#include <string>
-#include <sstream>
-#include <glm/glm.hpp>
 #include "../utils/FileReader.h"
-#include "../graphics/3D/Mesh.h"
 
 namespace loaders {
 
@@ -13,7 +9,7 @@ namespace loaders {
 	const std::string MeshReader::FILE_FORMAT::FILE_EXTENSION	= ".fzmsh";
 
 // Public Functions
-	std::vector<MeshReader::MeshUPtr> MeshReader::load(utils::FileReader& fileReader) const
+	std::vector<MeshReader::RawMeshUPtr> MeshReader::read(utils::FileReader& fileReader) const
 	{
 		try {
 			// 1. Get the input file
@@ -26,8 +22,8 @@ namespace loaders {
 				throw std::runtime_error("Error with the header of the file\n");
 			}
 
-			// 3. Parse the Meshes
-			return parseMeshes(fileReader);
+			// 3. Parse the RawMeshes
+			return parseRawMeshes(fileReader);
 		}
 		catch (const std::exception& e) {
 			throw std::runtime_error("Error parsing the Mesh in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
@@ -35,48 +31,29 @@ namespace loaders {
 	}
 
 
-	std::vector<GLfloat> MeshReader::calculateNormals(
-		const std::vector<GLfloat>& positions,
-		const std::vector<GLushort>& faceIndices
+	std::vector<glm::vec3> MeshReader::calculateNormals(
+		const std::vector<glm::vec3>& positions,
+		const std::vector<unsigned short>& faceIndices
 	) const
 	{
-		std::vector<GLfloat> normals(positions.size(), 0);
+		std::vector<glm::vec3> normals(positions.size(), glm::vec3(0.0f));
 
 		// Sum to the normal of every vertex, the normal of the faces 
 		// which it belongs
 		for (size_t i = 0; i < faceIndices.size(); i+=3) {
 			// Get the normal of triangle
-			GLfloat v1_x = positions[3 * faceIndices[i]]		- positions[3 * faceIndices[i+1]];
-			GLfloat v1_y = positions[3 * faceIndices[i] + 1]	- positions[3 * faceIndices[i+1] + 1];
-			GLfloat v1_z = positions[3 * faceIndices[i] + 2]	- positions[3 * faceIndices[i+1] + 2];
-			glm::vec3 v1(v1_x, v1_y, v1_z);
-
-			GLfloat v2_x = positions[3 * faceIndices[i]]		- positions[3 * faceIndices[i+2]];
-			GLfloat v2_y = positions[3 * faceIndices[i] + 1]	- positions[3 * faceIndices[i+2] + 1];
-			GLfloat v2_z = positions[3 * faceIndices[i] + 2]	- positions[3 * faceIndices[i+2] + 2];
-			glm::vec3 v2(v2_x, v2_y, v2_z);
-
+			const glm::vec3& v1 = positions[faceIndices[i]] - positions[faceIndices[i+1]];
+			const glm::vec3& v2 = positions[faceIndices[i]] - positions[faceIndices[i+2]];
 			glm::vec3 normal = glm::cross(v1, v2);
 
-			normals[3 * faceIndices[i]]			+= normal.x;
-			normals[3 * faceIndices[i] + 1]		+= normal.y;
-			normals[3 * faceIndices[i] + 2]		+= normal.z;
-
-			normals[3 * faceIndices[i+1]]		+= normal.x;
-			normals[3 * faceIndices[i+1] + 1]	+= normal.y;
-			normals[3 * faceIndices[i+1] + 2]	+= normal.z;
-
-			normals[3 * faceIndices[i+2]]		+= normal.x;
-			normals[3 * faceIndices[i+2] + 1]	+= normal.y;
-			normals[3 * faceIndices[i+2] + 2]	+= normal.z;
+			normals[faceIndices[i]]		+= normal;
+			normals[faceIndices[i+1]]	+= normal;
+			normals[faceIndices[i+2]]	+= normal;
 		}
 
 		// Normalize the normal vector of every vertex
-		for (size_t i = 0; i < normals.size(); i+=3) {
-			GLfloat length	= sqrt( pow(normals[i], 2) + pow(normals[i+1], 2) + pow(normals[i+2], 2) );
-			normals[i]		/= length;
-			normals[i+1]	/= length;
-			normals[i+2]	/= length;
+		for (glm::vec3& normal : normals) {
+			normal = glm::normalize(normal);
 		}
 
 		return normals;
@@ -90,9 +67,9 @@ namespace loaders {
 
 		std::string fileName, fileVersion;
 		fileReader >> fileName >> fileVersion;
-		if ((fileReader.getState() == utils::FileState::OK) &&
-			(fileName == FILE_FORMAT::FILE_NAME) &&
-			(fileVersion == FILE_VERSION)
+		if ((fileReader.getState() == utils::FileState::OK)
+			&& (fileName == FILE_FORMAT::FILE_NAME)
+			&& (fileVersion == FILE_VERSION)
 		) {
 			ret = true;
 		}
@@ -101,44 +78,44 @@ namespace loaders {
 	}
 
 	
-	std::vector<MeshReader::MeshUPtr> MeshReader::parseMeshes(utils::FileReader& fileReader) const
+	std::vector<MeshReader::RawMeshUPtr> MeshReader::parseRawMeshes(utils::FileReader& fileReader) const
 	{
-		std::vector<MeshUPtr> meshes;
-		unsigned int numMeshes = 0, meshIndex = 0;
+		std::vector<RawMeshUPtr> rawMeshes;
+		unsigned int nRawMeshes = 0, iRawMesh = 0;
 
 		std::string token;
 		while (fileReader.getValue(token) == utils::FileState::OK) {
-
 			if (token == "num_meshes") {
-				if (fileReader.getValue(numMeshes) == utils::FileState::OK) {
-					meshes.reserve(numMeshes);
+				if (fileReader.getValue(nRawMeshes) == utils::FileState::OK) {
+					rawMeshes.reserve(nRawMeshes);
 				}
 			}
 			else if (token == "mesh") {
-				auto curMesh = parseMesh(fileReader);
-				if (meshIndex < numMeshes) {
-					meshes.push_back(std::move(curMesh));
+				auto curRawMesh = parseRawMesh(fileReader);
+				if (iRawMesh < nRawMeshes) {
+					rawMeshes.push_back(std::move(curRawMesh));
 				}
-				++meshIndex;
+				++iRawMesh;
 			}
 			else {
 				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
 			}
 		}
 
-		if (meshIndex != numMeshes) {
-			throw std::runtime_error("Error: expected " + std::to_string(numMeshes) + " meshes, parsed " + std::to_string(meshIndex) + '\n');
+		if (iRawMesh != nRawMeshes) {
+			throw std::runtime_error("Error: expected " + std::to_string(nRawMeshes) + " meshes, parsed " + std::to_string(iRawMesh) + '\n');
 		}
 
-		return meshes;
+		return rawMeshes;
 	}
 
 
-	MeshReader::MeshUPtr MeshReader::parseMesh(utils::FileReader& fileReader) const
+	MeshReader::RawMeshUPtr MeshReader::parseRawMesh(utils::FileReader& fileReader) const
 	{
 		std::string name;
-		std::vector<GLfloat> positions, uvs;
-		std::vector<GLushort> posIndices, uvIndices;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uvs;
+		std::vector<unsigned short> posIndices, uvIndices;
 		unsigned int numPositions = 0, numUVs = 0, numFaces = 0, numJoints = 0;
 		unsigned int positionIndex = 0, uvIndex = 0, faceIndex = 0;
 		
@@ -151,12 +128,12 @@ namespace loaders {
 
 			if (token == "num_positions") {
 				if (fileReader.getValue(numPositions) == utils::FileState::OK) {
-					positions.resize(3 * numPositions);
+					positions.resize(numPositions);
 				}
 			}
 			else if (token == "num_uvs") {
 				if (fileReader.getValue(numUVs) == utils::FileState::OK) {
-					uvs.resize(2 * numUVs);
+					uvs.resize(numUVs);
 				}
 			}
 			else if (token == "num_faces") {
@@ -170,20 +147,20 @@ namespace loaders {
 			}
 			else if (token == "v") {
 				if (positionIndex < numPositions) {
-					fileReader	>> positions[3 * positionIndex]
-								>> positions[3 * positionIndex + 1]
-								>> positions[3 * positionIndex + 2];
+					fileReader	>> positions[positionIndex].x
+								>> positions[positionIndex].y
+								>> positions[positionIndex].z;
 				}
 				else { fileReader.discardLine(); }
 				++positionIndex;
 			}
 			else if (token == "uv"){
 				unsigned int vi;
-				if ((fileReader.getValue(vi) == utils::FileState::OK) &&
-					(vi < numPositions)
+				if ((fileReader.getValue(vi) == utils::FileState::OK)
+					&& (vi < numPositions)
 				) {
-					fileReader	>> uvs[2 * vi]
-								>> uvs[2 * vi + 1];
+					fileReader	>> uvs[vi].x
+								>> uvs[vi].y;
 				}
 				else { fileReader.discardLine(); }
 				++uvIndex;
@@ -194,9 +171,9 @@ namespace loaders {
 								>> posIndices[3 * faceIndex + 1]
 								>> posIndices[3 * faceIndex + 2] >> trash;
 					if (numUVs > 0) {
-						fileReader	>> trash >> uvIndices[3 * faceIndex]
-									>> uvIndices[3 * faceIndex + 1]
-									>> uvIndices[3 * faceIndex + 2] >> trash;
+						fileReader	>> trash >> uvIndices[faceIndex]
+									>> uvIndices[faceIndex]
+									>> uvIndices[faceIndex] >> trash;
 					}
 				}
 				else { fileReader.discardLine(); }
@@ -218,53 +195,45 @@ namespace loaders {
 			throw std::runtime_error("Error: expected " + std::to_string(numFaces) + " faces, parsed " + std::to_string(faceIndex) + '\n');
 		}
 
-		return processMeshData(name, positions, uvs, posIndices, uvIndices);
+		return processRawMeshData(name, positions, uvs, posIndices, uvIndices);
 	}
 
 
-	MeshReader::MeshUPtr MeshReader::processMeshData(
+	MeshReader::RawMeshUPtr MeshReader::processRawMeshData(
 		const std::string& name,
-		const std::vector<GLfloat>& positions,
-		const std::vector<GLfloat>& uvs,
-		const std::vector<GLushort>& posIndices,
-		const std::vector<GLushort>& uvIndices
+		const std::vector<glm::vec3>& positions,
+		const std::vector<glm::vec2>& uvs,
+		const std::vector<unsigned short>& posIndices,
+		const std::vector<unsigned short>& uvIndices
 	) const {
-		std::vector<GLfloat> positions2, uvs2, normals;
-		std::vector<GLushort> faceIndices;
+		auto rawMesh = std::make_unique<RawMesh>(name);
 
 		if (!uvIndices.empty()) {
-			faceIndices = std::vector<GLushort>(posIndices.size());
-			std::map<std::pair<GLushort, GLushort>, GLushort> faceIndicesMap;
+			rawMesh->mFaceIndices = std::vector<unsigned short>(posIndices.size());
+			std::map<std::pair<unsigned short, unsigned short>, unsigned short> faceIndicesMap;
 
-			for (size_t i = 0; i < faceIndices.size(); ++i) {
-				GLushort positionIndex	= posIndices[i];
-				GLushort uvIndex		= uvIndices[i];
-
-				auto mapKey = std::make_pair(positionIndex, uvIndex);
+			for (size_t i = 0; i < rawMesh->mFaceIndices.size(); ++i) {
+				auto mapKey = std::make_pair(posIndices[i], uvIndices[i]);
 				if (faceIndicesMap.find(mapKey) != faceIndicesMap.end()) {
-					faceIndices[i] = faceIndicesMap[mapKey];
+					rawMesh->mFaceIndices[i] = faceIndicesMap[mapKey];
 				}
 				else {
-					GLushort vertexIndex	= static_cast<GLushort>(positions2.size() / 3);
+					unsigned short vertexIndex	= static_cast<unsigned short>(rawMesh->mPositions.size());
 
-					positions2.push_back( positions[3 * positionIndex] );
-					positions2.push_back( positions[3 * positionIndex + 1] );
-					positions2.push_back( positions[3 * positionIndex + 2] );
-					uvs2.push_back( uvs[2 * uvIndex] );
-					uvs2.push_back( uvs[2 * uvIndex + 1] );
-					faceIndicesMap[mapKey]	= vertexIndex;
-					faceIndices[i]			= vertexIndex;
+					rawMesh->mPositions.push_back( positions[posIndices[i]] );
+					rawMesh->mUVs.push_back( uvs[uvIndices[i]] );
+					rawMesh->mFaceIndices[i]	= vertexIndex;
+					faceIndicesMap[mapKey]		= vertexIndex;
 				}
 			}
 		}
 		else {
-			positions2	= positions;
-			uvs2		= std::vector<GLfloat>(positions.size());
-			faceIndices	= posIndices;
+			rawMesh->mPositions		= positions;
+			rawMesh->mFaceIndices	= posIndices;
 		}
 
-		normals = calculateNormals(positions2, faceIndices);
-		return mMeshLoader.createMesh(name, positions2, normals, uvs2, faceIndices);
+		rawMesh->mNormals = calculateNormals(rawMesh->mPositions, rawMesh->mFaceIndices);
+		return rawMesh;
 	}
 
 }

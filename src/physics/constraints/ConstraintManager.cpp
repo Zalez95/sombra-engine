@@ -107,7 +107,7 @@ namespace physics {
 // Private functions
 	void ConstraintManager::updateBiasMatrix()
 	{
-		mBiasMatrix.clear();
+		mBiasMatrix = std::vector<float>();
 		mBiasMatrix.reserve(mConstraints.size());
 
 		for (const Constraint* c : mConstraints) {
@@ -118,7 +118,7 @@ namespace physics {
 
 	void ConstraintManager::updateVelocityMatrix()
 	{
-		mVelocityMatrix.clear();
+		mVelocityMatrix = std::vector<glm::vec3>();
 		mVelocityMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
@@ -130,7 +130,7 @@ namespace physics {
 
 	void ConstraintManager::updateForceExtMatrix()
 	{
-		mForceExtMatrix.clear();
+		mForceExtMatrix = std::vector<glm::vec3>();
 		mForceExtMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
@@ -142,7 +142,7 @@ namespace physics {
 
 	void ConstraintManager::updateJacobianMatrix()
 	{
-		mJacobianMatrix.clear();
+		mJacobianMatrix = std::vector<std::array<float, 12>>();
 		mJacobianMatrix.reserve(mConstraints.size());
 
 		for (const Constraint* c : mConstraints) {

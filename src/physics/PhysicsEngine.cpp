@@ -1,5 +1,4 @@
 #include "PhysicsEngine.h"
-#include <set>
 #include <limits>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
@@ -24,7 +23,7 @@ namespace physics {
 	{
 		if (!entity) { return; }
 
-		mPhysicsEntities.push_back(entity);
+		mPhysicsEntities.emplace(entity);
 
 		if (collision::Collider* collider = entity->getCollider()) {
 			mCollisionDetector.addCollider(collider);
@@ -37,10 +36,7 @@ namespace physics {
 	{
 		if (!entity) { return; }
 
-		mPhysicsEntities.erase(
-			std::remove(mPhysicsEntities.begin(), mPhysicsEntities.end(), entity),
-			mPhysicsEntities.end()
-		);
+		mPhysicsEntities.erase(entity);
 
 		if (collision::Collider* collider = entity->getCollider()) {
 			mCollisionDetector.removeCollider(collider);
@@ -65,9 +61,10 @@ namespace physics {
 			rigidBody->integrate(delta);
 
 			// Update the Collider data
-			collision::Collider* collider = physicsEntity->getCollider();
-			glm::mat4 colliderOffset = physicsEntity->getColliderOffset();
-			collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
+			if (collision::Collider* collider = physicsEntity->getCollider()) {
+				glm::mat4 colliderOffset = physicsEntity->getColliderOffset();
+				collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
+			}
 		}
 	}
 
@@ -103,7 +100,7 @@ namespace physics {
 				it->second.increaseK();
 
 				// Mark the constraint as active
-				active.emplace(&contact);
+				active.insert(&contact);
 			}
 		}
 

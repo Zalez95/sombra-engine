@@ -9,7 +9,7 @@ namespace physics {
 		mEntityForces.emplace_back(entity, force);
 	}
 
-	
+
 	void ForceManager::removeEntity(PhysicsEntity* entity, Force* force)
 	{
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {

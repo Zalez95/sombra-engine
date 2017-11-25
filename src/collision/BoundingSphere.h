@@ -1,16 +1,16 @@
 #ifndef BOUNDING_SPHERE_H
 #define BOUNDING_SPHERE_H
 
-#include "Collider.h"
+#include "ConvexCollider.h"
 #include <glm/gtx/quaternion.hpp>
 
 namespace collision {
 
 	/**
-	 * Class BoundingSphere, a BoundingSphere is a Collider with the
+	 * Class BoundingSphere, a BoundingSphere is a ConvexCollider with the
 	 * shape of a Sphere
 	 */
-	class BoundingSphere : public Collider
+	class BoundingSphere : public ConvexCollider
 	{
 	private:	// Attributes
 		/** The Radius if the BoundingSphere */

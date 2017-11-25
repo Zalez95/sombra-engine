@@ -1,8 +1,8 @@
 #ifndef PHYSICS_SYSTEM_H
 #define PHYSICS_SYSTEM_H
 
+#include <set>
 #include <map>
-#include <vector>
 #include "../collision/CollisionDetector.h"
 #include "forces/ForceManager.h"
 #include "constraints/ConstraintBounds.h"
@@ -43,7 +43,7 @@ namespace physics {
 		ConstraintManager mConstraintManager;
 
 		/** All the PhysicsEntities that must be updated */
-		std::vector<PhysicsEntity*> mPhysicsEntities;
+		std::set<PhysicsEntity*> mPhysicsEntities;
 
 		/** Maps each Collider with the Entity that holds it */
 		std::map<const collision::Collider*, PhysicsEntity*> mColliderEntityMap;
