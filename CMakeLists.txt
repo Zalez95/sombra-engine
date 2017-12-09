@@ -28,7 +28,11 @@ target_compile_options(FazeEngine PRIVATE -std=c++14 -Wall -Wextra -Wpedantic -W
 
 # Add the dependencies
 include(Dependencies)
-add_dependencies(FazeEngine ${dependencies})
+
+list(LENGTH dependencies_to_build N_DEPENDENCIES)
+if(NOT ${N_DEPENDENCIES} EQUAL 0)
+	add_dependencies(FazeEngine ${dependencies_to_build})
+endif()
 target_include_directories(FazeEngine PRIVATE ${INCLUDE_DIRS})
 target_link_libraries(FazeEngine PRIVATE ${LIBRARIES})
 
