@@ -1,0 +1,15 @@
+include(ExternalProject)
+ExternalProject_Add(
+	glm
+	GIT_REPOSITORY	"https://github.com/g-truc/glm"
+	GIT_TAG			"0.9.8"
+	SOURCE_DIR		"${EXTERNAL_PATH}/glm"
+	INSTALL_DIR		"${EXTERNAL_INSTALL_LOCATION}"
+	UPDATE_COMMAND	""
+	PATCH_COMMAND	""
+	TEST_COMMAND	""
+	CMAKE_ARGS		"-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
+)
+
+set(GLM_FOUND TRUE)
+set(GLM_INCLUDE_DIR "${EXTERNAL_INSTALL_LOCATION}/include")

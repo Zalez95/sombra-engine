@@ -32,7 +32,7 @@ namespace game {
 	{
 		// Get the player's input data
 		const window::InputData* inputData = mWindowSystem.getInputData();
-		
+
 		if (inputData) {
 			// Update the entities
 			for (Entity* entity : mEntities) {
@@ -63,7 +63,7 @@ namespace game {
 		// Calculate the rotation around the Entity's x-axis
 		float pitch			= MOUSE_SPEED * mouseDelta.y;
 		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
-		
+
 		// Apply the change in orientation
 		entity->mOrientation = glm::normalize((qPitch * qYaw) * entity->mOrientation);
 	}
@@ -74,9 +74,9 @@ namespace game {
 		glm::vec3 forward	= glm::vec3(0, 0,-1) * entity->mOrientation;
 		glm::vec3 up		= glm::vec3(0, 1, 0);
 		glm::vec3 right		= glm::cross(forward, up);
-		
+
 		// Get the direction from the input in the XZ plane
-		glm::vec3 direction;
+		glm::vec3 direction(0.0f);
 		if (inputData.mKeys[GLFW_KEY_W]) { direction += forward; }
 		if (inputData.mKeys[GLFW_KEY_S]) { direction -= forward; }
 		if (inputData.mKeys[GLFW_KEY_D]) { direction += right; }

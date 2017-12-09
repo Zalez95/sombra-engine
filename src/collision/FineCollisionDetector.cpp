@@ -164,7 +164,7 @@ namespace collision {
 
 		// Remove the contacts that are no longer valid from the manifold
 		removeInvalidContacts(manifold);
-		
+
 		// Check if the new Contact is far enough to the older contacts
 		if (!isClose(newContact, manifold)) {
 			// Add the new contact to the manifold
@@ -173,7 +173,7 @@ namespace collision {
 			// Limit the number of points in the manifold to 4
 			limitManifoldContacts(manifold);
 		}
-		
+
 		return true;
 	}
 
@@ -382,7 +382,7 @@ namespace collision {
 	{
 		glm::mat4 transforms1 = manifold.getFirstCollider()->getTransforms();
 		glm::mat4 transforms2 = manifold.getSecondCollider()->getTransforms();
-		
+
 		for (auto it = manifold.mContacts.begin(); it != manifold.mContacts.end();) {
 			glm::vec3 changedWorldPos0(transforms1 * glm::vec4(it->getLocalPosition(0), 1.0f));
 			glm::vec3 changedWorldPos1(transforms2 * glm::vec4(it->getLocalPosition(1), 1.0f));
@@ -401,7 +401,7 @@ namespace collision {
 		}
 	}
 
-	
+
 	bool FineCollisionDetector::isClose(
 		const Contact& newContact,
 		const Manifold& manifold
@@ -480,7 +480,7 @@ namespace collision {
 	) const
 	{
 		SupportPoint ret;
-		
+
 		collider1.getFurthestPointInDirection(direction, ret.mWorldPos[0], ret.mLocalPos[0]);
 		collider2.getFurthestPointInDirection(-direction, ret.mWorldPos[1], ret.mLocalPos[1]);
 		ret.mV = ret.mWorldPos[0] - ret.mWorldPos[1];

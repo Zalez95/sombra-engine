@@ -1,6 +1,6 @@
 Game Engine made in C++
 
-Third party libraries needed:
+Third party libraries used:
 - OpenGL	- The OpenGL library
 - GLM		- OpenGL mathematics library (http://glm.g-truc.net/0.9.8/index.html)
 - GLEW		- The OpenGL Extension Wrangler Library (http://glew.sourceforge.net/)
@@ -11,8 +11,9 @@ Project structure:
 - /bin		- output binaries
 - /build	- object files and other CMake output
 - /cmake	- CMake files used to find the third party libraries used in this project
-- /src		- project source files
+- /ext		- project dependencies (source code)
 - /res		- other files like images, maps, 3d models and shaders
+- /src		- project source files
 
 Naming conventions:
 - Shader extensions:

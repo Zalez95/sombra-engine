@@ -4,7 +4,7 @@
 namespace graphics {
 
 	/** The different render ways to render */
-	enum RenderFlags
+	enum RenderFlags : unsigned char
 	{
 		DEFAULT				= 1 << 0,
 		WIREFRAME			= 1 << 1,

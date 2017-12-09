@@ -1,60 +1,36 @@
-cmake_minimum_required(VERSION 2.8)
-project(FazeEngine)
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
-# Version number
-set(Test_VERSION_MAJOR 0)
-set(Test_VERSION_MINOR 5)
+###############################################################################
+# 								FAZE ENGINE
+###############################################################################
+# Project name and version
+project(FazeEngine VERSION 0.5.0 LANGUAGES CXX)
 
+# Set the external libraries directories
+set(EXTERNAL_PATH "${CMAKE_SOURCE_DIR}/ext")
+set(EXTERNAL_INSTALL_LOCATION "${CMAKE_BINARY_DIR}/ext")
 
-# Output directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
+# Change the global variables
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+set(BUILD_SHARED_LIBRARIES OFF)
 
-# Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_GXX_FLAGS} -Wall -Wextra -Wpedantic -Werror -std=c++14")
-
-
-# Find the external libraries needed by the exectuable
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
-
-find_package(GLM REQUIRED)
-if(GLM_FOUND)
-    include_directories("${GLM_INCLUDE_DIRS}")
-endif(GLM_FOUND)
-
-find_package(OpenGL REQUIRED)
-if(OPENGL_FOUND)
-    include_directories("${OPENGL_INCLUDE_DIR}")
-	set(LIBS ${LIBS} "${OPENGL_LIBRARY}")
-endif(OPENGL_FOUND)
-
-find_package(GLEW REQUIRED)
-if(GLEW_FOUND)
-    include_directories("${GLEW_INCLUDE_DIRS}")
-	set(LIBS ${LIBS} "${GLEW_LIBRARIES}")
-endif(GLEW_FOUND)
-
-find_package(GLFW3 REQUIRED)
-if(GLFW3_FOUND)
-    include_directories("${GLFW3_INCLUDE_DIRS}")
-	set(LIBS ${LIBS} "${GLFW3_LIBRARIES}")
-endif(GLFW3_FOUND)
-
-find_package(SOIL REQUIRED)
-if (SOIL_FOUND)
-	include_directories("${SOIL_INCLUDE_DIRS}")
-	set(LIBS ${LIBS} "${SOIL_LIBRARIES}")
-endif (SOIL_FOUND)
-
-
-# Copy the resource files to the output directory
-file(COPY "${CMAKE_HOME_DIRECTORY}/res" DESTINATION "${CMAKE_HOME_DIRECTORY}/bin")
-
+# Find the project header and source files
+file(GLOB_RECURSE FazeEngine_HEADERS "${CMAKE_SOURCE_DIR}/src/*.h")
+file(GLOB_RECURSE FazeEngine_SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp")
 
 # Create the executable
-file(GLOB_RECURSE FazeEngine_SOURCES "src/*.cpp")
-file(GLOB_RECURSE FazeEngine_HEADERS "src/*.h")
 add_executable(FazeEngine ${FazeEngine_HEADERS} ${FazeEngine_SOURCES})
-target_link_libraries(FazeEngine ${LIBS})
+target_compile_options(FazeEngine PRIVATE -std=c++14 -Wall -Wextra -Wpedantic -Werror)
+
+# Add the dependencies
+include(Dependencies)
+add_dependencies(FazeEngine ${dependencies})
+target_include_directories(FazeEngine PRIVATE ${INCLUDE_DIRS})
+target_link_libraries(FazeEngine PRIVATE ${LIBRARIES})
+
+# Copy the resource files to the output directory
+file(COPY "${CMAKE_SOURCE_DIR}/res" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

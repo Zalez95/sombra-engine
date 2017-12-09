@@ -8,7 +8,7 @@ namespace collision {
 	struct AABB;
 
 
-	/** The different types that the collider cons have */
+	/** The different types that a collider may be */
 	enum ColliderType
 	{
 		CONVEX_COLLIDER,
@@ -31,7 +31,7 @@ namespace collision {
 
 		/** Updates the translation and orientation of the Collider with the
 		 * data of the given transformations matrix
-		 * 
+		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			position and orientation of the Collider */
 		virtual void setTransforms(const glm::mat4& transforms) = 0;

@@ -2,7 +2,6 @@
 #define BOUNDING_SPHERE_H
 
 #include "ConvexCollider.h"
-#include <glm/gtx/quaternion.hpp>
 
 namespace collision {
 
@@ -21,7 +20,7 @@ namespace collision {
 
 	public:		// Functions
 		/** Creates a new BoundingSphere located at the origin of coordinates
-		 * 
+		 *
 		 * @param	radius the Radius of the new BoundingSphere */
 		BoundingSphere(float radius) : mRadius(radius) {};
 
@@ -34,14 +33,14 @@ namespace collision {
 
 		/** @return	the radius of the BoundingSphere */
 		inline float getRadius() const { return mRadius; };
-		
+
 		/** Updates the position of the BoundingSphere with the data of the
 		 * given transformation matrix
-		 * 
+		 *
 		 * @param	transforms the transformations matrix used to set the
 		 *			position of the BoundingSphere */
 		virtual void setTransforms(const glm::mat4& transforms);
-		
+
 		/** @return	the transformations matrix currently applied to the
 		 *			BoundingSphere */
 		inline virtual glm::mat4 getTransforms() const
@@ -53,7 +52,7 @@ namespace collision {
 
 		/** Calculates the coordinates of the BoundingSphere's furthest point
 		 * in the given direction
-		 * 
+		 *
 		 * @param	direction the direction towards we want to get the furthest
 		 *			point
 		 * @param	pointWorld the vector where we are going to store the
