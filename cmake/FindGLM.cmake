@@ -2,6 +2,7 @@
 # This module will set the next variables:
 #	GLM_FOUND		- GLM was succesfully found
 #	GLM_INCLUDE_DIR	- GLM header "glm/glm.hpp"
+#	glm				- GLM target
 
 # Search for the headers
 find_path(
@@ -16,3 +17,12 @@ find_package_handle_standard_args(
 	REQUIRED_VARS GLM_INCLUDE_DIR
 )
 
+if(GLM_FOUND)
+	# Create the dependency target
+	add_library(glm INTERFACE)
+	set_target_properties(
+		glm
+		PROPERTIES
+			INTERFACE_INCLUDE_DIRECTORIES ${GLM_INCLUDE_DIR}
+	)
+endif()

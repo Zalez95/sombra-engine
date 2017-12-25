@@ -1,0 +1,95 @@
+#include "fe/app/GraphicsManager.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include "fe/app/Entity.h"
+
+namespace fe { namespace app {
+
+	GraphicsManager::GraphicsManager(graphics::GraphicsSystem& graphicsSystem) :
+		mGraphicsSystem(graphicsSystem)
+	{
+		mGraphicsSystem.addLayer(&mLayer3D);
+	}
+
+
+	GraphicsManager::~GraphicsManager() {}
+
+
+	void GraphicsManager::addEntity(Entity* entity, CameraUPtr camera)
+	{
+		if (!entity || !camera) return;
+
+		mLayer3D.setCamera(camera.get());
+		mCameraEntities.emplace(entity, std::move(camera));
+	}
+
+
+	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D, const glm::mat4& offset)
+	{
+		if (!entity || !renderable3D) return;
+
+		mLayer3D.addRenderable3D(renderable3D.get());
+		mRenderable3DEntities.emplace(entity, std::make_pair(std::move(renderable3D), offset));
+	}
+
+
+	void GraphicsManager::addEntity(Entity* entity, PointLightUPtr pointLight)
+	{
+		if (!entity || !pointLight) return;
+
+		mLayer3D.addPointLight(pointLight.get());
+		mPointLightEntities.emplace(entity, std::move(pointLight));
+	}
+
+
+	void GraphicsManager::removeEntity(Entity* entity)
+	{
+		auto itCamera = mCameraEntities.find(entity);
+		if (itCamera != mCameraEntities.end()) {
+			mLayer3D.setCamera(nullptr);
+			mCameraEntities.erase(itCamera);
+		}
+
+		auto itRenderable3D = mRenderable3DEntities.find(entity);
+		if (itRenderable3D != mRenderable3DEntities.end()) {
+			mLayer3D.removeRenderable3D(itRenderable3D->second.first.get());
+			mRenderable3DEntities.erase(itRenderable3D);
+		}
+
+		auto itPointLight = mPointLightEntities.find(entity);
+		if (itPointLight != mPointLightEntities.end()) {
+			mLayer3D.removePointLight(itPointLight->second.get());
+			mPointLightEntities.erase(itPointLight);
+		}
+	}
+
+
+	void GraphicsManager::update()
+	{
+		for (auto& ce : mCameraEntities) {
+			glm::vec3 forwardVector = glm::vec3(0, 0,-1) * ce.first->mOrientation;
+			glm::vec3 upVector		= glm::vec3(0, 1, 0);
+
+			ce.second->setPosition(ce.first->mPosition);
+			ce.second->setTarget(ce.first->mPosition + forwardVector);
+			ce.second->setUp(upVector);
+		}
+
+		for (auto& pe : mPointLightEntities) {
+			pe.second->setPosition(pe.first->mPosition);
+		}
+
+		for (auto& re : mRenderable3DEntities) {
+			glm::mat4 translation	= glm::translate(glm::mat4(), re.first->mPosition);
+			glm::mat4 rotation		= glm::mat4_cast(re.first->mOrientation);
+			glm::mat4 offset		= re.second.second;
+			re.second.first->setModelMatrix(offset * translation * rotation);
+		}
+	}
+
+
+	void GraphicsManager::render()
+	{
+		mGraphicsSystem.render();
+	}
+
+}}
