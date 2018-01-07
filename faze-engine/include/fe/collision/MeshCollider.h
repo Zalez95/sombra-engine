@@ -6,7 +6,7 @@
 namespace fe { namespace collision {
 
 	/**
-	 * Class MeshCollider, a Collider with a concave shape which will be
+	 * Class MeshCollider, it's a Collider with a concave shape which will be
 	 * stored as a triangle Mesh.
 	 */
 	class MeshCollider : public ConcaveCollider
@@ -42,6 +42,19 @@ namespace fe { namespace collision {
 		MeshCollider(
 			const std::vector<glm::vec3>& vertices,
 			const std::vector<unsigned short>& indices
+		);
+
+		/** Creates a new MeshCollider
+		 *
+		 * @param	vertices the vertices of the MeshCollider in local
+		 *			space
+		 * @param	indices the indices of the faces of the MeshCollider
+		 * @param	transforms the transformations matrix with the translation
+		 *			and orientation of the MeshCollider */
+		MeshCollider(
+			const std::vector<glm::vec3>& vertices,
+			const std::vector<unsigned short>& indices,
+			const glm::mat4& transforms
 		);
 
 		/** Class destructor */

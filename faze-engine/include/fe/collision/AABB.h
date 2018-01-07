@@ -33,6 +33,10 @@ namespace fe { namespace collision {
 
 		/** Destructor */
 		~AABB() {};
+
+		/** @return true if the current AABB overlaps the given one, false
+		 * otherwise */
+		bool overlaps(const AABB& other) const;
 	};
 
 }}

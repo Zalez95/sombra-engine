@@ -1,4 +1,4 @@
-#include "FineCollisionDetector.h"
+#include "fe/collision/FineCollisionDetector.h"
 #include <limits>
 #include <cassert>
 #include <algorithm>

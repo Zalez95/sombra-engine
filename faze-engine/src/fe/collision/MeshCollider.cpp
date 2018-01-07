@@ -16,6 +16,18 @@ namespace fe { namespace collision {
 	}
 
 
+	MeshCollider::MeshCollider(
+		const std::vector<glm::vec3>& vertices,
+		const std::vector<unsigned short>& indices,
+		const glm::mat4& transforms
+	) : mVertices(vertices), mVerticesWorld(vertices.size()), mIndices(indices)
+	{
+		assert(mIndices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
+
+		setTransforms(transforms);
+	}
+
+
 	void MeshCollider::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;
@@ -28,31 +40,20 @@ namespace fe { namespace collision {
 	}
 
 
-	std::vector<MeshCollider::ConvexPart> MeshCollider::getOverlapingParts(const AABB& aabb) const
+	std::vector<ConcaveCollider::ConvexPart> MeshCollider::getOverlapingParts(const AABB& aabb) const
 	{
 		std::vector<ConvexPart> triangleColliders;
 
 		for (size_t i = 0; i < mTriangleAABBs.size(); ++i) {
-			const AABB* b1 = &mTriangleAABBs[i];
-			const AABB* b2 = &aabb;
-
-			if (b2->mMinimum.x < b1->mMinimum.x) { std::swap(b1, b2); }
-			bool intersecX = (b1->mMaximum.x > b2->mMinimum.x) && (b1->mMinimum.x < b2->mMaximum.x);
-
-			if (b2->mMinimum.y < b1->mMinimum.y) { std::swap(b1, b2); }
-			bool intersecY = (b1->mMaximum.y > b2->mMinimum.y) && (b1->mMinimum.y < b2->mMaximum.y);
-
-			if (b2->mMinimum.z < b1->mMinimum.z) { std::swap(b1, b2); }
-			bool intersecZ = (b1->mMaximum.z > b2->mMinimum.z) && (b1->mMinimum.z < b2->mMaximum.z);
-
-			if (intersecX && intersecY && intersecZ) {
+			if ( mTriangleAABBs[i].overlaps(aabb) ) {
 				std::vector<glm::vec3> triangleVertices;
 				triangleVertices.reserve(3);
 				for (size_t j = 0; j < 3; ++j) {
-					triangleVertices.push_back( mVerticesWorld[mIndices[3*i + j]] );
+					triangleVertices.push_back( mVertices[mIndices[3*i + j]] );
 				}
 
 				triangleColliders.push_back(std::make_unique<ConvexPolyhedron>(triangleVertices));
+				triangleColliders.back()->setTransforms(mTransformsMatrix);
 			}
 		}
 

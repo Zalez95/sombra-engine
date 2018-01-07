@@ -18,6 +18,9 @@ namespace fe { namespace collision {
 		/** The transformation matrix of the BoundingSphere */
 		glm::mat4 mTransformsMatrix;
 
+		/** The inverse of transformation matrix of the BoundingSphere */
+		glm::mat4 mInverseTransformsMatrix;
+
 	public:		// Functions
 		/** Creates a new BoundingSphere located at the origin of coordinates
 		 *

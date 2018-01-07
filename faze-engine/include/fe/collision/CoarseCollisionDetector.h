@@ -1,8 +1,8 @@
 #ifndef COARSE_COLLISION_DETECTOR_H
 #define COARSE_COLLISION_DETECTOR_H
 
+#include <set>
 #include <deque>
-#include <vector>
 #include "fe/collision/AABB.h"
 
 namespace fe { namespace collision {
@@ -42,11 +42,10 @@ namespace fe { namespace collision {
 		/** Calculates and returns the Colliders whose AABBs are currently
 		 * intersecting
 		 *
-		 * @return	the vector with the pairs of Colliders whose AABBs are
-		 * 			intersecting
+		 * @return	all the pairs of Colliders whose AABBs are intersecting
 		 * @note	after calling this function all the Colliders will be
 		 * 			cleared from the CoarseCollisionDetector */
-		std::vector<ColliderPair> getIntersectingColliders();
+		std::set<ColliderPair> getIntersectingColliders();
 	};
 
 }}

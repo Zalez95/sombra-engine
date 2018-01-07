@@ -5,21 +5,32 @@
 #include <map>
 #include <memory>
 #include "Manifold.h"
+#include "CoarseCollisionDetector.h"
+#include "FineCollisionDetector.h"
 
 namespace fe { namespace collision {
 
 	class Collider;
 
+
 	/**
-	 * Class CollisionDetector
+	 * Class CollisionDetector, TODO
 	 */
 	class CollisionDetector
 	{
 	private:	// Nested types
 		typedef std::pair<const Collider*, const Collider*> ColliderPair;
-		struct Implementation;
-
+		
 	private:	// Attributes
+		/** The CoarseCollisionDetector of the CollisionDetector. We will use
+		 * it to check what Colliders are intersecting in the broad phase of
+		 * the collision detection step */
+		CoarseCollisionDetector mCoarseCollisionDetector;
+
+		/** The FineCollisionDetector of the CollisionDetector. We will use
+		 * it to generate all the contact data */
+		FineCollisionDetector mFineCollisionDetector;
+
 		/** All the Colliders to check */
 		std::set<const Collider*> mColliders;
 
@@ -30,15 +41,12 @@ namespace fe { namespace collision {
 		 * the detected collisions */
 		std::set<Manifold*> mManifolds;
 
-		/** Other attributes hided with the Pimpl idiom */
-		std::unique_ptr<Implementation> mImpl;
-
 	public:		// Functions
 		/** Creates a new CollisionDetector */
-		CollisionDetector();
+		CollisionDetector() {};
 
 		/** Class destructor */
-		~CollisionDetector();
+		~CollisionDetector() {};
 
 		/** @return all the contact manifolds of the detected collisions */
 		inline std::set<Manifold*> getCollisionManifolds() const
