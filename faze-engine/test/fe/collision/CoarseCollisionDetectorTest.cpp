@@ -52,8 +52,8 @@ TEST(CoarseCollisionDetector, collide)
 	for (auto pair1 : result) {
 		bool flag = false;
 		for (auto pair2 : result) {
-			if (pair1.first == pair2.first && pair1.second == pair2.second
-				|| pair1.first == pair2.second && pair1.second == pair2.first
+			if ((pair1.first == pair2.first && pair1.second == pair2.second)
+				|| (pair1.first == pair2.second && pair1.second == pair2.first)
 			) {
 				flag = true;
 				break;

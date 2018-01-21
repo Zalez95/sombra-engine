@@ -13,7 +13,7 @@ namespace fe { namespace collision {
 	class Contact
 	{
 	private:	// Attributes
-		friend class FineCollisionDetector;
+		friend class EPACollisionDetector;
 
 		/** The penetration depth of the Contact */
 		float mPenetration;
