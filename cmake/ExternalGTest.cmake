@@ -1,14 +1,15 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(
-	gtestDownload
-	GIT_REPOSITORY	"https://github.com/google/googletest.git"
-	GIT_TAG			"release-1.8.0"
-	SOURCE_DIR		"${EXTERNAL_PATH}/gtest"
-	CMAKE_ARGS		"-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
-					"-DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}"
-	INSTALL_DIR		"${EXTERNAL_INSTALL_LOCATION}"
+ExternalProject_Add(gtestDownload
+	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/gtest"
+	SOURCE_DIR			"${EXTERNAL_PATH}/gtest"
+	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/gtest"
+	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+						-DBUILD_GTEST=ON
+						-DBUILD_GMOCK=OFF
+						-Wno-dev
 )
 
 # Get the properties from the downloaded target

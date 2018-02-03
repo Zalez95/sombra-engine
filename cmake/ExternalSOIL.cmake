@@ -1,13 +1,13 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(
-	soilDownload
-	GIT_REPOSITORY	"https://github.com/kbranigan/Simple-OpenGL-Image-Library.git"
-	GIT_TAG			"4fff135"
-	SOURCE_DIR		"${EXTERNAL_PATH}/soil"
-	CMAKE_ARGS		"-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
-					"-DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}"
+ExternalProject_Add(soilDownload
+	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/soil"
+	SOURCE_DIR			"${EXTERNAL_PATH}/soil"
+	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/soil"
+	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+						-Wno-dev
 )
 
 # Get the properties from the downloaded target

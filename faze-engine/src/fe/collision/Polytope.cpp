@@ -34,7 +34,7 @@ namespace fe { namespace collision {
 			glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
 
 			// Calculate a rotation matrix of 60 degrees around the line vector
-			glm::mat3 rotate60 = glm::mat3(glm::rotate(glm::mat4(), glm::pi<float>() / 6.0f, v01));
+			glm::mat3 rotate60 = glm::mat3(glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 6.0f, v01));
 
 			// Find the least significant axis
 			unsigned int closestAxis = 0;
@@ -81,8 +81,8 @@ namespace fe { namespace collision {
 		}
 
 		// Create the polytope from the simplex's points
-		mVertices = { simplex[0], simplex[1], simplex[2], simplex[3] };
-		SupportPoint *d = &mVertices[0], *c = &mVertices[1], *b = &mVertices[2], *a = &mVertices[3];
+		SupportPoint *d = &simplex[0], *c = &simplex[1], *b = &simplex[2], *a = &simplex[3];
+		mVertices = { *d, *c, *b, *a };
 		mFaces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
 	}
 

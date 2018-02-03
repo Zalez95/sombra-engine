@@ -23,16 +23,14 @@ find_library(
 
 find_package_handle_standard_args(
 	glew
-	REQUIRED_VARS	GLEW_INCLUDE_DIR GLEW_LIBRARY
+	REQUIRED_VARS GLEW_INCLUDE_DIR GLEW_LIBRARY
 )
 
 if(GLEW_FOUND)
 	# Create the dependency target
-	add_library(glew SHARED IMPORTED)
-	set_target_properties(
-		glew
-		PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${GLEW_INCLUDE_DIR}
-			IMPORTED_LOCATION ${GLEW_LIBRARY}
+	add_library(glew UNKNOWN IMPORTED)
+	set_target_properties(glew PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES ${GLEW_INCLUDE_DIR}
+		IMPORTED_LOCATION ${GLEW_LIBRARY}
 	)
 endif()

@@ -1,6 +1,7 @@
 #ifndef POLYTOPE_H
 #define POLYTOPE_H
 
+#include <list>
 #include <vector>
 #include <glm/glm.hpp>
 #include "SupportPoint.h"
@@ -55,8 +56,8 @@ namespace fe { namespace collision {
 	{
 		static const float sKEpsilon;
 
-		std::vector<SupportPoint> mVertices;
-		std::vector<Triangle> mFaces;
+		std::list<SupportPoint> mVertices;
+		std::list<Triangle> mFaces;
 
 		Polytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,

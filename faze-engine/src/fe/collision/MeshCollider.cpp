@@ -8,7 +8,8 @@ namespace fe { namespace collision {
 	MeshCollider::MeshCollider(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<unsigned short>& indices
-	) : mVertices(vertices), mVerticesWorld(vertices), mIndices(indices)
+	) : mVertices(vertices), mVerticesWorld(vertices), mIndices(indices),
+		mTransformsMatrix(1.0f)
 	{
 		assert(mIndices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
 

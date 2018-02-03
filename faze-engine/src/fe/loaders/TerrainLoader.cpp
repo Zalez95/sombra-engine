@@ -24,7 +24,7 @@ namespace fe { namespace loaders {
 		// Graphics data
 		auto graphicsMesh = mMeshLoader.createMesh(*rawMesh);
 		auto renderable3D = std::make_unique<graphics::Renderable3D>(std::move(graphicsMesh), nullptr, nullptr);
-		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), glm::mat4());
+		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), glm::mat4(1.0f));
 
 		// Physics data
 		// TODO

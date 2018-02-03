@@ -78,7 +78,7 @@ TEST(MeshCollider, getAABBTransforms)
 
 	fe::collision::MeshCollider mc1(vertices, indices);
 	glm::mat4 r = glm::mat4_cast(rotation);
-	glm::mat4 t = glm::translate(glm::mat4(), translation);
+	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	mc1.setTransforms(t * r);
 
 	const fe::collision::AABB aabb1 = mc1.getAABB();
@@ -129,7 +129,7 @@ TEST(MeshCollider, getOverlapingParts)
 
 	fe::collision::MeshCollider mc1(vertices, indices);
 	glm::mat4 r = glm::mat4_cast(rotation);
-	glm::mat4 t = glm::translate(glm::mat4(), translation);
+	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 transforms = t * r;
 
 	mc1.setTransforms(transforms);

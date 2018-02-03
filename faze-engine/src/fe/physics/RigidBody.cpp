@@ -6,13 +6,15 @@ namespace fe { namespace physics {
 
 	RigidBody::RigidBody() :
 		mInvertedMass(0.0f), mLinearSlowDown(0.0f),
-		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f) {}
+		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f),
+		mTransformsMatrix(1.0f) {}
 
 
 	RigidBody::RigidBody(
 		float mass, float linearSlowDown,
 		const glm::mat3& inertiaTensor, float angularSlowDown
-	) {
+	) : mTransformsMatrix(1.0f)
+	{
 		assert(mass > 0);
 
 		mInvertedMass			= 1.0f / mass;
@@ -71,7 +73,7 @@ namespace fe { namespace physics {
 
 	void RigidBody::updateTransformsMatrix()
 	{
-		glm::mat4 translation	= glm::translate(glm::mat4(), mPosition);
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), mPosition);
 		glm::mat4 rotation		= glm::mat4_cast(mOrientation);
 		mTransformsMatrix = translation * rotation;
 	}

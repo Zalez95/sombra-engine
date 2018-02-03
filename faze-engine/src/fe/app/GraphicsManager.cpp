@@ -79,7 +79,7 @@ namespace fe { namespace app {
 		}
 
 		for (auto& re : mRenderable3DEntities) {
-			glm::mat4 translation	= glm::translate(glm::mat4(), re.first->mPosition);
+			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), re.first->mPosition);
 			glm::mat4 rotation		= glm::mat4_cast(re.first->mOrientation);
 			glm::mat4 offset		= re.second.second;
 			re.second.first->setModelMatrix(offset * translation * rotation);

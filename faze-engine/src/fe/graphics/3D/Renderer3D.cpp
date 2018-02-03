@@ -17,7 +17,7 @@ namespace fe { namespace graphics {
 
 	void Renderer3D::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
 	{
-		glm::mat4 viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4();
+		glm::mat4 viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
 
 		mProgram.enable();
 		mProgram.setViewMatrix(viewMatrix);

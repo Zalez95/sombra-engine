@@ -11,7 +11,7 @@ target_include_directories(game PRIVATE
 )
 
 # Add the compiler options
-target_compile_options(game PRIVATE -std=c++14)
+set_target_properties(game PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 	target_compile_options(game PRIVATE -Wall -Wextra -Wpedantic -Werror)
 elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
@@ -23,6 +23,3 @@ set_target_properties(game PROPERTIES DEBUG_POSTFIX d)
 
 # Link the dependencies
 target_link_libraries(game PRIVATE fazeEngine)
-
-# Copy the resource files to the output directory
-file(COPY "res" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

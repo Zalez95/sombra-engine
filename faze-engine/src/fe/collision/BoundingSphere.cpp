@@ -1,10 +1,11 @@
 #include "fe/collision/BoundingSphere.h"
 #include <cassert>
-#include <glm/gtx/component_wise.hpp>
 
 namespace fe { namespace collision {
 
-	BoundingSphere::BoundingSphere(float radius) : mRadius(radius)
+	BoundingSphere::BoundingSphere(float radius) :
+		mRadius(radius),
+		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
 		assert(radius >= 0 && "The radius of the sphere can't be smaller than zero.");
 	}

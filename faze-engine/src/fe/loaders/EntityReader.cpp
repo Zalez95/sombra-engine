@@ -244,7 +244,7 @@ namespace fe { namespace loaders {
 				physicsEntity = std::make_unique<physics::PhysicsEntity>(
 					physics::RigidBody(),
 					std::make_unique<collision::MeshCollider>((*itRawMesh)->mPositions, (*itRawMesh)->mFaceIndices),
-					offsetMatrix
+					mat
 				);
 			}
 			else if (token == "}") { end = true; }

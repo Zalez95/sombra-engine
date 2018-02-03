@@ -6,7 +6,7 @@
 namespace fe { namespace collision {
 
 	ConvexPolyhedron::ConvexPolyhedron(const std::vector<glm::vec3>& vertices) :
-		mVertices(vertices), mVerticesWorld(vertices)
+		mVertices(vertices), mVerticesWorld(vertices), mTransformsMatrix(1.0f)
 	{
 		assert(!vertices.empty() && "The ConvexPolyhedron has to have at least one vertex");
 	}

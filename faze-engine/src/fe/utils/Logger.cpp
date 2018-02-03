@@ -30,13 +30,13 @@ namespace fe { namespace utils {
 		// Write the type of the text
 		switch (type)
 		{
-		case WARNING:
+		case LogType::WARNING:
 			mLogFile << "[WARNING]\t";
 			break;
-		case ERROR:
+		case LogType::ERROR:
 			mLogFile << "[ERROR]\t";
 			break;
-		case DEBUG:
+		case LogType::DEBUG:
 			mLogFile << "[DEBUG]\t";
 			break;
 		}

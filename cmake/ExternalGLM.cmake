@@ -1,13 +1,11 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(
-	glmDownload
-	GIT_REPOSITORY	"https://github.com/g-truc/glm.git"
-	GIT_TAG			"0.9.8"
-	SOURCE_DIR		"${EXTERNAL_PATH}/glm"
-	CMAKE_ARGS		"-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
-	INSTALL_DIR		"${EXTERNAL_INSTALL_LOCATION}"
+ExternalProject_Add(glmDownload
+	DOWNLOAD_COMMAND	git submodule update --init -- "${EXTERNAL_PATH}/glm"
+	SOURCE_DIR			"${EXTERNAL_PATH}/glm"
+	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/glm"
+	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 )
 
 # Get the properties from the downloaded target

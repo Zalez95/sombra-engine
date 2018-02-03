@@ -23,16 +23,14 @@ find_library(
 
 find_package_handle_standard_args(
 	glfw
-	REQUIRED_VARS	GLFW_INCLUDE_DIR GLFW_LIBRARY
+	REQUIRED_VARS GLFW_INCLUDE_DIR GLFW_LIBRARY
 )
 
 if(GLFW_FOUND)
 	# Create the dependency target
-	add_library(glfw SHARED IMPORTED)
-	set_target_properties(
-		glfw
-		PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${GLFW_INCLUDE_DIR}
-			IMPORTED_LOCATION ${GLFW_LIBRARY}
+	add_library(glfw UNKNOWN IMPORTED)
+	set_target_properties(glfw PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES ${GLFW_INCLUDE_DIR}
+		IMPORTED_LOCATION ${GLFW_LIBRARY}
 	)
 endif()

@@ -7,7 +7,7 @@
 namespace fe { namespace collision {
 
 	/** The different types that a collider may be */
-	enum ColliderType
+	enum class ColliderType
 	{
 		CONVEX_COLLIDER,
 		CONCAVE_COLLIDER

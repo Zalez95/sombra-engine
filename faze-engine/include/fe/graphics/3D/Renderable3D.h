@@ -50,7 +50,7 @@ namespace fe { namespace graphics {
 			MeshSPtr mesh, MaterialSPtr material, TextureSPtr texture,
 			RenderFlags renderFlags = RenderFlags::DEFAULT
 		) : mMesh(mesh), mMaterial(material), mTexture(texture),
-			mRenderFlags(renderFlags) {};
+			mRenderFlags(renderFlags), mModelMatrix(1.0f) {};
 
 		/** Class destructor */
 		~Renderable3D() {};

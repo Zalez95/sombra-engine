@@ -27,7 +27,8 @@ namespace fe { namespace physics {
 		/** Creates a new PhysicsEntity
 		 *
 		 * @param	rigidBody the RigidBody of the PhysicsEntity */
-		PhysicsEntity(const RigidBody& rigidBody) : mRigidBody(rigidBody) {};
+		PhysicsEntity(const RigidBody& rigidBody) :
+			mRigidBody(rigidBody), mColliderOffset(1.0f) {};
 
 		/** Creates a new PhysicsEntity with a Collider
 		 *

@@ -32,7 +32,7 @@ TEST(BoundingSphere, getAABBTransforms)
 
 	fe::collision::BoundingSphere bs1(radius);
 	glm::mat4 r = glm::mat4_cast(rotation);
-	glm::mat4 t = glm::translate(glm::mat4(), translation);
+	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	bs1.setTransforms(t * r);
 
 	const fe::collision::AABB aabb1 = bs1.getAABB();
@@ -49,7 +49,7 @@ TEST(BoundingSphere, getCenter)
 
 	fe::collision::BoundingSphere bs1(radius);
 	glm::mat4 r = glm::mat4_cast(rotation);
-	glm::mat4 t = glm::translate(glm::mat4(), translation);
+	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	bs1.setTransforms(t * r);
 
 	glm::vec3 center = bs1.getCenter();
@@ -65,7 +65,7 @@ TEST(BoundingSphere, getFurthestPointInDirection)
 
 	fe::collision::BoundingSphere bs1(radius);
 	glm::mat4 r = glm::mat4_cast(rotation);
-	glm::mat4 t = glm::translate(glm::mat4(), translation);
+	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	bs1.setTransforms(t * r);
 
 	glm::vec3 direction(-0.565685425f, 0.707106781f, 0.424264069f), pointWorld, pointLocal;

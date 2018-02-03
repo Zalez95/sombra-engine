@@ -1,16 +1,15 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(
-	glfwDownload
-	GIT_REPOSITORY	"https://github.com/glfw/glfw.git"
-	GIT_TAG			"3.2.1"
-	SOURCE_DIR		"${EXTERNAL_PATH}/glfw"
-	CMAKE_ARGS		"-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
-					"-DGLFW_BUILD_DOCS=OFF"
-					"-DGLFW_BUILD_TESTS=OFF"
-					"-DGLFW_BUILD_EXAMPLES=OFF"
-					"-DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}"
+ExternalProject_Add(glfwDownload
+	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/glfw"
+	SOURCE_DIR			"${EXTERNAL_PATH}/glfw"
+	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/glfw"
+	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+						-DGLFW_BUILD_DOCS=OFF
+						-DGLFW_BUILD_TESTS=OFF
+						-DGLFW_BUILD_EXAMPLES=OFF
+						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
 )
 
 # Get the properties from the downloaded target

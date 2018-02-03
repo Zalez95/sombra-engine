@@ -23,16 +23,14 @@ find_library(
 
 find_package_handle_standard_args(
 	soil
-	REQUIRED_VARS	SOIL_INCLUDE_DIR SOIL_LIBRARY
+	REQUIRED_VARS SOIL_INCLUDE_DIR SOIL_LIBRARY
 )
 
 if(SOIL_FOUND)
 	# Create the dependency target
-	add_library(soil SHARED IMPORTED)
-	set_target_properties(
-		soil
-		PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${SOIL_INCLUDE_DIR}
-			IMPORTED_LOCATION ${SOIL_LIBRARY}
+	add_library(soil UNKNOWN IMPORTED)
+	set_target_properties(soil PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES ${SOIL_INCLUDE_DIR}
+		IMPORTED_LOCATION ${SOIL_LIBRARY}
 	)
 endif()

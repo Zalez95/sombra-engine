@@ -12,7 +12,7 @@ target_include_directories(fazeEngine PUBLIC
 )
 
 # Add the compiler options
-target_compile_options(fazeEngine PRIVATE -std=c++14)
+set_target_properties(fazeEngine PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 	target_compile_options(fazeEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
 elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
@@ -23,9 +23,10 @@ endif()
 set_target_properties(fazeEngine PROPERTIES DEBUG_POSTFIX d)
 
 # Add the compiler definitions
-set_target_properties(fazeEngine PROPERTIES COMPILE_DEFINITIONS GLEW_STATIC)
+target_compile_definitions(fazeEngine PUBLIC GLEW_STATIC GLEW_NO_GLU)
 
 # Link the dependencies
+target_include_directories(fazeEngine PUBLIC glm PRIVATE soil glfw glew)
 target_link_libraries(fazeEngine PUBLIC glm soil glfw glew opengl)
 
 # Create the tests
@@ -35,12 +36,11 @@ if (FAZE_ENGINE_BUILD_TESTS)
 
 	# Create the executable
 	add_executable(fazeEngineTest ${FAZE_ENGINE_TEST_SOURCES})
-	
+
 	# Add the compiler options
-	target_compile_options(fazeEngineTest PRIVATE -std=c++14)
-	target_compile_options(fazeEngineTest PRIVATE -std=c++14)
+	set_target_properties(fazeEngineTest PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
 	if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-		target_compile_options(fazeEngineTest PRIVATE -Wall -Wextra -Wpedantic -Werror)
+		target_compile_options(fazeEngineTest PRIVATE -Wall -Wextra -Werror)
 	elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
 		target_compile_options(fazeEngineTest PRIVATE /W4 /MT -D_CRT_SECURE_NO_WARNINGS)
 		set_target_properties(fazeEngineTest PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

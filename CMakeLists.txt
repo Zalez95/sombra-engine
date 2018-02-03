@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 
 ###############################################################################
 # 								FAZE ENGINE
@@ -16,8 +16,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
 # Set the external libraries configuration data
-set(BUILD_SHARED_LIBRARIES OFF)
+option(BUILD_SHARED_LIBS
+	"Use the SHARED version of the third party libraries if possible" OFF)
 set(EXTERNAL_PATH "${CMAKE_SOURCE_DIR}/ext")
+set(EXTERNAL_INSTALL_PATH "${CMAKE_BINARY_DIR}/ext")
 
 # Include the dependencies
 include(Dependencies)

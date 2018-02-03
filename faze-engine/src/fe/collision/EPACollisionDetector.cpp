@@ -64,7 +64,7 @@ namespace fe { namespace collision {
 		float closestFDist = std::numeric_limits<float>::max();
 		while (true) {
 			// 1. Calculate the closest face to the origin of the polytope
-			std::vector<Triangle>::iterator closestF2 = polytope.mFaces.begin();
+			std::list<Triangle>::iterator closestF2 = polytope.mFaces.begin();
 			float closestFDist2 = std::numeric_limits<float>::max();
 			for (auto it = polytope.mFaces.begin(); it != polytope.mFaces.end(); ++it) {
 				float fDist = it->getDistanceToOrigin();
@@ -92,7 +92,7 @@ namespace fe { namespace collision {
 
 			// 5. Delete the faces that can be seen from the new point and get
 			// the edges of the created hole
-			std::vector<Edge> holeEdges;
+			std::list<Edge> holeEdges;
 			for (auto it = polytope.mFaces.begin(); it != polytope.mFaces.end();) {
 				if (glm::dot(it->mNormal, sp->getCSOPosition()) > 0) {
 					auto itE1 = std::find(holeEdges.begin(), holeEdges.end(), it->mAB);
@@ -112,7 +112,7 @@ namespace fe { namespace collision {
 			}
 
 			// 6. Add new faces connecting the edges of the hole to the support point
-			for (Edge e : holeEdges) {
+			for (Edge& e : holeEdges) {
 				polytope.mFaces.emplace_back(sp, e.mP1, e.mP2);
 			}
 
