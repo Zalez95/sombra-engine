@@ -1,18 +1,18 @@
+#include "fe/graphics/GLWrapper.h"
 #include "fe/graphics/buffers/VertexArray.h"
-#include <GL/glew.h>
 #include "fe/graphics/buffers/VertexBuffer.h"
 
 namespace fe { namespace graphics {
 
 	VertexArray::VertexArray()
 	{
-		glGenVertexArrays(1, &mArrayID);
+		GL_WRAP( glGenVertexArrays(1, &mArrayID) );
 	}
 
 
 	VertexArray::~VertexArray()
 	{
-		glDeleteVertexArrays(1, &mArrayID);
+		GL_WRAP( glDeleteVertexArrays(1, &mArrayID) );
 	}
 
 
@@ -21,8 +21,8 @@ namespace fe { namespace graphics {
 		bind();
 
 		vertexBuffer->bind();
-		glEnableVertexAttribArray(index);
-		glVertexAttribPointer(index, vertexBuffer->getComponentSize(), GL_FLOAT, GL_FALSE, 0, 0);
+		GL_WRAP( glEnableVertexAttribArray(index) );
+		GL_WRAP( glVertexAttribPointer(index, vertexBuffer->getComponentSize(), GL_FLOAT, GL_FALSE, 0, 0) );
 
 		unbind();
 	}

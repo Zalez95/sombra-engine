@@ -1,4 +1,3 @@
-#include "fe/loaders/TerrainLoader.h"
 #include <cassert>
 #include <glm/gtc/type_ptr.hpp>
 #include "fe/app/Entity.h"
@@ -6,6 +5,7 @@
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Renderable3D.h"
 #include "fe/loaders/RawMesh.h"
+#include "fe/loaders/TerrainLoader.h"
 
 namespace fe { namespace loaders {
 

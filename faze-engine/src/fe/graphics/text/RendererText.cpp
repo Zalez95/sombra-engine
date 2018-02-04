@@ -1,4 +1,3 @@
-#include "fe/graphics/text/RendererText.h"
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -7,6 +6,7 @@
 #include "fe/graphics/Shader.h"
 #include "fe/graphics/Program.h"
 #include "fe/graphics/Texture.h"
+#include "fe/graphics/text/RendererText.h"
 #include "fe/graphics/text/RenderableText.h"
 
 namespace fe { namespace graphics {

@@ -1,25 +1,25 @@
-#include "fe/graphics/GraphicsSystem.h"
 #include <algorithm>
-#include <GL/glew.h>
+#include "fe/graphics/GLWrapper.h"
+#include "fe/graphics/GraphicsSystem.h"
 
 namespace fe { namespace graphics {
 
 	GraphicsSystem::GraphicsSystem()
 	{
 		// Enable depth-testing
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LEQUAL);		// Write if depth <= depth buffer
-		glDepthRange(0.0f, 1.0f);	// The Z coordinate range is [0,1]
+		GL_WRAP( glEnable(GL_DEPTH_TEST) );
+		GL_WRAP( glDepthMask(GL_TRUE) );
+		GL_WRAP( glDepthFunc(GL_LEQUAL) );		// Write if depth <= depth buffer
+		GL_WRAP( glDepthRange(0.0f, 1.0f) );	// The Z coordinate range is [0,1]
 
 		// Enable face culling - tells OpenGL to not draw the faces that
 		// cannot be seen
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		glFrontFace(GL_CCW);		// Render only the counter-clockwise faces
+		GL_WRAP( glEnable(GL_CULL_FACE) );
+		GL_WRAP( glCullFace(GL_BACK) );
+		GL_WRAP( glFrontFace(GL_CCW) );			// Render only the counter-clockwise faces
 
 		// The Clear Color of the window
-		glClearColor(0.0f, 0.05f, 0.1f, 1.0f);
+		GL_WRAP( glClearColor(0.0f, 0.75f, 1.0f, 1.0f) );
 	}
 
 
@@ -41,7 +41,7 @@ namespace fe { namespace graphics {
 
 
 	void GraphicsSystem::render() {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		GL_WRAP( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) );
 		for (ILayer* layer : mLayers) {
 			layer->render();
 		}

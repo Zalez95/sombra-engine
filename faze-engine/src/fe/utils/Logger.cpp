@@ -1,6 +1,7 @@
-#include "fe/utils/Logger.h"
 #include <ctime>
 #include <chrono>
+#include <iomanip>
+#include "fe/utils/Logger.h"
 
 namespace fe { namespace utils {
 
@@ -10,47 +11,50 @@ namespace fe { namespace utils {
 	}
 
 
-	void Logger::writeLog(LogType type, const std::string& text)
+	Logger& Logger::getInstance()
 	{
 		static Logger mInstance(LOG_PATH);		// Create the static instance
-		mInstance.write(type, text);
+		return mInstance;
 	}
 
-	// Private functions
-	Logger::Logger(const std::string& logPath) : mLogFile(logPath, std::ios::app) {}
 
-
-	void Logger::write(LogType type, const std::string& text)
+	void Logger::write(LogLevel level, const std::string& text)
 	{
 		// Lock for writing in the log file and formatting the time
 		// (tm is a static variable, so it isn't thread safe)
 		std::lock_guard<std::mutex> locker(mMutex);
-		time_t t = time(0);
 
-		// Write the type of the text
-		switch (type)
+		// Check if the text should be written with the current log level
+		if (level < mMaxLogLevel) { return; }
+
+		// Write current time
+		time_t t = time(0);
+		tm* now = localtime(&t);
+		mLogFile.fill('0');
+		mLogFile << '[' << now->tm_year + 1900
+			<< '/' << std::setw(2) << now->tm_mon + 1
+			<< '/' << std::setw(2) << now->tm_mday
+			<< ' ' << std::setw(2) << now->tm_hour
+			<< ':' << std::setw(2) << now->tm_min
+			<< ':' << std::setw(2) << now->tm_sec
+			<< ']';
+
+		// Write the level of the log text
+		switch (level)
 		{
-		case LogType::WARNING:
-			mLogFile << "[WARNING]\t";
+		case LogLevel::WARNING:
+			mLogFile << " [WARNING]";
 			break;
-		case LogType::ERROR:
-			mLogFile << "[ERROR]\t";
+		case LogLevel::ERROR:
+			mLogFile << " [ERROR]";
 			break;
-		case LogType::DEBUG:
-			mLogFile << "[DEBUG]\t";
+		case LogLevel::DEBUG:
+			mLogFile << " [DEBUG]";
 			break;
 		}
 
-		// Write current time
-		tm* now = localtime(&t);
-		mLogFile	<< '['
-					<< now->tm_mday << '/'
-					<< now->tm_mon + 1 << '/'
-					<< now->tm_year + 1900 << '\t'
-					<< now->tm_hour << ':'
-					<< now->tm_min << ':'
-					<< now->tm_sec << "]\t"
-					<< text << "\n";
+		// Write the text
+		mLogFile << '\t' << text << std::endl;
 	}
 
 }}

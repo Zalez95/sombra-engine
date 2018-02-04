@@ -1,6 +1,6 @@
-#include "fe/graphics/2D/Layer2D.h"
 #include <algorithm>
 #include <glm/glm.hpp>
+#include "fe/graphics/2D/Layer2D.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace fe { namespace graphics {

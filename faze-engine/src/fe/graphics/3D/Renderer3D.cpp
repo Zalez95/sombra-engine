@@ -1,11 +1,30 @@
-#include "fe/graphics/3D/Renderer3D.h"
-#include <GL/glew.h>
-#include "fe/graphics/Texture.h"
-#include "fe/graphics/3D/Renderable3D.h"
+#include "fe/graphics/GLWrapper.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Camera.h"
+#include "fe/graphics/3D/Renderer3D.h"
+#include "fe/graphics/3D/Renderable3D.h"
 
 namespace fe { namespace graphics {
+
+	Renderer3D::Renderer3D(const glm::mat4& projectionMatrix) :
+		mProjectionMatrix(projectionMatrix),
+		mDefaultMaterial(
+			"3D renderer default material",
+			RGBColor(0.25f, 0.25f, 0.25f), RGBColor(1.0f, 0.0f, 1.0f),
+			RGBColor(1.0f, 1.0f, 1.0f), 0.25f
+		)
+	{
+		const float pixels[] = {
+			1.0f, 0.0f, 0.86f,	0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f,	1.0f, 0.0f, 0.86f
+		};
+
+		mDefaultTexture.setImage(
+			pixels, fe::graphics::TexturePixelType::FLOAT,
+			fe::graphics::TextureFormat::RGB, 2, 2
+		);
+	}
+
 
 	void Renderer3D::submit(const Renderable3D* renderable3D)
 	{
@@ -38,22 +57,22 @@ namespace fe { namespace graphics {
 
 			// Set the mesh transparency
 			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				glDisable(GL_DEPTH_TEST);
+				GL_WRAP( glEnable(GL_BLEND) );
+				GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+				GL_WRAP( glDisable(GL_DEPTH_TEST) );
 			}
 
 			// Bind the program data
 			mProgram.setModelMatrix(modelMatrix);
 			mProgram.setColorTexture(0);
-			if (material) { mProgram.setMaterial(material.get()); }
-			if (texture) { texture->bind(0); }
+			mProgram.setMaterial( (material)? material.get() : &mDefaultMaterial );
+			if (texture) { texture->bind(0); } else { mDefaultTexture.bind(0); };
 
 			// Draw
 			GLenum renderMode = (flags & RenderFlags::WIREFRAME)? GL_LINES : GL_TRIANGLES;
 
 			mesh->bind();
-			glDrawElements(renderMode, mesh->getIndexCount(), GL_UNSIGNED_SHORT, nullptr);
+			GL_WRAP( glDrawElements(renderMode, mesh->getIndexCount(), GL_UNSIGNED_SHORT, nullptr) );
 			mesh->unbind();
 
 			// Unbind the program data
@@ -61,8 +80,8 @@ namespace fe { namespace graphics {
 
 			// Unset the mesh transparency
 			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
-				glEnable(GL_DEPTH_TEST);
-				glDisable(GL_BLEND);
+				GL_WRAP( glEnable(GL_DEPTH_TEST) );
+				GL_WRAP( glDisable(GL_BLEND) );
 			}
 		}
 

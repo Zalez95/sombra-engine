@@ -1,5 +1,5 @@
+#include "fe/graphics/GLWrapper.h"
 #include "fe/graphics/buffers/VertexBuffer.h"
-#include <GL/glew.h>
 
 namespace fe { namespace graphics {
 
@@ -8,16 +8,16 @@ namespace fe { namespace graphics {
 		unsigned int count, unsigned int componentSize
 	) : mComponentSize(componentSize)
 	{
-		glGenBuffers(1, &mBufferID);
+		GL_WRAP( glGenBuffers(1, &mBufferID) );
 
-		glBindBuffer(GL_ARRAY_BUFFER, mBufferID);
-		glBufferData(
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBufferData(
 			GL_ARRAY_BUFFER,
 			count * sizeof(GLfloat),
 			data,
 			GL_STATIC_DRAW
-		);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
 	}
 
 
@@ -26,34 +26,34 @@ namespace fe { namespace graphics {
 		unsigned int count, unsigned int componentSize
 	) : mComponentSize(componentSize)
 	{
-		glGenBuffers(1, &mBufferID);
+		GL_WRAP( glGenBuffers(1, &mBufferID) );
 
-		glBindBuffer(GL_ARRAY_BUFFER, mBufferID);
-		glBufferData(
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBufferData(
 			GL_ARRAY_BUFFER,
 			count * sizeof(GLushort),
 			data,
 			GL_STATIC_DRAW
-		);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
 	}
 
 
 	VertexBuffer::~VertexBuffer()
 	{
-		glDeleteBuffers(1, &mBufferID);
+		GL_WRAP( glDeleteBuffers(1, &mBufferID) );
 	}
 
 
 	void VertexBuffer::bind() const
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, mBufferID);
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
 	}
 
 
 	void VertexBuffer::unbind() const
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
 	}
 
 }}

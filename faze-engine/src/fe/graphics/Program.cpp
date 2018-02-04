@@ -1,9 +1,9 @@
-#include "fe/graphics/Program.h"
 #include <string>
 #include <stdexcept>
-#include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "fe/graphics/Shader.h"
+#include "fe/graphics/Program.h"
+#include "fe/graphics/GLWrapper.h"
 
 namespace fe { namespace graphics {
 
@@ -14,20 +14,20 @@ namespace fe { namespace graphics {
 
 		// 2. Attach the shaders to the program
 		for (const Shader* shader : shaders) {
-			glAttachShader(mProgramID, shader->getShaderID());
+			GL_WRAP( glAttachShader(mProgramID, shader->getShaderID()) );
 		}
 
-		glLinkProgram(mProgramID);
+		GL_WRAP( glLinkProgram(mProgramID) );
 
 		// 3. Check program related errors
 		GLint status;
-		glGetProgramiv(mProgramID, GL_LINK_STATUS, &status);
+		GL_WRAP( glGetProgramiv(mProgramID, GL_LINK_STATUS, &status) );
 		if (status == GL_FALSE) {
 			GLint infoLogLength;
-			glGetProgramiv(mProgramID, GL_INFO_LOG_LENGTH, &infoLogLength);
+			GL_WRAP( glGetProgramiv(mProgramID, GL_INFO_LOG_LENGTH, &infoLogLength) );
 
 			char* infoLog = new char[infoLogLength + 1];
-			glGetProgramInfoLog(mProgramID, infoLogLength, NULL, infoLog);
+			GL_WRAP( glGetProgramInfoLog(mProgramID, infoLogLength, NULL, infoLog) );
 
 			std::string strInfoLog = "Failed to compile the program\n" + std::string(infoLog);
 			delete[] infoLog;
@@ -37,7 +37,7 @@ namespace fe { namespace graphics {
 
 		// 4. Remove the shaders from the program
 		for (const Shader* shader: shaders) {
-			glDetachShader(mProgramID, shader->getShaderID());
+			GL_WRAP( glDetachShader(mProgramID, shader->getShaderID()) );
 		}
 	}
 
@@ -45,7 +45,7 @@ namespace fe { namespace graphics {
 	Program::~Program()
 	{
 		disable();
-		glDeleteProgram(mProgramID);
+		GL_WRAP( glDeleteProgram(mProgramID) );
 	}
 
 
@@ -57,128 +57,128 @@ namespace fe { namespace graphics {
 
 	void Program::setUniform(const char* name, int value) const
 	{
-		glUniform1i(glGetUniformLocation(mProgramID, name), value);
+		GL_WRAP( glUniform1i(glGetUniformLocation(mProgramID, name), value) );
 	}
 
 
 	void Program::setUniform(unsigned int location, int value) const
 	{
-		glUniform1i(location, value);
+		GL_WRAP( glUniform1i(location, value) );
 	}
 
 
 	void Program::setUniform(const char* name, float value) const
 	{
-		glUniform1f(glGetUniformLocation(mProgramID, name), value);
+		GL_WRAP( glUniform1f(glGetUniformLocation(mProgramID, name), value) );
 	}
 
 
 	void Program::setUniform(unsigned int location, float value) const
 	{
-		glUniform1f(location, value);
+		GL_WRAP( glUniform1f(location, value) );
 	}
 
 
 	void Program::setUniform(const char* name, const RGBColor& color) const
 	{
-		glUniform3f(glGetUniformLocation(mProgramID, name),
-					color.mR, color.mG, color.mB);
+		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name),
+					color.mR, color.mG, color.mB) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const RGBColor& color) const
 	{
-		glUniform3f(location, color.mR, color.mG, color.mB);
+		GL_WRAP( glUniform3f(location, color.mR, color.mG, color.mB) );
 	}
 
 
 	void Program::setUniform(const char* name, const RGBAColor& color) const
 	{
-		glUniform4f(glGetUniformLocation(mProgramID, name),
-					color.mR, color.mG, color.mB, color.mA);
+		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name),
+					color.mR, color.mG, color.mB, color.mA) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const RGBAColor& color) const
 	{
-		glUniform4f(location, color.mR, color.mG, color.mB, color.mA);
+		GL_WRAP( glUniform4f(location, color.mR, color.mG, color.mB, color.mA) );
 	}
 
 
 	void Program::setUniform(const char* name, const glm::vec2& vector) const
 	{
-		glUniform2f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y);
+		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramID, name),
+					vector.x, vector.y) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const glm::vec2& vector) const
 	{
-		glUniform2f(location, vector.x, vector.y);
+		GL_WRAP( glUniform2f(location, vector.x, vector.y) );
 	}
 
 
 	void Program::setUniform(const char* name, const glm::vec3& vector) const
 	{
-		glUniform3f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y, vector.z);
+		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name),
+					vector.x, vector.y, vector.z) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const glm::vec3& vector) const
 	{
-		glUniform3f(location, vector.x, vector.y, vector.z);
+		GL_WRAP( glUniform3f(location, vector.x, vector.y, vector.z) );
 	}
 
 
 	void Program::setUniform(const char* name, const glm::vec4& vector) const
 	{
-		glUniform4f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y, vector.z, vector.w);
+		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name),
+					vector.x, vector.y, vector.z, vector.w) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const glm::vec4& vector) const
 	{
-		glUniform4f(location, vector.x, vector.y, vector.z, vector.w);
+		GL_WRAP( glUniform4f(location, vector.x, vector.y, vector.z, vector.w) );
 	}
 
 
 	void Program::setUniform(const char* name, const glm::mat3& matrix) const
 	{
-		glUniformMatrix3fv( glGetUniformLocation(mProgramID, name),
-							1, GL_FALSE, glm::value_ptr(matrix) );
+		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramID, name),
+					1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const glm::mat3& matrix) const
 	{
-		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+		GL_WRAP( glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
 	void Program::setUniform(const char* name, const glm::mat4& matrix) const
 	{
-		glUniformMatrix4fv( glGetUniformLocation(mProgramID, name),
-							1, GL_FALSE, glm::value_ptr(matrix) );
+		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramID, name),
+					1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
 	void Program::setUniform(unsigned int location, const glm::mat4& matrix) const
 	{
-		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+		GL_WRAP( glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
 	void Program::enable() const
 	{
-		glUseProgram(mProgramID);
+		GL_WRAP( glUseProgram(mProgramID) );
 	}
 
 
 	void Program::disable()
 	{
-		glUseProgram(0);
+		GL_WRAP( glUseProgram(0) );
 	}
 
 }}

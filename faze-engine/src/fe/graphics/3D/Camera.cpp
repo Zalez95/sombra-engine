@@ -1,5 +1,5 @@
-#include "fe/graphics/3D/Camera.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/graphics/3D/Camera.h"
 
 namespace fe { namespace graphics {
 

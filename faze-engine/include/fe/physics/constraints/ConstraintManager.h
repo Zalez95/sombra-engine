@@ -19,7 +19,7 @@ namespace fe { namespace physics {
 	private:	// Constants
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run */
-		static const unsigned int MAX_IT = 16;
+		static const unsigned int sMaxIt = 16;
 
 	private:	// Attributes
 		/** The vector that holds the registered Constraints in the

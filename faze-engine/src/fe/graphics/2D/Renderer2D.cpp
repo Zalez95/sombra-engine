@@ -1,10 +1,10 @@
-#include "fe/graphics/2D/Renderer2D.h"
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include "fe/graphics/Texture.h"
+#include "fe/graphics/2D/Renderer2D.h"
 #include "fe/graphics/2D/Renderable2D.h"
 
 namespace fe { namespace graphics {

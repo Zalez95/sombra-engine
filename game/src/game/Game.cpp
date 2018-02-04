@@ -1,5 +1,3 @@
-#include "Game.h"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -40,6 +38,8 @@
 #include <fe/utils/Image.h>
 #include <fe/utils/Logger.h>
 #include <fe/utils/FileReader.h>
+
+#include "game/Game.h"
 
 namespace game {
 
@@ -188,8 +188,8 @@ namespace game {
 			arial = std::move(fontReader.read(fileReader3));
 		}
 		catch (std::exception& e) {
-			fe::utils::Logger::writeLog(fe::utils::LogType::ERROR, e.what());
 			mState = AppState::ERROR;
+			fe::utils::Logger::getInstance().write(fe::utils::LogLevel::ERROR, e.what());
 		}
 
 		// RenderableTexts
@@ -209,7 +209,7 @@ namespace game {
 		auto physicsEntity1 = std::make_unique<fe::physics::PhysicsEntity>(
 			fe::physics::RigidBody(
 				40.0f, 0.01f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.01f
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.01f
 			),
 			std::make_unique<fe::collision::BoundingSphere>(0.5f), glm::mat4(1.0f)
 			//std::make_unique<fe::collision::BoundingBox>(glm::vec3(1, 1, 1)), glm::mat4(1.0f)
@@ -242,7 +242,7 @@ namespace game {
 			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
 				fe::physics::RigidBody(
 					20.0f, 0.95f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.95f
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.95f
 				),
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);
@@ -265,7 +265,7 @@ namespace game {
 			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
 				fe::physics::RigidBody(
 					10.0f, 0.9f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(), 0.9f
+					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.9f
 				),
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);

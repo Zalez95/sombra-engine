@@ -1,7 +1,6 @@
 [submodule "ext/glew"]
 	path = ext/glew
 	url = https://github.com/Perlmint/glew-cmake.git
-	shallow = true
 [submodule "ext/glfw"]
 	path = ext/glfw
 	url = https://github.com/glfw/glfw.git

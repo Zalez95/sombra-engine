@@ -1,4 +1,3 @@
-#include "fe/graphics/3D/Program3D.h"
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -7,6 +6,7 @@
 #include "fe/graphics/Program.h"
 #include "fe/graphics/3D/Lights.h"
 #include "fe/graphics/3D/Material.h"
+#include "fe/graphics/3D/Program3D.h"
 
 namespace fe { namespace graphics {
 
@@ -70,7 +70,7 @@ namespace fe { namespace graphics {
 
 	void Program3D::setLights(const std::vector<const PointLight*>& pointLights)
 	{
-		int numPointLights = (pointLights.size() > MAX_POINT_LIGHTS) ? static_cast<int>(MAX_POINT_LIGHTS) : static_cast<int>(pointLights.size());
+		int numPointLights = (pointLights.size() > MAX_POINT_LIGHTS)? static_cast<int>(MAX_POINT_LIGHTS) : static_cast<int>(pointLights.size());
 		mProgram->setUniform(mUniformLocations.mNumPointLights, numPointLights);
 
 		for (int i = 0; i < numPointLights; ++i) {

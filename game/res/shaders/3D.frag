@@ -4,7 +4,7 @@
 const int	MAX_POINT_LIGHTS	= 4;
 const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 const vec3	SCENE_AMBIENT_COLOR = vec3(0.2, 0.2, 0.2);
-const vec2	INVERT_Y_TEXTURE	 = vec2(1.0, -1.0);
+const vec2	INVERT_Y_TEXTURE	= vec2(1.0, -1.0);
 
 
 // ____ DATATYPES ____
@@ -126,5 +126,5 @@ void main()
 {
 	vec4 lightColor = vec4(calcDirectLight(), 1.0);
 	vec4 texColor	= texture(uColorTexture, INVERT_Y_TEXTURE * vsVertex.mUV);
-	glFragColor	= pow(texColor + lightColor, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
+	glFragColor = pow(texColor + lightColor, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
 }

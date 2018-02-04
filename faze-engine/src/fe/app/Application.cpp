@@ -1,10 +1,10 @@
-#include "fe/app/Application.h"
 #include <chrono>
 #include <thread>
 #include <iostream>
 #include "fe/utils/Logger.h"
 #include "fe/window/WindowSystem.h"
 #include "fe/app/Entity.h"
+#include "fe/app/Application.h"
 #include "fe/app/InputManager.h"
 #include "fe/app/PhysicsManager.h"
 #include "fe/app/GraphicsManager.h"
@@ -32,7 +32,10 @@ namespace fe { namespace app {
 		}
 		catch (std::exception& e) {
 			mState = AppState::ERROR;
-			utils::Logger::writeLog(utils::LogType::ERROR, "Error creating the application: " + std::string(e.what()));
+			utils::Logger::getInstance().write(
+				utils::LogLevel::ERROR,
+				"Error creating the application: " + std::string(e.what())
+			);
 		}
 	}
 
@@ -52,7 +55,7 @@ namespace fe { namespace app {
 		init();
 
 		if (mState != AppState::STOPPED) {
-			utils::Logger::writeLog(utils::LogType::ERROR, "Bad game state");
+			utils::Logger::getInstance().write(utils::LogLevel::ERROR, "Bad game state");
 			return false;
 		}
 

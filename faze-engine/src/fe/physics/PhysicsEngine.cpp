@@ -7,8 +7,8 @@
 namespace fe { namespace physics {
 
 // Constants definition
-	const ConstraintBounds PhysicsEngine::CONSTRAINT_BOUNDS(0.0f, std::numeric_limits<float>::max());
-	const float PhysicsEngine::CONSTRAINT_BETA = 1.1f;
+	const ConstraintBounds PhysicsEngine::sCollisionConstraintBounds(0.0f, std::numeric_limits<float>::max());
+	const float PhysicsEngine::sCollisionConstraintBeta = 1.1f;
 
 // Public functions
 	void PhysicsEngine::update(float delta)
@@ -88,7 +88,7 @@ namespace fe { namespace physics {
 					it = mContactConstraints.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(&contact),
-						std::forward_as_tuple(&CONSTRAINT_BOUNDS, std::array<RigidBody*, 2>{ rb1, rb2 }, CONSTRAINT_BETA)
+						std::forward_as_tuple(&sCollisionConstraintBounds, std::array<RigidBody*, 2>{ rb1, rb2 }, sCollisionConstraintBeta)
 					).first;
 					mConstraintManager.addConstraint(&it->second);
 				}

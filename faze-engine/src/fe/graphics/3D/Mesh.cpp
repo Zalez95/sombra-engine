@@ -1,7 +1,7 @@
-#include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/buffers/VertexBuffer.h"
 #include "fe/graphics/buffers/IndexBuffer.h"
 #include "fe/graphics/buffers/VertexArray.h"
+#include "fe/graphics/3D/Mesh.h"
 
 namespace fe { namespace graphics {
 

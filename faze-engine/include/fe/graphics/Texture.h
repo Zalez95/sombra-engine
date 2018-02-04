@@ -103,7 +103,7 @@ namespace fe { namespace graphics {
 		 * @param	width the width of the new Texture
 		 * @param	height the height of the new Texture */
 		void setImage(
-			void* pixels, TexturePixelType type, TextureFormat format,
+			const void* pixels, TexturePixelType type, TextureFormat format,
 			unsigned int width, unsigned int height
 		);
 

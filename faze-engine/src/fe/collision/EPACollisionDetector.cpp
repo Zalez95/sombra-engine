@@ -135,11 +135,11 @@ namespace fe { namespace collision {
 		float beta	= glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
 		float alpha	= 1 - gamma - beta;
 
-		assert(0.0f <= gamma && gamma <= 1.0f
-			&& 0.0f <= beta  && beta  <= 1.0f
-			&& 0.0f <= alpha && alpha <= 1.0f
-			&& "The given point can't be projected on the triangle"
-		);
+//		assert(0.0f <= gamma && gamma <= 1.0f
+//			&& 0.0f <= beta  && beta  <= 1.0f
+//			&& 0.0f <= alpha && alpha <= 1.0f
+//			&& "The given point can't be projected on the triangle"
+//		);
 
 		return glm::vec3(gamma, beta, alpha);
 	}

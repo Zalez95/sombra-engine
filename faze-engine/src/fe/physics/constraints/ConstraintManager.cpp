@@ -159,7 +159,7 @@ namespace fe { namespace physics {
 		auto aMat = getAMatrix(bMat, mLambdaMatrix);
 		auto dMat = getDMatrix(bMat, mJacobianMatrix);
 
-		for (unsigned int i = 0; i < MAX_IT; ++i) {
+		for (unsigned int i = 0; i < sMaxIt; ++i) {
 			for (size_t j = 0; j < mConstraints.size(); ++j) {
 				size_t iRB1 = mConstraintRBMap[j][0];
 				size_t iRB2 = mConstraintRBMap[j][1];

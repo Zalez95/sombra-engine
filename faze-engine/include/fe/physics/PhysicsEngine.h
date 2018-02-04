@@ -23,10 +23,10 @@ namespace fe { namespace physics {
 	{
 	private:	// Constants
 		/** The CounstraintBounds shared by all the NormalConstraints */
-		static const ConstraintBounds CONSTRAINT_BOUNDS;
+		static const ConstraintBounds sCollisionConstraintBounds;
 
 		/** The velocity of the constraint resolution process */
-		static const float CONSTRAINT_BETA;
+		static const float sCollisionConstraintBeta;
 
 	private:	// Attributes
 		/** The ForceManager of the PhysicsEngine. It's used to store the
