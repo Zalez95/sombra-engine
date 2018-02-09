@@ -4,8 +4,6 @@
 #include <queue>
 #include <glm/glm.hpp>
 #include "Program3D.h"
-#include "Material.h"
-#include "../Texture.h"
 
 namespace fe { namespace graphics {
 
@@ -31,17 +29,12 @@ namespace fe { namespace graphics {
 		/** The Renderable3Ds that we want to render */
 		std::queue<const Renderable3D*> mRenderable3Ds;
 
-		/** Default Material for the Renderables that doesn't have one */
-		Material mDefaultMaterial;
-
-		/** Default Texture for the Renderables that doesn't have one */
-		Texture mDefaultTexture;
-
 	public:		// Functions
 		/** Creates a new Renderer3D
 		 *
 		 * @param	projectionMatrix the projectionMatrix of the renderer */
-		Renderer3D(const glm::mat4& projectionMatrix);
+		Renderer3D(const glm::mat4& projectionMatrix) :
+			mProjectionMatrix(projectionMatrix) {};
 
 		/** Class destructor */
 		~Renderer3D() {};

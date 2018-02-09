@@ -62,7 +62,8 @@ namespace fe { namespace physics {
 		/** Updates the PhysicsEntities added to the System each time you
 		 * call this function
 		 *
-		 * @param delta the elapsed time since the last Update call */
+		 * @param	delta the elapsed time since the last Update call in
+		 *			seconds */
 		void update(float delta);
 
 		/** Adds the given PhysicsEntity to the PhysicsEngine so it will
@@ -91,13 +92,13 @@ namespace fe { namespace physics {
 		/** Updates the positions of the PhysicsEntities added to the System
 		 *
 		 * @param	delta the elapsed time since the last Update of the
-		 *			PhysicsEngine */
+		 *			PhysicsEngine in seconds */
 		void integrate(float delta);
 
 		/** Collision detections of the PhysicsEntities
 		 *
 		 * @param	delta the elapsed time since the last Update of the
-		 *			PhysicsEngine */
+		 *			PhysicsEngine in seconds */
 		void collide(float delta);
 	};
 

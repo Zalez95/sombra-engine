@@ -1,8 +1,8 @@
-#include <fe/collision/CoarseCollisionDetector.h>
 #include <gtest/gtest.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/ConvexPolyhedron.h>
 #include <fe/collision/BoundingSphere.h>
+#include <fe/collision/CoarseCollisionDetector.h>
 
 #define TOLERANCE 0.000000001
 

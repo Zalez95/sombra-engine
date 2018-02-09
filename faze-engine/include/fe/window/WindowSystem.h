@@ -81,7 +81,7 @@ namespace fe { namespace window {
 		/** @return	true if the window is closed */
 		bool isClosed() const;
 
-		/** @return	the elapsed time we started the window */
+		/** @return	the elapsed time since we started the window in seconds */
 		float getTime() const;
 
 		/** Swaps the front and back buffers of the window.

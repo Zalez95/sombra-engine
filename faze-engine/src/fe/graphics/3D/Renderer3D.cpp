@@ -1,30 +1,12 @@
 #include "fe/graphics/GLWrapper.h"
+#include "fe/graphics/Texture.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Camera.h"
+#include "fe/graphics/3D/Material.h"
 #include "fe/graphics/3D/Renderer3D.h"
 #include "fe/graphics/3D/Renderable3D.h"
 
 namespace fe { namespace graphics {
-
-	Renderer3D::Renderer3D(const glm::mat4& projectionMatrix) :
-		mProjectionMatrix(projectionMatrix),
-		mDefaultMaterial(
-			"3D renderer default material",
-			RGBColor(0.25f, 0.25f, 0.25f), RGBColor(1.0f, 0.0f, 1.0f),
-			RGBColor(1.0f, 1.0f, 1.0f), 0.25f
-		)
-	{
-		const float pixels[] = {
-			1.0f, 0.0f, 0.86f,	0.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 0.0f,	1.0f, 0.0f, 0.86f
-		};
-
-		mDefaultTexture.setImage(
-			pixels, fe::graphics::TexturePixelType::FLOAT,
-			fe::graphics::TextureFormat::RGB, 2, 2
-		);
-	}
-
 
 	void Renderer3D::submit(const Renderable3D* renderable3D)
 	{
@@ -64,9 +46,11 @@ namespace fe { namespace graphics {
 
 			// Bind the program data
 			mProgram.setModelMatrix(modelMatrix);
-			mProgram.setColorTexture(0);
-			mProgram.setMaterial( (material)? material.get() : &mDefaultMaterial );
-			if (texture) { texture->bind(0); } else { mDefaultTexture.bind(0); };
+			if (material) { mProgram.setMaterial(material.get()); }
+			if (texture) {
+				mProgram.setColorTexture(0);
+				texture->bind(0);
+			}
 
 			// Draw
 			GLenum renderMode = (flags & RenderFlags::WIREFRAME)? GL_LINES : GL_TRIANGLES;

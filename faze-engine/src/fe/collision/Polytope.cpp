@@ -19,7 +19,7 @@ namespace fe { namespace collision {
 			// Search a support point in each axis direction
 			for (unsigned int i = 0; i < 3; ++i) {
 				for (float v : {-1.0f, 1.0f}) {
-					glm::vec3 searchDir;
+					glm::vec3 searchDir(0.0f);
 					searchDir[i] = v;
 					SupportPoint sp(collider1, collider2, searchDir);
 

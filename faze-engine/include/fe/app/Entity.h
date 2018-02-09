@@ -28,7 +28,10 @@ namespace fe { namespace app {
 		/** Creates a new Entity
 		 *
 		 * @param	name the name of the Entity */
-		Entity(const std::string& name) : mName(name) {};
+		Entity(const std::string& name) :
+			mName(name),
+			mPosition(0.0f), mVelocity(0.0f),
+			mOrientation(1.0f, glm::vec3(0.0f)) {};
 
 		/** Destructor */
 		~Entity() {};

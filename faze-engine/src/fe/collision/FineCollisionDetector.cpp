@@ -10,7 +10,7 @@
 namespace fe { namespace collision {
 
 // Static variables definition
-	const float FineCollisionDetector::sContactSeparation	= 0.0002f;
+	const float FineCollisionDetector::sContactSeparation = 0.0002f;
 
 // Public functions
 	bool FineCollisionDetector::collide(
@@ -166,7 +166,7 @@ namespace fe { namespace collision {
 
 		auto contact2 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[contact1](const Contact& c1, const Contact& c2) {
+			[&contact1](const Contact& c1, const Contact& c2) {
 				float d1 = glm::length(c1.getWorldPosition(0) - contact1->getWorldPosition(0));
 				float d2 = glm::length(c2.getWorldPosition(0) - contact1->getWorldPosition(0));
 				return d1 < d2;
@@ -175,7 +175,7 @@ namespace fe { namespace collision {
 
 		auto contact3 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[contact1, contact2](const Contact& c1, const Contact& c2) {
+			[&contact1, &contact2](const Contact& c1, const Contact& c2) {
 				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
 				glm::vec3 v1c1	= c1.getWorldPosition(0) - contact1->getWorldPosition(0);
 				glm::vec3 v1c2	= c2.getWorldPosition(0) - contact1->getWorldPosition(0);
@@ -188,7 +188,7 @@ namespace fe { namespace collision {
 
 		auto contact4 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[contact1, contact2, contact3](const Contact& c1, const Contact& c2) {
+			[&contact1, &contact2, &contact3](const Contact& c1, const Contact& c2) {
 				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
 				//TODO:
 				//glm::vec3 v13	= contact1->getWorldPosition(0) - contact3->getWorldPosition(0);

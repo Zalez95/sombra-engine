@@ -22,9 +22,6 @@ namespace fe { namespace graphics {
 		glm::vec3 mUp;
 
 	public:		// Functions
-		/** Creates a new Camera */
-		Camera() {};
-
 		/** Creates a new Camera
 		 *
 		 * @param	position the position of the new camera in world space

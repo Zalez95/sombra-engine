@@ -10,6 +10,7 @@ namespace fe { namespace collision {
 
 // Static variables definition
 	const float EPACollisionDetector::sMinFDifference = 0.001f;
+	const float EPACollisionDetector::sProjectionPrecision = 0.0001f;
 
 // Public functions
 	Contact EPACollisionDetector::calculate(
@@ -22,16 +23,16 @@ namespace fe { namespace collision {
 		float closestFDist;
 		std::tie(closestF, closestFDist) = getClosestFaceToOrigin(collider1, collider2, polytope);
 
-		// 2. Project the origin into the closest triangle and get its
+		// 2. Project the origin onto the closest triangle and get its
 		// barycentric coordinates
-		glm::vec3 baryCoordinates = projectPointOnTriangle(
-			glm::vec3(0.0f),
-			{
-				closestF->mAB.mP1->getCSOPosition(),
-				closestF->mBC.mP1->getCSOPosition(),
-				closestF->mCA.mP1->getCSOPosition()
-			}
-		);
+		std::array<glm::vec3, 3> triangle = {
+			closestF->mAB.mP1->getCSOPosition(),
+			closestF->mBC.mP1->getCSOPosition(),
+			closestF->mCA.mP1->getCSOPosition()
+		};
+		glm::vec3 baryCoordinates;
+		/*bool success = */projectPointOnTriangle(glm::vec3(0.0f), triangle, baryCoordinates);
+		// TODO: if not success
 
 		// 3. Calculate the normal, local and world coordinates of the contact
 		// from the barycenter coordinates of the point
@@ -123,9 +124,10 @@ namespace fe { namespace collision {
 	}
 
 
-	glm::vec3 EPACollisionDetector::projectPointOnTriangle(
+	bool EPACollisionDetector::projectPointOnTriangle(
 		const glm::vec3& point,
-		const std::array<glm::vec3, 3>& triangle
+		const std::array<glm::vec3, 3>& triangle,
+		glm::vec3& projectedPoint
 	) const
 	{
 		glm::vec3 u = triangle[1] - triangle[0], v = triangle[2] - triangle[0],
@@ -135,13 +137,15 @@ namespace fe { namespace collision {
 		float beta	= glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
 		float alpha	= 1 - gamma - beta;
 
-//		assert(0.0f <= gamma && gamma <= 1.0f
-//			&& 0.0f <= beta  && beta  <= 1.0f
-//			&& 0.0f <= alpha && alpha <= 1.0f
-//			&& "The given point can't be projected on the triangle"
-//		);
+		if ((0.0f - sProjectionPrecision <= gamma) && (gamma <= 1.0f + sProjectionPrecision)
+			&& (0.0f - sProjectionPrecision <= beta) && (beta <= 1.0f + sProjectionPrecision)
+			&& (0.0f - sProjectionPrecision <= alpha) && (alpha <= 1.0f + sProjectionPrecision)
+		) {
+			projectedPoint = glm::vec3(gamma, beta, alpha);
+			return true;
+		}
 
-		return glm::vec3(gamma, beta, alpha);
+		return false;
 	}
 
 }}

@@ -45,7 +45,7 @@ namespace fe { namespace collision {
 		 *			coordinates in local space of ConvexCollider's furthest
 		 *			point */
 		virtual void getFurthestPointInDirection(
-		   	const glm::vec3& direction,
+			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal
 		) const = 0;
 	};

@@ -20,7 +20,7 @@ namespace fe { namespace collision {
 		glm::vec3 mMaximum;
 
 		/** Creates a new AABB */
-		AABB() {};
+		AABB() : mMinimum(0.0f), mMaximum(0.0f) {};
 
 		/** Creates a new AABB
 		 *

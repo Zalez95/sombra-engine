@@ -1,7 +1,7 @@
-#include <fe/collision/BoundingSphere.h>
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <fe/collision/BoundingSphere.h>
 
 #define TOLERANCE 0.000000001
 
@@ -73,7 +73,7 @@ TEST(BoundingSphere, getFurthestPointInDirection)
 
 	glm::vec3 expectedPWorld(3.86862915f, 0.414213562f, -9.151471862f);
 	glm::vec3 expectedPLocal(-0.13894384f, 1.99500793f, 0.02526247f);
-	for (unsigned int i = 0; i < 3; ++i) {
+	for (size_t i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
 		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
 	}

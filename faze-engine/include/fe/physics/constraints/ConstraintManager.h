@@ -96,7 +96,8 @@ namespace fe { namespace physics {
 
 		/** Applies the constraints stored in the ConstraintManager
 		 *
-		 * @param	deltaTime the elapsed time since the last update */
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds */
 		void update(float deltaTime);
 	private:
 		/** Updates the bias matrix value */
@@ -114,7 +115,8 @@ namespace fe { namespace physics {
 		/** Runs the Gauss-Seidel algorithm for solving:
 		 * jacobianMat * bMat * lambdaMat = hMat
 		 *
-		 * @param	deltaTime the elapsed time since the last update */
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds */
 		void solveConstraints(float deltaTime);
 
 		std::vector<std::array<float, 12>> getBMatrix() const;
@@ -132,7 +134,8 @@ namespace fe { namespace physics {
 		/** Updates the velocity and position of the RigidBodies with the
 		 * calculated lambda matrix
 		 *
-		 * @param	deltaTime the elapsed time since the last update */
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds */
 		void updateRigidBodies(float deltaTime);
 	};
 

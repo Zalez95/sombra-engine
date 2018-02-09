@@ -150,7 +150,7 @@ namespace fe { namespace physics {
 		 * by the given amount of time
 		 *
 		 * @param	delta the time by we will integrate the attributes of the
-		 *			RigidBody */
+		 *			RigidBody in seconds */
 		void integrate(float delta);
 
 		/** Updates the transformations matrix with the current data of the

@@ -5,15 +5,22 @@
 namespace fe { namespace physics {
 
 	RigidBody::RigidBody() :
+		mPosition(0.0f), mLinearVelocity(0.0), mLinearAcceleration(0.0f),
 		mInvertedMass(0.0f), mLinearSlowDown(0.0f),
-		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f),
-		mTransformsMatrix(1.0f) {}
+		mOrientation(1.0f, glm::vec3(0.0f)), mAngularVelocity(0.0), mAngularAcceleration(0.0f),
+		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f)
+	{
+		cleanForces();
+		updateTransformsMatrix();
+		updateInertiaTensorWorld();
+	}
 
 
 	RigidBody::RigidBody(
 		float mass, float linearSlowDown,
 		const glm::mat3& inertiaTensor, float angularSlowDown
-	) : mTransformsMatrix(1.0f)
+	) : mPosition(0.0f), mLinearVelocity(0.0), mLinearAcceleration(0.0f),
+		mOrientation(1.0f, glm::vec3(0.0f)), mAngularVelocity(0.0), mAngularAcceleration(0.0f)
 	{
 		assert(mass > 0);
 
@@ -22,6 +29,8 @@ namespace fe { namespace physics {
 		mInvertedInertiaTensor	= glm::inverse(inertiaTensor);
 		mAngularSlowDown		= angularSlowDown;	// TODO: SlowDown to [0-1]?
 
+		cleanForces();
+		updateTransformsMatrix();
 		updateInertiaTensorWorld();
 	}
 
@@ -48,8 +57,8 @@ namespace fe { namespace physics {
 
 	void RigidBody::cleanForces()
 	{
-		mForceSum	= glm::vec3();
-		mTorqueSum	= glm::vec3();
+		mForceSum	= glm::vec3(0.0f);
+		mTorqueSum	= glm::vec3(0.0f);
 	}
 
 

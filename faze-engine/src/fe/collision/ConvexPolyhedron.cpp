@@ -46,7 +46,7 @@ namespace fe { namespace collision {
 		auto itMax = std::max_element(
 			mVerticesWorld.begin(),
 			mVerticesWorld.end(),
-			[direction](const glm::vec3& p1, const glm::vec3& p2)
+			[&direction](const glm::vec3& p1, const glm::vec3& p2)
 			{
 				return glm::dot(p1, direction) < glm::dot(p2, direction);
 			}

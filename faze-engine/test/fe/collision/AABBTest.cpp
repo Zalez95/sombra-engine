@@ -1,5 +1,5 @@
-#include <fe/collision/AABB.h>
 #include <gtest/gtest.h>
+#include <fe/collision/AABB.h>
 
 #define TOLERANCE 0.000000001
 

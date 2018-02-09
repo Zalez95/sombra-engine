@@ -25,6 +25,9 @@ namespace fe { namespace collision {
 		 * faces needed for determinate the closest face to the origin */
 		static const float sMinFDifference;
 
+		/** The precision of the projected point onto a triangle */
+		static const float sProjectionPrecision;
+
 	public:		// Functions
 		/** Creates a new EPACollisionDetector */
 		EPACollisionDetector() {};
@@ -69,11 +72,15 @@ namespace fe { namespace collision {
 		 * @param	point the 3D coordinates of the point in world space
 		 * @param	triangle an array with the 3 points of the triangle in
 		 *			world space
-		 * @return	the coordinates of the projected point in barycentric
-		 *			coordinates */
-		glm::vec3 projectPointOnTriangle(
+		 * @param	projectedPoint a reference to the vector where we are going
+		 *			to store the coordinates of the projected point in
+		 *			barycentric coordinates
+		 * @return	true if the point could be projected onto the triangle,
+		 *			false otherwise*/
+		bool projectPointOnTriangle(
 			const glm::vec3& point,
-			const std::array<glm::vec3, 3>& triangle
+			const std::array<glm::vec3, 3>& triangle,
+			glm::vec3& projectedPoint
 		) const;
 	};
 

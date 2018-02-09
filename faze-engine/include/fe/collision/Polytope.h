@@ -36,7 +36,7 @@ namespace fe { namespace collision {
 		Edge mCA;
 		glm::vec3 mNormal;
 
-		Triangle(SupportPoint* a, SupportPoint* b,  SupportPoint* c) :
+		Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c) :
 			mAB(a, b), mBC(b, c), mCA(c, a)
 		{
 			mNormal = glm::normalize(glm::cross(

@@ -74,7 +74,7 @@ namespace fe { namespace collision {
 		searchDir = -a.getCSOPosition();
 
 		// Check if the support point is the origin
-		ret = (a.getCSOPosition() == glm::vec3(0));
+		ret = (a.getCSOPosition() == glm::vec3(0.0f));
 
 		return ret;
 	}

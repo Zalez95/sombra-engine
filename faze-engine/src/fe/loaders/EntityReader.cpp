@@ -193,7 +193,7 @@ namespace fe { namespace loaders {
 
 				auto itMesh = std::find_if(
 					sharedData.mMeshes.begin(), sharedData.mMeshes.end(),
-					[meshName](std::shared_ptr<graphics::Mesh> mesh) {
+					[&meshName](std::shared_ptr<graphics::Mesh> mesh) {
 						return mesh->getName() == meshName;
 					}
 				);
@@ -201,7 +201,7 @@ namespace fe { namespace loaders {
 				if (itMesh == sharedData.mMeshes.end()) {
 					auto itRawMesh = std::find_if(
 						sharedData.mRawMeshes.begin(), sharedData.mRawMeshes.end(),
-						[meshName](std::shared_ptr<RawMesh> rawMesh) {
+						[&meshName](std::shared_ptr<RawMesh> rawMesh) {
 							return rawMesh->mName == meshName;
 						}
 					);
@@ -214,7 +214,7 @@ namespace fe { namespace loaders {
 
 				auto itMaterial = std::find_if(
 					sharedData.mMaterials.begin(), sharedData.mMaterials.end(),
-					[materialName](std::shared_ptr<graphics::Material> material) {
+					[&materialName](std::shared_ptr<graphics::Material> material) {
 						return material->getName() == materialName;
 					}
 				);
@@ -235,7 +235,7 @@ namespace fe { namespace loaders {
 
 				auto itRawMesh = std::find_if(
 					sharedData.mRawMeshes.begin(), sharedData.mRawMeshes.end(),
-					[meshName](std::shared_ptr<RawMesh> rawMesh) {
+					[&meshName](std::shared_ptr<RawMesh> rawMesh) {
 						return rawMesh->mName == meshName;
 					}
 				);

@@ -56,7 +56,7 @@ namespace fe { namespace app {
 
 		/** Updates the physics data of the entities
 		 *
-		 * @param	delta the elapsed time since the last update */
+		 * @param	delta the elapsed time since the last update in seconds */
 		void update(float delta);
 	};
 

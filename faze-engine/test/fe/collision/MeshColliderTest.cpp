@@ -1,8 +1,8 @@
-#include <fe/collision/MeshCollider.h>
-#include <fe/collision/ConvexPolyhedron.h>
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <fe/collision/MeshCollider.h>
+#include <fe/collision/ConvexPolyhedron.h>
 
 #define TOLERANCE 0.000000001
 
@@ -84,7 +84,7 @@ TEST(MeshCollider, getAABBTransforms)
 	const fe::collision::AABB aabb1 = mc1.getAABB();
 	glm::vec3 expectedMinimum(3.02625942f, -3.53264260f, -12.16605472f);
 	glm::vec3 expectedMaximum(7.69599246f, 1.69831585f, -7.14549779f);
-	for (unsigned int i = 0; i < 3; ++i) {
+	for (size_t i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
 		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
@@ -156,7 +156,7 @@ TEST(MeshCollider, getOverlapingParts)
 	for (size_t i = 0; i < result.size(); ++i) {
 		fe::collision::AABB aabb2 = result[i]->getAABB();
 		fe::collision::AABB aabb3 = expectedRes[i].getAABB();
-		for (unsigned int j = 0; j < 3; ++j) {
+		for (size_t j = 0; j < 3; ++j) {
 			EXPECT_LE(abs(aabb2.mMinimum[j] - aabb3.mMinimum[j]), TOLERANCE);
 			EXPECT_LE(abs(aabb2.mMaximum[j] - aabb3.mMaximum[j]), TOLERANCE);
 		}

@@ -43,7 +43,7 @@ namespace fe { namespace physics {
 			const std::array<RigidBody*, 2>& rigidBodies,
 			float beta
 		) : Constraint(constraintBounds, rigidBodies),
-			mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
+			mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
 
 		/** Class destructor */
 		~NormalConstraint() {};
@@ -71,7 +71,8 @@ namespace fe { namespace physics {
 
 		/** Sets the elapsed time since the last update of the constraint
 		 *
-		 * @param	deltaTime the elapsed time since the last update */
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds */
 		inline void setDeltaTime(float deltaTime)
 		{ mDeltaTime = deltaTime; };
 
