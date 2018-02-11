@@ -14,7 +14,7 @@ namespace fe { namespace graphics {
 
 	/**
 	 * Class Mesh, it holds the buffers that creates a 3D mesh
-	 * TODO
+	 * TODO: complete documentation
 	 */
 	class Mesh
 	{

@@ -11,7 +11,7 @@ namespace fe { namespace physics {
 
 
 	/**
-	 * Class Constraint, TODO
+	 * Class Constraint, TODO: complete documentation
 	 *
 	 * @note	the constraints can only restrict the movement between two
 	 *			RigidBodies

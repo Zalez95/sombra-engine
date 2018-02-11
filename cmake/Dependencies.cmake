@@ -7,6 +7,10 @@ option(INSTALLED_GTEST "Use installed gtest library" ON)
 
 find_package(Git REQUIRED)
 
+if(FAZE_ENGINE_BUILD_DOC)
+	find_package(Doxygen)
+endif()
+
 find_package(OpenGL REQUIRED)
 add_library(opengl INTERFACE)
 target_include_directories(opengl INTERFACE "${OPENGL_INCLUDE_DIR}")

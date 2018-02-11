@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 project(FazeEngine VERSION 0.5.0 LANGUAGES CXX)
 
 # Project options
+option(FAZE_ENGINE_BUILD_DOC "Generate the FazeEngine documentation" ON)
 option(FAZE_ENGINE_BUILD_TESTS "Build the Faze Engine test programs" ON)
 
 # Set the project output and module directories

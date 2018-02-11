@@ -18,7 +18,7 @@ namespace fe { namespace app {
 
 
 	/**
-	 * Class Application, TODO
+	 * Class Application, TODO: complete documentation
 	 */
 	class Application
 	{

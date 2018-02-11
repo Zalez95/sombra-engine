@@ -1,3 +1,5 @@
 bin/
 build/
 lib/
+faze-engine/doc/*
+!faze-engine/doc/Doxyfile.in

@@ -7,7 +7,7 @@
 namespace fe { namespace physics {
 
 	/**
-	 * Class NormalConstraint, TODO
+	 * Class NormalConstraint, TODO: complete documentation
 	 */
 	class NormalConstraint : public Constraint
 	{

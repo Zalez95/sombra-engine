@@ -30,7 +30,7 @@ target_include_directories(fazeEngine PUBLIC glm PRIVATE soil glfw glew)
 target_link_libraries(fazeEngine PUBLIC glm soil glfw glew opengl)
 
 # Create the tests
-if (FAZE_ENGINE_BUILD_TESTS)
+if(FAZE_ENGINE_BUILD_TESTS)
 	# Find the tests source files
 	file(GLOB_RECURSE FAZE_ENGINE_TEST_SOURCES "test/*.cpp")
 
@@ -53,4 +53,17 @@ if (FAZE_ENGINE_BUILD_TESTS)
 
 	# Add the test
 	add_test(fazeEngineTest fazeEngineTest)
+endif()
+
+# Create the documentation
+if(FAZE_ENGINE_BUILD_DOC AND DOXYGEN_FOUND)
+	set(DOXYGEN_IN "${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in")
+	set(DOXYGEN_OUT "${CMAKE_CURRENT_BINARY_DIR}/doc")
+
+	configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+	add_custom_target(fazeEngineDoc ALL
+		COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/doc"
+		COMMENT "Generating API documentation with Doxygen"
+	)
 endif()

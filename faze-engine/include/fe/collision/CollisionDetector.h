@@ -14,7 +14,14 @@ namespace fe { namespace collision {
 
 
 	/**
-	 * Class CollisionDetector, TODO
+	 * Class CollisionDetector, it's the main class used to detect collisions
+	 * between Colliders and calculate the Manifolds and its Contact data.
+	 * 
+	 * The collision detection it splitted in two phases, one coarse collision
+	 * detection where we're going to check which colliders could be
+	 * intersecting by its AABB intersections, and one fine collision detection
+	 * where we will check if they are colliding by the actual coordinates of
+	 * the Colliders and calculate the Contact data.
 	 */
 	class CollisionDetector
 	{

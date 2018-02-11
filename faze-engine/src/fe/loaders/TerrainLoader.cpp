@@ -27,7 +27,7 @@ namespace fe { namespace loaders {
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), glm::mat4(1.0f));
 
 		// Physics data
-		// TODO
+		// TODO: create the physics data of the terrain
 
 		return entity;
 	}

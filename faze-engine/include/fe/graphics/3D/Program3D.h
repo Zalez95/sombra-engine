@@ -97,7 +97,7 @@ namespace fe { namespace graphics {
 		 *			Projection matrix in the shaders */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
 
-		/** TODO */
+		/** TODO: complete documentation */
 		void setColorTexture(int unit);
 
 		/** Sets the uniform variables for the given material

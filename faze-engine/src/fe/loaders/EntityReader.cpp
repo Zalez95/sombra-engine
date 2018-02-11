@@ -222,7 +222,7 @@ namespace fe { namespace loaders {
 				renderable3D = std::make_unique<graphics::Renderable3D>(*itMesh, *itMaterial, nullptr);
 			}
 			else if (token == "point_light") {
-				// TODO
+				// TODO: read light
 			}
 			else if (token == "physics") {
 				std::string meshName;
