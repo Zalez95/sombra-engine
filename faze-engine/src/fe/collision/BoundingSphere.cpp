@@ -31,7 +31,7 @@ namespace fe { namespace collision {
 	) const
 	{
 		glm::vec3 center = getCenter();
-		pointWorld = center + mRadius * direction;
+		pointWorld = center + mRadius * glm::normalize(direction);
 		pointLocal = mInverseTransformsMatrix * glm::vec4(pointWorld, 1.0f);
 	}
 

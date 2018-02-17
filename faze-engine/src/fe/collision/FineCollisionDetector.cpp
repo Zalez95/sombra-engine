@@ -10,7 +10,9 @@
 namespace fe { namespace collision {
 
 // Static variables definition
-	const float FineCollisionDetector::sContactSeparation = 0.0002f;
+	const float FineCollisionDetector::sMinFDifference		= 0.0001f;
+	const float FineCollisionDetector::sContactPrecision	= 0.0000001f;
+	const float FineCollisionDetector::sContactSeparation	= 0.0002f;
 
 // Public functions
 	bool FineCollisionDetector::collide(

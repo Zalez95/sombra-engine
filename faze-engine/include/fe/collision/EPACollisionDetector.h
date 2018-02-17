@@ -23,14 +23,19 @@ namespace fe { namespace collision {
 	private:	// Attributes
 		/** The minimum difference between the distances to the origin of two
 		 * faces needed for determinate the closest face to the origin */
-		static const float sMinFDifference;
+		const float mMinFDifference;
 
 		/** The precision of the projected point onto a triangle */
-		static const float sProjectionPrecision;
+		const float mProjectionPrecision;
 
 	public:		// Functions
-		/** Creates a new EPACollisionDetector */
-		EPACollisionDetector() {};
+		/** Creates a new EPACollisionDetector
+		 * @param	minFDifference the minimum difference between two faces
+		 *			needed for determinate the closest face in contact
+		 * @param	projectionPrecision precision of the Contact coordinates */
+		EPACollisionDetector(float minFDifference, float projectionPrecision) :
+			mMinFDifference(minFDifference),
+			mProjectionPrecision(projectionPrecision) {};
 
 		/** Class destructor */
 		~EPACollisionDetector() {};

@@ -21,11 +21,16 @@ namespace fe { namespace collision {
 	 */
 	class FineCollisionDetector
 	{
-	private:	// Nested types
-		struct Edge;
-		struct Triangle;
-
 	private:	// Attributes
+		/** The minimum difference between the distances to the origin of two
+		 * faces needed for determinate the closest face to the origin */
+		static const float sMinFDifference;
+
+		/** The precision of the calculated Contact points */
+		static const float sContactPrecision;
+
+		/** The minimum distance between the coordinates of two Contact used
+		 * to determine if a contact is the same than other one */
 		static const float sContactSeparation;
 
 		/** The class that implements the GJK algorithm for detecting if two
@@ -38,7 +43,8 @@ namespace fe { namespace collision {
 
 	public:		// Functions
 		/** Creates a new FineCollisionDetector */
-		FineCollisionDetector() {};
+		FineCollisionDetector() :
+			mEPACollisionDetector(sMinFDifference, sContactPrecision) {};
 
 		/** Class destructor */
 		~FineCollisionDetector() {};

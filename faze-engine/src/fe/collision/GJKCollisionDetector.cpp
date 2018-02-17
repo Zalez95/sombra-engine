@@ -12,20 +12,20 @@ namespace fe { namespace collision {
 		glm::vec3 direction = glm::sphericalRand(1.0f);
 		mSimplex = { SupportPoint(collider1, collider2, direction) };
 
-		bool flag = !doSimplex(mSimplex, direction);
-		while (flag) {
+		bool containsOrigin = doSimplex(mSimplex, direction);
+		while (!containsOrigin) {
 			// 2. Get a support point along the current direction
 			SupportPoint sp(collider1, collider2, direction);
 
 			// 3. Check if the support point is further along the search direction
-			if (glm::dot(sp.getCSOPosition(), direction) > 0) {
-				// 4.1 Add the point and update the simplex
-				mSimplex.push_back(sp);
-				flag = !doSimplex(mSimplex, direction);
+			if (glm::dot(sp.getCSOPosition(), direction) < 0.0f) {
+				// 4.1 There is no collision, exit without finishing the simplex
+				return false;
 			}
 			else {
-				// 4.2 There is no collision, exit without finishing the simplex
-				return false;
+				// 4.2 Add the point and update the simplex
+				mSimplex.push_back(sp);
+				containsOrigin = doSimplex(mSimplex, direction);
 			}
 		}
 
@@ -70,11 +70,17 @@ namespace fe { namespace collision {
 		bool ret = false;
 
 		SupportPoint a = simplex[0];
-		simplex = { a };
-		searchDir = -a.getCSOPosition();
+		glm::vec3 ao = -a.getCSOPosition();
 
-		// Check if the support point is the origin
-		ret = (a.getCSOPosition() == glm::vec3(0.0f));
+		if (ao != glm::vec3(0.0f)) {
+			// Mantain a and search in the direction to the origin
+			simplex = { a };
+			searchDir = ao;
+		}
+		else {
+			// The support point is the origin
+			ret = true;
+		}
 
 		return ret;
 	}
@@ -91,18 +97,20 @@ namespace fe { namespace collision {
 		glm::vec3 ab = b.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition();
 
 		float dot = glm::dot(ab, ao);
-		if (dot >= 0) {
-			// The origin is between b and a
-			simplex = { b, a };
-			searchDir = glm::cross(glm::cross(ab, ao), ab);
-
-			// Check if the origin is on the line
-			ret = (dot == 0.0f);
-		}
-		else {
+		if (dot < 0.0f) {
+			// The origin is outside the segment between b and a
 			// Discard b and do the same than with 0 dimensions
 			simplex = { a };
 			ret = doSimplex0D(simplex, searchDir);
+		}
+		else if (dot > 0.0f) {
+			// The origin is between b and a
+			simplex = { b, a };
+			searchDir = glm::cross(glm::cross(ab, ao), ab);
+		}
+		else {
+			// The origin is on the line
+			ret = true;
 		}
 
 		return ret;
@@ -121,34 +129,34 @@ namespace fe { namespace collision {
 					ao = -a.getCSOPosition(),
 					abc = glm::cross(ab, ac);
 
-		if (glm::dot(glm::cross(ab, abc), ao) > 0) {
-			// Origin outside the triangle from the ab edge
+		if (glm::dot(glm::cross(ab, abc), ao) > 0.0f) {
+			// The origin is outside the triangle from the ab edge
 			// Discard c point and test the edge in 1 dimension
 			simplex = { b, a };
 			ret = doSimplex1D(simplex, searchDir);
 		}
+		else if (glm::dot(glm::cross(abc, ac), ao) > 0.0f) {
+			// The origin is outside the triangle from the ac edge
+			// Discard b point and test the edge in 1 dimension
+			simplex = { c, a };
+			ret = doSimplex1D(simplex, searchDir);
+		}
 		else {
-			if (glm::dot(glm::cross(abc, ac), ao) > 0) {
-				// Origin outside the triangle from the ac edge
-				// Discard b point and test the edge in 1 dimension
-				simplex = { c, a };
-				ret = doSimplex1D(simplex, searchDir);
+			// The origin is nside the triangle in 2D
+			float dot = glm::dot(abc, ao);
+			if (dot > 0.0f) {
+				// The origin is above the triangle
+				simplex = { c, b, a };
+				searchDir = abc;
+			}
+			else if (dot < 0.0f) {
+				// The origin is below the triangle
+				simplex = { b, c, a };
+				searchDir = -abc;
 			}
 			else {
-				// Inside the triangle in 2D
-				// Check if the origin is above or below the triangle
-				float dot = glm::dot(abc, ao);
-				if (dot >= 0) {
-					simplex = { c, b, a };
-					searchDir = abc;
-
-					// Check if the origin is on the triangle
-					ret = (dot == 0.0f);
-				}
-				else {
-					simplex = { b, c, a };
-					searchDir = -abc;
-				}
+				// The origin is on the triangle
+				ret = true;
 			}
 		}
 
@@ -168,31 +176,27 @@ namespace fe { namespace collision {
 					ad = d.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition(),
 					abc = glm::cross(ab, ac), acd = glm::cross(ac, ad), adb = glm::cross(ad, ab);
 
-		if (glm::dot(abc, ao) > 0) {
-			// Origin outside the tetrahedron from the abc face
+		if (glm::dot(abc, ao) > 0.0f) {
+			// The origin is outside the tetrahedron from the abc face
 			// Discard d and check the triangle in 2 dimensions
 			simplex = { c, b, a };
 			ret = doSimplex2D(simplex, searchDir);
 		}
+		else if (glm::dot(acd, ao) > 0.0f) {
+			// The origin is outside the tetrahedron from the acd face
+			// Discard b and check the triangle in 2 dimensions
+			simplex = { d, c, a };
+			ret = doSimplex2D(simplex, searchDir);
+		}	
+		else if (glm::dot(adb, ao) > 0.0f) {
+			// The origin is outside the tetrahedron from the adb face
+			// Discard c and check the triangle in 2 dimensions
+			simplex = { b, d, a };
+			ret = doSimplex2D(simplex, searchDir);
+		}
 		else {
-			if (glm::dot(acd, ao) > 0) {
-				// Origin outside the tetrahedron from the acd face
-				// Discard b and check the triangle in 2 dimensions
-				simplex = { d, c, a };
-				ret = doSimplex2D(simplex, searchDir);
-			}
-			else {
-				if (glm::dot(adb, ao) > 0) {
-					// Origin outside the tetrahedron from the adb face
-					// Discard c and check the triangle in 2 dimensions
-					simplex = { b, d, a };
-					ret = doSimplex2D(simplex, searchDir);
-				}
-				else {
-					// Inside the tetrahedron
-					ret = true;
-				}
-			}
+			// The origin is inside the tetrahedron
+			ret = true;
 		}
 
 		return ret;

@@ -8,11 +8,6 @@
 
 namespace fe { namespace collision {
 
-// Static variables definition
-	const float EPACollisionDetector::sMinFDifference = 0.001f;
-	const float EPACollisionDetector::sProjectionPrecision = 0.0001f;
-
-// Public functions
 	Contact EPACollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Polytope& polytope
@@ -78,7 +73,7 @@ namespace fe { namespace collision {
 			// 2. If the difference of distance to the origin between the
 			// current closest face and last one is smaller than
 			// sMinFDifference we have found the closest face
-			if (closestFDist - closestFDist2 <= sMinFDifference) {
+			if (closestFDist - closestFDist2 <= mMinFDifference) {
 				closestF		= &(*closestF2);
 				closestFDist	= closestFDist2;
 				break;
@@ -137,9 +132,9 @@ namespace fe { namespace collision {
 		float beta	= glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
 		float alpha	= 1 - gamma - beta;
 
-		if ((0.0f - sProjectionPrecision <= gamma) && (gamma <= 1.0f + sProjectionPrecision)
-			&& (0.0f - sProjectionPrecision <= beta) && (beta <= 1.0f + sProjectionPrecision)
-			&& (0.0f - sProjectionPrecision <= alpha) && (alpha <= 1.0f + sProjectionPrecision)
+		if ((0.0f - mProjectionPrecision <= gamma) && (gamma <= 1.0f + mProjectionPrecision)
+			&& (0.0f - mProjectionPrecision <= beta) && (beta <= 1.0f + mProjectionPrecision)
+			&& (0.0f - mProjectionPrecision <= alpha) && (alpha <= 1.0f + mProjectionPrecision)
 		) {
 			projectedPoint = glm::vec3(gamma, beta, alpha);
 			return true;
