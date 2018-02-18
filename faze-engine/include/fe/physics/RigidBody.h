@@ -12,7 +12,7 @@ namespace fe { namespace physics {
 	 */
 	class RigidBody
 	{
-	public:		// Attributes
+	private:	// Attributes
 		/** The linear position of the origin (center of mass) of the
 		 * RigidBody in world space */
 		glm::vec3 mPosition;
@@ -22,7 +22,11 @@ namespace fe { namespace physics {
 
 		/** The linear acceleration of the RigidBody in world space */
 		glm::vec3 mLinearAcceleration;
-	private:
+
+		/** A vector with the sum of all the forces currently applied to
+		 * the RigidBody */
+		glm::vec3 mForceSum;
+
 		/** The inverse of the mass. We store the mass inverted because
 		 * it's more useful for storing object with infinite mass */
 		float mInvertedMass;
@@ -31,7 +35,7 @@ namespace fe { namespace physics {
 		 * be slowed down each time the integrate method is called so the
 		 * RigidBody doesn't move forever */
 		float mLinearSlowDown;
-	public:
+
 		/** The orientation of the RigidBody in world space */
 		glm::quat mOrientation;
 
@@ -40,7 +44,7 @@ namespace fe { namespace physics {
 
 		/** The angular acceleration of the RigidBody in world space */
 		glm::vec3 mAngularAcceleration;
-	private:
+
 		/** The inertia tensor of the RigidBody. It is a 3x3 matrix in
 		 * Body Space that stores all the moments of inertia of a
 		 * RigidBody.
@@ -58,10 +62,6 @@ namespace fe { namespace physics {
 		 * be slowed down each time the integrate method is called so the
 		 * RigidBody doesn't move forever */
 		float mAngularSlowDown;
-
-		/** A vector with the sum of all the forces currently applied to
-		 * the RigidBody */
-		glm::vec3 mForceSum;
 
 		/** A vector with the sum of all the torques currently applied to
 		 * the RigidBody */
@@ -94,26 +94,30 @@ namespace fe { namespace physics {
 		/** Class destructor */
 		~RigidBody() {};
 
-		/** @return	the mass of the RigidBody */
-		inline float getMass() const { return 1.0f / mInvertedMass; };
+		/** @return	the position of the RigidBody */
+		inline glm::vec3 getPosition() const { return mPosition; };
 
-		/** @return	the inverted mass (1/mass) of the RigidBody */
-		inline float getInvertedMass() const { return mInvertedMass; };
+		/** Sets the position of the RigidBody
+		 * @param	position the new position of the RigidBody
+		 * @note	after changing the position you must call the updateData
+		 *			method */
+		inline void setPosition(const glm::vec3& position)
+		{ mPosition = position; };
 
-		/** @return	true if the RigidBody has Finite Mass, false otherwise */
-		inline bool hasFiniteMass() const
-		{ return mInvertedMass > 0; };
+		/** @return	the linear velocity of the RigidBody */
+		inline glm::vec3 getLinearVelocity() const { return mLinearVelocity; };
 
-		/** @return	the inverted inertiaTensor matrix of the RigidBody */
-		inline glm::mat3 getInvertedInertiaTensor() const
-		{ return mInvertedInertiaTensor; };
+		/** Sets the linear velocity of the RigidBody
+		 * @param	velocity the new linear velocity of the RigidBody */
+		inline void setLinearVelocity(const glm::vec3& velocity)
+		{ mLinearVelocity = velocity; };
+
+		/** @return	the velocity of the RigidBody */
+		inline glm::vec3 getLinearAcceleration() const
+		{ return mLinearAcceleration; };
 
 		/** @return	the sum of forces currently applied to the RigidBody */
 		inline glm::vec3 getForceSum() const { return mForceSum; };
-
-		/** @return	the sum of torques of the forces currently applied to the
-		 *			RigidBody */
-		inline glm::vec3 getTorqueSum() const { return mTorqueSum; };
 
 		/** Applies the given force to the center of mass of the RigidBody
 		 *
@@ -138,9 +142,49 @@ namespace fe { namespace physics {
 			const glm::vec3& point
 		);
 
-		/** Cleans all the forces applied to the current RigidBody si they will
+		/** Cleans all the forces applied to the current RigidBody so they will
 		 * no longer change its movement */
 		void cleanForces();
+
+		/** @return	the mass of the RigidBody */
+		inline float getMass() const { return 1.0f / mInvertedMass; };
+
+		/** @return	the inverted mass (1/mass) of the RigidBody */
+		inline float getInvertedMass() const { return mInvertedMass; };
+
+		/** @return	true if the RigidBody has Finite Mass, false otherwise */
+		inline bool hasFiniteMass() const { return mInvertedMass > 0; };
+
+		/** @return	the orientation of the RigidBody */
+		inline glm::quat getOrientation() const { return mOrientation; };
+
+		/** Sets the orientation of the RigidBody
+		 * @param	orientation the new orientation of the RigidBody
+		 * @note	after changing the orientation you must call the updateData
+		 *			method */
+		inline void setOrientation(const glm::quat& orientation)
+		{ mOrientation = orientation; };
+
+		/** @return	the angular velocity of the RigidBody */
+		inline glm::vec3 getAngularVelocity() const
+		{ return mAngularVelocity; };
+
+		/** Sets the angular velocity of the RigidBody
+		 * @param	velocity the new angular velocity of the RigidBody */
+		inline void setAngularVelocity(const glm::vec3& velocity)
+		{ mAngularVelocity = velocity; };
+
+		/** @return	the velocity of the RigidBody */
+		inline glm::vec3 getAngularAcceleration() const
+		{ return mAngularAcceleration; };
+
+		/** @return	the sum of torques of the forces currently applied to the
+		 *			RigidBody */
+		inline glm::vec3 getTorqueSum() const { return mTorqueSum; };
+
+		/** @return	the inverted inertiaTensor matrix of the RigidBody */
+		inline glm::mat3 getInvertedInertiaTensor() const
+		{ return mInvertedInertiaTensor; };
 
 		/** @return	the transformations matrix of the Rigid Body */
 		inline glm::mat4 getTransformsMatrix() const
@@ -153,6 +197,10 @@ namespace fe { namespace physics {
 		 *			RigidBody in seconds */
 		void integrate(float delta);
 
+		/** Updates the RigidBody's internal data with the changes made by
+		 * the setters */
+		void updateData();
+	private:
 		/** Updates the transformations matrix with the current data of the
 		 * RigidBody */
 		void updateTransformsMatrix();

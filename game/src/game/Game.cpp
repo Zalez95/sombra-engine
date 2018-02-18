@@ -246,7 +246,7 @@ namespace game {
 				),
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);
-			if (i == 3) { physicsEntityCube2->getRigidBody()->mAngularVelocity += glm::vec3(0, 10, 0); }
+			if (i == 3) { physicsEntityCube2->getRigidBody()->setAngularVelocity(glm::vec3(0, 10, 0)); }
 			if (i == 4) { cube->mVelocity += glm::vec3(-1, 0, 0); }
 
 			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));

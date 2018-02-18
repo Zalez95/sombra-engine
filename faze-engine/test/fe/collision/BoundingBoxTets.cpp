@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/BoundingBox.h>
 
-#define TOLERANCE 0.000000001
+#define TOLERANCE 0.000000001f
 
 
 TEST(BoundingBox, getAABB)
@@ -30,7 +30,7 @@ TEST(BoundingBox, getAABBTransforms)
 	const fe::collision::AABB aabb1 = bb1.getAABB();
 	glm::vec3 expectedMinimum(3.02625942f, -3.63204646f, -12.16605472f);
 	glm::vec3 expectedMaximum(6.97374057f, 1.63204646f, -7.83394575f);
-	for (size_t i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
 		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
@@ -53,7 +53,7 @@ TEST(BoundingBox, getFurthestPointInDirection)
 
 	glm::vec3 expectedPWorld(3.38738465f, -2.15441298f, -7.83394575f);
 	glm::vec3 expectedPLocal(0.25, 1.0f, 2.75f);
-	for (size_t i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
 		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
 	}

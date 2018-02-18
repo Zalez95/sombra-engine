@@ -63,8 +63,8 @@ namespace fe { namespace collision {
 			std::list<Triangle>::iterator closestF2 = polytope.mFaces.begin();
 			float closestFDist2 = std::numeric_limits<float>::max();
 			for (auto it = polytope.mFaces.begin(); it != polytope.mFaces.end(); ++it) {
-				float fDist = it->getDistanceToOrigin();
-				if (closestFDist2 > fDist) {
+				float fDist = getDistanceToOrigin(*it);
+				if (fDist < closestFDist2) {
 					closestF2		= it;
 					closestFDist2	= fDist;
 				}
@@ -141,6 +141,12 @@ namespace fe { namespace collision {
 		}
 
 		return false;
+	}
+
+
+	float EPACollisionDetector::getDistanceToOrigin(const Triangle& t) const
+	{
+		return abs(glm::dot(t.mNormal, t.mAB.mP1->getCSOPosition()));
 	}
 
 }}

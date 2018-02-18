@@ -57,7 +57,7 @@ namespace fe { namespace collision {
 		 *
 		 * @param	i the first or the second collider given in the constructor
 		 * @return	the coordinates of the SupportPoint in local space */
-		inline glm::vec3 getLocalPosition(size_t i) const
+		inline glm::vec3 getLocalPosition(int i) const
 		{ return mLocalPosition[i]; };
 
 		/** Returns the coordinates in world space of the SupportPoint relative
@@ -65,7 +65,7 @@ namespace fe { namespace collision {
 		 *
 		 * @param	i the first or the second collider given in the constructor
 		 * @return	the coordinates of the SupportPoint in world space */
-		inline glm::vec3 getWorldPosition(size_t i) const
+		inline glm::vec3 getWorldPosition(int i) const
 		{ return mWorldPosition[i]; };
 	};
 

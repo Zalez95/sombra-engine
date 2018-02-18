@@ -1,5 +1,6 @@
 #include "fe/collision/Polytope.h"
 #include <cassert>
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "fe/collision/ConvexCollider.h"
 
@@ -17,7 +18,7 @@ namespace fe { namespace collision {
 
 		if (simplex.size() == 1) {
 			// Search a support point in each axis direction
-			for (unsigned int i = 0; i < 3; ++i) {
+			for (int i = 0; i < 3; ++i) {
 				for (float v : {-1.0f, 1.0f}) {
 					glm::vec3 searchDir(0.0f);
 					searchDir[i] = v;
@@ -37,22 +38,16 @@ namespace fe { namespace collision {
 			glm::mat3 rotate60 = glm::mat3(glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 6.0f, v01));
 
 			// Find the least significant axis
-			unsigned int closestAxis = 0;
-			for (unsigned int i = 1; i < 3; ++i) {
-				if (v01[i] < v01[closestAxis]) {
-					closestAxis = i;
-				}
-			}
-
-			glm::vec3 axis(0.0f);
-			axis[closestAxis] = 1.0f;
+			glm::vec3 vAxis(0.0f);
+			int iAxis = std::distance(&v01.x, std::max_element(&v01.x, &v01.x + 3));
+			vAxis[iAxis] = 1.0f;
 
 			// Calculate a normal vector to the line with the axis
-			glm::vec3 vNormal = glm::cross(v01, axis);
+			glm::vec3 vNormal = glm::cross(v01, vAxis);
 
 			// Search a support point in the 6 directions around the line
 			glm::vec3 searchDir = vNormal;
-			for (size_t i = 0; i < 6; ++i) {
+			for (int i = 0; i < 6; ++i) {
 				SupportPoint sp(collider1, collider2, searchDir);
 
 				if (glm::length(sp.getCSOPosition()) > sKEpsilon) {

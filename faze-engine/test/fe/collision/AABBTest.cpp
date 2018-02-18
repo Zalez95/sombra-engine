@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <fe/collision/AABB.h>
 
-#define TOLERANCE 0.000000001
+#define TOLERANCE 0.000000001f
 
 
 TEST(AABB, overlaps)
@@ -18,7 +18,6 @@ TEST(AABB, overlapsVertex)
 	const fe::collision::AABB aabb2(glm::vec3(-2.0f, -3.5f, -1.5f), glm::vec3(-1.0f, -2.5f, -0.5f));
 	EXPECT_TRUE(aabb1.overlaps(aabb2));
 }
-
 
 
 TEST(AABB, overlapsEdge)

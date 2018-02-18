@@ -1,7 +1,6 @@
 #ifndef CONTACT_H
 #define CONTACT_H
 
-#include <cassert>
 #include <glm/glm.hpp>
 
 namespace fe { namespace collision {
@@ -55,22 +54,16 @@ namespace fe { namespace collision {
 		 *
 		 * @param	collider the index of the collider (0 or 1)
 		 * @return	the position in world space of the Contact */
-		inline glm::vec3 getWorldPosition(size_t collider) const
-		{
-			assert(collider < 2 && "There are only two colliders");
-			return mWorldPos[collider];
-		};
+		inline glm::vec3 getWorldPosition(int collider) const
+		{ return mWorldPos[collider]; };
 
 		/** Returns the position of the Contact in local space relative to the
 		 * given collider
 		 *
 		 * @param	collider the index of the collider (0 or 1)
 		 * @return	the position in local space of the Contact */
-		inline glm::vec3 getLocalPosition(size_t collider) const
-		{
-			assert(collider < 2 && "There are only two colliders");
-			return mLocalPos[collider];
-		};
+		inline glm::vec3 getLocalPosition(int collider) const
+		{ return mLocalPos[collider]; };
 	};
 
 }}

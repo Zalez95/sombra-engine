@@ -11,22 +11,17 @@ namespace fe { namespace physics {
 	{
 		if (!constraint) { return; }
 
-		const ConstraintBounds* cb = constraint->getConstraintBounds();
-
-		std::array<size_t, 2> constraintRB;
-		for (size_t i = 0; i < 2; ++i) {
+		// Get the indices of the RigidBodies of the constraint or add them if
+		// they aren't yet
+		std::array<int, 2> constraintRB;
+		for (int i = 0; i < 2; ++i) {
 			RigidBody* rb = constraint->getRigidBody(i);
 
-			bool shouldAdd = true;
-			for (size_t j = 0; j < mRigidBodies.size(); ++j) {
-				if (mRigidBodies[j] == rb) {
-					constraintRB[i] = j;
-					shouldAdd = false;
-					break;
-				}
+			auto it = std::find(mRigidBodies.begin(), mRigidBodies.end(), rb);
+			if (it != mRigidBodies.end()) {
+				constraintRB[i] = std::distance(mRigidBodies.begin(), it);
 			}
-
-			if (shouldAdd) {
+			else {
 				mRigidBodies.push_back(rb);
 				mInverseMassMatrix.emplace_back(rb->getInvertedMass());
 				mInverseMassMatrix.push_back(rb->getInvertedInertiaTensor());
@@ -35,9 +30,11 @@ namespace fe { namespace physics {
 			}
 		}
 
+		// Add the constraint and its data
 		mConstraints.push_back(constraint);
 		mConstraintRBMap.push_back(constraintRB);
 		mLambdaMatrix.push_back(0.0f);
+		const ConstraintBounds* cb = constraint->getConstraintBounds();
 		mLambdaMinMatrix.push_back(cb->getAlphaMin());
 		mLambdaMaxMatrix.push_back(cb->getAlphaMax());
 	}
@@ -46,46 +43,44 @@ namespace fe { namespace physics {
 	void ConstraintManager::removeConstraint(Constraint* constraint)
 	{
 		auto itConstraint	= std::find(mConstraints.begin(), mConstraints.end(), constraint);
-		size_t iConstraint	= std::distance(mConstraints.begin(), itConstraint);
+		int iConstraint		= std::distance(mConstraints.begin(), itConstraint);
 		if (itConstraint == mConstraints.end()) { return; }
+
+		// Remove the constraint and its cached data
+		mConstraints.erase(itConstraint);
+		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
+		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
+		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
+		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
 
 		// Delete the RigidBodies if the constraint to remove is the only one
 		// that uses them
-		for (size_t i = 0; i < 2; ++i) {
-			size_t iRB = mConstraintRBMap[iConstraint][i];
+		for (int i = 0; i < 2; ++i) {
+			int iRB = mConstraintRBMap[iConstraint][i];
 
-			bool shouldRemove = true;
-			size_t count = 0;
-			for (auto it = mConstraintRBMap.begin(); it != mConstraintRBMap.end(); ++it) {
-				if ((*it)[0] == iRB || (*it)[1] == iRB) {
-					++count;
-					if (count > 1) {
-						shouldRemove = false;
-						break;
-					}
+			int count = 0;
+			bool shouldRemove = std::any_of(
+				mConstraintRBMap.begin(), mConstraintRBMap.end(),
+				[&count, iRB](const std::array<int, 2>& item) {
+					return (item[0] == iRB || item[1] == iRB) && (count++ > 0);
 				}
-			}
+			);
 
 			if (shouldRemove) {
-				// Remove the RigidBody and shift the map indexes left
+				// Remove the RigidBody and its cached data
 				mRigidBodies.erase(mRigidBodies.begin() + iRB);
 				mInverseMassMatrix.erase(
 					mInverseMassMatrix.begin() + 2*iRB,
 					mInverseMassMatrix.begin() + 2*(iRB+1)
 				);
 
-				for (std::array<size_t, 2>& pair : mConstraintRBMap) {
+				// Shift the map indexes left
+				for (std::array<int, 2>& pair : mConstraintRBMap) {
 					if (pair[0] > iRB) { --pair[0]; }
 					if (pair[1] > iRB) { --pair[1]; }
 				}
 			}
 		}
-
-		mConstraints.erase(itConstraint);
-		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
-		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
-		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
-		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
 	}
 
 
@@ -122,8 +117,8 @@ namespace fe { namespace physics {
 		mVelocityMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
-			mVelocityMatrix.push_back(rb->mLinearVelocity);
-			mVelocityMatrix.push_back(rb->mAngularVelocity);
+			mVelocityMatrix.push_back(rb->getLinearVelocity());
+			mVelocityMatrix.push_back(rb->getAngularVelocity());
 		}
 	}
 
@@ -146,7 +141,7 @@ namespace fe { namespace physics {
 		mJacobianMatrix.reserve(mConstraints.size());
 
 		for (const Constraint* c : mConstraints) {
-			mJacobianMatrix.push_back( c->getJacobianMatrix() );
+			mJacobianMatrix.push_back(c->getJacobianMatrix());
 		}
 	}
 
@@ -159,22 +154,21 @@ namespace fe { namespace physics {
 		auto aMat = getAMatrix(bMat, mLambdaMatrix);
 		auto dMat = getDMatrix(bMat, mJacobianMatrix);
 
-		for (unsigned int i = 0; i < sMaxIt; ++i) {
-			for (size_t j = 0; j < mConstraints.size(); ++j) {
-				size_t iRB1 = mConstraintRBMap[j][0];
-				size_t iRB2 = mConstraintRBMap[j][1];
+		for (int iteration = 0; iteration < sMaxIterations; ++iteration) {
+			for (size_t i = 0; i < mConstraints.size(); ++i) {
+				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-				float ja1 = std::inner_product(mJacobianMatrix[j].begin(), mJacobianMatrix[j].begin() + 6, aMat.begin() + 6*iRB1, 0.0f);
-				float ja2 = std::inner_product(mJacobianMatrix[j].begin() + 6, mJacobianMatrix[j].end(), aMat.begin() + 6*iRB2, 0.0f);
-				float deltaLambda = (hMat[j] - ja1 - ja2) / dMat[j];
+				float ja1 = std::inner_product(mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6, aMat.begin() + 6*iRB1, 0.0f);
+				float ja2 = std::inner_product(mJacobianMatrix[i].begin() + 6, mJacobianMatrix[i].end(), aMat.begin() + 6*iRB2, 0.0f);
+				float deltaLambda = (hMat[i] - ja1 - ja2) / dMat[i];
 
-				float oldLambda = mLambdaMatrix[j];
-				mLambdaMatrix[j] = std::max(mLambdaMinMatrix[j], std::min(mLambdaMatrix[j] + deltaLambda, mLambdaMaxMatrix[j]));
-				deltaLambda = mLambdaMatrix[j] - oldLambda;
+				float oldLambda = mLambdaMatrix[i];
+				mLambdaMatrix[i] = std::max(mLambdaMinMatrix[i], std::min(mLambdaMatrix[i] + deltaLambda, mLambdaMaxMatrix[i]));
+				deltaLambda = mLambdaMatrix[i] - oldLambda;
 
-				for (size_t k = 0; k < 6; ++k) {
-					aMat[6*iRB1 + k] += deltaLambda * bMat[j][k];
-					aMat[6*iRB2 + k] += deltaLambda * bMat[j][6 + k];
+				for (int j = 0; j < 6; ++j) {
+					aMat[6*iRB1 + j] += deltaLambda * bMat[i][j];
+					aMat[6*iRB2 + j] += deltaLambda * bMat[i][6 + j];
 				}
 			}
 		}
@@ -186,10 +180,10 @@ namespace fe { namespace physics {
 		std::vector<std::array<float, 12>> bMatrix(mConstraints.size());
 
 		for (size_t i = 0; i < mConstraints.size(); ++i) {
-			for (size_t j = 0; j < 2; ++j) {
-				size_t iRB = mConstraintRBMap[i][j];
+			for (int j = 0; j < 2; ++j) {
+				int iRB = mConstraintRBMap[i][j];
 
-				for (size_t k = 0; k < 2; ++k) {
+				for (int k = 0; k < 2; ++k) {
 					const glm::mat3& inverseMass	= mInverseMassMatrix[2*iRB + k];
 					const glm::vec3 jacobian		= glm::vec3(
 						mJacobianMatrix[i][6*j + 3*k],
@@ -218,10 +212,10 @@ namespace fe { namespace physics {
 			float bias = mBiasMatrix[i];
 
 			std::array<float, 12> tmp;
-			for (size_t j = 0; j < 2; ++j) {
-				size_t iRB = mConstraintRBMap[i][j];
+			for (int j = 0; j < 2; ++j) {
+				int iRB = mConstraintRBMap[i][j];
 
-				for (size_t k = 0; k < 2; ++k) {
+				for (int k = 0; k < 2; ++k) {
 					const glm::vec3& velocity		= mVelocityMatrix[2*iRB + k];
 					const glm::vec3& forceExt		= mForceExtMatrix[2*iRB + k];
 					const glm::mat3& inverseMass	= mInverseMassMatrix[2*iRB + k];
@@ -234,8 +228,7 @@ namespace fe { namespace physics {
 			}
 
 			float currentH = bias / deltaTime - std::inner_product(
-				mJacobianMatrix[i].begin(),
-				mJacobianMatrix[i].end(),
+				mJacobianMatrix[i].begin(), mJacobianMatrix[i].end(),
 				tmp.begin(),
 				0.0f
 			);
@@ -255,12 +248,11 @@ namespace fe { namespace physics {
 		std::vector<float> aMatrix(6 * mRigidBodies.size());
 
 		for (size_t i = 0; i < mConstraints.size(); ++i) {
-			size_t iRB1 = mConstraintRBMap[i][0];
-			size_t iRB2 = mConstraintRBMap[i][1];
+			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-			for (size_t k = 0; k < 6; ++k) {
-				aMatrix[6*iRB1 + k] += lambdaMatrix[i] * bMatrix[i][k];
-				aMatrix[6*iRB2 + k] += lambdaMatrix[i] * bMatrix[i][6 + k];
+			for (int j = 0; j < 6; ++j) {
+				aMatrix[6*iRB1 + j] += lambdaMatrix[i] * bMatrix[i][j];
+				aMatrix[6*iRB2 + j] += lambdaMatrix[i] * bMatrix[i][6 + j];
 			}
 		}
 
@@ -278,9 +270,9 @@ namespace fe { namespace physics {
 
 		for (size_t i = 0; i < mConstraints.size(); ++i) {
 			dMatrix.push_back(std::inner_product(
-				jacobianMatrix[i].begin(),
-				jacobianMatrix[i].end(),
-				bMatrix[i].begin(), 0.0f
+				jacobianMatrix[i].begin(), jacobianMatrix[i].end(),
+				bMatrix[i].begin(),
+				0.0f
 			));
 		}
 
@@ -292,36 +284,33 @@ namespace fe { namespace physics {
 	{
 		std::vector<float> jLambdaMat(6 * mRigidBodies.size());
 		for (size_t i = 0; i < mConstraints.size(); ++i) {
-			size_t iRB1 = mConstraintRBMap[i][0];
-			size_t iRB2 = mConstraintRBMap[i][1];
+			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-			for (size_t k = 0; k < 6; ++k) {
-				jLambdaMat[6*iRB1 + k] += mLambdaMatrix[i] * mJacobianMatrix[i][k];
-				jLambdaMat[6*iRB2 + k] += mLambdaMatrix[i] * mJacobianMatrix[i][6 + k];
+			for (int j = 0; j < 6; ++j) {
+				jLambdaMat[6*iRB1 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][j];
+				jLambdaMat[6*iRB2 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][6 + j];
 			}
 		}
 
 		for (size_t i = 0; i < mRigidBodies.size(); ++i) {
-			for (size_t j = 0; j < 2; ++j) {
+			for (int j = 0; j < 2; ++j) {
 				const glm::vec3& v1				= mVelocityMatrix[2*i + j];
 				const glm::vec3& forceExt		= mForceExtMatrix[2*i + j];
 				const glm::mat3& inverseMass	= mInverseMassMatrix[2*i + j];
-				const glm::vec3& jLambda		= glm::vec3(
-					jLambdaMat[6*i + 3*j],
-					jLambdaMat[6*i + 3*j + 1],
-					jLambdaMat[6*i + 3*j + 2]
-				);
+				const glm::vec3 jLambda(jLambdaMat[6*i + 3*j], jLambdaMat[6*i + 3*j + 1], jLambdaMat[6*i + 3*j + 2]);
 
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {
-					mRigidBodies[i]->mLinearVelocity = v2;
-					mRigidBodies[i]->mPosition += deltaTime * v2;
+					mRigidBodies[i]->setLinearVelocity(v2);
+					mRigidBodies[i]->setPosition(mRigidBodies[i]->getPosition() + v2 * deltaTime);
 				}
 				else {
-					mRigidBodies[i]->mAngularVelocity = v2;
-					mRigidBodies[i]->mOrientation = glm::normalize(glm::quat(deltaTime / 2 * v2) * mRigidBodies[i]->mOrientation);
+					mRigidBodies[i]->setAngularVelocity(v2);
+					mRigidBodies[i]->setOrientation(glm::normalize(glm::quat(deltaTime / 2.0f * v2) * mRigidBodies[i]->getOrientation()));
 				}
 			}
+
+			mRigidBodies[i]->updateData();
 		}
 	}
 

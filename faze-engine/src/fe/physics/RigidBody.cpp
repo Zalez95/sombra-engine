@@ -44,13 +44,13 @@ namespace fe { namespace physics {
 	void RigidBody::addForceAtPoint(const glm::vec3& force, const glm::vec3& point)
 	{
 		mForceSum	+= force;
-		mTorqueSum	+= point * force;
+		mTorqueSum	+= glm::cross(point, force);
 	}
 
 
 	void RigidBody::addForceAtLocalPoint(const glm::vec3& force, const glm::vec3& point)
 	{
-		glm::vec3 pointWorld = glm::mat3(mTransformsMatrix) * point + glm::vec3(mTransformsMatrix[3]);
+		glm::vec3 pointWorld = glm::vec3(mTransformsMatrix[3]) + glm::mat3(mTransformsMatrix) * point;
 		addForceAtPoint(force, pointWorld);
 	}
 
@@ -75,16 +75,22 @@ namespace fe { namespace physics {
 		mOrientation = glm::normalize(glm::quat(mAngularVelocity * delta) * mOrientation);
 
 		// Update the derived data
+		updateData();
+	}
+
+
+	void RigidBody::updateData()
+	{
 		updateTransformsMatrix();
 		updateInertiaTensorWorld();
 	}
 
-
+// Private functions
 	void RigidBody::updateTransformsMatrix()
 	{
 		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), mPosition);
 		glm::mat4 rotation		= glm::mat4_cast(mOrientation);
-		mTransformsMatrix = translation * rotation;
+		mTransformsMatrix		= translation * rotation;
 	}
 
 

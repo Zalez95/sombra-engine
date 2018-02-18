@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/ConvexPolyhedron.h>
 
-#define TOLERANCE 0.000000001
+#define TOLERANCE 0.000000001f
 
 
 TEST(ConvexPolyhedron, getAABB)
@@ -43,7 +43,7 @@ TEST(ConvexPolyhedron, getAABBTransforms)
 	const fe::collision::AABB aabb1 = cp1.getAABB();
 	glm::vec3 expectedMinimum(4.35967969f, -1.70720076f, -10.0f);
 	glm::vec3 expectedMaximum(5.72222232f, -0.21132487f, -8.53376102f);
-	for (size_t i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
 		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
@@ -72,7 +72,7 @@ TEST(ConvexPolyhedron, getFurthestPointInDirection)
 
 	glm::vec3 expectedPWorld(4.48910236f, -0.27777779f, -9.53376102f);
 	glm::vec3 expectedPLocal(0.0, 1.0f, 0.0f);
-	for (size_t i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
 		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
 	}

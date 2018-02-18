@@ -52,7 +52,7 @@ namespace fe { namespace collision {
 			}
 		);
 
-		size_t iMax = std::distance(mVerticesWorld.begin(), itMax);
+		int iMax = std::distance(mVerticesWorld.begin(), itMax);
 
 		pointWorld = *itMax;
 		pointLocal = mVertices[iMax];

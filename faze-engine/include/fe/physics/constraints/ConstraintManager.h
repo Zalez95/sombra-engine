@@ -19,7 +19,7 @@ namespace fe { namespace physics {
 	private:	// Constants
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run */
-		static const unsigned int sMaxIt = 16;
+		static const int sMaxIterations = 16;
 
 	private:	// Attributes
 		/** The vector that holds the registered Constraints in the
@@ -32,7 +32,7 @@ namespace fe { namespace physics {
 
 		/** The vector that stores the relations between the RigidBodies and
 		 * its Constraints */
-		std::vector<std::array<size_t, 2>> mConstraintRBMap;
+		std::vector<std::array<int, 2>> mConstraintRBMap;
 
 		/** The variable that will be solved by the Constraint resolver.
 		 * It's a column matrix with the size of (number of Constraints). */

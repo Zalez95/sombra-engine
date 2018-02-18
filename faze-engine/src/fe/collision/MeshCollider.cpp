@@ -49,7 +49,7 @@ namespace fe { namespace collision {
 			if ( mTriangleAABBs[i].overlaps(aabb) ) {
 				std::vector<glm::vec3> triangleVertices;
 				triangleVertices.reserve(3);
-				for (size_t j = 0; j < 3; ++j) {
+				for (int j = 0; j < 3; ++j) {
 					triangleVertices.push_back( mVertices[mIndices[3*i + j]] );
 				}
 
@@ -64,7 +64,7 @@ namespace fe { namespace collision {
 // Private functions
 	void MeshCollider::calculateAABBs()
 	{
-		size_t nTriangles = mIndices.size() / 3;
+		int nTriangles = mIndices.size() / 3;
 
 		mAABB = AABB(
 			glm::vec3( std::numeric_limits<float>::max()),
@@ -72,8 +72,8 @@ namespace fe { namespace collision {
 		);
 		mTriangleAABBs = std::vector<AABB>(nTriangles, mAABB);
 
-		for (size_t i = 0; i < nTriangles; ++i) {
-			for (size_t j = 0; j < 3; ++j) {
+		for (int i = 0; i < nTriangles; ++i) {
+			for (int j = 0; j < 3; ++j) {
 				const glm::vec3& vertex = mVerticesWorld[ mIndices[3*i + j] ];
 
 				mTriangleAABBs[i].mMinimum = glm::min(mTriangleAABBs[i].mMinimum, vertex);

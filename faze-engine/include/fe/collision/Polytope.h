@@ -20,17 +20,13 @@ namespace fe { namespace collision {
 
 		~Edge() {};
 
-		bool operator==(Edge e)
-		{
-			return (mP1->getCSOPosition() == e.mP1->getCSOPosition())
-				&& (mP2->getCSOPosition() == e.mP2->getCSOPosition());
-		};
+		bool operator==(Edge e) const
+		{ return ((mP1 == e.mP1) && (mP2 == e.mP2)); };
 	};
 
 
 	struct Triangle
 	{
-	public:
 		Edge mAB;
 		Edge mBC;
 		Edge mCA;
@@ -46,9 +42,6 @@ namespace fe { namespace collision {
 		};
 
 		~Triangle() {};
-
-		inline float getDistanceToOrigin() const
-		{ return abs(glm::dot(mNormal, mAB.mP1->getCSOPosition())); };
 	};
 
 

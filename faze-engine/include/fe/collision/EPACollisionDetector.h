@@ -87,6 +87,12 @@ namespace fe { namespace collision {
 			const std::array<glm::vec3, 3>& triangle,
 			glm::vec3& projectedPoint
 		) const;
+
+		/** Returns the minimum distance to the origin of the given triangle
+		 * @param	t the triangle to calculate its distance to the origin
+		 * @return	the minimum distance of the triangle to the origin of
+		 *			coordiantes */
+		float getDistanceToOrigin(const Triangle& t) const;
 	};
 
 }}

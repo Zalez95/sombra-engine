@@ -2,7 +2,6 @@
 #define CONSTRAINT_H
 
 #include <array>
-#include <cassert>
 
 namespace fe { namespace physics {
 
@@ -11,7 +10,9 @@ namespace fe { namespace physics {
 
 
 	/**
-	 * Class Constraint, TODO: complete documentation
+	 * Class Constraint, a physics constraint is a parameter that the movement
+	 * of one or two RigidBodies must obey. This allows us to limit the movement
+	 * between RigidBodies.
 	 *
 	 * @note	the constraints can only restrict the movement between two
 	 *			RigidBodies
@@ -48,11 +49,8 @@ namespace fe { namespace physics {
 		 *
 		 * @param	rb the index of the RigidBody (0 or 1)
 		 * @return	a pointer the the RigidBody */
-		inline RigidBody* getRigidBody(size_t rb) const
-		{
-			assert(rb < 2 && "There are only two RigidBodies");
-			return mRigidBodies[rb];
-		};
+		inline RigidBody* getRigidBody(int rb) const
+		{ return mRigidBodies[rb]; };
 
 		/** @return the value of the Bias of the constraint */
 		virtual float getBias() const = 0;
