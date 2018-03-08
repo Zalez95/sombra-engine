@@ -1,7 +1,6 @@
-#include "fe/collision/FineCollisionDetector.h"
 #include <limits>
-#include <cassert>
 #include <algorithm>
+#include "fe/collision/FineCollisionDetector.h"
 #include "fe/collision/Contact.h"
 #include "fe/collision/Polytope.h"
 #include "fe/collision/ConvexCollider.h"
@@ -21,9 +20,9 @@ namespace fe { namespace collision {
 		// 2. Project the origin onto the closest triangle and get its
 		// barycentric coordinates
 		std::array<glm::vec3, 3> triangle = {
-			closestF->mAB.mP1->getCSOPosition(),
-			closestF->mBC.mP1->getCSOPosition(),
-			closestF->mCA.mP1->getCSOPosition()
+			closestF->ab.p1->getCSOPosition(),
+			closestF->bc.p1->getCSOPosition(),
+			closestF->ca.p1->getCSOPosition()
 		};
 		glm::vec3 baryCoordinates;
 		/*bool success = */projectPointOnTriangle(glm::vec3(0.0f), triangle, baryCoordinates);
@@ -31,19 +30,19 @@ namespace fe { namespace collision {
 
 		// 3. Calculate the normal, local and world coordinates of the contact
 		// from the barycenter coordinates of the point
-		glm::vec3 contactNormal = baryCoordinates.x * closestF->mAB.mP1->getCSOPosition()
-								+ baryCoordinates.y * closestF->mBC.mP1->getCSOPosition()
-								+ baryCoordinates.z * closestF->mCA.mP1->getCSOPosition();
+		glm::vec3 contactNormal = baryCoordinates.x * closestF->ab.p1->getCSOPosition()
+								+ baryCoordinates.y * closestF->bc.p1->getCSOPosition()
+								+ baryCoordinates.z * closestF->ca.p1->getCSOPosition();
 
 		Contact ret(closestFDist, glm::normalize(contactNormal));
 		for (unsigned int i = 0; i < 2; ++i) {
 			for (unsigned int j = 0; j < 1; ++j) {
-				ret.mWorldPos[i][j] = baryCoordinates.x * closestF->mAB.mP1->getWorldPosition(i)[j]
-									+ baryCoordinates.y * closestF->mBC.mP1->getWorldPosition(i)[j]
-									+ baryCoordinates.z * closestF->mCA.mP1->getWorldPosition(i)[j];
-				ret.mLocalPos[i][j] = baryCoordinates.x * closestF->mAB.mP1->getLocalPosition(i)[j]
-									+ baryCoordinates.y * closestF->mBC.mP1->getLocalPosition(i)[j]
-									+ baryCoordinates.z * closestF->mCA.mP1->getLocalPosition(i)[j];
+				ret.mWorldPos[i][j] = baryCoordinates.x * closestF->ab.p1->getWorldPosition(i)[j]
+									+ baryCoordinates.y * closestF->bc.p1->getWorldPosition(i)[j]
+									+ baryCoordinates.z * closestF->ca.p1->getWorldPosition(i)[j];
+				ret.mLocalPos[i][j] = baryCoordinates.x * closestF->ab.p1->getLocalPosition(i)[j]
+									+ baryCoordinates.y * closestF->bc.p1->getLocalPosition(i)[j]
+									+ baryCoordinates.z * closestF->ca.p1->getLocalPosition(i)[j];
 			}
 		}
 
@@ -60,9 +59,9 @@ namespace fe { namespace collision {
 		float closestFDist = std::numeric_limits<float>::max();
 		while (true) {
 			// 1. Calculate the closest face to the origin of the polytope
-			std::list<Triangle>::iterator closestF2 = polytope.mFaces.begin();
+			std::list<Triangle>::iterator closestF2 = polytope.faces.begin();
 			float closestFDist2 = std::numeric_limits<float>::max();
-			for (auto it = polytope.mFaces.begin(); it != polytope.mFaces.end(); ++it) {
+			for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
 				float fDist = getDistanceToOrigin(*it);
 				if (fDist < closestFDist2) {
 					closestF2		= it;
@@ -80,27 +79,27 @@ namespace fe { namespace collision {
 			}
 
 			// 3. Add a new support point along the face normal
-			polytope.mVertices.emplace_back(collider1, collider2, closestF2->mNormal);
-			SupportPoint* sp = &polytope.mVertices.back();
+			polytope.vertices.emplace_back(collider1, collider2, closestF2->normal);
+			SupportPoint* sp = &polytope.vertices.back();
 
 			// 4. Remove the current closest face from the polytope
-			polytope.mFaces.erase(closestF2);
+			polytope.faces.erase(closestF2);
 
 			// 5. Delete the faces that can be seen from the new point and get
 			// the edges of the created hole
 			std::list<Edge> holeEdges;
-			for (auto it = polytope.mFaces.begin(); it != polytope.mFaces.end();) {
-				if (glm::dot(it->mNormal, sp->getCSOPosition()) > 0) {
-					auto itE1 = std::find(holeEdges.begin(), holeEdges.end(), it->mAB);
-					if (itE1 == holeEdges.end()) holeEdges.push_back(it->mAB); else holeEdges.erase(itE1);
+			for (auto it = polytope.faces.begin(); it != polytope.faces.end();) {
+				if (glm::dot(it->normal, sp->getCSOPosition()) > 0) {
+					auto itE1 = std::find(holeEdges.begin(), holeEdges.end(), it->ab);
+					if (itE1 == holeEdges.end()) holeEdges.push_back(it->ab); else holeEdges.erase(itE1);
 
-					auto itE2 = std::find(holeEdges.begin(), holeEdges.end(), it->mBC);
-					if (itE2 == holeEdges.end()) holeEdges.push_back(it->mBC); else holeEdges.erase(itE2);
+					auto itE2 = std::find(holeEdges.begin(), holeEdges.end(), it->bc);
+					if (itE2 == holeEdges.end()) holeEdges.push_back(it->bc); else holeEdges.erase(itE2);
 
-					auto itE3 = std::find(holeEdges.begin(), holeEdges.end(), it->mCA);
-					if (itE3 == holeEdges.end()) holeEdges.push_back(it->mCA); else holeEdges.erase(itE3);
+					auto itE3 = std::find(holeEdges.begin(), holeEdges.end(), it->ca);
+					if (itE3 == holeEdges.end()) holeEdges.push_back(it->ca); else holeEdges.erase(itE3);
 
-					it = polytope.mFaces.erase(it);
+					it = polytope.faces.erase(it);
 				}
 				else {
 					++it;
@@ -109,7 +108,7 @@ namespace fe { namespace collision {
 
 			// 6. Add new faces connecting the edges of the hole to the support point
 			for (Edge& e : holeEdges) {
-				polytope.mFaces.emplace_back(sp, e.mP1, e.mP2);
+				polytope.faces.emplace_back(sp, e.p1, e.p2);
 			}
 
 			closestFDist = closestFDist2;
@@ -146,7 +145,7 @@ namespace fe { namespace collision {
 
 	float EPACollisionDetector::getDistanceToOrigin(const Triangle& t) const
 	{
-		return abs(glm::dot(t.mNormal, t.mAB.mP1->getCSOPosition()));
+		return abs(glm::dot(t.normal, t.ab.p1->getCSOPosition()));
 	}
 
 }}

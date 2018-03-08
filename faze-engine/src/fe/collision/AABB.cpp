@@ -1,5 +1,5 @@
-#include "fe/collision/AABB.h"
 #include <algorithm>
+#include "fe/collision/AABB.h"
 
 namespace fe { namespace collision {
 
@@ -7,14 +7,14 @@ namespace fe { namespace collision {
 	{
 		AABB b1 = *this, b2 = other;
 
-		if (b2.mMinimum.x < b1.mMinimum.x) { std::swap(b1, b2); }
-		bool intersecX = (b1.mMaximum.x >= b2.mMinimum.x) && (b1.mMinimum.x <= b2.mMaximum.x);
+		if (b2.minimum.x < b1.minimum.x) { std::swap(b1, b2); }
+		bool intersecX = (b1.maximum.x >= b2.minimum.x) && (b1.minimum.x <= b2.maximum.x);
 
-		if (b2.mMinimum.y < b1.mMinimum.y) { std::swap(b1, b2); }
-		bool intersecY = (b1.mMaximum.y >= b2.mMinimum.y) && (b1.mMinimum.y <= b2.mMaximum.y);
+		if (b2.minimum.y < b1.minimum.y) { std::swap(b1, b2); }
+		bool intersecY = (b1.maximum.y >= b2.minimum.y) && (b1.minimum.y <= b2.maximum.y);
 
-		if (b2.mMinimum.z < b1.mMinimum.z) { std::swap(b1, b2); }
-		bool intersecZ = (b1.mMaximum.z >= b2.mMinimum.z) && (b1.mMinimum.z <= b2.mMaximum.z);
+		if (b2.minimum.z < b1.minimum.z) { std::swap(b1, b2); }
+		bool intersecZ = (b1.maximum.z >= b2.minimum.z) && (b1.minimum.z <= b2.maximum.z);
 
 		return (intersecX && intersecY && intersecZ);
 	}

@@ -13,14 +13,14 @@ namespace fe { namespace collision {
 	{
 		/** The minimum coordinates in each axis of the Mesh's vertices in
 		 * World Space */
-		glm::vec3 mMinimum;
+		glm::vec3 minimum;
 
 		/** The maximum coordinates in each Axis of the Mesh's vertices in
 		 * World Space */
-		glm::vec3 mMaximum;
+		glm::vec3 maximum;
 
 		/** Creates a new AABB */
-		AABB() : mMinimum(0.0f), mMaximum(0.0f) {};
+		AABB() : minimum(0.0f), maximum(0.0f) {};
 
 		/** Creates a new AABB
 		 *
@@ -29,7 +29,7 @@ namespace fe { namespace collision {
 		 * @param	maximum the maximum coordinates in each axis of the
 		 *			AABB in World Space */
 		AABB(const glm::vec3& minimum, const glm::vec3& maximum) :
-			mMinimum(minimum), mMaximum(maximum) {};
+			minimum(minimum), maximum(maximum) {};
 
 		/** Destructor */
 		~AABB() {};

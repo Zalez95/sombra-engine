@@ -15,19 +15,19 @@ namespace fe { namespace window {
 	struct WindowData
 	{
 		/** The window title */
-		std::string mTitle;
+		std::string title;
 
 		/** The window width */
-		int mWidth;
+		int width;
 
 		/** The window height */
-		int mHeight;
+		int height;
 
 		/** If the window is in fullscreen mode or not */
-		bool mFullscreen;
+		bool fullscreen;
 
 		/** If the window is resizable or not */
-		bool mResizable;
+		bool resizable;
 	};
 
 
@@ -73,10 +73,10 @@ namespace fe { namespace window {
 		void setMousePosition(float x, float y);
 
 		/** @return	the width of the window */
-		inline int getWidth() const { return mWindowData.mWidth; };
+		inline int getWidth() const { return mWindowData.width; };
 
 		/** @return	the height of the window */
-		inline int getHeight() const { return mWindowData.mHeight; };
+		inline int getHeight() const { return mWindowData.height; };
 
 		/** @return	true if the window is closed */
 		bool isClosed() const;

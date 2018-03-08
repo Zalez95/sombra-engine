@@ -1,5 +1,5 @@
-#include "fe/app/InputManager.h"
 #include <algorithm>
+#include "fe/app/InputManager.h"
 #include "fe/app/Entity.h"
 
 namespace fe { namespace app {
@@ -51,8 +51,8 @@ namespace fe { namespace app {
 
 		// Get the mouse movement from the center of the screen in the range [-1, 1]
 		glm::vec2 mouseDelta(
-			2 * inputData.mMouseX / width - 1.0f,
-			2 * inputData.mMouseY / height - 1.0f		// note that the Y position is upsidedown
+			2 * inputData.mouseX / width - 1.0f,
+			2 * inputData.mouseY / height - 1.0f		// note that the Y position is upsidedown
 		);
 
 		// Calculate the rotation around the Entity's y-axis
@@ -64,36 +64,36 @@ namespace fe { namespace app {
 		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 
 		// Apply the change in orientation
-		entity->mOrientation = glm::normalize((qPitch * qYaw) * entity->mOrientation);
+		entity->orientation = glm::normalize((qPitch * qYaw) * entity->orientation);
 	}
 
 
 	void InputManager::doKeyboardInput(Entity* entity, const window::InputData& inputData) const
 	{
-		glm::vec3 forward	= glm::vec3(0, 0,-1) * entity->mOrientation;
+		glm::vec3 forward	= glm::vec3(0, 0,-1) * entity->orientation;
 		glm::vec3 up		= glm::vec3(0, 1, 0);
 		glm::vec3 right		= glm::cross(forward, up);
 
 		// Get the direction from the input in the XZ plane
 		glm::vec3 direction(0.0f);
-		if (inputData.mKeys[GLFW_KEY_W]) { direction += forward; }
-		if (inputData.mKeys[GLFW_KEY_S]) { direction -= forward; }
-		if (inputData.mKeys[GLFW_KEY_D]) { direction += right; }
-		if (inputData.mKeys[GLFW_KEY_A]) { direction -= right; }
+		if (inputData.keys[GLFW_KEY_W]) { direction += forward; }
+		if (inputData.keys[GLFW_KEY_S]) { direction -= forward; }
+		if (inputData.keys[GLFW_KEY_D]) { direction += right; }
+		if (inputData.keys[GLFW_KEY_A]) { direction -= right; }
 
 		// Normalize the direction
 		float length = glm::length(direction);
 		if (length > 0) { direction /= length; }
 
 		// Transform the direction to velocity
-		float velocityDiff = RUN_SPEED - glm::length(entity->mVelocity);
+		float velocityDiff = RUN_SPEED - glm::length(entity->velocity);
 		if (velocityDiff > 0) {
-			entity->mVelocity += velocityDiff * direction;
+			entity->velocity += velocityDiff * direction;
 		}
 
 		// Add the jump velocity
-		if (inputData.mKeys[GLFW_KEY_SPACE]) { entity->mVelocity += JUMP_SPEED * up; }
-		if (inputData.mKeys[GLFW_KEY_LEFT_CONTROL]) { entity->mVelocity -= JUMP_SPEED * up; }
+		if (inputData.keys[GLFW_KEY_SPACE]) { entity->velocity += JUMP_SPEED * up; }
+		if (inputData.keys[GLFW_KEY_LEFT_CONTROL]) { entity->velocity -= JUMP_SPEED * up; }
 	}
 
 

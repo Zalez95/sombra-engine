@@ -90,7 +90,7 @@ namespace game {
 
 			// Meshes
 			fe::loaders::RawMesh rawMesh1("Cube");
-			rawMesh1.mPositions = {
+			rawMesh1.positions = {
 				{-0.5f,	-0.5f,	-0.5f},
 				{-0.5f,	-0.5f,	 0.5f},
 				{-0.5f,	 0.5f,	-0.5f},
@@ -100,7 +100,7 @@ namespace game {
 				{ 0.5f,	 0.5f,	-0.5f},
 				{ 0.5f,	 0.5f,	 0.5f}
 			};
-			rawMesh1.mFaceIndices = {
+			rawMesh1.faceIndices = {
 				0, 1, 2,
 				1, 3, 2,
 				0, 2, 4,
@@ -114,30 +114,30 @@ namespace game {
 				2, 3, 6,
 				3, 7, 6
 			};
-			rawMesh1.mNormals = meshReader.calculateNormals(rawMesh1.mPositions, rawMesh1.mFaceIndices);
-			rawMesh1.mUVs = std::vector<glm::vec2>(8);
+			rawMesh1.normals = meshReader.calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
+			rawMesh1.uvs = std::vector<glm::vec2>(8);
 			mesh1 = std::move(meshLoader.createMesh(rawMesh1));
 
 			fe::loaders::RawMesh rawMesh2("Plane");
-			rawMesh2.mPositions = {
+			rawMesh2.positions = {
 				{-0.5f,	-0.5f,	0.0f},
 				{ 0.5f,	-0.5f,	0.0f},
 				{-0.5f,	0.5f,	0.0f},
 				{ 0.5f,	0.5f,	0.0f}
 			};
-			rawMesh2.mNormals = {
+			rawMesh2.normals = {
 				{0.0f,	0.0f,	1.0f},
 				{0.0f,	0.0f,	1.0f},
 				{0.0f,	0.0f,	1.0f},
 				{0.0f,	0.0f,	1.0f}
 			};
-			rawMesh2.mUVs = {
+			rawMesh2.uvs = {
 				{0.0f,	0.0f},
 				{1.0f,	0.0f},
 				{0.0f,	1.0f},
 				{1.0f,	1.0f}
 			};
-			rawMesh2.mFaceIndices = {
+			rawMesh2.faceIndices = {
 				0, 1, 2,
 				1, 3, 2,
 			};
@@ -179,7 +179,7 @@ namespace game {
 			camera1 = std::make_unique<fe::graphics::Camera>(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
 
 			// Lights
-			fe::graphics::BaseLight baseLight1(fe::graphics::RGBColor(0.5f, 0.6f, 0.3f), fe::graphics::RGBColor(0.1f, 0.5f, 0.6f));
+			fe::graphics::BaseLight baseLight1(glm::vec3(0.5f, 0.6f, 0.3f), glm::vec3(0.1f, 0.5f, 0.6f));
 			fe::graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
 			pointLight1 = std::make_unique<fe::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 			pointLight2 = std::make_unique<fe::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
@@ -204,7 +204,7 @@ namespace game {
 		 *********************************************************************/
 		// Player
 		auto player	= std::make_unique<fe::app::Entity>("player");
-		player->mPosition = glm::vec3(0, 1, 10);
+		player->position = glm::vec3(0, 1, 10);
 
 		auto physicsEntity1 = std::make_unique<fe::physics::PhysicsEntity>(
 			fe::physics::RigidBody(
@@ -226,7 +226,7 @@ namespace game {
 
 		// Plane
 		auto plane = std::make_unique<fe::app::Entity>("plane");
-		plane->mPosition = glm::vec3(-5.0f, 1.0f, -5.0f);
+		plane->position = glm::vec3(-5.0f, 1.0f, -5.0f);
 
 		auto renderable3D1 = std::make_unique<fe::graphics::Renderable3D>(mesh2, fileMaterials[4], texture2);
 		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1), glm::mat4(1.0f));
@@ -237,7 +237,7 @@ namespace game {
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
 		for (size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("non-random-cube");
-			cube->mPosition = cubePositions[i];
+			cube->position = cubePositions[i];
 
 			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
 				fe::physics::RigidBody(
@@ -247,7 +247,7 @@ namespace game {
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);
 			if (i == 3) { physicsEntityCube2->getRigidBody()->setAngularVelocity(glm::vec3(0, 10, 0)); }
-			if (i == 4) { cube->mVelocity += glm::vec3(-1, 0, 0); }
+			if (i == 4) { cube->velocity += glm::vec3(-1, 0, 0); }
 
 			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
 
@@ -260,7 +260,7 @@ namespace game {
 		// Random cubes
 		for (size_t i = 0; i < sNumCubes; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("random-cube");
-			cube->mPosition = glm::ballRand(50.0f);
+			cube->position = glm::ballRand(50.0f);
 
 			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
 				fe::physics::RigidBody(
@@ -280,14 +280,14 @@ namespace game {
 		// Buildings
 		for (auto it = fileMeshes.begin(); it != fileMeshes.end(); ++it) {
 			auto building = std::make_unique<fe::app::Entity>("building");
-			building->mOrientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+			building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 
 			if (it == fileMeshes.begin()) {
 				auto rawMesh = *fileRawMeshes.begin();
 
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::MeshCollider>(rawMesh->mPositions, rawMesh->mFaceIndices),
+					std::make_unique<fe::collision::MeshCollider>(rawMesh->positions, rawMesh->faceIndices),
 					glm::mat4(1.0f)
 				);
 				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
@@ -295,9 +295,9 @@ namespace game {
 
 			auto tmpMaterial = std::make_shared<fe::graphics::Material>(
 				"tmp_material",
-				fe::graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				fe::graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				fe::graphics::RGBColor( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				0.2f
 			);
 
@@ -309,12 +309,12 @@ namespace game {
 
 		// Lights
 		auto eL1 = std::make_unique<fe::app::Entity>("point-light1");
-		eL1->mPosition = glm::vec3(2, 1, 5);
+		eL1->position = glm::vec3(2, 1, 5);
 		mGraphicsManager->addEntity(eL1.get(), std::move(pointLight1));
 		mEntities.push_back(std::move(eL1));
 
 		auto eL2 = std::make_unique<fe::app::Entity>("point-light2");
-		eL2->mPosition = glm::vec3(-3, 1, 5);
+		eL2->position = glm::vec3(-3, 1, 5);
 		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
 		mEntities.push_back(std::move(eL2));
 	}

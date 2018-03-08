@@ -20,24 +20,23 @@ namespace fe { namespace utils {
 
 	void Logger::write(LogLevel level, const std::string& text)
 	{
-		// Lock for writing in the log file and formatting the time
-		// (tm is a static variable, so it isn't thread safe)
+		static const std::string timeFormat = "[%Y/%m/%d %H:%M:%S]";
+
+		// Lock the log mutex
 		std::lock_guard<std::mutex> locker(mMutex);
 
 		// Check if the text should be written with the current log level
 		if (level < mMaxLogLevel) { return; }
 
-		// Write current time
+		// Get current time
 		time_t t = time(0);
 		tm* now = localtime(&t);
-		mLogFile.fill('0');
-		mLogFile << '[' << now->tm_year + 1900
-			<< '/' << std::setw(2) << now->tm_mon + 1
-			<< '/' << std::setw(2) << now->tm_mday
-			<< ' ' << std::setw(2) << now->tm_hour
-			<< ':' << std::setw(2) << now->tm_min
-			<< ':' << std::setw(2) << now->tm_sec
-			<< ']';
+
+		// Write the current time
+		std::string timeStr;
+		timeStr.resize(timeFormat.size());
+		strftime(&timeStr[0], timeStr.size(), timeFormat.c_str(), now);
+		mLogFile << timeStr;
 
 		// Write the level of the log text
 		switch (level) {

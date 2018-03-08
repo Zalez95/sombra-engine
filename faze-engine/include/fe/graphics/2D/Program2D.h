@@ -21,8 +21,8 @@ namespace fe { namespace graphics {
 		 * in each render call */
 		struct UniformLocations
 		{
-			unsigned int mModelMatrix;
-			unsigned int mTextureSampler;
+			unsigned int modelMatrix;
+			unsigned int textureSampler;
 		} mUniformLocations;
 
 	public:		// Functions

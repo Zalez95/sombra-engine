@@ -1,11 +1,11 @@
 #include <cassert>
 #include <glm/gtc/type_ptr.hpp>
+#include "fe/loaders/TerrainLoader.h"
+#include "fe/loaders/RawMesh.h"
 #include "fe/app/Entity.h"
 #include "fe/utils/Image.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Renderable3D.h"
-#include "fe/loaders/RawMesh.h"
-#include "fe/loaders/TerrainLoader.h"
 
 namespace fe { namespace loaders {
 
@@ -45,10 +45,10 @@ namespace fe { namespace loaders {
 
 		// The mesh data of the Terrain
 		auto rawMesh = std::make_unique<RawMesh>(name);
-		rawMesh->mPositions.reserve(3 * count);
-		rawMesh->mNormals.reserve(3 * count);
-		rawMesh->mUVs.reserve(2 * count);
-		rawMesh->mFaceIndices.reserve(6 * (width - 1) * (height - 1));
+		rawMesh->positions.reserve(3 * count);
+		rawMesh->normals.reserve(3 * count);
+		rawMesh->uvs.reserve(2 * count);
+		rawMesh->faceIndices.reserve(6 * (width - 1) * (height - 1));
 
 		for (size_t i = 0; i < height; ++i) {
 			float zPos = (i / static_cast<float>(height - 1) - 0.5f) * size;
@@ -57,10 +57,10 @@ namespace fe { namespace loaders {
 				float yPos = getHeight(heightMap, maxHeight, j, i);
 
 				// Set the position
-				rawMesh->mPositions.emplace_back(xPos, yPos, zPos);
+				rawMesh->positions.emplace_back(xPos, yPos, zPos);
 
 				// Set the uvs
-				rawMesh->mUVs.emplace_back(j / static_cast<float>(width), i / static_cast<float>(height));
+				rawMesh->uvs.emplace_back(j / static_cast<float>(width), i / static_cast<float>(height));
 
 				if ((i > 0) && (j > 0)) {
 					// Calculate the indices of the vertices that creates the faces
@@ -71,35 +71,35 @@ namespace fe { namespace loaders {
 
 					// Calculate the normals of the faces
 					glm::vec3 tr( xPos, yPos, zPos );
-					const glm::vec3& tl = rawMesh->mPositions[topLeft];
-					const glm::vec3& br = rawMesh->mPositions[bottomRight];
-					const glm::vec3& bl = rawMesh->mPositions[bottomLeft];
+					const glm::vec3& tl = rawMesh->positions[topLeft];
+					const glm::vec3& br = rawMesh->positions[bottomRight];
+					const glm::vec3& bl = rawMesh->positions[bottomLeft];
 
 					glm::vec3 n1 = glm::cross(tr - tl, tr - bl);
 					glm::vec3 n2 = glm::cross(tr - bl, tr - br);
 					glm::vec3 normal = n1 + n2;
 
 					// Set the normal vector of the current vertex
-					rawMesh->mNormals.insert(rawMesh->mNormals.end(), { normal.x, normal.y, normal.z });
+					rawMesh->normals.insert(rawMesh->normals.end(), { normal.x, normal.y, normal.z });
 
 					// update the normals of the other vertices
-					rawMesh->mNormals[topLeft]		+= n1;
-					rawMesh->mNormals[bottomLeft]	+= normal;
-					rawMesh->mNormals[bottomRight]	+= n2;
+					rawMesh->normals[topLeft]		+= n1;
+					rawMesh->normals[bottomLeft]	+= normal;
+					rawMesh->normals[bottomRight]	+= n2;
 
 					// Normalize the normal of the bottom left vertex
 					int norm = 6;
 					if (i == 1) { norm -= 3; }
 					if (j == 1) { norm -= 3; }
 					if (norm > 0) {
-						rawMesh->mNormals[bottomLeft] /= norm;
+						rawMesh->normals[bottomLeft] /= norm;
 					}
 
 					// Set the indices of the faces
-					rawMesh->mFaceIndices.insert(rawMesh->mFaceIndices.end(), { topRight, bottomLeft, topLeft, topRight, bottomRight, bottomLeft });
+					rawMesh->faceIndices.insert(rawMesh->faceIndices.end(), { topRight, bottomLeft, topLeft, topRight, bottomRight, bottomLeft });
 				}
 				else {
-					rawMesh->mNormals.emplace_back(0.0f);
+					rawMesh->normals.emplace_back(0.0f);
 				}
 			}
 		}

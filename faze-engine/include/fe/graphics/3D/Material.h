@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <glm/glm.hpp>
 #include "../PrimitiveTypes.h"
 
 namespace fe { namespace graphics {
@@ -18,13 +19,13 @@ namespace fe { namespace graphics {
 		std::string mName;
 
 		/** The ambient color of the Material */
-		RGBColor mAmbientColor;
+		glm::vec3 mAmbientColor;
 
 		/** The color of the diffuse reflected light the Material */
-		RGBColor mDiffuseColor;
+		glm::vec3 mDiffuseColor;
 
 		/** The color of the specular reflected light the Material */
-		RGBColor mSpecularColor;
+		glm::vec3 mSpecularColor;
 
 		/** The specular shininess of the Material */
 		float mShininess;
@@ -39,9 +40,9 @@ namespace fe { namespace graphics {
 		 * @param	shininess the specular shininess of the the new Material */
 		Material(
 			const std::string& name,
-			const RGBColor& ambientColor,
-			const RGBColor& diffuseColor,
-			const RGBColor& specularColor,
+			const glm::vec3& ambientColor,
+			const glm::vec3& diffuseColor,
+			const glm::vec3& specularColor,
 			float shininess
 		) : mName(name),
 			mAmbientColor(ambientColor),
@@ -56,13 +57,13 @@ namespace fe { namespace graphics {
 		inline std::string getName() const { return mName; };
 
 		/** @return the ambient color of the Material */
-		inline RGBColor getAmbientColor() const { return mAmbientColor; };
+		inline glm::vec3 getAmbientColor() const { return mAmbientColor; };
 
 		/** @return the diffuse color of the Material */
-		inline RGBColor getDiffuseColor() const { return mDiffuseColor; };
+		inline glm::vec3 getDiffuseColor() const { return mDiffuseColor; };
 
 		/** @return the specular color of the Material */
-		inline RGBColor getSpecularColor() const { return mSpecularColor; };
+		inline glm::vec3 getSpecularColor() const { return mSpecularColor; };
 
 		/** @return the specular shininess of the Material */
 		inline float getShininess() const

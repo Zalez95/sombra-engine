@@ -13,31 +13,31 @@ namespace fe { namespace collision {
 
 	struct Edge
 	{
-		SupportPoint* mP1;
-		SupportPoint* mP2;
+		SupportPoint* p1;
+		SupportPoint* p2;
 
-		Edge(SupportPoint* p1, SupportPoint* p2) : mP1(p1), mP2(p2) {};
+		Edge(SupportPoint* p1, SupportPoint* p2) : p1(p1), p2(p2) {};
 
 		~Edge() {};
 
 		bool operator==(Edge e) const
-		{ return ((mP1 == e.mP1) && (mP2 == e.mP2)); };
+		{ return ((p1 == e.p1) && (p2 == e.p2)); };
 	};
 
 
 	struct Triangle
 	{
-		Edge mAB;
-		Edge mBC;
-		Edge mCA;
-		glm::vec3 mNormal;
+		Edge ab;
+		Edge bc;
+		Edge ca;
+		glm::vec3 normal;
 
 		Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c) :
-			mAB(a, b), mBC(b, c), mCA(c, a)
+			ab(a, b), bc(b, c), ca(c, a)
 		{
-			mNormal = glm::normalize(glm::cross(
-				mAB.mP2->getCSOPosition() - mAB.mP1->getCSOPosition(),
-				mCA.mP2->getCSOPosition() - mCA.mP1->getCSOPosition()
+			normal = glm::normalize(glm::cross(
+				ab.p2->getCSOPosition() - ab.p1->getCSOPosition(),
+				ca.p2->getCSOPosition() - ca.p1->getCSOPosition()
 			));
 		};
 
@@ -49,8 +49,8 @@ namespace fe { namespace collision {
 	{
 		static const float sKEpsilon;
 
-		std::list<SupportPoint> mVertices;
-		std::list<Triangle> mFaces;
+		std::list<SupportPoint> vertices;
+		std::list<Triangle> faces;
 
 		Polytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,

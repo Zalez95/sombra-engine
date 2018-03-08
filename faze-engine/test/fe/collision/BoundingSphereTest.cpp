@@ -10,8 +10,8 @@ TEST(BoundingSphere, getAABB)
 {
 	const fe::collision::BoundingSphere bs1(2.0f);
 	const fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(-2.0f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(2.0f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(-2.0f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(2.0f));
 }
 
 
@@ -19,8 +19,8 @@ TEST(BoundingSphere, getAABBZeroRadius)
 {
 	const fe::collision::BoundingSphere bs1(0.0f);
 	const fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(0.0f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(0.0f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(0.0f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(0.0f));
 }
 
 
@@ -36,8 +36,8 @@ TEST(BoundingSphere, getAABBTransforms)
 	bs1.setTransforms(t * r);
 
 	const fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(4.0f, -2.0f, -11.0f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(6.0f, 0.0f, -9.0f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(4.0f, -2.0f, -11.0f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(6.0f, 0.0f, -9.0f));
 }
 
 

@@ -2,9 +2,9 @@
 #include <sstream>
 #include <fstream>
 #include <GL/glew.h>
+#include "fe/graphics/2D/Program2D.h"
 #include "fe/graphics/Shader.h"
 #include "fe/graphics/Program.h"
-#include "fe/graphics/2D/Program2D.h"
 
 namespace fe { namespace graphics {
 
@@ -35,13 +35,13 @@ namespace fe { namespace graphics {
 
 	void Program2D::setModelMatrix(const glm::mat4& modelMatrix)
 	{
-		mProgram->setUniform(mUniformLocations.mModelMatrix, modelMatrix);
+		mProgram->setUniform(mUniformLocations.modelMatrix, modelMatrix);
 	}
 
 
 	void Program2D::setTextureSampler(int unit)
 	{
-		mProgram->setUniform(mUniformLocations.mTextureSampler, unit);
+		mProgram->setUniform(mUniformLocations.textureSampler, unit);
 	}
 
 
@@ -76,8 +76,8 @@ namespace fe { namespace graphics {
 
 	void Program2D::initUniformLocations()
 	{
-		mUniformLocations.mModelMatrix		= mProgram->getUniformLocation("uModelMatrix");
-		mUniformLocations.mTextureSampler	= mProgram->getUniformLocation("uTextureSampler");
+		mUniformLocations.modelMatrix		= mProgram->getUniformLocation("uModelMatrix");
+		mUniformLocations.textureSampler	= mProgram->getUniformLocation("uTextureSampler");
 	}
 
 }}

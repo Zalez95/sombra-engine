@@ -1,5 +1,5 @@
-#include "fe/loaders/MeshReader.h"
 #include <map>
+#include "fe/loaders/MeshReader.h"
 #include "fe/utils/FileReader.h"
 
 namespace fe { namespace loaders {
@@ -209,30 +209,30 @@ namespace fe { namespace loaders {
 		auto rawMesh = std::make_unique<RawMesh>(name);
 
 		if (!uvIndices.empty()) {
-			rawMesh->mFaceIndices = std::vector<unsigned short>(posIndices.size());
+			rawMesh->faceIndices = std::vector<unsigned short>(posIndices.size());
 			std::map<std::pair<unsigned short, unsigned short>, unsigned short> faceIndicesMap;
 
-			for (size_t i = 0; i < rawMesh->mFaceIndices.size(); ++i) {
+			for (size_t i = 0; i < rawMesh->faceIndices.size(); ++i) {
 				auto mapKey = std::make_pair(posIndices[i], uvIndices[i]);
 				if (faceIndicesMap.find(mapKey) != faceIndicesMap.end()) {
-					rawMesh->mFaceIndices[i] = faceIndicesMap[mapKey];
+					rawMesh->faceIndices[i] = faceIndicesMap[mapKey];
 				}
 				else {
-					unsigned short vertexIndex	= static_cast<unsigned short>(rawMesh->mPositions.size());
+					unsigned short vertexIndex	= static_cast<unsigned short>(rawMesh->positions.size());
 
-					rawMesh->mPositions.push_back( positions[posIndices[i]] );
-					rawMesh->mUVs.push_back( uvs[uvIndices[i]] );
-					rawMesh->mFaceIndices[i]	= vertexIndex;
+					rawMesh->positions.push_back( positions[posIndices[i]] );
+					rawMesh->uvs.push_back( uvs[uvIndices[i]] );
+					rawMesh->faceIndices[i]	= vertexIndex;
 					faceIndicesMap[mapKey]		= vertexIndex;
 				}
 			}
 		}
 		else {
-			rawMesh->mPositions		= positions;
-			rawMesh->mFaceIndices	= posIndices;
+			rawMesh->positions		= positions;
+			rawMesh->faceIndices	= posIndices;
 		}
 
-		rawMesh->mNormals = calculateNormals(rawMesh->mPositions, rawMesh->mFaceIndices);
+		rawMesh->normals = calculateNormals(rawMesh->positions, rawMesh->faceIndices);
 		return rawMesh;
 	}
 

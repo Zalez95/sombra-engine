@@ -1,10 +1,10 @@
-#include "fe/loaders/EntityReader.h"
 #include <algorithm>
+#include "fe/loaders/EntityReader.h"
 #include "fe/utils/FileReader.h"
 #include "fe/app/Entity.h"
-#include "fe/graphics/3D/Renderable3D.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Material.h"
+#include "fe/graphics/3D/Renderable3D.h"
 #include "fe/physics/PhysicsEntity.h"
 #include "fe/collision/MeshCollider.h"
 #include "fe/loaders/RawMesh.h"
@@ -14,10 +14,10 @@ namespace fe { namespace loaders {
 // Nested types definition
 	struct EntityReader::SharedData
 	{
-		std::vector<std::shared_ptr<RawMesh>> mRawMeshes;
-		std::vector<std::shared_ptr<graphics::Mesh>> mMeshes;
-		std::vector<std::shared_ptr<graphics::Material>> mMaterials;
-		std::vector<std::shared_ptr<graphics::Texture>> mTextures;
+		std::vector<std::shared_ptr<RawMesh>> rawMeshes;
+		std::vector<std::shared_ptr<graphics::Mesh>> meshes;
+		std::vector<std::shared_ptr<graphics::Material>> materials;
+		std::vector<std::shared_ptr<graphics::Texture>> textures;
 	};
 
 // Static variables definition
@@ -84,9 +84,9 @@ namespace fe { namespace loaders {
 				fileReader >> token;
 				utils::FileReader meshFileReader(token);
 				auto rawMeshes = mMeshReader.read(meshFileReader);
-				ret.mRawMeshes.reserve(rawMeshes.size());
-				ret.mRawMeshes.insert(
-					ret.mRawMeshes.end(),
+				ret.rawMeshes.reserve(rawMeshes.size());
+				ret.rawMeshes.insert(
+					ret.rawMeshes.end(),
 					std::make_move_iterator(rawMeshes.begin()),
 					std::make_move_iterator(rawMeshes.end())
 				);
@@ -95,9 +95,9 @@ namespace fe { namespace loaders {
 				fileReader >> token;
 				utils::FileReader materialFileReader(token);
 				auto materials = mMaterialReader.read(materialFileReader);
-				ret.mMaterials.reserve(materials.size());
-				ret.mMaterials.insert(
-					ret.mMaterials.end(),
+				ret.materials.reserve(materials.size());
+				ret.materials.insert(
+					ret.materials.end(),
 					std::make_move_iterator(materials.begin()),
 					std::make_move_iterator(materials.end())
 				);
@@ -192,28 +192,28 @@ namespace fe { namespace loaders {
 					offsetMatrix[3][0] >> offsetMatrix[3][1] >> offsetMatrix[3][2] >> offsetMatrix[3][3];
 
 				auto itMesh = std::find_if(
-					sharedData.mMeshes.begin(), sharedData.mMeshes.end(),
+					sharedData.meshes.begin(), sharedData.meshes.end(),
 					[&meshName](std::shared_ptr<graphics::Mesh> mesh) {
 						return mesh->getName() == meshName;
 					}
 				);
 
-				if (itMesh == sharedData.mMeshes.end()) {
+				if (itMesh == sharedData.meshes.end()) {
 					auto itRawMesh = std::find_if(
-						sharedData.mRawMeshes.begin(), sharedData.mRawMeshes.end(),
+						sharedData.rawMeshes.begin(), sharedData.rawMeshes.end(),
 						[&meshName](std::shared_ptr<RawMesh> rawMesh) {
-							return rawMesh->mName == meshName;
+							return rawMesh->name == meshName;
 						}
 					);
 
-					if (itRawMesh != sharedData.mRawMeshes.end()) {
-						sharedData.mMeshes.push_back( mMeshLoader.createMesh(**itRawMesh) );
-						itMesh = sharedData.mMeshes.end();
+					if (itRawMesh != sharedData.rawMeshes.end()) {
+						sharedData.meshes.push_back( mMeshLoader.createMesh(**itRawMesh) );
+						itMesh = sharedData.meshes.end();
 					}
 				}
 
 				auto itMaterial = std::find_if(
-					sharedData.mMaterials.begin(), sharedData.mMaterials.end(),
+					sharedData.materials.begin(), sharedData.materials.end(),
 					[&materialName](std::shared_ptr<graphics::Material> material) {
 						return material->getName() == materialName;
 					}
@@ -234,16 +234,16 @@ namespace fe { namespace loaders {
 					mat[3][0] >> mat[3][1] >> mat[3][2] >> mat[3][3];
 
 				auto itRawMesh = std::find_if(
-					sharedData.mRawMeshes.begin(), sharedData.mRawMeshes.end(),
+					sharedData.rawMeshes.begin(), sharedData.rawMeshes.end(),
 					[&meshName](std::shared_ptr<RawMesh> rawMesh) {
-						return rawMesh->mName == meshName;
+						return rawMesh->name == meshName;
 					}
 				);
 
 				// TODO: read other colliders
 				physicsEntity = std::make_unique<physics::PhysicsEntity>(
 					physics::RigidBody(),
-					std::make_unique<collision::MeshCollider>((*itRawMesh)->mPositions, (*itRawMesh)->mFaceIndices),
+					std::make_unique<collision::MeshCollider>((*itRawMesh)->positions, (*itRawMesh)->faceIndices),
 					mat
 				);
 			}
@@ -254,8 +254,8 @@ namespace fe { namespace loaders {
 		}
 
 		auto entity = std::make_unique<app::Entity>(name);
-		entity->mPosition		= position;
-		entity->mOrientation	= orientation;
+		entity->position	= position;
+		entity->orientation	= orientation;
 
 		if (camera) {
 			mGraphicsManager.addEntity(entity.get(), std::move(camera));

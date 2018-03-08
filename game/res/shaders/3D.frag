@@ -10,30 +10,30 @@ const vec2	INVERT_Y_TEXTURE	= vec2(1.0, -1.0);
 // ____ DATATYPES ____
 struct Material
 {
-	vec3	mAmbientColor;
-	vec3	mDiffuseColor;
-	vec3	mSpecularColor;
-	float	mShininess;
-	float	mTransparency;
+	vec3	ambientColor;
+	vec3	diffuseColor;
+	vec3	specularColor;
+	float	shininess;
+	float	transparency;
 };
 
 struct BaseLight
 {
-	vec3	mDiffuseColor;
-	vec3	mSpecularColor;
+	vec3	diffuseColor;
+	vec3	specularColor;
 };
 
 struct Attenuation
 {
-	float	mConstant;
-	float	mLinear;
-	float	mExponential;
+	float	constant;
+	float	linear;
+	float	exponential;
 };
 
 struct PointLight
 {
-	BaseLight	mBaseLight;
-	Attenuation mAttenuation;
+	BaseLight	baseLight;
+	Attenuation attenuation;
 };
 
 
@@ -41,9 +41,9 @@ struct PointLight
 // Input data in view space from the vertex shader
 in VertexData
 {
-	vec3 mPosition;
-	vec3 mNormal;
-	vec2 mUV;
+	vec3 position;
+	vec3 normal;
+	vec2 uv;
 } vsVertex;
 
 flat in int vsNumPointLights;
@@ -62,22 +62,22 @@ out vec4 glFragColor;
 vec3 calcBlinnPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDirection)
 {
 	// Calculate the ambient color
-	vec3 ambientColor	= uMaterial.mAmbientColor * SCENE_AMBIENT_COLOR;
+	vec3 ambientColor	= uMaterial.ambientColor * SCENE_AMBIENT_COLOR;
 
 	// Calculate the diffuse color
 	vec3 diffuseColor	= vec3(0,0,0);
-	float diffuseDot	= dot(lightDirection, vsVertex.mNormal);
+	float diffuseDot	= dot(lightDirection, vsVertex.normal);
 	if (diffuseDot > 0) {
-		diffuseColor	= uMaterial.mDiffuseColor * light.mDiffuseColor * diffuseDot;
+		diffuseColor	= uMaterial.diffuseColor * light.diffuseColor * diffuseDot;
 	}
 
 	// Calculate the specular color
 	vec3 specularColor	= vec3(0,0,0);
 	vec3 halfDirection	= normalize(lightDirection + viewDirection);
-	float specularDot	= dot(vsVertex.mNormal, halfDirection);
+	float specularDot	= dot(vsVertex.normal, halfDirection);
 	if (specularDot > 0) {
-		float spec		= pow(specularDot, uMaterial.mShininess);
-		specularColor	= uMaterial.mSpecularColor * light.mSpecularColor * spec;
+		float spec		= pow(specularDot, uMaterial.shininess);
+		specularColor	= uMaterial.specularColor * light.specularColor * spec;
 	}
 
 	// Add all the light colors and return
@@ -88,21 +88,21 @@ vec3 calcBlinnPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDir
 vec3 calcPointLight(PointLight pointLight, vec3 pointLightPosition)
 {
 	// Calculate the view direction (the eye is in the center of the scene)
-	vec3 viewDirection	= normalize(-vsVertex.mPosition);
+	vec3 viewDirection	= normalize(-vsVertex.position);
 
 	// Calculate the light direction and distance from the current point
-	vec3 lightDirection	= pointLightPosition - vsVertex.mPosition;
+	vec3 lightDirection	= pointLightPosition - vsVertex.position;
 	float distance		= length(lightDirection);
 	lightDirection		= normalize(lightDirection);
 
 	// Calculate the direct lighting of the current light with the Phong
 	// reflection model
-	vec3 lightColor		= calcBlinnPhongReflection(pointLight.mBaseLight, lightDirection, viewDirection);
+	vec3 lightColor		= calcBlinnPhongReflection(pointLight.baseLight, lightDirection, viewDirection);
 
 	// Calculate the attenuation of the point light
-	float attenuation	= pointLight.mAttenuation.mConstant
-						+ pointLight.mAttenuation.mLinear * distance
-						+ pointLight.mAttenuation.mExponential * pow(distance, 2);
+	float attenuation	= pointLight.attenuation.constant
+						+ pointLight.attenuation.linear * distance
+						+ pointLight.attenuation.exponential * pow(distance, 2);
 	attenuation			= (attenuation != 0)? 1.0 / attenuation : 1.0;
 
 	// Apply the attenuation to the light color and return it
@@ -125,6 +125,6 @@ vec3 calcDirectLight()
 void main()
 {
 	vec4 lightColor = vec4(calcDirectLight(), 1.0);
-	vec4 texColor	= texture(uColorTexture, INVERT_Y_TEXTURE * vsVertex.mUV);
+	vec4 texColor	= texture(uColorTexture, INVERT_Y_TEXTURE * vsVertex.uv);
 	glFragColor = pow(texColor + lightColor, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
 }

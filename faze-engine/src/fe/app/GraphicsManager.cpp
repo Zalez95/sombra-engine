@@ -1,5 +1,5 @@
-#include "fe/app/GraphicsManager.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/app/GraphicsManager.h"
 #include "fe/app/Entity.h"
 
 namespace fe { namespace app {
@@ -66,21 +66,21 @@ namespace fe { namespace app {
 	void GraphicsManager::update()
 	{
 		for (auto& ce : mCameraEntities) {
-			glm::vec3 forwardVector = glm::vec3(0, 0,-1) * ce.first->mOrientation;
+			glm::vec3 forwardVector = glm::vec3(0, 0,-1) * ce.first->orientation;
 			glm::vec3 upVector		= glm::vec3(0, 1, 0);
 
-			ce.second->setPosition(ce.first->mPosition);
-			ce.second->setTarget(ce.first->mPosition + forwardVector);
+			ce.second->setPosition(ce.first->position);
+			ce.second->setTarget(ce.first->position + forwardVector);
 			ce.second->setUp(upVector);
 		}
 
 		for (auto& pe : mPointLightEntities) {
-			pe.second->setPosition(pe.first->mPosition);
+			pe.second->setPosition(pe.first->position);
 		}
 
 		for (auto& re : mRenderable3DEntities) {
-			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), re.first->mPosition);
-			glm::mat4 rotation		= glm::mat4_cast(re.first->mOrientation);
+			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), re.first->position);
+			glm::mat4 rotation		= glm::mat4_cast(re.first->orientation);
 			glm::mat4 offset		= re.second.second;
 			re.second.first->setModelMatrix(offset * translation * rotation);
 		}

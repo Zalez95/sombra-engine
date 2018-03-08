@@ -20,9 +20,9 @@ namespace fe { namespace loaders {
 		typedef std::unique_ptr<graphics::Mesh> MeshUPtr;
 
 		/** The attribute indices of the Meshes */
-		enum Attributes
+		enum Attributes : unsigned int
 		{
-			POSITION_ATTRIBUTE,
+			POSITION_ATTRIBUTE = 0,
 			NORMAL_ATTRIBUTE,
 			UV_ATTRIBUTE,
 			JOINT_WEIGHT_ATTRIBUTE,

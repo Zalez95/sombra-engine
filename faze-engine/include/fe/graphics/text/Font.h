@@ -20,22 +20,22 @@ namespace fe { namespace graphics {
 	struct Character
 	{
 		/** The character ASCII id */
-		unsigned int mId;
+		unsigned int id;
 
 		/** The position of the top left corner of the Character in the Font
 		 * texture */
-		glm::tvec2<int> mPosition;
+		glm::tvec2<int> position;
 
 		/** The size in pixels of the Character */
-		glm::tvec2<int> mSize;
+		glm::tvec2<int> size;
 
 		/** The offset distance of top left corner of the Character in relation
 		 * to the cursor position */
-		glm::tvec2<int> mOffset;
+		glm::tvec2<int> offset;
 
 		/** The horizontal advance to the next Character after adding the
 		 * current Character to a text */
-		int mAdvance;
+		int advance;
 
 		/** Creates a new Character */
 		Character() {};

@@ -20,17 +20,17 @@ namespace fe { namespace physics {
 		struct EntityForce
 		{
 			/** The entity that we want to pair */
-			PhysicsEntity* mEntity;
+			PhysicsEntity* entity;
 
 			/** The force that we want to pair with the entity */
-			Force* mForce;
+			Force* force;
 
 			/** Creates a new EntityForce
 			 *
 			 * @param	entity a pointer to the PhysicsEntity of EntityForce
 			 * @param	force a pointer to the Force of EntityForce */
 			EntityForce(PhysicsEntity* entity, Force* force) :
-				mEntity(entity), mForce(force) {};
+				entity(entity), force(force) {};
 
 			/** Class destructor */
 			~EntityForce() {};

@@ -12,7 +12,7 @@ namespace fe { namespace utils {
 	/**
 	 * The type of the text that we can write in the Log File with the Logger
 	 */
-	enum class LogLevel : unsigned int
+	enum class LogLevel : int
 	{
 		DEBUG = 0,
 		WARNING,

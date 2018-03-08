@@ -1,8 +1,8 @@
 #include <string>
 #include <stdexcept>
 #include <glm/gtc/type_ptr.hpp>
-#include "fe/graphics/Shader.h"
 #include "fe/graphics/Program.h"
+#include "fe/graphics/Shader.h"
 #include "fe/graphics/GLWrapper.h"
 
 namespace fe { namespace graphics {
@@ -76,32 +76,6 @@ namespace fe { namespace graphics {
 	void Program::setUniform(unsigned int location, float value) const
 	{
 		GL_WRAP( glUniform1f(location, value) );
-	}
-
-
-	void Program::setUniform(const char* name, const RGBColor& color) const
-	{
-		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name),
-					color.mR, color.mG, color.mB) );
-	}
-
-
-	void Program::setUniform(unsigned int location, const RGBColor& color) const
-	{
-		GL_WRAP( glUniform3f(location, color.mR, color.mG, color.mB) );
-	}
-
-
-	void Program::setUniform(const char* name, const RGBAColor& color) const
-	{
-		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name),
-					color.mR, color.mG, color.mB, color.mA) );
-	}
-
-
-	void Program::setUniform(unsigned int location, const RGBAColor& color) const
-	{
-		GL_WRAP( glUniform4f(location, color.mR, color.mG, color.mB, color.mA) );
 	}
 
 

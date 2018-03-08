@@ -12,8 +12,8 @@ namespace fe { namespace graphics {
 	class BaseLight
 	{
 	private:	// Attributes
-		RGBColor	mDiffuseColor;
-		RGBColor	mSpecularColor;
+		glm::vec3 mDiffuseColor;
+		glm::vec3 mSpecularColor;
 
 	public:		// Functions
 		/** Creates a new BaseLight
@@ -21,18 +21,18 @@ namespace fe { namespace graphics {
 		 * @param	diffuseColor the diffuse color that emits the light
 		 * @param	specularColor the specular color that emits the light */
 		BaseLight(
-			const RGBColor& diffuseColor,
-		   	const RGBColor& specularColor
+			const glm::vec3& diffuseColor,
+		   	const glm::vec3& specularColor
 		) : mDiffuseColor(diffuseColor), mSpecularColor(specularColor) {};
 
 		/** Class destructor */
 		~BaseLight() {};
 
 		/** @return the specular color that emits the light */
-		inline RGBColor getSpecularColor() const { return mSpecularColor; };
+		inline glm::vec3 getSpecularColor() const { return mSpecularColor; };
 
 		/** @return the diffuse color that emits the light */
-		inline RGBColor getDiffuseColor() const { return mDiffuseColor; };
+		inline glm::vec3 getDiffuseColor() const { return mDiffuseColor; };
 	};
 
 
@@ -42,9 +42,9 @@ namespace fe { namespace graphics {
 	 */
 	struct Attenuation
 	{
-		float	mConstant;
-		float	mLinear;
-		float	mExponential;
+		float constant;
+		float linear;
+		float exponential;
 	};
 
 

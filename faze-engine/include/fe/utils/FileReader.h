@@ -42,7 +42,7 @@ namespace fe { namespace utils {
 		/** The number of lines readed in the current file */
 		unsigned int mNumLines;
 
-	public:
+	public:		// Functions
 		/** Creates a new FileLineReader
 		 *
 		 * @param	path the path to the file that we are going to read */

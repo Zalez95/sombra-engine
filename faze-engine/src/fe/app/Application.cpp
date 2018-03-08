@@ -8,15 +8,16 @@
 #include "fe/app/InputManager.h"
 #include "fe/app/PhysicsManager.h"
 #include "fe/app/GraphicsManager.h"
+#include "fe/utils/BuddyAllocator.h"
 
 namespace fe { namespace app {
 
 	Application::Application(const std::string& title, int width, int height, float updateTime) :
-		mTitle(title), mWidth(width), mHeight(height), mUpdateTime(updateTime), mState(AppState::STOPPED)
+		mUpdateTime(updateTime), mState(AppState::STOPPED)
 	{
 		try {
 			// Window
-			mWindowSystem = new window::WindowSystem({ mTitle, mWidth, mHeight, false, false });
+			mWindowSystem = new window::WindowSystem({ title, width, height, false, false });
 			std::cout << mWindowSystem->getGLInfo() << std::endl;
 
 			// Input
@@ -75,7 +76,7 @@ namespace fe { namespace app {
 
 				// Update the Systems
 				mWindowSystem->update();
-				if (mWindowSystem->getInputData()->mKeys[GLFW_KEY_ESCAPE]) {
+				if (mWindowSystem->getInputData()->keys[GLFW_KEY_ESCAPE]) {
 					mState = AppState::STOPPED;
 				}
 				mInputManager->update();

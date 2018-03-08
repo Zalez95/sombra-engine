@@ -21,10 +21,10 @@ namespace fe { namespace loaders {
 		 * our Mesh file format */
 		struct FileFormat
 		{
-			static const std::string	sFileName;
-			static const std::string	sFileExtension;
-			static const unsigned int	sVersion = 1;
-			static const unsigned int	sRevision = 3;
+			static const std::string sFileName;
+			static const std::string sFileExtension;
+			static const int sVersion = 1;
+			static const int sRevision = 3;
 		};
 
 	public:		// Functions

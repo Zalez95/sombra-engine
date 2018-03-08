@@ -39,8 +39,8 @@ TEST(MeshCollider, getAABB)
 
 	const fe::collision::MeshCollider mc1(vertices, indices);
 	const fe::collision::AABB aabb1 = mc1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(-0.25f, -1.0f, -2.75f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(1.25f, 1.0, 2.75f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(-0.25f, -1.0f, -2.75f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(1.25f, 1.0, 2.75f));
 }
 
 
@@ -85,8 +85,8 @@ TEST(MeshCollider, getAABBTransforms)
 	glm::vec3 expectedMinimum(3.02625942f, -3.53264260f, -12.16605472f);
 	glm::vec3 expectedMaximum(7.69599246f, 1.69831585f, -7.14549779f);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
-		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
 }
 
@@ -157,8 +157,8 @@ TEST(MeshCollider, getOverlapingParts)
 		fe::collision::AABB aabb2 = result[i]->getAABB();
 		fe::collision::AABB aabb3 = expectedRes[i].getAABB();
 		for (int j = 0; j < 3; ++j) {
-			EXPECT_LE(abs(aabb2.mMinimum[j] - aabb3.mMinimum[j]), TOLERANCE);
-			EXPECT_LE(abs(aabb2.mMaximum[j] - aabb3.mMaximum[j]), TOLERANCE);
+			EXPECT_LE(abs(aabb2.minimum[j] - aabb3.minimum[j]), TOLERANCE);
+			EXPECT_LE(abs(aabb2.maximum[j] - aabb3.maximum[j]), TOLERANCE);
 		}
 	}
 }

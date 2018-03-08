@@ -4,8 +4,8 @@
 #include "MeshLoader.h"
 #include "MeshReader.h"
 #include "MaterialReader.h"
-#include "../app/GraphicsManager.h"
 #include "../app/PhysicsManager.h"
+#include "../app/GraphicsManager.h"
 
 namespace fe { namespace app { struct Entity; }}
 namespace fe { namespace utils { class FileReader; }}
@@ -25,10 +25,10 @@ namespace fe { namespace loaders {
 		 * our Entity file format */
 		struct FileFormat
 		{
-			static const std::string	sFileName;
-			static const std::string	sFileExtension;
-			static const unsigned int	sVersion = 1;
-			static const unsigned int	sRevision = 3;
+			static const std::string sFileName;
+			static const std::string sFileExtension;
+			static const int sVersion = 1;
+			static const int sRevision = 3;
 		};
 
 		/** Struct SharedData, it holds the data loaded by other loaders that

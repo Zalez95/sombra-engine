@@ -21,9 +21,9 @@ uniform vec3 uPointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions i
 // Output data in view space
 out VertexData
 {
-	vec3 mPosition;
-	vec3 mNormal;
-	vec2 mUV;
+	vec3 position;
+	vec3 normal;
+	vec2 uv;
 } vsVertex;
 
 flat out int vsNumPointLights;
@@ -40,9 +40,9 @@ void main()
 	gl_Position				= uProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in view space
-	vsVertex.mPosition		= vertexView.xyz;
-	vsVertex.mNormal		= normalize(inverseTranspose * vec4(aVertexNormal, 0.0f)).xyz;
-	vsVertex.mUV			= aVertexUV;
+	vsVertex.position	= vertexView.xyz;
+	vsVertex.normal		= normalize(inverseTranspose * vec4(aVertexNormal, 0.0f)).xyz;
+	vsVertex.uv			= aVertexUV;
 
 	// Calculate the PointLights coordinates in view space
 	vsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;

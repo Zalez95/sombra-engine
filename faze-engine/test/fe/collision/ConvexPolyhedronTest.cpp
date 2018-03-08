@@ -18,8 +18,8 @@ TEST(ConvexPolyhedron, getAABB)
 
 	const fe::collision::ConvexPolyhedron cp1(vertices);
 	const fe::collision::AABB aabb1 = cp1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(0.0f, 0.0f, 0.0f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(1.0, 1.0, 1.6f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(0.0f, 0.0f, 0.0f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(1.0, 1.0, 1.6f));
 }
 
 
@@ -44,8 +44,8 @@ TEST(ConvexPolyhedron, getAABBTransforms)
 	glm::vec3 expectedMinimum(4.35967969f, -1.70720076f, -10.0f);
 	glm::vec3 expectedMaximum(5.72222232f, -0.21132487f, -8.53376102f);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
-		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
 }
 

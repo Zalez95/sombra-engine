@@ -1,43 +1,37 @@
 #ifndef INPUT_DATA_H
 #define INPUT_DATA_H
 
+#include <array>
+
 namespace fe { namespace window {
-
-	// Input constants
-	const size_t MAX_MOUSE_BUTTONS	= 32;
-	const size_t MAX_KEYS			= 1024;
-
 
 	/**
 	 * Struct InputData, it holds all the current data of the player input
 	 */
 	struct InputData
 	{
+		/** Max number of buttons in the mouse */
+		static const int sMaxMouseButtons	= 32;
+
+		/** Max number of buttons in the keys */
+		static const int sMaxKeys			= 1024;
+
 		/** An array with the keyboard pressed keys */
-		bool mKeys[MAX_KEYS];
+		std::array<bool, sMaxKeys> keys;
 
 		/** An array with the mouse pressed keys */
-		bool mMouseButtons[MAX_MOUSE_BUTTONS];
+		std::array<bool, sMaxMouseButtons> mouseButtons;
 
 		/** The Mouse X coordinate relative to the top left corner of the
 		 * window*/
-		float mMouseX;
+		float mouseX;
 
 		/** The Mouse Y coordinate relative to the top left corner of the
 		 * window */
-		float mMouseY;
+		float mouseY;
 
 		/** Creates a new InputData */
-		InputData() : mMouseX(0.0f), mMouseY(0.0f)
-		{
-			for (size_t i = 0; i < MAX_KEYS; ++i) {
-				mKeys[i] = false;
-			}
-
-			for (size_t i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
-				mMouseButtons[i] = false;
-			}
-		};
+		InputData() : mouseX(0.0f), mouseY(0.0f) {};
 
 		/** Destructor */
 		~InputData() {};

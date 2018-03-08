@@ -13,17 +13,17 @@ namespace fe { namespace loaders {
 	struct RawMesh
 	{
 	public:
-		std::string mName;
+		std::string name;
 
-		std::vector<glm::vec3> mPositions;
-		std::vector<glm::vec3> mNormals;
-		std::vector<glm::vec2> mUVs;
-		std::vector<float> mJointWeights;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> uvs;
+		std::vector<float> jointWeights;
 
-		std::vector<unsigned short> mFaceIndices;
-		std::vector<unsigned short> mJointIndices;
+		std::vector<unsigned short> faceIndices;
+		std::vector<unsigned short> jointIndices;
 
-		RawMesh(const std::string& name) : mName(name) {};
+		RawMesh(const std::string& name) : name(name) {};
 
 		~RawMesh() {};
 	};

@@ -13,7 +13,7 @@ namespace fe { namespace physics {
 	void ForceManager::removeEntity(PhysicsEntity* entity, Force* force)
 	{
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			if ((it->mEntity == entity) && (it->mForce == force)) {
+			if ((it->entity == entity) && (it->force == force)) {
 				mEntityForces.erase(it);
 				break;
 			}
@@ -25,12 +25,12 @@ namespace fe { namespace physics {
 	{
 		// Clean the older forces
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			it->mEntity->getRigidBody()->cleanForces();
+			it->entity->getRigidBody()->cleanForces();
 		}
 
 		// Apply the current forces
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			it->mForce->apply(it->mEntity->getRigidBody());
+			it->force->apply(it->entity->getRigidBody());
 		}
 	}
 

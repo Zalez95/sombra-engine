@@ -85,28 +85,28 @@ namespace fe { namespace loaders {
 		while (flag) {
 			fileReader.getValuePair(name, "=", intValue);
 			if (name == "id") {
-				ret.mId = intValue;
+				ret.id = intValue;
 			}
 			else if (name == "x") {
-				ret.mPosition.x = intValue;
+				ret.position.x = intValue;
 			}
 			else if (name == "y") {
-				ret.mPosition.y = intValue;
+				ret.position.y = intValue;
 			}
 			else if (name == "width") {
-				ret.mSize.x = intValue;
+				ret.size.x = intValue;
 			}
 			else if (name == "height") {
-				ret.mSize.y = intValue;
+				ret.size.y = intValue;
 			}
 			else if (name == "xoffset") {
-				ret.mOffset.x = intValue;
+				ret.offset.x = intValue;
 			}
 			else if (name == "yoffset") {
-				ret.mOffset.y = intValue;
+				ret.offset.y = intValue;
 			}
 			else if (name == "xadvance") {
-				ret.mAdvance = intValue;
+				ret.advance = intValue;
 			}
 			else if (name == "page") {
 				continue;

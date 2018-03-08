@@ -1,5 +1,5 @@
-#include "fe/window/WindowSystem.h"
 #include <stdexcept>
+#include "fe/window/WindowSystem.h"
 
 namespace fe { namespace window {
 
@@ -15,10 +15,10 @@ namespace fe { namespace window {
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
 		if (action != GLFW_RELEASE) {
-			userWindow->mInputData.mKeys[button] = true;
+			userWindow->mInputData.keys[button] = true;
 		}
 		else {
-			userWindow->mInputData.mKeys[button] = false;
+			userWindow->mInputData.keys[button] = false;
 		}
 	}
 
@@ -28,10 +28,10 @@ namespace fe { namespace window {
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
 		if (action != GLFW_RELEASE) {
-			userWindow->mInputData.mMouseButtons[button] = true;
+			userWindow->mInputData.mouseButtons[button] = true;
 		}
 		else {
-			userWindow->mInputData.mMouseButtons[button] = false;
+			userWindow->mInputData.mouseButtons[button] = false;
 		}
 	}
 
@@ -40,8 +40,8 @@ namespace fe { namespace window {
 	{
 		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 
-		userWindow->mInputData.mMouseX = float(xpos);
-		userWindow->mInputData.mMouseY = float(ypos);
+		userWindow->mInputData.mouseX = float(xpos);
+		userWindow->mInputData.mouseY = float(ypos);
 	}
 
 // Public functions
@@ -59,9 +59,9 @@ namespace fe { namespace window {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_RESIZABLE, mWindowData.mResizable);
+		glfwWindowHint(GLFW_RESIZABLE, mWindowData.resizable);
 
-		mWindow = glfwCreateWindow(mWindowData.mWidth, mWindowData.mHeight, mWindowData.mTitle.c_str(), nullptr, nullptr);
+		mWindow = glfwCreateWindow(mWindowData.width, mWindowData.height, mWindowData.title.c_str(), nullptr, nullptr);
 		if (!mWindow) {
 			glfwTerminate();
 			throw std::runtime_error("Failed to create the Window");
@@ -99,14 +99,12 @@ namespace fe { namespace window {
 
 	void WindowSystem::update()
 	{
-		for (size_t i = 0; i < MAX_KEYS; ++i) {
-			if (mInputData.mKeys[i] == true) {
-				mInputData.mKeys[i] = false;
-			}
+		for (bool& key : mInputData.keys) {
+			key = false;
 		}
 
-		for (size_t i = 0; i < MAX_MOUSE_BUTTONS; ++i) {
-			if (mInputData.mMouseButtons[i] == true) { mInputData.mMouseButtons[i] = false; }
+		for (bool& button : mInputData.keys) {
+			button = false;
 		}
 
 		glfwPollEvents();
@@ -115,8 +113,8 @@ namespace fe { namespace window {
 
 	void WindowSystem::setMousePosition(float x, float y)
 	{
-		mInputData.mMouseX = x;
-		mInputData.mMouseY = y;
+		mInputData.mouseX = x;
+		mInputData.mouseY = y;
 		glfwSetCursorPos(mWindow, x, y);
 	}
 

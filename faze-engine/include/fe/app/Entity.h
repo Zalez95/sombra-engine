@@ -14,24 +14,24 @@ namespace fe { namespace app {
 	struct Entity
 	{
 		/** The name of the Entity */
-		std::string mName;
+		std::string name;
 
 		/** The Entity position in world space */
-		glm::vec3 mPosition;
+		glm::vec3 position;
 
 		/** The Entity velocity in world space */
-		glm::vec3 mVelocity;
+		glm::vec3 velocity;
 
 		/** The Entity orientation in world space */
-		glm::quat mOrientation;
+		glm::quat orientation;
 
 		/** Creates a new Entity
 		 *
 		 * @param	name the name of the Entity */
 		Entity(const std::string& name) :
-			mName(name),
-			mPosition(0.0f), mVelocity(0.0f),
-			mOrientation(1.0f, glm::vec3(0.0f)) {};
+			name(name),
+			position(0.0f), velocity(0.0f),
+			orientation(1.0f, glm::vec3(0.0f)) {};
 
 		/** Destructor */
 		~Entity() {};

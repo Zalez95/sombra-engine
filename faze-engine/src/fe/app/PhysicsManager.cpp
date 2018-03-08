@@ -9,9 +9,9 @@ namespace fe { namespace app {
 
 		// The rigid body initial data is overrided by the entity one
 		physics::RigidBody* rigidBody = physicsEntity->getRigidBody();
-		rigidBody->setPosition(entity->mPosition);
-		rigidBody->setLinearVelocity(entity->mVelocity);
-		rigidBody->setOrientation(entity->mOrientation);
+		rigidBody->setPosition(entity->position);
+		rigidBody->setLinearVelocity(entity->velocity);
+		rigidBody->setOrientation(entity->orientation);
 		rigidBody->updateData();
 
 		mPhysicsEngine.addPhysicsEntity(physicsEntity.get());
@@ -36,9 +36,9 @@ namespace fe { namespace app {
 			Entity* entity = entry.first;
 			physics::RigidBody* rigidBody = entry.second->getRigidBody();
 
-			rigidBody->setPosition(entity->mPosition);
-			rigidBody->setLinearVelocity(entity->mVelocity);
-			rigidBody->setOrientation(entity->mOrientation);
+			rigidBody->setPosition(entity->position);
+			rigidBody->setLinearVelocity(entity->velocity);
+			rigidBody->setOrientation(entity->orientation);
 			rigidBody->updateData();
 		}
 
@@ -50,9 +50,9 @@ namespace fe { namespace app {
 			Entity* entity					= entry.first;
 			physics::RigidBody* rigidBody	= entry.second->getRigidBody();
 
-			entity->mPosition		= rigidBody->getPosition();
-			entity->mVelocity		= rigidBody->getLinearVelocity();
-			entity->mOrientation	= rigidBody->getOrientation();
+			entity->position	= rigidBody->getPosition();
+			entity->velocity	= rigidBody->getLinearVelocity();
+			entity->orientation	= rigidBody->getOrientation();
 		}
 	}
 

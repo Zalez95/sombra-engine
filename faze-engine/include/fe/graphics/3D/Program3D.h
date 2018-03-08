@@ -20,7 +20,7 @@ namespace fe { namespace graphics {
 	{
 	private:	// Attributes
 		/** The maximum number of point lights in the program */
-		static const unsigned int MAX_POINT_LIGHTS = 4;
+		static const int sMaxPointLights = 4;
 
 		/** The Program of the renderer */
 		Program* mProgram;
@@ -29,40 +29,40 @@ namespace fe { namespace graphics {
 		 * in each render call */
 		struct UniformLocations
 		{
-			unsigned int mModelMatrix;
-			unsigned int mViewMatrix;
-			unsigned int mProjectionMatrix;
+			unsigned int modelMatrix;
+			unsigned int viewMatrix;
+			unsigned int projectionMatrix;
 
-			unsigned int mColorTexture;
+			unsigned int colorTexture;
 
 			struct
 			{
-				unsigned int mAmbientColor;
-				unsigned int mDiffuseColor;
-				unsigned int mSpecularColor;
-				unsigned int mShininess;
-			} mMaterial;
+				unsigned int ambientColor;
+				unsigned int diffuseColor;
+				unsigned int specularColor;
+				unsigned int shininess;
+			} material;
 
 			struct BaseLight
 			{
-				unsigned int mDiffuseColor;
-				unsigned int mSpecularColor;
+				unsigned int diffuseColor;
+				unsigned int specularColor;
 			};
 
 			struct Attenuation
 			{
-				unsigned int mConstant;
-				unsigned int mLinear;
-				unsigned int mExponential;
+				unsigned int constant;
+				unsigned int linear;
+				unsigned int exponential;
 			};
 
-			unsigned int mNumPointLights;
+			unsigned int numPointLights;
 			struct
 			{
-				BaseLight mBaseLight;
-				Attenuation mAttenuation;
-			} mPointLights[MAX_POINT_LIGHTS];
-			unsigned int mPointLightsPositions[MAX_POINT_LIGHTS];
+				BaseLight baseLight;
+				Attenuation attenuation;
+			} pointLights[sMaxPointLights];
+			unsigned int pointLightsPositions[sMaxPointLights];
 		} mUniformLocations;
 
 	public:		// Functions

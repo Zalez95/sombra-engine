@@ -1,6 +1,6 @@
-#include "fe/collision/MeshCollider.h"
 #include <limits>
 #include <cassert>
+#include "fe/collision/MeshCollider.h"
 #include "fe/collision/ConvexPolyhedron.h"
 
 namespace fe { namespace collision {
@@ -76,10 +76,10 @@ namespace fe { namespace collision {
 			for (int j = 0; j < 3; ++j) {
 				const glm::vec3& vertex = mVerticesWorld[ mIndices[3*i + j] ];
 
-				mTriangleAABBs[i].mMinimum = glm::min(mTriangleAABBs[i].mMinimum, vertex);
-				mTriangleAABBs[i].mMaximum = glm::max(mTriangleAABBs[i].mMaximum, vertex);
-				mAABB.mMinimum = glm::min(mAABB.mMinimum, vertex);
-				mAABB.mMaximum = glm::max(mAABB.mMaximum, vertex);
+				mTriangleAABBs[i].minimum = glm::min(mTriangleAABBs[i].minimum, vertex);
+				mTriangleAABBs[i].maximum = glm::max(mTriangleAABBs[i].maximum, vertex);
+				mAABB.minimum = glm::min(mAABB.minimum, vertex);
+				mAABB.maximum = glm::max(mAABB.maximum, vertex);
 			}
 		}
 	}

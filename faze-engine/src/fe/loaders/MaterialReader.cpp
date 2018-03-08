@@ -1,6 +1,6 @@
-#include "fe/loaders/MaterialReader.h"
 #include <string>
 #include <sstream>
+#include "fe/loaders/MaterialReader.h"
 #include "fe/utils/FileReader.h"
 #include "fe/graphics/3D/Material.h"
 
@@ -86,7 +86,7 @@ namespace fe { namespace loaders {
 	MaterialReader::MaterialUPtr MaterialReader::parseMaterial(utils::FileReader& fileReader) const
 	{
 		std::string name;
-		graphics::RGBColor ambientColor, diffuseColor, specularColor;
+		glm::vec3 ambientColor, diffuseColor, specularColor;
 		float shininess;
 
 		std::string trash;
@@ -97,13 +97,13 @@ namespace fe { namespace loaders {
 			std::string token; fileReader >> token;
 
 			if (token == "ambient_color") {
-				fileReader >> ambientColor.mR >> ambientColor.mG >> ambientColor.mB;
+				fileReader >> ambientColor.r >> ambientColor.g >> ambientColor.b;
 			}
 			else if (token == "diffuse_color") {
-				fileReader >> diffuseColor.mR >> diffuseColor.mG >> diffuseColor.mB;
+				fileReader >> diffuseColor.r >> diffuseColor.g >> diffuseColor.b;
 			}
 			else if (token == "specular_color") {
-				fileReader >> specularColor.mR >> specularColor.mG >> specularColor.mB;
+				fileReader >> specularColor.r >> specularColor.g >> specularColor.b;
 			}
 			else if (token == "specular_shininess") {
 				fileReader >> shininess;

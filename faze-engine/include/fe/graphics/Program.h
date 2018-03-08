@@ -43,12 +43,6 @@ namespace fe { namespace graphics {
 		void setUniform(const char* name,		float value) const;
 		void setUniform(unsigned int location,	float value) const;
 
-		void setUniform(const char* name,		const RGBColor& color) const;
-		void setUniform(unsigned int location,	const RGBColor& color) const;
-
-		void setUniform(const char* name,		const RGBAColor& color) const;
-		void setUniform(unsigned int location,	const RGBAColor& color) const;
-
 		void setUniform(const char* name,		const glm::vec2& vector) const;
 		void setUniform(unsigned int location,	const glm::vec2& vector) const;
 

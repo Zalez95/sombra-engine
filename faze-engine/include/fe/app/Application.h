@@ -34,9 +34,7 @@ namespace fe { namespace app {
 		};
 
 	protected:	// Attributes
-		const std::string mTitle;
-		const int mWidth;
-		const int mHeight;
+		/** Delay time in seconds between each iteration of the game loop */
 		const float mUpdateTime;
 
 		/** The state of the application */

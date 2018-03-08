@@ -1,7 +1,7 @@
-#include "fe/collision/Polytope.h"
 #include <cassert>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/collision/Polytope.h"
 #include "fe/collision/ConvexCollider.h"
 
 namespace fe { namespace collision {
@@ -77,8 +77,8 @@ namespace fe { namespace collision {
 
 		// Create the polytope from the simplex's points
 		SupportPoint *d = &simplex[0], *c = &simplex[1], *b = &simplex[2], *a = &simplex[3];
-		mVertices = { *d, *c, *b, *a };
-		mFaces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
+		vertices = { *d, *c, *b, *a };
+		faces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
 	}
 
 }}

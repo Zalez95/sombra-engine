@@ -11,8 +11,8 @@ TEST(BoundingBox, getAABB)
 	const glm::vec3 lengths(0.5f, 2.0f, 5.5f);
 	const fe::collision::BoundingBox bb1(lengths);
 	const fe::collision::AABB aabb1 = bb1.getAABB();
-	EXPECT_EQ(aabb1.mMinimum, glm::vec3(-0.25f, -1.0f, -2.75f));
-	EXPECT_EQ(aabb1.mMaximum, glm::vec3(0.25f, 1.0f, 2.75f));
+	EXPECT_EQ(aabb1.minimum, glm::vec3(-0.25f, -1.0f, -2.75f));
+	EXPECT_EQ(aabb1.maximum, glm::vec3(0.25f, 1.0f, 2.75f));
 }
 
 
@@ -31,8 +31,8 @@ TEST(BoundingBox, getAABBTransforms)
 	glm::vec3 expectedMinimum(3.02625942f, -3.63204646f, -12.16605472f);
 	glm::vec3 expectedMaximum(6.97374057f, 1.63204646f, -7.83394575f);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(aabb1.mMinimum[i] - expectedMinimum[i]), TOLERANCE);
-		EXPECT_LE(abs(aabb1.mMaximum[i] - expectedMaximum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
+		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);
 	}
 }
 

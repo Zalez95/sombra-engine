@@ -1,7 +1,7 @@
-#include "fe/collision/ConvexPolyhedron.h"
 #include <limits>
 #include <cassert>
 #include <algorithm>
+#include "fe/collision/ConvexPolyhedron.h"
 
 namespace fe { namespace collision {
 
@@ -30,8 +30,8 @@ namespace fe { namespace collision {
 		);
 
 		for (const glm::vec3& vertex : mVerticesWorld) {
-			ret.mMinimum = glm::min(ret.mMinimum, vertex);
-			ret.mMaximum = glm::max(ret.mMaximum, vertex);
+			ret.minimum = glm::min(ret.minimum, vertex);
+			ret.maximum = glm::max(ret.maximum, vertex);
 		}
 
 		return ret;
