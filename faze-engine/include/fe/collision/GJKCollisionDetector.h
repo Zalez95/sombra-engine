@@ -48,7 +48,7 @@ namespace fe { namespace collision {
 
 		/** @return	a vector with the SupportPoints of the simplex needed to
 		 *			check the collision. */
-		inline std::vector<SupportPoint> getSimplex() const
+		inline std::vector<SupportPoint> getLastSimplex() const
 		{ return mSimplex; };
 	private:
 		/** Updates the given direction and simplex, reducing it to the lowest

@@ -36,11 +36,13 @@ TEST(MeshCollider, getAABB)
 		2, 6, 3,
 		7, 4, 3
 	};
+	const glm::vec3 expectedMinimum(-0.25f, -1.0f, -2.75f);
+	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
 
-	const fe::collision::MeshCollider mc1(vertices, indices);
-	const fe::collision::AABB aabb1 = mc1.getAABB();
-	EXPECT_EQ(aabb1.minimum, glm::vec3(-0.25f, -1.0f, -2.75f));
-	EXPECT_EQ(aabb1.maximum, glm::vec3(1.25f, 1.0, 2.75f));
+	fe::collision::MeshCollider mc1(vertices, indices);
+	fe::collision::AABB aabb1 = mc1.getAABB();
+	EXPECT_EQ(aabb1.minimum, expectedMinimum);
+	EXPECT_EQ(aabb1.maximum, expectedMaximum);
 }
 
 
@@ -75,15 +77,15 @@ TEST(MeshCollider, getAABBTransforms)
 		2, 6, 3,
 		7, 4, 3
 	};
+	const glm::vec3 expectedMinimum(3.02625942f, -3.53264260f, -12.16605472f);
+	const glm::vec3 expectedMaximum(7.69599246f, 1.69831585f, -7.14549779f);
 
 	fe::collision::MeshCollider mc1(vertices, indices);
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	mc1.setTransforms(t * r);
 
-	const fe::collision::AABB aabb1 = mc1.getAABB();
-	glm::vec3 expectedMinimum(3.02625942f, -3.53264260f, -12.16605472f);
-	glm::vec3 expectedMaximum(7.69599246f, 1.69831585f, -7.14549779f);
+	fe::collision::AABB aabb1 = mc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
 		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);

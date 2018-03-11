@@ -16,6 +16,7 @@ namespace fe { namespace collision {
 		Triangle* closestF;
 		float closestFDist;
 		std::tie(closestF, closestFDist) = getClosestFaceToOrigin(collider1, collider2, polytope);
+		Contact ret(closestFDist, closestF->normal);
 
 		// 2. Project the origin onto the closest triangle and get its
 		// barycentric coordinates
@@ -25,18 +26,12 @@ namespace fe { namespace collision {
 			closestF->ca.p1->getCSOPosition()
 		};
 		glm::vec3 baryCoordinates;
-		/*bool success = */projectPointOnTriangle(glm::vec3(0.0f), triangle, baryCoordinates);
-		// TODO: if not success
+		/* TODO: bool success = */projectPointOnTriangle(glm::vec3(0.0f), triangle, baryCoordinates);
 
-		// 3. Calculate the normal, local and world coordinates of the contact
+		// 3. Calculate the local and world coordinates of the contact
 		// from the barycenter coordinates of the point
-		glm::vec3 contactNormal = baryCoordinates.x * closestF->ab.p1->getCSOPosition()
-								+ baryCoordinates.y * closestF->bc.p1->getCSOPosition()
-								+ baryCoordinates.z * closestF->ca.p1->getCSOPosition();
-
-		Contact ret(closestFDist, glm::normalize(contactNormal));
-		for (unsigned int i = 0; i < 2; ++i) {
-			for (unsigned int j = 0; j < 1; ++j) {
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 3; ++j) {
 				ret.mWorldPos[i][j] = baryCoordinates.x * closestF->ab.p1->getWorldPosition(i)[j]
 									+ baryCoordinates.y * closestF->bc.p1->getWorldPosition(i)[j]
 									+ baryCoordinates.z * closestF->ca.p1->getWorldPosition(i)[j];

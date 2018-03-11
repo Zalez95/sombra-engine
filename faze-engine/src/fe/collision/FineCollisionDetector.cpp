@@ -10,9 +10,9 @@
 namespace fe { namespace collision {
 
 // Static variables definition
-	const float FineCollisionDetector::sMinFDifference		= 0.0001f;
+	const float FineCollisionDetector::sMinFDifference		= 0.00001f;
 	const float FineCollisionDetector::sContactPrecision	= 0.0000001f;
-	const float FineCollisionDetector::sContactSeparation	= 0.0002f;
+	const float FineCollisionDetector::sContactSeparation	= 0.00001f;
 
 // Public functions
 	bool FineCollisionDetector::collide(
@@ -87,9 +87,9 @@ namespace fe { namespace collision {
 		if (!mGJKCollisionDetector.calculate(collider1, collider2)) {
 			return false;
 		}
-		std::vector<SupportPoint> simplex = mGJKCollisionDetector.getSimplex();
+		std::vector<SupportPoint> simplex = mGJKCollisionDetector.getLastSimplex();
 
-		// Create a polytope (tetrahedron) from the simplex points
+		// Create a polytope (tetrahedron) from the GJK simplex points
 		Polytope polytope(collider1, collider2, simplex);
 
 		// EPA Algorithm
