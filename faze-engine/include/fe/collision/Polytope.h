@@ -19,9 +19,6 @@ namespace fe { namespace collision {
 		Edge(SupportPoint* p1, SupportPoint* p2) : p1(p1), p2(p2) {};
 
 		~Edge() {};
-
-		bool operator==(Edge e) const
-		{ return ((p1 == e.p1) && (p2 == e.p2)); };
 	};
 
 

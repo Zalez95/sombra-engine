@@ -75,8 +75,16 @@ namespace fe { namespace collision {
 			simplex.push_back(sp);
 		}
 
-		// Create the polytope from the simplex's points
+		// Fix the tetrahedron winding (It's faces must be counter-clockwise)
 		SupportPoint *d = &simplex[0], *c = &simplex[1], *b = &simplex[2], *a = &simplex[3];
+		glm::vec3 da = a->getCSOPosition() - d->getCSOPosition(),
+			db = b->getCSOPosition() - d->getCSOPosition(),
+			dc = c->getCSOPosition() - d->getCSOPosition(); 
+		if (glm::dot(da, glm::cross(db, dc)) > 0.0f) {
+			std::swap(b, c);
+		}
+
+		// Create the polytope from the simplex's points
 		vertices = { *d, *c, *b, *a };
 		faces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
 	}

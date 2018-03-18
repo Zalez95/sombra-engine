@@ -2,15 +2,13 @@
 #define EPA_COLLISION_DETECTOR_H
 
 #include <array>
-#include <tuple>
 #include <glm/glm.hpp>
+#include "Polytope.h"
 
 namespace fe { namespace collision {
 
 	class Contact;
 	class ConvexCollider;
-	struct Polytope;
-	struct Triangle;
 
 
 	/**
@@ -65,12 +63,30 @@ namespace fe { namespace collision {
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	polytope the Polytope to expand
-		 * @param	a tuple with a pointer to the closest face and its
+		 * @param	a pair with a pointer to the closest face and its
 		 *			distance to the origin */
-		std::tuple<Triangle*, float> getClosestFaceToOrigin(
+		std::pair<Triangle*, float> expandPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Polytope& polytope
 		) const;
+
+		/** Calculates the closest face of the given polytope to the origin of
+		 * the Minkowski Difference
+		 *
+		 * @param	polytope the Polytope with the faces
+		 * @param	a pair with the iterator to the closest face in the polytope
+		 *			and its distance to the origin */
+		std::pair<std::list<Triangle>::iterator, float> getClosestFaceToOrigin(
+			Polytope& polytope
+		) const;
+
+		/** Appends the given edge to the list if it isn't already inside, also
+		 * if it founds an edge equal to the given one, it will remove it from
+		 * the list
+		 *
+		 * @param	e the edge to append
+		 * @param	edgeList the list where we want to append the edge */
+		void appendEdge(const Edge& e, std::list<Edge>& edgeList) const;
 
 		/** Projects the given point onto the the given 3D triangle 
 		 *
@@ -87,12 +103,6 @@ namespace fe { namespace collision {
 			const std::array<glm::vec3, 3>& triangle,
 			glm::vec3& projectedPoint
 		) const;
-
-		/** Returns the minimum distance to the origin of the given triangle
-		 * @param	t the triangle to calculate its distance to the origin
-		 * @return	the minimum distance of the triangle to the origin of
-		 *			coordiantes */
-		float getDistanceToOrigin(const Triangle& t) const;
 	};
 
 }}

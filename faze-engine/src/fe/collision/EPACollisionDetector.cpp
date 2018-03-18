@@ -1,9 +1,9 @@
+#include <tuple>
 #include <limits>
 #include <algorithm>
-#include "fe/collision/FineCollisionDetector.h"
 #include "fe/collision/Contact.h"
-#include "fe/collision/Polytope.h"
 #include "fe/collision/ConvexCollider.h"
+#include "fe/collision/FineCollisionDetector.h"
 
 namespace fe { namespace collision {
 
@@ -15,7 +15,7 @@ namespace fe { namespace collision {
 		// 1. Calculate the closest face to the origin
 		Triangle* closestF;
 		float closestFDist;
-		std::tie(closestF, closestFDist) = getClosestFaceToOrigin(collider1, collider2, polytope);
+		std::tie(closestF, closestFDist) = expandPolytope(collider1, collider2, polytope);
 		Contact ret(closestFDist, closestF->normal);
 
 		// 2. Project the origin onto the closest triangle and get its
@@ -44,8 +44,8 @@ namespace fe { namespace collision {
 		return ret;
 	}
 
-// Private functions
-	std::tuple<Triangle*, float> EPACollisionDetector::getClosestFaceToOrigin(
+// Private functions		
+	std::pair<Triangle*, float> EPACollisionDetector::expandPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Polytope& polytope
 	) const
@@ -54,46 +54,32 @@ namespace fe { namespace collision {
 		float closestFDist = std::numeric_limits<float>::max();
 		while (true) {
 			// 1. Calculate the closest face to the origin of the polytope
-			std::list<Triangle>::iterator closestF2 = polytope.faces.begin();
-			float closestFDist2 = std::numeric_limits<float>::max();
-			for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
-				float fDist = getDistanceToOrigin(*it);
-				if (fDist < closestFDist2) {
-					closestF2		= it;
-					closestFDist2	= fDist;
-				}
-			}
+			std::list<Triangle>::iterator closestF2It;
+			float closestF2Dist;
+			std::tie(closestF2It, closestF2Dist) = getClosestFaceToOrigin(polytope);
 
 			// 2. If the difference of distance to the origin between the
 			// current closest face and last one is smaller than
 			// sMinFDifference we have found the closest face
-			if (closestFDist - closestFDist2 <= mMinFDifference) {
-				closestF		= &(*closestF2);
-				closestFDist	= closestFDist2;
+			if (closestFDist - closestF2Dist <= mMinFDifference) {
+				closestF		= &(*closestF2It);
+				closestFDist	= closestF2Dist;
 				break;
 			}
 
-			// 3. Add a new support point along the face normal
-			polytope.vertices.emplace_back(collider1, collider2, closestF2->normal);
+			// 3. Add a new support point along the new closest face normal
+			polytope.vertices.emplace_back(collider1, collider2, closestF2It->normal);
 			SupportPoint* sp = &polytope.vertices.back();
 
-			// 4. Remove the current closest face from the polytope
-			polytope.faces.erase(closestF2);
-
-			// 5. Delete the faces that can be seen from the new point and get
+			// 4. Delete the faces that can be seen from the new point and get
 			// the edges of the created hole
-			std::list<Edge> holeEdges;
+			std::list<Edge> holeEdges = { closestF2It->ab, closestF2It->bc, closestF2It->ca };
+			polytope.faces.erase(closestF2It);
 			for (auto it = polytope.faces.begin(); it != polytope.faces.end();) {
 				if (glm::dot(it->normal, sp->getCSOPosition()) > 0) {
-					auto itE1 = std::find(holeEdges.begin(), holeEdges.end(), it->ab);
-					if (itE1 == holeEdges.end()) holeEdges.push_back(it->ab); else holeEdges.erase(itE1);
-
-					auto itE2 = std::find(holeEdges.begin(), holeEdges.end(), it->bc);
-					if (itE2 == holeEdges.end()) holeEdges.push_back(it->bc); else holeEdges.erase(itE2);
-
-					auto itE3 = std::find(holeEdges.begin(), holeEdges.end(), it->ca);
-					if (itE3 == holeEdges.end()) holeEdges.push_back(it->ca); else holeEdges.erase(itE3);
-
+					appendEdge(it->ab, holeEdges);
+					appendEdge(it->bc, holeEdges);
+					appendEdge(it->ca, holeEdges);
 					it = polytope.faces.erase(it);
 				}
 				else {
@@ -101,15 +87,46 @@ namespace fe { namespace collision {
 				}
 			}
 
-			// 6. Add new faces connecting the edges of the hole to the support point
-			for (Edge& e : holeEdges) {
+			// 5. Add new faces connecting the edges of the hole to the support point
+			for (const Edge& e : holeEdges) {
 				polytope.faces.emplace_back(sp, e.p1, e.p2);
 			}
 
-			closestFDist = closestFDist2;
+			closestFDist = closestF2Dist;
 		}
 
-		return std::make_tuple(closestF, closestFDist);
+		return std::make_pair(closestF, closestFDist);
+	}
+
+
+	std::pair<std::list<Triangle>::iterator, float> EPACollisionDetector::getClosestFaceToOrigin(
+		Polytope& polytope
+	) const
+	{
+		std::list<Triangle>::iterator closestFIt = polytope.faces.end();
+		float closestFDist = std::numeric_limits<float>::max();
+		for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
+			float distance = glm::dot(it->normal, it->ab.p1->getCSOPosition());
+			if (distance < closestFDist) {
+				closestFIt		= it;
+				closestFDist	= distance;
+			}
+		}
+
+		return std::make_pair(closestFIt, closestFDist);
+	}
+
+
+	void EPACollisionDetector::appendEdge(const Edge& e, std::list<Edge>& edgeList) const
+	{
+		for (auto itEdge = edgeList.begin(); itEdge != edgeList.end(); ++itEdge) {
+			if ((e.p1 == itEdge->p2) && (e.p2 == itEdge->p1)) {
+				edgeList.erase(itEdge);
+				return;
+			}
+		}
+
+		edgeList.push_back(e);
 	}
 
 
@@ -135,12 +152,6 @@ namespace fe { namespace collision {
 		}
 
 		return false;
-	}
-
-
-	float EPACollisionDetector::getDistanceToOrigin(const Triangle& t) const
-	{
-		return abs(glm::dot(t.normal, t.ab.p1->getCSOPosition()));
 	}
 
 }}
