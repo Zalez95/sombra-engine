@@ -69,7 +69,7 @@ namespace game {
 		 * GRAPHICS DATA
 		 *********************************************************************/
 		fe::loaders::MeshLoader meshLoader;
-		fe::loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager);
+		fe::loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager, *mPhysicsManager);
 
 		std::shared_ptr<fe::graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<fe::loaders::RawMesh>> fileRawMeshes;

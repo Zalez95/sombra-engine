@@ -8,7 +8,6 @@
 #include "fe/app/InputManager.h"
 #include "fe/app/PhysicsManager.h"
 #include "fe/app/GraphicsManager.h"
-#include "fe/utils/BuddyAllocator.h"
 
 namespace fe { namespace app {
 

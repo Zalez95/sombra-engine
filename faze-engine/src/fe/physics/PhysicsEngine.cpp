@@ -56,6 +56,8 @@ namespace fe { namespace physics {
 	void PhysicsEngine::integrate(float delta)
 	{
 		for (PhysicsEntity* physicsEntity : mPhysicsEntities) {
+			// TODO: Non movable physics entities (buildings)
+
 			// Update the RigidBody data
 			RigidBody* rigidBody = physicsEntity->getRigidBody();
 			rigidBody->integrate(delta);

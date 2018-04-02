@@ -49,8 +49,8 @@ namespace fe { namespace collision {
 		 * @param	vertices the vertices of the MeshCollider in local
 		 *			space
 		 * @param	indices the indices of the faces of the MeshCollider
-		 * @param	transforms the transformations matrix with the translation
-		 *			and orientation of the MeshCollider */
+		 * @param	transforms the transformations matrix with the scale,
+		 *			translation and orientation of the MeshCollider */
 		MeshCollider(
 			const std::vector<glm::vec3>& vertices,
 			const std::vector<unsigned short>& indices,
@@ -60,11 +60,11 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		virtual ~MeshCollider() {};
 
-		/** Updates the translation and orientation of the MeshCollider
-		 * with the data of the given transformations matrix
+		/** Updates the scale, translation and orientation of the MeshCollider
+		 * with the given transformations matrix
 		 *
 		 * @param	transforms the transformations matrix used to update the
-		 *			position and orientation of the MeshCollider */
+		 *			scale, translation and orientation of the MeshCollider */
 		virtual void setTransforms(const glm::mat4& transforms);
 
 		/** @return	the transformations matrix currently applied to the
@@ -86,6 +86,8 @@ namespace fe { namespace collision {
 			const AABB& aabb
 		) const;
 	private:
+		/** Calculates the AABBs of the triangles of the MeshCollider with its
+		 * local vertices and tranforms matrix */
 		void calculateAABBs();
 	};
 

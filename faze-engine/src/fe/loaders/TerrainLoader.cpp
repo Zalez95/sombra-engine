@@ -1,11 +1,11 @@
 #include <cassert>
-#include <glm/gtc/type_ptr.hpp>
-#include "fe/loaders/TerrainLoader.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include "fe/loaders/RawMesh.h"
+#include "fe/loaders/TerrainLoader.h"
 #include "fe/app/Entity.h"
 #include "fe/utils/Image.h"
 #include "fe/graphics/3D/Mesh.h"
-#include "fe/graphics/3D/Renderable3D.h"
+#include "fe/collision/TerrainCollider.h"
 
 namespace fe { namespace loaders {
 
@@ -17,56 +17,59 @@ namespace fe { namespace loaders {
 		const std::string& name, float size,
 		const utils::Image& heightMap, float maxHeight
 	) {
-		auto rawMesh = createRawMesh(name, size, heightMap, maxHeight);
+		auto rawMesh = createRawMesh(name, heightMap);
+		glm::mat4 transforms = glm::scale(glm::mat4(1.0f), glm::vec3(size, maxHeight, size));
 
 		auto entity = std::make_unique<app::Entity>(name);
 
 		// Graphics data
 		auto graphicsMesh = mMeshLoader.createMesh(*rawMesh);
 		auto renderable3D = std::make_unique<graphics::Renderable3D>(std::move(graphicsMesh), nullptr, nullptr);
-		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), glm::mat4(1.0f));
+		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), transforms);
 
 		// Physics data
-		// TODO: create the physics data of the terrain
+		physics::RigidBody rb;
+		auto terrainCollider = createTerrainCollider(heightMap);
+		auto physicsEntity = std::make_unique<physics::PhysicsEntity>(rb, std::move(terrainCollider), transforms);
+		mPhysicsManager.addEntity(entity.get(), std::move(physicsEntity));
 
 		return entity;
 	}
 
 // Private functions
 	TerrainLoader::RawMeshUPtr TerrainLoader::createRawMesh(
-		const std::string& name, float size,
-		const utils::Image& heightMap, float maxHeight
+		const std::string& name, const utils::Image& heightMap
 	) const
 	{
 		// Get the data from the image
-		const size_t width	= heightMap.getWidth();
-		const size_t height	= heightMap.getHeight();
-		const size_t count	= width * height;
+		const size_t xSize	= heightMap.getWidth();
+		const size_t zSize	= heightMap.getHeight();
+		const size_t count	= xSize * zSize;
 
 		// The mesh data of the Terrain
 		auto rawMesh = std::make_unique<RawMesh>(name);
 		rawMesh->positions.reserve(3 * count);
 		rawMesh->normals.reserve(3 * count);
 		rawMesh->uvs.reserve(2 * count);
-		rawMesh->faceIndices.reserve(6 * (width - 1) * (height - 1));
+		rawMesh->faceIndices.reserve(6 * (xSize - 1) * (zSize - 1));
 
-		for (size_t i = 0; i < height; ++i) {
-			float zPos = (i / static_cast<float>(height - 1) - 0.5f) * size;
-			for (size_t j = 0; j < width; ++j) {
-				float xPos = (j / static_cast<float>(width - 1) - 0.5f) * size;
-				float yPos = getHeight(heightMap, maxHeight, j, i);
+		for (size_t z = 0; z < zSize; ++z) {
+			float zPos = z / static_cast<float>(zSize - 1) - 0.5f;
+			for (size_t x = 0; x < xSize; ++x) {
+				float xPos = x / static_cast<float>(xSize - 1) - 0.5f;
+				float yPos = getHeight(heightMap, x, z);
 
 				// Set the position
 				rawMesh->positions.emplace_back(xPos, yPos, zPos);
 
 				// Set the uvs
-				rawMesh->uvs.emplace_back(j / static_cast<float>(width), i / static_cast<float>(height));
+				rawMesh->uvs.emplace_back(x / static_cast<float>(xSize), z / static_cast<float>(zSize));
 
-				if ((i > 0) && (j > 0)) {
+				if ((x > 0) && (z > 0)) {
 					// Calculate the indices of the vertices that creates the faces
-					unsigned short topRight		= static_cast<unsigned short>(i * width + j);
+					unsigned short topRight		= static_cast<unsigned short>(z * xSize + x);
 					unsigned short topLeft		= static_cast<unsigned short>(topRight - 1);
-					unsigned short bottomRight	= static_cast<unsigned short>((i - 1) * width + j);
+					unsigned short bottomRight	= static_cast<unsigned short>((z - 1) * xSize + x);
 					unsigned short bottomLeft	= static_cast<unsigned short>(bottomRight - 1);
 
 					// Calculate the normals of the faces
@@ -89,8 +92,8 @@ namespace fe { namespace loaders {
 
 					// Normalize the normal of the bottom left vertex
 					int norm = 6;
-					if (i == 1) { norm -= 3; }
-					if (j == 1) { norm -= 3; }
+					if (x == 1) { norm -= 3; }
+					if (z == 1) { norm -= 3; }
 					if (norm > 0) {
 						rawMesh->normals[bottomLeft] /= norm;
 					}
@@ -108,10 +111,26 @@ namespace fe { namespace loaders {
 	}
 
 
-	float TerrainLoader::getHeight(
-		const utils::Image& heightMap, float maxHeight,
-		size_t x, size_t z
+	TerrainLoader::TerrainColliderUPtr TerrainLoader::createTerrainCollider(
+		const utils::Image& heightMap
 	) const
+	{
+		const size_t xSize	= heightMap.getWidth();
+		const size_t zSize	= heightMap.getHeight();
+
+		std::vector<float> heights;
+		heights.reserve(xSize * zSize);
+		for (size_t z = 0; z < zSize; ++z) {
+			for (size_t x = 0; x < xSize; ++x) {
+				heights.push_back( getHeight(heightMap, x, z) );
+			}
+		}
+
+		return std::make_unique<collision::TerrainCollider>(heights, xSize, zSize);
+	}
+
+
+	float TerrainLoader::getHeight(const utils::Image& heightMap, size_t x, size_t z) const
 	{
 		assert(x < heightMap.getWidth() && "x must be smaller than the image width");
 		assert(z < heightMap.getHeight() && "z must be smaller than the image height");
@@ -119,7 +138,7 @@ namespace fe { namespace loaders {
 		unsigned char* heightMapPixels = heightMap.getPixels();
 		unsigned char l = heightMapPixels[z * heightMap.getWidth() + x];
 
-		return (l / MAX_COLOR - 0.5f) * maxHeight;
+		return (l / MAX_COLOR - 0.5f);
 	}
 
 }}

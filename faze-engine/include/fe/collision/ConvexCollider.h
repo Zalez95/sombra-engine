@@ -18,11 +18,11 @@ namespace fe { namespace collision {
 		inline virtual ColliderType getType() const
 		{ return ColliderType::CONVEX_COLLIDER; };
 
-		/** Updates the translation and orientation of the ConvexCollider with
-		 * the data of the given transformations matrix
+		/** Updates the scale, translation and orientation of the ConvexCollider
+		 * with the given transformations matrix
 		 *
 		 * @param	transforms the transformations matrix used to update the
-		 *			position and orientation of the ConvexCollider */
+		 *			scale, translation and orientation of the ConvexCollider */
 		virtual void setTransforms(const glm::mat4& transforms) = 0;
 
 		/** @return	the transformations matrix currently applied to the

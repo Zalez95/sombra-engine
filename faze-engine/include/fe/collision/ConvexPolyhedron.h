@@ -25,8 +25,7 @@ namespace fe { namespace collision {
 		glm::mat4 mTransformsMatrix;
 
 	public:		// Functions
-		/** Creates a new ConvexPolyhedron located at the origin of
-		 * coordinates
+		/** Creates a new ConvexPolyhedron located at the origin of coordinates
 		 *
 		 * @param	vertices the vertices of the ConvexPolyhedron in local
 		 *			space */
@@ -35,11 +34,12 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		~ConvexPolyhedron() {};
 
-		/** Updates the position of the ConvexPolyhedron with the data of the
-		 * given transformation matrix
+		/** Updates the scale, translation and orientation of the
+		 * ConvexPolyhedron with the given transformations matrix
 		 *
-		 * @param	transforms the transformations matrix used to set the
-		 *			position and rotation of the ConvexPolyhedron */
+		 * @param	transforms the transformations matrix used to update the
+		 *			scale, translation and orientation of the
+		 *			ConvexPolyhedron */
 		virtual void setTransforms(const glm::mat4& transforms);
 
 		/** @return	the transformations matrix currently applied to the

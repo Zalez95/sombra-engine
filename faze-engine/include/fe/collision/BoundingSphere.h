@@ -37,11 +37,11 @@ namespace fe { namespace collision {
 		/** @return	the radius of the BoundingSphere */
 		inline float getRadius() const { return mRadius; };
 
-		/** Updates the position of the BoundingSphere with the data of the
-		 * given transformation matrix
+		/** Updates the scale, translation and orientation of the BoundingSphere
+		 * with the given transformations matrix
 		 *
-		 * @param	transforms the transformations matrix used to set the
-		 *			position of the BoundingSphere */
+		 * @param	transforms the transformations matrix used to update the
+		 *			scale, translation and orientation of the BoundingSphere */
 		virtual void setTransforms(const glm::mat4& transforms);
 
 		/** @return	the transformations matrix currently applied to the
