@@ -75,6 +75,16 @@ namespace fe { namespace collision {
 		/** Calculates all the collisions that can be currently happening
 		 * between the Colliders added to the CollisionDetector */
 		void update();
+	private:
+		/** Searchs a Manifold already stored with by the given colliders, and
+		 * if it doesn't found one, creates a new one
+		 *
+		 * @param	c1 a pointer to the first collider to search for the
+		 *			manifold
+		 * @param	c2 a pointer to the second collider to search for the
+		 *			manifold
+		 * @return	a pointer to the manifold */
+		Manifold* getManifold(const Collider* c1, const Collider* c2);
 	};
 
 }}

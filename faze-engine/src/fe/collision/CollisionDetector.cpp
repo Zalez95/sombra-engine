@@ -31,20 +31,13 @@ namespace fe { namespace collision {
 		mManifolds.clear();
 		std::set<ColliderPair> collidingManifolds;
 		for (ColliderPair pair : intersectingColliders) {
-			const Collider* c1 = pair.first;
-			const Collider* c2 = pair.second;
-
-			// Create a manifold between the colliders if it doesn't exist
-			if (mMapCollidersManifolds.find(pair) == mMapCollidersManifolds.end()) {
-				mMapCollidersManifolds.emplace(
-					std::piecewise_construct,
-					std::forward_as_tuple(pair),
-					std::forward_as_tuple(c1, c2)
-				);
-			}
-
-			Manifold* manifold = &mMapCollidersManifolds.at(pair);
-			if (mFineCollisionDetector.collide(c1, c2, *manifold)) {
+			Manifold* manifold = getManifold(pair.first, pair.second);
+			if (mFineCollisionDetector.collide(
+					manifold->getFirstCollider(),
+					manifold->getSecondCollider(),
+					*manifold
+				)
+			) {
 				collidingManifolds.insert(pair);
 				mManifolds.insert(manifold);
 			}
@@ -59,6 +52,33 @@ namespace fe { namespace collision {
 				++it;
 			}
 		}
+	}
+
+// Private functions
+	Manifold* CollisionDetector::getManifold(const Collider* c1, const Collider* c2)
+	{
+		Manifold* ret;
+
+		auto it = mMapCollidersManifolds.find(std::make_pair(c1, c2));
+		if (it != mMapCollidersManifolds.end()) {
+			ret = &it->second;
+		}
+		else {
+			it = mMapCollidersManifolds.find(std::make_pair(c2, c1));
+			if (it != mMapCollidersManifolds.end()) {
+				ret = &it->second;
+			}
+			else {
+				it = mMapCollidersManifolds.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(c1, c2),
+					std::forward_as_tuple(c1, c2)
+				).first;
+				ret = &it->second;
+			}
+		}
+
+		return ret;
 	}
 
 }}

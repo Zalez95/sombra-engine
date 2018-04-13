@@ -34,7 +34,7 @@ namespace fe { namespace collision {
 		mTransformsMatrix = transforms;
 
 		for (size_t i = 0; i < mVertices.size(); ++i) {
-			mVerticesWorld[i] = glm::vec3(transforms * glm::vec4(mVertices[i], 1.0f));
+			mVerticesWorld[i] = transforms * glm::vec4(mVertices[i], 1.0f);
 		}
 
 		calculateAABBs();

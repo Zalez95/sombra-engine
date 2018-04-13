@@ -1,18 +1,19 @@
-#include "fe/collision/GJKCollisionDetector.h"
 #include <cassert>
 #include <glm/gtc/random.hpp>
 #include "fe/collision/ConvexCollider.h"
+#include "fe/collision/GJKCollisionDetector.h"
 
 namespace fe { namespace collision {
 
-	bool GJKCollisionDetector::calculate(
+	std::pair<bool, GJKCollisionDetector::SupportPointVector> GJKCollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2
-	) {
+	) const
+	{
 		// 1. Get an arbitrary point
 		glm::vec3 direction = glm::sphericalRand(1.0f);
-		mSimplex = { SupportPoint(collider1, collider2, direction) };
+		SupportPointVector simplex = { SupportPoint(collider1, collider2, direction) };
 
-		bool containsOrigin = doSimplex(mSimplex, direction);
+		bool containsOrigin = doSimplex(simplex, direction);
 		while (!containsOrigin) {
 			// 2. Get a support point along the current direction
 			SupportPoint sp(collider1, collider2, direction);
@@ -20,22 +21,21 @@ namespace fe { namespace collision {
 			// 3. Check if the support point is further along the search direction
 			if (glm::dot(sp.getCSOPosition(), direction) < 0.0f) {
 				// 4.1 There is no collision, exit without finishing the simplex
-				return false;
+				return std::make_pair(false, simplex);
 			}
 			else {
 				// 4.2 Add the point and update the simplex
-				mSimplex.push_back(sp);
-				containsOrigin = doSimplex(mSimplex, direction);
+				simplex.push_back(sp);
+				containsOrigin = doSimplex(simplex, direction);
 			}
 		}
 
-		return true;
+		return std::make_pair(true, simplex);
 	}
 
 // Private functions
 	bool GJKCollisionDetector::doSimplex(
-		std::vector<SupportPoint>& simplex,
-		glm::vec3& searchDir
+		SupportPointVector& simplex, glm::vec3& searchDir
 	) const
 	{
 		assert(!simplex.empty() && "The simplex has to have at least one initial point");
@@ -63,8 +63,7 @@ namespace fe { namespace collision {
 
 
 	bool GJKCollisionDetector::doSimplex0D(
-		std::vector<SupportPoint>& simplex,
-		glm::vec3& searchDir
+		SupportPointVector& simplex, glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;
@@ -87,8 +86,7 @@ namespace fe { namespace collision {
 
 
 	bool GJKCollisionDetector::doSimplex1D(
-		std::vector<SupportPoint>& simplex,
-		glm::vec3& searchDir
+		SupportPointVector& simplex, glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;
@@ -118,8 +116,7 @@ namespace fe { namespace collision {
 
 
 	bool GJKCollisionDetector::doSimplex2D(
-		std::vector<SupportPoint>& simplex,
-		glm::vec3& searchDir
+		SupportPointVector& simplex, glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;
@@ -165,8 +162,7 @@ namespace fe { namespace collision {
 
 
 	bool GJKCollisionDetector::doSimplex3D(
-		std::vector<SupportPoint>& simplex,
-		glm::vec3& searchDir
+		SupportPointVector& simplex, glm::vec3& searchDir
 	) const
 	{
 		bool ret = false;

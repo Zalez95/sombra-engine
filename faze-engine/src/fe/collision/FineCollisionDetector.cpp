@@ -1,4 +1,4 @@
-#include "fe/collision/FineCollisionDetector.h"
+#include <tuple>
 #include <algorithm>
 #include "fe/collision/Contact.h"
 #include "fe/collision/Manifold.h"
@@ -6,6 +6,7 @@
 #include "fe/collision/Collider.h"
 #include "fe/collision/ConvexCollider.h"
 #include "fe/collision/ConcaveCollider.h"
+#include "fe/collision/FineCollisionDetector.h"
 
 namespace fe { namespace collision {
 
@@ -30,7 +31,7 @@ namespace fe { namespace collision {
 			}
 			else {
 				auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2);
-				// TODO: manifold order
+				// FIXME: manifold order
 				return collideConvexConcave(*convexCollider2, *concaveCollider1, manifold);
 			}
 		}
@@ -53,14 +54,46 @@ namespace fe { namespace collision {
 		const ConcaveCollider& collider1, const ConcaveCollider& collider2,
 		Manifold& manifold
 	) {
-		bool collides = false;
+		bool anyCollides = false;
 
+		// Remove the contacts that are no longer valid from the manifold
+		removeInvalidContacts(manifold);
+
+		// Get the overlapping convex parts of each concave collider
 		auto overlappingParts1 = collider1.getOverlapingParts(collider2.getAABB());
-		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts1) {
-			collides = collides || collideConvexConcave(*part, collider2, manifold);
+		for (const std::unique_ptr<ConvexCollider>& part1 : overlappingParts1) {
+			auto overlappingParts2 = collider2.getOverlapingParts(part1->getAABB());
+			for (const std::unique_ptr<ConvexCollider>& part2 : overlappingParts2) {
+				// GJK algorithm
+				bool collides;
+				std::vector<SupportPoint> simplex;
+				std::tie(collides, simplex) = mGJKCollisionDetector.calculate(*part1, *part2);
+				if (!collides) {
+					continue;
+				}
+
+				// Create a polytope (tetrahedron) from the GJK simplex points
+				Polytope polytope(*part1, *part2, simplex);
+
+				// EPA Algorithm
+				Contact newContact = mEPACollisionDetector.calculate(*part1, *part2, polytope);
+
+				// Check if the new Contact is far enough to the older contacts
+				if (!isClose(newContact, manifold.mContacts)) {
+					// Add the new contact to the manifold
+					manifold.mContacts.push_back(newContact);
+				}
+
+				anyCollides = true;
+			}
 		}
 
-		return collides;
+		if (anyCollides) {
+			// Limit the number of points in the manifold to 4
+			limitManifoldContacts(manifold);
+		}
+
+		return anyCollides;
 	}
 
 
@@ -68,14 +101,44 @@ namespace fe { namespace collision {
 		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
 		Manifold& manifold
 	) {
-		bool collides = false;
+		bool anyCollides = false;
 
+		// Remove the contacts that are no longer valid from the manifold
+		removeInvalidContacts(manifold);
+
+		// Get the overlapping convex parts of the concave collider with the
+		// convex one
 		auto overlappingParts = concaveCollider.getOverlapingParts(convexCollider.getAABB());
-		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts) {
-			collides = collides || collideConvex(convexCollider, *part, manifold);
+		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts) {	
+			// GJK algorithm
+			bool collides;
+			std::vector<SupportPoint> simplex;
+			std::tie(collides, simplex) = mGJKCollisionDetector.calculate(convexCollider, *part);
+			if (!collides) {
+				continue;
+			}
+
+			// Create a polytope (tetrahedron) from the GJK simplex points
+			Polytope polytope(convexCollider, *part, simplex);
+
+			// EPA Algorithm
+			Contact newContact = mEPACollisionDetector.calculate(convexCollider, *part, polytope);
+
+			// Check if the new Contact is far enough to the older contacts
+			if (!isClose(newContact, manifold.mContacts)) {
+				// Add the new contact to the manifold
+				manifold.mContacts.push_back(newContact);
+			}
+
+			anyCollides = true;
 		}
 
-		return collides;
+		if (anyCollides) {
+			// Limit the number of points in the manifold to 4
+			limitManifoldContacts(manifold);
+		}
+
+		return anyCollides;
 	}
 
 
@@ -84,10 +147,12 @@ namespace fe { namespace collision {
 		Manifold& manifold
 	) {
 		// GJK algorithm
-		if (!mGJKCollisionDetector.calculate(collider1, collider2)) {
+		bool collides;
+		std::vector<SupportPoint> simplex;
+		std::tie(collides, simplex) = mGJKCollisionDetector.calculate(collider1, collider2);
+		if (!collides) {
 			return false;
 		}
-		std::vector<SupportPoint> simplex = mGJKCollisionDetector.getLastSimplex();
 
 		// Create a polytope (tetrahedron) from the GJK simplex points
 		Polytope polytope(collider1, collider2, simplex);
@@ -99,7 +164,7 @@ namespace fe { namespace collision {
 		removeInvalidContacts(manifold);
 
 		// Check if the new Contact is far enough to the older contacts
-		if (!isClose(newContact, manifold.getContacts())) {
+		if (!isClose(newContact, manifold.mContacts)) {
 			// Add the new contact to the manifold
 			manifold.mContacts.push_back(newContact);
 
@@ -113,12 +178,12 @@ namespace fe { namespace collision {
 
 	void FineCollisionDetector::removeInvalidContacts(Manifold& manifold) const
 	{
-		glm::mat4 transforms1 = manifold.getFirstCollider()->getTransforms();
-		glm::mat4 transforms2 = manifold.getSecondCollider()->getTransforms();
+		const glm::mat4 transforms1 = manifold.getFirstCollider()->getTransforms();
+		const glm::mat4 transforms2 = manifold.getSecondCollider()->getTransforms();
 
 		for (auto it = manifold.mContacts.begin(); it != manifold.mContacts.end();) {
-			glm::vec3 changedWorldPos0(transforms1 * glm::vec4(it->getLocalPosition(0), 1.0f));
-			glm::vec3 changedWorldPos1(transforms2 * glm::vec4(it->getLocalPosition(1), 1.0f));
+			glm::vec3 changedWorldPos0 = transforms1 * glm::vec4(it->getLocalPosition(0), 1.0f);
+			glm::vec3 changedWorldPos1 = transforms2 * glm::vec4(it->getLocalPosition(1), 1.0f);
 
 			glm::vec3 v0 = it->getWorldPosition(0) - changedWorldPos0;
 			glm::vec3 v1 = it->getWorldPosition(1) - changedWorldPos1;
@@ -191,7 +256,7 @@ namespace fe { namespace collision {
 		auto contact4 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
 			[&contact1, &contact2, &contact3](const Contact& c1, const Contact& c2) {
-				//TODO: this is wrong
+				// FIXME: this is wrong
 				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
 
 				//glm::vec3 v13	= contact1->getWorldPosition(0) - contact3->getWorldPosition(0);

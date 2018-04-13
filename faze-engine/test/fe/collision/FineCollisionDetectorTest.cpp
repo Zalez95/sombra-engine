@@ -3,13 +3,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
+#include <fe/collision/MeshCollider.h>
 #include <fe/collision/Manifold.h>
 #include <fe/collision/FineCollisionDetector.h>
 
 #define TOLERANCE 0.000001f
 
-
-TEST(GJKCollisionDetector, SphereSphere1)
+TEST(FineCollisionDetector, SphereSphere1)
 {
 	glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(0.0f);
 	glm::quat o1(1.0f, 0.0f, 0.0f, 0.0f), o2(0.795f, -0.002f, -0.575f, 0.192f);
@@ -63,12 +63,12 @@ TEST(FineCollisionDetector, SphereSphere2)
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 
 	fe::collision::Contact& res = contacts.front();
-	EXPECT_LE(abs(res.getPenetration() - expectedPenetration), TOLERANCE);
+	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(res.getNormal()[i] - expectedNormal[i]), TOLERANCE);
+		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_LE(abs(res.getWorldPosition(j)[i] - expectedWorldPos[j][i]), TOLERANCE);
-			EXPECT_LE(abs(res.getLocalPosition(j)[i] - expectedLocalPos[j][i]), TOLERANCE);
+			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], TOLERANCE);
+			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
 		}
 	}
 }
@@ -94,6 +94,7 @@ TEST(FineCollisionDetector, SphereSphere3)
 	EXPECT_TRUE(fineCollisionDetector.collide(&bs1, &bs2, manifold));
  	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+	// TODO: complete
 }
 
 
@@ -150,13 +151,84 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 
 	fe::collision::Contact& res = contacts.front();
-	EXPECT_LE(abs(res.getPenetration() - expectedPenetration), TOLERANCE);
+	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(res.getNormal()[i] - expectedNormal[i]), TOLERANCE);
+		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_LE(abs(res.getWorldPosition(j)[i] - expectedWorldPos[j][i]), TOLERANCE);
-			EXPECT_LE(abs(res.getLocalPosition(j)[i] - expectedLocalPos[j][i]), TOLERANCE);
+			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], TOLERANCE);
+			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
 		}
 	}
-	EXPECT_LE(abs(res.getPenetration() - expectedPenetration), TOLERANCE);
+}
+
+
+TEST(FineCollisionDetector, SphereMesh1)
+{
+	const glm::vec3 expectedWorldPos[] = {
+		{ 15.029119491f, -6.232823848f, 8.426028251f },
+		{ 14.939769744f, -6.063839912f, 8.329644203f }
+	};
+	const glm::vec3 expectedLocalPos[] = {
+		{ 1.529119491f, -0.982823848f, 1.326028347f },
+		{ 1.249999523f, -0.999999284f, 0.213817119f }
+	};
+	const glm::vec3 expectedNormal(0.416512221f, -0.789699912f, 0.450434893f);
+	const float expectedPenetration = glm::length(expectedWorldPos[1] - expectedWorldPos[0]);
+	const float radius = 2.25;
+	const std::vector<glm::vec3> vertices = {
+		{  1.25f,  1.0f, -2.75f },
+		{  1.25f, -1.0f, -2.75f },
+		{ -0.25f, -1.0f, -2.75f },
+		{ -0.25f,  1.0f,  0.0f  },
+		{  1.25f,  1.0f,  2.75f },
+		{  1.25f, -1.0f,  2.75f },
+		{ -0.25f, -1.0f,  0.0f  },
+		{ -0.25f,  1.0f,  2.75f },
+		{  0.25f,  0.0f,  0.0f  }
+	};
+	const std::vector<unsigned short> indices = {
+		0, 1, 2, 7, 6, 5,
+		1, 5, 6, 6, 7, 3,
+		4, 0, 3, 0, 4, 8,
+		1, 0, 8, 4, 5, 8,
+		5, 1, 8, 3, 0, 2,
+		4, 7, 5, 2, 1, 6,
+		2, 6, 3, 7, 4, 3
+	};
+	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(14.67f, -7.62f, 8.667f);
+	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.473f, -0.313f, 0.057f, 0.821f);
+
+	fe::collision::BoundingSphere bs1(radius);
+	glm::mat4 r1 = glm::mat4_cast(o1);
+	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
+	bs1.setTransforms(t1 * r1);
+
+	fe::collision::MeshCollider mc1(vertices, indices);
+	glm::mat4 r2 = glm::mat4_cast(o2);
+	glm::mat4 t2 = glm::translate(glm::mat4(1.0f), v2);
+	mc1.setTransforms(t2 * r2);
+
+	fe::collision::Manifold manifold(&bs1, &mc1);
+	fe::collision::FineCollisionDetector fineCollisionDetector;
+
+	EXPECT_TRUE(fineCollisionDetector.collide(&bs1, &mc1, manifold));
+ 	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
+	EXPECT_EQ(static_cast<int>(contacts.size()), 4);
+
+	auto it = std::max_element(
+		contacts.begin(), contacts.end(),
+		[](fe::collision::Contact& c1, fe::collision::Contact& c2) { return c1.getPenetration() > c2.getPenetration(); }
+	);
+	fe::collision::Contact& res = *it;
+
+	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
+		for (int j = 0; j < 2; ++j) {
+			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], TOLERANCE);
+			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
+		}
+	}
+
+	// TODO: Compare the rest
 }

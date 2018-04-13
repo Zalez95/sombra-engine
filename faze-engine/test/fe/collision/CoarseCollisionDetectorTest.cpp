@@ -4,9 +4,6 @@
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/CoarseCollisionDetector.h>
 
-#define TOLERANCE 0.000000001f
-
-
 TEST(CoarseCollisionDetector, collide)
 {
 	fe::collision::CoarseCollisionDetector ccd;

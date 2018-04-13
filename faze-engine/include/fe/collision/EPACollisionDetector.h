@@ -31,9 +31,7 @@ namespace fe { namespace collision {
 		 * @param	minFDifference the minimum difference between two faces
 		 *			needed for determinate the closest face in contact
 		 * @param	projectionPrecision precision of the Contact coordinates */
-		EPACollisionDetector(float minFDifference, float projectionPrecision) :
-			mMinFDifference(minFDifference),
-			mProjectionPrecision(projectionPrecision) {};
+		EPACollisionDetector(float minFDifference, float projectionPrecision);
 
 		/** Class destructor */
 		~EPACollisionDetector() {};
@@ -65,7 +63,7 @@ namespace fe { namespace collision {
 		 * @param	polytope the Polytope to expand
 		 * @param	a pair with a pointer to the closest face and its
 		 *			distance to the origin */
-		std::pair<Triangle*, float> expandPolytope(
+		std::pair<Triangle, float> calculateEPA(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Polytope& polytope
 		) const;
@@ -78,6 +76,22 @@ namespace fe { namespace collision {
 		 *			and its distance to the origin */
 		std::pair<std::list<Triangle>::iterator, float> getClosestFaceToOrigin(
 			Polytope& polytope
+		) const;
+
+		/** Expands the given Polytope adding new SupportPoints and faces along
+		 * the given face's normal
+		 *
+		 * @param	collider1 the first of the ConvexColliders with which we
+		 *			are going to expand the Polytope
+		 * @param	collider1 the second of the ConvexColliders with which we
+		 *			are going to expand the Polytope
+		 * @param	polytope the polytope to expand
+		 * @param	itFace an iterator to the faces from where we are going to
+		 *			expand the Polytope */
+		void expandPolytope(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
+			Polytope& polytope,
+			std::list<Triangle>::iterator itFace
 		) const;
 
 		/** Appends the given edge to the list if it isn't already inside, also
@@ -99,8 +113,7 @@ namespace fe { namespace collision {
 		 * @return	true if the point could be projected onto the triangle,
 		 *			false otherwise*/
 		bool projectPointOnTriangle(
-			const glm::vec3& point,
-			const std::array<glm::vec3, 3>& triangle,
+			const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 			glm::vec3& projectedPoint
 		) const;
 	};

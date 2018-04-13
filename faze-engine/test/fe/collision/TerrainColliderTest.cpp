@@ -4,7 +4,7 @@
 #include <fe/collision/TerrainCollider.h>
 #include <fe/collision/ConvexPolyhedron.h>
 
-#define TOLERANCE 0.000000001f
+#define TOLERANCE 0.000001f
 
 
 TEST(TerrainCollider, getAABB)
@@ -25,8 +25,10 @@ TEST(TerrainCollider, getAABB)
 
 	fe::collision::TerrainCollider tc1(heights, xSize, zSize);
 	fe::collision::AABB aabb1 = tc1.getAABB();
-	EXPECT_EQ(aabb1.minimum, expectedMinimum);
-	EXPECT_EQ(aabb1.maximum, expectedMaximum);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
+	}
 }
 
 
@@ -57,13 +59,13 @@ TEST(TerrainCollider, getAABBTransforms)
 
 	fe::collision::AABB aabb1 = tc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
-		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
 	}
 }
 
 
-TEST(Terrainlider, getOverlapingParts)
+TEST(TerrainCollider, getOverlapingParts)
 {
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);
 	const glm::vec3 translation(-3.24586f, -1.559f, 4.78164f);
@@ -145,8 +147,8 @@ TEST(Terrainlider, getOverlapingParts)
 		fe::collision::AABB aabb2 = result[i]->getAABB();
 		fe::collision::AABB aabb3 = expectedRes[i].getAABB();
 		for (int j = 0; j < 3; ++j) {
-			EXPECT_LE(abs(aabb2.minimum[j] - aabb3.minimum[j]), TOLERANCE);
-			EXPECT_LE(abs(aabb2.maximum[j] - aabb3.maximum[j]), TOLERANCE);
+			EXPECT_NEAR(aabb2.minimum[j], aabb3.minimum[j], TOLERANCE);
+			EXPECT_NEAR(aabb2.maximum[j], aabb3.maximum[j], TOLERANCE);
 		}
 	}
 }

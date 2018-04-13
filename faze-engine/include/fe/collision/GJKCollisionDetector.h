@@ -23,11 +23,8 @@ namespace fe { namespace collision {
 	 */
 	class GJKCollisionDetector
 	{
-	private:	// Attributes
-		/** A vector with the SupportPoints of the simplex needed to check
-		 * the collision. If the origin is inside the simplex then the two
-		 * colliders are intersecting */
-		std::vector<SupportPoint> mSimplex;
+	private:	// Nested types
+		typedef std::vector<SupportPoint> SupportPointVector;
 
 	public:		// Functions
 		/** Creates a new GJKCollisionDetector */
@@ -36,20 +33,18 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		~GJKCollisionDetector() {};
 
-		/** Calculates if the given ConvexColliders are intersecting or not
-		 * with the GJK algorithm
+		/** Checks if the given ConvexColliders are intersecting with the GJK
+		 * algorithm
 		 *
-		 * @param	collider1 the first ConvexColliders that we want to check
-		 * @param	collider2 the second ConvexColliders that we want to check
-		 * @return	true if the two Colliders collides, false otherwise */
-		bool calculate(
-			const ConvexCollider& collider1, const ConvexCollider& collider2
-		);
-
-		/** @return	a vector with the SupportPoints of the simplex needed to
+		 * @param	collider1 the first ConvexCollider that we want to check
+		 * @param	collider2 the second ConvexCollider that we want to check
+		 * @return	a pair with the result of the GJK algorithm: a boolean that
+		 *			tells if the two ConvexColliders are intersecting and a
+		 *			vector with the SupportPoints of the simplex needed to
 		 *			check the collision. */
-		inline std::vector<SupportPoint> getLastSimplex() const
-		{ return mSimplex; };
+		std::pair<bool, SupportPointVector> calculate(
+			const ConvexCollider& collider1, const ConvexCollider& collider2
+		) const;
 	private:
 		/** Updates the given direction and simplex, reducing it to the lowest
 		 * dimension possible by discarding vertices.
@@ -60,9 +55,7 @@ namespace fe { namespace collision {
 		 * @param	searchDir the direction to search the next SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex(
-			std::vector<SupportPoint>& simplex, glm::vec3& direction
-		) const;
+		bool doSimplex(SupportPointVector& simplex, glm::vec3& direction) const;
 
 		/** Updates the given direction and simplex in 0 dimensions
 		 *
@@ -73,7 +66,7 @@ namespace fe { namespace collision {
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex0D(
-			std::vector<SupportPoint>& simplex, glm::vec3& direction
+			SupportPointVector& simplex, glm::vec3& direction
 		) const;
 
 		/** Updates the given direction and simplex in 1 dimensions
@@ -86,7 +79,7 @@ namespace fe { namespace collision {
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex1D(
-			std::vector<SupportPoint>& simplex, glm::vec3& direction
+			SupportPointVector& simplex, glm::vec3& direction
 		) const;
 
 		/** Updates the given direction and simplex in 2 dimensions
@@ -99,7 +92,7 @@ namespace fe { namespace collision {
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex2D(
-			std::vector<SupportPoint>& simplex, glm::vec3& direction
+			SupportPointVector& simplex, glm::vec3& direction
 		) const;
 
 		/** Updates the given direction and simplex in 3 dimensions
@@ -112,7 +105,7 @@ namespace fe { namespace collision {
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex3D(
-			std::vector<SupportPoint>& simplex, glm::vec3& direction
+			SupportPointVector& simplex, glm::vec3& direction
 		) const;
 	};
 

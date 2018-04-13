@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/ConvexPolyhedron.h>
 
-#define TOLERANCE 0.000000001f
+#define TOLERANCE 0.000001f
 
 
 TEST(ConvexPolyhedron, getAABB)
@@ -15,11 +15,15 @@ TEST(ConvexPolyhedron, getAABB)
 		{ 0.0f, 1.0f, 0.0f },
 		{ 0.5f, 0.5f, 1.6f }
 	};
+	const glm::vec3 expectedMinimum(0.0f, 0.0f, 0.0f);
+	const glm::vec3 expectedMaximum(1.0, 1.0, 1.6f);
 
 	fe::collision::ConvexPolyhedron cp1(vertices);
 	fe::collision::AABB aabb1 = cp1.getAABB();
-	EXPECT_EQ(aabb1.minimum, glm::vec3(0.0f, 0.0f, 0.0f));
-	EXPECT_EQ(aabb1.maximum, glm::vec3(1.0, 1.0, 1.6f));
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
+	}
 }
 
 
@@ -44,8 +48,8 @@ TEST(ConvexPolyhedron, getAABBTransforms)
 
 	fe::collision::AABB aabb1 = cp1.getAABB();
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(aabb1.minimum[i] - expectedMinimum[i]), TOLERANCE);
-		EXPECT_LE(abs(aabb1.maximum[i] - expectedMaximum[i]), TOLERANCE);
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
 	}
 }
 
@@ -73,7 +77,7 @@ TEST(ConvexPolyhedron, getFurthestPointInDirection)
 	cp1.getFurthestPointInDirection(direction, pointWorld, pointLocal);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
-		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
+		EXPECT_NEAR(pointWorld[i], expectedPWorld[i], TOLERANCE);
+		EXPECT_NEAR(pointLocal[i], expectedPLocal[i], TOLERANCE);
 	}
 }

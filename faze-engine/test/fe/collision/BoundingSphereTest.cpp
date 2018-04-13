@@ -3,24 +3,34 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/BoundingSphere.h>
 
-#define TOLERANCE 0.000000001f
+#define TOLERANCE 0.000001f
 
 
 TEST(BoundingSphere, getAABB)
 {
 	const fe::collision::BoundingSphere bs1(2.0f);
+	const glm::vec3 expectedMinimum(-2.0f);
+	const glm::vec3 expectedMaximum(2.0f);
+
 	fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.minimum, glm::vec3(-2.0f));
-	EXPECT_EQ(aabb1.maximum, glm::vec3(2.0f));
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
+	}
 }
 
 
 TEST(BoundingSphere, getAABBZeroRadius)
 {
 	const fe::collision::BoundingSphere bs1(0.0f);
+	const glm::vec3 expectedMinimum(0.0f);
+	const glm::vec3 expectedMaximum(0.0f);
+
 	fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.minimum, glm::vec3(0.0f));
-	EXPECT_EQ(aabb1.maximum, glm::vec3(0.0f));
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
+	}
 }
 
 
@@ -29,6 +39,8 @@ TEST(BoundingSphere, getAABBTransforms)
 	const float radius = 1.0f;
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
+	const glm::vec3 expectedMinimum(4.0f, -2.0f, -11.0f);
+	const glm::vec3 expectedMaximum(6.0f, 0.0f, -9.0f);
 
 	fe::collision::BoundingSphere bs1(radius);
 	glm::mat4 r = glm::mat4_cast(rotation);
@@ -36,8 +48,10 @@ TEST(BoundingSphere, getAABBTransforms)
 	bs1.setTransforms(t * r);
 
 	fe::collision::AABB aabb1 = bs1.getAABB();
-	EXPECT_EQ(aabb1.minimum, glm::vec3(4.0f, -2.0f, -11.0f));
-	EXPECT_EQ(aabb1.maximum, glm::vec3(6.0f, 0.0f, -9.0f));
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], TOLERANCE);
+	}
 }
 
 
@@ -54,6 +68,9 @@ TEST(BoundingSphere, getCenter)
 
 	glm::vec3 center = bs1.getCenter();
 	EXPECT_EQ(center, translation);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(center[i], translation[i], TOLERANCE);
+	}
 }
 
 
@@ -74,7 +91,7 @@ TEST(BoundingSphere, getFurthestPointInDirection)
 	bs1.getFurthestPointInDirection(direction, pointWorld, pointLocal);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
-		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
+		EXPECT_NEAR(pointWorld[i], expectedPWorld[i], TOLERANCE);
+		EXPECT_NEAR(pointLocal[i], expectedPLocal[i], TOLERANCE);
 	}
 }

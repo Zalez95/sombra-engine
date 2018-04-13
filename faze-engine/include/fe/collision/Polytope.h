@@ -16,6 +16,8 @@ namespace fe { namespace collision {
 		SupportPoint* p1;
 		SupportPoint* p2;
 
+		Edge() : p1(nullptr), p2(nullptr) {};
+
 		Edge(SupportPoint* p1, SupportPoint* p2) : p1(p1), p2(p2) {};
 
 		~Edge() {};
@@ -28,6 +30,8 @@ namespace fe { namespace collision {
 		Edge bc;
 		Edge ca;
 		glm::vec3 normal;
+
+		Triangle() : normal(0.0f) {};
 
 		Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c) :
 			ab(a, b), bc(b, c), ca(c, a)

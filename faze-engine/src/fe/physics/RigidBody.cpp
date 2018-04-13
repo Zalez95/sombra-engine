@@ -72,7 +72,7 @@ namespace fe { namespace physics {
 		// Update the Orientation
 		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
 		mAngularVelocity = mAngularVelocity * glm::pow(mAngularSlowDown, delta) + mAngularAcceleration * delta;
-		mOrientation = glm::normalize(glm::quat(mAngularVelocity * delta) * mOrientation);
+		mOrientation = glm::normalize(0.5f * mOrientation * (mAngularVelocity * delta));
 
 		// Update the derived data
 		updateData();
