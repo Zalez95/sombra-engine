@@ -1,6 +1,6 @@
-#include "fe/physics/RigidBody.h"
 #include <cassert>
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/physics/RigidBody.h"
 
 namespace fe { namespace physics {
 
@@ -11,8 +11,7 @@ namespace fe { namespace physics {
 		mInvertedInertiaTensor(0.0f), mAngularSlowDown(0.0f)
 	{
 		cleanForces();
-		updateTransformsMatrix();
-		updateInertiaTensorWorld();
+		updateData();
 	}
 
 
@@ -22,7 +21,7 @@ namespace fe { namespace physics {
 	) : mPosition(0.0f), mLinearVelocity(0.0), mLinearAcceleration(0.0f),
 		mOrientation(1.0f, glm::vec3(0.0f)), mAngularVelocity(0.0), mAngularAcceleration(0.0f)
 	{
-		assert(mass > 0);
+		assert(mass > 0.0f);
 
 		mInvertedMass			= 1.0f / mass;
 		mLinearSlowDown			= linearSlowDown;	// TODO: SlowDown to [0-1]?
@@ -30,8 +29,7 @@ namespace fe { namespace physics {
 		mAngularSlowDown		= angularSlowDown;	// TODO: SlowDown to [0-1]?
 
 		cleanForces();
-		updateTransformsMatrix();
-		updateInertiaTensorWorld();
+		updateData();
 	}
 
 
@@ -50,7 +48,7 @@ namespace fe { namespace physics {
 
 	void RigidBody::addForceAtLocalPoint(const glm::vec3& force, const glm::vec3& point)
 	{
-		glm::vec3 pointWorld = glm::vec3(mTransformsMatrix[3]) + glm::mat3(mTransformsMatrix) * point;
+		glm::vec3 pointWorld = mTransformsMatrix * glm::vec4(point, 1.0f);
 		addForceAtPoint(force, pointWorld);
 	}
 
@@ -72,7 +70,9 @@ namespace fe { namespace physics {
 		// Update the Orientation
 		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
 		mAngularVelocity = mAngularVelocity * glm::pow(mAngularSlowDown, delta) + mAngularAcceleration * delta;
-		mOrientation = glm::normalize(0.5f * mOrientation * (mAngularVelocity * delta));
+
+		glm::quat angularVelocityQuat(0.0f, mAngularVelocity.x * delta, mAngularVelocity.y * delta, mAngularVelocity.z * delta);
+		mOrientation = glm::normalize(mOrientation + 0.5f * (angularVelocityQuat * mOrientation));
 
 		// Update the derived data
 		updateData();
@@ -96,11 +96,11 @@ namespace fe { namespace physics {
 
 	void RigidBody::updateInertiaTensorWorld()
 	{
-		glm::mat3 transformsMat3(mTransformsMatrix);
+		glm::mat3 inverseTransformsMat3 = glm::inverse(mTransformsMatrix);
 
-		mInvertedInertiaTensorWorld = glm::transpose(inverse(transformsMat3))
+		mInvertedInertiaTensorWorld = glm::transpose(inverseTransformsMat3)
 			* mInvertedInertiaTensor
-			* glm::inverse(transformsMat3);
+			* inverseTransformsMat3;
 	}
 
 }}

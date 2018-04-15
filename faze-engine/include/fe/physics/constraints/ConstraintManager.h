@@ -12,7 +12,8 @@ namespace fe { namespace physics {
 
 
 	/**
-	 * Class ConstraintManager
+	 * Class ConstraintManager, it's the class used to solve the physic
+	 * constraints between the rigid bodies of the Physics System.
 	 */
 	class ConstraintManager
 	{
@@ -121,7 +122,6 @@ namespace fe { namespace physics {
 
 		std::vector<std::array<float, 12>> getBMatrix() const;
 		std::vector<float> getHMatrix(float deltaTime) const;
-
 		std::vector<float> getAMatrix(
 			const std::vector<std::array<float, 12>>& bMatrix,
 			const std::vector<float>& lambdaMatrix

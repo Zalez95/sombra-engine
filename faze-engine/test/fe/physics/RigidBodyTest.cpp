@@ -22,7 +22,7 @@ TEST(RigidBody, linearVelocityIntegration)
 
 TEST(RigidBody, angularVelocityIntegration)
 {
-	const glm::quat expectedOrientation(0.033355131f, 0.424811601f, 0.113779082f, -0.235535338f);
+	const glm::quat expectedOrientation(0.066598400f, 0.827548027f, 0.362650245f, -0.423336178f);
 	fe::physics::RigidBody rb(3.5f, 1.0f, glm::mat3(2.0f / 5.0f * 3.5f * pow(2.0f, 2)), 1.0f);
 	rb.setOrientation(glm::quat(0.020926f, 0.841695f, 0.296882f, -0.450525f));
 	rb.setAngularVelocity(glm::vec3(-0.13f, -3.6f, 10.125f));
@@ -60,11 +60,11 @@ TEST(RigidBody, addForce)
 TEST(RigidBody, addForceAtPoint)
 {
 	const glm::vec3 expectedPosition(5.371876716f, -5.707605838f, 3.908789396f);
-	const glm::quat expectedOrientation(0.811595022f, 0.423024982f, -0.389173269f, 0.104439236f);
+	const glm::quat expectedOrientation(0.811599493f, 0.423053562f, -0.389114081f, 0.104509316f);
 	const glm::vec3 expectedLinearVelocity(-0.103524908f, -3.650396108f, 10.131346702f);
 	const glm::vec3 expectedAngularVelocity(1.044589281f, -1.986972808f, -7.955280303f);
 	const glm::vec3 expectedLinearAcceleration(1.654692649f, -3.149759769f, 0.396660745f);
-	const glm::vec3 expectedAngularAcceleration(4.974330902f, 1.776695132f, -6.642519950f);
+	const glm::vec3 expectedAngularAcceleration(4.974330902f, 1.776694655f, -6.642519950f);
 	fe::physics::RigidBody rb(3.953f, 1.0f, glm::mat3(2.0f / 5.0f * 3.953f * pow(2.0f, 2)), 1.0f);
 	rb.setPosition(glm::vec3(5.373533248f, -5.649199485f, 3.746687889f));
 	rb.setOrientation(glm::quat(0.812893509f, 0.441731840f, -0.347656339f, 0.152355521f));
@@ -91,15 +91,15 @@ TEST(RigidBody, addForceAtPoint)
 TEST(RigidBody, addForceAtLocalPoint)
 {
 	const glm::vec3 expectedPosition(-1.462884187f, 11.208745956f, -14.201886177f);
-	const glm::quat expectedOrientation(0.004820846f, -0.720890223f, -0.487551778f, -0.492531448f);
+	const glm::quat expectedOrientation(-0.601788520f, 0.309684604f, 0.276499629f, -0.682271182f);
 	const glm::vec3 expectedLinearVelocity(1.977337837f, 5.294228553f, -6.772780418f);
-	const glm::vec3 expectedAngularVelocity(0.434943199f, -11.159923553f, -4.147571086f);
+	const glm::vec3 expectedAngularVelocity(0.434944272f, -11.159923553f, -4.147571086f);
 	const glm::vec3 expectedLinearAcceleration(1.188229441f, 0.751120924f, -0.517487585f);
-	const glm::vec3 expectedAngularAcceleration(1.072136640f, -3.708540678f, -2.921071290f);
+	const glm::vec3 expectedAngularAcceleration(1.072137355f, -3.708540916f, -2.921071290f);
 	const glm::mat4 expectedTransformsMatrix(
-		glm::vec4(0.039412070f, 0.698193788f, 0.714823007f, 0.0f),
-		glm::vec4(0.707691431f, -0.524539887f, 0.473318576f, 0.0f),
-		glm::vec4(0.705421388f, 0.487219780f, -0.514778912f, 0.0f),
+		glm::vec4(-0.083892025f, 0.992421269f, -0.089789159f, 0.0f),
+		glm::vec4(-0.649910569f, -0.122797042f, -0.750024735f, 0.0f),
+		glm::vec4(-0.755366384f, -0.004566177f, 0.655286788f, 0.0f),
 		glm::vec4(-1.462884187f, 11.208745956f, -14.201886177f, 1.0f)
 	);
 	fe::physics::RigidBody rb(6.1781f, 1.0f, glm::mat3(6.1781f * pow(3.21f, 2) / 6.0f), 1.0f);

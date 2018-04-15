@@ -46,20 +46,13 @@ namespace fe { namespace physics {
 		int iConstraint		= std::distance(mConstraints.begin(), itConstraint);
 		if (itConstraint == mConstraints.end()) { return; }
 
-		// Remove the constraint and its cached data
-		mConstraints.erase(itConstraint);
-		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
-		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
-		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
-		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
-
-		// Delete the RigidBodies if the constraint to remove is the only one
+		// Remove the RigidBodies if the constraint to remove is the only one
 		// that uses them
 		for (int i = 0; i < 2; ++i) {
 			int iRB = mConstraintRBMap[iConstraint][i];
 
 			int count = 0;
-			bool shouldRemove = std::any_of(
+			bool shouldRemove = std::none_of(
 				mConstraintRBMap.begin(), mConstraintRBMap.end(),
 				[&count, iRB](const std::array<int, 2>& item) {
 					return (item[0] == iRB || item[1] == iRB) && (count++ > 0);
@@ -81,6 +74,13 @@ namespace fe { namespace physics {
 				}
 			}
 		}
+
+		// Remove the constraint and its cached data
+		mConstraints.erase(itConstraint);
+		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
+		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
+		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
+		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
 	}
 
 
@@ -306,7 +306,9 @@ namespace fe { namespace physics {
 				}
 				else {
 					mRigidBodies[i]->setAngularVelocity(v2);
-					mRigidBodies[i]->setOrientation(glm::normalize(glm::quat(deltaTime / 2.0f * v2) * mRigidBodies[i]->getOrientation()));
+					glm::quat angularVelocityQuat(0.0f, v2.x * deltaTime, v2.y * deltaTime, v2.z * deltaTime);
+					glm::quat orientation = mRigidBodies[i]->getOrientation();
+					mRigidBodies[i]->setOrientation(glm::normalize(orientation + 0.5f * (angularVelocityQuat * orientation)));
 				}
 			}
 

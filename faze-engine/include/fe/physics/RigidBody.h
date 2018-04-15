@@ -7,8 +7,10 @@
 namespace fe { namespace physics {
 
 	/**
-	 * Class RigidBody, a Rigid Body is the basic object of the Physics System
-	 * <br>A Rigid Body holds position and orientation.
+	 * Class RigidBody, a Rigid Body holds the position, orientation and other
+	 * movement data of any object in the physics system. It's also the class
+	 * used to integrate the position and orientation of an object with it's
+	 * velocities and accelerations.
 	 */
 	class RigidBody
 	{
