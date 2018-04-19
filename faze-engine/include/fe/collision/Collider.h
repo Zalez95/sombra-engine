@@ -6,14 +6,6 @@
 
 namespace fe { namespace collision {
 
-	/** The different types that a collider may be */
-	enum class ColliderType
-	{
-		CONVEX_COLLIDER,
-		CONCAVE_COLLIDER
-	};
-
-
 	/**
 	 * Class Collider, a Collider is used to store the basic data of an object
 	 * that can collide with other Colliders
@@ -23,9 +15,6 @@ namespace fe { namespace collision {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Collider() {};
-
-		/** @return the type of the Collider */
-		virtual ColliderType getType() const = 0;
 
 		/** Updates the translation and orientation of the Collider with the
 		 * data of the given transformations matrix

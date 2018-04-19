@@ -11,7 +11,7 @@ namespace fe { namespace collision {
 
 	/**
 	 * Class Manifold, a contact manifold holds all the Contacs between two
-	 * Colliders
+	 * Colliders. A Manifold can store up to 4 contacts.
 	 */
 	class Manifold
 	{

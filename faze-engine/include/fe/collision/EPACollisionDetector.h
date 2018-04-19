@@ -36,7 +36,7 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		~EPACollisionDetector() {};
 
-		/** Calculates the deepest contact point between the given colliders
+		/** Calculates the deepest Contact point between the given colliders
 		 * using the EPA algorithm
 		 *
 		 * @param	collider1 the first of the ConvexColliders that are
@@ -44,11 +44,12 @@ namespace fe { namespace collision {
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	polytope the convex shape to expand with EPA
-		 * @return	the deepest Contact
-		 * @note	Initially the polytope must hold a tetrahedron */
-		Contact calculate(
+		 * @param	ret a reference to the deepest Contact (return parameter)
+		 * @return	true if the Contact data was successfully created, false
+		 *			otherwise */
+		bool calculate(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			Polytope& polytope
+			Polytope& polytope, Contact& ret
 		) const;
 	private:
 		/** Expands the given polytope iteratively until it finds the closest

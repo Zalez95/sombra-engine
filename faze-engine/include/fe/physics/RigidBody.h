@@ -195,9 +195,44 @@ namespace fe { namespace physics {
 		/** Integrates the all the linear and angular data of the RigidBody
 		 * by the given amount of time
 		 *
-		 * @param	delta the time by we will integrate the attributes of the
-		 *			RigidBody in seconds */
-		void integrate(float delta);
+		 * @param	deltaTime the difference time used to integrate the
+		 *			attributes of the RigidBody in seconds */
+		void integrate(float deltaTime);
+
+		/** Applies the force to the RigidBody to calculate its new linear
+		 * acceleration */
+		void applyForces();
+
+		/** Applies the torque to the RigidBody to calculate its new angular
+		 * acceleration */
+		void applyTorque();
+
+		/** Integrates the RigidBody angular acceleration to calculate its new
+		 * angular velocity
+		 * 
+		 * @param	deltaTime the difference of time used to integrate the
+		 *			linear acceleration of the RigidBody in seconds */
+		void integrateLinearAcceleration(float deltaTime);
+
+		/** Integrates the RigidBody angular acceleration to calculate its new
+		 * angular velocity
+		 * 
+		 * @param	deltaTime the difference of time used to integrate the
+		 *			angular acceleration of the RigidBody in seconds */
+		void integrateAngularAcceleration(float deltaTime);
+
+		/** Integrates the RigidBody linear velocity to calculate its new
+		 * position
+		 * @param	deltaTime the difference of time used to integrate the
+		 *			linear velocity of the RigidBody in seconds */
+		void integrateLinearVelocity(float deltaTime);
+
+		/** Integrates the RigidBody angular velocity to calculate its new
+		 * orientation
+		 *
+		 * @param	deltaTime the difference of time used to integrate the
+		 *			angular velocity of the RigidBody in seconds */
+		void integrateAngularVelocity(float deltaTime);
 
 		/** Updates the RigidBody's internal data with the changes made by
 		 * the setters */

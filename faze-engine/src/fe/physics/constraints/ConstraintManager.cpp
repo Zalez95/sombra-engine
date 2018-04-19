@@ -302,13 +302,11 @@ namespace fe { namespace physics {
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {
 					mRigidBodies[i]->setLinearVelocity(v2);
-					mRigidBodies[i]->setPosition(mRigidBodies[i]->getPosition() + v2 * deltaTime);
+					mRigidBodies[i]->integrateLinearVelocity(deltaTime);
 				}
 				else {
 					mRigidBodies[i]->setAngularVelocity(v2);
-					glm::quat angularVelocityQuat(0.0f, v2.x * deltaTime, v2.y * deltaTime, v2.z * deltaTime);
-					glm::quat orientation = mRigidBodies[i]->getOrientation();
-					mRigidBodies[i]->setOrientation(glm::normalize(orientation + 0.5f * (angularVelocityQuat * orientation)));
+					mRigidBodies[i]->integrateAngularVelocity(deltaTime);
 				}
 			}
 

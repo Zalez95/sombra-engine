@@ -18,41 +18,46 @@ namespace fe { namespace collision {
 	}
 
 
-	Contact EPACollisionDetector::calculate(
+	bool EPACollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		Polytope& polytope
+		Polytope& polytope, Contact& ret
 	) const
 	{
+		if (polytope.faces.size() < 4) {
+			return false;
+		}
+
 		// 1. Calculate the closest face to the origin
 		Triangle closestF;
 		float closestFDist;
 		std::tie(closestF, closestFDist) = calculateEPA(collider1, collider2, polytope);
-		Contact ret(closestFDist, closestF.normal);
 
-		// 2. Project the origin onto the closest triangle and get its
+		// 2. Project the origin onto the closest face and calculate its
 		// barycentric coordinates
-		std::array<glm::vec3, 3> triangle = {
-			closestF.ab.p1->getCSOPosition(),
-			closestF.bc.p1->getCSOPosition(),
-			closestF.ca.p1->getCSOPosition()
-		};
-		glm::vec3 baryCoordinates;
-		projectPointOnTriangle(glm::vec3(0.0f), triangle, baryCoordinates);
+		glm::vec3 originBarycentricCoords,
+			a = closestF.ab.p1->getCSOPosition(),
+			b = closestF.bc.p1->getCSOPosition(),
+			c = closestF.ca.p1->getCSOPosition();
+		if (!projectPointOnTriangle(glm::vec3(0.0f), { a, b, c }, originBarycentricCoords)) {
+			return false;
+		}
 
-		// 3. Calculate the local and world coordinates of the contact
-		// from the barycenter coordinates of the point
+		// 3. Fill the Contact data with the face normal, it's distance to the
+		// origin and the barycentric coordinates of the origin onto the face
+		ret.mPenetration = closestFDist;
+		ret.mNormal = closestF.normal;
 		for (int i = 0; i < 2; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				ret.mWorldPos[i][j] = baryCoordinates.x * closestF.ab.p1->getWorldPosition(i)[j]
-									+ baryCoordinates.y * closestF.bc.p1->getWorldPosition(i)[j]
-									+ baryCoordinates.z * closestF.ca.p1->getWorldPosition(i)[j];
-				ret.mLocalPos[i][j] = baryCoordinates.x * closestF.ab.p1->getLocalPosition(i)[j]
-									+ baryCoordinates.y * closestF.bc.p1->getLocalPosition(i)[j]
-									+ baryCoordinates.z * closestF.ca.p1->getLocalPosition(i)[j];
+				ret.mWorldPos[i][j] = originBarycentricCoords.x * closestF.ab.p1->getWorldPosition(i)[j]
+									+ originBarycentricCoords.y * closestF.bc.p1->getWorldPosition(i)[j]
+									+ originBarycentricCoords.z * closestF.ca.p1->getWorldPosition(i)[j];
+				ret.mLocalPos[i][j] = originBarycentricCoords.x * closestF.ab.p1->getLocalPosition(i)[j]
+									+ originBarycentricCoords.y * closestF.bc.p1->getLocalPosition(i)[j]
+									+ originBarycentricCoords.z * closestF.ca.p1->getLocalPosition(i)[j];
 			}
 		}
 
-		return ret;
+		return true;
 	}
 
 // Private functions		

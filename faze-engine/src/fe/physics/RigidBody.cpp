@@ -21,12 +21,16 @@ namespace fe { namespace physics {
 	) : mPosition(0.0f), mLinearVelocity(0.0), mLinearAcceleration(0.0f),
 		mOrientation(1.0f, glm::vec3(0.0f)), mAngularVelocity(0.0), mAngularAcceleration(0.0f)
 	{
-		assert(mass > 0.0f);
+		assert(mass > 0.0f && "The mass must be bigger than zero");
+		assert(linearSlowDown >= 0.0f && linearSlowDown <= 1.0f
+			&& "The linearSlowDown should be in the range [0,1]");
+		assert(angularSlowDown >= 0.0f && angularSlowDown <= 1.0f
+			&& "The angularSlowDown should be in the range [0,1]");
 
 		mInvertedMass			= 1.0f / mass;
-		mLinearSlowDown			= linearSlowDown;	// TODO: SlowDown to [0-1]?
+		mLinearSlowDown			= linearSlowDown;
 		mInvertedInertiaTensor	= glm::inverse(inertiaTensor);
-		mAngularSlowDown		= angularSlowDown;	// TODO: SlowDown to [0-1]?
+		mAngularSlowDown		= angularSlowDown;
 
 		cleanForces();
 		updateData();
@@ -60,22 +64,58 @@ namespace fe { namespace physics {
 	}
 
 
-	void RigidBody::integrate(float delta)
+	void RigidBody::integrate(float deltaTime)
 	{
-		// Update the Position
-		mLinearAcceleration = mInvertedMass * mForceSum;
-		mLinearVelocity = mLinearVelocity * glm::pow(mLinearSlowDown, delta) + mLinearAcceleration * delta;
-		mPosition += mLinearVelocity * delta;
+		// Update the linear attributes
+		applyForces();
+		integrateLinearAcceleration(deltaTime);
+		integrateLinearVelocity(deltaTime);
 
-		// Update the Orientation
-		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
-		mAngularVelocity = mAngularVelocity * glm::pow(mAngularSlowDown, delta) + mAngularAcceleration * delta;
+		// Update the angular attributes
+		applyTorque();
+		integrateAngularAcceleration(deltaTime);
+		integrateAngularVelocity(deltaTime);
 
-		glm::quat angularVelocityQuat(0.0f, mAngularVelocity.x * delta, mAngularVelocity.y * delta, mAngularVelocity.z * delta);
-		mOrientation = glm::normalize(mOrientation + 0.5f * (angularVelocityQuat * mOrientation));
-
-		// Update the derived data
 		updateData();
+	}
+
+
+	void RigidBody::applyForces()
+	{
+		mLinearAcceleration = mInvertedMass * mForceSum;
+	}
+
+
+	void RigidBody::applyTorque()
+	{
+		mAngularAcceleration = mInvertedInertiaTensorWorld * mTorqueSum;
+	}
+
+
+	void RigidBody::integrateLinearAcceleration(float deltaTime)
+	{
+		mLinearVelocity = mLinearVelocity * glm::pow(mLinearSlowDown, deltaTime)
+			+ mLinearAcceleration * deltaTime;
+	}
+
+
+	void RigidBody::integrateAngularAcceleration(float deltaTime)
+	{
+		mAngularVelocity = mAngularVelocity * glm::pow(mAngularSlowDown, deltaTime)
+			+ mAngularAcceleration * deltaTime;
+	}
+
+
+	void RigidBody::integrateLinearVelocity(float deltaTime)
+	{
+		mPosition += mLinearVelocity * deltaTime;
+	}
+
+
+	void RigidBody::integrateAngularVelocity(float deltaTime)
+	{
+		const glm::quat angularVelocityQuat(0.0f, mAngularVelocity.x, mAngularVelocity.y, mAngularVelocity.z);
+		mOrientation = glm::normalize(mOrientation + (0.5f * deltaTime * angularVelocityQuat) * mOrientation);
 	}
 
 

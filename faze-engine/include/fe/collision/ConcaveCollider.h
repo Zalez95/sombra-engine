@@ -22,10 +22,6 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		virtual ~ConcaveCollider() {};
 
-		/** @return the type of the Collider */
-		inline virtual ColliderType getType() const
-		{ return ColliderType::CONCAVE_COLLIDER; };
-
 		/** Updates the scale, translation and orientation of the
 		 * ConcaveCollider with the given transformations matrix
 		 *

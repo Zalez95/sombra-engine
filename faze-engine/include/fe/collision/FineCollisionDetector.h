@@ -91,12 +91,14 @@ namespace fe { namespace collision {
 		 *			calculate the collision data
 		 * @param	manifold a contact manifold where the FineCollisionDetector
 		 *			will store the collision data
+		 * @param	convexFirst if the ConvexCollider is the first collider in
+		 *			the Manifold or the second one
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise */
 		bool collideConvexConcave(
 			const ConvexCollider& convexCollider,
 			const ConcaveCollider& concaveCollider,
-			Manifold& manifold
+			Manifold& manifold, bool convexFirst
 		);
 
 		/** Calculates the contact data of the collision that happened between
@@ -141,6 +143,30 @@ namespace fe { namespace collision {
 		 * @return	true if the number of contacs was cut down, false
 		 *			otherwise */
 		void limitManifoldContacts(Manifold& manifold) const;
+
+		/** Calculates the minimum distance from a point to the given edge
+		 *
+		 * @param	p the point whose distance to the edge we want to know
+		 * @param	e1 the first point of the edge
+		 * @param	e2 the second point of the edge
+		 * @return	the minimum distance of p to the edge between e1 and e2 */
+		float distancePointEdge(
+			const glm::vec3& p,
+			const glm::vec3& e1, const glm::vec3& e2
+		) const;
+
+		/** Calculates the minimum distance from a point to the given triangle
+		 *
+		 * @param	p the point whose distance to the triangle we want to know
+		 * @param	t1 the first point of the triangle
+		 * @param	t2 the second point of the triangle
+		 * @param	t3 the third point of the triangle
+		 * @return	the minimum distance of p to the triangle between e1, e2
+		 *			and e3 */
+		float distancePointTriangle(
+			const glm::vec3& p,
+			const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+		) const;
 	};
 
 }}

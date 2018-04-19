@@ -22,29 +22,23 @@ namespace fe { namespace collision {
 	) {
 		if (!collider1 || !collider2) { return false; }
 
-		if (collider1->getType() == ColliderType::CONCAVE_COLLIDER) {
-			auto concaveCollider1 = dynamic_cast<const ConcaveCollider*>(collider1);
-
-			if (collider2->getType() == ColliderType::CONCAVE_COLLIDER) {
-				auto concaveCollider2 = dynamic_cast<const ConcaveCollider*>(collider2);
-				return collideConcave(*concaveCollider1, *concaveCollider2, manifold);
+		if (auto convexCollider1 = dynamic_cast<const ConvexCollider*>(collider1)) {
+			if (auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2)) {
+				return collideConvex(*convexCollider1, *convexCollider2, manifold);
 			}
 			else {
-				auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2);
-				// FIXME: manifold order
-				return collideConvexConcave(*convexCollider2, *concaveCollider1, manifold);
+				auto concaveCollider2 = static_cast<const ConcaveCollider*>(collider2);
+				return collideConvexConcave(*convexCollider1, *concaveCollider2, manifold, true);
 			}
 		}
 		else {
-			auto convexCollider1 = dynamic_cast<const ConvexCollider*>(collider1);
-
-			if (collider2->getType() == ColliderType::CONCAVE_COLLIDER) {
-				auto concaveCollider2 = dynamic_cast<const ConcaveCollider*>(collider2);
-				return collideConvexConcave(*convexCollider1, *concaveCollider2, manifold);
+			auto concaveCollider1 = static_cast<const ConcaveCollider*>(collider1);
+			if (auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2)) {
+				return collideConvexConcave(*convexCollider2, *concaveCollider1, manifold, false);
 			}
 			else {
-				auto convexCollider2 = dynamic_cast<const ConvexCollider*>(collider2);
-				return collideConvex(*convexCollider1, *convexCollider2, manifold);
+				auto concaveCollider2 = static_cast<const ConcaveCollider*>(collider2);
+				return collideConcave(*concaveCollider1, *concaveCollider2, manifold);
 			}
 		}
 	}
@@ -76,7 +70,10 @@ namespace fe { namespace collision {
 				Polytope polytope(*part1, *part2, simplex);
 
 				// EPA Algorithm
-				Contact newContact = mEPACollisionDetector.calculate(*part1, *part2, polytope);
+				Contact newContact;
+				if (!mEPACollisionDetector.calculate(*part1, *part2, polytope, newContact)) {
+					continue;
+				}
 
 				// Check if the new Contact is far enough to the older contacts
 				if (!isClose(newContact, manifold.mContacts)) {
@@ -99,7 +96,7 @@ namespace fe { namespace collision {
 
 	bool FineCollisionDetector::collideConvexConcave(
 		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
-		Manifold& manifold
+		Manifold& manifold, bool convexFirst
 	) {
 		bool anyCollides = false;
 
@@ -113,16 +110,26 @@ namespace fe { namespace collision {
 			// GJK algorithm
 			bool collides;
 			std::vector<SupportPoint> simplex;
-			std::tie(collides, simplex) = mGJKCollisionDetector.calculate(convexCollider, *part);
+			std::tie(collides, simplex) = (convexFirst)?
+				mGJKCollisionDetector.calculate(convexCollider, *part) :
+				mGJKCollisionDetector.calculate(*part, convexCollider);
 			if (!collides) {
 				continue;
 			}
 
 			// Create a polytope (tetrahedron) from the GJK simplex points
-			Polytope polytope(convexCollider, *part, simplex);
+			Polytope polytope = (convexFirst)?
+				Polytope(convexCollider, *part, simplex) :
+				Polytope(*part, convexCollider, simplex);
 
 			// EPA Algorithm
-			Contact newContact = mEPACollisionDetector.calculate(convexCollider, *part, polytope);
+			Contact newContact;
+			bool contactFilled = (convexFirst)?
+				mEPACollisionDetector.calculate(convexCollider, *part, polytope, newContact) :
+				mEPACollisionDetector.calculate(*part, convexCollider, polytope, newContact);
+			if (!contactFilled) {
+				continue;
+			}
 
 			// Check if the new Contact is far enough to the older contacts
 			if (!isClose(newContact, manifold.mContacts)) {
@@ -158,7 +165,10 @@ namespace fe { namespace collision {
 		Polytope polytope(collider1, collider2, simplex);
 
 		// EPA Algorithm
-		Contact newContact = mEPACollisionDetector.calculate(collider1, collider2, polytope);
+		Contact newContact;
+		if (!mEPACollisionDetector.calculate(collider1, collider2, polytope, newContact)) {
+			return false;
+		}
 
 		// Remove the contacts that are no longer valid from the manifold
 		removeInvalidContacts(manifold);
@@ -233,7 +243,7 @@ namespace fe { namespace collision {
 
 		auto contact2 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&contact1](const Contact& c1, const Contact& c2) {
+			[&](const Contact& c1, const Contact& c2) {
 				float d1 = glm::length(c1.getWorldPosition(0) - contact1->getWorldPosition(0));
 				float d2 = glm::length(c2.getWorldPosition(0) - contact1->getWorldPosition(0));
 				return d1 < d2;
@@ -242,35 +252,84 @@ namespace fe { namespace collision {
 
 		auto contact3 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&contact1, &contact2](const Contact& c1, const Contact& c2) {
-				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
-				glm::vec3 v1c1	= c1.getWorldPosition(0) - contact1->getWorldPosition(0);
-				glm::vec3 v1c2	= c2.getWorldPosition(0) - contact1->getWorldPosition(0);
-
-				float d1 = glm::length(glm::cross(v12, v1c1));
-				float d2 = glm::length(glm::cross(v12, v1c2));
+			[&](const Contact& c1, const Contact& c2) {
+				float d1 = distancePointEdge(
+					c1.getWorldPosition(0),
+					contact1->getWorldPosition(0), contact2->getWorldPosition(0)
+				);
+				float d2 = distancePointEdge(
+					c2.getWorldPosition(0),
+					contact1->getWorldPosition(0), contact2->getWorldPosition(0)
+				);
 				return d1 < d2;
 			}
 		);
 
 		auto contact4 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&contact1, &contact2, &contact3](const Contact& c1, const Contact& c2) {
-				// FIXME: this is wrong
-				glm::vec3 v12	= contact1->getWorldPosition(0) - contact2->getWorldPosition(0);
-
-				//glm::vec3 v13	= contact1->getWorldPosition(0) - contact3->getWorldPosition(0);
-				//glm::vec3 vN	= glm::cross(v12, v13);
-				glm::vec3 v1c1	= c1.getWorldPosition(0) - contact1->getWorldPosition(0);
-				glm::vec3 v1c2	= c2.getWorldPosition(0) - contact1->getWorldPosition(0);
-
-				float d1 = glm::length(glm::cross(v12, v1c1));
-				float d2 = glm::length(glm::cross(v12, v1c2));
+			[&](const Contact& c1, const Contact& c2) {
+				float d1 = distancePointTriangle(
+					c1.getWorldPosition(0),
+					contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0)
+				);
+				float d2 = distancePointTriangle(
+					c2.getWorldPosition(0),
+					contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0)
+				);
 				return d1 < d2;
 			}
 		);
 
 		manifold.mContacts = { *contact1, *contact2, *contact3, *contact4 };
+	}
+
+
+	float FineCollisionDetector::distancePointEdge(
+		const glm::vec3& p,
+		const glm::vec3& e1, const glm::vec3& e2
+	) const
+	{
+		float ret = -1;
+
+		glm::vec3 ve1p = p - e1, ve2p = p - e2, ve1e2 = glm::normalize(e2 - e1);
+		if (float dot1 = glm::dot(ve1p, ve1e2) < 0) {
+			ret = glm::length(ve1p);
+		}
+		else if (glm::dot(ve2p, ve1e2) > 0) {
+			ret = glm::length(ve2p);
+		}
+		else {
+			ret = glm::length(p - (e1 + dot1 * ve1e2));
+		}
+
+		return ret;
+	}
+
+
+	float FineCollisionDetector::distancePointTriangle(
+		const glm::vec3& p,
+		const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+	) const
+	{
+		glm::vec3 vt1t2	= t1 - t2, vt2t3 = t2 - t3, vt3t1 = t3 - t1,
+			tNormal = glm::normalize(-glm::cross(vt1t2, vt3t1));
+
+		glm::vec3 vt1p = p - t1, vt1t2xtNormal = glm::normalize(glm::cross(vt1t2, tNormal));
+		if (glm::dot(vt1p, vt1t2xtNormal) > 0) {
+			return distancePointEdge(p, t1, t2);
+		}
+
+		glm::vec3 vt2p = p - t2, vt2t3xtNormal = glm::normalize(glm::cross(vt2t3, tNormal));
+		if (glm::dot(vt2p, vt2t3xtNormal) > 0) {
+			return distancePointEdge(p, t2, t3);
+		}
+
+		glm::vec3 vt3p = p - t3, vt3t1xtNormal = glm::normalize(glm::cross(vt3t1, tNormal));
+		if (glm::dot(vt3p, vt3t1xtNormal) > 0) {
+			return distancePointEdge(p, t3, t1);
+		}
+
+		return abs(glm::dot(vt1p, tNormal));
 	}
 
 }}

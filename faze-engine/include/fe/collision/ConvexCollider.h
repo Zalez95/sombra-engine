@@ -14,10 +14,6 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		virtual ~ConvexCollider() {};
 
-		/** @return the type of the Collider */
-		inline virtual ColliderType getType() const
-		{ return ColliderType::CONVEX_COLLIDER; };
-
 		/** Updates the scale, translation and orientation of the ConvexCollider
 		 * with the given transformations matrix
 		 *

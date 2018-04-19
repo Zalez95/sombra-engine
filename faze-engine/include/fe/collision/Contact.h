@@ -30,14 +30,8 @@ namespace fe { namespace collision {
 		glm::vec3 mLocalPos[2];
 
 	public:		// Functions
-		/** Creates a new Contact
-		 *
-		 * @param	penetration the penetration depth of the Contact
-		 * @param	normal the normal direction of the Contact in world
-		 *			space
-		 * @note	the normal must be normalized */
-		Contact(float penetration, const glm::vec3& normal) :
-			mPenetration(penetration), mNormal(normal) {};
+		/** Creates a new Contact */
+		Contact() {};
 
 		/** Class destructor */
 		~Contact() {};
