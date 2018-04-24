@@ -22,6 +22,9 @@ option(BUILD_SHARED_LIBS
 set(EXTERNAL_PATH "${CMAKE_SOURCE_DIR}/ext")
 set(EXTERNAL_INSTALL_PATH "${CMAKE_BINARY_DIR}/ext")
 
+# Other constants
+set(MY_DEBUG_POSTFIX "d")
+
 # Include the dependencies
 include(Dependencies)
 

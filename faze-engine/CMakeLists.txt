@@ -13,14 +13,15 @@ target_include_directories(fazeEngine PUBLIC
 
 # Add the compiler options
 set_target_properties(fazeEngine PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
-if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+if(CMAKE_CXX_COMPILER MATCHES "GNU")
 	target_compile_options(fazeEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
-elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
-	target_compile_options(fazeEngine PRIVATE /W4 /MT -D_CRT_SECURE_NO_WARNINGS)
-	set_target_properties(fazeEngine PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-	set_target_properties(fazeEngine PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
+	target_compile_options(fazeEngine PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
+	set_target_properties(fazeEngine PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set_target_properties(fazeEngine PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set_target_properties(fazeEngine PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 endif()
-set_target_properties(fazeEngine PROPERTIES DEBUG_POSTFIX d)
+set_target_properties(fazeEngine PROPERTIES DEBUG_POSTFIX ${MY_DEBUG_POSTFIX})
 
 # Add the compiler definitions
 target_compile_definitions(fazeEngine PUBLIC GLEW_STATIC GLEW_NO_GLU)
@@ -39,14 +40,15 @@ if(FAZE_ENGINE_BUILD_TESTS)
 
 	# Add the compiler options
 	set_target_properties(fazeEngineTest PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
-	if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+	if(CMAKE_CXX_COMPILER MATCHES "GNU")
 		target_compile_options(fazeEngineTest PRIVATE -Wall -Wextra -Werror)
-	elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
-		target_compile_options(fazeEngineTest PRIVATE /W4 /MT -D_CRT_SECURE_NO_WARNINGS)
-		set_target_properties(fazeEngineTest PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-		set_target_properties(fazeEngineTest PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
+		target_compile_options(fazeEngineTest PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
+		set_target_properties(fazeEngineTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+		set_target_properties(fazeEngineTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+		set_target_properties(fazeEngineTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 	endif()
-	set_target_properties(fazeEngineTest PROPERTIES DEBUG_POSTFIX d)
+	set_target_properties(fazeEngineTest PROPERTIES DEBUG_POSTFIX ${MY_DEBUG_POSTFIX})
 
 	# Link the dependencies
 	target_link_libraries(fazeEngineTest PRIVATE gtest fazeEngine)
