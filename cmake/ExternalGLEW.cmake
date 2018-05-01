@@ -11,6 +11,7 @@ ExternalProject_Add(glewDownload
 						-Dglew-cmake_BUILD_MULTI_CONTEXT=OFF
 						-Dglew-cmake_BUILD_SHARED=$<BOOL:${BUILD_SHARED_LIBS}>
 						-Dglew-cmake_BUILD_STATIC=$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>
+						-DONLY_LIBS=ON
 )
 
 # Get the properties from the downloaded target

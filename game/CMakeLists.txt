@@ -11,16 +11,16 @@ target_include_directories(game PRIVATE
 )
 
 # Add the compiler options
-set_target_properties(game PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED On)
+set_target_properties(game PROPERTIES
+	CXX_STANDARD			14
+	CXX_STANDARD_REQUIRED	On
+	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
+)
 if(CMAKE_CXX_COMPILER MATCHES "GNU")
 	target_compile_options(game PRIVATE -Wall -Wextra -Wpedantic -Werror)
 elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
 	target_compile_options(game PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
-	set_target_properties(game PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-	set_target_properties(game PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-	set_target_properties(game PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
-set_target_properties(game PROPERTIES DEBUG_POSTFIX ${MY_DEBUG_POSTFIX})
 
 # Link the dependencies
 target_link_libraries(game PRIVATE fazeEngine)
