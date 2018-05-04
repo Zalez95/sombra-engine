@@ -1,8 +1,8 @@
 # Searchs the SOIL library
 # This module will set the next variables:
 #	SOIL_FOUND			- SOIL was succesfully found
-#	SOIL_INCLUDE_DIRS	- SOIL header "SOIL/SOIL.h"
-#	SOIL_LIBRARIES		- SOIL libraries
+#	SOIL_INCLUDE_DIR	- SOIL header "SOIL/SOIL.h"
+#	SOIL_LIBRARY		- SOIL libraries
 #	soil				- SOIL target
 
 include(FindPackageHandleStandardArgs)

@@ -12,6 +12,8 @@ ExternalProject_Add(glfwDownload
 						-DGLFW_BUILD_DOCS=OFF
 						-DGLFW_BUILD_TESTS=OFF
 						-DGLFW_BUILD_EXAMPLES=OFF
+						-DUSE_MSVC_RUNTIME_LIBRARY_DLL=$<NOT:$<BOOL:${FORCE_STATIC_VCRT}>>
+						--no-warn-unused-cli
 )
 
 # Get the properties from the downloaded target

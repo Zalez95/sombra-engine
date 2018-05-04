@@ -9,7 +9,10 @@ ExternalProject_Add(soilDownload
 						-DCMAKE_BUILD_TYPE=$<CONFIG>
 						-DCMAKE_DEBUG_POSTFIX=${MY_DEBUG_POSTFIX}
 						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-						-Wno-dev
+						-DCMAKE_C_FLAGS=$<$<BOOL:${FORCE_STATIC_VCRT}>:/MT>
+						-DCMAKE_C_FLAGS_RELEASE=$<$<BOOL:${FORCE_STATIC_VCRT}>:/MT>
+						-DCMAKE_C_FLAGS_DEBUG=$<$<BOOL:${FORCE_STATIC_VCRT}>:/MTd>
+						--no-warn-unused-cli
 )
 
 # Get the properties from the downloaded target

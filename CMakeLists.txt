@@ -24,13 +24,24 @@ foreach(outputConfig ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 # Set the external libraries configuration data
-option(BUILD_SHARED_LIBS
-	"Use the SHARED version of the third party libraries if possible" OFF)
 set(EXTERNAL_PATH "${CMAKE_SOURCE_DIR}/ext")
 set(EXTERNAL_INSTALL_PATH "${CMAKE_BINARY_DIR}/ext")
 
-# Other constants
+# Global compiler options
 set(MY_DEBUG_POSTFIX "d")
+if(CMAKE_CXX_COMPILER MATCHES "MSVC")
+	option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
+    if(NOT BUILD_SHARED_LIBS AND FORCE_STATIC_VCRT)
+		foreach(flagVar
+			CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+			CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		)
+            if(${flagVar} MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flagVar} "${${flagVar}}")
+            endif()
+        endforeach()
+    endif()
+endif()
 
 # Include the dependencies
 include(Dependencies)

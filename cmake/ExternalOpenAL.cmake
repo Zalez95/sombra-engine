@@ -13,6 +13,12 @@ ExternalProject_Add(openalDownload
 						-DALSOFT_NO_CONFIG_UTIL=ON
 						-DALSOFT_EXAMPLES=OFF
 						-DALSOFT_TESTS=OFF
+						-DALSOFT_CONFIG=OFF
+						-DALSOFT_HRTF_DEFS=OFF
+						-DALSOFT_AMBDEC_PRESETS=OFF
+						-DALSOFT_BACKEND_WINMM=OFF
+						-DFORCE_STATIC_VCRT=${FORCE_STATIC_VCRT}
+						--no-warn-unused-cli
 )
 
 # Get the properties from the downloaded target

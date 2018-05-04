@@ -1,8 +1,8 @@
 # Searchs the OPENAL library
 # This module will set the next variables:
 #	OPENAL_FOUND		- OPENAL was succesfully found
-#	OPENAL_INCLUDE_DIRS	- OPENAL header "AL/al.h"
-#	OPENAL_LIBRARIES	- OPENAL libraries
+#	OPENAL_INCLUDE_DIR	- OPENAL header "AL/al.h"
+#	OPENAL_LIBRARY		- OPENAL libraries
 #	openal				- OPENAL target
 
 include(FindPackageHandleStandardArgs)

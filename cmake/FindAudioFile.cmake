@@ -1,8 +1,8 @@
 # Searchs the AUDIOFILE library
 # This module will set the next variables:
 #	AUDIOFILE_FOUND			- AUDIOFILE was succesfully found
-#	AUDIOFILE_INCLUDE_DIRS	- AUDIOFILE header "AudioFile.h"
-#	AUDIOFILE_LIBRARIES		- AUDIOFILE libraries
+#	AUDIOFILE_INCLUDE_DIR	- AUDIOFILE header "AudioFile.h"
+#	AUDIOFILE_LIBRARY		- AUDIOFILE libraries
 #	audioFile				- AUDIOFILE target
 
 include(FindPackageHandleStandardArgs)

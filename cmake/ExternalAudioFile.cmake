@@ -10,6 +10,8 @@ ExternalProject_Add(audioFileDownload
 						-DCMAKE_DEBUG_POSTFIX=${MY_DEBUG_POSTFIX}
 						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
 						-DAUDIOFILE_BUILD_TESTS=OFF
+						-DFORCE_STATIC_VCRT=${FORCE_STATIC_VCRT}
+						--no-warn-unused-cli
 )
 
 # Get the properties from the downloaded target

@@ -1,8 +1,8 @@
 # Searchs the Google Test library
 # This module will set the next variables:
 #	GTEST_FOUND			- GTEST was succesfully found
-#	GTEST_INCLUDE_DIRS	- GTEST header "GTEST/GTEST.h"
-#	GTEST_LIBRARIES		- GTEST libraries
+#	GTEST_INCLUDE_DIR	- GTEST header "gtest/gtest.h"
+#	GTEST_LIBRARY		- GTEST libraries
 #	gtest				- GTEST target
 
 include(FindPackageHandleStandardArgs)

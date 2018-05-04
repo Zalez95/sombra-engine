@@ -24,7 +24,10 @@ elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
 endif()
 
 # Add the compiler definitions
-target_compile_definitions(fazeEngine PUBLIC GLEW_STATIC GLEW_NO_GLU)
+target_compile_definitions(fazeEngine PRIVATE GLEW_NO_GLU)
+if(NOT BUILD_SHARED_LIBS)
+	target_compile_definitions(fazeEngine PRIVATE AL_LIBTYPE_STATIC GLEW_STATIC)
+endif()
 
 # Link the dependencies
 target_include_directories(fazeEngine PUBLIC glm PRIVATE audioFile openal soil glfw glew)
