@@ -8,13 +8,15 @@
 namespace fe { namespace window { class WindowSystem; }}
 namespace fe { namespace graphics { class GraphicsSystem; }}
 namespace fe { namespace physics { class PhysicsEngine; }}
+namespace fe { namespace audio { class AudioEngine; }}
 
 namespace fe { namespace app {
 
 	struct Entity;
 	class InputManager;
-	class PhysicsManager;
 	class GraphicsManager;
+	class PhysicsManager;
+	class AudioManager;
 
 
 	/**
@@ -43,14 +45,16 @@ namespace fe { namespace app {
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
 		physics::PhysicsEngine* mPhysicsEngine;
+		audio::AudioEngine* mAudioEngine;
 
 		/** The Entities that exists currently in the application */
 		std::vector<EntityUPtr> mEntities;
 
 		/** The managers that hold the data of the entities */
 		InputManager* mInputManager;
-		PhysicsManager* mPhysicsManager;
 		GraphicsManager* mGraphicsManager;
+		PhysicsManager* mPhysicsManager;
+		AudioManager* mAudioManager;
 
 	public:		// Functions
 		/** Creates a new Game */
@@ -67,14 +71,10 @@ namespace fe { namespace app {
 		 * @return	true if the Game exited succesfully, false otherwise */
 		bool run();
 	protected:
-		/**
-		 * Function used to initialize the application's entities data
-		 */
+		/**  Function used to initialize the application's entities data */
 		virtual void init() = 0;
 
-		/**
-		 * Function used to remove the application's entities data
-		 */
+		/** Function used to remove the application's entities data */
 		virtual void end() = 0;
 	};
 

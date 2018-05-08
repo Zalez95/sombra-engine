@@ -50,7 +50,7 @@ namespace fe { namespace app {
 		 *
 		 * @param	entity a pointer to the Entity to add to the
 		 *			GraphicsManager
-		 * @param	Camera a pointer to the camera to add to the
+		 * @param	camera a pointer to the camera to add to the
 		 *			GraphicsManager */
 		void addEntity(Entity* entity, CameraUPtr camera);
 

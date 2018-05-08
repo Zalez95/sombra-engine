@@ -17,9 +17,9 @@ set_target_properties(fazeEngine PROPERTIES
 	CXX_STANDARD_REQUIRED	On
 	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 )
-if(CMAKE_CXX_COMPILER MATCHES "GNU")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(fazeEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
-elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	target_compile_options(fazeEngine PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
@@ -47,9 +47,9 @@ if(FAZE_ENGINE_BUILD_TESTS)
 		CXX_STANDARD_REQUIRED	On
 		DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 	)
-	if(CMAKE_CXX_COMPILER MATCHES "GNU")
+	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(fazeEngineTest PRIVATE -Wall -Wextra -Werror)
-	elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		target_compile_options(fazeEngineTest PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
 	endif()
 

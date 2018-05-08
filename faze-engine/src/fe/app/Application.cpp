@@ -3,11 +3,15 @@
 #include <iostream>
 #include "fe/utils/Logger.h"
 #include "fe/window/WindowSystem.h"
+#include "fe/graphics/GraphicsSystem.h"
+#include "fe/physics/PhysicsEngine.h"
+#include "fe/audio/AudioEngine.h"
 #include "fe/app/Entity.h"
 #include "fe/app/Application.h"
 #include "fe/app/InputManager.h"
-#include "fe/app/PhysicsManager.h"
 #include "fe/app/GraphicsManager.h"
+#include "fe/app/PhysicsManager.h"
+#include "fe/app/AudioManager.h"
 
 namespace fe { namespace app {
 
@@ -22,13 +26,17 @@ namespace fe { namespace app {
 			// Input
 			mInputManager = new InputManager(*mWindowSystem);
 
+			// Graphics
+			mGraphicsSystem = new graphics::GraphicsSystem();
+			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine();
 			mPhysicsManager = new PhysicsManager(*mPhysicsEngine);
 
-			// Graphics
-			mGraphicsSystem = new graphics::GraphicsSystem();
-			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+			// Audio
+			mAudioEngine = new audio::AudioEngine();
+			mAudioManager = new AudioManager(*mAudioEngine);
 		}
 		catch (std::exception& e) {
 			mState = AppState::ERROR;
@@ -42,9 +50,12 @@ namespace fe { namespace app {
 
 	Application::~Application()
 	{
+		delete mAudioManager;
+		delete mAudioEngine;
+		delete mPhysicsManager;
+		delete mPhysicsEngine;
 		delete mGraphicsManager;
 		delete mGraphicsSystem;
-		delete mPhysicsManager;
 		delete mInputManager;
 		delete mWindowSystem;
 	}
@@ -80,6 +91,7 @@ namespace fe { namespace app {
 				}
 				mInputManager->update();
 				mPhysicsManager->update(deltaTime);
+				mAudioManager->update();
 				mGraphicsManager->update();
 
 				// Draw

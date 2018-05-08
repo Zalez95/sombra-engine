@@ -5,8 +5,9 @@
 
 #include <fe/app/Entity.h>
 #include <fe/app/InputManager.h>
-#include <fe/app/PhysicsManager.h>
 #include <fe/app/GraphicsManager.h>
+#include <fe/app/PhysicsManager.h>
+#include <fe/app/AudioManager.h>
 
 #include <fe/graphics/Texture.h>
 #include <fe/graphics/GraphicsSystem.h>
@@ -27,6 +28,9 @@
 #include <fe/physics/RigidBody.h>
 #include <fe/physics/forces/Gravity.h>
 
+#include <fe/audio/Buffer.h>
+#include <fe/audio/Source.h>
+
 #include <fe/loaders/MeshLoader.h>
 #include <fe/loaders/MeshReader.h>
 #include <fe/loaders/MaterialReader.h>
@@ -34,6 +38,7 @@
 #include <fe/loaders/FontReader.h>
 #include <fe/loaders/TerrainLoader.h>
 #include <fe/loaders/RawMesh.h>
+#include <AudioFile.h>
 
 #include <fe/utils/Image.h>
 #include <fe/utils/Logger.h>
@@ -80,9 +85,12 @@ namespace game {
 		std::unique_ptr<fe::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<fe::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr;
 		std::shared_ptr<fe::graphics::Font> arial = nullptr;
+		//std::unique_ptr<fe::audio::Buffer> buffer1 = nullptr;
+		std::unique_ptr<fe::audio::Source> source1 = nullptr;
 
 		try {
 			// Readers
+			AudioFile<float> audioFile;
 			fe::loaders::MeshReader meshReader;
 			fe::loaders::MaterialReader materialReader;
 			fe::loaders::ImageReader imageReader;
@@ -169,8 +177,8 @@ namespace game {
 			);
 
 			float pixels[] = {
-				0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
-				1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
+				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
+				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
 			texture2 = std::make_shared<fe::graphics::Texture>();
 			texture2->setImage(pixels, fe::graphics::TexturePixelType::FLOAT, fe::graphics::TextureFormat::RGB, 2, 2);
@@ -186,6 +194,15 @@ namespace game {
 
 			fe::utils::FileReader fileReader3("res/fonts/arial.fnt");
 			arial = std::move(fontReader.read(fileReader3));
+
+			// Audio
+			if (audioFile.load("res/audio/bounce.wav")) {
+				buffer1.setBufferFloatData(audioFile.samples[0], audioFile.getSampleRate());
+				source1 = std::make_unique<fe::audio::Source>();
+				source1->bind(buffer1);
+				source1->setLooping(true);
+				source1->play();
+			}
 		}
 		catch (std::exception& e) {
 			mState = AppState::ERROR;
@@ -216,8 +233,9 @@ namespace game {
 		);
 
 		mInputManager->addEntity(player.get());
-		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1));
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
+		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1));
+		mAudioManager->setListener(player.get());
 
 		mEntities.push_back(std::move(player));
 
@@ -246,6 +264,7 @@ namespace game {
 				),
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);
+			if (i == 2) { mAudioManager->addSource(cube.get(), std::move(source1)); }
 			if (i == 3) { physicsEntityCube2->getRigidBody()->setAngularVelocity(glm::vec3(0, 10, 0)); }
 			if (i == 4) { cube->velocity += glm::vec3(-1, 0, 0); }
 

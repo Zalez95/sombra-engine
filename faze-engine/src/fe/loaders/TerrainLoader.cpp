@@ -5,6 +5,8 @@
 #include "fe/app/Entity.h"
 #include "fe/utils/Image.h"
 #include "fe/graphics/3D/Mesh.h"
+#include "fe/graphics/3D/Renderable3D.h"
+#include "fe/physics/PhysicsEntity.h"
 #include "fe/collision/TerrainCollider.h"
 
 namespace fe { namespace loaders {

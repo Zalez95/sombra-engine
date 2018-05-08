@@ -16,9 +16,9 @@ set_target_properties(game PROPERTIES
 	CXX_STANDARD_REQUIRED	On
 	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 )
-if(CMAKE_CXX_COMPILER MATCHES "GNU")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(game PRIVATE -Wall -Wextra -Wpedantic -Werror)
-elseif(CMAKE_CXX_COMPILER MATCHES "MSVC")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	target_compile_options(game PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
 endif()
 

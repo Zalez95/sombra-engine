@@ -7,6 +7,7 @@
 #include <fe/app/Application.h>
 #include <fe/graphics/2D/Layer2D.h>
 #include <fe/graphics/2D/Renderable2D.h>
+#include <fe/audio/Buffer.h>
 
 namespace game {
 
@@ -25,6 +26,7 @@ namespace game {
 	private:	// Attributes
 		fe::graphics::Layer2D mLayer2D;
 		std::vector<fe::graphics::Renderable2D> mRenderable2Ds;
+		fe::audio::Buffer buffer1;
 
 	public:		// Functions
 		/** Creates a new Game */

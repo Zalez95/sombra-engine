@@ -17,6 +17,7 @@ ExternalProject_Add(gtestDownload
 						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
 						-DBUILD_GTEST=ON
 						-DBUILD_GMOCK=OFF
+						-Dgtest_force_shared_crt=$<NOT:$<BOOL:${FORCE_STATIC_VCRT}>>
 						-Wno-dev
 )
 

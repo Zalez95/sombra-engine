@@ -29,18 +29,18 @@ set(EXTERNAL_INSTALL_PATH "${CMAKE_BINARY_DIR}/ext")
 
 # Global compiler options
 set(MY_DEBUG_POSTFIX "d")
-if(CMAKE_CXX_COMPILER MATCHES "MSVC")
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
-    if(NOT BUILD_SHARED_LIBS AND FORCE_STATIC_VCRT)
+	if(NOT BUILD_SHARED_LIBS AND FORCE_STATIC_VCRT)
 		foreach(flagVar
 			CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
 			CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
 		)
-            if(${flagVar} MATCHES "/MD")
-                string(REGEX REPLACE "/MD" "/MT" ${flagVar} "${${flagVar}}")
-            endif()
-        endforeach()
-    endif()
+			if(${flagVar} MATCHES "/MD")
+				string(REGEX REPLACE "/MD" "/MT" ${flagVar} "${${flagVar}}")
+			endif()
+		endforeach()
+	endif()
 endif()
 
 # Include the dependencies
