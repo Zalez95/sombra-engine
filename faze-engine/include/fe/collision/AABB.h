@@ -18,26 +18,15 @@ namespace fe { namespace collision {
 		/** The maximum coordinates in each Axis of the Mesh's vertices in
 		 * World Space */
 		glm::vec3 maximum;
-
-		/** Creates a new AABB */
-		AABB() : minimum(0.0f), maximum(0.0f) {};
-
-		/** Creates a new AABB
-		 *
-		 * @param	minimum the minimum coordinates in each axis of the
-		 *			AABB in World Space
-		 * @param	maximum the maximum coordinates in each axis of the
-		 *			AABB in World Space */
-		AABB(const glm::vec3& minimum, const glm::vec3& maximum) :
-			minimum(minimum), maximum(maximum) {};
-
-		/** Destructor */
-		~AABB() {};
-
-		/** @return true if the current AABB overlaps the given one, false
-		 * otherwise */
-		bool overlaps(const AABB& other) const;
 	};
+
+
+	/** Checks if the given AABBs are overlapping or not
+	 *
+	 * @param	aabb1 the first of the fiven AABBs to check
+	 * @param	aabb2 the second of the fiven AABBs to check
+	 * @return true if the given AABB overlaps each other, false otherwise */
+	bool overlaps(const AABB& aabb1, const AABB& aabb2);
 
 }}
 

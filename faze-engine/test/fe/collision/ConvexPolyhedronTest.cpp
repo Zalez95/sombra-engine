@@ -5,7 +5,6 @@
 
 #define TOLERANCE 0.000001f
 
-
 TEST(ConvexPolyhedron, getAABB)
 {
 	const std::vector<glm::vec3> vertices = {

@@ -23,11 +23,11 @@ namespace fe { namespace collision {
 
 		/** The coordinates of the Contact point relative to each of the
 		 * Collider in world space */
-		glm::vec3 mWorldPos[2];
+		glm::vec3 mWorldPosition[2];
 
 		/** The coordinates of the Contact point relative to each of the
 		 * Collider in local space */
-		glm::vec3 mLocalPos[2];
+		glm::vec3 mLocalPosition[2];
 
 	public:		// Functions
 		/** Creates a new Contact */
@@ -44,20 +44,24 @@ namespace fe { namespace collision {
 		inline glm::vec3 getNormal() const { return mNormal; };
 
 		/** Returns the position of the Contact in world space relative to the
-		 * given collider
+		 * requested Collider
 		 *
-		 * @param	collider the index of the collider (0 or 1)
-		 * @return	the position in world space of the Contact */
-		inline glm::vec3 getWorldPosition(int collider) const
-		{ return mWorldPos[collider]; };
+		 * @param	second the flag used to select the world position to return
+		 * @return	the position in world space of the Contact relative to the
+		 *			second Collider if the flag is true, or relative to the
+		 *			first one of the flag is false */
+		inline glm::vec3 getWorldPosition(bool second) const
+		{ return (second)? mWorldPosition[1] : mWorldPosition[0]; };
 
 		/** Returns the position of the Contact in local space relative to the
-		 * given collider
+		 * requested Collider
 		 *
-		 * @param	collider the index of the collider (0 or 1)
-		 * @return	the position in local space of the Contact */
-		inline glm::vec3 getLocalPosition(int collider) const
-		{ return mLocalPos[collider]; };
+		 * @param	second the flag used to select the local position to return
+		 * @return	the position in local space of the Contact relative to the
+		 *			second Collider if the flag is true, or relative to the
+		 *			first one of the flag is false */
+		inline glm::vec3 getLocalPosition(bool second) const
+		{ return (second)? mLocalPosition[1] : mLocalPosition[0]; };
 	};
 
 }}

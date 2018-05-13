@@ -1,21 +1,19 @@
 #include <cassert>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "fe/collision/Polytope.h"
+#include "fe/collision/SupportPoint.h"
 #include "fe/collision/ConvexCollider.h"
+#include "Polytope.h"
 
 namespace fe { namespace collision {
 
-// Static variables definition
-	const float Polytope::sKEpsilon = 0.0001f;
-
-// Public functions
 	Polytope::Polytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<SupportPoint>& simplex
 	) {
 		assert(simplex.size() > 0 && "The simplex must have at least one support point.");
 
+		const float kEpsilon = 0.0001f;
 		if (simplex.size() == 1) {
 			// Search a support point in each axis direction
 			for (int i = 0; i < 3; ++i) {
@@ -24,7 +22,7 @@ namespace fe { namespace collision {
 					searchDir[i] = v;
 					SupportPoint sp(collider1, collider2, searchDir);
 
-					if (glm::length(sp.getCSOPosition() - simplex[0].getCSOPosition()) >= sKEpsilon) {
+					if (glm::length(sp.getCSOPosition() - simplex[0].getCSOPosition()) >= kEpsilon) {
 						simplex.push_back(sp);
 						break;
 					}
@@ -50,7 +48,7 @@ namespace fe { namespace collision {
 			for (int i = 0; i < 6; ++i) {
 				SupportPoint sp(collider1, collider2, searchDir);
 
-				if (glm::length(sp.getCSOPosition()) > sKEpsilon) {
+				if (glm::length(sp.getCSOPosition()) > kEpsilon) {
 					simplex.push_back(sp);
 					break;
 				}
@@ -66,7 +64,7 @@ namespace fe { namespace collision {
 
 			SupportPoint sp(collider1, collider2, searchDir);
 
-			if (glm::length(sp.getCSOPosition()) < sKEpsilon) {
+			if (glm::length(sp.getCSOPosition()) < kEpsilon) {
 				// Try the opposite direction
 				searchDir = -searchDir;
 				sp = SupportPoint(collider1, collider2, searchDir);
@@ -75,17 +73,21 @@ namespace fe { namespace collision {
 			simplex.push_back(sp);
 		}
 
-		// Fix the tetrahedron winding (It's faces must be counter-clockwise)
-		SupportPoint *d = &simplex[0], *c = &simplex[1], *b = &simplex[2], *a = &simplex[3];
+		// Create the polytope from the simplex's points
+		vertices.push_back(simplex[0]);		SupportPoint *d = &vertices.back();
+		vertices.push_back(simplex[1]);		SupportPoint *c = &vertices.back();
+		vertices.push_back(simplex[2]);		SupportPoint *b = &vertices.back();
+		vertices.push_back(simplex[3]);		SupportPoint *a = &vertices.back();
+
 		glm::vec3 da = a->getCSOPosition() - d->getCSOPosition(),
 			db = b->getCSOPosition() - d->getCSOPosition(),
 			dc = c->getCSOPosition() - d->getCSOPosition(); 
 		if (glm::dot(da, glm::cross(db, dc)) > 0.0f) {
+			// Fix the tetrahedron winding (the faces must be in
+			// counter-clockwise order)
 			std::swap(b, c);
 		}
 
-		// Create the polytope from the simplex's points
-		vertices = { *d, *c, *b, *a };
 		faces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
 	}
 

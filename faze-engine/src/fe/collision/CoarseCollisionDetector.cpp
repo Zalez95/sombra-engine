@@ -16,8 +16,8 @@ namespace fe { namespace collision {
 
 		while (!mAABBs.empty()) {
 			for (size_t i = 1; i < mAABBs.size(); ++i) {
-				if ( mAABBs[0].overlaps(mAABBs[i]) ) {
-					ret.insert(std::make_pair(mColliders[0], mColliders[i]));
+				if ( overlaps(mAABBs.front(), mAABBs[i]) ) {
+					ret.insert(std::make_pair(mColliders.front(), mColliders[i]));
 				}
 			}
 

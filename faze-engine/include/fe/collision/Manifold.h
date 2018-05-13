@@ -21,11 +21,8 @@ namespace fe { namespace collision {
 		/** All the Contacs the the Contact Manifold can hold */
 		std::vector<Contact> mContacts;
 
-		/** The first collider of the Manifold */
-		const Collider* mFirstCollider;
-
-		/** The second collider of the Manifold */
-		const Collider* mSecondCollider;
+		/** The colliders of the Manifold */
+		const Collider* mColliders[2];
 
 	public:		// Functions
 		/** Creates a new Manifold
@@ -33,7 +30,7 @@ namespace fe { namespace collision {
 		 * @param	c1 a pointer to the first Collider of the Manifold
 		 * @param	c2 a pointer to the second Collider of the Manifold */
 		Manifold(const Collider* c1, const Collider* c2) :
-			mFirstCollider(c1), mSecondCollider(c2) {};
+			mColliders{ c1, c2 } {};
 
 		/** Class destructor */
 		~Manifold() {};
@@ -42,13 +39,13 @@ namespace fe { namespace collision {
 		inline std::vector<Contact> getContacts() const
 		{ return mContacts; };
 
-		/** @return a pointer to the first Collider of the Manifold */
-		inline const Collider* getFirstCollider() const
-		{ return mFirstCollider; };
-
-		/** @return a pointer to the second Collider of the Manifold */
-		inline const Collider* getSecondCollider() const
-		{ return mSecondCollider; };
+		/** Returns a pointer to the requested collider
+		 *
+		 * @param	second the flag used to select the collider to return
+		 * @return	a pointer to the second Collider if the second flag is
+		 *			true, the first one otherwise */
+		inline const Collider* getCollider(bool second) const
+		{ return (second)? mColliders[1] : mColliders[0]; };
 	};
 
 }}

@@ -8,6 +8,10 @@
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
 
+#define MIN_F_DIFFERENCE	0.00001f
+#define CONTACT_PRECISION	0.0000001f
+#define CONTACT_SEPARATION	0.00001f
+
 namespace fe { namespace collision {
 
 	class Collider;
@@ -50,7 +54,11 @@ namespace fe { namespace collision {
 
 	public:		// Functions
 		/** Creates a new CollisionDetector */
-		CollisionDetector() {};
+		CollisionDetector() :
+			mFineCollisionDetector(
+				MIN_F_DIFFERENCE, CONTACT_PRECISION,
+				CONTACT_SEPARATION
+			) {};
 
 		/** Class destructor */
 		~CollisionDetector() {};

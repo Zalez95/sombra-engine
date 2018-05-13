@@ -24,10 +24,10 @@ namespace fe { namespace collision {
 
 	AABB ConvexPolyhedron::getAABB() const
 	{
-		AABB ret = AABB(
+		AABB ret{
 			glm::vec3( std::numeric_limits<float>::max()),
 			glm::vec3(-std::numeric_limits<float>::max())
-		);
+		};
 
 		for (const glm::vec3& vertex : mVerticesWorld) {
 			ret.minimum = glm::min(ret.minimum, vertex);

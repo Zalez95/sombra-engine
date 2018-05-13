@@ -84,8 +84,8 @@ namespace fe { namespace physics {
 				// it doesn't exist yet
 				auto it = mContactConstraints.find(&contact);
 				if (it == mContactConstraints.end()) {
-					RigidBody* rb1 = mColliderEntityMap[manifold->getFirstCollider()]->getRigidBody();
-					RigidBody* rb2 = mColliderEntityMap[manifold->getSecondCollider()]->getRigidBody();
+					RigidBody* rb1 = mColliderEntityMap[manifold->getCollider(0)]->getRigidBody();
+					RigidBody* rb2 = mColliderEntityMap[manifold->getCollider(1)]->getRigidBody();
 
 					it = mContactConstraints.emplace(
 						std::piecewise_construct,

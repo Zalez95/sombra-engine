@@ -32,12 +32,7 @@ namespace fe { namespace collision {
 		std::set<ColliderPair> collidingManifolds;
 		for (ColliderPair pair : intersectingColliders) {
 			Manifold* manifold = getManifold(pair.first, pair.second);
-			if (mFineCollisionDetector.collide(
-					manifold->getFirstCollider(),
-					manifold->getSecondCollider(),
-					*manifold
-				)
-			) {
+			if (mFineCollisionDetector.collide(*manifold)) {
 				collidingManifolds.insert(pair);
 				mManifolds.insert(manifold);
 			}

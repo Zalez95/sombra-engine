@@ -5,7 +5,6 @@
 
 #define TOLERANCE 0.000001f
 
-
 TEST(BoundingBox, getAABB)
 {
 	const glm::vec3 lengths(0.5f, 2.0f, 5.5f);
@@ -48,8 +47,8 @@ TEST(BoundingBox, getFurthestPointInDirection)
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
 	const glm::vec3 direction(-0.565685425f, 0.707106781f, 0.424264069f);
-	const glm::vec3 expectedPLocal(0.25, 1.0f, 2.75f);
-	const glm::vec3 expectedPWorld(3.38738465f, -2.15441298f, -7.83394575f);
+	const glm::vec3 expectedPLocal(-0.25, 1.0f, 2.75f);
+	const glm::vec3 expectedPWorld(3.026389360f, -2.187659978f, -8.178098678f);
 
 	fe::collision::BoundingBox bb1(lengths);
 	glm::mat4 r = glm::mat4_cast(rotation);
@@ -60,7 +59,7 @@ TEST(BoundingBox, getFurthestPointInDirection)
 	bb1.getFurthestPointInDirection(direction, pointWorld, pointLocal);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_LE(abs(pointWorld[i] - expectedPWorld[i]), TOLERANCE);
-		EXPECT_LE(abs(pointLocal[i] - expectedPLocal[i]), TOLERANCE);
+		EXPECT_NEAR(pointWorld[i], expectedPWorld[i], TOLERANCE);
+		EXPECT_NEAR(pointLocal[i], expectedPLocal[i], TOLERANCE);
 	}
 }

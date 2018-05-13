@@ -1,14 +1,15 @@
 #ifndef EPA_COLLISION_DETECTOR_H
 #define EPA_COLLISION_DETECTOR_H
 
-#include <array>
-#include <glm/glm.hpp>
-#include "Polytope.h"
+#include <list>
 
 namespace fe { namespace collision {
 
 	class Contact;
 	class ConvexCollider;
+	struct Edge;
+	struct Triangle;
+	struct Polytope;
 
 
 	/**
@@ -19,19 +20,20 @@ namespace fe { namespace collision {
 	class EPACollisionDetector
 	{
 	private:	// Attributes
-		/** The minimum difference between the distances to the origin of two
-		 * faces needed for determinate the closest face to the origin */
-		const float mMinFDifference;
+		/** The minimum difference between the distances to the origin of
+		 * a face and the next SupportPoint during the Polytope expansion step
+		 * needed for determinate the closest face to the origin */
+		const float mMinFThreshold;
 
 		/** The precision of the projected point onto a triangle */
 		const float mProjectionPrecision;
 
 	public:		// Functions
 		/** Creates a new EPACollisionDetector
-		 * @param	minFDifference the minimum difference between two faces
-		 *			needed for determinate the closest face in contact
+		 * @param	minFThreshold a threshold needed for determinate the
+		 *			closest face in contact and stop the Algorithm
 		 * @param	projectionPrecision precision of the Contact coordinates */
-		EPACollisionDetector(float minFDifference, float projectionPrecision);
+		EPACollisionDetector(float minFThreshold, float projectionPrecision);
 
 		/** Class destructor */
 		~EPACollisionDetector() {};
@@ -64,7 +66,7 @@ namespace fe { namespace collision {
 		 * @param	polytope the Polytope to expand
 		 * @param	a pair with a pointer to the closest face and its
 		 *			distance to the origin */
-		std::pair<Triangle, float> calculateEPA(
+		std::pair<Triangle*, float> calculateEPA(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Polytope& polytope
 		) const;
@@ -79,22 +81,6 @@ namespace fe { namespace collision {
 			Polytope& polytope
 		) const;
 
-		/** Expands the given Polytope adding new SupportPoints and faces along
-		 * the given face's normal
-		 *
-		 * @param	collider1 the first of the ConvexColliders with which we
-		 *			are going to expand the Polytope
-		 * @param	collider1 the second of the ConvexColliders with which we
-		 *			are going to expand the Polytope
-		 * @param	polytope the polytope to expand
-		 * @param	itFace an iterator to the faces from where we are going to
-		 *			expand the Polytope */
-		void expandPolytope(
-			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			Polytope& polytope,
-			std::list<Triangle>::iterator itFace
-		) const;
-
 		/** Appends the given edge to the list if it isn't already inside, also
 		 * if it founds an edge equal to the given one, it will remove it from
 		 * the list
@@ -102,21 +88,6 @@ namespace fe { namespace collision {
 		 * @param	e the edge to append
 		 * @param	edgeList the list where we want to append the edge */
 		void appendEdge(const Edge& e, std::list<Edge>& edgeList) const;
-
-		/** Projects the given point onto the the given 3D triangle 
-		 *
-		 * @param	point the 3D coordinates of the point in world space
-		 * @param	triangle an array with the 3 points of the triangle in
-		 *			world space
-		 * @param	projectedPoint a reference to the vector where we are going
-		 *			to store the coordinates of the projected point in
-		 *			barycentric coordinates
-		 * @return	true if the point could be projected onto the triangle,
-		 *			false otherwise*/
-		bool projectPointOnTriangle(
-			const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
-			glm::vec3& projectedPoint
-		) const;
 	};
 
 }}

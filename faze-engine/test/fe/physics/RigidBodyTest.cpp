@@ -3,7 +3,6 @@
 
 #define TOLERANCE 0.000001
 
-
 TEST(RigidBody, linearVelocityIntegration)
 {
 	const glm::vec3 expectedPosition(-2.96f, 1.968f, -5.008f);

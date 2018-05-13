@@ -22,17 +22,6 @@ namespace fe { namespace collision {
 	class FineCollisionDetector
 	{
 	private:	// Attributes
-		/** The minimum difference between the distances to the origin of two
-		 * faces needed for determinate the closest face to the origin */
-		static const float sMinFDifference;
-
-		/** The precision of the calculated Contact points */
-		static const float sContactPrecision;
-
-		/** The minimum distance between the coordinates of two Contact used
-		 * to determine if a contact is the same than other one */
-		static const float sContactSeparation;
-
 		/** The class that implements the GJK algorithm for detecting if two
 		 * ConvexColliders are intersecting */
 		GJKCollisionDetector mGJKCollisionDetector;
@@ -41,29 +30,39 @@ namespace fe { namespace collision {
 		 * Contact between the two ConvexColliders that are intersecting */
 		EPACollisionDetector mEPACollisionDetector;
 
+		/** The minimum distance between the coordinates of two Contact used
+		 * to determine if a contact is the same than other one */
+		const float mContactSeparation;
+
 	public:		// Functions
-		/** Creates a new FineCollisionDetector */
-		FineCollisionDetector() :
-			mEPACollisionDetector(sMinFDifference, sContactPrecision) {};
+		/** Creates a new FineCollisionDetector
+		 *
+		 * @param	minFDifference the minimum difference between the distances
+		 *			to the origin of two faces needed for the EPA algorithm
+		 * @param	contactPrecission the precision of the calculated Contact
+		 *			points
+		 * @param	contactSeparation the minimum distance between the
+		 *			coordinates of two Contact used to determine if a contact
+		 *			is the same than another one */
+		FineCollisionDetector(
+			float minFDifference, float contactPrecision,
+			float contactSeparation
+		) : mEPACollisionDetector(minFDifference, contactPrecision),
+			mContactSeparation(contactSeparation) {}
 
 		/** Class destructor */
 		~FineCollisionDetector() {};
 
-		/** Calculates the contact data of the collision that happened between
-		 * the given Colliders
+		/** Checks if the Colliders of the given manifold are intersecting,
+		 * and if that is the case, calculates the contact data of the
+		 * collision that happened between those Colliders.
 		 *
-		 * @param	collider1 a pointer to the first Collider with which we
-		 *			will calculate the collision data
-		 * @param	collider2 a pointer to the second Collider with which we
-		 *			will calculate the collision data
-		 * @param	manifold a contact manifold where the FineCollisionDetector
-		 *			will store the collision data
+		 * @param	manifold a contact manifold with the Colliders to check if
+		 *			they are colliding. If they are colliding, the manifold
+		 *			contact data will be updated.
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise */
-		bool collide(
-			const Collider* collider1, const Collider* collider2,
-			Manifold& manifold
-		);
+		bool collide(Manifold& manifold) const;
 	private:
 		/** Calculates the contact data of the collision that happened between
 		 * the given ConcaveColliders
@@ -75,12 +74,14 @@ namespace fe { namespace collision {
 		 * @param	manifold a contact manifold where the FineCollisionDetector
 		 *			will store the collision data
 		 * @return	true if the given Colliders are intersecting, false
-		 *			otherwise */
+		 *			otherwise
+		 * @note	the colliders must be given in the same order than the ones
+		 *			in the manifold */
 		bool collideConcave(
 			const ConcaveCollider& collider1,
 			const ConcaveCollider& collider2,
 			Manifold& manifold
-		);
+		) const;
 
 		/** Calculates the contact data of the collision that happened between
 		 * a ConvexCollider and a ConcaveCollider
@@ -99,7 +100,7 @@ namespace fe { namespace collision {
 			const ConvexCollider& convexCollider,
 			const ConcaveCollider& concaveCollider,
 			Manifold& manifold, bool convexFirst
-		);
+		) const;
 
 		/** Calculates the contact data of the collision that happened between
 		 * the given ConvexColliders
@@ -111,11 +112,13 @@ namespace fe { namespace collision {
 		 * @param	manifold a contact manifold where the FineCollisionDetector
 		 *			will store the collision data
 		 * @return	true if the given Colliders are intersecting, false
-		 *			otherwise */
+		 *			otherwise
+		 * @note	the colliders must be given in the same order than the ones
+		 *			in the manifold */
 		bool collideConvex(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Manifold& manifold
-		);
+		) const;
 
 		/** Removes the Contacts that are no longer valid from the given
 		 * manifold
@@ -143,30 +146,6 @@ namespace fe { namespace collision {
 		 * @return	true if the number of contacs was cut down, false
 		 *			otherwise */
 		void limitManifoldContacts(Manifold& manifold) const;
-
-		/** Calculates the minimum distance from a point to the given edge
-		 *
-		 * @param	p the point whose distance to the edge we want to know
-		 * @param	e1 the first point of the edge
-		 * @param	e2 the second point of the edge
-		 * @return	the minimum distance of p to the edge between e1 and e2 */
-		float distancePointEdge(
-			const glm::vec3& p,
-			const glm::vec3& e1, const glm::vec3& e2
-		) const;
-
-		/** Calculates the minimum distance from a point to the given triangle
-		 *
-		 * @param	p the point whose distance to the triangle we want to know
-		 * @param	t1 the first point of the triangle
-		 * @param	t2 the second point of the triangle
-		 * @param	t3 the third point of the triangle
-		 * @return	the minimum distance of p to the triangle between e1, e2
-		 *			and e3 */
-		float distancePointTriangle(
-			const glm::vec3& p,
-			const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
-		) const;
 	};
 
 }}

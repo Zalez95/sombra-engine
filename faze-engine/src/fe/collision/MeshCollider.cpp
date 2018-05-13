@@ -46,7 +46,7 @@ namespace fe { namespace collision {
 		std::vector<ConvexPart> triangleColliders;
 
 		for (size_t i = 0; i < mTriangleAABBs.size(); ++i) {
-			if ( mTriangleAABBs[i].overlaps(aabb) ) {
+			if (overlaps(aabb, mTriangleAABBs[i])) {
 				std::vector<glm::vec3> triangleVertices;
 				triangleVertices.reserve(3);
 				for (int j = 0; j < 3; ++j) {
@@ -66,10 +66,10 @@ namespace fe { namespace collision {
 	{
 		int nTriangles = mIndices.size() / 3;
 
-		mAABB = AABB(
+		mAABB = {
 			glm::vec3( std::numeric_limits<float>::max()),
 			glm::vec3(-std::numeric_limits<float>::max())
-		);
+		};
 		mTriangleAABBs = std::vector<AABB>(nTriangles, mAABB);
 
 		for (int i = 0; i < nTriangles; ++i) {

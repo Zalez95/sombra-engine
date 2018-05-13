@@ -6,7 +6,6 @@
 
 #define TOLERANCE 0.000001f
 
-
 TEST(MeshCollider, getAABB)
 {
 	const std::vector<glm::vec3> vertices = {
@@ -105,10 +104,10 @@ TEST(MeshCollider, getOverlapingParts)
 		4, 7, 5, 2, 1, 6,
 		2, 6, 3, 7, 4, 3
 	};
-	const fe::collision::AABB aabb1(
+	const fe::collision::AABB aabb1{
 		glm::vec3(3.47687816f, -3.09886074f, -10.11952781f),
 		glm::vec3(5.47687816f, -1.09886074f, -8.11952781f)
-	);
+	};
 
 	fe::collision::MeshCollider mc1(vertices, indices);
 	glm::mat4 r = glm::mat4_cast(rotation);

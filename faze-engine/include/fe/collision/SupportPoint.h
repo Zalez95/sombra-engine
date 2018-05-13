@@ -55,18 +55,23 @@ namespace fe { namespace collision {
 		/** Returns the coordinates in local space of the SupportPoint relative
 		 * to the Collider located at the given index
 		 *
-		 * @param	i the first or the second collider given in the constructor
-		 * @return	the coordinates of the SupportPoint in local space */
-		inline glm::vec3 getLocalPosition(int i) const
-		{ return mLocalPosition[i]; };
+		 * @param	second the flag used to select the local position to return
+		 * @return	the position in local space of the SupportPoint relative to
+		 *			the second Collider if the flag is true, or relative to the
+		 *			first one of the flag is false */
+		inline glm::vec3 getLocalPosition(bool second) const
+		{ return (second)? mLocalPosition[1] : mLocalPosition[0]; };
 
 		/** Returns the coordinates in world space of the SupportPoint relative
 		 * to the Collider located at the given index
 		 *
-		 * @param	i the first or the second collider given in the constructor
-		 * @return	the coordinates of the SupportPoint in world space */
-		inline glm::vec3 getWorldPosition(int i) const
-		{ return mWorldPosition[i]; };
+		 * @param	second the flag used to select the world position to return
+
+		 * @return	the position in world space of the SupportPoint relative to
+		 *			the second Collider if the flag is true, or relative to the
+		 *			first one of the flag is false */
+		inline glm::vec3 getWorldPosition(bool second) const
+		{ return (second)? mWorldPosition[1] : mWorldPosition[0]; };
 	};
 
 }}

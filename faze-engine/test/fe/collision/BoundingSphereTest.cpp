@@ -5,7 +5,6 @@
 
 #define TOLERANCE 0.000001f
 
-
 TEST(BoundingSphere, getAABB)
 {
 	const fe::collision::BoundingSphere bs1(2.0f);

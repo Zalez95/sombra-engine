@@ -21,7 +21,7 @@ namespace fe { namespace collision {
 	AABB BoundingSphere::getAABB() const
 	{
 		glm::vec3 center = getCenter();
-		return AABB(center - glm::vec3(mRadius), center + glm::vec3(mRadius));
+		return { center - glm::vec3(mRadius), center + glm::vec3(mRadius) };
 	}
 
 

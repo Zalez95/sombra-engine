@@ -6,7 +6,6 @@
 
 #define TOLERANCE 0.000001f
 
-
 TEST(TerrainCollider, getAABB)
 {
 	const std::vector<float> heights = {
@@ -81,10 +80,10 @@ TEST(TerrainCollider, getOverlapingParts)
 		-0.283075078f, 0.129306909f, 0.134741993f, -0.250951479f, 0.104189257f, -0.422417659f
 	};
 	const int xSize = 6, zSize = 8;
-	const fe::collision::AABB aabb1(
+	const fe::collision::AABB aabb1{
 		glm::vec3(-3.536325216f, -0.434814631f, 0.558086156f),
 		glm::vec3(-2.536325216f, 0.565185368f, 1.558086156f)
-	);
+	};
 
 	fe::collision::TerrainCollider tc1(heights, xSize, zSize);
 	glm::mat4 s = glm::scale(glm::mat4(1.0f), scale);

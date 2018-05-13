@@ -76,10 +76,10 @@ namespace fe { namespace collision {
 // Private functions
 	void TerrainCollider::calculateAABB()
 	{
-		mAABB = AABB(
+		mAABB = {
 			glm::vec3( std::numeric_limits<float>::max()),
 			glm::vec3(-std::numeric_limits<float>::max())
-		);
+		};
 
 		for (int z = 0; z < mZSize; ++z) {
 			float zPos = z / static_cast<float>(mZSize - 1) - 0.5f;
@@ -112,7 +112,7 @@ namespace fe { namespace collision {
 			}
 		}
 
-		return AABB(localMinimum, localMaximum);
+		return { localMinimum, localMaximum };
 	}
 
 

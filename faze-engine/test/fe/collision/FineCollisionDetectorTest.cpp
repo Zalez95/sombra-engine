@@ -8,11 +8,14 @@
 #include <fe/collision/FineCollisionDetector.h>
 
 #define TOLERANCE 0.000001f
+#define MIN_F_DIFFERENCE	0.0000001f
+#define CONTACT_PRECISION	0.0000001f
+#define CONTACT_SEPARATION	0.0000001f
 
 TEST(FineCollisionDetector, SphereSphere1)
 {
-	glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(0.0f);
-	glm::quat o1(1.0f, 0.0f, 0.0f, 0.0f), o2(0.795f, -0.002f, -0.575f, 0.192f);
+	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(0.0f);
+	const glm::quat o1(1.0f, 0.0f, 0.0f, 0.0f), o2(0.795f, -0.002f, -0.575f, 0.192f);
 	fe::collision::BoundingSphere bs1(2.5f), bs2(5.2f);
 
 	glm::mat4 r1 = glm::mat4_cast(o1);
@@ -24,9 +27,12 @@ TEST(FineCollisionDetector, SphereSphere1)
 	bs2.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bs1, &bs2);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_FALSE(fineCollisionDetector.collide(&bs1, &bs2, manifold));
+	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
 
 
@@ -56,10 +62,13 @@ TEST(FineCollisionDetector, SphereSphere2)
 	bs2.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bs1, &bs2);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_TRUE(fineCollisionDetector.collide(&bs1, &bs2, manifold));
- 	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
+	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
+	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 
 	fe::collision::Contact& res = contacts.front();
@@ -89,9 +98,12 @@ TEST(FineCollisionDetector, SphereSphere3)
 	bs2.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bs1, &bs2);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_TRUE(fineCollisionDetector.collide(&bs1, &bs2, manifold));
+	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
  	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 	// TODO: complete
@@ -113,9 +125,12 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly1)
 	bb2.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bb1, &bb2);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_FALSE(fineCollisionDetector.collide(&bb1, &bb2, manifold));
+	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
 
 
@@ -144,10 +159,13 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 	bb2.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bb1, &bb2);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_TRUE(fineCollisionDetector.collide(&bb1, &bb2, manifold));
- 	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
+	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
+	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 
 	fe::collision::Contact& res = contacts.front();
@@ -209,9 +227,12 @@ TEST(FineCollisionDetector, SphereMesh1)
 	mc1.setTransforms(t2 * r2);
 
 	fe::collision::Manifold manifold(&bs1, &mc1);
-	fe::collision::FineCollisionDetector fineCollisionDetector;
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
 
-	EXPECT_TRUE(fineCollisionDetector.collide(&bs1, &mc1, manifold));
+	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
  	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 4);
 
