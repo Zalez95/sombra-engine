@@ -37,8 +37,8 @@ namespace fe { namespace collision {
 
 		// Calculate the indices of the terrain vertices to check with the
 		// local position of the AABB
-		int iMinX = mXSize * (localAABB.minimum.x + 0.5f), iMaxX = ceil(mXSize * (localAABB.maximum.x + 0.5f)),
-			iMinZ = mZSize * (localAABB.minimum.z + 0.5f), iMaxZ = ceil(mZSize * (localAABB.maximum.z + 0.5f));
+		int iMinX = mXSize * (localAABB.minimum.x + 0.5f), iMaxX = std::ceil(mXSize * (localAABB.maximum.x + 0.5f)),
+			iMinZ = mZSize * (localAABB.minimum.z + 0.5f), iMaxZ = std::ceil(mZSize * (localAABB.maximum.z + 0.5f));
 		if ((iMinX < mXSize) && (iMaxX >= 0) && (iMinZ < mZSize) && (iMaxZ >= 0)) {
 			if (iMinX < 0) { iMinX = 0; }
 			if (iMaxX >= mXSize) { iMaxX = mXSize - 1; }

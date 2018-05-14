@@ -26,9 +26,11 @@ namespace fe { namespace collision {
 		 * each axis
 		 *
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
-		std::vector<glm::vec3> verticesFromLengths(const glm::vec3& lengths)
+		std::vector<glm::vec3> verticesFromLengths(
+			const glm::vec3& lengths
+		) const
 		{
-			std::vector<glm::vec3> ret = {
+			return {
 				glm::vec3(-lengths.x, -lengths.y, -lengths.z) / 2.0f,
 				glm::vec3(-lengths.x, -lengths.y,  lengths.z) / 2.0f,
 				glm::vec3(-lengths.x,  lengths.y, -lengths.z) / 2.0f,
@@ -38,8 +40,6 @@ namespace fe { namespace collision {
 				glm::vec3( lengths.x,  lengths.y, -lengths.z) / 2.0f,
 				glm::vec3( lengths.x,  lengths.y,  lengths.z) / 2.0f
 			};
-
-			return ret;
 		};
 	};
 

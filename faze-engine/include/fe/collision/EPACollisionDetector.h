@@ -1,7 +1,7 @@
 #ifndef EPA_COLLISION_DETECTOR_H
 #define EPA_COLLISION_DETECTOR_H
 
-#include <list>
+#include <vector>
 
 namespace fe { namespace collision {
 
@@ -19,6 +19,9 @@ namespace fe { namespace collision {
 	 */
 	class EPACollisionDetector
 	{
+	private:	// Nested types
+		typedef std::pair<std::vector<Triangle>::iterator, float> ClosestFace;
+
 	private:	// Attributes
 		/** The maximum number of iterations of EPA Algorithm. If mMinFThreshold
 		 * is too low this could make the algorithm exit prematurely */
@@ -81,17 +84,15 @@ namespace fe { namespace collision {
 		 * @param	polytope the Polytope with the faces
 		 * @param	a pair with the iterator to the closest face in the polytope
 		 *			and its distance to the origin */
-		std::pair<std::list<Triangle>::iterator, float> getClosestFaceToOrigin(
-			Polytope& polytope
-		) const;
+		ClosestFace getClosestFaceToOrigin(Polytope& polytope) const;
 
-		/** Appends the given edge to the list if it isn't already inside, also
-		 * if it founds an edge equal to the given one, it will remove it from
-		 * the list
+		/** Appends the given edge to the edge vector if it isn't already
+		 * inside, also if it founds an edge equal to the given one, it will
+		 * remove it from the vector
 		 *
 		 * @param	e the edge to append
-		 * @param	edgeList the list where we want to append the edge */
-		void appendEdge(const Edge& e, std::list<Edge>& edgeList) const;
+		 * @param	edgeVector the vector where we want to append the edge */
+		void appendEdge(const Edge& e, std::vector<Edge>& edgeVector) const;
 	};
 
 }}

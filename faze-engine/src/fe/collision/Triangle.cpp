@@ -34,7 +34,7 @@ namespace fe { namespace collision {
 		const glm::vec3& p,
 		const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
 	) {
-		glm::vec3 vt1t2	= t1 - t2, vt2t3 = t2 - t3, vt3t1 = t3 - t1,
+		glm::vec3 vt1t2	= t2 - t1, vt2t3 = t3 - t2, vt3t1 = t3 - t1,
 			tNormal = glm::normalize(-glm::cross(vt1t2, vt3t1));
 
 		glm::vec3 vt1p = p - t1, vt1t2xtNormal = glm::normalize(glm::cross(vt1t2, tNormal));
@@ -52,7 +52,7 @@ namespace fe { namespace collision {
 			return distancePointEdge(p, t3, t1);
 		}
 
-		return abs(glm::dot(vt1p, tNormal));
+		return std::abs(glm::dot(vt1p, tNormal));
 	}
 
 
@@ -67,11 +67,11 @@ namespace fe { namespace collision {
 		float beta	= glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
 		float alpha	= 1 - gamma - beta;
 
-		if ((0.0f - projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision)
+		if ((0.0f - projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
 			&& (0.0f - projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision)
-			&& (0.0f - projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
+			&& (0.0f - projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision)
 		) {
-			projectedPoint = glm::vec3(gamma, beta, alpha);
+			projectedPoint = glm::vec3(alpha, beta, gamma);
 			return true;
 		}
 

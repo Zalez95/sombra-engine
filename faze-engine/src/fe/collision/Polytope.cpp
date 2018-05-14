@@ -1,7 +1,6 @@
 #include <cassert>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "fe/collision/SupportPoint.h"
 #include "fe/collision/ConvexCollider.h"
 #include "Polytope.h"
 
@@ -74,10 +73,8 @@ namespace fe { namespace collision {
 		}
 
 		// Create the polytope from the simplex's points
-		vertices.push_back(simplex[0]);		SupportPoint *d = &vertices.back();
-		vertices.push_back(simplex[1]);		SupportPoint *c = &vertices.back();
-		vertices.push_back(simplex[2]);		SupportPoint *b = &vertices.back();
-		vertices.push_back(simplex[3]);		SupportPoint *a = &vertices.back();
+		vertices = { simplex[0], simplex[1], simplex[2], simplex[3] };
+		SupportPoint *d = &vertices[0], *c = &vertices[1], *b = &vertices[2], *a = &vertices[3];
 
 		glm::vec3 da = a->getCSOPosition() - d->getCSOPosition(),
 			db = b->getCSOPosition() - d->getCSOPosition(),

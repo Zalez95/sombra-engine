@@ -15,7 +15,8 @@ namespace fe { namespace collision {
 
 	bool SupportPoint::operator==(const SupportPoint& other) const
 	{
-		return other.mCSOPosition == mCSOPosition;
+		return (mWorldPosition[0] == other.mWorldPosition[0])
+			&& (mWorldPosition[1] == other.mWorldPosition[1]);
 	}
 
 }}

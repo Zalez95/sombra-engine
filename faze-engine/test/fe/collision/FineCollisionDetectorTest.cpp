@@ -39,15 +39,15 @@ TEST(FineCollisionDetector, SphereSphere1)
 TEST(FineCollisionDetector, SphereSphere2)
 {
 	const glm::vec3 expectedWorldPos[] = {
-		{ 12.345150947f, -4.478355407f, 5.021325111f },
-		{ 12.345151901f, -4.478355407f, 5.021327018f }
+		{ 12.345151365f, -4.478355257f, 5.021325737f },
+		{ 12.345151438f, -4.478355306f, 5.021325869f }
 	};
 	const glm::vec3 expectedLocalPos[] = {
-		{ -1.154849052f, 0.771644830f, -2.078674554f },
-		{ 4.094133853f, -3.184389114f, -0.388609051f }
+		{ -1.154848634f, 0.771644742f, -2.078674167f },
+		{ 4.095410456f, -3.183182967f, -0.384987776f }
 	};
-	const glm::vec3 expectedNormal(-0.461939632f, 0.308657944f, -0.831469833f);
-	const float expectedPenetration = glm::length(expectedWorldPos[1] - expectedWorldPos[0]);
+	const glm::vec3 expectedNormal(-0.459571301f, 0.309309959f, -0.832539200f);
+	const float expectedPenetration = 0.000000159f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(9.943065643f, -2.873334407f, 0.697683811f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);
 
@@ -85,6 +85,16 @@ TEST(FineCollisionDetector, SphereSphere2)
 
 TEST(FineCollisionDetector, SphereSphere3)
 {
+	const glm::vec3 expectedWorldPos[] = {
+		{ 16.554130554f, -8.813152313f, 4.860304832f },
+		{ 13.531667709f, -5.286946296f, 7.076776504f }
+	};
+	const glm::vec3 expectedLocalPos[] = {
+		{ 1.554130554f, -1.813152313f, -1.139695167f },
+		{ -0.024201989f, -0.038624286f, -0.028828501f }
+	};
+	const glm::vec3 expectedNormal(-0.587332725f, 0.685221552f, 0.430710643f);
+	const float expectedPenetration = 5.146081735f;
 	const glm::vec3 v1(15.0f, -7.0f, 6.0f), v2(13.5f, -5.25f, 7.1f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);
 	fe::collision::BoundingSphere bs1(2.5f), bs2(5.2f);
@@ -106,7 +116,16 @@ TEST(FineCollisionDetector, SphereSphere3)
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
  	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
 	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
-	// TODO: complete
+
+	fe::collision::Contact& res = contacts.front();
+	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
+		for (int j = 0; j < 2; ++j) {
+			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], TOLERANCE);
+			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
+		}
+	}
 }
 
 
@@ -137,15 +156,15 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly1)
 TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 {
 	const glm::vec3 expectedWorldPos[] = {
-		{ -3.471179485f, 4.671000003f, -2.168259382f },
-		{ -3.471183061f, 4.671000957f, -2.168255567f }
+		{ -3.471183140f, 4.671001170f, -2.168255635f },
+		{ -3.471179485f, 4.671000003f, -2.168259382f }
 	};
 	const glm::vec3 expectedLocalPos[] = {
-		{ -0.219993710f, 1.000000238f, 0.720000684f },
+		{ -0.219993725f, 1.0f, 0.720000408f },
 		{ 0.5f, 0.125f, -0.25f }
 	};
-	const glm::vec3 expectedNormal(-0.679432392f, 0.211933776f, 0.702463984f);
-	const float expectedPenetration = glm::length(expectedWorldPos[1] - expectedWorldPos[0]);
+	const glm::vec3 expectedNormal(-0.679432451f, 0.211933821f, 0.702463984f);
+	const float expectedPenetration = 0.000005355f;
 	const glm::vec3 v1(-2.787537574f, 5.180943965f, -3.084435224f), v2(-3.950720071f, 4.450982570f, -1.945194125f);
 	const glm::quat o1(0.770950198f, 0.507247209f, -0.107715316f, 0.369774848f), o2(0.550417125f, -0.692481637f, -0.259043514f, 0.387822926f);
 	fe::collision::BoundingBox bb1(glm::vec3(1.0f, 2.0f, 2.0f)), bb2(glm::vec3(1.0f, 0.25f, 0.5f));

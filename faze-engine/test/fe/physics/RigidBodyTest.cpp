@@ -6,7 +6,7 @@
 TEST(RigidBody, linearVelocityIntegration)
 {
 	const glm::vec3 expectedPosition(-2.96f, 1.968f, -5.008f);
-	fe::physics::RigidBody rb(3.5f, 1.0f, glm::mat3(2.0f / 5.0f * 3.5f * pow(2.0f, 2)), 1.0f);
+	fe::physics::RigidBody rb(3.5f, 1.0f, glm::mat3(2.0f / 5.0f * 3.5f * std::pow(2.0f, 2)), 1.0f);
 	rb.setPosition(glm::vec3(-3.0f, 2.0f, -5.0f));
 	rb.setLinearVelocity(glm::vec3(2.5f, -2.0f, -0.5f));
 	rb.updateData();
@@ -22,7 +22,7 @@ TEST(RigidBody, linearVelocityIntegration)
 TEST(RigidBody, angularVelocityIntegration)
 {
 	const glm::quat expectedOrientation(0.066598400f, 0.827548027f, 0.362650245f, -0.423336178f);
-	fe::physics::RigidBody rb(3.5f, 1.0f, glm::mat3(2.0f / 5.0f * 3.5f * pow(2.0f, 2)), 1.0f);
+	fe::physics::RigidBody rb(3.5f, 1.0f, glm::mat3(2.0f / 5.0f * 3.5f * std::pow(2.0f, 2)), 1.0f);
 	rb.setOrientation(glm::quat(0.020926f, 0.841695f, 0.296882f, -0.450525f));
 	rb.setAngularVelocity(glm::vec3(-0.13f, -3.6f, 10.125f));
 	rb.updateData();
@@ -40,7 +40,7 @@ TEST(RigidBody, addForce)
 	const glm::vec3 expectedPosition(-3.147619724f, 2.891815185f, -5.038386344f);
 	const glm::vec3 expectedLinearVelocity(-0.101241126f, -3.636560201f, 10.100842475f);
 	const glm::vec3 expectedLinearAcceleration(1.797428965f, -2.285017728f, -1.509840369f);
-	fe::physics::RigidBody rb(4.512f, 1.0f, glm::mat3(2.0f / 5.0f * 4.512f * pow(2.0f, 2)), 1.0f);
+	fe::physics::RigidBody rb(4.512f, 1.0f, glm::mat3(2.0f / 5.0f * 4.512f * std::pow(2.0f, 2)), 1.0f);
 	rb.setPosition(glm::vec3(-3.146f, 2.95f, -5.2f));
 	rb.setLinearVelocity(glm::vec3(-0.13f, -3.6f, 10.125f));
 	rb.updateData();
@@ -64,7 +64,7 @@ TEST(RigidBody, addForceAtPoint)
 	const glm::vec3 expectedAngularVelocity(1.044589281f, -1.986972808f, -7.955280303f);
 	const glm::vec3 expectedLinearAcceleration(1.654692649f, -3.149759769f, 0.396660745f);
 	const glm::vec3 expectedAngularAcceleration(4.974330902f, 1.776694655f, -6.642519950f);
-	fe::physics::RigidBody rb(3.953f, 1.0f, glm::mat3(2.0f / 5.0f * 3.953f * pow(2.0f, 2)), 1.0f);
+	fe::physics::RigidBody rb(3.953f, 1.0f, glm::mat3(2.0f / 5.0f * 3.953f * std::pow(2.0f, 2)), 1.0f);
 	rb.setPosition(glm::vec3(5.373533248f, -5.649199485f, 3.746687889f));
 	rb.setOrientation(glm::quat(0.812893509f, 0.441731840f, -0.347656339f, 0.152355521f));
 	rb.setLinearVelocity(glm::vec3(-0.13f, -3.6f, 10.125f));
@@ -101,7 +101,7 @@ TEST(RigidBody, addForceAtLocalPoint)
 		glm::vec4(-0.755366384f, -0.004566177f, 0.655286788f, 0.0f),
 		glm::vec4(-1.462884187f, 11.208745956f, -14.201886177f, 1.0f)
 	);
-	fe::physics::RigidBody rb(6.1781f, 1.0f, glm::mat3(6.1781f * pow(3.21f, 2) / 6.0f), 1.0f);
+	fe::physics::RigidBody rb(6.1781f, 1.0f, glm::mat3(6.1781f * std::pow(3.21f, 2) / 6.0f), 1.0f);
 	rb.setPosition(glm::vec3(-4.547531127f, 2.949749708f, -3.636348962f));
 	rb.setOrientation(glm::quat(-0.074506878f, -0.676165580f, -0.448467493f, -0.579763472f));
 	rb.setLinearVelocity(glm::vec3(0.1237f, 4.12248f, -5.9655f));

@@ -70,7 +70,7 @@ namespace fe { namespace collision {
 		Polytope& polytope
 	) const
 	{
-		std::list<Triangle>::iterator closestFIt;
+		std::vector<Triangle>::iterator closestFIt;
 		float closestFDist = std::numeric_limits<float>::max();
 		for (int nIterations = 0; nIterations < sMaxIterations; ++nIterations) {
 			// 1. Calculate the closest face to the origin of the polytope
@@ -90,7 +90,7 @@ namespace fe { namespace collision {
 
 			// 4. Delete the faces that can be seen from the new point and get
 			// the edges of the created hole in the Polytope
-			std::list<Edge> holeEdges = { closestFIt->ab, closestFIt->bc, closestFIt->ca };
+			std::vector<Edge> holeEdges = { closestFIt->ab, closestFIt->bc, closestFIt->ca };
 			polytope.faces.erase(closestFIt);
 			for (auto it = polytope.faces.begin(); it != polytope.faces.end();) {
 				if (glm::dot(it->normal, sp->getCSOPosition()) > 0) {
@@ -115,14 +115,14 @@ namespace fe { namespace collision {
 	}
 
 
-	std::pair<std::list<Triangle>::iterator, float> EPACollisionDetector::getClosestFaceToOrigin(
+	EPACollisionDetector::ClosestFace EPACollisionDetector::getClosestFaceToOrigin(
 		Polytope& polytope
 	) const
 	{
-		std::list<Triangle>::iterator closestFIt = polytope.faces.end();
+		std::vector<Triangle>::iterator closestFIt = polytope.faces.end();
 		float closestFDist = std::numeric_limits<float>::max();
 		for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
-			float distance = abs(glm::dot(it->normal, it->ab.p1->getCSOPosition()));
+			float distance = std::abs(glm::dot(it->normal, it->ab.p1->getCSOPosition()));
 			if (distance < closestFDist) {
 				closestFIt		= it;
 				closestFDist	= distance;
@@ -133,16 +133,17 @@ namespace fe { namespace collision {
 	}
 
 
-	void EPACollisionDetector::appendEdge(const Edge& e, std::list<Edge>& edgeList) const
+	void EPACollisionDetector::appendEdge(const Edge& e, std::vector<Edge>& edgeVector) const
 	{
-		for (auto itEdge = edgeList.begin(); itEdge != edgeList.end(); ++itEdge) {
+		for (auto itEdge = edgeVector.begin(); itEdge != edgeVector.end(); ++itEdge) {
 			if (e == *itEdge) {
-				edgeList.erase(itEdge);
+				std::swap(*itEdge, edgeVector.back());
+				edgeVector.pop_back();
 				return;
 			}
 		}
 
-		edgeList.push_back(e);
+		edgeVector.push_back(e);
 	}
 
 }}
