@@ -32,6 +32,9 @@ namespace fe { namespace collision {
 		Triangle* closestF;
 		float closestFDist;
 		std::tie(closestF, closestFDist) = calculateEPA(collider1, collider2, polytope);
+		if (closestF == nullptr) {
+			return false;
+		}
 
 		// 2. Project the origin onto the closest face and calculate its
 		// barycentric coordinates
@@ -69,7 +72,7 @@ namespace fe { namespace collision {
 	{
 		std::list<Triangle>::iterator closestFIt;
 		float closestFDist = std::numeric_limits<float>::max();
-		while (true) {
+		for (int nIterations = 0; nIterations < sMaxIterations; ++nIterations) {
 			// 1. Calculate the closest face to the origin of the polytope
 			std::tie(closestFIt, closestFDist) = getClosestFaceToOrigin(polytope);
 
@@ -80,8 +83,9 @@ namespace fe { namespace collision {
 			// 3. If the distance to the origin of the new SupportPoint is no
 			// further to the origin than the current closest face by
 			// mMinFThreshold, then we have found the closest face
-			if (closestFDist - glm::length(sp->getCSOPosition()) <= mMinFThreshold) {
-				break;
+			float distanceSPFace = glm::dot(sp->getCSOPosition(), closestFIt->normal) - closestFDist;
+			if (distanceSPFace <= mMinFThreshold) {
+				return std::make_pair(&(*closestFIt), closestFDist);
 			}
 
 			// 4. Delete the faces that can be seen from the new point and get
@@ -107,7 +111,7 @@ namespace fe { namespace collision {
 			}
 		}
 
-		return std::make_pair(&(*closestFIt), closestFDist);
+		return std::make_pair(nullptr, -1);
 	}
 
 
@@ -118,11 +122,7 @@ namespace fe { namespace collision {
 		std::list<Triangle>::iterator closestFIt = polytope.faces.end();
 		float closestFDist = std::numeric_limits<float>::max();
 		for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
-			float distance = distancePointTriangle(
-				glm::vec3(0.0f),
-				it->ab.p1->getCSOPosition(), it->bc.p1->getCSOPosition(), it->ca.p1->getCSOPosition()
-			);
-
+			float distance = abs(glm::dot(it->normal, it->ab.p1->getCSOPosition()));
 			if (distance < closestFDist) {
 				closestFIt		= it;
 				closestFDist	= distance;
@@ -136,7 +136,7 @@ namespace fe { namespace collision {
 	void EPACollisionDetector::appendEdge(const Edge& e, std::list<Edge>& edgeList) const
 	{
 		for (auto itEdge = edgeList.begin(); itEdge != edgeList.end(); ++itEdge) {
-			if ((e.p1 == itEdge->p2) && (e.p2 == itEdge->p1)) {
+			if (e == *itEdge) {
 				edgeList.erase(itEdge);
 				return;
 			}

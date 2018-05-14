@@ -13,6 +13,23 @@ namespace fe { namespace collision {
 	}
 
 
+	bool Triangle::operator==(const Triangle& other) const
+	{
+		if (ab == other.ab) {
+			return (bc == other.bc) && (ca == other.ca);
+		}
+		else if (ab == other.bc) {
+			return (bc == other.ca) && (ca == other.ab);
+		}
+		else if (ab == other.ca) {
+			return (bc == other.ab) && (ca == other.bc);
+		}
+		else {
+			return false;
+		}
+	}
+
+
 	float distancePointTriangle(
 		const glm::vec3& p,
 		const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3

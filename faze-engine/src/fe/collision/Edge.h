@@ -18,6 +18,13 @@ namespace fe { namespace collision {
 
 		/** The second point of the Edge */
 		SupportPoint* p2;
+
+		/** Compares the current Edge with the given one
+		 *
+		 * @param	other the Edge to compare with the current one
+		 * @return	true if the Edges are the same, false otherwise */
+		bool operator==(const Edge& other) const
+		{ return (p1 == other.p1) && (p2 == other.p2); }
 	};
 
 

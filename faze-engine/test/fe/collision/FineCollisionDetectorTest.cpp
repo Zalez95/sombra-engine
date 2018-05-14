@@ -8,7 +8,7 @@
 #include <fe/collision/FineCollisionDetector.h>
 
 #define TOLERANCE 0.000001f
-#define MIN_F_DIFFERENCE	0.0000001f
+#define MIN_F_DIFFERENCE	0.0001f
 #define CONTACT_PRECISION	0.0000001f
 #define CONTACT_SEPARATION	0.0000001f
 

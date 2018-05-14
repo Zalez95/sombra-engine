@@ -20,6 +20,10 @@ namespace fe { namespace collision {
 	class EPACollisionDetector
 	{
 	private:	// Attributes
+		/** The maximum number of iterations of EPA Algorithm. If mMinFThreshold
+		 * is too low this could make the algorithm exit prematurely */
+		static const int sMaxIterations = 36;
+
 		/** The minimum difference between the distances to the origin of
 		 * a face and the next SupportPoint during the Polytope expansion step
 		 * needed for determinate the closest face to the origin */

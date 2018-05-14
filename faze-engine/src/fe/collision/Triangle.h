@@ -24,7 +24,14 @@ namespace fe { namespace collision {
 		/** The normal of Triangle */
 		glm::vec3 normal;
 
+		/** Creates a Triangle from the given SupportPoints */
 		Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c);
+
+		/** Compares the current Triangle with the given one
+		 *
+		 * @param	other the Triangle to compare with the current one
+		 * @return	true if the Triangles are the same, false otherwise */
+		bool operator==(const Triangle& other) const;
 	};
 
 
