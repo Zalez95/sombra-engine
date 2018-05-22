@@ -29,8 +29,8 @@ namespace fe { namespace collision {
 	{
 		std::vector<ConvexPart> triangleColliders;
 
-		auto xIndexToX = [this](int i) { return i / static_cast<float>(mXSize-1) - 0.5f; };
-		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize-1) - 0.5f; };
+		auto xIndexToX = [this](int i) { return i / static_cast<float>(mXSize - 1) - 0.5f; };
+		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize - 1) - 0.5f; };
 
 		// Get the AABB in local coordinates
 		AABB localAABB = calculateLocalAABB(aabb);

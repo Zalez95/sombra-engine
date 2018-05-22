@@ -2,11 +2,12 @@
 #include <algorithm>
 #include "fe/collision/Contact.h"
 #include "fe/collision/Manifold.h"
-#include "fe/collision/Polytope.h"
 #include "fe/collision/Collider.h"
 #include "fe/collision/ConvexCollider.h"
 #include "fe/collision/ConcaveCollider.h"
 #include "fe/collision/FineCollisionDetector.h"
+#include "Edge.h"
+#include "Triangle.h"
 
 namespace fe { namespace collision {
 
@@ -51,12 +52,9 @@ namespace fe { namespace collision {
 			return false;
 		}
 
-		// Create a polytope (tetrahedron) from the GJK simplex points
-		Polytope polytope(collider1, collider2, simplex);
-
 		// EPA Algorithm
 		Contact newContact;
-		if (!mEPACollisionDetector.calculate(collider1, collider2, polytope, newContact)) {
+		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, newContact)) {
 			return false;
 		}
 
@@ -97,16 +95,11 @@ namespace fe { namespace collision {
 				continue;
 			}
 
-			// Create a polytope (tetrahedron) from the GJK simplex points
-			Polytope polytope = (convexFirst)?
-				Polytope(convexCollider, *part, simplex) :
-				Polytope(*part, convexCollider, simplex);
-
 			// EPA Algorithm
 			Contact newContact;
 			bool contactFilled = (convexFirst)?
-				mEPACollisionDetector.calculate(convexCollider, *part, polytope, newContact) :
-				mEPACollisionDetector.calculate(*part, convexCollider, polytope, newContact);
+				mEPACollisionDetector.calculate(convexCollider, *part, simplex, newContact) :
+				mEPACollisionDetector.calculate(*part, convexCollider, simplex, newContact);
 			if (!contactFilled) {
 				continue;
 			}
@@ -155,12 +148,9 @@ namespace fe { namespace collision {
 					continue;
 				}
 
-				// Create a polytope (tetrahedron) from the GJK simplex points
-				Polytope polytope(*part1, *part2, simplex);
-
 				// EPA Algorithm
 				Contact newContact;
-				if (!mEPACollisionDetector.calculate(*part1, *part2, polytope, newContact)) {
+				if (!mEPACollisionDetector.calculate(*part1, *part2, simplex, newContact)) {
 					continue;
 				}
 

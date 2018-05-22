@@ -47,7 +47,7 @@ namespace fe { namespace collision {
 		inline virtual glm::mat4 getTransforms() const
 		{ return mTransformsMatrix; };
 
-		/** @return the Axis Aligned Bounding Box that contains the
+		/** @return	the Axis Aligned Bounding Box that contains the
 		 *			ConvexPolyhedron */
 		virtual AABB getAABB() const;
 

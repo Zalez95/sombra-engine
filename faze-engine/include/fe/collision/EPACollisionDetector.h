@@ -52,13 +52,13 @@ namespace fe { namespace collision {
 		 *			intersecting
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
-		 * @param	polytope the convex shape to expand with EPA
+		 * @param	simplex the points of the initial simplex
 		 * @param	ret a reference to the deepest Contact (return parameter)
 		 * @return	true if the Contact data was successfully created, false
 		 *			otherwise */
 		bool calculate(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			Polytope& polytope, Contact& ret
+			std::vector<SupportPoint>& simplex, Contact& ret
 		) const;
 	private:
 		/** Expands the given polytope iteratively until it finds the closest
@@ -70,12 +70,12 @@ namespace fe { namespace collision {
 		 *			intersecting
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
-		 * @param	polytope the Polytope to expand
+		 * @param	simplex the points of the initial simplex
 		 * @param	a pair with a pointer to the closest face and its
 		 *			distance to the origin */
 		std::pair<Triangle*, float> calculateEPA(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			Polytope& polytope
+			std::vector<SupportPoint>& simplex
 		) const;
 
 		/** Calculates the closest face of the given polytope to the origin of

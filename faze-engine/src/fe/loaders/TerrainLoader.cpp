@@ -65,7 +65,7 @@ namespace fe { namespace loaders {
 				rawMesh->positions.emplace_back(xPos, yPos, zPos);
 
 				// Set the uvs
-				rawMesh->uvs.emplace_back(x / static_cast<float>(xSize), z / static_cast<float>(zSize));
+				rawMesh->uvs.emplace_back(static_cast<float>(x) / xSize, static_cast<float>(z) / zSize);
 
 				if ((x > 0) && (z > 0)) {
 					// Calculate the indices of the vertices that creates the faces

@@ -9,8 +9,10 @@ namespace fe { namespace collision {
 		const ConvexCollider& collider1, const ConvexCollider& collider2
 	) const
 	{
-		// 1. Get an arbitrary point
-		glm::vec3 direction = glm::sphericalRand(1.0f);
+		// 1. Get an initial point in the direction from one collider to another
+		glm::vec3 c1Location = collider1.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		glm::vec3 c2Location = collider2.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		glm::vec3 direction = c1Location - c2Location;
 		SupportPointVector simplex = { SupportPoint(collider1, collider2, direction) };
 
 		bool containsOrigin = doSimplex(simplex, direction);
@@ -139,7 +141,7 @@ namespace fe { namespace collision {
 			ret = doSimplex1D(simplex, searchDir);
 		}
 		else {
-			// The origin is nside the triangle in 2D
+			// The origin is inside the triangle in 2D
 			float dot = glm::dot(abc, ao);
 			if (dot > 0.0f) {
 				// The origin is above the triangle

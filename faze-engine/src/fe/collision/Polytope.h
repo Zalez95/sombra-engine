@@ -24,7 +24,13 @@ namespace fe { namespace collision {
 		/** The faces of the Polytope */
 		std::vector<Triangle> faces;
 
-		/** Creates a new Polytope from the given simplex points */
+		/** Creates a new Polytope from the given simplex points by expanding it
+		 *
+		 * @param	collider1 the first of the colliders needed for creating
+		 *			the polytope
+		 * @param	collider2 the second of the colliders needed for creating
+		 *			the polytope
+		 * @param	simplex a vector with the initial simplex points */
 		Polytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<SupportPoint>& simplex
