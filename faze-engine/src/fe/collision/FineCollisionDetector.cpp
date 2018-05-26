@@ -262,15 +262,15 @@ namespace fe { namespace collision {
 		auto contact4 = std::max_element(
 			manifold.mContacts.begin(), manifold.mContacts.end(),
 			[&](const Contact& c1, const Contact& c2) {
-				float d1 = distancePointTriangle(
+				glm::vec3 p1 = getClosestPointInPlane(
 					c1.getWorldPosition(0),
-					contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0)
+					{ contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0) }
 				);
-				float d2 = distancePointTriangle(
+				glm::vec3 p2 = getClosestPointInPlane(
 					c2.getWorldPosition(0),
-					contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0)
+					{ contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0) }
 				);
-				return d1 < d2;
+				return glm::length(p1) < glm::length(p2);
 			}
 		);
 

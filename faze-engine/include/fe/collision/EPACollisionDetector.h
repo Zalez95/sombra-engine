@@ -7,9 +7,9 @@ namespace fe { namespace collision {
 
 	class Contact;
 	class ConvexCollider;
+	class Polytope;
 	struct Edge;
-	struct Triangle;
-	struct Polytope;
+	struct PolytopeFace;
 
 
 	/**
@@ -19,9 +19,6 @@ namespace fe { namespace collision {
 	 */
 	class EPACollisionDetector
 	{
-	private:	// Nested types
-		typedef std::pair<std::vector<Triangle>::iterator, float> ClosestFace;
-
 	private:	// Attributes
 		/** The maximum number of iterations of EPA Algorithm. If mMinFThreshold
 		 * is too low this could make the algorithm exit prematurely */
@@ -71,9 +68,8 @@ namespace fe { namespace collision {
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	simplex the points of the initial simplex
-		 * @param	a pair with a pointer to the closest face and its
-		 *			distance to the origin */
-		std::pair<Triangle*, float> calculateEPA(
+		 * @return	the closest face to the origin */
+		PolytopeFace* calculateEPA(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<SupportPoint>& simplex
 		) const;
@@ -82,9 +78,9 @@ namespace fe { namespace collision {
 		 * the Minkowski Difference
 		 *
 		 * @param	polytope the Polytope with the faces
-		 * @param	a pair with the iterator to the closest face in the polytope
-		 *			and its distance to the origin */
-		ClosestFace getClosestFaceToOrigin(Polytope& polytope) const;
+		 * @param	the closest face to the origin in the given polytope that
+		 *			isn't obsolete */
+		PolytopeFace* getClosestFaceToOrigin(Polytope& polytope) const;
 
 		/** Appends the given edge to the edge vector if it isn't already
 		 * inside, also if it founds an edge equal to the given one, it will

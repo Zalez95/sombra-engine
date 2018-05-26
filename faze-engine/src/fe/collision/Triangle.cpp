@@ -7,8 +7,8 @@ namespace fe { namespace collision {
 		ab{a, b}, bc{b, c}, ca{c, a}
 	{
 		normal = glm::normalize(glm::cross(
-			ab.p2->getCSOPosition() - ab.p1->getCSOPosition(),
-			ca.p2->getCSOPosition() - ca.p1->getCSOPosition()
+			bc.p1->getCSOPosition() - ab.p1->getCSOPosition(),
+			ca.p1->getCSOPosition() - ab.p1->getCSOPosition()
 		));
 	}
 
@@ -30,29 +30,16 @@ namespace fe { namespace collision {
 	}
 
 
-	float distancePointTriangle(
+	glm::vec3 getClosestPointInPlane(
 		const glm::vec3& p,
-		const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+		const std::array<glm::vec3, 3>& planePoints
 	) {
-		glm::vec3 vt1t2	= t2 - t1, vt2t3 = t3 - t2, vt3t1 = t3 - t1,
-			tNormal = glm::normalize(-glm::cross(vt1t2, vt3t1));
+		glm::vec3 vp1p = p - planePoints[0],
+			vp1p2 = planePoints[1] - planePoints[0], vp1p3 = planePoints[2] - planePoints[0],
+			pNormal = glm::normalize(glm::cross(vp1p2, vp1p3));
 
-		glm::vec3 vt1p = p - t1, vt1t2xtNormal = glm::normalize(glm::cross(vt1t2, tNormal));
-		if (glm::dot(vt1p, vt1t2xtNormal) > 0) {
-			return distancePointEdge(p, t1, t2);
-		}
-
-		glm::vec3 vt2p = p - t2, vt2t3xtNormal = glm::normalize(glm::cross(vt2t3, tNormal));
-		if (glm::dot(vt2p, vt2t3xtNormal) > 0) {
-			return distancePointEdge(p, t2, t3);
-		}
-
-		glm::vec3 vt3p = p - t3, vt3t1xtNormal = glm::normalize(glm::cross(vt3t1, tNormal));
-		if (glm::dot(vt3p, vt3t1xtNormal) > 0) {
-			return distancePointEdge(p, t3, t1);
-		}
-
-		return std::abs(glm::dot(vt1p, tNormal));
+		float distance = glm::dot(vp1p, pNormal);
+		return p - distance * pNormal;
 	}
 
 

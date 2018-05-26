@@ -1,81 +1,123 @@
-#include <cassert>
+#include <exception>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "fe/collision/ConvexCollider.h"
 #include "Polytope.h"
 
 namespace fe { namespace collision {
 
+	PolytopeFace::PolytopeFace(SupportPoint* a, SupportPoint* b, SupportPoint* c, float precision) :
+		triangle(a, b, c), obsolete(false)
+	{
+		glm::vec3 aCSO = a->getCSOPosition(), bCSO = b->getCSOPosition(), cCSO = c->getCSOPosition();
+		closestPoint = getClosestPointInPlane(glm::vec3(0.0f), { aCSO, bCSO, cCSO });
+		distance = glm::length(closestPoint);
+		inside = projectPointOnTriangle(closestPoint, { aCSO, bCSO, cCSO }, precision, closestPointBarycentricCoords);
+	}
+
+
 	Polytope::Polytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		std::vector<SupportPoint>& simplex
+		const std::vector<SupportPoint>& simplex, float precision
 	) {
-		assert(simplex.size() > 0 && "The simplex must have at least one support point.");
-
-		const float kEpsilon = 0.0001f;
-		if (simplex.size() == 1) {
-			// Search a support point in each axis direction
-			for (int i = 0; i < 3; ++i) {
-				for (float v : {-1.0f, 1.0f}) {
-					glm::vec3 searchDir(0.0f);
-					searchDir[i] = v;
-					SupportPoint sp(collider1, collider2, searchDir);
-
-					if (glm::length(sp.getCSOPosition() - simplex[0].getCSOPosition()) >= kEpsilon) {
-						simplex.push_back(sp);
-						break;
-					}
-				}
-			}
+		switch(simplex.size()) {
+			case 0:
+			case 1:
+				return;		// Don't calculate the initial tetrahedron polytope
+			case 2:
+				tetrahedronFromEdge(collider1, collider2, simplex, precision);
+				break;
+			case 3:
+				tetrahedronFromTriangle(collider1, collider2, simplex, precision);
+				break;
+			default:
+				vertices = { simplex[0], simplex[1], simplex[2], simplex[3] };
+				createTetrahedronFaces(precision);
+				break;
 		}
-		if (simplex.size() == 2) {
-			glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
+	}
 
-			// Calculate a rotation matrix of 60 degrees around the line vector
-			glm::mat3 rotate60 = glm::mat3(glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 6.0f, v01));
 
-			// Find the least significant axis
-			glm::vec3 vAxis(0.0f);
-			int iAxis = std::distance(&v01.x, std::max_element(&v01.x, &v01.x + 3));
-			vAxis[iAxis] = 1.0f;
-
-			// Calculate a normal vector to the line with the axis
-			glm::vec3 vNormal = glm::cross(v01, vAxis);
-
-			// Search a support point in the 6 directions around the line
-			glm::vec3 searchDir = vNormal;
-			for (int i = 0; i < 6; ++i) {
-				SupportPoint sp(collider1, collider2, searchDir);
-
-				if (glm::length(sp.getCSOPosition()) > kEpsilon) {
-					simplex.push_back(sp);
-					break;
-				}
-
-				searchDir = rotate60 * searchDir;
-			}
+	void Polytope::addFace(const PolytopeFace& polytopeFace)
+	{
+		if (polytopeFace.distance < faces.front().distance) {
+			faces.push_front(polytopeFace);
 		}
-		if (simplex.size() == 3) {
-			// Search a support point along the simplex's triangle normal
-			glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
-			glm::vec3 v02 = simplex[2].getCSOPosition() - simplex[0].getCSOPosition();
-			glm::vec3 searchDir = glm::cross(v01, v02);
+		else {
+			faces.push_back(polytopeFace);
+		}
+	}
 
-			SupportPoint sp(collider1, collider2, searchDir);
+// Private functions
+	void Polytope::tetrahedronFromEdge(
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
+		const std::vector<SupportPoint>& simplex, float precision
+	) {
+		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
 
-			if (glm::length(sp.getCSOPosition()) < kEpsilon) {
-				// Try the opposite direction
-				searchDir = -searchDir;
-				sp = SupportPoint(collider1, collider2, searchDir);
-			}
+		// 1. Find the coordinate axis that is the closest to be orthonormal
+		// to the direction v01
+		glm::vec3 vAxis(0.0f);
+		auto absCompare = [](float f1, float f2) { return std::abs(f1) < std::abs(f2); };
+		int iAxis = std::distance(&v01.x, std::min_element(&v01.x, &v01.x + 3, absCompare));
+		vAxis[iAxis] = 1.0f;
 
-			simplex.push_back(sp);
+		// 2. Calculate an orthonormal vector to the vector v01 with the axis
+		glm::vec3 vNormal = glm::cross(v01, vAxis);
+
+		// 3. Calculate 3 new points around the vector v01 by rotating
+		// vNormal by 2*pi/3 radians around v01
+		glm::mat3 rotate2Pi3 = glm::mat3(glm::rotate(glm::mat4(1.0f), 2.0f * glm::pi<float>() / 3.0f, v01));
+		glm::vec3 searchDir = vNormal;
+		for (int i = 0; i < 3; ++i) {
+			vertices.emplace_back(collider1, collider2, searchDir);
+			searchDir = rotate2Pi3 * searchDir;
 		}
 
-		// Create the polytope from the simplex's points
-		vertices = { simplex[0], simplex[1], simplex[2], simplex[3] };
+		// 4. The fourth point of the polytope must be either simplex[0] or
+		// simplex[1], we select the one that creates a tetrahedron with the
+		// origin inside
+		glm::vec3 a = vertices[0].getCSOPosition(), b = vertices[1].getCSOPosition(), c = vertices[2].getCSOPosition();
+		glm::vec3 tNormal = glm::cross(b - a, c - a);
+		if (glm::dot(-a, tNormal) < 0) {
+			tNormal = -tNormal;
+		}
+
+		if (glm::dot(simplex[0].getCSOPosition() - a, tNormal) > kEpsilon) {
+			vertices.push_back(simplex[0]);
+		}
+		else {
+			vertices.push_back(simplex[1]);
+		}
+
+		// 5. Create the faces
+		createTetrahedronFaces(precision);
+	}
+
+
+	void Polytope::tetrahedronFromTriangle(
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
+		const std::vector<SupportPoint>& simplex, float precision
+	) {
+		// Search a support point along the simplex's triangle normal
+		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
+		glm::vec3 v02 = simplex[2].getCSOPosition() - simplex[0].getCSOPosition();
+		glm::vec3 tNormal = glm::cross(v01, v02);
+
+		SupportPoint sp(collider1, collider2, tNormal);
+
+		if (glm::dot(tNormal, sp.getCSOPosition() - simplex[0].getCSOPosition()) < kEpsilon) {
+			// Try the opposite direction
+			sp = SupportPoint(collider1, collider2, -tNormal);
+		}
+
+		vertices = { simplex[0], simplex[1], simplex[2], sp };
+		createTetrahedronFaces(precision);
+	}
+
+
+	void Polytope::createTetrahedronFaces(float precision)
+	{
 		SupportPoint *d = &vertices[0], *c = &vertices[1], *b = &vertices[2], *a = &vertices[3];
-
 		glm::vec3 da = a->getCSOPosition() - d->getCSOPosition(),
 			db = b->getCSOPosition() - d->getCSOPosition(),
 			dc = c->getCSOPosition() - d->getCSOPosition(); 
@@ -85,7 +127,10 @@ namespace fe { namespace collision {
 			std::swap(b, c);
 		}
 
-		faces = { Triangle(a,b,c), Triangle(a,d,b), Triangle(a,c,d), Triangle(b,d,c) };
+		addFace( PolytopeFace(a, b, c, precision) );
+		addFace( PolytopeFace(a, d, b, precision) );
+		addFace( PolytopeFace(a, c, d, precision) );
+		addFace( PolytopeFace(b, d, c, precision) );
 	}
 
 }}

@@ -35,17 +35,14 @@ namespace fe { namespace collision {
 	};
 
 
-	/** Calculates the minimum distance from a point to the given triangle
+	/** Calculates the closest point to p in the given plane
 	 *
-	 * @param	p the point whose distance to the triangle we want to know
-	 * @param	t1 the first point of the triangle
-	 * @param	t2 the second point of the triangle
-	 * @param	t3 the third point of the triangle
-	 * @return	the minimum distance of p to the triangle between e1, e2
-	 *			and e3 */
-	float distancePointTriangle(
+	 * @param	p the point
+	 * @param	planePoints three of the points of the plane
+	 * @return	the closest points in the plane to the given point p */
+	glm::vec3 getClosestPointInPlane(
 		const glm::vec3& p,
-		const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+		const std::array<glm::vec3, 3>& planePoints
 	);
 
 

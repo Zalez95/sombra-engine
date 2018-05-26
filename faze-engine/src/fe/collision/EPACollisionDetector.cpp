@@ -1,4 +1,3 @@
-#include <tuple>
 #include <limits>
 #include <cassert>
 #include <algorithm>
@@ -24,36 +23,38 @@ namespace fe { namespace collision {
 		std::vector<SupportPoint>& simplex, Contact& ret
 	) const
 	{
-		// 1. Calculate the closest face to the origin
-		Triangle* closestF;
-		float closestFDist;
-		std::tie(closestF, closestFDist) = calculateEPA(collider1, collider2, simplex);
-		if (closestF == nullptr) {
-			return false;
+		// 1. Handle the weird simplex cases
+		if (simplex.empty()) { return false; }
+		if (simplex.size() == 1) {	// The simplex point is the Contact point
+			ret.mPenetration = 0.0f;
+			ret.mNormal = glm::vec3(0.0f);
+			for (int i = 0; i < 2; ++i) {
+				ret.mWorldPosition[i] = simplex[0].getWorldPosition(i);
+				ret.mLocalPosition[i] = simplex[0].getLocalPosition(i);
+			}
+			return true;
 		}
 
-		// 2. Project the origin onto the closest face and calculate its
-		// barycentric coordinates
-		glm::vec3 originBarycentricCoords,
-			a = closestF->ab.p1->getCSOPosition(),
-			b = closestF->bc.p1->getCSOPosition(),
-			c = closestF->ca.p1->getCSOPosition();
-		if (!projectPointOnTriangle(glm::vec3(0.0f), { a, b, c }, mProjectionPrecision, originBarycentricCoords)) {
+		// 2. Calculate the closest face to the origin
+		PolytopeFace* closestFace = calculateEPA(collider1, collider2, simplex);
+		if (!closestFace) {
 			return false;
 		}
 
 		// 3. Fill the Contact data with the face normal, it's distance to the
 		// origin and the barycentric coordinates of the origin onto the face
-		ret.mPenetration = closestFDist;
-		ret.mNormal = closestF->normal;
+		Triangle& t = closestFace->triangle;
+		glm::vec3 originBarycentricCoords = closestFace->closestPointBarycentricCoords;
+		ret.mPenetration = closestFace->distance;
+		ret.mNormal = t.normal;
 		for (int i = 0; i < 2; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				ret.mWorldPosition[i][j] = originBarycentricCoords.x * closestF->ab.p1->getWorldPosition(i)[j]
-					+ originBarycentricCoords.y * closestF->bc.p1->getWorldPosition(i)[j]
-					+ originBarycentricCoords.z * closestF->ca.p1->getWorldPosition(i)[j];
-				ret.mLocalPosition[i][j] = originBarycentricCoords.x * closestF->ab.p1->getLocalPosition(i)[j]
-					+ originBarycentricCoords.y * closestF->bc.p1->getLocalPosition(i)[j]
-					+ originBarycentricCoords.z * closestF->ca.p1->getLocalPosition(i)[j];
+				ret.mWorldPosition[i][j] = originBarycentricCoords.x * t.ab.p1->getWorldPosition(i)[j]
+					+ originBarycentricCoords.y * t.bc.p1->getWorldPosition(i)[j]
+					+ originBarycentricCoords.z * t.ca.p1->getWorldPosition(i)[j];
+				ret.mLocalPosition[i][j] = originBarycentricCoords.x * t.ab.p1->getLocalPosition(i)[j]
+					+ originBarycentricCoords.y * t.bc.p1->getLocalPosition(i)[j]
+					+ originBarycentricCoords.z * t.ca.p1->getLocalPosition(i)[j];
 			}
 		}
 
@@ -61,77 +62,68 @@ namespace fe { namespace collision {
 	}
 
 // Private functions
-	std::pair<Triangle*, float> EPACollisionDetector::calculateEPA(
+	PolytopeFace* EPACollisionDetector::calculateEPA(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<SupportPoint>& simplex
 	) const
 	{
 		// 1. Create the initial polytope to expand from the simplex points
-		Polytope polytope(collider1, collider2, simplex);
-		if (polytope.faces.size() < 4) {
-			return std::make_pair(nullptr, -1);
+		Polytope polytope(collider1, collider2, simplex, mProjectionPrecision);
+		if (polytope.faces.empty()) {
+			return nullptr;
 		}
 
-		std::vector<Triangle>::iterator closestFIt;
-		float closestFDist = std::numeric_limits<float>::max();
-		for (int nIterations = 0; nIterations < sMaxIterations; ++nIterations) {
-			// 2. Calculate the closest face to the origin of the polytope
-			std::tie(closestFIt, closestFDist) = getClosestFaceToOrigin(polytope);
+		float upperBound = std::numeric_limits<float>::max();
+		PolytopeFace* closestFace = &polytope.faces.front();
+		do {
+			if (!closestFace->obsolete) {
+				// 2. Add a new support point along the closest point direction
+				polytope.vertices.emplace_back(collider1, collider2, closestFace->closestPoint);
+				SupportPoint* sp = &polytope.vertices.back();
 
-			// 3. Add a new support point along the face normal
-			polytope.vertices.emplace_back(collider1, collider2, closestFIt->normal);
-			SupportPoint* sp = &polytope.vertices.back();
+				// 3. If the new point is further from the origin than the
+				// closest point in the current triangle we update our current
+				// upper bound
+				float currentBound = glm::dot(sp->getCSOPosition(), closestFace->closestPoint / closestFace->distance);
+				upperBound = std::min(upperBound, currentBound);
 
-			// 4. If the distance to the origin of the new SupportPoint is no
-			// further to the origin than the current closest face by
-			// mMinFThreshold, then we have found the closest face
-			float distanceSPFace = glm::dot(sp->getCSOPosition(), closestFIt->normal) - closestFDist;
-			if (distanceSPFace <= mMinFThreshold) {
-				return std::make_pair(&(*closestFIt), closestFDist);
-			}
+				if (closestFace->distance - upperBound < mMinFThreshold) {
+					// 5. Mark as obsolete all the faces that can be seen from
+					// the new point and get the edges of the created hole that
+					// would be created in the Polytope if we remove them
+					closestFace->obsolete = true;
+					std::vector<Edge> holeEdges = {
+						closestFace->triangle.ab,
+						closestFace->triangle.bc,
+						closestFace->triangle.ca
+					};
+					for (PolytopeFace& currentFace : polytope.faces) {
+						if (glm::dot(currentFace.triangle.normal, sp->getCSOPosition()) > 0) {
+							appendEdge(currentFace.triangle.ab, holeEdges);
+							appendEdge(currentFace.triangle.bc, holeEdges);
+							appendEdge(currentFace.triangle.ca, holeEdges);
+							currentFace.obsolete = true;
+						}
+					}
 
-			// 5. Delete the faces that can be seen from the new point and get
-			// the edges of the created hole in the Polytope
-			std::vector<Edge> holeEdges = { closestFIt->ab, closestFIt->bc, closestFIt->ca };
-			polytope.faces.erase(closestFIt);
-			for (auto it = polytope.faces.begin(); it != polytope.faces.end();) {
-				if (glm::dot(it->normal, sp->getCSOPosition()) > 0) {
-					appendEdge(it->ab, holeEdges);
-					appendEdge(it->bc, holeEdges);
-					appendEdge(it->ca, holeEdges);
-					it = polytope.faces.erase(it);
+					// 6. Add new faces to the polytope by connecting the edges
+					// of the hole to the new support point
+					for (const Edge& e : holeEdges) {
+						PolytopeFace nextFace(sp, e.p1, e.p2, mProjectionPrecision);
+						if (nextFace.inside) {
+							polytope.addFace(nextFace);
+						}
+					}
 				}
-				else {
-					++it;
-				}
 			}
 
-			// 6. Add new faces connecting the edges of the hole to the support
-			// point
-			for (const Edge& e : holeEdges) {
-				polytope.faces.emplace_back(sp, e.p1, e.p2);
-			}
+			// 7. Remove the current obsolete face and get the next one
+			polytope.faces.pop_front();
+			closestFace = &polytope.faces.front();
 		}
+		while((polytope.faces.size() != 1) && (closestFace->distance - upperBound < mMinFThreshold));
 
-		return std::make_pair(nullptr, -1);
-	}
-
-
-	EPACollisionDetector::ClosestFace EPACollisionDetector::getClosestFaceToOrigin(
-		Polytope& polytope
-	) const
-	{
-		std::vector<Triangle>::iterator closestFIt = polytope.faces.end();
-		float closestFDist = std::numeric_limits<float>::max();
-		for (auto it = polytope.faces.begin(); it != polytope.faces.end(); ++it) {
-			float distance = std::abs(glm::dot(it->normal, it->ab.p1->getCSOPosition()));
-			if (distance < closestFDist) {
-				closestFIt		= it;
-				closestFDist	= distance;
-			}
-		}
-
-		return std::make_pair(closestFIt, closestFDist);
+		return closestFace;
 	}
 
 
