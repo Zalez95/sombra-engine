@@ -15,9 +15,6 @@ namespace fe { namespace collision {
 	 */
 	class ConcaveCollider : public Collider
 	{
-	protected:	// Nested types
-		typedef std::unique_ptr<ConvexCollider> ConvexPart;
-
 	public:		// Functions
 		/** Class destructor */
 		virtual ~ConcaveCollider() {};
@@ -41,9 +38,9 @@ namespace fe { namespace collision {
 		 * with the given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	a set with Convex parts of the collider that can be
-		 *			overlaping with the given AABB */
-		virtual std::vector<ConvexPart> getOverlapingParts(
+		 * @return	a set with the pointers to the Convex parts of the collider
+		 *			that could be overlaping with the given AABB */
+		virtual std::vector<const ConvexCollider*> getOverlapingParts(
 			const AABB& aabb
 		) const = 0;
 	};

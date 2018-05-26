@@ -2,8 +2,23 @@
 #define MESH_COLLIDER_H
 
 #include "ConcaveCollider.h"
+#include "ConvexPolyhedron.h"
 
 namespace fe { namespace collision {
+
+	/**
+	 * The algorithm used to split the ConcaveCollider in multiple
+	 * ConvexColliders
+	 */
+	enum class ConvexStrategy
+	{
+		/** QuickHull algorithm used to calculate the Convex Hull */
+		QuickHull,
+		/** HACD algorithm used to split a ConcaveCollider in multiple
+		 * ConvexColliders */
+		HACD
+	};
+
 
 	/**
 	 * Class MeshCollider, it's a Collider with a concave shape which will be
@@ -12,22 +27,11 @@ namespace fe { namespace collision {
 	class MeshCollider : public ConcaveCollider
 	{
 	private:	// Attributes
-		/** The coordinates in local space of the MeshCollider's
-		 * mesh vertices */
-		const std::vector<glm::vec3> mVertices;
-
-		/** The coordinates in world space of the MeshCollider's
-		 * mesh vertices */
-		std::vector<glm::vec3> mVerticesWorld;
-
-		/** The indices of the triangle faces of the MeshCollider */
-		const std::vector<unsigned short> mIndices;
+		/** The multiple pieces in which the ConcaveCollider is splited */
+		std::vector<ConvexPolyhedron> mConvexParts;
 
 		/** The transformation matrix of the MeshCollider */
 		glm::mat4 mTransformsMatrix;
-
-		/** The AABBs of each triangle in the MeshCollider */
-		std::vector<AABB> mTriangleAABBs;
 
 		/** The AABB of the MeshCollider */
 		AABB mAABB;
@@ -38,23 +42,12 @@ namespace fe { namespace collision {
 		 *
 		 * @param	vertices the vertices of the MeshCollider in local
 		 *			space
-		 * @param	indices the indices of the faces of the MeshCollider */
-		MeshCollider(
-			const std::vector<glm::vec3>& vertices,
-			const std::vector<unsigned short>& indices
-		);
-
-		/** Creates a new MeshCollider
-		 *
-		 * @param	vertices the vertices of the MeshCollider in local
-		 *			space
-		 * @param	indices the indices of the faces of the MeshCollider
-		 * @param	transforms the transformations matrix with the scale,
-		 *			translation and orientation of the MeshCollider */
+		 * @param	indices the indices of the triangle mesh of the
+		 *			MeshCollider */
 		MeshCollider(
 			const std::vector<glm::vec3>& vertices,
 			const std::vector<unsigned short>& indices,
-			const glm::mat4& transforms
+			ConvexStrategy strategy
 		);
 
 		/** Class destructor */
@@ -80,15 +73,30 @@ namespace fe { namespace collision {
 		 * with the given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	a set with Convex parts of the collider that can be
-		 *			overlaping with the given AABB */
-		virtual std::vector<ConvexPart> getOverlapingParts(
+		 * @return	a set with the pointers to the Convex parts of the collider
+		 *			that could be overlaping with the given AABB */
+		virtual std::vector<const ConvexCollider*> getOverlapingParts(
 			const AABB& aabb
 		) const;
 	private:
-		/** Calculates the AABBs of the triangles of the MeshCollider with its
-		 * local vertices and tranforms matrix */
-		void calculateAABBs();
+		/** Calculates the AABB of the MeshCollider */
+		void calculateAABB();
+
+		/** TODO: */
+		std::vector<glm::vec3> doQuickHull(
+			const std::vector<glm::vec3>& points
+		) const;
+
+		/** Calculates the initial simplex needed for calculating the QuickHull
+		 * algorithm from the given points
+		 *
+		 * @param	points the points with which we will calculate the initial simplex
+		 * @note	the number of points must be bigger than 3
+		 * @return	the initial simplex of the QuickHull algorithm */
+		std::vector<glm::vec3> createInitialHull(
+			const std::vector<glm::vec3>& points
+		) const;
+
 	};
 
 }}

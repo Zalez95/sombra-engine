@@ -1,31 +1,23 @@
 #include <limits>
 #include <cassert>
 #include "fe/collision/MeshCollider.h"
-#include "fe/collision/ConvexPolyhedron.h"
 
 namespace fe { namespace collision {
 
 	MeshCollider::MeshCollider(
 		const std::vector<glm::vec3>& vertices,
-		const std::vector<unsigned short>& indices
-	) : mVertices(vertices), mVerticesWorld(vertices), mIndices(indices),
-		mTransformsMatrix(1.0f)
-	{
-		assert(mIndices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
-
-		calculateAABBs();
-	}
-
-
-	MeshCollider::MeshCollider(
-		const std::vector<glm::vec3>& vertices,
 		const std::vector<unsigned short>& indices,
-		const glm::mat4& transforms
-	) : mVertices(vertices), mVerticesWorld(vertices.size()), mIndices(indices)
+		ConvexStrategy strategy
+	) : mTransformsMatrix(1.0f)
 	{
-		assert(mIndices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
+		assert(indices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
 
-		setTransforms(transforms);
+		//calculateAABBs();
+		if (strategy == ConvexStrategy::QuickHull) {
+			doQuickHull(vertices);
+		}
+
+		calculateAABB();
 	}
 
 
@@ -33,55 +25,111 @@ namespace fe { namespace collision {
 	{
 		mTransformsMatrix = transforms;
 
-		for (size_t i = 0; i < mVertices.size(); ++i) {
-			mVerticesWorld[i] = transforms * glm::vec4(mVertices[i], 1.0f);
+		for (ConvexPolyhedron& convexPart : mConvexParts) {
+			convexPart.setTransforms(transforms);
 		}
 
-		calculateAABBs();
+		calculateAABB();
 	}
 
 
-	std::vector<ConcaveCollider::ConvexPart> MeshCollider::getOverlapingParts(const AABB& aabb) const
+	std::vector<const ConvexCollider*> MeshCollider::getOverlapingParts(const AABB& aabb) const
 	{
-		std::vector<ConvexPart> triangleColliders;
+		std::vector<const ConvexCollider*> overlapingParts;
 
-		for (size_t i = 0; i < mTriangleAABBs.size(); ++i) {
-			if (overlaps(aabb, mTriangleAABBs[i])) {
-				std::vector<glm::vec3> triangleVertices;
-				triangleVertices.reserve(3);
-				for (int j = 0; j < 3; ++j) {
-					triangleVertices.push_back( mVertices[mIndices[3*i + j]] );
-				}
-
-				triangleColliders.push_back(std::make_unique<ConvexPolyhedron>(triangleVertices));
-				triangleColliders.back()->setTransforms(mTransformsMatrix);
+		for (const ConvexPolyhedron& convexPart : mConvexParts) {
+			if (overlaps(aabb, convexPart.getAABB())) {
+				overlapingParts.push_back(&convexPart);
 			}
 		}
 
-		return triangleColliders;
+		return overlapingParts;
 	}
 
 // Private functions
-	void MeshCollider::calculateAABBs()
+	void MeshCollider::calculateAABB()
 	{
-		int nTriangles = mIndices.size() / 3;
-
 		mAABB = {
 			glm::vec3( std::numeric_limits<float>::max()),
 			glm::vec3(-std::numeric_limits<float>::max())
 		};
-		mTriangleAABBs = std::vector<AABB>(nTriangles, mAABB);
 
-		for (int i = 0; i < nTriangles; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				const glm::vec3& vertex = mVerticesWorld[ mIndices[3*i + j] ];
+		for (const ConvexPolyhedron& convexPart : mConvexParts) {
+			AABB convexPartAABB = convexPart.getAABB();
+			mAABB.minimum = glm::min(mAABB.minimum, convexPartAABB.minimum);
+			mAABB.maximum = glm::max(mAABB.maximum, convexPartAABB.maximum);
+		}
+	}
 
-				mTriangleAABBs[i].minimum = glm::min(mTriangleAABBs[i].minimum, vertex);
-				mTriangleAABBs[i].maximum = glm::max(mTriangleAABBs[i].maximum, vertex);
-				mAABB.minimum = glm::min(mAABB.minimum, vertex);
-				mAABB.maximum = glm::max(mAABB.maximum, vertex);
+
+	std::vector<glm::vec3> MeshCollider::doQuickHull(
+		const std::vector<glm::vec3>& points
+	) const
+	{
+		std::vector<glm::vec3> convexHull = createInitialHull(points);
+
+
+		return convexHull;
+	}
+
+
+	std::vector<glm::vec3> MeshCollider::createInitialHull(
+		const std::vector<glm::vec3>& points
+	) const
+	{
+		size_t iP1, iP2, iP3, iP4;
+		
+		// 1. Find the extreme points in each axis
+		std::array<size_t, 6> indexExtremePoints{};
+		for (size_t i = 0; i < points.size(); ++i) {
+			for (size_t j = 0; j < 3; ++j) {
+				if (points[i][j] < points[indexExtremePoints[2*j]][j]) {
+					indexExtremePoints[2*j] = i;
+				}
+				if (points[i][j] > points[indexExtremePoints[2*j + 1]][j]) {
+					indexExtremePoints[2*j + 1] = i;
+				}
 			}
 		}
+
+		// 2. Find from the extreme points the pair which are furthest apart
+		float maxLength = -std::numeric_limits<float>::max();
+		for (size_t i = 0; i < points.size(); ++i) {
+			for (size_t j = i + 1; j < points.size(); ++j) {
+				float currentLength = glm::length(points[j] - points[i]);
+				if (currentLength > maxLength) {
+					iP1 = i; iP2 = j;
+					maxLength = currentLength;
+				}
+			}
+		}
+
+		// 3. Find the furthest point to the edge between the last 2 points
+		glm::vec3 dirP1P2 = glm::normalize(points[iP2] - points[iP1]);
+		maxLength = -std::numeric_limits<float>::max();
+		for (size_t i = 0; i < points.size(); ++i) {
+			glm::vec3 projection = points[iP1] + dirP1P2 * glm::dot(points[i], dirP1P2);
+			float currentLength = glm::length(points[i] - projection);
+			if (currentLength > maxLength) {
+				iP3 = i;
+				maxLength = currentLength;
+			}
+		}
+
+		// 4. Find the furthest point to the triangle created from the last 3
+		// points
+		glm::vec3 dirP1P3 = glm::normalize(points[iP3] - points[iP1]);
+		glm::vec3 tNormal = glm::normalize(glm::cross(dirP1P2, dirP1P3));
+		maxLength = -std::numeric_limits<float>::max();
+		for (size_t i = 0; i < points.size(); ++i) {
+			float currentLength = std::abs(glm::dot(points[i], tNormal));
+			if (currentLength > maxLength) {
+				iP4 = i;
+				maxLength = currentLength;
+			}
+		}
+
+		return { points[iP1], points[iP2], points[iP3], points[iP4] };
 	}
 
 }}
