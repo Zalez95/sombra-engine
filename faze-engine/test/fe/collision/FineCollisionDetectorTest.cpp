@@ -128,7 +128,7 @@ TEST(FineCollisionDetector, SphereSphere3)
 	}
 }
 
-
+/** Non colliding */
 TEST(FineCollisionDetector, CVXPolyCVXPoly1)
 {
 	const glm::vec3 v1(-5.65946f, -2.8255f, -1.52118f), v2(-4.58841f, -2.39753f, -0.164247f);
@@ -152,7 +152,7 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly1)
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
 
-
+/** Colliding - vertex face */
 TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 {
 	const glm::vec3 expectedWorldPos[] = {
@@ -168,6 +168,52 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 	const glm::vec3 v1(-2.787537574f, 5.180943965f, -3.084435224f), v2(-3.950720071f, 4.450982570f, -1.945194125f);
 	const glm::quat o1(0.770950198f, 0.507247209f, -0.107715316f, 0.369774848f), o2(0.550417125f, -0.692481637f, -0.259043514f, 0.387822926f);
 	fe::collision::BoundingBox bb1(glm::vec3(1.0f, 2.0f, 2.0f)), bb2(glm::vec3(1.0f, 0.25f, 0.5f));
+
+	glm::mat4 r1 = glm::mat4_cast(o1);
+	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
+	bb1.setTransforms(t1 * r1);
+
+	glm::mat4 r2 = glm::mat4_cast(o2);
+	glm::mat4 t2 = glm::translate(glm::mat4(1.0f), v2);
+	bb2.setTransforms(t2 * r2);
+
+	fe::collision::Manifold manifold(&bb1, &bb2);
+	fe::collision::FineCollisionDetector fineCollisionDetector(
+		MIN_F_DIFFERENCE, CONTACT_PRECISION,
+		CONTACT_SEPARATION
+	);
+
+	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
+	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
+	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+
+	fe::collision::Contact& res = contacts.front();
+	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
+		for (int j = 0; j < 2; ++j) {
+			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], TOLERANCE);
+			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
+		}
+	}
+}
+
+/** Colliding vertex - vertex */
+TEST(FineCollisionDetector, CVXPolyCVXPoly4)
+{
+	const glm::vec3 expectedWorldPos[] = {
+		{ 2.647833347f, 1.175995111f, 0.072492107f },
+		{ 2.647833347f, 1.175995111f, 0.072492107f }
+	};
+	const glm::vec3 expectedLocalPos[] = {
+		{ -1.0f, -0.6f, -0.025f },
+		{ 0.5f, -1.1f, -1.0f }
+	};
+	const glm::vec3 expectedNormal(0.0f);
+	const float expectedPenetration = 0.0f;
+	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0), v2(3.065070390f, 0.126420855f, 0.363925933f);
+	const glm::quat o1(0.900554239f, -0.349306106f, -0.093596287f, -0.241302788f), o2(0.637856543f, -0.079467326f, -0.094705462f, -0.760167777f);
+	fe::collision::BoundingBox bb1(glm::vec3(1.0f, 2.2f, 2.0f)), bb2(glm::vec3(2.0f, 1.2f, 0.05f));
 
 	glm::mat4 r1 = glm::mat4_cast(o1);
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);

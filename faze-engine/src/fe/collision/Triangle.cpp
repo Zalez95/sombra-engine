@@ -3,33 +3,6 @@
 
 namespace fe { namespace collision {
 
-	Triangle::Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c) :
-		ab{a, b}, bc{b, c}, ca{c, a}
-	{
-		normal = glm::normalize(glm::cross(
-			bc.p1->getCSOPosition() - ab.p1->getCSOPosition(),
-			ca.p1->getCSOPosition() - ab.p1->getCSOPosition()
-		));
-	}
-
-
-	bool Triangle::operator==(const Triangle& other) const
-	{
-		if (ab == other.ab) {
-			return (bc == other.bc) && (ca == other.ca);
-		}
-		else if (ab == other.bc) {
-			return (bc == other.ca) && (ca == other.ab);
-		}
-		else if (ab == other.ca) {
-			return (bc == other.ab) && (ca == other.bc);
-		}
-		else {
-			return false;
-		}
-	}
-
-
 	glm::vec3 getClosestPointInPlane(
 		const glm::vec3& p,
 		const std::array<glm::vec3, 3>& planePoints

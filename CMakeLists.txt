@@ -47,5 +47,6 @@ endif()
 include(Dependencies)
 
 # Create the libraries and the executables
+enable_testing()
 add_subdirectory(faze-engine)
 add_subdirectory(game)

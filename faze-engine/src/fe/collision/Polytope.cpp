@@ -5,13 +5,33 @@
 
 namespace fe { namespace collision {
 
-	PolytopeFace::PolytopeFace(SupportPoint* a, SupportPoint* b, SupportPoint* c, float precision) :
-		triangle(a, b, c), obsolete(false)
-	{
-		glm::vec3 aCSO = a->getCSOPosition(), bCSO = b->getCSOPosition(), cCSO = c->getCSOPosition();
-		closestPoint = getClosestPointInPlane(glm::vec3(0.0f), { aCSO, bCSO, cCSO });
+	PolytopeFace::PolytopeFace(
+		const std::array<int, 3>& indices,
+		const std::vector<SupportPoint>& vertices,
+		float precision
+	) {
+		int iP1 = indices[0], iP2 = indices[1], iP3 = indices[2];
+		glm::vec3 p1CSO = vertices[iP1].getCSOPosition();
+		glm::vec3 p2CSO = vertices[iP2].getCSOPosition();
+		glm::vec3 p3CSO = vertices[iP3].getCSOPosition();
+
+		glm::vec3 normal = glm::normalize(glm::cross(p2CSO - p1CSO, p3CSO - p1CSO));
+		if (glm::dot(normal, -p1CSO) > 0.0f) {
+			// Fix the tetrahedron winding (the face must be pointing away from
+			// the origin)
+			normal = -normal;
+			std::swap(iP2, iP3);
+			std::swap(p2CSO, p3CSO);
+		}
+
+		triangle = { { iP1, iP2 }, { iP2, iP3 }, { iP3, iP1 }, normal };
+		obsolete = false;
+		closestPoint = getClosestPointInPlane(glm::vec3(0.0f), { p1CSO, p2CSO, p3CSO });
 		distance = glm::length(closestPoint);
-		inside = projectPointOnTriangle(closestPoint, { aCSO, bCSO, cCSO }, precision, closestPointBarycentricCoords);
+		inside = projectPointOnTriangle(
+			closestPoint, { p1CSO, p2CSO, p3CSO },
+			precision, closestPointBarycentricCoords
+		);
 	}
 
 
@@ -39,12 +59,15 @@ namespace fe { namespace collision {
 
 	void Polytope::addFace(const PolytopeFace& polytopeFace)
 	{
-		if (polytopeFace.distance < faces.front().distance) {
-			faces.push_front(polytopeFace);
-		}
-		else {
-			faces.push_back(polytopeFace);
-		}
+		faces.insert(
+			std::upper_bound(
+				faces.begin(), faces.end(), polytopeFace,
+				[](const PolytopeFace& p1, const PolytopeFace& p2) {
+					return (p1.distance < p2.distance);
+				}
+			),
+			polytopeFace
+		);
 	}
 
 // Private functions
@@ -82,7 +105,7 @@ namespace fe { namespace collision {
 			tNormal = -tNormal;
 		}
 
-		if (glm::dot(simplex[0].getCSOPosition() - a, tNormal) > kEpsilon) {
+		if (glm::dot(simplex[0].getCSOPosition() - a, tNormal) > sKEpsilon) {
 			vertices.push_back(simplex[0]);
 		}
 		else {
@@ -105,7 +128,7 @@ namespace fe { namespace collision {
 
 		SupportPoint sp(collider1, collider2, tNormal);
 
-		if (glm::dot(tNormal, sp.getCSOPosition() - simplex[0].getCSOPosition()) < kEpsilon) {
+		if (glm::dot(tNormal, sp.getCSOPosition() - simplex[0].getCSOPosition()) < sKEpsilon) {
 			// Try the opposite direction
 			sp = SupportPoint(collider1, collider2, -tNormal);
 		}
@@ -117,20 +140,10 @@ namespace fe { namespace collision {
 
 	void Polytope::createTetrahedronFaces(float precision)
 	{
-		SupportPoint *d = &vertices[0], *c = &vertices[1], *b = &vertices[2], *a = &vertices[3];
-		glm::vec3 da = a->getCSOPosition() - d->getCSOPosition(),
-			db = b->getCSOPosition() - d->getCSOPosition(),
-			dc = c->getCSOPosition() - d->getCSOPosition(); 
-		if (glm::dot(da, glm::cross(db, dc)) > 0.0f) {
-			// Fix the tetrahedron winding (the faces must be in
-			// counter-clockwise order)
-			std::swap(b, c);
-		}
-
-		addFace( PolytopeFace(a, b, c, precision) );
-		addFace( PolytopeFace(a, d, b, precision) );
-		addFace( PolytopeFace(a, c, d, precision) );
-		addFace( PolytopeFace(b, d, c, precision) );
+		addFace( PolytopeFace({ 0, 1, 2 }, vertices, precision) );
+		addFace( PolytopeFace({ 0, 3, 1 }, vertices, precision) );
+		addFace( PolytopeFace({ 0, 2, 3 }, vertices, precision) );
+		addFace( PolytopeFace({ 1, 3, 2 }, vertices, precision) );
 	}
 
 }}

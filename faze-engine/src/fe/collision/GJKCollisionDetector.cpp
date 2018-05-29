@@ -12,7 +12,7 @@ namespace fe { namespace collision {
 		// 1. Get an initial point in the direction from one collider to another
 		glm::vec3 c1Location = collider1.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 c2Location = collider2.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		glm::vec3 direction = c1Location - c2Location;
+		glm::vec3 direction = c2Location - c1Location;
 		SupportPointVector simplex = { SupportPoint(collider1, collider2, direction) };
 
 		bool containsOrigin = doSimplex(simplex, direction);

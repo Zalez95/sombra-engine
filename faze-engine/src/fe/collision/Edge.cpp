@@ -2,6 +2,13 @@
 
 namespace fe { namespace collision {
 
+	bool Edge::operator==(const Edge& other) const
+	{
+		return ((p1 == other.p1) && (p2 == other.p2))
+			|| ((p2 == other.p1) && (p1 == other.p2));
+	}
+
+
 	float distancePointEdge(
 		const glm::vec3& p,
 		const glm::vec3& e1, const glm::vec3& e2

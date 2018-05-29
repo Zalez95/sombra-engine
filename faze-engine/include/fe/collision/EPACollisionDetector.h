@@ -67,20 +67,14 @@ namespace fe { namespace collision {
 		 *			intersecting
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
-		 * @param	simplex the points of the initial simplex
-		 * @return	the closest face to the origin */
-		PolytopeFace* calculateEPA(
+		 * @param	polytope a reference to the Polytope to expand its faces
+		 * @return	true if the polytope was expanded successfully, false
+		 *			otherwise
+		 * @note	the initial polytope must be a tetrahedron */
+		bool expandPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			std::vector<SupportPoint>& simplex
+			Polytope& polytope
 		) const;
-
-		/** Calculates the closest face of the given polytope to the origin of
-		 * the Minkowski Difference
-		 *
-		 * @param	polytope the Polytope with the faces
-		 * @param	the closest face to the origin in the given polytope that
-		 *			isn't obsolete */
-		PolytopeFace* getClosestFaceToOrigin(Polytope& polytope) const;
 
 		/** Appends the given edge to the edge vector if it isn't already
 		 * inside, also if it founds an edge equal to the given one, it will
@@ -89,6 +83,16 @@ namespace fe { namespace collision {
 		 * @param	e the edge to append
 		 * @param	edgeVector the vector where we want to append the edge */
 		void appendEdge(const Edge& e, std::vector<Edge>& edgeVector) const;
+
+		/** Fills the Contact data with the normal of closest face in the
+		 * Polytope to the origin, and the distance and coordinates of the
+		 * closest point of this face to the origin
+		 *
+		 * @param	polytope the Polytope with which we want to fill the Contact
+		 *			data
+		 * @param	ret a reference to the Contact where we are going to store
+		 *			the data */
+		void fillContactData(const Polytope& polytope, Contact& ret) const;
 	};
 
 }}

@@ -20,7 +20,11 @@ namespace fe { namespace collision {
 		bool		inside;
 		glm::vec3	closestPointBarycentricCoords;
 
-		PolytopeFace(SupportPoint* a, SupportPoint* b, SupportPoint* c, float precision);
+		PolytopeFace(
+			const std::array<int, 3>& indices,
+			const std::vector<SupportPoint>& vertices,
+			float precision
+		);
 	};
 
 
@@ -33,14 +37,15 @@ namespace fe { namespace collision {
 	class Polytope
 	{
 	private:	// Attributes
-		static constexpr float kEpsilon = 0.0001f;
-	public:
-		/** The vertices of the Polytope
-		 * @note	we use deque instead of vectors to avoid reference
-		 *			invalidations when pushing back SupportPoints */
-		std::deque<SupportPoint> vertices;
+		static constexpr float sKEpsilon = 0.0001f;
 
-		/** The faces of the Polytope */
+	public:
+		/** The vertices of the Polytope */
+		std::vector<SupportPoint> vertices;
+
+		/** The faces of the Polytope
+		 * @note	the faces are stored in a min-heap based on the distance
+		 *			to the origin of each face */
 		std::deque<PolytopeFace> faces;
 
 	public:		//Functions

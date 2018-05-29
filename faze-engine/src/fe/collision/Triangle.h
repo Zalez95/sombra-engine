@@ -23,15 +23,6 @@ namespace fe { namespace collision {
 
 		/** The normal of Triangle */
 		glm::vec3 normal;
-
-		/** Creates a Triangle from the given SupportPoints */
-		Triangle(SupportPoint* a, SupportPoint* b, SupportPoint* c);
-
-		/** Compares the current Triangle with the given one
-		 *
-		 * @param	other the Triangle to compare with the current one
-		 * @return	true if the Triangles are the same, false otherwise */
-		bool operator==(const Triangle& other) const;
 	};
 
 
@@ -57,7 +48,7 @@ namespace fe { namespace collision {
 	 *			to store the coordinates of the projected point in
 	 *			barycentric coordinates
 	 * @return	true if the point could be projected onto the triangle,
-	 *			false otherwise*/
+	 *			false otherwise */
 	bool projectPointOnTriangle(
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision, glm::vec3& projectedPoint
