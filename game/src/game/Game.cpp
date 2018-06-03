@@ -306,7 +306,10 @@ namespace game {
 
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::MeshCollider>(rawMesh->positions, rawMesh->faceIndices),
+					std::make_unique<fe::collision::MeshCollider>(
+						rawMesh->positions, rawMesh->faceIndices,
+						fe::collision::ConvexStrategy::HACD
+					),
 					glm::mat4(1.0f)
 				);
 				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));

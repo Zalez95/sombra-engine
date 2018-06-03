@@ -75,10 +75,10 @@ namespace fe { namespace collision {
 
 
 	bool FineCollisionDetector::collideConvexConcave(
-		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
-		Manifold& manifold, bool convexFirst
+		const ConvexCollider& /*convexCollider*/, const ConcaveCollider& /*concaveCollider*/,
+		Manifold& /*manifold*/, bool /*convexFirst*/
 	) const
-	{
+	{/*
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of the concave collider with the
@@ -122,17 +122,17 @@ namespace fe { namespace collision {
 			// Limit the number of points in the manifold to 4
 			limitManifoldContacts(manifold);
 			return true;
-		}
+		}*/
 
 		return false;
 	}
 
 
 	bool FineCollisionDetector::collideConcave(
-		const ConcaveCollider& collider1, const ConcaveCollider& collider2,
-		Manifold& manifold
+		const ConcaveCollider& /*collider1*/, const ConcaveCollider& /*collider2*/,
+		Manifold& /*manifold*/
 	) const
-	{
+	{/*
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider
@@ -174,7 +174,7 @@ namespace fe { namespace collision {
 			limitManifoldContacts(manifold);
 
 			return true;
-		}
+		}*/
 
 		return false;
 	}

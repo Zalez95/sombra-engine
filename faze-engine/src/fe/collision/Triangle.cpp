@@ -3,6 +3,15 @@
 
 namespace fe { namespace collision {
 
+	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle)
+	{
+		glm::vec3 v12 = triangle[1] - triangle[0];
+		glm::vec3 v13 = triangle[2] - triangle[0];
+		float sinTheta = std::sqrt(1.0f - std::pow(glm::dot(v12, v13), 2.0f));
+		return glm::length(v12) * glm::length(v13) * sinTheta / 2.0f;
+	}
+
+
 	glm::vec3 getClosestPointInPlane(
 		const glm::vec3& p,
 		const std::array<glm::vec3, 3>& planePoints

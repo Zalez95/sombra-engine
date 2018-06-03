@@ -245,7 +245,10 @@ namespace fe { namespace loaders {
 				// TODO: read other colliders
 				physicsEntity = std::make_unique<physics::PhysicsEntity>(
 					physics::RigidBody(),
-					std::make_unique<collision::MeshCollider>((*itRawMesh)->positions, (*itRawMesh)->faceIndices),
+					std::make_unique<collision::MeshCollider>(
+						(*itRawMesh)->positions, (*itRawMesh)->faceIndices,
+						collision::ConvexStrategy::HACD
+					),
 					mat
 				);
 			}

@@ -74,7 +74,7 @@ namespace fe { namespace collision {
 		 * @param	aabb the AABB to compare
 		 * @return	a set with Convex parts of the collider that can be
 		 *			overlaping with the given AABB */
-		virtual std::vector<ConvexPart> getOverlapingParts(
+		virtual std::vector<const ConvexCollider*> getOverlapingParts(
 			const AABB& aabb
 		) const;
 	private:

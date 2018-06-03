@@ -25,10 +25,10 @@ namespace fe { namespace collision {
 	}
 
 
-	std::vector<ConcaveCollider::ConvexPart> TerrainCollider::getOverlapingParts(const AABB& aabb) const
+	std::vector<const ConvexCollider*> TerrainCollider::getOverlapingParts(const AABB& /*aabb*/) const
 	{
-		std::vector<ConvexPart> triangleColliders;
-
+		std::vector<const ConvexCollider*> triangleColliders;
+/*
 		auto xIndexToX = [this](int i) { return i / static_cast<float>(mXSize - 1) - 0.5f; };
 		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize - 1) - 0.5f; };
 
@@ -69,7 +69,7 @@ namespace fe { namespace collision {
 				}
 			}
 		}
-
+*/
 		return triangleColliders;
 	}
 
