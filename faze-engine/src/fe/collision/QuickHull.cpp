@@ -1,14 +1,50 @@
-#include <array>
+#include <list>
+#include <limits>
 #include <algorithm>
 #include "QuickHull.h"
 
 namespace fe { namespace collision {
 
+	glm::vec3 calculateTriangleNormal(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+	{
+		return glm::normalize(glm::cross(b - a, c - a));
+	}
+
+
 	QuickHull::QuickHull(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<unsigned short>& /*indices*/
 	) {
-		/*auto convexHull =*/ createInitialHull(vertices);
+		for (const glm::vec3& v : createInitialHull(vertices)) {
+			mMesh.addVertex(v);
+		}
+		mMesh.addFace({ 0, 1, 2 });
+		mMesh.addFace({ 0, 3, 1 });
+		mMesh.addFace({ 0, 2, 3 });
+		mMesh.addFace({ 1, 3, 2 });
+
+		std::list<std::vector<glm::vec3>> outsideList;
+
+		for (auto& currentFace : mMesh.faces) {
+			// 1. Get the vertices outside of the current Hull by the given face
+			auto verticesOutside = getVerticesOutside(currentFace, vertices);
+			if (!verticesOutside.empty()) {
+				// 2. Get the furthest point in the direction of the face normal
+				const glm::vec3 eyePoint = getFurthestPoint(currentFace, verticesOutside);
+
+				// 3. Calculate the horizon from the current point
+				std::vector<Edge> horizon;
+				std::vector<glm::vec3> unclaimedVertices;
+				calculateHorizon(eyePoint, currentFace, horizon);
+
+				// 4. Create the new faces of the hull by joining the edges of
+				// the horizon with the eyePoint
+				for (const Edge& horizonEdge : horizon) {
+					//mMesh.faces.emplace_back(eyePoint, horizonEdge );
+					//verticesOutside = getVerticesOutside(newFace, unclaimedVertices);
+				}
+			}
+		}
 	}
 
 
@@ -72,14 +108,71 @@ namespace fe { namespace collision {
 	}
 
 
-	void QuickHull::addFaceToHull(
-		const Face& /*face*/,
-		const std::vector<glm::vec3>& /*vertices*/
-	) {
-		//glm::vec3 v01 = vertices[face[1]] - vertices[face[0]];
-		//glm::vec3 v02 = vertices[face[2]] - vertices[face[0]];
-		//glm::vec3 faceNormal = glm::normalize(glm::cross(v01, v02));
-		//std::max_element(vertices.begin(), vertices.end(), )
+	std::vector<glm::vec3> QuickHull::getVerticesOutside(
+		const Face& face,
+		const std::vector<glm::vec3>& vertices
+	) const
+	{
+		std::vector<glm::vec3> verticesOutside;
+
+		for (const glm::vec3& currentVertex : vertices) {
+			float currentDistance = glm::dot(currentVertex - mVertices[face.ab.p1], face.normal);
+			if (currentDistance == 0) {
+				if (
+					(mVertices[face.ab.p1] != currentVertex)
+					&& (mVertices[face.bc.p1] != currentVertex)
+					&& (mVertices[face.ca.p1] != currentVertex)
+				) {
+					verticesOutside.push_back(currentVertex);
+				}
+			}
+			else if (currentDistance > 0) {
+				verticesOutside.push_back(currentVertex);
+			}
+		}
+
+		return verticesOutside;
+	}
+
+
+	glm::vec3 QuickHull::getFurthestPoint(
+		const Face& face,
+		const std::vector<glm::vec3>& vertices
+	) const
+	{
+		glm::vec3 ret;
+
+		float maxDistance = -std::numeric_limits<float>::max();
+		for (const glm::vec3& currentVertex : vertices) {
+			float currentDistance = glm::dot(currentVertex - mVertices[face.ab.p1], face.normal);
+			if (currentDistance > currentDistance) {
+				maxDistance = currentDistance;
+				ret = currentVertex;
+			}
+		}
+
+		return ret;
+	}
+
+
+	void QuickHull::calculateHorizon(
+		const glm::vec3& /*eyePoint*/, const Face& /*face*/,
+		const std::vector<Edge>& /*horizon*/
+	) const
+	{
+		/*if (face not in ConvexHull) {
+			set crossedEdge not in convex hull
+			return;
+		}
+
+		if (glm::dot(face.normal, eyePoint) >= 0) {
+			set curFace not in convex hull
+			uncalimedVertices.add(outsideVertices);
+			if (crossedEdge) {
+				set crossedEdge not in convex hull
+			}
+			
+		}*/
 	}
 
 }}
