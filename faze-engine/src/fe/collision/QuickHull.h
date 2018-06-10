@@ -13,65 +13,48 @@ namespace fe { namespace collision {
 	class QuickHull
 	{
 	private:	// Attributes
-		MeshAdjacencyData mMesh;
+		/** The Calculated ConvexHull of the mesh */
+		MeshAdjacencyData mConvexHull;
 
 	public:		// Functions
-		/** Creates a new QuickHull
+		/** Calculates the ConvexHull from the given Mesh data
 		 *
-		 * @param	vertices the vertices of the Mesh to calculate the
-		 *			convex hull with
-		 * @param	indices the indices of the faces of the triangle Mesh to
-		 *			calculate the convex hull with */
-		QuickHull(
-			const std::vector<glm::vec3>& vertices,
-			const std::vector<unsigned short>& indices
-		);
+		 * @param	meshData the Data of the mesh to calculate the ConvexHull
+		 *			from */
+		QuickHull(const MeshAdjacencyData& meshData);
 
 		/** Class destructor */
 		~QuickHull() {};
 	private:
 		/** Calculates the initial simplex needed for calculating the QuickHull
-		 * algorithm from the given points
+		 * algorithm from the mesh vertices
 		 *
-		 * @param	points the points with which we will calculate the initial
-		 *			simplex
-		 * @note	the number of points must be bigger than 3
-		 * @return	the initial simplex of the QuickHull algorithm */
-		std::vector<glm::vec3> createInitialHull(
-			const std::vector<glm::vec3>& points
+		 * @param	meshData the Mesh with the vertices vertices with which we
+		 *			will calculate the initial simplex */
+		void createInitialHull(const MeshAdjacencyData& meshData);
+
+		/** Calculates the vertices that are outside of the current Hull by the
+		 * given face
+		 *
+		 * @param	iFace the index of the Face
+		 * @param	meshData the Mesh data with the Vertices and Faces
+		 * @return	the indexes of the vertices that in front of the given
+		 *			face */
+		std::vector<int> getVerticesOutside(
+			int iFace,
+			const MeshAdjacencyData& meshData
 		) const;
 
-		/** Calculates the vertices that are outside Hull by the given face
+		/** Calculates which of the given vertices is the the furthest point in
+		 * the Face normal direction
 		 *
-		 * @param	face the triangular face used to determine which vertex is
-		 *			outside or inside the convex hull
-		 * @param	vertices the vertices to add
-		 * @return	the vertices outside the convex hull */
-		std::vector<glm::vec3> getVerticesOutside(
-			const Face& face,
-			const std::vector<glm::vec3>& vertices
-		) const;
-
-		/** TODO:
-		 *
-		 * @param	face
-		 * @param	vertices
-		 * @return	the furthest point */
-		glm::vec3 getFurthestPoint(
-			const Face& face,
-			const std::vector<glm::vec3>& vertices
-		) const;
-
-		/** Calculates the boundary of the convex hull as seen from the given
-		 * eyePoint
-		 * 
-		 * @param	eyePoint the 3D coordinates of the point
-		 * @param	face the current face
-		 * @param	horizon the list of edges where we are going to store the
-		 *			boundary of the convex hull */
-		void calculateHorizon(
-			const glm::vec3& eyePoint, const Face& face,
-			const std::vector<Edge>& horizon
+		 * @param	iFace the index of the Face
+		 * @param	vertexIndices the index of the vertices to check
+		 * @param	meshData the Mesh data with the Vertices and Faces
+		 * @return	the index of the furthest point */
+		int getFurthestPoint(
+			int iFace, const std::vector<int>& vertexIndices,
+			const MeshAdjacencyData& meshData
 		) const;
 	};
 

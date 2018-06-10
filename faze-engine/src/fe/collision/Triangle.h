@@ -26,13 +26,6 @@ namespace fe { namespace collision {
 	};
 
 
-	/** Calculates the area of the given triangle
-	 * @param	triangle an array with the 3 points of the triangle in 3D
-	 * @return	the area of the triangle */
-	 *
-	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
-
-
 	/** Calculates the closest point to p in the given plane
 	 *
 	 * @param	p the point
@@ -60,6 +53,13 @@ namespace fe { namespace collision {
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision, glm::vec3& projectedPoint
 	);
+
+
+	/** Calculates the area of the given triangle
+	 *
+	 * @param	triangle an array with the 3 points of the triangle in 3D
+	 * @return	the area of the triangle */
+	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
 
 }}
 

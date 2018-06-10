@@ -69,7 +69,7 @@ namespace fe { namespace collision {
 				SupportPoint& sp = polytope.vertices.back();
 				int iSp = polytope.vertices.size() - 1;
 
-				// 3. If the origin is in the triangle or the new SupportPoint
+				// 2.3. If the origin is in the triangle or the new SupportPoint
 				// is no further to the current triangle than mMinFThreshold
 				// then we've found the closest PolytopeFace
 				float spSeparation = glm::dot(sp.getCSOPosition(), closestFace.closestPoint / closestFace.distance);

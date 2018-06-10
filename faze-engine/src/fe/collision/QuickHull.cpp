@@ -1,133 +1,135 @@
-#include <list>
 #include <limits>
-#include <algorithm>
 #include "QuickHull.h"
 
 namespace fe { namespace collision {
 
-	glm::vec3 calculateTriangleNormal(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+	QuickHull::QuickHull(const MeshAdjacencyData& meshData)
 	{
-		return glm::normalize(glm::cross(b - a, c - a));
-	}
-
-
-	QuickHull::QuickHull(
-		const std::vector<glm::vec3>& vertices,
-		const std::vector<unsigned short>& /*indices*/
-	) {
-		for (const glm::vec3& v : createInitialHull(vertices)) {
-			mMesh.addVertex(v);
-		}
-		mMesh.addFace({ 0, 1, 2 });
-		mMesh.addFace({ 0, 3, 1 });
-		mMesh.addFace({ 0, 2, 3 });
-		mMesh.addFace({ 1, 3, 2 });
-
-		std::list<std::vector<glm::vec3>> outsideList;
-
-		for (auto& currentFace : mMesh.faces) {
+		createInitialHull(meshData);
+		for (int iFace = 0; iFace < mConvexHull.getNumFaces(); ++iFace) {
 			// 1. Get the vertices outside of the current Hull by the given face
-			auto verticesOutside = getVerticesOutside(currentFace, vertices);
+			std::vector<int> verticesOutside = getVerticesOutside(iFace, meshData);
 			if (!verticesOutside.empty()) {
 				// 2. Get the furthest point in the direction of the face normal
-				const glm::vec3 eyePoint = getFurthestPoint(currentFace, verticesOutside);
+				int iEyePoint = getFurthestPoint(iFace, verticesOutside, meshData);
+				glm::vec3 eyePoint = meshData.getVertex(iEyePoint).location;
 
-				// 3. Calculate the horizon from the current point
-				std::vector<Edge> horizon;
-				std::vector<glm::vec3> unclaimedVertices;
-				calculateHorizon(eyePoint, currentFace, horizon);
+				// 3. Calculate the horizon edges from the current eyePoint
+				// perspective
+				std::vector<int> horizon = calculateHorizon(eyePoint, iFace, meshData);
 
 				// 4. Create the new faces of the hull by joining the edges of
 				// the horizon with the eyePoint
-				for (const Edge& horizonEdge : horizon) {
-					//mMesh.faces.emplace_back(eyePoint, horizonEdge );
-					//verticesOutside = getVerticesOutside(newFace, unclaimedVertices);
+				for (int iEdge : horizon) {
+					const Edge& currentEdge	= meshData.getEdge(iEdge);
+					const Edge& nextEdge	= meshData.getEdge(currentEdge.nextEdge);
+					// FIXME: add the points with the correct indexes
+					// FIXME: only if the face of the current edge isn't coplanar to the one in the opposite edge
+					mConvexHull.addFace({ iEyePoint, currentEdge.vertex, nextEdge.vertex });
 				}
 			}
 		}
 	}
 
-
-	std::vector<glm::vec3> QuickHull::createInitialHull(
-		const std::vector<glm::vec3>& points
-	) const
+	
+	void QuickHull::createInitialHull(const MeshAdjacencyData& meshData)
 	{
-		size_t iP1, iP2, iP3, iP4;
+		std::array<int, 4> simplex;
 		
-		// 1. Find the extreme points in each axis
-		std::array<size_t, 6> indexExtremePoints{};
-		for (size_t i = 0; i < points.size(); ++i) {
-			for (size_t j = 0; j < 3; ++j) {
-				if (points[i][j] < points[indexExtremePoints[2*j]][j]) {
-					indexExtremePoints[2*j] = i;
+		// 1. Find the extreme vertices in each axis
+		std::array<size_t, 6> extremePointIndices{};
+		for (int i = 0; i < meshData.getNumVertices(); ++i) {
+			for (int j = 0; j < 3; ++j) {
+				if (meshData.getVertex(i).location[j] < meshData.getVertex(extremePointIndices[2*j]).location[j]) {
+					extremePointIndices[2*j] = i;
 				}
-				if (points[i][j] > points[indexExtremePoints[2*j + 1]][j]) {
-					indexExtremePoints[2*j + 1] = i;
+				if (meshData.getVertex(i).location[j] > meshData.getVertex(extremePointIndices[2*j + 1]).location[j]) {
+					extremePointIndices[2*j + 1] = i;
 				}
 			}
 		}
 
-		// 2. Find from the extreme points the pair which are furthest apart
+		// 2. Find from the extreme vertices the pair which are furthest apart
 		float maxLength = -std::numeric_limits<float>::max();
-		for (size_t i = 0; i < points.size(); ++i) {
-			for (size_t j = i + 1; j < points.size(); ++j) {
-				float currentLength = glm::length(points[j] - points[i]);
+		for (int i = 0; i < meshData.getNumVertices(); ++i) {
+			for (int j = i + 1; j < meshData.getNumVertices(); ++j) {
+				float currentLength = glm::length(meshData.getVertex(j).location - meshData.getVertex(i).location);
 				if (currentLength > maxLength) {
-					iP1 = i; iP2 = j;
+					simplex[0] = i;
+					simplex[1] = j;
 					maxLength = currentLength;
 				}
 			}
 		}
 
-		// 3. Find the furthest point to the edge between the last 2 points
-		glm::vec3 dirP1P2 = glm::normalize(points[iP2] - points[iP1]);
+		// 3. Find the furthest point to the edge between the last 2 vertices
+		glm::vec3 dirP1P2 = glm::normalize(meshData.getVertex(simplex[1]).location - meshData.getVertex(simplex[0]).location);
 		maxLength = -std::numeric_limits<float>::max();
-		for (size_t i = 0; i < points.size(); ++i) {
-			glm::vec3 projection = points[iP1] + dirP1P2 * glm::dot(points[i], dirP1P2);
-			float currentLength = glm::length(points[i] - projection);
+		for (int i = 0; i < meshData.getNumVertices(); ++i) {
+			glm::vec3 projection = meshData.getVertex(simplex[0]).location + dirP1P2 * glm::dot(meshData.getVertex(i).location, dirP1P2);
+			float currentLength = glm::length(meshData.getVertex(i).location - projection);
 			if (currentLength > maxLength) {
-				iP3 = i;
+				simplex[2] = i;
 				maxLength = currentLength;
 			}
 		}
 
 		// 4. Find the furthest point to the triangle created from the last 3
-		// points
-		glm::vec3 dirP1P3 = glm::normalize(points[iP3] - points[iP1]);
+		// vertices
+		glm::vec3 dirP1P3 = glm::normalize(meshData.getVertex(simplex[2]).location - meshData.getVertex(simplex[0]).location);
 		glm::vec3 tNormal = glm::normalize(glm::cross(dirP1P2, dirP1P3));
 		maxLength = -std::numeric_limits<float>::max();
-		for (size_t i = 0; i < points.size(); ++i) {
-			float currentLength = std::abs(glm::dot(points[i], tNormal));
+		for (int i = 0; i < meshData.getNumVertices(); ++i) {
+			float currentLength = std::abs(glm::dot(meshData.getVertex(i).location, tNormal));
 			if (currentLength > maxLength) {
-				iP4 = i;
+				simplex[3] = i;
 				maxLength = currentLength;
 			}
 		}
 
-		return { points[iP1], points[iP2], points[iP3], points[iP4] };
+		for (int i : simplex) {
+			mConvexHull.addVertex(meshData.getVertex(i).location);
+		}
+		mConvexHull.addFace({ 0, 1, 2 });
+		mConvexHull.addFace({ 0, 3, 1 });
+		mConvexHull.addFace({ 0, 2, 3 });
+		mConvexHull.addFace({ 1, 3, 2 });
 	}
 
 
-	std::vector<glm::vec3> QuickHull::getVerticesOutside(
-		const Face& face,
-		const std::vector<glm::vec3>& vertices
+	std::vector<int> QuickHull::getVerticesOutside(
+		int iFace,
+		const MeshAdjacencyData& meshData
 	) const
 	{
-		std::vector<glm::vec3> verticesOutside;
+		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);
+		const Vertex& faceVertex = meshData.getVertex( meshData.getEdge(meshData.getFace(iFace).edge).vertex );
 
-		for (const glm::vec3& currentVertex : vertices) {
-			float currentDistance = glm::dot(currentVertex - mVertices[face.ab.p1], face.normal);
-			if (currentDistance == 0) {
-				if (
-					(mVertices[face.ab.p1] != currentVertex)
-					&& (mVertices[face.bc.p1] != currentVertex)
-					&& (mVertices[face.ca.p1] != currentVertex)
-				) {
-					verticesOutside.push_back(currentVertex);
-				}
+		std::vector<int> verticesOutside;
+		for (int i = 0; i < meshData.getNumVertices(); ++i) {
+			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);
+
+			if (currentDistance > 0) {
+				verticesOutside.push_back(i);
 			}
-			else if (currentDistance > 0) {
-				verticesOutside.push_back(currentVertex);
+			else if (currentDistance == 0) {
+				bool vertexInFace = false;
+
+				int iInitialEdge = meshData.getFace(iFace).edge;
+				int iCurrentEdge = iInitialEdge;
+				do {
+					Edge currentEdge = meshData.getEdge(iCurrentEdge);
+					if (currentEdge.vertex == i) {
+						vertexInFace = true;
+						break;
+					}
+					iCurrentEdge = currentEdge.nextEdge;
+				}
+				while (iCurrentEdge != iInitialEdge);
+
+				if (!vertexInFace) {
+					verticesOutside.push_back(i);
+				}
 			}
 		}
 
@@ -135,44 +137,26 @@ namespace fe { namespace collision {
 	}
 
 
-	glm::vec3 QuickHull::getFurthestPoint(
-		const Face& face,
-		const std::vector<glm::vec3>& vertices
+	int QuickHull::getFurthestPoint(
+		int iFace,
+		const std::vector<int>& vertexIndices,
+		const MeshAdjacencyData& meshData
 	) const
 	{
-		glm::vec3 ret;
+		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);	// TODO: cache the face normals
+		const Vertex& faceVertex = meshData.getVertex(meshData.getEdge(meshData.getFace(iFace).edge).vertex);
 
+		int furthestPoint;
 		float maxDistance = -std::numeric_limits<float>::max();
-		for (const glm::vec3& currentVertex : vertices) {
-			float currentDistance = glm::dot(currentVertex - mVertices[face.ab.p1], face.normal);
-			if (currentDistance > currentDistance) {
-				maxDistance = currentDistance;
-				ret = currentVertex;
+		for (int i : vertexIndices) {
+			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);
+			if (currentDistance > maxDistance) {
+				maxDistance		= currentDistance;
+				furthestPoint	= i;
 			}
 		}
 
-		return ret;
-	}
-
-
-	void QuickHull::calculateHorizon(
-		const glm::vec3& /*eyePoint*/, const Face& /*face*/,
-		const std::vector<Edge>& /*horizon*/
-	) const
-	{
-		/*if (face not in ConvexHull) {
-			set crossedEdge not in convex hull
-			return;
-		}
-
-		if (glm::dot(face.normal, eyePoint) >= 0) {
-			set curFace not in convex hull
-			uncalimedVertices.add(outsideVertices);
-			if (crossedEdge) {
-				set crossedEdge not in convex hull
-			}
-			
-		}*/
+		return furthestPoint;
 	}
 
 }}

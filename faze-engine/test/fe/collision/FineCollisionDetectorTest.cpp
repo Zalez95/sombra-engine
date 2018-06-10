@@ -245,7 +245,7 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly4)
 }
 
 
-TEST(FineCollisionDetector, SphereMesh1)
+/*TEST(FineCollisionDetector, SphereMesh1)
 {
 	const glm::vec3 expectedWorldPos[] = {
 		{ 15.029119491f, -6.232823848f, 8.426028251f },
@@ -317,5 +317,4 @@ TEST(FineCollisionDetector, SphereMesh1)
 	}
 
 	// TODO: Compare the rest
-}
-*/
+}*/

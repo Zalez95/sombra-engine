@@ -57,23 +57,42 @@ namespace fe { namespace collision {
 	};
 
 
-	/** TODO: */
+	/**
+	 * Class MeshAdjacencyData, it holds the data of a 3D Mesh in a Half-Edge
+	 * data structure so we can store the adjacency of the Faces and Edges for
+	 * faster computations
+	 */
 	class MeshAdjacencyData
 	{
-	public:		// Attributes
+	private:		// Attributes
 		/** The vertices of the Mesh */
-		std::vector<Vertex> vertices;
+		std::vector<Vertex> mVertices;
 
 		/** The edges of the Mesh */
-		std::vector<Edge> edges;
+		std::vector<Edge> mEdges;
 
 		/** The faces of the Mesh */
-		std::vector<Face> faces;
-	private:
+		std::vector<Face> mFaces;
+
 		/** Maps two Vertex indices with the Edge that references them */
 		std::map<std::pair<int, int>, int> mVertexEdgeMap;
 
 	public:		// Functions
+		/** @return	the total number of Vertices in the Mesh */
+		int getNumVertices() const { return mVertices.size(); };
+
+		/** @return	the total number of Edges in the Mesh */
+		int getNumEdges() const { return mEdges.size(); };
+
+		/** @return	the total number of Faces in the Mesh */
+		int getNumFaces() const { return mFaces.size(); };
+
+		/** Returns the requested Vertex
+		 *
+		 * @param	i the Vertex index
+		 * @return	a reference to the Vertex */
+		const Vertex& getVertex(int i) const { return mVertices[i]; };
+
 		/** Adds the given point as a new Vertex in the MeshAdjacencyData
 		 *
 		 * @param	point the 3D coordintes of the new Vertex */
@@ -84,6 +103,18 @@ namespace fe { namespace collision {
 		 *
 		 * @param	index the index of the Vertex to remove */
 		// TODO: void removeVertex(int index);
+
+		/** Returns the requested Edge
+		 *
+		 * @param	i the Edge index
+		 * @return	a reference to the Edge */
+		const Edge& getEdge(int i) const { return mEdges[i]; };
+
+		/** Returns the requested Face
+		 *
+		 * @param	i the Face index
+		 * @return	a reference to the Face */
+		const Face& getFace(int i) const { return mFaces[i]; };
 
 		/** Creates a new Face from the given vertex indexes and adds it
 		 * to the MeshAdjacencyData
@@ -96,6 +127,31 @@ namespace fe { namespace collision {
 		 * @param	index the index of the Face to remove */
 		// TODO: void removeFace(int index);
 	};
+
+
+	/** Calculates the normal of the given Face
+	 *
+	 * @param	iFace the index of the Face
+	 * @param	meshData the data of the Mesh where the Face is located in
+	 * @return	the normal of the Face */
+	glm::vec3 calculateFaceNormal(int iFace, const MeshAdjacencyData& meshData);
+
+
+	/** Calculates the boundary of the convex hull as seen from the given
+	 * eye point
+	 *
+	 * @param	eyePoint the 3D coordinates of the eye point
+	 * @param	iFace the index of the initial Face from which we will start
+	 *			searching
+	 * @param	meshData the Mesh data with the Vertices and Faces
+	 * @return	the list of Edge indices that represents the boundary of the
+	 *			ConvexHull
+	 * @note	the initial Face must be visible from the eyePoint
+	 *			perspective */
+	std::vector<int> calculateHorizon(
+		const glm::vec3& eyePoint,
+		int iFace, const MeshAdjacencyData& meshData
+	);
 
 }}
 
