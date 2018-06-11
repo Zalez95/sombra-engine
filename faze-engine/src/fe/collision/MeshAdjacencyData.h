@@ -7,7 +7,9 @@
 
 namespace fe { namespace collision {
 
-	/** TODO: */
+	/**
+	 * Struct Vertex
+	 */
 	struct Vertex
 	{
 		/** The 3D coordinates of the vertex */
@@ -21,7 +23,9 @@ namespace fe { namespace collision {
 	};
 
 
-	/** TODO: */
+	/**
+	 * Struct Edge
+	 */
 	struct Edge
 	{
 		/** The index of the vertex which the Edge is pointing to */
@@ -46,7 +50,9 @@ namespace fe { namespace collision {
 	};
 
 
-	/** TODO: CCW order */
+	/**
+	 * Struct Face
+	 */
 	struct Face
 	{
 		/** The index of one of the Edges of the Triangle */
@@ -137,6 +143,20 @@ namespace fe { namespace collision {
 	glm::vec3 calculateFaceNormal(int iFace, const MeshAdjacencyData& meshData);
 
 
+	/** Calculates the furthest point of the Mesh in the given direction with
+	 * the Hill-Climbing algorithm
+	 *
+	 * @param	direction the direction in which we are going to search
+	 * @param	meshData the Mesh data with the Vertices and Faces
+	 * @return	the index of the furthest Mesh Vertex
+	 * @note	the Mesh must be convex, otherwise the furthest point found
+	 *			could be a local maximum */
+	int getFurthestVertexInDirection(
+		const glm::vec3& direction,
+		const MeshAdjacencyData& meshData
+	);
+
+
 	/** Calculates the boundary of the convex hull as seen from the given
 	 * eye point
 	 *
@@ -144,11 +164,12 @@ namespace fe { namespace collision {
 	 * @param	iFace the index of the initial Face from which we will start
 	 *			searching
 	 * @param	meshData the Mesh data with the Vertices and Faces
-	 * @return	the list of Edge indices that represents the boundary of the
-	 *			ConvexHull
+	 * @return	a pair with the list of Edge indices that represents the
+	 *			boundary of the ConvexHull and the list of Face indices with the
+	 *			visible faces
 	 * @note	the initial Face must be visible from the eyePoint
 	 *			perspective */
-	std::vector<int> calculateHorizon(
+	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const glm::vec3& eyePoint,
 		int iFace, const MeshAdjacencyData& meshData
 	);

@@ -1,4 +1,6 @@
 #include <array>
+#include <limits>
+#include <cassert>
 #include <algorithm>
 #include "MeshAdjacencyData.h"
 
@@ -105,7 +107,6 @@ namespace fe { namespace collision {
 			// Remove the currentEdge and its opposite one only if the
 			// opposite Edge also has no Face
 			if (oppositeEdge.face < 0) {
-				
 			}
 
 			currentEdgeIndex
@@ -140,12 +141,61 @@ namespace fe { namespace collision {
 	}
 
 
-	std::vector<int> calculateHorizon(
+	int getFurthestVertexInDirection(
+		const glm::vec3& direction,
+		const MeshAdjacencyData& meshData
+
+	) {
+		auto getVertexDistance = [](const glm::vec3& location, const glm::vec3& direction) {
+			return glm::dot(location, direction);
+		};
+
+		int iBestEdge = 0;
+		float bestDistance = getVertexDistance(
+			meshData.getVertex( meshData.getEdge(iBestEdge).vertex ).location,
+			direction
+		);
+
+		for (bool end = false; !end;) {
+			// Search the best neighbour of the current vertex
+			int iInitialEdge = iBestEdge, iCurrentEdge = iBestEdge, iBestEdge2 = iBestEdge;
+			float bestDistance2 = bestDistance;
+			do {
+				Edge currentEdge = meshData.getEdge(iCurrentEdge);
+				Vertex currentVertex = meshData.getVertex(currentEdge.vertex);
+
+				float currentDistance = getVertexDistance(currentVertex.location, direction);
+				if (currentDistance > bestDistance2) {
+					bestDistance2 = currentDistance;
+					iBestEdge2 = iCurrentEdge;
+				}
+
+				iCurrentEdge = meshData.getEdge(currentEdge.oppositeEdge).nextEdge;
+			}
+			while (iCurrentEdge != iInitialEdge);
+
+			if (bestDistance2 > bestDistance) {
+				// Update our upper bound
+				bestDistance = bestDistance2;
+				iBestEdge = iBestEdge2;
+			}
+			else {
+				// Found maximum
+				end = true;
+			}
+		}
+
+		return meshData.getEdge(iBestEdge).vertex;
+	}
+
+
+	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const glm::vec3& eyePoint,
 		int iFace, const MeshAdjacencyData& meshData
 	) {
-		std::vector<int> visitedFaces;
-		std::vector<int> horizonEdges; 
+		assert((iFace >= 0) && (iFace < meshData.getNumFaces()) && "The index of the Face must be in range");
+
+		std::vector<int> visitedFaces, horizonEdges, visibleFaces = { iFace };
 
 		int iInitialEdge = meshData.getFace(iFace).edge;
 		int iCurrentEdge = iInitialEdge;
@@ -159,9 +209,12 @@ namespace fe { namespace collision {
 			Edge oppositeEdge = meshData.getEdge(currentEdge.oppositeEdge);
 			int iNextFace = oppositeEdge.face;
 
-			// 3. Check if we already visited the next Face
-			if (std::any_of(visitedFaces.begin(), visitedFaces.end(), [&](int f) { return f == iNextFace; })) {
-				// 4.1. Already visited, continue with the next Edge
+			// 3. Check if the next face exists or if we already visited the
+			// next Face
+			if ((iNextFace < 0)
+				|| std::any_of(visitedFaces.begin(), visitedFaces.end(), [&](int f) { return f == iNextFace; })
+			) {
+				// 4.1. Continue with the next Edge
 				iCurrentEdge = currentEdge.nextEdge;
 			}
 			else {
@@ -170,6 +223,7 @@ namespace fe { namespace collision {
 				glm::vec3 nextFaceNormal = calculateFaceNormal(iNextFace, meshData);
 				if (glm::dot(eyePoint - nextFaceVertex.location, nextFaceNormal) >= 0) {
 					// 4.3.1. Visible, continue with next Edge of the next Face
+					visibleFaces.push_back(iNextFace);
 					iCurrentEdge = oppositeEdge.nextEdge;
 				}
 				else {
@@ -182,7 +236,7 @@ namespace fe { namespace collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		return horizonEdges;
+		return std::make_pair(horizonEdges, visibleFaces);
 	}
 
 }}

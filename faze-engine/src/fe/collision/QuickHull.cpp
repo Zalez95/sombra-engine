@@ -16,7 +16,7 @@ namespace fe { namespace collision {
 
 				// 3. Calculate the horizon edges from the current eyePoint
 				// perspective
-				std::vector<int> horizon = calculateHorizon(eyePoint, iFace, meshData);
+				std::vector<int> horizon = calculateHorizon(eyePoint, iFace, meshData).first;
 
 				// 4. Create the new faces of the hull by joining the edges of
 				// the horizon with the eyePoint
@@ -31,11 +31,11 @@ namespace fe { namespace collision {
 		}
 	}
 
-	
+
 	void QuickHull::createInitialHull(const MeshAdjacencyData& meshData)
 	{
 		std::array<int, 4> simplex;
-		
+
 		// 1. Find the extreme vertices in each axis
 		std::array<size_t, 6> extremePointIndices{};
 		for (int i = 0; i < meshData.getNumVertices(); ++i) {
