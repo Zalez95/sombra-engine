@@ -2,36 +2,36 @@
 #include <limits>
 #include <cassert>
 #include <algorithm>
-#include "MeshAdjacencyData.h"
+#include "HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 
-	void MeshAdjacencyData::addVertex(const glm::vec3& point)
+	void HalfEdgeMesh::addVertex(const glm::vec3& point)
 	{
-		mVertices.emplace_back(point);
+		int i = mVertices.create();
+		mVertices[i].location = point;
 	}
 
 
-	/*void MeshAdjacencyData::removeVertex(int index)
+	void HalfEdgeMesh::removeVertex(int i)
 	{
-		int initialEdgeIndex = vertices[index].edge;
-		int currentEdgeIndex = initialEdgeIndex;
+		int iInitialEdge = mVertices[i].edge;
+		int iCurrentEdge = iInitialEdge;
 		do {
-			Edge& currentEdge = edges[currentEdgeIndex];
+			Edge& currentEdge = mEdges[iCurrentEdge];
+			iCurrentEdge = currentEdge.oppositeEdge;
 			removeFace(currentEdge.face);
-			currentEdgeIndex = currentEdge.oppositeEdge;
 		}
-		while (currentEdgeIndex != initialEdgeIndex);
+		while (iCurrentEdge != iInitialEdge);
 
-		vertices.erase(vertices.begin() + index);
-	}*/
+		mVertices.free(i);
+	}
 
 
-	void MeshAdjacencyData::addFace(std::vector<int> vertexIndexes)
+	void HalfEdgeMesh::addFace(const std::vector<int>& vertexIndexes)
 	{
 		// Create a new face
-		mFaces.emplace_back();
-		int iFace = mFaces.size() - 1;
+		int iFace = mFaces.create();
 
 		// Create or set the face and vertex edges
 		std::vector<int> edgeIndexes;
@@ -40,19 +40,18 @@ namespace fe { namespace collision {
 				iVertex2 = vertexIndexes[(i + 1) % vertexIndexes.size()];
 
 			// Get the Edge of the current vertices
-			int iEdge;
+			int iEdge1, iEdge2;
 			auto edgeIt = mVertexEdgeMap.find(std::make_pair(iVertex1, iVertex2));
 			if (edgeIt != mVertexEdgeMap.end()) {
-				iEdge = edgeIt->second;
+				iEdge1 = edgeIt->second;
+				iEdge2 = mEdges[iEdge1].oppositeEdge;
 			}
 			else {
 				// Create a new Edge
-				mEdges.emplace_back();
-				int iEdge1 = mEdges.size() - 1;
+				iEdge1 = mEdges.create();
 
 				// Create the oposite edge
-				mEdges.emplace_back();
-				int iEdge2 = mEdges.size() - 1;
+				iEdge2 = mEdges.create();
 
 				// Set the vertices of both edges
 				mEdges[iEdge1].vertex = iVertex2;
@@ -63,61 +62,91 @@ namespace fe { namespace collision {
 				mEdges[iEdge2].oppositeEdge = iEdge1;
 
 				// Register the edges on the map
-				mVertexEdgeMap[std::make_pair(iVertex2, iVertex2)] = iEdge1;
+				mVertexEdgeMap[std::make_pair(iVertex1, iVertex2)] = iEdge1;
 				mVertexEdgeMap[std::make_pair(iVertex2, iVertex1)] = iEdge2;
-
-				iEdge = iEdge1;
 			}
-			edgeIndexes.push_back(iEdge);
 
 			// Set the Edge of the Face
+			edgeIndexes.push_back(iEdge1);
 			if (mFaces[iFace].edge < 0) {
-				mFaces[iFace].edge = iEdge;
+				mFaces[iFace].edge = iEdge1;
 			}
 
 			// Set the Edge of the first Vertex
 			if (mVertices[iVertex1].edge < 0) {
-				mVertices[iVertex1].edge = iEdge;
+				mVertices[iVertex1].edge = iEdge2;
 			}
 
 			// Set the Face of the Edge
-			mEdges[iEdge].face = iFace;
+			mEdges[iEdge1].face = iFace;
 		}
 
 		// Set the previous and next edges of the face edges
-		for (size_t iEdge = 0; iEdge < edgeIndexes.size(); ++iEdge) {
-			int iPreviousEdge	= (iEdge == 0)? edgeIndexes.back() : edgeIndexes[iEdge - 1];
-			int iNextEdge		= (iEdge + 1) % edgeIndexes.size();
+		for (size_t i = 0; i < edgeIndexes.size(); ++i) {
+			int iPreviousEdge	= (i == 0)? edgeIndexes.back() : edgeIndexes[i - 1];
+			int iNextEdge		= edgeIndexes[(i + 1) % edgeIndexes.size()];
 
-			Edge& currentEdge = mEdges[edgeIndexes[iEdge]];
-			currentEdge.previousEdge	= edgeIndexes[iPreviousEdge];
-			currentEdge.nextEdge		= edgeIndexes[iNextEdge];
+			Edge& currentEdge = mEdges[ edgeIndexes[i] ];
+			currentEdge.previousEdge	= iPreviousEdge;
+			currentEdge.nextEdge		= iNextEdge;
 		}
 	}
 
 
-	/*void MeshAdjacencyData::removeFace(int index)
+	void HalfEdgeMesh::removeFace(int i)
 	{
-		int initialEdgeIndex = faces[index].edge;
-		int currentEdgeIndex = initialEdgeIndex;
+		std::vector<int> vertexIndices;
+
+		int iInitialEdge = mFaces[i].edge;
+		int iCurrentEdge = iInitialEdge;
 		do {
-			Edge& currentEdge	= edges[currentEdgeIndex];
-			Edge& oppositeEdge	= edges[currentEdge.oppositeEdge];
+			Edge& currentEdge	= mEdges[iCurrentEdge];
+			int iNextEdge		= currentEdge.nextEdge;
+			int iOppositeEdge	= currentEdge.oppositeEdge;
+			Edge& oppositeEdge	= mEdges[iOppositeEdge];
+			vertexIndices.push_back(currentEdge.vertex);
 
 			// Remove the currentEdge and its opposite one only if the
-			// opposite Edge also has no Face
+			// opposite Edge hasn't a Face
 			if (oppositeEdge.face < 0) {
+				int iVertex1 = oppositeEdge.vertex;
+				int iVertex2 = currentEdge.vertex;
+
+				// Remove the Edges from the map
+				auto itEdge1 = mVertexEdgeMap.find(std::make_pair(iVertex1, iVertex2));
+				if (itEdge1 != mVertexEdgeMap.end()) {
+					mVertexEdgeMap.erase(itEdge1);
+				}
+
+				auto itEdge2 = mVertexEdgeMap.find(std::make_pair(iVertex2, iVertex1));
+				if (itEdge2 != mVertexEdgeMap.end()) {
+					mVertexEdgeMap.erase(itEdge2);
+				}
+
+				// Remove the Edges
+				mEdges.free(iCurrentEdge);
+				mEdges.free(iOppositeEdge);
 			}
 
-			currentEdgeIndex
+			iCurrentEdge = iNextEdge;
 		}
-		while (currentEdgeIndex != initialEdgeIndex);
+		while (iCurrentEdge != iInitialEdge);
 
-		faces.erase(faces.begin() + index);
-	}*/
+		// Update the Edges if the Face Vertices
+		for (int iCurrentVertex : vertexIndices) {
+			for (const auto& pair : mVertexEdgeMap) {
+				if (pair.first.first == iCurrentEdge) {
+					mVertices[iCurrentVertex].edge = pair.second;
+					break;
+				}
+			}
+		}
+
+		mFaces.free(i);
+	}
 
 
-	glm::vec3 calculateFaceNormal(int iFace, const MeshAdjacencyData& meshData)
+	glm::vec3 calculateFaceNormal(int iFace, const HalfEdgeMesh& meshData)
 	{
 		glm::vec3 normal(0.0f);
 
@@ -143,8 +172,7 @@ namespace fe { namespace collision {
 
 	int getFurthestVertexInDirection(
 		const glm::vec3& direction,
-		const MeshAdjacencyData& meshData
-
+		const HalfEdgeMesh& meshData
 	) {
 		auto getVertexDistance = [](const glm::vec3& location, const glm::vec3& direction) {
 			return glm::dot(location, direction);
@@ -191,7 +219,7 @@ namespace fe { namespace collision {
 
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const glm::vec3& eyePoint,
-		int iFace, const MeshAdjacencyData& meshData
+		int iFace, const HalfEdgeMesh& meshData
 	) {
 		assert((iFace >= 0) && (iFace < meshData.getNumFaces()) && "The index of the Face must be in range");
 

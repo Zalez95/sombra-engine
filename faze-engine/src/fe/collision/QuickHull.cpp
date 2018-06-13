@@ -3,7 +3,7 @@
 
 namespace fe { namespace collision {
 
-	QuickHull::QuickHull(const MeshAdjacencyData& meshData)
+	QuickHull::QuickHull(const HalfEdgeMesh& meshData)
 	{
 		createInitialHull(meshData);
 		for (int iFace = 0; iFace < mConvexHull.getNumFaces(); ++iFace) {
@@ -32,7 +32,7 @@ namespace fe { namespace collision {
 	}
 
 
-	void QuickHull::createInitialHull(const MeshAdjacencyData& meshData)
+	void QuickHull::createInitialHull(const HalfEdgeMesh& meshData)
 	{
 		std::array<int, 4> simplex;
 
@@ -99,7 +99,7 @@ namespace fe { namespace collision {
 
 	std::vector<int> QuickHull::getVerticesOutside(
 		int iFace,
-		const MeshAdjacencyData& meshData
+		const HalfEdgeMesh& meshData
 	) const
 	{
 		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);
@@ -140,7 +140,7 @@ namespace fe { namespace collision {
 	int QuickHull::getFurthestPoint(
 		int iFace,
 		const std::vector<int>& vertexIndices,
-		const MeshAdjacencyData& meshData
+		const HalfEdgeMesh& meshData
 	) const
 	{
 		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);	// TODO: cache the face normals

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
-#include "MeshAdjacencyData.h"
+#include "HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 
@@ -14,14 +14,14 @@ namespace fe { namespace collision {
 	{
 	private:	// Attributes
 		/** The Calculated ConvexHull of the mesh */
-		MeshAdjacencyData mConvexHull;
+		HalfEdgeMesh mConvexHull;
 
 	public:		// Functions
 		/** Calculates the ConvexHull from the given Mesh data
 		 *
 		 * @param	meshData the Data of the mesh to calculate the ConvexHull
 		 *			from */
-		QuickHull(const MeshAdjacencyData& meshData);
+		QuickHull(const HalfEdgeMesh& meshData);
 
 		/** Class destructor */
 		~QuickHull() {};
@@ -31,7 +31,7 @@ namespace fe { namespace collision {
 		 *
 		 * @param	meshData the Mesh with the vertices vertices with which we
 		 *			will calculate the initial simplex */
-		void createInitialHull(const MeshAdjacencyData& meshData);
+		void createInitialHull(const HalfEdgeMesh& meshData);
 
 		/** Calculates the vertices that are outside of the current Hull by the
 		 * given face
@@ -42,7 +42,7 @@ namespace fe { namespace collision {
 		 *			face */
 		std::vector<int> getVerticesOutside(
 			int iFace,
-			const MeshAdjacencyData& meshData
+			const HalfEdgeMesh& meshData
 		) const;
 
 		/** Calculates which of the given vertices is the the furthest point in
@@ -54,7 +54,7 @@ namespace fe { namespace collision {
 		 * @return	the index of the furthest point */
 		int getFurthestPoint(
 			int iFace, const std::vector<int>& vertexIndices,
-			const MeshAdjacencyData& meshData
+			const HalfEdgeMesh& meshData
 		) const;
 	};
 
