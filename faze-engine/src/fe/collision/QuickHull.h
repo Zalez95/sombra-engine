@@ -45,16 +45,16 @@ namespace fe { namespace collision {
 			const HalfEdgeMesh& meshData
 		) const;
 
-		/** Calculates which of the given vertices is the the furthest point in
+		/** Calculates which of the given Vertices is the the furthest point in
 		 * the Face normal direction
 		 *
+		 * @param	vertexIndices the index of the Vertices to check
 		 * @param	iFace the index of the Face
-		 * @param	vertexIndices the index of the vertices to check
 		 * @param	meshData the Mesh data with the Vertices and Faces
-		 * @return	the index of the furthest point */
-		int getFurthestPoint(
-			int iFace, const std::vector<int>& vertexIndices,
-			const HalfEdgeMesh& meshData
+		 * @return	the index of the furthest Vertex */
+		int getFurthestVertex(
+			const std::vector<int>& vertexIndices,
+			int iFace, const HalfEdgeMesh& meshData
 		) const;
 	};
 

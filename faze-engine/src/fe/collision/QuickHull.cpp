@@ -1,3 +1,5 @@
+#include <tuple>
+#include <array>
 #include <limits>
 #include "QuickHull.h"
 
@@ -5,27 +7,44 @@ namespace fe { namespace collision {
 
 	QuickHull::QuickHull(const HalfEdgeMesh& meshData)
 	{
+		// FIXME: the vertices and faces of the mesh and convex hull are wrong
 		createInitialHull(meshData);
 		for (int iFace = 0; iFace < mConvexHull.getNumFaces(); ++iFace) {
 			// 1. Get the vertices outside of the current Hull by the given face
-			std::vector<int> verticesOutside = getVerticesOutside(iFace, meshData);
+			std::vector<int> verticesOutside = getVerticesOutside(iFace, mConvexHull);
 			if (!verticesOutside.empty()) {
-				// 2. Get the furthest point in the direction of the face normal
-				int iEyePoint = getFurthestPoint(iFace, verticesOutside, meshData);
-				glm::vec3 eyePoint = meshData.getVertex(iEyePoint).location;
+				// 2. Get the furthest Vertex in the direction of the face normal
+				int iEyeVertex = getFurthestVertex(verticesOutside, iFace, mConvexHull);
+				glm::vec3 eyePoint = mConvexHull.getVertex(iEyeVertex).location;
 
 				// 3. Calculate the horizon edges from the current eyePoint
 				// perspective
-				std::vector<int> horizon = calculateHorizon(eyePoint, iFace, meshData).first;
+				std::vector<int> horizon, facesToRemove;
+				std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, iFace, mConvexHull);
 
-				// 4. Create the new faces of the hull by joining the edges of
-				// the horizon with the eyePoint
-				for (int iEdge : horizon) {
-					const Edge& currentEdge	= meshData.getEdge(iEdge);
-					const Edge& nextEdge	= meshData.getEdge(currentEdge.nextEdge);
-					// FIXME: add the points with the correct indexes
-					// FIXME: only if the face of the current edge isn't coplanar to the one in the opposite edge
-					mConvexHull.addFace({ iEyePoint, currentEdge.vertex, nextEdge.vertex });
+				// 4. Remove the faces seen from the current eyePoint
+				for (int iFaceToRemove : facesToRemove) {
+					mConvexHull.removeFace(iFaceToRemove);
+				}
+
+				// 4. Create new faces by joining the edges of the horizon with
+				// the eyePoint
+				for (int iHorizonEdge : horizon) {
+					const Edge& currentEdge = mConvexHull.getEdge(iHorizonEdge);
+					const Edge& oppositeEdge = mConvexHull.getEdge(currentEdge.oppositeEdge);
+
+					int iV1 = mConvexHull.getEdge(currentEdge.oppositeEdge).vertex;
+					int iV2 = currentEdge.vertex;
+
+					int iNewFace = mConvexHull.addFace({ iV1, iV2, iEyeVertex });
+
+					// Test if the new face is coplanar to the opposite one by
+					// the horizon edge
+					glm::vec3 currentFaceNormal = calculateFaceNormal(iNewFace, mConvexHull);
+					glm::vec3 oppositeFaceNormal = calculateFaceNormal(oppositeEdge.face, mConvexHull);
+					if (currentFaceNormal == oppositeFaceNormal) {
+						mConvexHull.mergeFace(iHorizonEdge);
+					}
 				}
 			}
 		}
@@ -37,7 +56,7 @@ namespace fe { namespace collision {
 		std::array<int, 4> simplex;
 
 		// 1. Find the extreme vertices in each axis
-		std::array<size_t, 6> extremePointIndices{};
+		std::array<size_t, 6> extremePointIndices;
 		for (int i = 0; i < meshData.getNumVertices(); ++i) {
 			for (int j = 0; j < 3; ++j) {
 				if (meshData.getVertex(i).location[j] < meshData.getVertex(extremePointIndices[2*j]).location[j]) {
@@ -137,13 +156,12 @@ namespace fe { namespace collision {
 	}
 
 
-	int QuickHull::getFurthestPoint(
-		int iFace,
+	int QuickHull::getFurthestVertex(
 		const std::vector<int>& vertexIndices,
-		const HalfEdgeMesh& meshData
+		int iFace, const HalfEdgeMesh& meshData
 	) const
 	{
-		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);	// TODO: cache the face normals
+		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);
 		const Vertex& faceVertex = meshData.getVertex(meshData.getEdge(meshData.getFace(iFace).edge).vertex);
 
 		int furthestPoint;

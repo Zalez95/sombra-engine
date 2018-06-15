@@ -155,8 +155,9 @@ namespace fe { namespace collision {
 
 		/** Adds the given point as a new Vertex in the Mesh
 		 *
-		 * @param	point the 3D coordintes of the new Vertex */
-		void addVertex(const glm::vec3& point);
+		 * @param	point the 3D coordintes of the new Vertex
+		 * @return	the index of the Vertex */
+		int addVertex(const glm::vec3& point);
 
 		/** Removes the given Vertex and the Faces and Edges that
 		 * references it
@@ -179,13 +180,19 @@ namespace fe { namespace collision {
 		/** Creates a new Face from the given vertex indexes and adds it
 		 * to the Mesh
 		 *
-		 * @param	vertexIndexes the indexes of the vertex of the new face */
-		void addFace(const std::vector<int>& vertexIndexes);
+		 * @param	vertexIndexes the indexes of the vertex of the new face
+		 * @return	the index of the Face */
+		int addFace(const std::vector<int>& vertexIndexes);
 
 		/** Removes the given Face and the Edges that references it
 		 *
 		 * @param	i the index of the Face to remove */
 		void removeFace(int i);
+
+		/** Merges two faces into a single one by the given edge
+		 *
+		 * @param	iEdge the shared edge between the faces to merge */
+		void mergeFace(int iEdge);
 	};
 
 

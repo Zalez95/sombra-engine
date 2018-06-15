@@ -6,10 +6,12 @@
 
 namespace fe { namespace collision {
 
-	void HalfEdgeMesh::addVertex(const glm::vec3& point)
+	int HalfEdgeMesh::addVertex(const glm::vec3& point)
 	{
-		int i = mVertices.create();
-		mVertices[i].location = point;
+		int iVertex = mVertices.create();
+		mVertices[iVertex].location = point;
+
+		return iVertex;
 	}
 
 
@@ -28,7 +30,7 @@ namespace fe { namespace collision {
 	}
 
 
-	void HalfEdgeMesh::addFace(const std::vector<int>& vertexIndexes)
+	int HalfEdgeMesh::addFace(const std::vector<int>& vertexIndexes)
 	{
 		// Create a new face
 		int iFace = mFaces.create();
@@ -90,6 +92,8 @@ namespace fe { namespace collision {
 			currentEdge.previousEdge	= iPreviousEdge;
 			currentEdge.nextEdge		= iNextEdge;
 		}
+
+		return iFace;
 	}
 
 
@@ -132,7 +136,7 @@ namespace fe { namespace collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		// Update the Edges if the Face Vertices
+		// Update the Edges of the Face Vertices
 		for (int iCurrentVertex : vertexIndices) {
 			for (const auto& pair : mVertexEdgeMap) {
 				if (pair.first.first == iCurrentEdge) {
@@ -143,6 +147,39 @@ namespace fe { namespace collision {
 		}
 
 		mFaces.free(i);
+	}
+
+
+	void HalfEdgeMesh::mergeFace(int iEdge)
+	{
+		Edge currentEdge	= mEdges[iEdge];
+		Edge oppositeEdge	= mEdges[currentEdge.oppositeEdge];
+
+		// Remove the opposite face
+		currentEdge.face = -1;
+		removeFace(oppositeEdge.face);
+
+		// Join the edges of both Faces by the current Edge position
+		mEdges[oppositeEdge.previousEdge].nextEdge	= currentEdge.nextEdge;
+		mEdges[currentEdge.nextEdge].previousEdge	= oppositeEdge.previousEdge;
+		mEdges[currentEdge.previousEdge].nextEdge	= oppositeEdge.nextEdge;
+		mEdges[oppositeEdge.nextEdge].previousEdge	= currentEdge.previousEdge;
+
+		// Update the Vertices' Edges
+		Vertex& currentVertex = mVertices[currentEdge.vertex];
+		Vertex& oppositeVertex = mVertices[oppositeEdge.vertex];
+		if (currentVertex.edge == currentEdge.oppositeEdge) {
+			currentVertex.edge = currentEdge.nextEdge;
+		}
+		if (oppositeVertex.edge == iEdge) {
+			oppositeVertex.edge = oppositeEdge.nextEdge;
+		}
+
+		// Update the updated Face's Edge
+		Face& currentFace = mFaces[currentEdge.face];
+		if (currentFace.edge == iEdge) {
+			currentFace.edge = currentEdge.nextEdge;
+		}
 	}
 
 
