@@ -2,7 +2,7 @@
 #include <limits>
 #include <cassert>
 #include <algorithm>
-#include "HalfEdgeMesh.h"
+#include "fe/collision/HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 

@@ -73,38 +73,41 @@ namespace fe { namespace collision {
 	{
 	private:	// Attributes
 		/** The raw data of the HEMeshVector */
-		std::vector<T> mRawData;
+		std::vector<T> mElements;
 
-		/** The indices to the freed elements of the Vector */
+		/** The number of non free Elements of the Vector */
+		std::size_t mNumElements;
+
+		/** The indices to the freed Elements of the Vector */
 		std::set<std::size_t> mFreeIndices;
 
 	public:		// Functions
 		/** Creates a new HEMeshVector */
-		HEMeshVector() {};
+		HEMeshVector() : mNumElements(0) {};
 
 		/** Class destructor */
 		~HEMeshVector() {};
 
 		/** @return	the number of Elements in the HEMeshVector */
-		std::size_t size() const { return mRawData.size(); };
+		std::size_t size() const { return mNumElements; };
 
 		/** Returns	the Element i of the HEMeshVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a reference to the Element */
-		T& operator[](std::size_t i) { return mRawData[i]; };
+		T& operator[](int i) { return mElements[i]; };
 
 		/** Returns	the Element i of the HEMeshVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a const reference to the Element */
-		const T& operator[](std::size_t i) const { return mRawData[i]; };
+		const T& operator[](int i) const { return mElements[i]; };
 
 		/** Creates a new Element in the vector or reuses an already released
 		 * one
 		 *
 		 * @return	the index of the element */
-		std::size_t create();
+		int create();
 
 		/** Marks the Element located at the given index as released for
 		 * future use
@@ -113,7 +116,7 @@ namespace fe { namespace collision {
 		 * @note	by releasing the elements instead than erasing them we
 		 *			don't have to iterate through the elements for fixing
 		*			its indexes */
-		void free(std::size_t i);
+		void free(int i);
 	};
 
 
@@ -238,28 +241,32 @@ namespace fe { namespace collision {
 
 // Template functions definition
 	template<class T>
-	std::size_t HEMeshVector<T>::create()
+	int HEMeshVector<T>::create()
 	{
-		std::size_t index;
+		int index;
 		if (mFreeIndices.empty()) {
-			mRawData.emplace_back();
-			index = mRawData.size() - 1;
+			mElements.emplace_back();
+			index = mElements.size() - 1;
 		}
 		else {
 			auto it = mFreeIndices.begin();
 			index = *it;
 			mFreeIndices.erase(it);
 		}
+		mNumElements++;
 
 		return index;
 	}
 
 
 	template<class T>
-	void HEMeshVector<T>::free(std::size_t i)
+	void HEMeshVector<T>::free(int i)
 	{
-		mFreeIndices.insert(i);
-		mRawData[i] = T();
+		if (mFreeIndices.find(i) == mFreeIndices.end()) {
+			mFreeIndices.insert(i);
+			mElements[i] = T();
+			mNumElements--;
+		}
 	}
 
 }}
