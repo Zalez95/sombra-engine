@@ -24,7 +24,7 @@ namespace fe { namespace collision {
 	class GJKCollisionDetector
 	{
 	private:	// Nested types
-		typedef std::vector<SupportPoint> SupportPointVector;
+		using SupportPointVector = std::vector<SupportPoint>;
 
 	public:		// Functions
 		/** Creates a new GJKCollisionDetector */

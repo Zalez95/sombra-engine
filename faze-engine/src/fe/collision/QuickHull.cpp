@@ -17,7 +17,7 @@ namespace fe { namespace collision {
 				[](const std::pair<int, std::vector<int>>& pair) { return !pair.second.empty(); }
 			);
 			if (itFace != mFaceOutsideVertices.end()) {
-				// 2. Get the furthest Vertex in the direction of the face normal
+				// 2. Get the furthest HEVertex in the direction of the face normal
 				int iEyeVertex = getFurthestVertex(itFace->second, itFace->first, mConvexHull);
 				glm::vec3 eyePoint = mConvexHull.getVertex(iEyeVertex).location;
 
@@ -40,8 +40,8 @@ namespace fe { namespace collision {
 				// 5. Create new faces by joining the edges of the horizon with
 				// the convex hull eyePoint
 				for (int iHorizonEdge : horizon) {
-					const Edge& currentEdge		= mConvexHull.getEdge(iHorizonEdge);
-					const Edge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
+					const HEEdge& currentEdge		= mConvexHull.getEdge(iHorizonEdge);
+					const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
 
 					int iV1 = mConvexHull.getEdge(currentEdge.oppositeEdge).vertex;
 					int iV2 = currentEdge.vertex;
@@ -172,9 +172,9 @@ namespace fe { namespace collision {
 	) const
 	{
 		// Get the face data from the convex hull
-		Face face = mConvexHull.getFace(iFace);
+		HEFace face = mConvexHull.getFace(iFace);
 		glm::vec3 faceNormal = calculateFaceNormal(iFace, mConvexHull);
-		const Vertex& faceVertex = mConvexHull.getVertex(mConvexHull.getEdge(face.edge).vertex);
+		const HEVertex& faceVertex = mConvexHull.getVertex(mConvexHull.getEdge(face.edge).vertex);
 
 		std::vector<int> verticesOutside;
 		for (int i : vertexIndices) {
@@ -187,12 +187,12 @@ namespace fe { namespace collision {
 				// Check if the vertex index is in mVertexIndexMap
 				auto itVertexPair = mVertexIndexMap.find(i);
 				if (itVertexPair != mVertexIndexMap.end()) {
-					// Check if the vertex index is in any of the Edges of the Face
+					// Check if the vertex index is in any of the HEEdges of the HEFace
 					bool vertexInFace = false;
 					int iInitialEdge = face.edge;
 					int iCurrentEdge = iInitialEdge;
 					do {
-						Edge currentEdge = meshData.getEdge(iCurrentEdge);
+						HEEdge currentEdge = meshData.getEdge(iCurrentEdge);
 						if (currentEdge.vertex == itVertexPair->second) {
 							vertexInFace = true;
 							break;
@@ -218,9 +218,9 @@ namespace fe { namespace collision {
 	) const
 	{
 		glm::vec3 faceNormal = calculateFaceNormal(iFace, meshData);
-		const Vertex& faceVertex = meshData.getVertex(meshData.getEdge(meshData.getFace(iFace).edge).vertex);
+		const HEVertex& faceVertex = meshData.getVertex(meshData.getEdge(meshData.getFace(iFace).edge).vertex);
 
-		int furthestPoint;
+		int furthestPoint = -1;
 		float maxDistance = -std::numeric_limits<float>::max();
 		for (int i : vertexIndices) {
 			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);

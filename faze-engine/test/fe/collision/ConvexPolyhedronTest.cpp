@@ -2,7 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/ConvexPolyhedron.h>
-
+/*
 #define TOLERANCE 0.000001f
 
 TEST(ConvexPolyhedron, getAABB)
@@ -80,3 +80,4 @@ TEST(ConvexPolyhedron, getFurthestPointInDirection)
 		EXPECT_NEAR(pointLocal[i], expectedPLocal[i], TOLERANCE);
 	}
 }
+*/

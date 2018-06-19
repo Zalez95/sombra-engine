@@ -67,7 +67,7 @@ namespace fe { namespace physics {
 					mInverseMassMatrix.begin() + 2*(iRB+1)
 				);
 
-				// Shift the map indexes left
+				// Shift the map indices left
 				for (std::array<int, 2>& pair : mConstraintRBMap) {
 					if (pair[0] > iRB) { --pair[0]; }
 					if (pair[1] > iRB) { --pair[1]; }

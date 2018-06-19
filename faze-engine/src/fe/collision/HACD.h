@@ -12,7 +12,7 @@ namespace fe { namespace collision {
 	class HACD
 	{
 	private:	// Nested types
-		typedef std::vector<std::vector<bool>> EdgeMatrix;
+		using GraphMatrix = std::vector<std::vector<bool>>;
 
 	private:	// Attributes
 		/** The minimum concavity needed for HACD algorithm */
@@ -39,9 +39,10 @@ namespace fe { namespace collision {
 		 * in the graph is connected to another one if the triangle
 		 * corresponging to that vertex shares an edge with another triangle.
  		 *
+		 * @param	indices the indices of the triangle Faces of the Mesh
 		 * @return	a square matrix with the initial connections (Edges) between
 		 *			the graph vertices */
-		EdgeMatrix createDualGraph(const std::vector<int>& indices) const;
+		GraphMatrix createDualGraph(const std::vector<int>& indices) const;
 
 		/** Collapses the given edges into one by removing the edges of the
 		 * second point and adding them to the first one
@@ -51,7 +52,7 @@ namespace fe { namespace collision {
 		 * @param	v2 the index of the graph vertex to collapse
 		 * @param	graphEdges the square matrix that holds the edges of the
 		 *			graph */
-		void halfEdgeCollapse(int v1, int v2, EdgeMatrix& graphEdges) const;
+		void halfEdgeCollapse(int v1, int v2, GraphMatrix& graphEdges) const;
 
 		/** Calculates the cost function of the given edge with the aspect ratio
 		 * and the concavity of the surface resulting from the unification of

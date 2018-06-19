@@ -21,7 +21,7 @@ namespace fe { namespace collision {
 		/** Maps each convex hull face with it outside vertex indices */
 		std::map<int, std::vector<int>> mFaceOutsideVertices;
 
-		/** Maps the indexes of the vertices in the current Mesh with the ones
+		/** Maps the indices of the vertices in the current Mesh with the ones
 		 * in the convex hull */
 		std::map<int, int> mVertexIndexMap;
 
@@ -47,7 +47,7 @@ namespace fe { namespace collision {
 		 *			will calculate the initial simplex */
 		void createInitialConvexHull(const HalfEdgeMesh& meshData);
 
-		/** Calculates the indexes of the vertices that creates an initial
+		/** Calculates the indices of the vertices that creates an initial
 		 * simplex
 		 *
 		 * @param	meshData the Mesh with the vertices vertices with which we
@@ -58,25 +58,25 @@ namespace fe { namespace collision {
 		) const;
 
 		/** Calculates which of the given vertices are outside of the current
-		 * Hull by the given Face
+		 * Hull by the given HEFace
 		 *
 		 * @param	vertexIndices the index to the vertices of the mesh that we
 		 *			want to test
 		 * @param	meshData the Mesh data with the Vertices
-		 * @param	iFace the index of the Face in the convex hull
-		 * @return	the indexes of the vertices that in front of the face */
+		 * @param	iFace the index of the HEFace in the convex hull
+		 * @return	the indices of the vertices that in front of the face */
 		std::vector<int> getVerticesOutside(
 			const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
 			int iFace
 		) const;
 
 		/** Calculates which of the given Vertices is the the furthest point in
-		 * the Face normal direction
+		 * the HEFace normal direction
 		 *
 		 * @param	vertexIndices the index of the Vertices to check
-		 * @param	iFace the index of the Face
+		 * @param	iFace the index of the HEFace
 		 * @param	meshData the Mesh data with the Vertices and Faces
-		 * @return	the index of the furthest Vertex */
+		 * @return	the index of the furthest HEVertex */
 		int getFurthestVertex(
 			const std::vector<int>& vertexIndices,
 			int iFace, const HalfEdgeMesh& meshData

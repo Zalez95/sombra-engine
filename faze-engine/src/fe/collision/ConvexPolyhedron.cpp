@@ -1,23 +1,16 @@
 #include <limits>
-#include <cassert>
-#include <algorithm>
 #include "fe/collision/ConvexPolyhedron.h"
 
 namespace fe { namespace collision {
-
-	ConvexPolyhedron::ConvexPolyhedron(const std::vector<glm::vec3>& vertices) :
-		mVertices(vertices), mVerticesWorld(vertices), mTransformsMatrix(1.0f)
-	{
-		assert(!vertices.empty() && "The ConvexPolyhedron has to have at least one vertex");
-	}
-
 
 	void ConvexPolyhedron::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;
 
-		for (size_t i = 0; i < mVertices.size(); ++i) {
-			mVerticesWorld[i] = transforms * glm::vec4(mVertices[i], 1.0f);
+		CachedVector<HEVertex>& verticesVector = mMesh.getVerticesVector();
+		verticesVector = mLocalVertices;
+		for (HEVertex& vertex : verticesVector) {
+			vertex.location = mTransformsMatrix * glm::vec4(vertex.location, 1.0);
 		}
 	}
 
@@ -29,9 +22,9 @@ namespace fe { namespace collision {
 			glm::vec3(-std::numeric_limits<float>::max())
 		};
 
-		for (const glm::vec3& vertex : mVerticesWorld) {
-			ret.minimum = glm::min(ret.minimum, vertex);
-			ret.maximum = glm::max(ret.maximum, vertex);
+		for (const HEVertex& vertex : mMesh.getVerticesVector()) {
+			ret.minimum = glm::min(ret.minimum, vertex.location);
+			ret.maximum = glm::max(ret.maximum, vertex.location);
 		}
 
 		return ret;
@@ -43,19 +36,10 @@ namespace fe { namespace collision {
 		glm::vec3& pointWorld, glm::vec3& pointLocal
 	) const
 	{
-		auto itMax = std::max_element(
-			mVerticesWorld.begin(),
-			mVerticesWorld.end(),
-			[&direction](const glm::vec3& p1, const glm::vec3& p2)
-			{
-				return glm::dot(p1, direction) < glm::dot(p2, direction);
-			}
-		);
+		int iVertex = getFurthestVertexInDirection(direction, mMesh);
 
-		int iMax = std::distance(mVerticesWorld.begin(), itMax);
-
-		pointWorld = *itMax;
-		pointLocal = mVertices[iMax];
+		pointWorld = mMesh.getVertex(iVertex).location;
+		pointLocal = mLocalVertices[iVertex].location;
 	}
 
 }}

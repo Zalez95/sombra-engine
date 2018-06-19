@@ -3,7 +3,7 @@
 #include <fe/collision/ConvexPolyhedron.h>
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/CoarseCollisionDetector.h>
-
+/*
 TEST(CoarseCollisionDetector, collide)
 {
 	fe::collision::CoarseCollisionDetector ccd;
@@ -60,3 +60,4 @@ TEST(CoarseCollisionDetector, collide)
 		EXPECT_TRUE(flag);
 	}
 }
+*/

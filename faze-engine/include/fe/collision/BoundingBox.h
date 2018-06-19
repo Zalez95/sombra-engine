@@ -17,30 +17,18 @@ namespace fe { namespace collision {
 		 *
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
 		BoundingBox(const glm::vec3& lengths) :
-			ConvexPolyhedron(verticesFromLengths(lengths)) {};
+			ConvexPolyhedron(meshFromLengths(lengths)) {};
 
 		/** Class destructor */
 		~BoundingBox() {};
 	private:
-		/** Calculates the vertices of the BoundingBox from its lenghts in
+		/** Calculates the HalfEdgeMesh of the BoundingBox from its lenghts in
 		 * each axis
 		 *
-		 * @param	lengths the lenght in each aixs of the BoundingBox */
-		std::vector<glm::vec3> verticesFromLengths(
-			const glm::vec3& lengths
-		) const
-		{
-			return {
-				glm::vec3(-lengths.x, -lengths.y, -lengths.z) / 2.0f,
-				glm::vec3(-lengths.x, -lengths.y,  lengths.z) / 2.0f,
-				glm::vec3(-lengths.x,  lengths.y, -lengths.z) / 2.0f,
-				glm::vec3(-lengths.x,  lengths.y,  lengths.z) / 2.0f,
-				glm::vec3( lengths.x, -lengths.y, -lengths.z) / 2.0f,
-				glm::vec3( lengths.x, -lengths.y,  lengths.z) / 2.0f,
-				glm::vec3( lengths.x,  lengths.y, -lengths.z) / 2.0f,
-				glm::vec3( lengths.x,  lengths.y,  lengths.z) / 2.0f
-			};
-		};
+		 * @param	lengths the lenght in each aixs of the BoundingBox
+		 * @return	the HalfEdgeMesh structure with the Mesh of the
+		 *			BoundingBox */
+		HalfEdgeMesh meshFromLengths(const glm::vec3& lengths) const;
 	};
 
 }}

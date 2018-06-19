@@ -27,7 +27,7 @@ namespace fe { namespace collision {
 	class MeshCollider : public ConcaveCollider
 	{
 	private:	// Nested types
-		typedef std::vector<std::vector<bool>> EdgeMatrix;
+		using EdgeMatrix = std::vector<std::vector<bool>>;
 
 	private:	// Attributes
 		/** The minimum concavity needed for HACD algorithm */

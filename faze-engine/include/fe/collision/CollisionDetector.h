@@ -30,7 +30,7 @@ namespace fe { namespace collision {
 	class CollisionDetector
 	{
 	private:	// Nested types
-		typedef std::pair<const Collider*, const Collider*> ColliderPair;
+		using ColliderPair = std::pair<const Collider*, const Collider*>;
 		
 	private:	// Attributes
 		/** The CoarseCollisionDetector of the CollisionDetector. We will use

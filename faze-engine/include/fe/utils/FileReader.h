@@ -173,7 +173,7 @@ namespace fe { namespace utils {
 
 		// Parse the data
 		std::stringstream(firstStr) >> first;
-	   	std::stringstream(secondStr) >> second;
+		std::stringstream(secondStr) >> second;
 		if (mCurLineStream.fail()) {
 			mCurrentState = FileState::FAILED;
 		}

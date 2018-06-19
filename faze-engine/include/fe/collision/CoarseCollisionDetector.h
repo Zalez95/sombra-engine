@@ -17,7 +17,7 @@ namespace fe { namespace collision {
 	class CoarseCollisionDetector
 	{
 	private:	// Nested types
-		typedef std::pair<const Collider*, const Collider*> ColliderPair;
+		using ColliderPair = std::pair<const Collider*, const Collider*>;
 
 	private:	// Attributes
 		/** The Colliders to check if they collide between each others */

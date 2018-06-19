@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/TerrainCollider.h>
 #include <fe/collision/ConvexPolyhedron.h>
-
+/*
 #define TOLERANCE 0.000001f
 
 TEST(TerrainCollider, getAABB)
@@ -151,3 +151,4 @@ TEST(TerrainCollider, getOverlapingParts)
 		}
 	}
 }
+*/

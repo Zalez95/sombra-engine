@@ -2,6 +2,7 @@
 #define CONVEX_POLYHEDRON_H
 
 #include <vector>
+#include "HalfEdgeMesh.h"
 #include "ConvexCollider.h"
 
 namespace fe { namespace collision {
@@ -13,13 +14,11 @@ namespace fe { namespace collision {
 	class ConvexPolyhedron : public ConvexCollider
 	{
 	protected:	// Attributes
-		/** The coordinates in local space of the ConvexPolyhedron's
-		 * vertices */
-		const std::vector<glm::vec3> mVertices;
+		/** The Mesh in world coordinates */
+		HalfEdgeMesh mMesh;
 
-		/** The coordinates in world space of the ConvexPolyhedron's
-		 * vertices */
-		std::vector<glm::vec3> mVerticesWorld;
+		/** The HEVertices of the ConvexPolyhedron's in local space */
+		CachedVector<HEVertex> mLocalVertices;
 
 		/** The transformation matrix of the ConvexPolyhedron */
 		glm::mat4 mTransformsMatrix;
@@ -27,9 +26,12 @@ namespace fe { namespace collision {
 	public:		// Functions
 		/** Creates a new ConvexPolyhedron located at the origin of coordinates
 		 *
-		 * @param	vertices the vertices of the ConvexPolyhedron in local
-		 *			space */
-		ConvexPolyhedron(const std::vector<glm::vec3>& vertices);
+		 * @param	meshData the Half-Edge Mesh used to create the
+		 *			ConvexPolyhedron
+		 * @note	the Mesh must be convex */
+		ConvexPolyhedron(const HalfEdgeMesh& meshData) :
+			mMesh(meshData), mLocalVertices(meshData.getVerticesVector()),
+			mTransformsMatrix(1.0f) {};
 
 		/** Class destructor */
 		~ConvexPolyhedron() {};
