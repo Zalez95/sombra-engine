@@ -241,16 +241,24 @@ namespace fe { namespace loaders {
 						return rawMesh->name == meshName;
 					}
 				);
+				if (itRawMesh != sharedData.rawMeshes.end()) {
+					auto rawMesh = *itRawMesh;
+					collision::HalfEdgeMesh meshData;
 
-				// TODO: read other colliders
-				physicsEntity = std::make_unique<physics::PhysicsEntity>(
-					physics::RigidBody(),
-					std::make_unique<collision::MeshCollider>(
-						(*itRawMesh)->positions, (*itRawMesh)->faceIndices,
-						collision::ConvexStrategy::HACD
-					),
-					mat
-				);
+					for (const glm::vec3& position : rawMesh->positions) {
+						meshData.addVertex(position);
+					}
+					for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
+						meshData.addFace({ rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
+					}
+
+					// TODO: read other colliders
+					physicsEntity = std::make_unique<physics::PhysicsEntity>(
+						physics::RigidBody(),
+						std::make_unique<collision::MeshCollider>(meshData, collision::ConvexStrategy::QuickHull),
+						mat
+					);
+				}
 			}
 			else if (token == "}") { end = true; }
 			else {

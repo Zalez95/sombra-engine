@@ -62,16 +62,13 @@ namespace fe { namespace collision {
 		const T& operator[](std::size_t i) const { return mElements[i]; };
 
 		/** @return	the initial iterator of the CachedVector */
-		iterator begin()
-		{ return iterator(*this, 0); };
+		iterator begin() { return iterator(*this); };
 
 		/** @return	the initial iterator of the CachedVector */
-		const_iterator begin() const
-		{ return const_iterator(*this, 0); };
+		const_iterator begin() const { return const_iterator(*this); };
 
 		/** @return	the final iterator of the CachedVector */
-		iterator end()
-		{ return iterator(*this, mElements.size()); };
+		iterator end() { return iterator(*this, mElements.size()); };
 
 		/** @return	the final iterator of the CachedVector */
 		const_iterator end() const
@@ -91,6 +88,13 @@ namespace fe { namespace collision {
 		 *			don't have to iterate through the elements for fixing
 		 *			its indices */
 		void free(std::size_t i);
+
+		/** Checks if the Element given located at the given index is valid and
+		 * active
+		 *
+		 * @param	i the index of the Element
+		 * @return	true if is valid and active false otherwise */
+		bool isActive(std::size_t i) const;
 	};
 
 
@@ -115,15 +119,32 @@ namespace fe { namespace collision {
 		std::size_t mIndex;
 
 	public:		// Functions
+		/** Creates a new CachedVectorIterator located at the initial valid
+		 * position of the given CachedVector (begin)
+		 *
+		 * @param	vector the vector to iterate */
+		CachedVectorIterator(VectorType& vector);
+
 		/** Creates a new CachedVectorIterator
 		 *
 		 * @param	vector the vector to iterate
 		 * @param	index the inital index of the iterator */
-		CachedVectorIterator(VectorType& vector, std::size_t index = 0) :
+		CachedVectorIterator(VectorType& vector, std::size_t index) :
 			mVector(vector), mIndex(index) {};
 
 		/** Class destructor */
 		~CachedVectorIterator() {};
+
+		/** @return	the index of the Element that the iterator is pointing to */
+		std::size_t getIndex() const { return mIndex; };
+
+		/** @return	a reference to the current Element that the iterator is
+		 *			pointing at */
+		ElementType& operator*() { return mVector[mIndex]; };
+
+		/** @return	a pointer to the current Element that the iterator is
+		 *			pointing at */
+		ElementType* operator->() { return &mVector[mIndex]; };
 
 		/** Compares the current iterator with the given one
 		 *
@@ -138,10 +159,6 @@ namespace fe { namespace collision {
 		 * @return	true if both iterators are different, false otherwise */
 		bool operator!=(const CachedVectorIterator& other) const
 		{ return !(*this == other); };
-
-		/** @return	a reference to the current Element that the iterator is
-		 *			pointing at */
-		ElementType& operator*() { return mVector[mIndex]; };
 
 		/** Preincrement operator
 		 *
@@ -166,13 +183,6 @@ namespace fe { namespace collision {
 		 * @return	a copy of the current iterator with the previous value to
 		 *			the decrementation */
 		CachedVectorIterator operator--(int);
-	private:
-		/** Checks if the Element given located at the given index is valid and
-		 * active
-		 *
-		 * @param	i the index of the Element
-		 * @return	true if is valid and active false otherwise */
-		bool isActive(std::size_t i) const;
 	};
 
 // Template functions definition
@@ -206,6 +216,24 @@ namespace fe { namespace collision {
 	}
 
 
+	template<class T>
+	bool CachedVector<T>::isActive(std::size_t i) const
+	{
+		return (i < mElements.size())
+			&& (mFreeIndices.find(i) == mFreeIndices.end());
+	}
+
+
+	template<class T, bool isConst>
+	CachedVectorIterator<T, isConst>::CachedVectorIterator(VectorType& vector) :
+		mVector(vector), mIndex(0)
+	{
+		if (!mVector.isActive(mIndex) && (mVector.mNumElements > 0)) {
+			operator++();
+		}
+	}
+
+
 	template<class T, bool isConst>
 	CachedVectorIterator<T, isConst>&
 		CachedVectorIterator<T, isConst>::operator++()
@@ -213,7 +241,10 @@ namespace fe { namespace collision {
 		do {
 			mIndex++;
 		}
-		while ((mIndex < mVector.mElements.size()) && !isActive(mIndex));
+		while (
+			!mVector.isActive(mIndex)
+			&& (mIndex < mVector.mElements.size())
+		);
 
 		return *this;
 	}
@@ -236,7 +267,10 @@ namespace fe { namespace collision {
 		do {
 			mIndex--;
 		}
-		while ((mIndex < mVector.mElements.size()) && !isActive(mIndex));
+		while (
+			!mVector.isActive(mIndex)
+			&& (mIndex < mVector.mElements.size())
+		);
 
 		return *this;
 	}
@@ -249,14 +283,6 @@ namespace fe { namespace collision {
 		CachedVectorIterator<T> ret(*this);
 		operator--();
 		return ret;
-	}
-
-
-	template<class T, bool isConst>
-	bool CachedVectorIterator<T, isConst>::isActive(std::size_t i) const
-	{
-		return (i < mVector.mElements.size())
-			&& (mVector.mFreeIndices.find(i) == mVector.mFreeIndices.end());
 	}
 
 }}

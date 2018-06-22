@@ -20,10 +20,10 @@ namespace fe { namespace collision {
 
 		ret.addFace({ iVertices[0], iVertices[1], iVertices[3], iVertices[2] });
 		ret.addFace({ iVertices[0], iVertices[2], iVertices[6], iVertices[4] });
-		ret.addFace({ iVertices[4], iVertices[6], iVertices[6], iVertices[7] });
-		ret.addFace({ iVertices[1], iVertices[5], iVertices[5], iVertices[7] });
-		ret.addFace({ iVertices[0], iVertices[4], iVertices[4], iVertices[5] });
+		ret.addFace({ iVertices[4], iVertices[6], iVertices[7], iVertices[5] });
+		ret.addFace({ iVertices[5], iVertices[7], iVertices[3], iVertices[1] });
 		ret.addFace({ iVertices[2], iVertices[3], iVertices[7], iVertices[6] });
+		ret.addFace({ iVertices[0], iVertices[4], iVertices[5], iVertices[1] });
 
 		return ret;
 	}

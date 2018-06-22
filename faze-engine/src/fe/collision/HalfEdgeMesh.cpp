@@ -15,9 +15,11 @@ namespace fe { namespace collision {
 	}
 
 
-	void HalfEdgeMesh::removeVertex(int i)
+	void HalfEdgeMesh::removeVertex(int iVertex)
 	{
-		int iInitialEdge = mVertices[i].edge;
+		if (!mEdges.isActive(iVertex)) { return; }
+
+		int iInitialEdge = mVertices[iVertex].edge;
 		int iCurrentEdge = iInitialEdge;
 		do {
 			HEEdge& currentEdge = mEdges[iCurrentEdge];
@@ -26,20 +28,20 @@ namespace fe { namespace collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		mVertices.free(i);
+		mVertices.free(iVertex);
 	}
 
 
 	int HalfEdgeMesh::addFace(const std::vector<int>& vertexIndices)
 	{
-		assert(!vertexIndices.empty() && "The face vertexIndices can't be empty");
+		if (vertexIndices.size() < 3) { return -1; }
 
 		// Create a new HEFace
 		int iFace = mFaces.create();
 
 		// Create or set the face and vertex edges
 		std::vector<int> edgeIndices;
-		for (size_t i = 0; i < vertexIndices.size(); ++i) {
+		for (std::size_t i = 0; i < vertexIndices.size(); ++i) {
 			int iVertex1 = vertexIndices[i],
 				iVertex2 = vertexIndices[(i + 1) % vertexIndices.size()];
 
@@ -78,7 +80,7 @@ namespace fe { namespace collision {
 
 			// Set the HEEdge of the first HEVertex
 			if (mVertices[iVertex1].edge < 0) {
-				mVertices[iVertex1].edge = iEdge2;
+				mVertices[iVertex1].edge = iEdge1;
 			}
 
 			// Set the HEFace of the HEEdge
@@ -86,11 +88,12 @@ namespace fe { namespace collision {
 		}
 
 		// Set the previous and next edges of the face edges
-		for (size_t i = 0; i < edgeIndices.size(); ++i) {
-			int iPreviousEdge	= (i == 0)? edgeIndices.back() : edgeIndices[i - 1];
+		for (std::size_t i = 0; i < edgeIndices.size(); ++i) {
+			int iCurrentEdge	= edgeIndices[i];
+			int iPreviousEdge	= edgeIndices[(i == 0)? edgeIndices.size() - 1 : i - 1];
 			int iNextEdge		= edgeIndices[(i + 1) % edgeIndices.size()];
 
-			HEEdge& currentEdge = mEdges[ edgeIndices[i] ];
+			HEEdge& currentEdge = mEdges[iCurrentEdge];
 			currentEdge.previousEdge	= iPreviousEdge;
 			currentEdge.nextEdge		= iNextEdge;
 		}
@@ -99,11 +102,13 @@ namespace fe { namespace collision {
 	}
 
 
-	void HalfEdgeMesh::removeFace(int i)
+	void HalfEdgeMesh::removeFace(int iFace)
 	{
+		if (!mFaces.isActive(iFace)) { return; }
+
 		std::vector<int> vertexIndices;
 
-		int iInitialEdge = mFaces[i].edge;
+		int iInitialEdge = mFaces[iFace].edge;
 		int iCurrentEdge = iInitialEdge;
 		do {
 			HEEdge& currentEdge	= mEdges[iCurrentEdge];
@@ -148,12 +153,15 @@ namespace fe { namespace collision {
 			}
 		}
 
-		mFaces.free(i);
+		mFaces.free(iFace);
 	}
 
 
 	void HalfEdgeMesh::mergeFace(int iEdge)
 	{
+		if (!mEdges.isActive(iEdge)) { return; }
+
+		// FIXME: vertex and faces edges -> don't use removeFace
 		HEEdge currentEdge	= mEdges[iEdge];
 		HEEdge oppositeEdge	= mEdges[currentEdge.oppositeEdge];
 
@@ -213,28 +221,26 @@ namespace fe { namespace collision {
 		const glm::vec3& direction,
 		const HalfEdgeMesh& meshData
 	) {
-		auto getVertexDistance = [](const glm::vec3& location, const glm::vec3& direction) {
+		auto getVertexDistance = [&direction](const glm::vec3& location) {
 			return glm::dot(location, direction);
 		};
 
-		int iBestEdge = 0;
-		float bestDistance = getVertexDistance(
-			meshData.getVertex( meshData.getEdge(iBestEdge).vertex ).location,
-			direction
-		);
+		int iBestVertex = meshData.getVerticesVector().begin().getIndex();
+		float bestDistance = getVertexDistance(meshData.getVertex(iBestVertex).location);
 
 		for (bool end = false; !end;) {
 			// Search the best neighbour of the current vertex
-			int iInitialEdge = iBestEdge, iCurrentEdge = iBestEdge, iBestEdge2 = iBestEdge;
-			float bestDistance2 = bestDistance;
+			int iInitialEdge = meshData.getVertex(iBestVertex).edge, iCurrentEdge = iInitialEdge,
+				iBestVertex2 = -1;
+			float bestDistance2 = -std::numeric_limits<float>::max();
 			do {
 				HEEdge currentEdge = meshData.getEdge(iCurrentEdge);
 				HEVertex currentVertex = meshData.getVertex(currentEdge.vertex);
 
-				float currentDistance = getVertexDistance(currentVertex.location, direction);
+				float currentDistance = getVertexDistance(currentVertex.location);
 				if (currentDistance > bestDistance2) {
 					bestDistance2 = currentDistance;
-					iBestEdge2 = iCurrentEdge;
+					iBestVertex2 = currentEdge.vertex;
 				}
 
 				iCurrentEdge = meshData.getEdge(currentEdge.oppositeEdge).nextEdge;
@@ -244,7 +250,7 @@ namespace fe { namespace collision {
 			if (bestDistance2 > bestDistance) {
 				// Update our upper bound
 				bestDistance = bestDistance2;
-				iBestEdge = iBestEdge2;
+				iBestVertex = iBestVertex2;
 			}
 			else {
 				// Found maximum
@@ -252,16 +258,14 @@ namespace fe { namespace collision {
 			}
 		}
 
-		return meshData.getEdge(iBestEdge).vertex;
+		return iBestVertex;
 	}
 
 
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const glm::vec3& eyePoint,
-		int iFace, const HalfEdgeMesh& meshData
+		const glm::vec3& eyePoint, int iFace,
+		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals
 	) {
-		assert((iFace >= 0) && (iFace < meshData.getNumFaces()) && "The index of the HEFace must be in range");
-
 		std::vector<int> visitedFaces, horizonEdges, visibleFaces = { iFace };
 
 		int iInitialEdge = meshData.getFace(iFace).edge;
@@ -276,25 +280,32 @@ namespace fe { namespace collision {
 			HEEdge oppositeEdge = meshData.getEdge(currentEdge.oppositeEdge);
 			int iNextFace = oppositeEdge.face;
 
-			// 3. Check if the next face exists or if we already visited the
-			// next HEFace
-			if ((iNextFace < 0)
-				|| std::any_of(visitedFaces.begin(), visitedFaces.end(), [&](int f) { return f == iNextFace; })
+			// 3. Check if we already visited the next HEFace
+			if (std::any_of(visitedFaces.begin(), visitedFaces.end(), [&](int f) { return f == iNextFace; })
+				|| (iNextFace < 0)
 			) {
-				// 4.1. Continue with the next HEEdge
-				iCurrentEdge = currentEdge.nextEdge;
+				// 3.1. Check if we are in the returning step of the search
+				if (!horizonEdges.empty() && (oppositeEdge.nextEdge >= 0)) {
+					// 3.1.1. Continue with the next HEEdge of the next HEFace
+					iCurrentEdge = oppositeEdge.nextEdge;
+				}
+				else {
+					// 3.1.2. Continue with the next HEEdge
+					iCurrentEdge = currentEdge.nextEdge;
+				}
 			}
 			else {
-				// 4.2. Test the visibility of the next face from the eye point
+				// 3.2. Test the visibility of the next HEFace from the eye point
 				HEVertex nextFaceVertex = meshData.getVertex(oppositeEdge.vertex);
-				glm::vec3 nextFaceNormal = calculateFaceNormal(iNextFace, meshData);
-				if (glm::dot(eyePoint - nextFaceVertex.location, nextFaceNormal) >= 0) {
-					// 4.3.1. Visible, continue with next HEEdge of the next HEFace
+				glm::vec3 nextFaceNormal = faceNormals.find(iNextFace)->second;
+				if (glm::dot(eyePoint - nextFaceVertex.location, nextFaceNormal) > 0) {
+					// 3.2.1. Mark the HEFace as visible and continue with next
+					// HEEdge of the next HEFace
 					visibleFaces.push_back(iNextFace);
 					iCurrentEdge = oppositeEdge.nextEdge;
 				}
 				else {
-					// 4.3.2. Add the current HEEdge to the horizon list and
+					// 3.2.2. Mark the current HEEdge as an horizon HEEdge and
 					// continue with the next HEEdge
 					horizonEdges.push_back(iCurrentEdge);
 					iCurrentEdge = currentEdge.nextEdge;

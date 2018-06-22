@@ -304,12 +304,17 @@ namespace game {
 			if (it == fileMeshes.begin()) {
 				auto rawMesh = *fileRawMeshes.begin();
 
+				fe::collision::HalfEdgeMesh meshData;
+				for (const glm::vec3& position : rawMesh->positions) {
+					meshData.addVertex(position);
+				}
+				for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
+					meshData.addFace({ rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
+				}
+
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::MeshCollider>(
-						rawMesh->positions, rawMesh->faceIndices,
-						fe::collision::ConvexStrategy::HACD
-					),
+					std::make_unique<fe::collision::MeshCollider>(meshData, fe::collision::ConvexStrategy::QuickHull),
 					glm::mat4(1.0f)
 				);
 				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));

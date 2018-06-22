@@ -1,4 +1,4 @@
-/*#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/MeshCollider.h>
@@ -8,30 +8,37 @@
 
 TEST(MeshCollider, getAABB)
 {
-	const std::vector<glm::vec3> vertices = {
-		{  1.25f,  1.0f, -2.75f },
-		{  1.25f, -1.0f, -2.75f },
-		{ -0.25f, -1.0f, -2.75f },
-		{ -0.25f,  1.0f,  0.0f  },
-		{  1.25f,  1.0f,  2.75f },
-		{  1.25f, -1.0f,  2.75f },
-		{ -0.25f, -1.0f,  0.0f  },
-		{ -0.25f,  1.0f,  2.75f },
-		{  0.25f,  0.0f,  0.0f  }
-	};
-	const std::vector<unsigned short> indices = {
-		0, 1, 2, 7, 6, 5,
-		1, 5, 6, 6, 7, 3,
-		4, 0, 3, 0, 4, 8,
-		1, 0, 8, 4, 5, 8,
-		5, 1, 8, 3, 0, 2,
-		4, 7, 5, 2, 1, 6,
-		2, 6, 3, 7, 4, 3
-	};
+	fe::collision::HalfEdgeMesh meshData;
+
+	meshData.addVertex({  1.25f,  1.0f, -2.75f });
+	meshData.addVertex({  1.25f, -1.0f, -2.75f });
+	meshData.addVertex({ -0.25f, -1.0f, -2.75f });
+	meshData.addVertex({ -0.25f,  1.0f,  0.0f  });
+	meshData.addVertex({  1.25f,  1.0f,  2.75f });
+	meshData.addVertex({  1.25f, -1.0f,  2.75f });
+	meshData.addVertex({ -0.25f, -1.0f,  0.0f  });
+	meshData.addVertex({ -0.25f,  1.0f,  2.75f });
+	meshData.addVertex({  0.25f,  0.0f,  0.0f  });
+
+	meshData.addFace({ 0, 1, 2 });
+	meshData.addFace({ 7, 6, 5 });
+	meshData.addFace({ 1, 5, 6 });
+	meshData.addFace({ 6, 7, 3 });
+	meshData.addFace({ 4, 0, 3 });
+	meshData.addFace({ 0, 4, 8 });
+	meshData.addFace({ 1, 0, 8 });
+	meshData.addFace({ 4, 5, 8 });
+	meshData.addFace({ 5, 1, 8 });
+	meshData.addFace({ 3, 0, 2 });
+	meshData.addFace({ 4, 7, 5 });
+	meshData.addFace({ 2, 1, 6 });
+	meshData.addFace({ 2, 6, 3 });
+	meshData.addFace({ 7, 4, 3 });
+
 	const glm::vec3 expectedMinimum(-0.25f, -1.0f, -2.75f);
 	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
 
-	fe::collision::MeshCollider mc1(vertices, indices);
+	fe::collision::MeshCollider mc1(meshData, fe::collision::ConvexStrategy::QuickHull);
 	fe::collision::AABB aabb1 = mc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
@@ -44,30 +51,36 @@ TEST(MeshCollider, getAABBTransforms)
 {
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
-	const std::vector<glm::vec3> vertices = {
-		{  1.25f,  1.0f, -2.75f },
-		{  1.25f, -1.0f, -2.75f },
-		{ -0.25f, -1.0f, -2.75f },
-		{ -0.25f,  1.0f,  0.0f  },
-		{  1.25f,  1.0f,  2.75f },
-		{  1.25f, -1.0f,  2.75f },
-		{ -0.25f, -1.0f,  0.0f  },
-		{ -0.25f,  1.0f,  2.75f },
-		{  0.25f,  0.0f,  0.0f  }
-	};
-	const std::vector<unsigned short> indices = {
-		0, 1, 2, 7, 6, 5,
-		1, 5, 6, 6, 7, 3,
-		4, 0, 3, 0, 4, 8,
-		1, 0, 8, 4, 5, 8,
-		5, 1, 8, 3, 0, 2,
-		4, 7, 5, 2, 1, 6,
-		2, 6, 3, 7, 4, 3
-	};
+	fe::collision::HalfEdgeMesh meshData;
+	meshData.addVertex({  1.25f,  1.0f, -2.75f });
+	meshData.addVertex({  1.25f, -1.0f, -2.75f });
+	meshData.addVertex({ -0.25f, -1.0f, -2.75f });
+	meshData.addVertex({ -0.25f,  1.0f,  0.0f  });
+	meshData.addVertex({  1.25f,  1.0f,  2.75f });
+	meshData.addVertex({  1.25f, -1.0f,  2.75f });
+	meshData.addVertex({ -0.25f, -1.0f,  0.0f  });
+	meshData.addVertex({ -0.25f,  1.0f,  2.75f });
+	meshData.addVertex({  0.25f,  0.0f,  0.0f  });
+
+	meshData.addFace({ 0, 1, 2 });
+	meshData.addFace({ 7, 6, 5 });
+	meshData.addFace({ 1, 5, 6 });
+	meshData.addFace({ 6, 7, 3 });
+	meshData.addFace({ 4, 0, 3 });
+	meshData.addFace({ 0, 4, 8 });
+	meshData.addFace({ 1, 0, 8 });
+	meshData.addFace({ 4, 5, 8 });
+	meshData.addFace({ 5, 1, 8 });
+	meshData.addFace({ 3, 0, 2 });
+	meshData.addFace({ 4, 7, 5 });
+	meshData.addFace({ 2, 1, 6 });
+	meshData.addFace({ 2, 6, 3 });
+	meshData.addFace({ 7, 4, 3 });
+
 	const glm::vec3 expectedMinimum(3.026389360f, -3.532424926f, -12.166131973f);
 	const glm::vec3 expectedMaximum(7.695832729f, 1.698557257f, -7.145406246f);
 
-	fe::collision::MeshCollider mc1(vertices, indices);
+	fe::collision::MeshCollider mc1(meshData, fe::collision::ConvexStrategy::QuickHull);
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	mc1.setTransforms(t * r);
@@ -79,7 +92,7 @@ TEST(MeshCollider, getAABBTransforms)
 	}
 }
 
-
+/*
 TEST(MeshCollider, getOverlapingParts)
 {
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);

@@ -97,14 +97,12 @@ namespace fe { namespace collision {
 		const CachedVector<HEVertex>& getVerticesVector() const
 		{ return mVertices; };
 
-		/** @return	the total number of HEVertices in the Mesh */
-		int getNumVertices() const { return mVertices.size(); };
-
 		/** Returns the requested HEVertex
 		 *
-		 * @param	i the HEVertex index
+		 * @param	iVertex the HEVertex index
 		 * @return	a const reference to the HEVertex */
-		const HEVertex& getVertex(int i) const { return mVertices[i]; };
+		const HEVertex& getVertex(int iVertex) const
+		{ return mVertices[iVertex]; };
 
 		/** Adds the given point as a new HEVertex in the Mesh
 		 *
@@ -115,8 +113,8 @@ namespace fe { namespace collision {
 		/** Removes the given HEVertex and the HEFaces and HEEdges that
 		 * references it
 		 *
-		 * @param	i the index of the HEVertex to remove */
-		void removeVertex(int i);
+		 * @param	iVertex the index of the HEVertex to remove */
+		void removeVertex(int iVertex);
 
 		/** @return	a reference to the HEEdges vector of the Mesh */
 		CachedVector<HEEdge>& getEdgesVector() { return mEdges; };
@@ -124,14 +122,11 @@ namespace fe { namespace collision {
 		/** @return	a const reference to the HEEdges vector of the Mesh */
 		const CachedVector<HEEdge>& getEdgesVector() const { return mEdges; };
 
-		/** @return	the total number of HEEdges in the Mesh */
-		int getNumEdges() const { return mEdges.size(); };
-
 		/** Returns the requested HEEdge
 		 *
-		 * @param	i the HEEdge index
+		 * @param	iEdge the HEEdge index
 		 * @return	a const reference to the HEEdge */
-		const HEEdge& getEdge(int i) const { return mEdges[i]; };
+		const HEEdge& getEdge(int iEdge) const { return mEdges[iEdge]; };
 
 		/** @return	a reference to the HEFaces vector of the Mesh */
 		CachedVector<HEFace>& getFacesVector() { return mFaces; };
@@ -139,26 +134,24 @@ namespace fe { namespace collision {
 		/** @return	a const reference to the HEFaces vector of the Mesh */
 		const CachedVector<HEFace>& getFacesVector() const { return mFaces; };
 
-		/** @return	the total number of HEFaces in the Mesh */
-		int getNumFaces() const { return mFaces.size(); };
-
 		/** Returns the requested HEFace
 		 *
-		 * @param	i the HEFace index
+		 * @param	iFace the HEFace index
 		 * @return	a const reference to the HEFace */
-		const HEFace& getFace(int i) const { return mFaces[i]; };
+		const HEFace& getFace(int iFace) const { return mFaces[iFace]; };
 
 		/** Creates a new HEFace from the given HEVertex indices and adds it
 		 * to the Mesh
 		 *
 		 * @param	vertexIndices the indices of the HEVertex of the new HEFace
-		 * @return	the index of the HEFace */
+		 * @return	the index of the HEFace, -1 if the number of vertices is
+		 *			less than 3 */
 		int addFace(const std::vector<int>& vertexIndices);
 
 		/** Removes the given HEFace and the HEEdges that references it
 		 *
-		 * @param	i the index of the HEFace to remove */
-		void removeFace(int i);
+		 * @param	iFace the index of the HEFace to remove */
+		void removeFace(int iFace);
 
 		/** Merges two HEFaces into a single one by the given HEEdge
 		 *
@@ -196,14 +189,16 @@ namespace fe { namespace collision {
 	 * @param	iFace the index of the initial HEFace from which we will start
 	 *			searching
 	 * @param	meshData the Mesh data with the HEVertices and HEFaces
+	 * @param	faceNormals the normals of each HEFace
 	 * @return	a pair with the list of HEEdge indices that represents the
 	 *			boundary of the ConvexHull and the list of HEFace indices with
 	 *			the visible HEFaces
 	 * @note	the initial HEFace must be visible from the eyePoint
 	 *			perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const glm::vec3& eyePoint,
-		int iFace, const HalfEdgeMesh& meshData
+		const glm::vec3& eyePoint, int iFace,
+		const HalfEdgeMesh& meshData,
+		const std::map<int, glm::vec3>& faceNormals
 	);
 
 }}

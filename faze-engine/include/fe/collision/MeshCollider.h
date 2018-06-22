@@ -7,7 +7,7 @@
 namespace fe { namespace collision {
 
 	/**
-	 * The algorithm used to split the ConcaveCollider in multiple
+	 * The algorithm used to transform the concave MeshCollider in a/multiple
 	 * ConvexColliders
 	 */
 	enum class ConvexStrategy
@@ -21,8 +21,8 @@ namespace fe { namespace collision {
 
 
 	/**
-	 * Class MeshCollider, it's a Collider with a concave shape which will be
-	 * stored as a triangle Mesh.
+	 * Class MeshCollider, it's a Collider with a concave shape stored as a
+	 * Half-Edge mesh.
 	 */
 	class MeshCollider : public ConcaveCollider
 	{
@@ -46,15 +46,9 @@ namespace fe { namespace collision {
 		/** Creates a new MeshCollider located at the origin of
 		 * coordinates
 		 *
-		 * @param	vertices the vertices of the MeshCollider in local
-		 *			space
-		 * @param	indices the indices of the triangle mesh of the
-		 *			MeshCollider */
-		MeshCollider(
-			const std::vector<glm::vec3>& vertices,
-			const std::vector<unsigned short>& indices,
-			ConvexStrategy strategy
-		);
+		 * @param	meshData the mesh of the MeshCollider
+		 * @param	strategy the algorithm used for the convex */
+		MeshCollider(const HalfEdgeMesh& meshData, ConvexStrategy strategy);
 
 		/** Class destructor */
 		virtual ~MeshCollider() {};

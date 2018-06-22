@@ -18,7 +18,10 @@ namespace fe { namespace collision {
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
 		HalfEdgeMesh mConvexHull;
 
-		/** Maps each convex hull face with it outside vertex indices */
+		/** Maps each convex hull face with its normal vector */
+		std::map<int, glm::vec3> mFaceNormals;
+
+		/** Maps each convex hull face with its outside vertex indices */
 		std::map<int, std::vector<int>> mFaceOutsideVertices;
 
 		/** Maps the indices of the vertices in the current Mesh with the ones
@@ -64,7 +67,7 @@ namespace fe { namespace collision {
 		 *			want to test
 		 * @param	meshData the Mesh data with the Vertices
 		 * @param	iFace the index of the HEFace in the convex hull
-		 * @return	the indices of the vertices that in front of the face */
+		 * @return	the indices of the vertices that are in front of the face */
 		std::vector<int> getVerticesOutside(
 			const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
 			int iFace
@@ -73,10 +76,11 @@ namespace fe { namespace collision {
 		/** Calculates which of the given Vertices is the the furthest point in
 		 * the HEFace normal direction
 		 *
-		 * @param	vertexIndices the index of the Vertices to check
-		 * @param	iFace the index of the HEFace
-		 * @param	meshData the Mesh data with the Vertices and Faces
-		 * @return	the index of the furthest HEVertex */
+		 * @param	vertexIndices the index of the meshData Vertices to check
+		 * @param	iFace the index of the HEFace of the ConvexHull mesh
+		 * @param	meshData the Mesh data that contains the Vertices
+		 * @return	the index of the furthest meshData HEVertex, -1 if iFace is
+		 *			not valid or vertexIndices is empty */
 		int getFurthestVertex(
 			const std::vector<int>& vertexIndices,
 			int iFace, const HalfEdgeMesh& meshData

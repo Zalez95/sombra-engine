@@ -60,16 +60,16 @@ namespace fe { namespace collision {
 			// 1. Get the next closest face to the origin
 			PolytopeFace& closestFace = polytope.faces.front();
 			if (closestFace.obsolete) {
-				// 2.1. Remove the current obsolete closest face
+				// 1.1. Remove the current obsolete closest face
 				polytope.faces.pop_front();
 			}
 			else {
-				// 2.2. Add a new SupportPoint along the closest point direction
+				// 1.2. Add a new SupportPoint along the closest point direction
 				polytope.vertices.emplace_back(collider1, collider2, closestFace.closestPoint);
 				SupportPoint& sp = polytope.vertices.back();
 				int iSp = polytope.vertices.size() - 1;
 
-				// 2.3. If the origin is in the triangle or the new SupportPoint
+				// 1.3. If the origin is in the triangle or the new SupportPoint
 				// is no further to the current triangle than mMinFThreshold
 				// then we've found the closest PolytopeFace
 				float spSeparation = glm::dot(sp.getCSOPosition(), closestFace.closestPoint / closestFace.distance);
@@ -80,7 +80,7 @@ namespace fe { namespace collision {
 					return true;
 				}
 
-				// 2.4. Mark as obsolete all the faces that can be seen
+				// 1.4. Mark as obsolete all the faces that can be seen
 				// from the new SupportPoint and get the edges of the hole that
 				// would be created in the Polytope if we remove them
 				closestFace.obsolete = true;
@@ -97,7 +97,7 @@ namespace fe { namespace collision {
 					}
 				}
 
-				// 2.5. Add new faces to the Polytope by connecting the edges
+				// 1.5. Add new faces to the Polytope by connecting the edges
 				// of the hole to the new SupportPoint
 				for (const Edge& e : holeEdges) {
 					PolytopeFace nextFace({ iSp, e.p1, e.p2 }, polytope.vertices, mProjectionPrecision);

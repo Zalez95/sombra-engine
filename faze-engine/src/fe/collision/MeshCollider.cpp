@@ -1,22 +1,18 @@
 #include <limits>
-#include <cassert>
 #include "fe/collision/MeshCollider.h"
+#include "QuickHull.h"
 
 namespace fe { namespace collision {
 
-	MeshCollider::MeshCollider(
-		const std::vector<glm::vec3>& /*vertices*/,
-		const std::vector<unsigned short>& indices,
-		ConvexStrategy strategy
-	) : mTransformsMatrix(1.0f)
+	MeshCollider::MeshCollider(const HalfEdgeMesh& meshData, ConvexStrategy strategy) :
+		mTransformsMatrix(1.0f)
 	{
-		assert(indices.size() % 3 == 0 && "The faces of the MeshCollider must be triangles");
-
-		//calculateAABBs();
 		switch (strategy) {
-			case ConvexStrategy::QuickHull:
-				break;
+			case ConvexStrategy::QuickHull: {
+					mConvexParts.push_back(QuickHull().calculate(meshData));
+				} break;
 			case ConvexStrategy::HACD:
+				throw std::runtime_error("Not implemented");
 				break;
 		}
 
