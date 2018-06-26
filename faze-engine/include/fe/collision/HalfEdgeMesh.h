@@ -150,13 +150,19 @@ namespace fe { namespace collision {
 
 		/** Removes the given HEFace and the HEEdges that references it
 		 *
-		 * @param	iFace the index of the HEFace to remove */
+		 * @param	iFace the index of the HEFace to remove
+		 * @note	the HEEdges of the HEEFace will only be removed if its
+		 *			opposite one hasn't setted its HEFace, otherwise it will
+		 *			only update its internal data (remove the loop data and the
+		 *			face) */
 		void removeFace(int iFace);
 
 		/** Merges two HEFaces into a single one by the given HEEdge
 		 *
-		 * @param	iEdge the shared HEEdge between the HEFaces to merge */
-		void mergeFace(int iEdge);
+		 * @param	iEdge the shared HEEdge between the HEFaces to merge
+		 * @return	the index of the merged HEFace, -1 if the given iEdge is
+		 *			not valid */
+		int mergeFace(int iEdge);
 	};
 
 

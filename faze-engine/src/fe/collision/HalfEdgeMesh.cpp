@@ -138,6 +138,12 @@ namespace fe { namespace collision {
 				mEdges.free(iCurrentEdge);
 				mEdges.free(iOppositeEdge);
 			}
+			else {
+				// Reset the HEFace data of the current HEEdge
+				currentEdge.face			= -1;
+				currentEdge.previousEdge	= -1;
+				currentEdge.nextEdge		= -1;
+			}
 
 			iCurrentEdge = iNextEdge;
 		}
@@ -157,23 +163,34 @@ namespace fe { namespace collision {
 	}
 
 
-	void HalfEdgeMesh::mergeFace(int iEdge)
+	int HalfEdgeMesh::mergeFace(int iEdge)
 	{
-		if (!mEdges.isActive(iEdge)) { return; }
+		if (!mEdges.isActive(iEdge)) { return -1; }
 
-		// FIXME: vertex and faces edges -> don't use removeFace
-		HEEdge currentEdge	= mEdges[iEdge];
-		HEEdge oppositeEdge	= mEdges[currentEdge.oppositeEdge];
+		const HEEdge& currentEdge	= mEdges[iEdge];
+		const HEEdge& oppositeEdge	= mEdges[currentEdge.oppositeEdge];
 
-		// Remove the opposite face
-		currentEdge.face = -1;
-		removeFace(oppositeEdge.face);
+		int iMergedFace = currentEdge.face;
 
 		// Join the edges of both Faces by the current HEEdge position
 		mEdges[oppositeEdge.previousEdge].nextEdge	= currentEdge.nextEdge;
 		mEdges[currentEdge.nextEdge].previousEdge	= oppositeEdge.previousEdge;
 		mEdges[currentEdge.previousEdge].nextEdge	= oppositeEdge.nextEdge;
 		mEdges[oppositeEdge.nextEdge].previousEdge	= currentEdge.previousEdge;
+
+		// Update the HEFace of the HEEdges
+		int iCurrentEdge = oppositeEdge.nextEdge;
+		while (mEdges[iCurrentEdge].face != iMergedFace) {
+			HEEdge& currentEdge2 = mEdges[iCurrentEdge];
+			currentEdge2.face = iMergedFace;
+			iCurrentEdge = currentEdge2.nextEdge;
+		}
+
+		// Update the joined HEFace's HEEdge
+		HEFace& currentFace = mFaces[iMergedFace];
+		if (currentFace.edge == iEdge) {
+			currentFace.edge = currentEdge.nextEdge;
+		}
 
 		// Update the Vertices' Edges
 		HEVertex& currentVertex = mVertices[currentEdge.vertex];
@@ -185,11 +202,14 @@ namespace fe { namespace collision {
 			oppositeVertex.edge = oppositeEdge.nextEdge;
 		}
 
-		// Update the updated HEFace's HEEdge
-		HEFace& currentFace = mFaces[currentEdge.face];
-		if (currentFace.edge == iEdge) {
-			currentFace.edge = currentEdge.nextEdge;
-		}
+		// Remove the opposite face
+		mFaces.free(oppositeEdge.face);
+
+		// Remove the current and opposite HEEdges
+		mEdges.free(currentEdge.oppositeEdge);
+		mEdges.free(iEdge);
+
+		return iMergedFace;
 	}
 
 
