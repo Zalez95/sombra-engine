@@ -85,6 +85,12 @@ namespace fe { namespace collision {
 			const std::vector<int>& vertexIndices,
 			int iFace, const HalfEdgeMesh& meshData
 		) const;
+
+		/** Merges the given HEFace of the ConvexHull with its surrounding
+		 * HEFaces if they are coplanar (they have the same normal vector)
+		 *
+		 * @param	iFace the index of the HEFace of the ConvexHull to merge */
+		void mergeCoplanarFaces(int iFace);
 	};
 
 }}

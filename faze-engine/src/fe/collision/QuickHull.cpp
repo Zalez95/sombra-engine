@@ -17,8 +17,11 @@ namespace fe { namespace collision {
 				)
 			) != mFaceOutsideVertices.end()
 		) {
+			int iFace = itFace->first;
+			std::vector<int> verticesOutside = itFace->second;
+
 			// 2. Get the furthest HEVertex in the direction of the face normal
-			int iEyeVertex = getFurthestVertex(itFace->second, itFace->first, meshData);
+			int iEyeVertex = getFurthestVertex(verticesOutside, iFace, meshData);
 			glm::vec3 eyePoint = meshData.getVertex(iEyeVertex).location;
 
 			// 3. Add the eyePoint to the convex hull if it isn't already inside
@@ -32,39 +35,32 @@ namespace fe { namespace collision {
 				mVertexIndexMap.emplace(iEyeVertex, iEyeVertexConvexHull);
 			}
 
-			// 4. Calculate the horizon edges and faces to remove from the
+			// 4. Calculate the horizon HEEdges and HEFaces to remove from the
 			// current eyePoint perspective
 			std::vector<int> horizon, facesToRemove;
-			std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, itFace->first, mConvexHull, mFaceNormals);
+			std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, iFace, mConvexHull, mFaceNormals);
 
-			// 5. Create new faces by joining the edges of the horizon with
+			// 5. Remove the faces seen from the current eyePoint
+			for (int iFaceToRemove : facesToRemove) {
+				mConvexHull.removeFace(iFaceToRemove);
+				mFaceNormals.erase( mFaceNormals.find(iFaceToRemove) );
+				mFaceOutsideVertices.erase( mFaceOutsideVertices.find(iFaceToRemove) );
+			}
+
+			// 6. Create new HEFaces by joining the edges of the horizon with
 			// the convex hull eyePoint
 			for (int iHorizonEdge : horizon) {
 				const HEEdge& currentEdge	= mConvexHull.getEdge(iHorizonEdge);
 				const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
 
-				int iV1 = mConvexHull.getEdge(currentEdge.oppositeEdge).vertex;
-				int iV2 = currentEdge.vertex;
-
+				// Create the new HEFace
+				int iV1 = oppositeEdge.vertex, iV2 = currentEdge.vertex;
 				int iNewFace = mConvexHull.addFace({ iV1, iV2, iEyeVertexConvexHull });
 				mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
-				mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(itFace->second, meshData, iNewFace));
+				mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(verticesOutside, meshData, iNewFace));
 
-				// Test if the new face is coplanar with the opposite one by
-				// the horizon edge
-				glm::vec3 currentFaceNormal		= mFaceNormals.find(iNewFace)->second;
-				glm::vec3 oppositeFaceNormal	= mFaceNormals.find(oppositeEdge.face)->second;
-				if (currentFaceNormal == oppositeFaceNormal) {
-					// Merge the coplanar faces
-					mConvexHull.mergeFace(iHorizonEdge);
-				}
-			}
-
-			// 6. Remove the faces seen from the current eyePoint
-			for (int iFaceToRemove : facesToRemove) {
-				mConvexHull.removeFace(iFaceToRemove);
-				mFaceNormals.erase( mFaceNormals.find(iFaceToRemove) );
-				mFaceOutsideVertices.erase( mFaceOutsideVertices.find(iFaceToRemove) );
+				// Merge the coplanar faces
+				mergeCoplanarFaces(iNewFace);
 			}
 		}
 
@@ -219,6 +215,49 @@ namespace fe { namespace collision {
 		}
 
 		return furthestPoint;
+	}
+
+
+	void QuickHull::mergeCoplanarFaces(int iFace)
+	{
+		// Test all the HEEFace edges
+		bool initialEdgeUpdated;
+		int iInitialEdge = mConvexHull.getFace(iFace).edge;
+		int iCurrentEdge = iInitialEdge;
+		do {
+			const HEEdge& currentEdge	= mConvexHull.getEdge(iCurrentEdge);
+			const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
+
+			initialEdgeUpdated = false;
+			int iNextEdge = currentEdge.nextEdge;
+
+			// Test if the current HEFace is coplanar with the opposite one by
+			// the current edge
+			glm::vec3 currentFaceNormal		= mFaceNormals.find(iFace)->second;
+			glm::vec3 oppositeFaceNormal	= mFaceNormals.find(oppositeEdge.face)->second;
+			if (currentFaceNormal == oppositeFaceNormal) {
+				// Merge the two HEFaces into the current one
+				int iRemovedFace = oppositeEdge.face;
+				mConvexHull.mergeFace(iCurrentEdge);
+
+				// Remove the opposite HEFace normal
+				mFaceNormals.erase(iRemovedFace);
+
+				// Remove the opposite HEFace outside vertices (if both faces
+				// has the same normal and shares an HHEdge, the outside
+				// vertices are the same)
+				mFaceOutsideVertices.erase(iRemovedFace);
+
+				// Update the iInitialEdge if it has been removed
+				if (iCurrentEdge == iInitialEdge) {
+					iInitialEdge = iNextEdge;
+					initialEdgeUpdated = true;
+				}
+			}
+
+			iCurrentEdge = iNextEdge;
+		}
+		while ((iCurrentEdge != iInitialEdge) || initialEdgeUpdated);
 	}
 
 }}

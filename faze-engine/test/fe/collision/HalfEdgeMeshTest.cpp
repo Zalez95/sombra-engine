@@ -124,7 +124,8 @@ TEST(HalfEdgeMesh, mergeFace1)
 	const int iMergedEdge = 35;
 
 	std::size_t nVertices = 0;
-	int iMergedFace = meshData.mergeFace(iMergedEdge);
+	int iMergedFace = meshData.getEdge(iMergedEdge).face;
+	meshData.mergeFace(iMergedEdge);
 	int iInitialEdge = meshData.getFace(iMergedFace).edge;
 	int iCurrentEdge = iInitialEdge;
 	do {

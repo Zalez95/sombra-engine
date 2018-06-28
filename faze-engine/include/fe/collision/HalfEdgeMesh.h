@@ -160,9 +160,10 @@ namespace fe { namespace collision {
 		/** Merges two HEFaces into a single one by the given HEEdge
 		 *
 		 * @param	iEdge the shared HEEdge between the HEFaces to merge
-		 * @return	the index of the merged HEFace, -1 if the given iEdge is
-		 *			not valid */
-		int mergeFace(int iEdge);
+		 * @note	the removed HEFace will always be the opposite HEFace,
+		 *			while the one of the given HEEdge will be preserved and
+		 *			updated */
+		void mergeFace(int iEdge);
 	};
 
 

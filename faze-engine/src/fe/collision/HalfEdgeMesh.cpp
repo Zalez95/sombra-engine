@@ -163,9 +163,9 @@ namespace fe { namespace collision {
 	}
 
 
-	int HalfEdgeMesh::mergeFace(int iEdge)
+	void HalfEdgeMesh::mergeFace(int iEdge)
 	{
-		if (!mEdges.isActive(iEdge)) { return -1; }
+		if (!mEdges.isActive(iEdge)) { return; }
 
 		const HEEdge& currentEdge	= mEdges[iEdge];
 		const HEEdge& oppositeEdge	= mEdges[currentEdge.oppositeEdge];
@@ -208,8 +208,6 @@ namespace fe { namespace collision {
 		// Remove the current and opposite HEEdges
 		mEdges.free(currentEdge.oppositeEdge);
 		mEdges.free(iEdge);
-
-		return iMergedFace;
 	}
 
 
