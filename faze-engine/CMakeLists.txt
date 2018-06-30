@@ -41,6 +41,9 @@ if(FAZE_ENGINE_BUILD_TESTS)
 	# Create the executable
 	add_executable(fazeEngineTest ${FAZE_ENGINE_TEST_SOURCES})
 
+	# Add the include directories
+	target_include_directories(fazeEngineTest PRIVATE "test")
+
 	# Add the compiler options
 	set_target_properties(fazeEngineTest PROPERTIES
 		CXX_STANDARD			14

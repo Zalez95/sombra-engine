@@ -3,37 +3,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/MeshCollider.h>
 #include <fe/collision/ConvexPolyhedron.h>
+#include "TestMeshes.h"
 
 #define TOLERANCE 0.000001f
 
 TEST(MeshCollider, getAABB)
 {
 	fe::collision::HalfEdgeMesh meshData;
-
-	meshData.addVertex({  1.25f,  1.0f, -2.75f });
-	meshData.addVertex({  1.25f, -1.0f, -2.75f });
-	meshData.addVertex({ -0.25f, -1.0f, -2.75f });
-	meshData.addVertex({ -0.25f,  1.0f,  0.0f  });
-	meshData.addVertex({  1.25f,  1.0f,  2.75f });
-	meshData.addVertex({  1.25f, -1.0f,  2.75f });
-	meshData.addVertex({ -0.25f, -1.0f,  0.0f  });
-	meshData.addVertex({ -0.25f,  1.0f,  2.75f });
-	meshData.addVertex({  0.25f,  0.0f,  0.0f  });
-
-	meshData.addFace({ 0, 1, 2 });
-	meshData.addFace({ 7, 6, 5 });
-	meshData.addFace({ 1, 5, 6 });
-	meshData.addFace({ 6, 7, 3 });
-	meshData.addFace({ 4, 0, 3 });
-	meshData.addFace({ 0, 4, 8 });
-	meshData.addFace({ 1, 0, 8 });
-	meshData.addFace({ 4, 5, 8 });
-	meshData.addFace({ 5, 1, 8 });
-	meshData.addFace({ 3, 0, 2 });
-	meshData.addFace({ 4, 7, 5 });
-	meshData.addFace({ 2, 1, 6 });
-	meshData.addFace({ 2, 6, 3 });
-	meshData.addFace({ 7, 4, 3 });
+	createTestMesh1(meshData);
 
 	const glm::vec3 expectedMinimum(-0.25f, -1.0f, -2.75f);
 	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
@@ -52,30 +29,7 @@ TEST(MeshCollider, getAABBTransforms)
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
 	fe::collision::HalfEdgeMesh meshData;
-	meshData.addVertex({  1.25f,  1.0f, -2.75f });
-	meshData.addVertex({  1.25f, -1.0f, -2.75f });
-	meshData.addVertex({ -0.25f, -1.0f, -2.75f });
-	meshData.addVertex({ -0.25f,  1.0f,  0.0f  });
-	meshData.addVertex({  1.25f,  1.0f,  2.75f });
-	meshData.addVertex({  1.25f, -1.0f,  2.75f });
-	meshData.addVertex({ -0.25f, -1.0f,  0.0f  });
-	meshData.addVertex({ -0.25f,  1.0f,  2.75f });
-	meshData.addVertex({  0.25f,  0.0f,  0.0f  });
-
-	meshData.addFace({ 0, 1, 2 });
-	meshData.addFace({ 7, 6, 5 });
-	meshData.addFace({ 1, 5, 6 });
-	meshData.addFace({ 6, 7, 3 });
-	meshData.addFace({ 4, 0, 3 });
-	meshData.addFace({ 0, 4, 8 });
-	meshData.addFace({ 1, 0, 8 });
-	meshData.addFace({ 4, 5, 8 });
-	meshData.addFace({ 5, 1, 8 });
-	meshData.addFace({ 3, 0, 2 });
-	meshData.addFace({ 4, 7, 5 });
-	meshData.addFace({ 2, 1, 6 });
-	meshData.addFace({ 2, 6, 3 });
-	meshData.addFace({ 7, 4, 3 });
+	createTestMesh1(meshData);
 
 	const glm::vec3 expectedMinimum(3.026389360f, -3.532424926f, -12.166131973f);
 	const glm::vec3 expectedMaximum(7.695832729f, 1.698557257f, -7.145406246f);

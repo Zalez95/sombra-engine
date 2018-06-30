@@ -3,31 +3,21 @@
 #include <fe/collision/ConvexPolyhedron.h>
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/CoarseCollisionDetector.h>
-/*
+#include "TestMeshes.h"
+
 TEST(CoarseCollisionDetector, collide)
 {
 	fe::collision::CoarseCollisionDetector ccd;
 
-	fe::collision::ConvexPolyhedron cp1({
-		glm::vec3( 1.0f,  1.0f, -1.0f),
-		glm::vec3( 1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f,  1.0f, -1.0f),
-		glm::vec3( 1.0f,  1.0f,  1.0f),
-		glm::vec3( 0.0f, -1.0f,  1.0f),
-		glm::vec3(-1.0f, -1.0f,  1.0f),
-		glm::vec3(-1.0f,  1.0f,  1.0f)
-	});
+	fe::collision::HalfEdgeMesh meshData1;
+	createTestPolyhedron1(meshData1);
+	fe::collision::ConvexPolyhedron cp1(meshData1);
 	cp1.setTransforms(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 4.0f, 4.0f)));
 	ccd.submit(&cp1);
 
-	fe::collision::ConvexPolyhedron cp2({
-		glm::vec3(-1.0f, -0.5f, -0.5f),
-		glm::vec3(-1.0f, -0.5f,  0.5f),
-		glm::vec3(-1.0f,  0.5f, -0.5f),
-		glm::vec3(-1.0f,  0.5f,  0.5f),
-		glm::vec3( 1.0f,  0.0f,  0.0f)
-	});
+	fe::collision::HalfEdgeMesh meshData2;
+	createTestPolyhedron3(meshData2);
+	fe::collision::ConvexPolyhedron cp2(meshData2);
 	cp2.setTransforms(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 4.0f, 4.0f)));
 	ccd.submit(&cp2);
 
@@ -60,4 +50,3 @@ TEST(CoarseCollisionDetector, collide)
 		EXPECT_TRUE(flag);
 	}
 }
-*/
