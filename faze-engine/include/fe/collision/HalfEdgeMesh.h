@@ -189,7 +189,7 @@ namespace fe { namespace collision {
 	);
 
 
-	/** Calculates the boundary of the convex hull as seen from the given
+	/** Calculates the boundary of the given HalfEdgeMesh as seen from the given
 	 * eye point
 	 *
 	 * @param	eyePoint the 3D coordinates of the eye point

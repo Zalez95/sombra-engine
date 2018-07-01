@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <glm/gtc/constants.hpp>
 #include "HACD.h"
-#include "Triangle.h"
+#include "Geometry.h"
 
 namespace fe { namespace collision {
 

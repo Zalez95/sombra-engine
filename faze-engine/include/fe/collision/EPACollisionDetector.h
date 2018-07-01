@@ -68,21 +68,13 @@ namespace fe { namespace collision {
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	polytope a reference to the Polytope to expand its faces
-		 * @return	true if the polytope was expanded successfully, false
-		 *			otherwise
+		 * @return	the index of the closest face if the polytope was expanded
+		 *			successfully, -1 otherwise
 		 * @note	the initial polytope must be a tetrahedron */
-		bool expandPolytope(
+		int expandPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Polytope& polytope
 		) const;
-
-		/** Appends the given edge to the edge vector if it isn't already
-		 * inside, also if it founds an edge equal to the given one, it will
-		 * remove it from the vector
-		 *
-		 * @param	e the edge to append
-		 * @param	edgeVector the vector where we want to append the edge */
-		void appendEdge(const Edge& e, std::vector<Edge>& edgeVector) const;
 
 		/** Fills the Contact data with the normal of closest face in the
 		 * Polytope to the origin, and the distance and coordinates of the
@@ -90,9 +82,12 @@ namespace fe { namespace collision {
 		 *
 		 * @param	polytope the Polytope with which we want to fill the Contact
 		 *			data
+		 * @param	iClosestFace the index of the closest face in the Polytope
 		 * @param	ret a reference to the Contact where we are going to store
 		 *			the data */
-		void fillContactData(const Polytope& polytope, Contact& ret) const;
+		void fillContactData(
+			const Polytope& polytope, int iClosestFace, Contact& ret
+		) const;
 	};
 
 }}

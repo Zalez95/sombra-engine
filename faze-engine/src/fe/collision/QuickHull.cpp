@@ -68,8 +68,8 @@ namespace fe { namespace collision {
 				const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
 
 				// Create the new HEFace
-				int iV1 = oppositeEdge.vertex, iV2 = currentEdge.vertex;
-				int iNewFace = mConvexHull.addFace({ iV1, iV2, iEyeVertexConvexHull });
+				int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
+				int iNewFace = mConvexHull.addFace({ iV0, iV1, iEyeVertexConvexHull });
 				mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
 				mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allVerticesOutside, meshData, iNewFace));
 
@@ -96,24 +96,24 @@ namespace fe { namespace collision {
 		}
 
 		// Add the faces to the convex hull
-		int f1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[2] });
-		int f2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[1] });
-		int f3 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[3] });
-		int f4 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[3], iCHVertices[2] });
+		int iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[2] });
+		int iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[1] });
+		int iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[3] });
+		int iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[3], iCHVertices[2] });
 
-		mFaceNormals.emplace(f1, calculateFaceNormal(f1, mConvexHull));
-		mFaceNormals.emplace(f2, calculateFaceNormal(f2, mConvexHull));
-		mFaceNormals.emplace(f3, calculateFaceNormal(f3, mConvexHull));
-		mFaceNormals.emplace(f4, calculateFaceNormal(f4, mConvexHull));
+		mFaceNormals.emplace(iF0, calculateFaceNormal(iF0, mConvexHull));
+		mFaceNormals.emplace(iF1, calculateFaceNormal(iF1, mConvexHull));
+		mFaceNormals.emplace(iF2, calculateFaceNormal(iF2, mConvexHull));
+		mFaceNormals.emplace(iF3, calculateFaceNormal(iF3, mConvexHull));
 
 		std::vector<int> allVertexIndices;
 		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
 			allVertexIndices.push_back(it.getIndex());
 		}
-		mFaceOutsideVertices.emplace(f1, getVerticesOutside(allVertexIndices, meshData, f1));
-		mFaceOutsideVertices.emplace(f2, getVerticesOutside(allVertexIndices, meshData, f2));
-		mFaceOutsideVertices.emplace(f3, getVerticesOutside(allVertexIndices, meshData, f3));
-		mFaceOutsideVertices.emplace(f4, getVerticesOutside(allVertexIndices, meshData, f4));
+		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(allVertexIndices, meshData, iF0));
+		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(allVertexIndices, meshData, iF1));
+		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(allVertexIndices, meshData, iF2));
+		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(allVertexIndices, meshData, iF3));
 	}
 
 
@@ -152,12 +152,12 @@ namespace fe { namespace collision {
 		}
 
 		// 3. Find the furthest point to the edge between the last 2 vertices
-		glm::vec3 p1 = meshData.getVertex(iSimplexVertices[0]).location;
-		glm::vec3 p2 = meshData.getVertex(iSimplexVertices[1]).location;
-		glm::vec3 dirP1P2 = glm::normalize(p2 - p1);
+		glm::vec3 p0 = meshData.getVertex(iSimplexVertices[0]).location;
+		glm::vec3 p1 = meshData.getVertex(iSimplexVertices[1]).location;
+		glm::vec3 dirP0P1 = glm::normalize(p1 - p0);
 		maxLength = -std::numeric_limits<float>::max();
 		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
-			glm::vec3 projection = p1 + dirP1P2 * glm::dot(it->location - p1, dirP1P2);
+			glm::vec3 projection = p0 + dirP0P1 * glm::dot(it->location - p0, dirP0P1);
 			float currentLength = glm::length(it->location - projection);
 			if (currentLength > maxLength) {
 				iSimplexVertices[2] = it.getIndex();
@@ -167,9 +167,9 @@ namespace fe { namespace collision {
 
 		// 4. Find the furthest point to the triangle created from the last 3
 		// vertices
-		glm::vec3 p3 = meshData.getVertex(iSimplexVertices[2]).location;
-		glm::vec3 dirP1P3 = glm::normalize(p3 - p1);
-		glm::vec3 tNormal = glm::normalize(glm::cross(dirP1P2, dirP1P3));
+		glm::vec3 p2 = meshData.getVertex(iSimplexVertices[2]).location;
+		glm::vec3 dirP0P2 = glm::normalize(p2 - p0);
+		glm::vec3 tNormal = glm::normalize(glm::cross(dirP0P1, dirP0P2));
 		maxLength = -std::numeric_limits<float>::max();
 		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
 			float currentLength = std::abs(glm::dot(it->location, tNormal));

@@ -39,109 +39,123 @@ namespace fe { namespace collision {
 		Polytope polytope(collider1, collider2, simplex, mProjectionPrecision);
 
 		// 3. Calculate the closest face to the origin
-		if (!expandPolytope(collider1, collider2, polytope)) {
+		int iClosestFace = expandPolytope(collider1, collider2, polytope);
+		if (iClosestFace < 0) {
 			return false;
 		}
 
 		// 4. Fill the Contact data with the cloest face of the Polytope
-		fillContactData(polytope, ret);
+		fillContactData(polytope, iClosestFace, ret);
 
 		return true;
 	}
 
 // Private functions
-	bool EPACollisionDetector::expandPolytope(
+	int EPACollisionDetector::expandPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Polytope& polytope
 	) const
 	{
+		const HalfEdgeMesh& meshData = polytope.getMesh();
+		auto compareDistances = [&](int iF1, int iF2) {
+			return (polytope.getDistanceData(iF1).distance < polytope.getDistanceData(iF2).distance);
+		};
+
+		std::vector<int> closestFaces;
+		for (auto itFace = meshData.getFacesVector().begin(); itFace != meshData.getFacesVector().end(); ++itFace) {
+			closestFaces.insert(
+				std::upper_bound(closestFaces.begin(), closestFaces.end(), itFace.getIndex(), compareDistances),
+				itFace.getIndex()
+			);
+			closestFaces.push_back(itFace.getIndex());
+		}
+
 		float closestSeparation = std::numeric_limits<float>::max();
-		while (!polytope.faces.empty()) {
+		while (!closestFaces.empty()) {
 			// 1. Get the next closest face to the origin
-			PolytopeFace& closestFace = polytope.faces.front();
-			if (closestFace.obsolete) {
-				// 1.1. Remove the current obsolete closest face
-				polytope.faces.pop_front();
+			int iClosestFace = closestFaces.front();
+			FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
+
+			// 2. Add a new SupportPoint along the closest point direction
+			int iSp = polytope.addVertex(SupportPoint(collider1, collider2, faceDistance.closestPoint));
+			SupportPoint sp = polytope.getSupportPoint(iSp);
+
+			// 3. If the origin is in the triangle or the new SupportPoint is
+			// no further to the current triangle than mMinFThreshold then
+			// we've found the closest PolytopeFace
+			float spSeparation = glm::dot(sp.getCSOPosition(), faceDistance.closestPoint / faceDistance.distance);
+			closestSeparation = std::min(closestSeparation, spSeparation);
+			if ((faceDistance.distance == 0)
+				|| (closestSeparation - faceDistance.distance < mMinFThreshold)
+			) {
+				return iClosestFace;
 			}
-			else {
-				// 1.2. Add a new SupportPoint along the closest point direction
-				polytope.vertices.emplace_back(collider1, collider2, closestFace.closestPoint);
-				SupportPoint& sp = polytope.vertices.back();
-				int iSp = polytope.vertices.size() - 1;
 
-				// 1.3. If the origin is in the triangle or the new SupportPoint
-				// is no further to the current triangle than mMinFThreshold
-				// then we've found the closest PolytopeFace
-				float spSeparation = glm::dot(sp.getCSOPosition(), closestFace.closestPoint / closestFace.distance);
-				closestSeparation = std::min(closestSeparation, spSeparation);
-				if ((closestFace.distance == 0)
-					|| (closestSeparation - closestFace.distance < mMinFThreshold)
-				) {
-					return true;
-				}
+			// 4. Calculate the horizon HEEdges and HEFaces to remove from the
+			// current eyePoint perspective
+			std::vector<int> horizon, facesToRemove;
+			std::tie(horizon, facesToRemove) = calculateHorizon(
+				sp.getCSOPosition(), iClosestFace,
+				meshData, polytope.getNormalsVector()
+			);
 
-				// 1.4. Mark as obsolete all the faces that can be seen
-				// from the new SupportPoint and get the edges of the hole that
-				// would be created in the Polytope if we remove them
-				closestFace.obsolete = true;
-				const Triangle& t = closestFace.triangle;
-				std::vector<Edge> holeEdges = { t.ab, t.bc, t.ca };
-				for (PolytopeFace& currentFace : polytope.faces) {
-					if (!currentFace.obsolete
-						&& (glm::dot(currentFace.triangle.normal, sp.getCSOPosition()) > 0.0f)
-					) {
-						currentFace.obsolete = true;
-						appendEdge(currentFace.triangle.ab, holeEdges);
-						appendEdge(currentFace.triangle.bc, holeEdges);
-						appendEdge(currentFace.triangle.ca, holeEdges);
-					}
-				}
+			// 5. Remove all the faces that can be seen from the new
+			// SupportPoint
+			for (int iFaceToRemove : facesToRemove) {
+				closestFaces.erase(std::find(closestFaces.begin(), closestFaces.end(), iFaceToRemove));
+				polytope.removeFace(iFaceToRemove);
+			}
 
-				// 1.5. Add new faces to the Polytope by connecting the edges
-				// of the hole to the new SupportPoint
-				for (const Edge& e : holeEdges) {
-					PolytopeFace nextFace({ iSp, e.p1, e.p2 }, polytope.vertices, mProjectionPrecision);
-					if (nextFace.inside) {
-						polytope.addFace(nextFace);
-					}
-				}
+			// 5. Add new faces to the Polytope by connecting the edges of the
+			// horizon to the new SupportPoint
+			for (int iHorizonEdge : horizon) {
+				const HEEdge& currentEdge	= meshData.getEdge(iHorizonEdge);
+				const HEEdge& oppositeEdge	= meshData.getEdge(currentEdge.oppositeEdge);
+
+				// Create the new HEFace
+				int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
+				int iNewFace = polytope.addFace({ iV0, iV1, iSp });
+
+				// Add the face to the faceQueue
+				closestFaces.insert(
+					std::upper_bound(closestFaces.begin(), closestFaces.end(), iNewFace, compareDistances),
+					iNewFace
+				);
 			}
 		}
 
-		return false;
+		return -1;
 	}
 
 
-	void EPACollisionDetector::appendEdge(const Edge& e, std::vector<Edge>& edgeVector) const
+	void EPACollisionDetector::fillContactData(
+		const Polytope& polytope, int iClosestFace, Contact& ret
+	) const
 	{
-		auto itEdge = std::find(edgeVector.begin(), edgeVector.end(), e);
-		if (itEdge == edgeVector.end()) {
-			edgeVector.push_back(e);
-		}
-		else {
-			std::swap(*itEdge, edgeVector.back());
-			edgeVector.pop_back();
-		}
-	}
+		const HalfEdgeMesh& meshData = polytope.getMesh();
+		FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
+		glm::vec3 faceNormal = polytope.getNormalsVector().find(iClosestFace)->second;
 
+		const HEEdge& edge1		= meshData.getEdge(meshData.getFace(iClosestFace).edge);
+		const SupportPoint& sp1	= polytope.getSupportPoint(edge1.vertex);
 
-	void EPACollisionDetector::fillContactData(const Polytope& polytope, Contact& ret) const
-	{
-		const PolytopeFace& closestFace = polytope.faces.front();
-		const SupportPoint& p1 = polytope.vertices[closestFace.triangle.ab.p1];
-		const SupportPoint& p2 = polytope.vertices[closestFace.triangle.bc.p1];
-		const SupportPoint& p3 = polytope.vertices[closestFace.triangle.ca.p1];
-		const glm::vec3& originBarycentricCoords = closestFace.closestPointBarycentricCoords;
-		ret.mPenetration = closestFace.distance;
-		ret.mNormal = -closestFace.triangle.normal;
+		const HEEdge& edge2		= meshData.getEdge(edge1.nextEdge);
+		const SupportPoint& sp2	= polytope.getSupportPoint(edge2.vertex);
+
+		const HEEdge& edge3		= meshData.getEdge(edge2.nextEdge);
+		const SupportPoint& sp3	= polytope.getSupportPoint(edge3.vertex);
+
+		const glm::vec3& originBarycentricCoords = faceDistance.closestPointBarycentricCoords;
+		ret.mPenetration = faceDistance.distance;
+		ret.mNormal = -faceNormal;
 		for (int i = 0; i < 2; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				ret.mWorldPosition[i][j] = originBarycentricCoords.x * p1.getWorldPosition(i)[j]
-					+ originBarycentricCoords.y * p2.getWorldPosition(i)[j]
-					+ originBarycentricCoords.z * p3.getWorldPosition(i)[j];
-				ret.mLocalPosition[i][j] = originBarycentricCoords.x * p1.getLocalPosition(i)[j]
-					+ originBarycentricCoords.y * p2.getLocalPosition(i)[j]
-					+ originBarycentricCoords.z * p3.getLocalPosition(i)[j];
+				ret.mWorldPosition[i][j] = originBarycentricCoords.x * sp1.getWorldPosition(i)[j]
+					+ originBarycentricCoords.y * sp2.getWorldPosition(i)[j]
+					+ originBarycentricCoords.z * sp3.getWorldPosition(i)[j];
+				ret.mLocalPosition[i][j] = originBarycentricCoords.x * sp1.getLocalPosition(i)[j]
+					+ originBarycentricCoords.y * sp2.getLocalPosition(i)[j]
+					+ originBarycentricCoords.z * sp3.getLocalPosition(i)[j];
 			}
 		}
 	}

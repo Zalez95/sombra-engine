@@ -6,8 +6,7 @@
 #include "fe/collision/ConvexCollider.h"
 #include "fe/collision/ConcaveCollider.h"
 #include "fe/collision/FineCollisionDetector.h"
-#include "Edge.h"
-#include "Triangle.h"
+#include "Geometry.h"
 
 namespace fe { namespace collision {
 

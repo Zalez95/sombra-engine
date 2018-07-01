@@ -1,30 +1,34 @@
 #ifndef POLYTOPE_H
 #define POLYTOPE_H
 
-#include <deque>
 #include <vector>
 #include "fe/collision/SupportPoint.h"
-#include "Triangle.h"
+#include "fe/collision/HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 
 	class ConvexCollider;
 
 
-	struct PolytopeFace
+	/**
+	 * Struct FaceDistanceData, it stores the distance data of a Face to
+	 * the origin
+	 */
+	struct FaceDistanceData
 	{
-		Triangle	triangle;
-		bool		obsolete;
-		glm::vec3	closestPoint;
-		float		distance;
-		bool		inside;
-		glm::vec3	closestPointBarycentricCoords;
+		/** The 3D coordinates of the closest point in the Face to the
+		 * origin */
+		glm::vec3 closestPoint;
 
-		PolytopeFace(
-			const std::array<int, 3>& indices,
-			const std::vector<SupportPoint>& vertices,
-			float precision
-		);
+		/** The distance of the closest Point to the origin */
+		float distance;
+
+		/** If the calculated closest point is inside the face or not */
+		bool inside;
+
+		/** The barycentric coordinates of the cloest point in the face to
+		 * the origin */
+		glm::vec3 closestPointBarycentricCoords;
 	};
 
 
@@ -39,14 +43,20 @@ namespace fe { namespace collision {
 	private:	// Attributes
 		static constexpr float sKEpsilon = 0.0001f;
 
-	public:
-		/** The vertices of the Polytope */
-		std::vector<SupportPoint> vertices;
+		/** The precision of the calculated projections */
+		float mPrecision;
 
-		/** The faces of the Polytope
-		 * @note	the faces are stored in a min-heap based on the distance
-		 *			to the origin of each face */
-		std::deque<PolytopeFace> faces;
+		/** The Half-Edge Mesh with the convex hull of the current Mesh */
+		HalfEdgeMesh mMesh;
+
+		/** Maps each HalfEdgeMesh HEFace with its normal vector */
+		std::map<int, glm::vec3> mFaceNormals;
+
+		/** Maps each HalfEdgeMesh HEFace with its distance data */
+		std::map<int, FaceDistanceData> mFaceDistances;
+
+		/** Maps each HalfEdgeMesh HEVertex with its SupportPoint */
+		std::map<int, SupportPoint> mVertexSupportPoints;
 
 	public:		//Functions
 		/** Creates a new Polytope from the given simplex points by expanding it
@@ -57,6 +67,8 @@ namespace fe { namespace collision {
 		 * @param	collider2 the second of the colliders needed for creating
 		 *			the polytope
 		 * @param	simplex a vector with the initial simplex points
+		 * @param	precision the precision of the projected points of the
+		 *			polytope
 		 * @note	if the size of the simplex is less than 2 it won't create
 		 *			the polytope */
 		Polytope(
@@ -64,11 +76,46 @@ namespace fe { namespace collision {
 			const std::vector<SupportPoint>& simplex, float precision
 		);
 
-		/** Pushes the face at the front of the faces queue if it's closer to
-		 * the origin than the current head, at the back otherwise
+		/** @return	the HalfEdgeMesh of the Polytope */
+		const HalfEdgeMesh& getMesh() const { return mMesh; };
+
+		/** @return	the map with the normals of the HalfEdgeMesh of the
+		 *			Polytope */
+		const std::map<int, glm::vec3>& getNormalsVector() const
+		{ return mFaceNormals; };
+
+		/** Returns the SupportPoint of the given Polytope HEVertex
 		 *
-		 * @param	polytopeFace the new face of the Polytope */
-		void addFace(const PolytopeFace& polytopeFace);
+		 * @param	iVertex the index of the HEVertex in the Polytope
+		 * @return	the SupportPoint of the HEVertex
+		 * @throw	runtime_error if the HEVertex isn't found */
+		const SupportPoint& getSupportPoint(int iVertex) const;
+
+		/** Returns the FaceDistanceData of the given Polytope HEFace
+		 *
+		 * @param	iFace the index of the HEFace in the Polytope
+		 * @return	the FaceDistanceData of the HEFace
+		 * @throw	runtime_error if the HEFace isn't found */
+		const FaceDistanceData& getDistanceData(int iFace) const;
+
+		/** Creates a new HEVertex from the given SupportPoint and adds it to
+		 * the Polytope Mesh
+		 *
+		 * @param	sp the SupportPoint used to create the HEVertex */
+		int addVertex(const SupportPoint& sp);
+
+		/** Creates a HEFace and pushes it at the front of the faces queue if
+		 * it's closer to the origin than the current head, at the back
+		 * otherwise
+		 *
+		 * @param	faceIndices the indices of the new face's vertices */
+		int addFace(const std::vector<int>& faceIndices);
+
+		/** Removes the given HEFace and its data from the Polytope
+		 *
+		 * @param	iFace the index of the HEFace to remove */
+		void removeFace(int iFace);
+
 	private:
 		/** Creates a tetrahedron from the points of the given simplex
 		 *
@@ -80,7 +127,7 @@ namespace fe { namespace collision {
 		 *			case the simplex must be an edge (size = 2) */
 		void tetrahedronFromEdge(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			const std::vector<SupportPoint>& simplex, float precision
+			const std::vector<SupportPoint>& simplex
 		);
 
 		/** Creates a tetrahedron from the points of the given simplex
@@ -93,11 +140,11 @@ namespace fe { namespace collision {
 		 *			case the simplex must be a triangle (size = 3) */
 		void tetrahedronFromTriangle(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			const std::vector<SupportPoint>& simplex, float precision
+			const std::vector<SupportPoint>& simplex
 		);
 
-		/** Creates the polytope faces from the tetrahedron points */
-		void createTetrahedronFaces(float precision);
+		/** Creates the polytope faces from the tetrahedron indices */
+		void createTetrahedronFaces();
 	};
 
 }}
