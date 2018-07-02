@@ -1,5 +1,6 @@
 #include <cassert>
 #include <glm/gtc/random.hpp>
+#include <glm/gtc/epsilon.hpp>
 #include "fe/collision/ConvexCollider.h"
 #include "fe/collision/GJKCollisionDetector.h"
 
@@ -21,7 +22,7 @@ namespace fe { namespace collision {
 			SupportPoint sp(collider1, collider2, direction);
 
 			// 3. Check if the support point is further along the search direction
-			if (glm::dot(sp.getCSOPosition(), direction) < 0.0f) {
+			if (glm::dot(sp.getCSOPosition(), direction) < -mEpsilon) {
 				// 4.1 There is no collision, exit without finishing the simplex
 				return std::make_pair(false, simplex);
 			}
@@ -73,7 +74,7 @@ namespace fe { namespace collision {
 		SupportPoint a = simplex[0];
 		glm::vec3 ao = -a.getCSOPosition();
 
-		if (ao != glm::vec3(0.0f)) {
+		if (!glm::all( glm::epsilonEqual(ao, glm::vec3(0.0f), mEpsilon) )) {
 			// Mantain a and search in the direction to the origin
 			simplex = { a };
 			searchDir = ao;
@@ -94,23 +95,28 @@ namespace fe { namespace collision {
 		bool ret = false;
 
 		SupportPoint b = simplex[0], a = simplex[1];
-		glm::vec3 ab = b.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition();
+		glm::vec3 ab = b.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition(),
+			abo = glm::cross(ab, ao);
 
 		float dot = glm::dot(ab, ao);
-		if (dot < 0.0f) {
+		if (dot < -mEpsilon) {
 			// The origin is outside the segment between b and a
 			// Discard b and do the same than with 0 dimensions
 			simplex = { a };
 			ret = doSimplex0D(simplex, searchDir);
 		}
-		else if (dot > 0.0f) {
-			// The origin is between b and a
-			simplex = { b, a };
-			searchDir = glm::cross(glm::cross(ab, ao), ab);
-		}
 		else {
-			// The origin is on the line
-			ret = true;
+			// The origin is between b and a
+			if (!glm::all( glm::epsilonEqual(abo, glm::vec3(0.0f), mEpsilon) )) {
+				// Mantain a and b and search towards a normal vector to the
+				// ab segment
+				simplex = { b, a };
+				searchDir = glm::cross(abo, ab);
+			}
+			else {
+				// The origin is on the segment
+				ret = true;
+			}
 		}
 
 		return ret;
@@ -128,13 +134,13 @@ namespace fe { namespace collision {
 					ao = -a.getCSOPosition(),
 					abc = glm::cross(ab, ac);
 
-		if (glm::dot(glm::cross(ab, abc), ao) > 0.0f) {
+		if (glm::dot(glm::cross(ab, abc), ao) > mEpsilon) {
 			// The origin is outside the triangle from the ab edge
 			// Discard c point and test the edge in 1 dimension
 			simplex = { b, a };
 			ret = doSimplex1D(simplex, searchDir);
 		}
-		else if (glm::dot(glm::cross(abc, ac), ao) > 0.0f) {
+		else if (glm::dot(glm::cross(abc, ac), ao) > mEpsilon) {
 			// The origin is outside the triangle from the ac edge
 			// Discard b point and test the edge in 1 dimension
 			simplex = { c, a };
@@ -143,12 +149,12 @@ namespace fe { namespace collision {
 		else {
 			// The origin is inside the triangle in 2D
 			float dot = glm::dot(abc, ao);
-			if (dot > 0.0f) {
+			if (dot > mEpsilon) {
 				// The origin is above the triangle
 				simplex = { c, b, a };
 				searchDir = abc;
 			}
-			else if (dot < 0.0f) {
+			else if (dot < -mEpsilon) {
 				// The origin is below the triangle
 				simplex = { b, c, a };
 				searchDir = -abc;
@@ -174,19 +180,19 @@ namespace fe { namespace collision {
 					ad = d.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition(),
 					abc = glm::cross(ab, ac), acd = glm::cross(ac, ad), adb = glm::cross(ad, ab);
 
-		if (glm::dot(abc, ao) > 0.0f) {
+		if (glm::dot(abc, ao) > mEpsilon) {
 			// The origin is outside the tetrahedron from the abc face
 			// Discard d and check the triangle in 2 dimensions
 			simplex = { c, b, a };
 			ret = doSimplex2D(simplex, searchDir);
 		}
-		else if (glm::dot(acd, ao) > 0.0f) {
+		else if (glm::dot(acd, ao) > mEpsilon) {
 			// The origin is outside the tetrahedron from the acd face
 			// Discard b and check the triangle in 2 dimensions
 			simplex = { d, c, a };
 			ret = doSimplex2D(simplex, searchDir);
 		}	
-		else if (glm::dot(adb, ao) > 0.0f) {
+		else if (glm::dot(adb, ao) > mEpsilon) {
 			// The origin is outside the tetrahedron from the adb face
 			// Discard c and check the triangle in 2 dimensions
 			simplex = { b, d, a };

@@ -73,17 +73,18 @@ namespace fe { namespace collision {
 			int iFace
 		) const;
 
-		/** Calculates which of the given Vertices is the the furthest point in
-		 * the HEFace normal direction
+		/** Calculates which of the given HEVertices is the the furthest point
+		 * in the HEFace normal direction
 		 *
 		 * @param	vertexIndices the index of the meshData Vertices to check
-		 * @param	iFace the index of the HEFace of the ConvexHull mesh
 		 * @param	meshData the Mesh data that contains the Vertices
+		 * @param	direction the direction towards we want to find the furthest
+		 *			HEVertex
 		 * @return	the index of the furthest meshData HEVertex, -1 if iFace is
 		 *			not valid or vertexIndices is empty */
-		int getFurthestVertex(
-			const std::vector<int>& vertexIndices,
-			int iFace, const HalfEdgeMesh& meshData
+		int getFurthestVertexFrom(
+			const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
+			const glm::vec3& direction
 		) const;
 
 		/** Merges the given HEFace of the ConvexHull with its surrounding

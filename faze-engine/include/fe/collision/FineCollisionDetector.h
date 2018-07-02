@@ -47,7 +47,8 @@ namespace fe { namespace collision {
 		FineCollisionDetector(
 			float minFDifference, float contactPrecision,
 			float contactSeparation
-		) : mEPACollisionDetector(minFDifference, contactPrecision),
+		) : mGJKCollisionDetector(contactPrecision),
+			mEPACollisionDetector(minFDifference, contactPrecision),
 			mContactSeparation(contactSeparation) {}
 
 		/** Class destructor */

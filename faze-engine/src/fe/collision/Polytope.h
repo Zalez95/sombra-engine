@@ -1,7 +1,7 @@
 #ifndef POLYTOPE_H
 #define POLYTOPE_H
 
-#include <vector>
+#include <array>
 #include "fe/collision/SupportPoint.h"
 #include "fe/collision/HalfEdgeMesh.h"
 
@@ -62,26 +62,18 @@ namespace fe { namespace collision {
 		/** Creates a new Polytope from the given simplex points by expanding it
 		 * until a tetrahedron is created
 		 *
-		 * @param	collider1 the first of the colliders needed for creating
-		 *			the polytope
-		 * @param	collider2 the second of the colliders needed for creating
-		 *			the polytope
-		 * @param	simplex a vector with the initial simplex points
+		 * @param	simplex the 4 initial simplex points
 		 * @param	precision the precision of the projected points of the
 		 *			polytope
-		 * @note	if the size of the simplex is less than 2 it won't create
-		 *			the polytope */
-		Polytope(
-			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			const std::vector<SupportPoint>& simplex, float precision
-		);
+		 * @throw	runtime_error if the simplex doesn't have 4 points */
+		Polytope(const std::array<SupportPoint, 4>& simplex, float precision);
 
 		/** @return	the HalfEdgeMesh of the Polytope */
 		const HalfEdgeMesh& getMesh() const { return mMesh; };
 
-		/** @return	the map with the normals of the HalfEdgeMesh of the
-		 *			Polytope */
-		const std::map<int, glm::vec3>& getNormalsVector() const
+		/** @return	the map with the normal vectors of the HEFaces of the
+		 *			Polytope's HalfEdgeMesh */
+		const std::map<int, glm::vec3>& getNormalsMap() const
 		{ return mFaceNormals; };
 
 		/** Returns the SupportPoint of the given Polytope HEVertex
@@ -90,6 +82,13 @@ namespace fe { namespace collision {
 		 * @return	the SupportPoint of the HEVertex
 		 * @throw	runtime_error if the HEVertex isn't found */
 		const SupportPoint& getSupportPoint(int iVertex) const;
+
+		/** Returns the normal vector of the given Polytope HEFace
+		 *
+		 * @param	iFace the index of the HEFace in the Polytope
+		 * @return	the normal vector of the HEFace
+		 * @throw	runtime_error if the HEFace isn't found */
+		const glm::vec3& getNormal(int iFace) const;
 
 		/** Returns the FaceDistanceData of the given Polytope HEFace
 		 *
@@ -109,42 +108,12 @@ namespace fe { namespace collision {
 		 * otherwise
 		 *
 		 * @param	faceIndices the indices of the new face's vertices */
-		int addFace(const std::vector<int>& faceIndices);
+		int addFace(const std::array<int, 3>& faceIndices);
 
 		/** Removes the given HEFace and its data from the Polytope
 		 *
 		 * @param	iFace the index of the HEFace to remove */
 		void removeFace(int iFace);
-
-	private:
-		/** Creates a tetrahedron from the points of the given simplex
-		 *
-		 * @param	collider1 the first of the colliders that we will use to
-		 *			create the polytope
-		 * @param	collider2 the second of the colliders that we will use to
-		 *			create the polytope
-		 * @param	the initial simplex used to create the polytope. In this
-		 *			case the simplex must be an edge (size = 2) */
-		void tetrahedronFromEdge(
-			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			const std::vector<SupportPoint>& simplex
-		);
-
-		/** Creates a tetrahedron from the points of the given simplex
-		 *
-		 * @param	collider1 the first of the colliders that we will use to
-		 *			create the polytope
-		 * @param	collider2 the second of the colliders that we will use to
-		 *			create the polytope
-		 * @param	the initial simplex used to create the polytope. In this
-		 *			case the simplex must be a triangle (size = 3) */
-		void tetrahedronFromTriangle(
-			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			const std::vector<SupportPoint>& simplex
-		);
-
-		/** Creates the polytope faces from the tetrahedron indices */
-		void createTetrahedronFaces();
 	};
 
 }}

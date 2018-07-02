@@ -18,7 +18,7 @@ namespace fe { namespace collision {
 			) != mFaceOutsideVertices.end()
 		) {
 			// 2. Get the furthest HEVertex in the direction of the face normal
-			int iEyeVertex = getFurthestVertex(itFace->second, itFace->first, meshData);
+			int iEyeVertex = getFurthestVertexFrom(itFace->second, meshData, mFaceNormals[itFace->first]);
 			glm::vec3 eyePoint = meshData.getVertex(iEyeVertex).location;
 
 			// 3. Add the eyePoint to the convex hull if it isn't already inside
@@ -95,17 +95,33 @@ namespace fe { namespace collision {
 			iCHVertices.push_back(iConvexHullVertex);
 		}
 
-		// Add the faces to the convex hull
-		int iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[2] });
-		int iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[1] });
-		int iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[3] });
-		int iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[3], iCHVertices[2] });
+		// Add the faces to the convex hull, 
+		const glm::vec3 p0 = mConvexHull.getVertex(iCHVertices[0]).location,
+						p1 = mConvexHull.getVertex(iCHVertices[1]).location,
+						p2 = mConvexHull.getVertex(iCHVertices[2]).location,
+						p3 = mConvexHull.getVertex(iCHVertices[3]).location;
+		int iF0, iF1, iF2, iF3;
+		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
+		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
+			iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[2] });
+			iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[1] });
+			iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[3] });
+			iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[3], iCHVertices[2] });
+		}
+		else {
+			iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[1] });
+			iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[3] });
+			iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[2] });
+			iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[2], iCHVertices[3] });
+		}
 
+		// Add the HEFaces normals
 		mFaceNormals.emplace(iF0, calculateFaceNormal(iF0, mConvexHull));
 		mFaceNormals.emplace(iF1, calculateFaceNormal(iF1, mConvexHull));
 		mFaceNormals.emplace(iF2, calculateFaceNormal(iF2, mConvexHull));
 		mFaceNormals.emplace(iF3, calculateFaceNormal(iF3, mConvexHull));
 
+		// Add the HEFaces outside vertices
 		std::vector<int> allVertexIndices;
 		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
 			allVertexIndices.push_back(it.getIndex());
@@ -207,36 +223,28 @@ namespace fe { namespace collision {
 	}
 
 
-	int QuickHull::getFurthestVertex(
-		const std::vector<int>& vertexIndices,
-		int iFace, const HalfEdgeMesh& meshData
+	int QuickHull::getFurthestVertexFrom(
+		const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
+		const glm::vec3& direction
 	) const
 	{
-		if (!mConvexHull.getFacesVector().isActive(iFace)) { return -1; }
-
-		const HEFace& face = mConvexHull.getFace(iFace);
-		const glm::vec3 faceNormal = mFaceNormals.find(iFace)->second;
-		const HEVertex& faceVertex = mConvexHull.getVertex(meshData.getEdge(face.edge).vertex);
-
-		int furthestPoint = -1;
-		float maxDistance = -std::numeric_limits<float>::max();
-		for (int i : vertexIndices) {
-			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);
-			if (currentDistance > maxDistance) {
-				maxDistance		= currentDistance;
-				furthestPoint	= i;
-			}
-		}
-
-		return furthestPoint;
+		auto itMaxVertex = std::max_element(vertexIndices.begin(), vertexIndices.end(), [&](int iV1, int iV2) {
+			float dot1 = glm::dot(meshData.getVertex(iV1).location, direction);
+			float dot2 = glm::dot(meshData.getVertex(iV2).location, direction);
+			return dot1 < dot2;
+		});
+		return (itMaxVertex != vertexIndices.end())? *itMaxVertex : -1;
 	}
 
 
 	void QuickHull::mergeCoplanarFaces(int iFace)
 	{
+		HEFace inputFace = mConvexHull.getFace(iFace);
+		glm::vec3 inputFaceNormal = mFaceNormals.find(iFace)->second;
+
 		// Test all the HEEFace edges
 		bool initialEdgeUpdated;
-		int iInitialEdge = mConvexHull.getFace(iFace).edge;
+		int iInitialEdge = inputFace.edge;
 		int iCurrentEdge = iInitialEdge;
 		do {
 			const HEEdge& currentEdge	= mConvexHull.getEdge(iCurrentEdge);
@@ -245,25 +253,27 @@ namespace fe { namespace collision {
 			initialEdgeUpdated = false;
 			int iNextEdge = currentEdge.nextEdge;
 
-			// Test if the current HEFace is coplanar with the opposite one by
-			// the current edge
-			glm::vec3 currentFaceNormal		= mFaceNormals.find(iFace)->second;
-			glm::vec3 oppositeFaceNormal	= mFaceNormals.find(oppositeEdge.face)->second;
-			if (currentFaceNormal == oppositeFaceNormal) {
-				// Merge the two HEFaces into the current one
-				int iRemovedFace = oppositeEdge.face;
-				mConvexHull.mergeFace(iCurrentEdge);
+			// Check if the opposite HEFace exists
+			if (oppositeEdge.face >= 0) {
+				// Test if the current HEFace is coplanar with the opposite
+				// one by the current edge
+				glm::vec3 oppositeFaceNormal = mFaceNormals.find(oppositeEdge.face)->second;
+				if (inputFaceNormal == oppositeFaceNormal) {
+					// Merge the two HEFaces into the current one
+					int iRemovedFace = oppositeEdge.face;
+					mConvexHull.mergeFace(iCurrentEdge);
 
-				// Remove the opposite HEFace normal
-				mFaceNormals.erase(iRemovedFace);
+					// Remove the opposite HEFace normal
+					mFaceNormals.erase(iRemovedFace);
 
-				// Remove the opposite HEFace outside HEVertices
-				mFaceOutsideVertices.erase(iRemovedFace);
+					// Remove the opposite HEFace outside HEVertices
+					mFaceOutsideVertices.erase(iRemovedFace);
 
-				// Update the iInitialEdge if it has been removed
-				if (iCurrentEdge == iInitialEdge) {
-					iInitialEdge = iNextEdge;
-					initialEdgeUpdated = true;
+					// Update the iInitialEdge if it has been removed
+					if (iCurrentEdge == iInitialEdge) {
+						iInitialEdge = iNextEdge;
+						initialEdgeUpdated = true;
+					}
 				}
 			}
 

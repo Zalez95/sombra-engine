@@ -49,13 +49,13 @@ namespace fe { namespace collision {
 		/** @return	the number of Elements in the CachedVector */
 		std::size_t size() const { return mNumElements; };
 
-		/** Returns	the Element i of the CachedVector
+		/** Returns the Element i of the CachedVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a reference to the Element */
 		T& operator[](std::size_t i) { return mElements[i]; };
 
-		/** Returns	the Element i of the CachedVector
+		/** Returns the Element i of the CachedVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a const reference to the Element */

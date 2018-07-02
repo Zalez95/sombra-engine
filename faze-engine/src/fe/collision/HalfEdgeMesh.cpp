@@ -1,6 +1,5 @@
-#include <array>
+#include <set>
 #include <limits>
-#include <cassert>
 #include <algorithm>
 #include "fe/collision/HalfEdgeMesh.h"
 
@@ -235,6 +234,24 @@ namespace fe { namespace collision {
 	}
 
 
+	std::vector<int> getFaceIndices(int iFace, const HalfEdgeMesh& meshData)
+	{
+		std::vector<int> indices;
+
+		int initialEdgeIndex = meshData.getFace(iFace).edge;
+		int currentEdgeIndex = initialEdgeIndex;
+		do {
+			const HEEdge& currentEdge	= meshData.getEdge(currentEdgeIndex);
+			const HEEdge& oppositeEdge	= meshData.getEdge(currentEdge.oppositeEdge);
+			indices.push_back(oppositeEdge.vertex);
+			currentEdgeIndex = currentEdge.nextEdge;
+		}
+		while (currentEdgeIndex != initialEdgeIndex);
+
+		return indices;
+	}
+
+
 	int getFurthestVertexInDirection(
 		const glm::vec3& direction,
 		const HalfEdgeMesh& meshData
@@ -284,53 +301,65 @@ namespace fe { namespace collision {
 		const glm::vec3& eyePoint, int iFace,
 		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals
 	) {
-		std::vector<int> visitedFaces, horizonEdges, visibleFaces = { iFace };
+		std::vector<int> horizonEdges, visibleFaces;
 
-		int iInitialEdge = meshData.getFace(iFace).edge;
-		int iCurrentEdge = iInitialEdge;
-		do {
-			// 1. Mark the current face as visited
-			HEEdge currentEdge = meshData.getEdge(iCurrentEdge);
-			visitedFaces.push_back(currentEdge.face);
+		// Test the visibility of the initial HEFace
+		HEFace inputFace = meshData.getFace(iFace);
+		HEVertex inputFaceVertex = meshData.getVertex( meshData.getEdge(inputFace.edge).vertex );
+		glm::vec3 inputFaceNormal = faceNormals.find(iFace)->second;
+		if (glm::dot(eyePoint - inputFaceVertex.location, inputFaceNormal) > 0) {
+			visibleFaces.push_back(iFace);
 
-			// 2. Get the next face as the one found by crossing the
-			// currentEdge, more specifically, the HEFace of the opposite HEEdge
-			HEEdge oppositeEdge = meshData.getEdge(currentEdge.oppositeEdge);
-			int iNextFace = oppositeEdge.face;
+			std::set<int> visitedFaces;
+			int iInitialEdge = meshData.getFace(iFace).edge;
+			int iCurrentEdge = iInitialEdge;
+			do {
+				// 1. Mark the current face as visited
+				HEEdge currentEdge = meshData.getEdge(iCurrentEdge);
+				visitedFaces.insert(currentEdge.face);
 
-			// 3. Check if we already visited the next HEFace
-			if (std::any_of(visitedFaces.begin(), visitedFaces.end(), [&](int f) { return f == iNextFace; })
-				|| (iNextFace < 0)
-			) {
-				// 3.1. Check if we are in the returning step of the search
-				if (!horizonEdges.empty() && (oppositeEdge.nextEdge >= 0)) {
-					// 3.1.1. Continue with the next HEEdge of the next HEFace
-					iCurrentEdge = oppositeEdge.nextEdge;
+				// 2. Get the next face as the one found by crossing the
+				// currentEdge, more specifically, the HEFace of the opposite
+				// HEEdge
+				HEEdge oppositeEdge = meshData.getEdge(currentEdge.oppositeEdge);
+				int iNextFace = oppositeEdge.face;
+
+				// 3. Check if we already visited the next HEFace
+				if ((iNextFace < 0)
+					|| (std::find(visitedFaces.begin(), visitedFaces.end(), iNextFace) != visitedFaces.end())
+				) {
+					// 3.1. Check if we are in the returning step of the search
+					if (!horizonEdges.empty() && (oppositeEdge.nextEdge >= 0)) {
+						// 3.1.1. Continue with the next HEEdge of the next
+						// HEFace
+						iCurrentEdge = oppositeEdge.nextEdge;
+					}
+					else {
+						// 3.1.2. Continue with the next HEEdge
+						iCurrentEdge = currentEdge.nextEdge;
+					}
 				}
 				else {
-					// 3.1.2. Continue with the next HEEdge
-					iCurrentEdge = currentEdge.nextEdge;
+					// 3.2. Test the visibility of the next HEFace from the eye
+					// point
+					HEVertex nextFaceVertex = meshData.getVertex(oppositeEdge.vertex);
+					glm::vec3 nextFaceNormal = faceNormals.find(iNextFace)->second;
+					if (glm::dot(eyePoint - nextFaceVertex.location, nextFaceNormal) > 0) {
+						// 3.2.1. Mark the HEFace as visible and continue with
+						// next HEEdge of the next HEFace
+						visibleFaces.push_back(iNextFace);
+						iCurrentEdge = oppositeEdge.nextEdge;
+					}
+					else {
+						// 3.2.2. Mark the current HEEdge as an horizon HEEdge
+						// and continue with the next HEEdge
+						horizonEdges.push_back(iCurrentEdge);
+						iCurrentEdge = currentEdge.nextEdge;
+					}
 				}
 			}
-			else {
-				// 3.2. Test the visibility of the next HEFace from the eye point
-				HEVertex nextFaceVertex = meshData.getVertex(oppositeEdge.vertex);
-				glm::vec3 nextFaceNormal = faceNormals.find(iNextFace)->second;
-				if (glm::dot(eyePoint - nextFaceVertex.location, nextFaceNormal) > 0) {
-					// 3.2.1. Mark the HEFace as visible and continue with next
-					// HEEdge of the next HEFace
-					visibleFaces.push_back(iNextFace);
-					iCurrentEdge = oppositeEdge.nextEdge;
-				}
-				else {
-					// 3.2.2. Mark the current HEEdge as an horizon HEEdge and
-					// continue with the next HEEdge
-					horizonEdges.push_back(iCurrentEdge);
-					iCurrentEdge = currentEdge.nextEdge;
-				}
-			}
+			while (iCurrentEdge != iInitialEdge);
 		}
-		while (iCurrentEdge != iInitialEdge);
 
 		return std::make_pair(horizonEdges, visibleFaces);
 	}

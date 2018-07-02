@@ -66,7 +66,11 @@ namespace fe { namespace collision {
 	/**
 	 * Class HalfEdgeMesh, it holds the data of a 3D Mesh in a Half-Edge
 	 * data structure so we can store the adjacency of the Faces and Edges
-	 * for faster computations
+	 * for faster computations.
+	 *
+	 * @note	a Half-Edge mesh is only capable of representing manifold
+	 *			surfaces, this means that every HEEdge is bordered by only
+	 *			two HEFaces.
 	 */
 	class HalfEdgeMesh
 	{
@@ -173,6 +177,14 @@ namespace fe { namespace collision {
 	 * @param	meshData the data of the Mesh where the Face is located in
 	 * @return	the normal of the HEFace */
 	glm::vec3 calculateFaceNormal(int iFace, const HalfEdgeMesh& meshData);
+
+
+	/** Returns the HEVertex indices of the given HEFace
+	 *
+	 * @param	iFace the index of the HEFace
+	 * @param	meshData the data of the Mesh where the Face is located in
+	 * @return	a vector with the indices of the HEFace's HEVertices */
+	std::vector<int> getFaceIndices(int iFace, const HalfEdgeMesh& meshData);
 
 
 	/** Calculates the furthest point of the Mesh in the given direction with

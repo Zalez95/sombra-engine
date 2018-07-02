@@ -66,6 +66,20 @@ TEST(HalfEdgeMesh, calculateFaceNormal2)
 }
 
 
+TEST(HalfEdgeMesh, getFaceIndices1)
+{
+	int iFace = 6;
+	std::vector<int> expectedFaceIndices = { 2, 17, 19 };
+
+	fe::collision::HalfEdgeMesh meshData;
+	std::map<int, glm::vec3> normals;
+	createTestMesh2(meshData, normals);
+
+	std::vector<int> faceIndices = fe::collision::getFaceIndices(iFace, meshData);
+	EXPECT_EQ(faceIndices, expectedFaceIndices);
+}
+
+
 TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
 {
 	fe::collision::HalfEdgeMesh meshData;

@@ -40,18 +40,18 @@ namespace fe { namespace collision {
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision, glm::vec3& projectedPoint
 	) {
-		glm::vec3 u = triangle[1] - triangle[0], v = triangle[2] - triangle[0],
-			w = point - triangle[0], n = glm::cross(u, v);
+		glm::vec3 v0 = triangle[1] - triangle[0], v1 = triangle[2] - triangle[0], v2 = point - triangle[0];
+		float den = 1.0f / (v0.x * v1.y - v1.x * v0.y);
 
-		float gamma	= glm::dot(glm::cross(u, w), n) / glm::dot(n, n);
-		float beta	= glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
-		float alpha	= 1 - gamma - beta;
+		float v = (v2.x * v1.y - v1.x * v2.y) * den;
+		float w = (v0.x * v2.y - v2.x * v0.y) * den;
+		float u = 1.0f - v - w;
 
-		if ((0.0f - projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
-			&& (0.0f - projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision)
-			&& (0.0f - projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision)
+		if ((0.0f - projectionPrecision <= u) && (u <= 1.0f + projectionPrecision)
+			&& (0.0f - projectionPrecision <= v) && (v <= 1.0f + projectionPrecision)
+			&& (0.0f - projectionPrecision <= w) && (w <= 1.0f + projectionPrecision)
 		) {
-			projectedPoint = glm::vec3(alpha, beta, gamma);
+			projectedPoint = glm::vec3(u, v, w);
 			return true;
 		}
 

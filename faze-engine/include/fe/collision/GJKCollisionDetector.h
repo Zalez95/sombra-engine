@@ -26,9 +26,15 @@ namespace fe { namespace collision {
 	private:	// Nested types
 		using SupportPointVector = std::vector<SupportPoint>;
 
+	private:	// Attributes
+		/** The precision of the comparisons in the GJK algorithm */
+		const float mEpsilon;
+
 	public:		// Functions
-		/** Creates a new GJKCollisionDetector */
-		GJKCollisionDetector() {};
+		/** Creates a new GJKCollisionDetector
+		 *
+		 * @param	epsilon the comparison precision of the algorithm */
+		GJKCollisionDetector(float epsilon) : mEpsilon(epsilon) {};
 
 		/** Class destructor */
 		~GJKCollisionDetector() {};

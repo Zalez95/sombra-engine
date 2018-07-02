@@ -20,10 +20,6 @@ namespace fe { namespace collision {
 	class EPACollisionDetector
 	{
 	private:	// Attributes
-		/** The maximum number of iterations of EPA Algorithm. If mMinFThreshold
-		 * is too low this could make the algorithm exit prematurely */
-		static const int sMaxIterations = 36;
-
 		/** The minimum difference between the distances to the origin of
 		 * a face and the next SupportPoint during the Polytope expansion step
 		 * needed for determinate the closest face to the origin */
@@ -58,6 +54,31 @@ namespace fe { namespace collision {
 			std::vector<SupportPoint>& simplex, Contact& ret
 		) const;
 	private:
+		/** Creates a contact from the given degenerate simplex (only one or
+		 * two SupportPoints)
+		 *
+		 * @param	simplex the points of the initial simplex
+		 * @param	ret a reference to the deepest Contact (return
+		 *			parameter) */
+		void calculateDegenerateContact(
+			const std::vector<SupportPoint>& simplex, Contact& ret
+		) const;
+
+		/** Creates an initial polytope from the given simplex
+		 *
+		 * @param	collider1 the first of the ConvexColliders that are
+		 *			intersecting
+		 * @param	collider2 the second of the ConvexColliders that are
+		 *			intersecting
+		 * @param	simplex the points of the initial simplex
+		 * @return	the polytope
+		 * @note	if the given simplex is a triangle it will be expanded to
+		 *			a tetrahedron */
+		Polytope createInitialPolytope(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
+			std::vector<SupportPoint>& simplex
+		) const;
+
 		/** Expands the given polytope iteratively until it finds the closest
 		 * face to the origin with the EPA Algorithm (in other words, when a
 		 * face that it's closer to the origin than the old closest face with
