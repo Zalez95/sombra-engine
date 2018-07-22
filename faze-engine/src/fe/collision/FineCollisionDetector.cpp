@@ -74,16 +74,16 @@ namespace fe { namespace collision {
 
 
 	bool FineCollisionDetector::collideConvexConcave(
-		const ConvexCollider& /*convexCollider*/, const ConcaveCollider& /*concaveCollider*/,
-		Manifold& /*manifold*/, bool /*convexFirst*/
+		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
+		Manifold& manifold, bool convexFirst
 	) const
-	{/*
+	{
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of the concave collider with the
 		// convex one
 		auto overlappingParts = concaveCollider.getOverlapingParts(convexCollider.getAABB());
-		for (const std::unique_ptr<ConvexCollider>& part : overlappingParts) {	
+		for (const ConvexCollider* part : overlappingParts) {	
 			// GJK algorithm
 			bool collides;
 			std::vector<SupportPoint> simplex;
@@ -121,24 +121,24 @@ namespace fe { namespace collision {
 			// Limit the number of points in the manifold to 4
 			limitManifoldContacts(manifold);
 			return true;
-		}*/
+		}
 
 		return false;
 	}
 
 
 	bool FineCollisionDetector::collideConcave(
-		const ConcaveCollider& /*collider1*/, const ConcaveCollider& /*collider2*/,
-		Manifold& /*manifold*/
+		const ConcaveCollider& collider1, const ConcaveCollider& collider2,
+		Manifold& manifold
 	) const
-	{/*
+	{
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider
 		auto overlappingParts1 = collider1.getOverlapingParts(collider2.getAABB());
-		for (const std::unique_ptr<ConvexCollider>& part1 : overlappingParts1) {
+		for (const ConvexCollider* part1 : overlappingParts1) {
 			auto overlappingParts2 = collider2.getOverlapingParts(part1->getAABB());
-			for (const std::unique_ptr<ConvexCollider>& part2 : overlappingParts2) {
+			for (const ConvexCollider* part2 : overlappingParts2) {
 				// GJK algorithm
 				bool collides;
 				std::vector<SupportPoint> simplex;
@@ -173,7 +173,7 @@ namespace fe { namespace collision {
 			limitManifoldContacts(manifold);
 
 			return true;
-		}*/
+		}
 
 		return false;
 	}

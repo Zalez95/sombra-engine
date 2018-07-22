@@ -8,9 +8,9 @@ namespace fe { namespace collision {
 		mTransformsMatrix(1.0f)
 	{
 		switch (strategy) {
-			case ConvexStrategy::QuickHull: {
-					mConvexParts.push_back(QuickHull().calculate(meshData));
-				} break;
+			case ConvexStrategy::QuickHull:
+				mConvexParts.push_back(QuickHull(sEpsilon).calculate(meshData));
+				break;
 			case ConvexStrategy::HACD:
 				throw std::runtime_error("Not implemented");
 				break;

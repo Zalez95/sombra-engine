@@ -280,7 +280,7 @@ namespace fe { namespace collision {
 
 				iCurrentEdge = meshData.getEdge(currentEdge.oppositeEdge).nextEdge;
 			}
-			while (iCurrentEdge != iInitialEdge);
+			while ((iCurrentEdge != iInitialEdge) && (iCurrentEdge >= 0));
 
 			if (bestDistance2 > bestDistance) {
 				// Update our upper bound

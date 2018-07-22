@@ -21,60 +21,58 @@ namespace fe { namespace collision {
 			int iEyeVertex = getFurthestVertexFrom(itFace->second, meshData, mFaceNormals[itFace->first]);
 			glm::vec3 eyePoint = meshData.getVertex(iEyeVertex).location;
 
-			// 3. Add the eyePoint to the convex hull if it isn't already inside
+			// 3. Check if the eyePoint is already inside in the convex hull
 			int iEyeVertexConvexHull;
 			auto itVertex = mVertexIndexMap.find(iEyeVertex);
-			if (itVertex != mVertexIndexMap.end()) {
-				iEyeVertexConvexHull = itVertex->second;
-			}
-			else {
+			if (itVertex == mVertexIndexMap.end()) {
+				// 3.1 Add the eyePoint to the convex hull
 				iEyeVertexConvexHull = mConvexHull.addVertex(eyePoint);
 				mVertexIndexMap.emplace(iEyeVertex, iEyeVertexConvexHull);
-			}
 
-			// 4. Calculate the horizon HEEdges and HEFaces to remove from the
-			// current eyePoint perspective
-			std::vector<int> horizon, facesToRemove;
-			std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, itFace->first, mConvexHull, mFaceNormals);
+				// 3.2. Calculate the horizon HEEdges and HEFaces to remove from
+				// the current eyePoint perspective
+				std::vector<int> horizon, facesToRemove;
+				std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, itFace->first, mConvexHull, mFaceNormals);
 
-			// 5. Remove the HEFaces seen from the current eyePoint and collect
-			// all their outside HEVertices
-			std::vector<int> allVerticesOutside;
-			for (int iFaceToRemove : facesToRemove) {
-				mConvexHull.removeFace(iFaceToRemove);
-				mFaceNormals.erase(iFaceToRemove);
+				// 3.3. Remove the HEFaces seen from the current eyePoint and
+				// collect all their outside HEVertices
+				std::vector<int> allVerticesOutside;
+				for (int iFaceToRemove : facesToRemove) {
+					mConvexHull.removeFace(iFaceToRemove);
+					mFaceNormals.erase(iFaceToRemove);
 
-				auto itFOutisideVertices = mFaceOutsideVertices.find(iFaceToRemove);
-				if (itFOutisideVertices != mFaceOutsideVertices.end()) {
-					std::vector<int>& faceOutsideVerticesRemoved = itFOutisideVertices->second;
-					std::sort(faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end());
+					auto itFOutisideVertices = mFaceOutsideVertices.find(iFaceToRemove);
+					if (itFOutisideVertices != mFaceOutsideVertices.end()) {
+						std::vector<int>& faceOutsideVerticesRemoved = itFOutisideVertices->second;
+						std::sort(faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end());
 
-					std::vector<int> faceOutsideVerticesJoined;
-					std::set_union(
-						allVerticesOutside.begin(), allVerticesOutside.end(),
-						faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end(),
-						std::back_inserter(faceOutsideVerticesJoined)
-					);
-					allVerticesOutside = faceOutsideVerticesJoined;
+						std::vector<int> faceOutsideVerticesJoined;
+						std::set_union(
+							allVerticesOutside.begin(), allVerticesOutside.end(),
+							faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end(),
+							std::back_inserter(faceOutsideVerticesJoined)
+						);
+						allVerticesOutside = faceOutsideVerticesJoined;
 
-					mFaceOutsideVertices.erase(itFOutisideVertices);
+						mFaceOutsideVertices.erase(itFOutisideVertices);
+					}
 				}
-			}
 
-			// 6. Create new HEFaces by joining the edges of the horizon with
-			// the convex hull eyePoint
-			for (int iHorizonEdge : horizon) {
-				const HEEdge& currentEdge	= mConvexHull.getEdge(iHorizonEdge);
-				const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
+				// 3.4. Create new HEFaces by joining the edges of the horizon
+				// with the convex hull eyePoint
+				for (int iHorizonEdge : horizon) {
+					const HEEdge& currentEdge	= mConvexHull.getEdge(iHorizonEdge);
+					const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
 
-				// Create the new HEFace
-				int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
-				int iNewFace = mConvexHull.addFace({ iV0, iV1, iEyeVertexConvexHull });
-				mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
-				mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allVerticesOutside, meshData, iNewFace));
+					// Create the new HEFace
+					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
+					int iNewFace = mConvexHull.addFace({ iV0, iV1, iEyeVertexConvexHull });
+					mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
+					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allVerticesOutside, meshData, iNewFace));
 
-				// Merge the coplanar faces
-				mergeCoplanarFaces(iNewFace);
+					// Merge the coplanar faces
+					mergeCoplanarFaces(iNewFace);
+				}
 			}
 		}
 
@@ -214,7 +212,7 @@ namespace fe { namespace collision {
 
 		for (int i : vertexIndices) {
 			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);
-			if (currentDistance > 0) {
+			if (currentDistance > mEpsilon) {
 				verticesOutside.push_back(i);
 			}
 		}

@@ -29,6 +29,10 @@ namespace fe { namespace collision {
 	private:	// Nested types
 		using EdgeMatrix = std::vector<std::vector<bool>>;
 
+		/** The epsilon used to calculate the convex parts of the
+		 * MeshCollider */
+		static constexpr float sEpsilon = 0.001f;
+
 	private:	// Attributes
 		/** The minimum concavity needed for HACD algorithm */
 		static constexpr float sMinimumConcavity = 0.5f;

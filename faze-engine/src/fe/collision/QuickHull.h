@@ -15,6 +15,11 @@ namespace fe { namespace collision {
 	class QuickHull
 	{
 	private:	// Attributes
+		/** The precision with which we will compare the HEVertices to the
+		 * HEFaces of the Meshes when checking if they're over or inside
+		 * them */
+		float mEpsilon;
+
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
 		HalfEdgeMesh mConvexHull;
 
@@ -29,8 +34,11 @@ namespace fe { namespace collision {
 		std::map<int, int> mVertexIndexMap;
 
 	public:		// Functions
-		/** Creates a new QuickHull object */
-		QuickHull() {};
+		/** Creates a new QuickHull object
+		 *
+		 * @param	epsilon the epsilon value of the comparisons during the
+		 *			QuickHull algorithm computation */
+		QuickHull(float epsilon) : mEpsilon(epsilon) {};
 
 		/** Class destructor */
 		~QuickHull() {};
