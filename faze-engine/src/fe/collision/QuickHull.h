@@ -43,13 +43,23 @@ namespace fe { namespace collision {
 		/** Class destructor */
 		~QuickHull() {};
 
+		/** @return	the HalfEdgeMesh of the convex hull */
+		const HalfEdgeMesh& getMesh() const { return mConvexHull; };
+
+		/** @return	the map with the normal vectors of the HEFaces of the
+		 *			convex hull HalfEdgeMesh */
+		const std::map<int, glm::vec3>& getNormalsMap() const
+		{ return mFaceNormals; };
+
 		/** Calculates the convex hull of the given 3D Mesh with the QuickHull
 		 * 3D algorithm
 		 *
 		 * @param	meshData the Half-Edge data structure with the 3D Mesh to
-		 *			calculate its convex hull
-		 * @return	the convex hull of the given Mesh */
-		HalfEdgeMesh calculate(const HalfEdgeMesh& meshData);
+		 *			calculate its convex hull */
+		void calculate(const HalfEdgeMesh& meshData);
+
+		/** Resets the convex hull data for the next calculations */
+		void resetData();
 	private:
 		/** Calculates the initial simplex needed for calculating the QuickHull
 		 * algorithm from the Mesh vertices and stores it in mConvexHull

@@ -5,7 +5,7 @@
 
 namespace fe { namespace collision {
 
-	HalfEdgeMesh QuickHull::calculate(const HalfEdgeMesh& meshData)
+	void QuickHull::calculate(const HalfEdgeMesh& meshData)
 	{
 		createInitialConvexHull(meshData);
 
@@ -75,8 +75,15 @@ namespace fe { namespace collision {
 				}
 			}
 		}
+	}
 
-		return mConvexHull;
+
+	void QuickHull::resetData()
+	{
+		mConvexHull = HalfEdgeMesh();
+		mFaceNormals.clear();
+		mFaceOutsideVertices.clear();
+		mVertexIndexMap.clear();
 	}
 
 // Private functions
