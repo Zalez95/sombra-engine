@@ -148,10 +148,10 @@ namespace fe { namespace collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		// Update the Edges of the HEFace Vertices
+		// Update the HEVertices of the HEFace
 		for (int iCurrentVertex : vertexIndices) {
 			for (const auto& pair : mVertexEdgeMap) {
-				if (pair.first.first == iCurrentEdge) {
+				if (pair.first.first == iCurrentVertex) {
 					mVertices[iCurrentVertex].edge = pair.second;
 					break;
 				}

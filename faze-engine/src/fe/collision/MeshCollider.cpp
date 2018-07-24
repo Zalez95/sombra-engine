@@ -8,12 +8,16 @@ namespace fe { namespace collision {
 		mTransformsMatrix(1.0f)
 	{
 		switch (strategy) {
-			case ConvexStrategy::QuickHull:
-				mConvexParts.push_back(QuickHull(sEpsilon).calculate(meshData));
+			case ConvexStrategy::QuickHull: {
+				QuickHull quickHull(sEpsilon);
+				quickHull.calculate(meshData);
+				mConvexParts.push_back(quickHull.getMesh());
 				break;
-			case ConvexStrategy::HACD:
+			}
+			case ConvexStrategy::HACD: {
 				throw std::runtime_error("Not implemented");
 				break;
+			}
 		}
 
 		calculateAABB();

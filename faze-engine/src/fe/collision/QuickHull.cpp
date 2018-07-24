@@ -5,7 +5,7 @@
 
 namespace fe { namespace collision {
 
-	HalfEdgeMesh QuickHull::calculate(const HalfEdgeMesh& meshData)
+	void QuickHull::calculate(const HalfEdgeMesh& meshData)
 	{
 		createInitialConvexHull(meshData);
 
@@ -36,26 +36,23 @@ namespace fe { namespace collision {
 
 				// 3.3. Remove the HEFaces seen from the current eyePoint and
 				// collect all their outside HEVertices
-				std::vector<int> allVerticesOutside;
+				std::vector<int> allOutsideVertices;
 				for (int iFaceToRemove : facesToRemove) {
 					mConvexHull.removeFace(iFaceToRemove);
 					mFaceNormals.erase(iFaceToRemove);
 
-					auto itFOutisideVertices = mFaceOutsideVertices.find(iFaceToRemove);
-					if (itFOutisideVertices != mFaceOutsideVertices.end()) {
-						std::vector<int>& faceOutsideVerticesRemoved = itFOutisideVertices->second;
-						std::sort(faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end());
+					auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToRemove);
 
-						std::vector<int> faceOutsideVerticesJoined;
-						std::set_union(
-							allVerticesOutside.begin(), allVerticesOutside.end(),
-							faceOutsideVerticesRemoved.begin(), faceOutsideVerticesRemoved.end(),
-							std::back_inserter(faceOutsideVerticesJoined)
-						);
-						allVerticesOutside = faceOutsideVerticesJoined;
+					std::vector<int> joinedOutsideVertices;
+					std::sort(itFOutsideVertices->second.begin(), itFOutsideVertices->second.end());
+					std::set_union(
+						allOutsideVertices.begin(), allOutsideVertices.end(),
+						itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
+						std::back_inserter(joinedOutsideVertices)
+					);
+					allOutsideVertices = joinedOutsideVertices;
 
-						mFaceOutsideVertices.erase(itFOutisideVertices);
-					}
+					mFaceOutsideVertices.erase(itFOutsideVertices);
 				}
 
 				// 3.4. Create new HEFaces by joining the edges of the horizon
@@ -68,15 +65,22 @@ namespace fe { namespace collision {
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
 					int iNewFace = mConvexHull.addFace({ iV0, iV1, iEyeVertexConvexHull });
 					mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
-					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allVerticesOutside, meshData, iNewFace));
+					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, meshData, iNewFace));
 
 					// Merge the coplanar faces
 					mergeCoplanarFaces(iNewFace);
 				}
 			}
 		}
+	}
 
-		return mConvexHull;
+
+	void QuickHull::resetData()
+	{
+		mConvexHull = HalfEdgeMesh();
+		mFaceNormals.clear();
+		mFaceOutsideVertices.clear();
+		mVertexIndexMap.clear();
 	}
 
 // Private functions
@@ -86,31 +90,31 @@ namespace fe { namespace collision {
 		std::vector<int> iSimplexVertices = calculateInitialSimplex(meshData);
 
 		// Add the vertices to the convex hull
-		std::vector<int> iCHVertices;
+		std::vector<int> chVertexIndices;
 		for (int iMeshVertex : iSimplexVertices) {
 			int iConvexHullVertex = mConvexHull.addVertex(meshData.getVertex(iMeshVertex).location);
 			mVertexIndexMap.emplace(iMeshVertex, iConvexHullVertex);
-			iCHVertices.push_back(iConvexHullVertex);
+			chVertexIndices.push_back(iConvexHullVertex);
 		}
 
 		// Add the faces to the convex hull, 
-		const glm::vec3 p0 = mConvexHull.getVertex(iCHVertices[0]).location,
-						p1 = mConvexHull.getVertex(iCHVertices[1]).location,
-						p2 = mConvexHull.getVertex(iCHVertices[2]).location,
-						p3 = mConvexHull.getVertex(iCHVertices[3]).location;
+		const glm::vec3 p0 = mConvexHull.getVertex(chVertexIndices[0]).location,
+						p1 = mConvexHull.getVertex(chVertexIndices[1]).location,
+						p2 = mConvexHull.getVertex(chVertexIndices[2]).location,
+						p3 = mConvexHull.getVertex(chVertexIndices[3]).location;
 		int iF0, iF1, iF2, iF3;
 		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
 		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
-			iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[2] });
-			iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[1] });
-			iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[3] });
-			iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[3], iCHVertices[2] });
+			iF0 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
+			iF1 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
+			iF2 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
+			iF3 = mConvexHull.addFace({ chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
 		}
 		else {
-			iF0 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[2], iCHVertices[1] });
-			iF1 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[1], iCHVertices[3] });
-			iF2 = mConvexHull.addFace({ iCHVertices[0], iCHVertices[3], iCHVertices[2] });
-			iF3 = mConvexHull.addFace({ iCHVertices[1], iCHVertices[2], iCHVertices[3] });
+			iF0 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
+			iF1 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
+			iF2 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
+			iF3 = mConvexHull.addFace({ chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
 		}
 
 		// Add the HEFaces normals
@@ -120,14 +124,14 @@ namespace fe { namespace collision {
 		mFaceNormals.emplace(iF3, calculateFaceNormal(iF3, mConvexHull));
 
 		// Add the HEFaces outside vertices
-		std::vector<int> allVertexIndices;
+		std::vector<int> meshVertexIndices;
 		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
-			allVertexIndices.push_back(it.getIndex());
+			meshVertexIndices.push_back(it.getIndex());
 		}
-		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(allVertexIndices, meshData, iF0));
-		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(allVertexIndices, meshData, iF1));
-		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(allVertexIndices, meshData, iF2));
-		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(allVertexIndices, meshData, iF3));
+		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, meshData, iF0));
+		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(meshVertexIndices, meshData, iF1));
+		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(meshVertexIndices, meshData, iF2));
+		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(meshVertexIndices, meshData, iF3));
 	}
 
 
