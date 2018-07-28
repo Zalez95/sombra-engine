@@ -11,14 +11,14 @@ namespace fe { namespace loaders {
 		try {
 			// 1. Get the input file
 			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file\n");
+				throw std::runtime_error("Error reading the file");
 			}
 
 			// 2. Parse the Meshes
 			return parseFont(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Font in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Font in the file \"" + fileReader.getFilePath() + "\": " + e.what());
 		}
 	}
 
@@ -63,12 +63,12 @@ namespace fe { namespace loaders {
 				++iCharacter;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 
 		if (iCharacter != nCharacters) {
-			throw std::runtime_error("Error: expected " + std::to_string(nCharacters) + " characters, parsed " + std::to_string(iCharacter) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(nCharacters) + " characters, parsed " + std::to_string(iCharacter));
 		}
 
 		return std::make_unique<graphics::Font>(fontName, characters, textureAtlas);
@@ -115,7 +115,7 @@ namespace fe { namespace loaders {
 				flag = false;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + name + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + name + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 

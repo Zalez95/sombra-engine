@@ -14,12 +14,12 @@ namespace fe { namespace loaders {
 		try {
 			// 1. Get the input file
 			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file\n");
+				throw std::runtime_error("Error reading the file");
 			}
 
 			// 2. Check the file header
 			if (!checkHeader(fileReader)) {
-				throw std::runtime_error("Error with the header of the file\n");
+				throw std::runtime_error("Error with the header of the file");
 			}
 
 			// 3. Parse the RawMeshes
@@ -98,12 +98,12 @@ namespace fe { namespace loaders {
 				++iRawMesh;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 
 		if (iRawMesh != nRawMeshes) {
-			throw std::runtime_error("Error: expected " + std::to_string(nRawMeshes) + " meshes, parsed " + std::to_string(iRawMesh) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(nRawMeshes) + " meshes, parsed " + std::to_string(iRawMesh));
 		}
 
 		return rawMeshes;
@@ -181,18 +181,18 @@ namespace fe { namespace loaders {
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()));
 			}
 		}
 
 		if (positionIndex != numPositions) {
-			throw std::runtime_error("Error: expected " + std::to_string(numPositions) + " positions, parsed " + std::to_string(positionIndex) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(numPositions) + " positions, parsed " + std::to_string(positionIndex));
 		}
 		if (uvIndex != numUVs) {
-			throw std::runtime_error("Error: expected " + std::to_string(numUVs) + " UVs, parsed " + std::to_string(uvIndex) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(numUVs) + " UVs, parsed " + std::to_string(uvIndex));
 		}
 		if (faceIndex != numFaces) {
-			throw std::runtime_error("Error: expected " + std::to_string(numFaces) + " faces, parsed " + std::to_string(faceIndex) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(numFaces) + " faces, parsed " + std::to_string(faceIndex));
 		}
 
 		return processRawMeshData(name, positions, uvs, posIndices, uvIndices);

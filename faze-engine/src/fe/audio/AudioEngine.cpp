@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdexcept>
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "fe/audio/AudioEngine.h"
@@ -9,14 +9,13 @@ namespace fe { namespace audio {
 	{
 		mDevice = alcOpenDevice(nullptr);
 		if (!mDevice) {
-			std::cerr << "device error" << std::endl;
-			return;
+			throw std::runtime_error("Can't open the Device");
 		}
 
 		mContext = alcCreateContext(mDevice, nullptr);
 		if (!alcMakeContextCurrent(mContext)) {
-			std::cerr << "context error" << std::endl;
-			return;
+			alcCloseDevice(mDevice);
+			throw std::runtime_error("Context creation error");
 		}
 	}
 

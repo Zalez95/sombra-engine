@@ -25,7 +25,10 @@ namespace fe { namespace audio {
 
 	public:		// Functions
 		/** Creates a new AudioEngine and initializes the devices and context.
-		 * The audio device will be the default one. */
+		 * The audio device will be the default one.
+		 *
+		 * @throw	runtime_error in case of not being able to initialize the
+		 *			devices */
 		AudioEngine();
 
 		/** Class destructor. It releases the audio devices. */

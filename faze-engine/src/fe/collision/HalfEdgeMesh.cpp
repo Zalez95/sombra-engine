@@ -311,7 +311,7 @@ namespace fe { namespace collision {
 			visibleFaces.push_back(iFace);
 
 			std::set<int> visitedFaces;
-			int iInitialEdge = meshData.getFace(iFace).edge;
+			int iInitialEdge = inputFace.edge;
 			int iCurrentEdge = iInitialEdge;
 			do {
 				// 1. Mark the current face as visited

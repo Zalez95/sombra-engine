@@ -41,7 +41,8 @@ namespace fe { namespace loaders {
 		 *			the file
 		 * @param	fileReader the file reader with the Materials that we want
 		 *			to parse
-		 * @return	a vector with the parsed Materials */
+		 * @return	a vector with the parsed Materials
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<MaterialUPtr> read(utils::FileReader& fileReader) const;
 	private:
 		/** Checks the header of the given file
@@ -55,7 +56,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the materials that we want
 		 *			to parse
-		 * @return	a vector with the parsed materials */
+		 * @return	a vector with the parsed materials
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<MaterialUPtr> parseMaterials(
 			utils::FileReader& fileReader
 		) const;
@@ -65,7 +67,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
-		 * @return	a pointer to the parsed Material */
+		 * @return	a pointer to the parsed Material
+		 * @throw	runtime_error in case of an unexpected text */
 		MaterialUPtr parseMaterial(utils::FileReader& fileReader) const;
 	};
 

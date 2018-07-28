@@ -24,7 +24,8 @@ namespace fe { namespace graphics {
 		/** Creates and compiles a OpenGL program from the specified shaders
 		 *
 		 * @param	shaders a vector with the shaders that compose the GLSL
-		 *			Program */
+		 *			Program
+		 * @throw	runtime_error if the Program couldn't be created */
 		Program(const std::vector<const Shader*>& shaders);
 
 		/** Class destructor */

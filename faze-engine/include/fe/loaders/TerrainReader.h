@@ -47,7 +47,8 @@ namespace fe { namespace loaders {
 		 *			the file
 		 * @param	fileReader the file reader with the Terrain that we want
 		 *			to parse
-		 * @return	the parsed Terrain */
+		 * @return	the parsed Terrain
+		 * @throw	runtime_error in case of any error while parsing */
 		EntityUPtr read(utils::FileReader& fileReader);
 	private:
 		/** Parses the Entity at the current position of the given file and
@@ -55,7 +56,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
-		 * @return	a pointer to the parsed Entity */
+		 * @return	a pointer to the parsed Entity
+		 * @throw	runtime_error in case of an unexpected text */
 		EntityUPtr parseEntity(utils::FileReader& fileReader);
 	};
 

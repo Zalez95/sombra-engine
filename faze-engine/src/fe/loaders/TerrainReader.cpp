@@ -10,14 +10,14 @@ namespace fe { namespace loaders {
 		try {
 			// 1. Get the input file
 			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file\n");
+				throw std::runtime_error("Error reading the file");
 			}
 
 			// 2. Parse the Entity
 			return parseEntity(fileReader);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Terrain in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Terrain in the file \"" + fileReader.getFilePath() + "\": " + e.what());
 		}
 	}
 
@@ -45,7 +45,7 @@ namespace fe { namespace loaders {
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()));
 			}
 		}
 

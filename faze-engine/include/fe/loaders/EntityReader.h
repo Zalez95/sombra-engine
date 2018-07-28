@@ -76,7 +76,8 @@ namespace fe { namespace loaders {
 		 *			the file
 		 * @param	fileReader the file reader with the Entities that we want
 		 *			to parse
-		 * @return	a vector with the parsed Entities */
+		 * @return	a vector with the parsed Entities
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<EntityUPtr> load(utils::FileReader& fileReader);
 	private:
 		/** Checks the header of the given file
@@ -90,7 +91,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the meshes that we want to
 		 *			parse
-		 * @return	a struct holding the data */
+		 * @return	a struct holding the data
+		 * @throw	runtime_error in case of any error while parsing */
 		SharedData loadSharedData(utils::FileReader& fileReader) const;
 
 		/** Parses the Entities in the given file and returns them
@@ -98,7 +100,8 @@ namespace fe { namespace loaders {
 		 * @param	fileReader the file reader with the entities that we want
 		 *			to parse
 		 * @param	sharedData the data needed for creating the Entities
-		 * @return	a vector with the parsed entities */
+		 * @return	a vector with the parsed entities
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<EntityUPtr> parseEntities(
 			utils::FileReader& fileReader, SharedData& sharedData
 		) const;
@@ -109,7 +112,8 @@ namespace fe { namespace loaders {
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
 		 * @param	sharedData the data needed for creating the Entities
-		 * @return	a pointer to the parsed Entity */
+		 * @return	a pointer to the parsed Entity
+		 * @throw	runtime_error in case of any error while parsing */
 		EntityUPtr parseEntity(
 			utils::FileReader& fileReader, SharedData& sharedData
 		) const;

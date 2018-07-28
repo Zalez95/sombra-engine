@@ -51,7 +51,8 @@ namespace fe { namespace window {
 		/** Creates a new Window, the viewport and sets the callbacks for
 		 * the events
 		 *
-		 * @param	windowData the window data used to create the Window */
+		 * @param	windowData the window data used to create the Window
+		 * @throw	runtime_error if the window couldn't be created */
 		WindowSystem(const WindowData& windowData);
 
 		/** Class destructor, destroys the window and stops GLFW */

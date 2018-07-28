@@ -48,7 +48,8 @@ namespace fe { namespace loaders {
 		 * @param	positions a vector with the positions of the vertices
 		 * @param	faceIndices a vector with indices of the vertices that
 		 *			compose the faces of a Mesh
-		 * @return	a vector with the normals of the vertices */
+		 * @return	a vector with the normals of the vertices
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<glm::vec3> calculateNormals(
 			const std::vector<glm::vec3>& positions,
 			const std::vector<unsigned short>& faceIndices
@@ -65,7 +66,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the meshes that we want to
 		 *			parse
-		 * @return	a vector with the parsed RawMeshes */
+		 * @return	a vector with the parsed RawMeshes
+		 * @throw	runtime_error in case of any error while parsing */
 		std::vector<RawMeshUPtr> parseRawMeshes(utils::FileReader& fileReader) const;
 
 		/** Parses the Mesh at the current position of the given file and
@@ -73,7 +75,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
-		 * @return	a pointer to the parsed RawMesh */
+		 * @return	a pointer to the parsed RawMesh
+		 * @throw	runtime_error in case of an unexpected text */
 		RawMeshUPtr parseRawMesh(utils::FileReader& fileReader) const;
 
 		/** With the positions, uvs and the vectors of indices given

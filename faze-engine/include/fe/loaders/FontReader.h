@@ -36,14 +36,16 @@ namespace fe { namespace loaders {
 		 *			the file
 		 * @param	fileReader the file reader with the Font that we want
 		 *			to parse
-		 * @return	the parsed Font */
+		 * @return	the parsed Font
+		 * @throw	runtime_error in case of any error while parsing */
 		FontUPtr read(utils::FileReader& fileReader) const;
 	private:
 		/** Parses the Font in the given file and returns it
 		 *
 		 * @param	fileReader the file reader with the Font that we want
 		 *			to parse
-		 * @return	a pointer to the parsed Font */
+		 * @return	a pointer to the parsed Font
+		 * @throw	runtime_error in case of any error while parsing */
 		FontUPtr parseFont(utils::FileReader& fileReader) const;
 
 		/** Parses the Character at the current position of the given file and
@@ -51,7 +53,8 @@ namespace fe { namespace loaders {
 		 *
 		 * @param	fileReader the file reader with the file that we want
 		 *			to read
-		 * @return	the parsed Character */
+		 * @return	the parsed Character
+		 * @throw	runtime_error in case of an unexpected text */
 		graphics::Character parseCharacter(utils::FileReader& fileReader) const;
 	};
 

@@ -32,12 +32,12 @@ namespace fe { namespace loaders {
 		try {
 			// 1. Get the input file
 			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file\n");
+				throw std::runtime_error("Error reading the file");
 			}
 
 			// 2. Check the file header
 			if (!checkHeader(fileReader)) {
-				throw std::runtime_error("Error with the header of the file\n");
+				throw std::runtime_error("Error with the header of the file");
 			}
 
 			// 3. Load the SharedData
@@ -47,7 +47,7 @@ namespace fe { namespace loaders {
 			return parseEntities(fileReader, sharedData);
 		}
 		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Entity in the file \"" + fileReader.getFilePath() + "\":\n" + e.what());
+			throw std::runtime_error("Error parsing the Entity in the file \"" + fileReader.getFilePath() + "\": " + e.what());
 		}
 	}
 
@@ -106,7 +106,7 @@ namespace fe { namespace loaders {
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 
@@ -136,12 +136,12 @@ namespace fe { namespace loaders {
 				++iEntity;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 
 		if (iEntity != nEntities) {
-			throw std::runtime_error("Error: expected " + std::to_string(nEntities) + " entities, parsed " + std::to_string(iEntity) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(nEntities) + " entities, parsed " + std::to_string(iEntity));
 		}
 
 		return entities;
@@ -262,7 +262,7 @@ namespace fe { namespace loaders {
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 

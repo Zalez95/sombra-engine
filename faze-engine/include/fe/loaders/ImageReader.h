@@ -21,7 +21,9 @@ namespace fe { namespace loaders {
 		/** Reads the image located at the given position
 		 *
 		 * @param	path the location of the image
-		 * @param	imageFormat the format in which the image is stored */
+		 * @param	imageFormat the format in which the image is stored
+		 * @return	a pointe to the new image
+		 * @throw	runtime_error if the image wasn't found */
 		utils::Image* read(
 			const std::string& path, utils::ImageFormat imageFormat
 		) const;

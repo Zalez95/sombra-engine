@@ -16,12 +16,12 @@ namespace fe { namespace loaders {
 		try {
 			// 1. Get the input file
 			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file\n");
+				throw std::runtime_error("Error reading the file");
 			}
 
 			// 2. Check the file header
 			if (!checkHeader(fileReader)) {
-				throw std::runtime_error("Error with the header of the file\n");
+				throw std::runtime_error("Error with the header of the file");
 			}
 
 			// 3. Parse the Meshes
@@ -71,12 +71,12 @@ namespace fe { namespace loaders {
 				++iMaterial;
 			}
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
 			}
 		}
 
 		if (iMaterial != nMaterials) {
-			throw std::runtime_error("Error: expected " + std::to_string(nMaterials) + " materials, parsed " + std::to_string(iMaterial) + '\n');
+			throw std::runtime_error("Error: expected " + std::to_string(nMaterials) + " materials, parsed " + std::to_string(iMaterial));
 		}
 
 		return materials;
@@ -110,7 +110,7 @@ namespace fe { namespace loaders {
 			}
 			else if (token == "}") { end = true; }
 			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()) + '\n');
+				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line "+ std::to_string(fileReader.getNumLines()));
 			}
 		}
 
