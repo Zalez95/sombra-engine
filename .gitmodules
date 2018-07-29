@@ -16,7 +16,6 @@
 [submodule "ext/openal"]
 	path = ext/openal
 	url = https://github.com/kcat/openal-soft.git
-	shallow = true
 [submodule "ext/audiofile"]
 	path = ext/audiofile
 	url = https://github.com/Zalez95/AudioFile.git
