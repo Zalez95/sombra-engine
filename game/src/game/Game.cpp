@@ -306,10 +306,10 @@ namespace game {
 
 				fe::collision::HalfEdgeMesh meshData;
 				for (const glm::vec3& position : rawMesh->positions) {
-					meshData.addVertex(position);
+					fe::collision::addVertex(meshData, position);
 				}
 				for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
-					meshData.addFace({ rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
+					fe::collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
 				}
 
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(

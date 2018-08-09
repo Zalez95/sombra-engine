@@ -13,15 +13,16 @@ TEST(HalfEdgeMesh, mergeFace1)
 	createTestMesh2(meshData, normals);
 
 	const std::vector<int> expectedVertices = { 19, 18, 2, 17 };
-	const int iMergedEdge = 35;
+	const int iMergedFace1 = 17, iMergedFace2 = 6;
 
 	std::size_t nVertices = 0;
-	int iMergedFace = meshData.getEdge(iMergedEdge).face;
-	meshData.mergeFace(iMergedEdge);
-	int iInitialEdge = meshData.getFace(iMergedFace).edge;
+	int iJoinedFace = fe::collision::mergeFaces(meshData, iMergedFace1, iMergedFace2);
+
+	ASSERT_EQ(iJoinedFace, iMergedFace1);
+	int iInitialEdge = meshData.faces[iJoinedFace].edge;
 	int iCurrentEdge = iInitialEdge;
 	do {
-		auto currentEdge = meshData.getEdge(iCurrentEdge);
+		auto currentEdge = meshData.edges[iCurrentEdge];
 		int iCurrentVertex = currentEdge.vertex;
 		EXPECT_TRUE(std::find(expectedVertices.begin(), expectedVertices.end(), iCurrentVertex) != expectedVertices.end());
 		iCurrentEdge = currentEdge.nextEdge;
@@ -36,10 +37,10 @@ TEST(HalfEdgeMesh, calculateFaceNormal1)
 {
 	fe::collision::HalfEdgeMesh meshData;
 
-	meshData.addVertex({  1.25f,  1.0f, -2.75f });
-	meshData.addVertex({  1.25f, -1.0f, -2.75f });
-	meshData.addVertex({ -0.25f, -1.0f, -2.75f });
-	meshData.addFace({ 0, 1, 2 });
+	fe::collision::addVertex(meshData, { 1.25f,  1.0f, -2.75f });
+	fe::collision::addVertex(meshData, { 1.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(meshData, { -0.25f, -1.0f, -2.75f });
+	fe::collision::addFace(meshData, { 0, 1, 2 });
 
 	const glm::vec3 expectedNormal(0.0f, 0.0f, -1.0f);
 	glm::vec3 normal = fe::collision::calculateFaceNormal(0, meshData);
@@ -52,11 +53,11 @@ TEST(HalfEdgeMesh, calculateFaceNormal1)
 TEST(HalfEdgeMesh, calculateFaceNormal2)
 {
 	fe::collision::HalfEdgeMesh meshData;
-	meshData.addVertex({ 0.117263972f,  0.704151272f, -3.100874185f });
-	meshData.addVertex({ 0.965986073f, -0.263351202f, -0.244983732f });
-	meshData.addVertex({ 0.965986073f, -2.136411190f,  1.768507480f });
-	meshData.addVertex({ 0.117263972f, -3.041968584f,  0.926108181f });
-	meshData.addFace({ 0, 1, 2, 3 });
+	fe::collision::addVertex(meshData, { 0.117263972f,  0.704151272f, -3.100874185f });
+	fe::collision::addVertex(meshData, { 0.965986073f, -0.263351202f, -0.244983732f });
+	fe::collision::addVertex(meshData, { 0.965986073f, -2.136411190f,  1.768507480f });
+	fe::collision::addVertex(meshData, { 0.117263972f, -3.041968584f,  0.926108181f });
+	fe::collision::addFace(meshData, { 0, 1, 2, 3 });
 
 	const glm::vec3 expectedNormal(0.824532389f, -0.414277464f, -0.385383605f);
 	glm::vec3 normal = fe::collision::calculateFaceNormal(0, meshData);
@@ -108,7 +109,7 @@ TEST(HalfEdgeMesh, calculateHorizon1)
 
 	EXPECT_EQ(horizon.size(), expectedHorizonVertices.size());
 	for (int iEdge : horizon) {
-		int iCurrentVertex = meshData.getEdge(iEdge).vertex;
+		int iCurrentVertex = meshData.edges[iEdge].vertex;
 		EXPECT_TRUE(std::find(expectedHorizonVertices.begin(), expectedHorizonVertices.end(), iCurrentVertex)
 			!= expectedHorizonVertices.end()
 		);

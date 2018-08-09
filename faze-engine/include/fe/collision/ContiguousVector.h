@@ -1,5 +1,5 @@
-#ifndef CACHED_VECTOR_H
-#define CACHED_VECTOR_H
+#ifndef CONTIGUOUS_VECTOR_H
+#define CONTIGUOUS_VECTOR_H
 
 #include <set>
 #include <vector>
@@ -7,30 +7,30 @@
 
 namespace fe { namespace collision {
 
-	template<class T, bool isConst> class CachedVectorIterator;
+	template<class T, bool isConst> class ContiguousVectorIterator;
 
 
 	/**
-	 * Class CachedVector, it works as an usual vector but it also caches the
-	 * released elements instead of erasing them for preventing the old indices
-	 * pointing to the vector from being invalidated.
+	 * Class ContiguousVector, it works as an usual vector but it also caches
+	 * the released elements instead of erasing them for preventing the old
+	 * indices pointing to the vector from being invalidated.
 	 *
 	 * @note	it doesn't prevent from pointer invalidations due to the
 	 *			increment of the vector size with new allocations, also the
 	 *			released elements will be reused in the following allocations
 	 */
 	template<class T>
-	class CachedVector
+	class ContiguousVector
 	{
 	public:		// Nested types
-		using iterator = CachedVectorIterator<T, false>;
-		using const_iterator = CachedVectorIterator<T, true>;
+		using iterator = ContiguousVectorIterator<T, false>;
+		using const_iterator = ContiguousVectorIterator<T, true>;
 
 	private:	// Attributes
-		friend class CachedVectorIterator<T, false>;
-		friend class CachedVectorIterator<T, true>;
+		friend class ContiguousVectorIterator<T, false>;
+		friend class ContiguousVectorIterator<T, true>;
 
-		/** The raw data of the CachedVector */
+		/** The raw data of the ContiguousVector */
 		std::vector<T> mElements;
 
 		/** The number of non free Elements of the Vector */
@@ -40,37 +40,37 @@ namespace fe { namespace collision {
 		std::set<std::size_t> mFreeIndices;
 
 	public:		// Functions
-		/** Creates a new CachedVector */
-		CachedVector() : mNumElements(0) {};
+		/** Creates a new ContiguousVector */
+		ContiguousVector() : mNumElements(0) {};
 
 		/** Class destructor */
-		~CachedVector() {};
+		~ContiguousVector() {};
 
-		/** @return	the number of Elements in the CachedVector */
+		/** @return	the number of Elements in the ContiguousVector */
 		std::size_t size() const { return mNumElements; };
 
-		/** Returns the Element i of the CachedVector
+		/** Returns the Element i of the ContiguousVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a reference to the Element */
 		T& operator[](std::size_t i) { return mElements[i]; };
 
-		/** Returns the Element i of the CachedVector
+		/** Returns the Element i of the ContiguousVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a const reference to the Element */
 		const T& operator[](std::size_t i) const { return mElements[i]; };
 
-		/** @return	the initial iterator of the CachedVector */
+		/** @return	the initial iterator of the ContiguousVector */
 		iterator begin() { return iterator(*this); };
 
-		/** @return	the initial iterator of the CachedVector */
+		/** @return	the initial iterator of the ContiguousVector */
 		const_iterator begin() const { return const_iterator(*this); };
 
-		/** @return	the final iterator of the CachedVector */
+		/** @return	the final iterator of the ContiguousVector */
 		iterator end() { return iterator(*this, mElements.size()); };
 
-		/** @return	the final iterator of the CachedVector */
+		/** @return	the final iterator of the ContiguousVector */
 		const_iterator end() const
 		{ return const_iterator(*this, mElements.size()); };
 
@@ -99,17 +99,17 @@ namespace fe { namespace collision {
 
 
 	/**
-	 * Class CachedVectorIterator, the class used to iterate through the
-	 * elements of a CachedVector
+	 * Class ContiguousVectorIterator, the class used to iterate through the
+	 * elements of a ContiguousVector
 	 */
 	template<class T, bool isConst = false>
-	class CachedVectorIterator : public std::iterator<
+	class ContiguousVectorIterator : public std::iterator<
 		std::bidirectional_iterator_tag, T
 	> {
 	private:	// Attributes
 		using ElementType = typename std::conditional_t<isConst, const T, T>;
 		using VectorType = typename std::conditional_t<isConst,
-			const CachedVector<T>, CachedVector<T>
+			const ContiguousVector<T>, ContiguousVector<T>
 		>;
 
 		/** The vector to iterate */
@@ -119,21 +119,21 @@ namespace fe { namespace collision {
 		std::size_t mIndex;
 
 	public:		// Functions
-		/** Creates a new CachedVectorIterator located at the initial valid
-		 * position of the given CachedVector (begin)
+		/** Creates a new ContiguousVectorIterator located at the initial valid
+		 * position of the given ContiguousVector (begin)
 		 *
 		 * @param	vector the vector to iterate */
-		CachedVectorIterator(VectorType& vector);
+		ContiguousVectorIterator(VectorType& vector);
 
-		/** Creates a new CachedVectorIterator
+		/** Creates a new ContiguousVectorIterator
 		 *
 		 * @param	vector the vector to iterate
 		 * @param	index the inital index of the iterator */
-		CachedVectorIterator(VectorType& vector, std::size_t index) :
+		ContiguousVectorIterator(VectorType& vector, std::size_t index) :
 			mVector(vector), mIndex(index) {};
 
 		/** Class destructor */
-		~CachedVectorIterator() {};
+		~ContiguousVectorIterator() {};
 
 		/** @return	the index of the Element that the iterator is pointing to */
 		std::size_t getIndex() const { return mIndex; };
@@ -150,44 +150,44 @@ namespace fe { namespace collision {
 		 *
 		 * @param	other the other iterator to compare
 		 * @return	true if both iterators are equal, false otherwise */
-		bool operator==(const CachedVectorIterator& other) const
+		bool operator==(const ContiguousVectorIterator& other) const
 		{ return (&mVector == &other.mVector) && (mIndex == other.mIndex); };
 
 		/** Compares the current iterator with the given one
 		 *
 		 * @param	other the other iterator to compare
 		 * @return	true if both iterators are different, false otherwise */
-		bool operator!=(const CachedVectorIterator& other) const
+		bool operator!=(const ContiguousVectorIterator& other) const
 		{ return !(*this == other); };
 
 		/** Preincrement operator
 		 *
 		 * @return	a reference to the current iterator after its
 		 *			incrementation */
-		CachedVectorIterator& operator++();
+		ContiguousVectorIterator& operator++();
 
 		/** Postincrement operator
 		 *
 		 * @return	a copy of the current iterator with the previous value to
 		 *			the incrementation */
-		CachedVectorIterator operator++(int);
+		ContiguousVectorIterator operator++(int);
 
 		/** Predecrement operator
 		 *
 		 * @return	a reference to the current iterator after its
 		 *			decrementation */
-		CachedVectorIterator& operator--();
+		ContiguousVectorIterator& operator--();
 
 		/** Postdecrement operator
 		 *
 		 * @return	a copy of the current iterator with the previous value to
 		 *			the decrementation */
-		CachedVectorIterator operator--(int);
+		ContiguousVectorIterator operator--(int);
 	};
 
 // Template functions definition
 	template<class T>
-	std::size_t CachedVector<T>::create()
+	std::size_t ContiguousVector<T>::create()
 	{
 		std::size_t index;
 		if (mFreeIndices.empty()) {
@@ -206,7 +206,7 @@ namespace fe { namespace collision {
 
 
 	template<class T>
-	void CachedVector<T>::free(std::size_t i)
+	void ContiguousVector<T>::free(std::size_t i)
 	{
 		if (mFreeIndices.find(i) == mFreeIndices.end()) {
 			mFreeIndices.insert(i);
@@ -217,7 +217,7 @@ namespace fe { namespace collision {
 
 
 	template<class T>
-	bool CachedVector<T>::isActive(std::size_t i) const
+	bool ContiguousVector<T>::isActive(std::size_t i) const
 	{
 		return (i < mElements.size())
 			&& (mFreeIndices.find(i) == mFreeIndices.end());
@@ -225,8 +225,9 @@ namespace fe { namespace collision {
 
 
 	template<class T, bool isConst>
-	CachedVectorIterator<T, isConst>::CachedVectorIterator(VectorType& vector) :
-		mVector(vector), mIndex(0)
+	ContiguousVectorIterator<T, isConst>::ContiguousVectorIterator(
+		VectorType& vector
+	) : mVector(vector), mIndex(0)
 	{
 		if (!mVector.isActive(mIndex) && (mVector.mNumElements > 0)) {
 			operator++();
@@ -235,8 +236,8 @@ namespace fe { namespace collision {
 
 
 	template<class T, bool isConst>
-	CachedVectorIterator<T, isConst>&
-		CachedVectorIterator<T, isConst>::operator++()
+	ContiguousVectorIterator<T, isConst>&
+		ContiguousVectorIterator<T, isConst>::operator++()
 	{
 		do {
 			mIndex++;
@@ -251,18 +252,18 @@ namespace fe { namespace collision {
 
 
 	template<class T, bool isConst>
-	CachedVectorIterator<T, isConst>
-		CachedVectorIterator<T, isConst>::operator++(int)
+	ContiguousVectorIterator<T, isConst>
+		ContiguousVectorIterator<T, isConst>::operator++(int)
 	{
-		CachedVectorIterator<T> ret(*this);
+		ContiguousVectorIterator<T> ret(*this);
 		operator++();
 		return ret;
 	}
 
 
 	template<class T, bool isConst>
-	CachedVectorIterator<T, isConst>&
-		CachedVectorIterator<T, isConst>::operator--()
+	ContiguousVectorIterator<T, isConst>&
+		ContiguousVectorIterator<T, isConst>::operator--()
 	{
 		do {
 			mIndex--;
@@ -277,14 +278,14 @@ namespace fe { namespace collision {
 
 
 	template<class T, bool isConst>
-	CachedVectorIterator<T, isConst>
-		CachedVectorIterator<T, isConst>::operator--(int)
+	ContiguousVectorIterator<T, isConst>
+		ContiguousVectorIterator<T, isConst>::operator--(int)
 	{
-		CachedVectorIterator<T> ret(*this);
+		ContiguousVectorIterator<T> ret(*this);
 		operator--();
 		return ret;
 	}
 
 }}
 
-#endif		// CACHED_VECTOR_H
+#endif		// CONTIGUOUS_VECTOR_H

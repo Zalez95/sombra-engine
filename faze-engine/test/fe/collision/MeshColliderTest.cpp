@@ -50,22 +50,22 @@ TEST(MeshCollider, getAABBTransforms)
 TEST(MeshCollider, getOverlapingParts1)
 {
 	fe::collision::HalfEdgeMesh expectedMesh;
-	expectedMesh.addVertex({  1.25f,  1.0f, -2.75f });
-	expectedMesh.addVertex({  1.25f, -1.0f, -2.75f });
-	expectedMesh.addVertex({ -0.25f, -1.0f, -2.75f });
-	expectedMesh.addVertex({ -0.25f,  1.0f,  0.0f  });
-	expectedMesh.addVertex({  1.25f,  1.0f,  2.75f });
-	expectedMesh.addVertex({  1.25f, -1.0f,  2.75f });
-	expectedMesh.addVertex({ -0.25f, -1.0f,  0.0f  });
-	expectedMesh.addVertex({ -0.25f,  1.0f,  2.75f });
-	expectedMesh.addFace({ 0, 1, 2 });
-	expectedMesh.addFace({ 0, 2, 3 });
-	expectedMesh.addFace({ 3, 2, 6, 7 });
-	expectedMesh.addFace({ 7, 6, 5 });
-	expectedMesh.addFace({ 7, 5, 4 });
-	expectedMesh.addFace({ 2, 1, 5, 6 });
-	expectedMesh.addFace({ 1, 0, 4, 5 });
-	expectedMesh.addFace({ 0, 3, 7, 4 });
+	fe::collision::addVertex(expectedMesh, { 1.25f,  1.0f, -2.75f });
+	fe::collision::addVertex(expectedMesh, { 1.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(expectedMesh, { -0.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(expectedMesh, { -0.25f,  1.0f,  0.0f });
+	fe::collision::addVertex(expectedMesh, { 1.25f,  1.0f,  2.75f });
+	fe::collision::addVertex(expectedMesh, { 1.25f, -1.0f,  2.75f });
+	fe::collision::addVertex(expectedMesh, { -0.25f, -1.0f,  0.0f });
+	fe::collision::addVertex(expectedMesh, { -0.25f,  1.0f,  2.75f });
+	fe::collision::addFace(expectedMesh, { 0, 1, 2 });
+	fe::collision::addFace(expectedMesh, { 0, 2, 3 });
+	fe::collision::addFace(expectedMesh, { 3, 2, 6, 7 });
+	fe::collision::addFace(expectedMesh, { 7, 6, 5 });
+	fe::collision::addFace(expectedMesh, { 7, 5, 4 });
+	fe::collision::addFace(expectedMesh, { 2, 1, 5, 6 });
+	fe::collision::addFace(expectedMesh, { 1, 0, 4, 5 });
+	fe::collision::addFace(expectedMesh, { 0, 3, 7, 4 });
 
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));

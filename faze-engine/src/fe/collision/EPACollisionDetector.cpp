@@ -115,7 +115,7 @@ namespace fe { namespace collision {
 
 		// Store the HEFace indices in a vector ordered by their distance
 		std::vector<int> facesByDistance;
-		for (auto itFace = meshData.getFacesVector().begin(); itFace != meshData.getFacesVector().end(); ++itFace) {
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
 			facesByDistance.insert(
 				std::lower_bound(facesByDistance.begin(), facesByDistance.end(), itFace.getIndex(), compareDistances),
 				itFace.getIndex()
@@ -175,8 +175,8 @@ namespace fe { namespace collision {
 				// HEEdges of the horizon to the new SupportPoint
 				if (iClosestFace < 0) { overlappingFaces.clear(); }
 				for (int iHorizonEdge : horizon) {
-					const HEEdge& currentEdge = meshData.getEdge(iHorizonEdge);
-					const HEEdge& oppositeEdge = meshData.getEdge(currentEdge.oppositeEdge);
+					const HEEdge& currentEdge = meshData.edges[iHorizonEdge];
+					const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
 
 					// Create the new HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
@@ -215,13 +215,13 @@ namespace fe { namespace collision {
 		FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
 		glm::vec3 faceNormal = polytope.getNormal(iClosestFace);
 
-		const HEEdge& edge1		= meshData.getEdge(meshData.getFace(iClosestFace).edge);
+		const HEEdge& edge1		= meshData.edges[meshData.faces[iClosestFace].edge];
 		const SupportPoint& sp2	= polytope.getSupportPoint(edge1.vertex);
 
-		const HEEdge& edge2		= meshData.getEdge(edge1.nextEdge);
+		const HEEdge& edge2		= meshData.edges[edge1.nextEdge];
 		const SupportPoint& sp3	= polytope.getSupportPoint(edge2.vertex);
 
-		const HEEdge& edge3		= meshData.getEdge(edge2.nextEdge);
+		const HEEdge& edge3		= meshData.edges[edge2.nextEdge];
 		const SupportPoint& sp1	= polytope.getSupportPoint(edge3.vertex);
 
 		const glm::vec3& originBarycentricCoords = faceDistance.closestPointBarycentricCoords;

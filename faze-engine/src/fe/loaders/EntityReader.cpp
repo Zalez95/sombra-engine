@@ -183,7 +183,7 @@ namespace fe { namespace loaders {
 				fileReader >> cameraTarget.x	>> cameraTarget.y	>> cameraTarget.z;
 				fileReader >> cameraUp.x		>> cameraUp.y		>> cameraUp.z;
 
-				auto camera = std::make_unique<graphics::Camera>(cameraPosition, cameraTarget, cameraUp);
+				camera = std::make_unique<graphics::Camera>(cameraPosition, cameraTarget, cameraUp);
 			}
 			else if (token == "renderable3D") {
 				std::string meshName, materialName, textureName;
@@ -245,11 +245,11 @@ namespace fe { namespace loaders {
 					auto rawMesh = *itRawMesh;
 					collision::HalfEdgeMesh meshData;
 
-					for (const glm::vec3& position : rawMesh->positions) {
-						meshData.addVertex(position);
+					for (const glm::vec3& vertexPosition : rawMesh->positions) {
+						collision::addVertex(meshData, vertexPosition);
 					}
 					for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
-						meshData.addFace({ rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
+						collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
 					}
 
 					// TODO: read other colliders

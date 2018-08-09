@@ -7,9 +7,8 @@ namespace fe { namespace collision {
 	{
 		mTransformsMatrix = transforms;
 
-		CachedVector<HEVertex>& verticesVector = mMesh.getVerticesVector();
-		verticesVector = mLocalVertices;
-		for (HEVertex& vertex : verticesVector) {
+		mMesh.vertices = mLocalVertices;
+		for (HEVertex& vertex : mMesh.vertices) {
 			vertex.location = mTransformsMatrix * glm::vec4(vertex.location, 1.0);
 		}
 	}
@@ -22,7 +21,7 @@ namespace fe { namespace collision {
 			glm::vec3(-std::numeric_limits<float>::max())
 		};
 
-		for (const HEVertex& vertex : mMesh.getVerticesVector()) {
+		for (const HEVertex& vertex : mMesh.vertices) {
 			ret.minimum = glm::min(ret.minimum, vertex.location);
 			ret.maximum = glm::max(ret.maximum, vertex.location);
 		}
@@ -38,7 +37,7 @@ namespace fe { namespace collision {
 	{
 		int iVertex = getFurthestVertexInDirection(direction, mMesh);
 
-		pointWorld = mMesh.getVertex(iVertex).location;
+		pointWorld = mMesh.vertices[iVertex].location;
 		pointLocal = mLocalVertices[iVertex].location;
 	}
 

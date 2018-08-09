@@ -16,10 +16,10 @@ namespace fe { namespace collision {
 		vertexIndices.push_back( addVertex(simplex[2]) );
 		vertexIndices.push_back( addVertex(simplex[3]) );
 
-		const glm::vec3 p0CSO = mMesh.getVertex(vertexIndices[0]).location;
-		const glm::vec3 p1CSO = mMesh.getVertex(vertexIndices[1]).location;
-		const glm::vec3 p2CSO = mMesh.getVertex(vertexIndices[2]).location;
-		const glm::vec3 p3CSO = mMesh.getVertex(vertexIndices[3]).location;
+		const glm::vec3 p0CSO = mMesh.vertices[vertexIndices[0]].location;
+		const glm::vec3 p1CSO = mMesh.vertices[vertexIndices[1]].location;
+		const glm::vec3 p2CSO = mMesh.vertices[vertexIndices[2]].location;
+		const glm::vec3 p3CSO = mMesh.vertices[vertexIndices[3]].location;
 
 		// Add the HEFaces with the correct normal winding order
 		const glm::vec3 tNormal = glm::cross(p1CSO - p0CSO, p2CSO - p0CSO);
@@ -76,7 +76,7 @@ namespace fe { namespace collision {
 
 	int Polytope::addVertex(const SupportPoint& sp)
 	{
-		int iVertex = mMesh.addVertex(sp.getCSOPosition());
+		int iVertex = fe::collision::addVertex(mMesh, sp.getCSOPosition());
 		mVertexSupportPoints.emplace(iVertex, sp);
 
 		return iVertex;
@@ -85,15 +85,15 @@ namespace fe { namespace collision {
 
 	int Polytope::addFace(const std::array<int, 3>& faceIndices)
 	{
-		int iFace = mMesh.addFace({ faceIndices[0], faceIndices[1], faceIndices[2] });
+		int iFace = fe::collision::addFace(mMesh, { faceIndices[0], faceIndices[1], faceIndices[2] });
 
 		// Add the normal of the HEFace to mFaceNormals
 		mFaceNormals[iFace] = calculateFaceNormal(iFace, mMesh);
 
 		// Add the distance data of the HEFace to mFaceDistances
-		const glm::vec3 p0CSO = mMesh.getVertex(faceIndices[0]).location;
-		const glm::vec3 p1CSO = mMesh.getVertex(faceIndices[1]).location;
-		const glm::vec3 p2CSO = mMesh.getVertex(faceIndices[2]).location;
+		const glm::vec3 p0CSO = mMesh.vertices[faceIndices[0]].location;
+		const glm::vec3 p1CSO = mMesh.vertices[faceIndices[1]].location;
+		const glm::vec3 p2CSO = mMesh.vertices[faceIndices[2]].location;
 		glm::vec3 closestPoint = getClosestPointInPlane(glm::vec3(0.0f), { p0CSO, p1CSO, p2CSO });
 		float distance = glm::length(closestPoint);
 		glm::vec3 closestPointBarycentricCoords;
@@ -109,7 +109,7 @@ namespace fe { namespace collision {
 
 	void Polytope::removeFace(int iFace)
 	{
-		mMesh.removeFace(iFace);
+		fe::collision::removeFace(mMesh, iFace);
 		mFaceNormals.erase(iFace);
 		mFaceDistances.erase(iFace);
 	}

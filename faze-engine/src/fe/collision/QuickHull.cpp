@@ -19,14 +19,14 @@ namespace fe { namespace collision {
 		) {
 			// 2. Get the furthest HEVertex in the direction of the face normal
 			int iEyeVertex = getFurthestVertexFrom(itFace->second, meshData, mFaceNormals[itFace->first]);
-			glm::vec3 eyePoint = meshData.getVertex(iEyeVertex).location;
+			glm::vec3 eyePoint = meshData.vertices[iEyeVertex].location;
 
 			// 3. Check if the eyePoint is already inside in the convex hull
 			int iEyeVertexConvexHull;
 			auto itVertex = mVertexIndexMap.find(iEyeVertex);
 			if (itVertex == mVertexIndexMap.end()) {
 				// 3.1 Add the eyePoint to the convex hull
-				iEyeVertexConvexHull = mConvexHull.addVertex(eyePoint);
+				iEyeVertexConvexHull = addVertex(mConvexHull, eyePoint);
 				mVertexIndexMap.emplace(iEyeVertex, iEyeVertexConvexHull);
 
 				// 3.2. Calculate the horizon HEEdges and HEFaces to remove from
@@ -38,7 +38,7 @@ namespace fe { namespace collision {
 				// collect all their outside HEVertices
 				std::vector<int> allOutsideVertices;
 				for (int iFaceToRemove : facesToRemove) {
-					mConvexHull.removeFace(iFaceToRemove);
+					removeFace(mConvexHull, iFaceToRemove);
 					mFaceNormals.erase(iFaceToRemove);
 
 					auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToRemove);
@@ -58,12 +58,12 @@ namespace fe { namespace collision {
 				// 3.4. Create new HEFaces by joining the edges of the horizon
 				// with the convex hull eyePoint
 				for (int iHorizonEdge : horizon) {
-					const HEEdge& currentEdge	= mConvexHull.getEdge(iHorizonEdge);
-					const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
+					const HEEdge& currentEdge	= mConvexHull.edges[iHorizonEdge];
+					const HEEdge& oppositeEdge	= mConvexHull.edges[currentEdge.oppositeEdge];
 
 					// Create the new HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
-					int iNewFace = mConvexHull.addFace({ iV0, iV1, iEyeVertexConvexHull });
+					int iNewFace = addFace(mConvexHull, { iV0, iV1, iEyeVertexConvexHull });
 					mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
 					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, meshData, iNewFace));
 
@@ -92,29 +92,29 @@ namespace fe { namespace collision {
 		// Add the vertices to the convex hull
 		std::vector<int> chVertexIndices;
 		for (int iMeshVertex : iSimplexVertices) {
-			int iConvexHullVertex = mConvexHull.addVertex(meshData.getVertex(iMeshVertex).location);
+			int iConvexHullVertex = addVertex(mConvexHull, meshData.vertices[iMeshVertex].location);
 			mVertexIndexMap.emplace(iMeshVertex, iConvexHullVertex);
 			chVertexIndices.push_back(iConvexHullVertex);
 		}
 
 		// Add the faces to the convex hull, 
-		const glm::vec3 p0 = mConvexHull.getVertex(chVertexIndices[0]).location,
-						p1 = mConvexHull.getVertex(chVertexIndices[1]).location,
-						p2 = mConvexHull.getVertex(chVertexIndices[2]).location,
-						p3 = mConvexHull.getVertex(chVertexIndices[3]).location;
+		const glm::vec3 p0 = mConvexHull.vertices[chVertexIndices[0]].location,
+						p1 = mConvexHull.vertices[chVertexIndices[1]].location,
+						p2 = mConvexHull.vertices[chVertexIndices[2]].location,
+						p3 = mConvexHull.vertices[chVertexIndices[3]].location;
 		int iF0, iF1, iF2, iF3;
 		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
 		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
-			iF0 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
-			iF1 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
-			iF2 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
-			iF3 = mConvexHull.addFace({ chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
+			iF0 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
+			iF1 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
+			iF2 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
+			iF3 = addFace(mConvexHull, { chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
 		}
 		else {
-			iF0 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
-			iF1 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
-			iF2 = mConvexHull.addFace({ chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
-			iF3 = mConvexHull.addFace({ chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
+			iF0 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
+			iF1 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
+			iF2 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
+			iF3 = addFace(mConvexHull, { chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
 		}
 
 		// Add the HEFaces normals
@@ -125,7 +125,7 @@ namespace fe { namespace collision {
 
 		// Add the HEFaces outside vertices
 		std::vector<int> meshVertexIndices;
-		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
+		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 			meshVertexIndices.push_back(it.getIndex());
 		}
 		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, meshData, iF0));
@@ -141,12 +141,12 @@ namespace fe { namespace collision {
 
 		// 1. Find the extreme vertices in each axis
 		std::vector<int> extremePointIndices(6, 0);
-		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
+		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 			for (int j = 0; j < 3; ++j) {
-				if (it->location[j] < meshData.getVertex(extremePointIndices[2*j]).location[j]) {
+				if (it->location[j] < meshData.vertices[extremePointIndices[2*j]].location[j]) {
 					extremePointIndices[2*j] = it.getIndex();
 				}
-				if (it->location[j] > meshData.getVertex(extremePointIndices[2*j + 1]).location[j]) {
+				if (it->location[j] > meshData.vertices[extremePointIndices[2*j + 1]].location[j]) {
 					extremePointIndices[2*j + 1] = it.getIndex();
 				}
 			}
@@ -155,10 +155,10 @@ namespace fe { namespace collision {
 		// 2. Find from the extreme vertices the pair which are furthest apart
 		float maxLength = -std::numeric_limits<float>::max();
 		for (int i = 0; i < 6; ++i) {
-			glm::vec3 p1 = meshData.getVertex(extremePointIndices[i]).location;
+			glm::vec3 p1 = meshData.vertices[extremePointIndices[i]].location;
 
 			for (int j = i + 1; j < 6; ++j) {
-				glm::vec3 p2 = meshData.getVertex(extremePointIndices[j]).location;
+				glm::vec3 p2 = meshData.vertices[extremePointIndices[j]].location;
 
 				float currentLength = glm::length(p2 - p1);
 				if (currentLength > maxLength) {
@@ -170,11 +170,11 @@ namespace fe { namespace collision {
 		}
 
 		// 3. Find the furthest point to the edge between the last 2 vertices
-		glm::vec3 p0 = meshData.getVertex(iSimplexVertices[0]).location;
-		glm::vec3 p1 = meshData.getVertex(iSimplexVertices[1]).location;
+		glm::vec3 p0 = meshData.vertices[iSimplexVertices[0]].location;
+		glm::vec3 p1 = meshData.vertices[iSimplexVertices[1]].location;
 		glm::vec3 dirP0P1 = glm::normalize(p1 - p0);
 		maxLength = -std::numeric_limits<float>::max();
-		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
+		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 			glm::vec3 projection = p0 + dirP0P1 * glm::dot(it->location - p0, dirP0P1);
 			float currentLength = glm::length(it->location - projection);
 			if (currentLength > maxLength) {
@@ -185,11 +185,11 @@ namespace fe { namespace collision {
 
 		// 4. Find the furthest point to the triangle created from the last 3
 		// vertices
-		glm::vec3 p2 = meshData.getVertex(iSimplexVertices[2]).location;
+		glm::vec3 p2 = meshData.vertices[iSimplexVertices[2]].location;
 		glm::vec3 dirP0P2 = glm::normalize(p2 - p0);
 		glm::vec3 tNormal = glm::normalize(glm::cross(dirP0P1, dirP0P2));
 		maxLength = -std::numeric_limits<float>::max();
-		for (auto it = meshData.getVerticesVector().begin(); it != meshData.getVerticesVector().end(); ++it) {
+		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 			float currentLength = std::abs(glm::dot(it->location, tNormal));
 			if (currentLength > maxLength) {
 				iSimplexVertices[3] = it.getIndex();
@@ -207,15 +207,15 @@ namespace fe { namespace collision {
 	) const
 	{
 		std::vector<int> verticesOutside;
-		if (!mConvexHull.getFacesVector().isActive(iFace)) { return verticesOutside; }
+		if (!mConvexHull.faces.isActive(iFace)) { return verticesOutside; }
 
 		// Get the face data from the convex hull
-		const HEFace& face = mConvexHull.getFace(iFace);
+		const HEFace& face = mConvexHull.faces[iFace];
 		const glm::vec3 faceNormal = mFaceNormals.find(iFace)->second;
-		const HEVertex& faceVertex = mConvexHull.getVertex(mConvexHull.getEdge(face.edge).vertex);
+		const HEVertex& faceVertex = mConvexHull.vertices[ mConvexHull.edges[face.edge].vertex ];
 
 		for (int i : vertexIndices) {
-			float currentDistance = glm::dot(meshData.getVertex(i).location - faceVertex.location, faceNormal);
+			float currentDistance = glm::dot(meshData.vertices[i].location - faceVertex.location, faceNormal);
 			if (currentDistance > mEpsilon) {
 				verticesOutside.push_back(i);
 			}
@@ -231,8 +231,8 @@ namespace fe { namespace collision {
 	) const
 	{
 		auto itMaxVertex = std::max_element(vertexIndices.begin(), vertexIndices.end(), [&](int iV1, int iV2) {
-			float dot1 = glm::dot(meshData.getVertex(iV1).location, direction);
-			float dot2 = glm::dot(meshData.getVertex(iV2).location, direction);
+			float dot1 = glm::dot(meshData.vertices[iV1].location, direction);
+			float dot2 = glm::dot(meshData.vertices[iV2].location, direction);
 			return dot1 < dot2;
 		});
 		return (itMaxVertex != vertexIndices.end())? *itMaxVertex : -1;
@@ -241,19 +241,17 @@ namespace fe { namespace collision {
 
 	void QuickHull::mergeCoplanarFaces(int iFace)
 	{
-		HEFace inputFace = mConvexHull.getFace(iFace);
+		HEFace inputFace = mConvexHull.faces[iFace];
 		glm::vec3 inputFaceNormal = mFaceNormals.find(iFace)->second;
 
-		// Test all the HEEFace edges
-		bool initialEdgeUpdated;
+		// Calculate the HEFaces to merge by testing all the HEFaces of the
+		// HEEdge loop of the current HEFace
+		std::set<int> facesToMerge;
 		int iInitialEdge = inputFace.edge;
 		int iCurrentEdge = iInitialEdge;
 		do {
-			const HEEdge& currentEdge	= mConvexHull.getEdge(iCurrentEdge);
-			const HEEdge& oppositeEdge	= mConvexHull.getEdge(currentEdge.oppositeEdge);
-
-			initialEdgeUpdated = false;
-			int iNextEdge = currentEdge.nextEdge;
+			const HEEdge& currentEdge	= mConvexHull.edges[iCurrentEdge];
+			const HEEdge& oppositeEdge	= mConvexHull.edges[currentEdge.oppositeEdge];
 
 			// Check if the opposite HEFace exists
 			if (oppositeEdge.face >= 0) {
@@ -261,27 +259,25 @@ namespace fe { namespace collision {
 				// one by the current edge
 				glm::vec3 oppositeFaceNormal = mFaceNormals.find(oppositeEdge.face)->second;
 				if (inputFaceNormal == oppositeFaceNormal) {
-					// Merge the two HEFaces into the current one
-					int iRemovedFace = oppositeEdge.face;
-					mConvexHull.mergeFace(iCurrentEdge);
-
-					// Remove the opposite HEFace normal
-					mFaceNormals.erase(iRemovedFace);
-
-					// Remove the opposite HEFace outside HEVertices
-					mFaceOutsideVertices.erase(iRemovedFace);
-
-					// Update the iInitialEdge if it has been removed
-					if (iCurrentEdge == iInitialEdge) {
-						iInitialEdge = iNextEdge;
-						initialEdgeUpdated = true;
-					}
+					facesToMerge.insert(oppositeEdge.face);
 				}
 			}
 
-			iCurrentEdge = iNextEdge;
+			iCurrentEdge = currentEdge.nextEdge;
 		}
-		while ((iCurrentEdge != iInitialEdge) || initialEdgeUpdated);
+		while (iCurrentEdge != iInitialEdge);
+
+		// Merge the HEFaces
+		for (int iMergedFace : facesToMerge) {
+			// Merge the two HEFaces into the current one
+			mergeFaces(mConvexHull, iFace, iMergedFace);
+
+			// Remove the opposite HEFace normal
+			mFaceNormals.erase(iMergedFace);
+
+			// Remove the opposite HEFace outside HEVertices
+			mFaceOutsideVertices.erase(iMergedFace);
+		}
 	}
 
 }}

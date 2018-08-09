@@ -18,7 +18,7 @@ namespace fe { namespace collision {
 		HalfEdgeMesh mMesh;
 
 		/** The HEVertices of the ConvexPolyhedron's in local space */
-		CachedVector<HEVertex> mLocalVertices;
+		ContiguousVector<HEVertex> mLocalVertices;
 
 		/** The transformation matrix of the ConvexPolyhedron */
 		glm::mat4 mTransformsMatrix;
@@ -30,7 +30,7 @@ namespace fe { namespace collision {
 		 *			ConvexPolyhedron
 		 * @note	the Mesh must be convex */
 		ConvexPolyhedron(const HalfEdgeMesh& meshData) :
-			mMesh(meshData), mLocalVertices(meshData.getVerticesVector()),
+			mMesh(meshData), mLocalVertices(meshData.vertices),
 			mTransformsMatrix(1.0f) {};
 
 		/** Class destructor */
