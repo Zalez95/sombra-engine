@@ -32,7 +32,7 @@ namespace fe { namespace collision {
 				// 3.2. Calculate the horizon HEEdges and HEFaces to remove from
 				// the current eyePoint perspective
 				std::vector<int> horizon, facesToRemove;
-				std::tie(horizon, facesToRemove) = calculateHorizon(eyePoint, itFace->first, mConvexHull, mFaceNormals);
+				std::tie(horizon, facesToRemove) = calculateHorizon(mConvexHull, mFaceNormals, eyePoint, itFace->first);
 
 				// 3.3. Remove the HEFaces seen from the current eyePoint and
 				// collect all their outside HEVertices
@@ -64,7 +64,7 @@ namespace fe { namespace collision {
 					// Create the new HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
 					int iNewFace = addFace(mConvexHull, { iV0, iV1, iEyeVertexConvexHull });
-					mFaceNormals.emplace(iNewFace, calculateFaceNormal(iNewFace, mConvexHull));
+					mFaceNormals.emplace(iNewFace, calculateFaceNormal(mConvexHull, iNewFace));
 					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, meshData, iNewFace));
 
 					// Merge the coplanar faces
@@ -118,10 +118,10 @@ namespace fe { namespace collision {
 		}
 
 		// Add the HEFaces normals
-		mFaceNormals.emplace(iF0, calculateFaceNormal(iF0, mConvexHull));
-		mFaceNormals.emplace(iF1, calculateFaceNormal(iF1, mConvexHull));
-		mFaceNormals.emplace(iF2, calculateFaceNormal(iF2, mConvexHull));
-		mFaceNormals.emplace(iF3, calculateFaceNormal(iF3, mConvexHull));
+		mFaceNormals.emplace(iF0, calculateFaceNormal(mConvexHull, iF0));
+		mFaceNormals.emplace(iF1, calculateFaceNormal(mConvexHull, iF1));
+		mFaceNormals.emplace(iF2, calculateFaceNormal(mConvexHull, iF2));
+		mFaceNormals.emplace(iF3, calculateFaceNormal(mConvexHull, iF3));
 
 		// Add the HEFaces outside vertices
 		std::vector<int> meshVertexIndices;

@@ -88,7 +88,7 @@ namespace fe { namespace collision {
 		int iFace = fe::collision::addFace(mMesh, { faceIndices[0], faceIndices[1], faceIndices[2] });
 
 		// Add the normal of the HEFace to mFaceNormals
-		mFaceNormals[iFace] = calculateFaceNormal(iFace, mMesh);
+		mFaceNormals[iFace] = calculateFaceNormal(mMesh, iFace);
 
 		// Add the distance data of the HEFace to mFaceDistances
 		const glm::vec3 p0CSO = mMesh.vertices[faceIndices[0]].location;

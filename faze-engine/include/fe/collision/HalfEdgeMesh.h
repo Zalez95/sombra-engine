@@ -104,6 +104,20 @@ namespace fe { namespace collision {
 	void removeVertex(HalfEdgeMesh& meshData, int iVertex);
 
 
+	/** Calculates the furthest point of the Mesh in the given direction with
+	 * the Hill-Climbing algorithm
+	 *
+	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
+	 * @param	direction the direction in which we are going to search
+	 * @return	the index of the furthest Mesh HEVertex
+	 * @note	the Mesh must be convex, otherwise the furthest point found
+	 *			could be a local maximum */
+	int getFurthestVertexInDirection(
+		const HalfEdgeMesh& meshData,
+		const glm::vec3& direction
+	);
+
+
 	/** Creates a new HEFace from the given HEVertex indices and adds it
 	 * to the Mesh
 	 *
@@ -126,6 +140,14 @@ namespace fe { namespace collision {
 	void removeFace(HalfEdgeMesh& meshData, int iFace);
 
 
+	/** Returns the HEVertex indices of the given HEFace
+	 *
+	 * @param	meshData the Mesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
+	 * @return	a vector with the indices of the HEFace's HEVertices */
+	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
+
+
 	/** Merges the given two HEFaces into a single one
 	 *
 	 * @param	meshData the Mesh where the HEFaces are located in
@@ -138,53 +160,40 @@ namespace fe { namespace collision {
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2);
 
 
+	/** Replaces the polygon HEFaces of the given HalfEdgeMesh for triangles
+	 *
+	 * @param	meshData the Mesh where the HEFaces are located in
+	 * @note	we will use the ear clipping method, which only works with
+	 *			convex polygons (The HEFaces are ensured to be convex if we
+	 *			had added them with the addFace method) */
+	void triangulateFaces(HalfEdgeMesh& meshData);
+
+
 	/** Calculates the normal of the given HEFace
 	 *
-	 * @param	iFace the index of the HEFace
 	 * @param	meshData the Mesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
 	 * @return	the normal of the HEFace */
-	glm::vec3 calculateFaceNormal(int iFace, const HalfEdgeMesh& meshData);
-
-
-	/** Returns the HEVertex indices of the given HEFace
-	 *
-	 * @param	iFace the index of the HEFace
-	 * @param	meshData the Mesh where the HEFace is located in
-	 * @return	a vector with the indices of the HEFace's HEVertices */
-	std::vector<int> getFaceIndices(int iFace, const HalfEdgeMesh& meshData);
-
-
-	/** Calculates the furthest point of the Mesh in the given direction with
-	 * the Hill-Climbing algorithm
-	 *
-	 * @param	direction the direction in which we are going to search
-	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
-	 * @return	the index of the furthest Mesh HEVertex
-	 * @note	the Mesh must be convex, otherwise the furthest point found
-	 *			could be a local maximum */
-	int getFurthestVertexInDirection(
-		const glm::vec3& direction,
-		const HalfEdgeMesh& meshData
-	);
+	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace);
 
 
 	/** Calculates the boundary of the given HalfEdgeMesh as seen from the given
 	 * eye point
 	 *
+	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
+	 * @param	faceNormals the normals of each HEFace
 	 * @param	eyePoint the 3D coordinates of the eye point
 	 * @param	iFace the index of the initial HEFace from which we will start
 	 *			searching
-	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
-	 * @param	faceNormals the normals of each HEFace
 	 * @return	a pair with the list of HEEdge indices that represents the
 	 *			boundary of the ConvexHull and the list of HEFace indices with
 	 *			the visible HEFaces
 	 * @note	the initial HEFace must be visible from the eyePoint
 	 *			perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const glm::vec3& eyePoint, int iFace,
 		const HalfEdgeMesh& meshData,
-		const std::map<int, glm::vec3>& faceNormals
+		const std::map<int, glm::vec3>& faceNormals,
+		const glm::vec3& eyePoint, int iFace
 	);
 
 }}

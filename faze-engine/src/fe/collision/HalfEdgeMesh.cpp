@@ -31,6 +31,51 @@ namespace fe { namespace collision {
 	}
 
 
+	int getFurthestVertexInDirection(
+		const HalfEdgeMesh& meshData,
+		const glm::vec3& direction
+	) {
+		auto getVertexDistance = [&direction](const glm::vec3& location) {
+			return glm::dot(location, direction);
+		};
+
+		int iBestVertex = meshData.vertices.begin().getIndex();
+		float bestDistance = getVertexDistance(meshData.vertices[iBestVertex].location);
+
+		for (bool end = false; !end;) {
+			// Search the best neighbour of the current vertex
+			int iInitialEdge = meshData.vertices[iBestVertex].edge, iCurrentEdge = iInitialEdge,
+				iBestVertex2 = -1;
+			float bestDistance2 = -std::numeric_limits<float>::max();
+			do {
+				HEEdge currentEdge = meshData.edges[iCurrentEdge];
+				HEVertex currentVertex = meshData.vertices[currentEdge.vertex];
+
+				float currentDistance = getVertexDistance(currentVertex.location);
+				if (currentDistance > bestDistance2) {
+					bestDistance2 = currentDistance;
+					iBestVertex2 = currentEdge.vertex;
+				}
+
+				iCurrentEdge = meshData.edges[currentEdge.oppositeEdge].nextEdge;
+			}
+			while ((iCurrentEdge != iInitialEdge) && (iCurrentEdge >= 0));
+
+			if (bestDistance2 > bestDistance) {
+				// Update our upper bound
+				bestDistance = bestDistance2;
+				iBestVertex = iBestVertex2;
+			}
+			else {
+				// Found maximum
+				end = true;
+			}
+		}
+
+		return iBestVertex;
+	}
+
+
 	int addFace(HalfEdgeMesh& meshData, const std::vector<int>& vertexIndices)
 	{
 		if (vertexIndices.size() < 3) { return -1; }
@@ -155,6 +200,24 @@ namespace fe { namespace collision {
 	}
 
 
+	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace)
+	{
+		std::vector<int> indices;
+
+		int initialEdgeIndex = meshData.faces[iFace].edge;
+		int currentEdgeIndex = initialEdgeIndex;
+		do {
+			const HEEdge& currentEdge	= meshData.edges[currentEdgeIndex];
+			const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
+			indices.push_back(oppositeEdge.vertex);
+			currentEdgeIndex = currentEdge.nextEdge;
+		}
+		while (currentEdgeIndex != initialEdgeIndex);
+
+		return indices;
+	}
+
+
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2)
 	{
 		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)
@@ -242,7 +305,32 @@ namespace fe { namespace collision {
 	}
 
 
-	glm::vec3 calculateFaceNormal(int iFace, const HalfEdgeMesh& meshData)
+	void triangulateFaces(HalfEdgeMesh& meshData)
+	{
+		HalfEdgeMesh triangulatedMesh;
+		triangulatedMesh.vertices = meshData.vertices;
+
+		for (const HEFace& face : meshData.faces) {
+			HEEdge currentEdge	= meshData.edges[face.edge];
+			HEEdge oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
+
+			int initialVertexIndex	= oppositeEdge.vertex;
+			int lastEdgeIndex		= currentEdge.previousEdge;
+			int currentEdgeIndex	= currentEdge.nextEdge;
+			do {
+				currentEdge		= meshData.edges[currentEdgeIndex];
+				oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
+				addFace(triangulatedMesh, { initialVertexIndex, oppositeEdge.vertex, currentEdge.vertex });
+				currentEdgeIndex = currentEdge.nextEdge;
+			}
+			while (currentEdgeIndex != lastEdgeIndex);
+		}
+
+		meshData = triangulatedMesh;
+	}
+
+
+	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace)
 	{
 		glm::vec3 normal(0.0f);
 
@@ -266,72 +354,9 @@ namespace fe { namespace collision {
 	}
 
 
-	std::vector<int> getFaceIndices(int iFace, const HalfEdgeMesh& meshData)
-	{
-		std::vector<int> indices;
-
-		int initialEdgeIndex = meshData.faces[iFace].edge;
-		int currentEdgeIndex = initialEdgeIndex;
-		do {
-			const HEEdge& currentEdge	= meshData.edges[currentEdgeIndex];
-			const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
-			indices.push_back(oppositeEdge.vertex);
-			currentEdgeIndex = currentEdge.nextEdge;
-		}
-		while (currentEdgeIndex != initialEdgeIndex);
-
-		return indices;
-	}
-
-
-	int getFurthestVertexInDirection(
-		const glm::vec3& direction,
-		const HalfEdgeMesh& meshData
-	) {
-		auto getVertexDistance = [&direction](const glm::vec3& location) {
-			return glm::dot(location, direction);
-		};
-
-		int iBestVertex = meshData.vertices.begin().getIndex();
-		float bestDistance = getVertexDistance(meshData.vertices[iBestVertex].location);
-
-		for (bool end = false; !end;) {
-			// Search the best neighbour of the current vertex
-			int iInitialEdge = meshData.vertices[iBestVertex].edge, iCurrentEdge = iInitialEdge,
-				iBestVertex2 = -1;
-			float bestDistance2 = -std::numeric_limits<float>::max();
-			do {
-				HEEdge currentEdge = meshData.edges[iCurrentEdge];
-				HEVertex currentVertex = meshData.vertices[currentEdge.vertex];
-
-				float currentDistance = getVertexDistance(currentVertex.location);
-				if (currentDistance > bestDistance2) {
-					bestDistance2 = currentDistance;
-					iBestVertex2 = currentEdge.vertex;
-				}
-
-				iCurrentEdge = meshData.edges[currentEdge.oppositeEdge].nextEdge;
-			}
-			while ((iCurrentEdge != iInitialEdge) && (iCurrentEdge >= 0));
-
-			if (bestDistance2 > bestDistance) {
-				// Update our upper bound
-				bestDistance = bestDistance2;
-				iBestVertex = iBestVertex2;
-			}
-			else {
-				// Found maximum
-				end = true;
-			}
-		}
-
-		return iBestVertex;
-	}
-
-
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const glm::vec3& eyePoint, int iFace,
-		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals
+		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals,
+		const glm::vec3& eyePoint, int iFace
 	) {
 		std::vector<int> horizonEdges, visibleFaces;
 

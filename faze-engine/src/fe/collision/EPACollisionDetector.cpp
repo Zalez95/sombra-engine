@@ -150,8 +150,8 @@ namespace fe { namespace collision {
 				// from the current eyePoint perspective
 				std::vector<int> horizon, facesToRemove;
 				std::tie(horizon, facesToRemove) = calculateHorizon(
-					sp.getCSOPosition(), iCurrentFace,
-					meshData, polytope.getNormalsMap()
+					meshData, polytope.getNormalsMap(),
+					sp.getCSOPosition(), iCurrentFace
 				);
 
 				// 4.2. Remove all the HEFaces that can be seen from the new
@@ -160,7 +160,7 @@ namespace fe { namespace collision {
 					// If we are going to remove the closest HEFace then we
 					// store its indices for recoving it later if necessary
 					if (iClosestFace == iFaceToRemove) {
-						closestFaceIndices = getFaceIndices(iClosestFace, polytope.getMesh());
+						closestFaceIndices = getFaceIndices(polytope.getMesh(), iClosestFace);
 						iClosestFace = -1;
 					}
 

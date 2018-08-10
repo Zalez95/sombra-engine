@@ -35,7 +35,7 @@ namespace fe { namespace collision {
 		glm::vec3& pointWorld, glm::vec3& pointLocal
 	) const
 	{
-		int iVertex = getFurthestVertexInDirection(direction, mMesh);
+		int iVertex = getFurthestVertexInDirection(mMesh, direction);
 
 		pointWorld = mMesh.vertices[iVertex].location;
 		pointLocal = mLocalVertices[iVertex].location;
