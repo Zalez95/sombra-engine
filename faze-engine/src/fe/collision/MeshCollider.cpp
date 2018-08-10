@@ -1,25 +1,11 @@
 #include <limits>
 #include "fe/collision/MeshCollider.h"
-#include "QuickHull.h"
 
 namespace fe { namespace collision {
 
-	MeshCollider::MeshCollider(const HalfEdgeMesh& meshData, ConvexStrategy strategy) :
-		mTransformsMatrix(1.0f)
+	MeshCollider::MeshCollider(const std::vector<ConvexPolyhedron>& convexParts) :
+		mConvexParts(convexParts), mTransformsMatrix(1.0f)
 	{
-		switch (strategy) {
-			case ConvexStrategy::QuickHull: {
-				QuickHull quickHull(sEpsilon);
-				quickHull.calculate(meshData);
-				mConvexParts.push_back(quickHull.getMesh());
-				break;
-			}
-			case ConvexStrategy::HACD: {
-				throw std::runtime_error("Not implemented");
-				break;
-			}
-		}
-
 		calculateAABB();
 	}
 

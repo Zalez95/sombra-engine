@@ -7,36 +7,12 @@
 namespace fe { namespace collision {
 
 	/**
-	 * The algorithm used to transform the concave MeshCollider in a/multiple
-	 * ConvexColliders
-	 */
-	enum class ConvexStrategy
-	{
-		/** QuickHull algorithm used to calculate the Convex Hull */
-		QuickHull,
-		/** HACD algorithm used to split a ConcaveCollider in multiple
-		 * ConvexColliders */
-		HACD
-	};
-
-
-	/**
 	 * Class MeshCollider, it's a Collider with a concave shape stored as a
 	 * Half-Edge mesh.
 	 */
 	class MeshCollider : public ConcaveCollider
 	{
-	private:	// Nested types
-		using EdgeMatrix = std::vector<std::vector<bool>>;
-
-		/** The epsilon used to calculate the convex parts of the
-		 * MeshCollider */
-		static constexpr float sEpsilon = 0.001f;
-
 	private:	// Attributes
-		/** The minimum concavity needed for HACD algorithm */
-		static constexpr float sMinimumConcavity = 0.5f;
-
 		/** The multiple pieces in which the ConcaveCollider is splited */
 		std::vector<ConvexPolyhedron> mConvexParts;
 
@@ -47,12 +23,12 @@ namespace fe { namespace collision {
 		AABB mAABB;
 
 	public:		// Functions
-		/** Creates a new MeshCollider located at the origin of
-		 * coordinates
+		/** Creates a new MeshCollider located at the origin of coordinates
+		 * from the given convex pieces
 		 *
-		 * @param	meshData the mesh of the MeshCollider
-		 * @param	strategy the algorithm used for the convex */
-		MeshCollider(const HalfEdgeMesh& meshData, ConvexStrategy strategy);
+		 * @param	convexParts the multiple pieces in which the ConcaveCollider
+		 *			is splitted */
+		MeshCollider(const std::vector<ConvexPolyhedron>& convexParts);
 
 		/** Class destructor */
 		virtual ~MeshCollider() {};

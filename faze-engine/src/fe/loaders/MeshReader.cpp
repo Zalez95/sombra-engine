@@ -154,7 +154,7 @@ namespace fe { namespace loaders {
 				else { fileReader.discardLine(); }
 				++positionIndex;
 			}
-			else if (token == "uv"){
+			else if (token == "uv") {
 				unsigned int vi;
 				if ((fileReader.getValue(vi) == utils::FileState::OK)
 					&& (vi < numPositions)

@@ -2,7 +2,6 @@
 #define QUICK_HULL_H
 
 #include <map>
-#include <vector>
 #include <glm/glm.hpp>
 #include "fe/collision/HalfEdgeMesh.h"
 
@@ -18,7 +17,7 @@ namespace fe { namespace collision {
 		/** The precision with which we will compare the HEVertices to the
 		 * HEFaces of the Meshes when checking if they're over or inside
 		 * them */
-		float mEpsilon;
+		const float mEpsilon;
 
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
 		HalfEdgeMesh mConvexHull;

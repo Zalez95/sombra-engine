@@ -21,7 +21,8 @@
 
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
-#include <fe/collision/MeshCollider.h>
+#include <fe/collision/ConvexPolyhedron.h>
+#include <fe/collision/QuickHull.h>
 
 #include <fe/physics/PhysicsEngine.h>
 #include <fe/physics/PhysicsEntity.h>
@@ -75,6 +76,7 @@ namespace game {
 		 *********************************************************************/
 		fe::loaders::MeshLoader meshLoader;
 		fe::loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager, *mPhysicsManager);
+		fe::collision::QuickHull qh(0.0001f);
 
 		std::shared_ptr<fe::graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<fe::loaders::RawMesh>> fileRawMeshes;
@@ -312,9 +314,10 @@ namespace game {
 					fe::collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
 				}
 
+				qh.calculate(meshData);
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::MeshCollider>(meshData, fe::collision::ConvexStrategy::QuickHull),
+					std::make_unique<fe::collision::ConvexPolyhedron>(qh.getMesh()),
 					glm::mat4(1.0f)
 				);
 				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));

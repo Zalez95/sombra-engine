@@ -8,7 +8,8 @@
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Material.h"
 #include "fe/physics/PhysicsEntity.h"
-#include "fe/collision/MeshCollider.h"
+#include "fe/collision/ConvexPolyhedron.h"
+#include "fe/collision/QuickHull.h"
 #include "fe/loaders/RawMesh.h"
 
 namespace fe { namespace loaders {
@@ -243,8 +244,9 @@ namespace fe { namespace loaders {
 				);
 				if (itRawMesh != sharedData.rawMeshes.end()) {
 					auto rawMesh = *itRawMesh;
-					collision::HalfEdgeMesh meshData;
 
+					// TODO: read other colliders
+					collision::HalfEdgeMesh meshData;
 					for (const glm::vec3& vertexPosition : rawMesh->positions) {
 						collision::addVertex(meshData, vertexPosition);
 					}
@@ -252,10 +254,13 @@ namespace fe { namespace loaders {
 						collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
 					}
 
-					// TODO: read other colliders
+					// TODO: move to header
+					collision::QuickHull qh(0.001f);
+					qh.calculate(meshData);
+
 					physicsEntity = std::make_unique<physics::PhysicsEntity>(
 						physics::RigidBody(),
-						std::make_unique<collision::MeshCollider>(meshData, collision::ConvexStrategy::QuickHull),
+						std::make_unique<collision::ConvexPolyhedron>(qh.getMesh()),
 						mat
 					);
 				}

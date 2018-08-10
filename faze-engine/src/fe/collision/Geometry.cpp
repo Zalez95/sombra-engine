@@ -67,4 +67,14 @@ namespace fe { namespace collision {
 		return glm::length(v12) * glm::length(v13) * sinTheta / 2.0f;
 	}
 
+
+	float calculatePolygonPerimeter(const std::vector<glm::vec3>& vertices)
+	{
+		float perimeter = 0.0f;
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			perimeter += glm::length(vertices[(i + 1) % vertices.size()] - vertices[i]);
+		}
+		return perimeter;
+	}
+
 }}

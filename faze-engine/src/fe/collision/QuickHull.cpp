@@ -1,7 +1,7 @@
 #include <tuple>
 #include <limits>
 #include <algorithm>
-#include "QuickHull.h"
+#include "fe/collision/QuickHull.h"
 
 namespace fe { namespace collision {
 
