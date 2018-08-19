@@ -33,10 +33,10 @@ namespace fe { namespace collision {
 		/** The raw data of the ContiguousVector */
 		std::vector<T> mElements;
 
-		/** The number of non free Elements of the Vector */
+		/** The number of non free Elements of the ContiguousVector */
 		std::size_t mNumElements;
 
-		/** The indices to the freed Elements of the Vector */
+		/** The indices to the freed Elements of the ContiguousVector */
 		std::set<std::size_t> mFreeIndices;
 
 	public:		// Functions
@@ -62,17 +62,17 @@ namespace fe { namespace collision {
 		const T& operator[](std::size_t i) const { return mElements[i]; };
 
 		/** @return	the initial iterator of the ContiguousVector */
-		iterator begin() { return iterator(*this); };
+		iterator begin() { return iterator(this); };
 
 		/** @return	the initial iterator of the ContiguousVector */
-		const_iterator begin() const { return const_iterator(*this); };
+		const_iterator begin() const { return const_iterator(this); };
 
 		/** @return	the final iterator of the ContiguousVector */
-		iterator end() { return iterator(*this, mElements.size()); };
+		iterator end() { return iterator(this, mElements.size()); };
 
 		/** @return	the final iterator of the ContiguousVector */
 		const_iterator end() const
-		{ return const_iterator(*this, mElements.size()); };
+		{ return const_iterator(this, mElements.size()); };
 
 		/** Creates a new Element in the vector or reuses an already released
 		 * one
@@ -87,7 +87,7 @@ namespace fe { namespace collision {
 		 * @note	by releasing the elements instead than erasing them we
 		 *			don't have to iterate through the elements for fixing
 		 *			its indices */
-		void free(std::size_t i);
+		void release(std::size_t i);
 
 		/** Checks if the Element given located at the given index is valid and
 		 * active
@@ -112,8 +112,8 @@ namespace fe { namespace collision {
 			const ContiguousVector<T>, ContiguousVector<T>
 		>;
 
-		/** The vector to iterate */
-		VectorType& mVector;
+		/** A pointer to the vector to iterate */
+		VectorType* mVector;
 
 		/** The current position in the vector */
 		std::size_t mIndex;
@@ -122,14 +122,14 @@ namespace fe { namespace collision {
 		/** Creates a new ContiguousVectorIterator located at the initial valid
 		 * position of the given ContiguousVector (begin)
 		 *
-		 * @param	vector the vector to iterate */
-		ContiguousVectorIterator(VectorType& vector);
+		 * @param	vector a pointer to the vector to iterate */
+		ContiguousVectorIterator(VectorType* vector);
 
 		/** Creates a new ContiguousVectorIterator
 		 *
-		 * @param	vector the vector to iterate
+		 * @param	vector a pointer to the vector to iterate
 		 * @param	index the inital index of the iterator */
-		ContiguousVectorIterator(VectorType& vector, std::size_t index) :
+		ContiguousVectorIterator(VectorType* vector, std::size_t index) :
 			mVector(vector), mIndex(index) {};
 
 		/** Class destructor */
@@ -140,18 +140,18 @@ namespace fe { namespace collision {
 
 		/** @return	a reference to the current Element that the iterator is
 		 *			pointing at */
-		ElementType& operator*() { return mVector[mIndex]; };
+		ElementType& operator*() { return (*mVector)[mIndex]; };
 
 		/** @return	a pointer to the current Element that the iterator is
 		 *			pointing at */
-		ElementType* operator->() { return &mVector[mIndex]; };
+		ElementType* operator->() { return &(*mVector)[mIndex]; };
 
 		/** Compares the current iterator with the given one
 		 *
 		 * @param	other the other iterator to compare
 		 * @return	true if both iterators are equal, false otherwise */
 		bool operator==(const ContiguousVectorIterator& other) const
-		{ return (&mVector == &other.mVector) && (mIndex == other.mIndex); };
+		{ return (mVector == other.mVector) && (mIndex == other.mIndex); };
 
 		/** Compares the current iterator with the given one
 		 *
@@ -206,9 +206,9 @@ namespace fe { namespace collision {
 
 
 	template<class T>
-	void ContiguousVector<T>::free(std::size_t i)
+	void ContiguousVector<T>::release(std::size_t i)
 	{
-		if (mFreeIndices.find(i) == mFreeIndices.end()) {
+		if (isActive(i)) {
 			mFreeIndices.insert(i);
 			mElements[i] = T();
 			mNumElements--;
@@ -226,10 +226,10 @@ namespace fe { namespace collision {
 
 	template<class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>::ContiguousVectorIterator(
-		VectorType& vector
+		VectorType* vector
 	) : mVector(vector), mIndex(0)
 	{
-		if (!mVector.isActive(mIndex) && (mVector.mNumElements > 0)) {
+		if (!mVector->isActive(mIndex) && (mVector->mNumElements > 0)) {
 			operator++();
 		}
 	}
@@ -243,8 +243,8 @@ namespace fe { namespace collision {
 			mIndex++;
 		}
 		while (
-			!mVector.isActive(mIndex)
-			&& (mIndex < mVector.mElements.size())
+			!mVector->isActive(mIndex)
+			&& (mIndex < mVector->mElements.size())
 		);
 
 		return *this;
@@ -255,7 +255,7 @@ namespace fe { namespace collision {
 	ContiguousVectorIterator<T, isConst>
 		ContiguousVectorIterator<T, isConst>::operator++(int)
 	{
-		ContiguousVectorIterator<T> ret(*this);
+		ContiguousVectorIterator<T, isConst> ret(*this);
 		operator++();
 		return ret;
 	}
@@ -269,8 +269,8 @@ namespace fe { namespace collision {
 			mIndex--;
 		}
 		while (
-			!mVector.isActive(mIndex)
-			&& (mIndex < mVector.mElements.size())
+			!mVector->isActive(mIndex)
+			&& (mIndex < mVector->mElements.size())
 		);
 
 		return *this;
@@ -281,7 +281,7 @@ namespace fe { namespace collision {
 	ContiguousVectorIterator<T, isConst>
 		ContiguousVectorIterator<T, isConst>::operator--(int)
 	{
-		ContiguousVectorIterator<T> ret(*this);
+		ContiguousVectorIterator<T, isConst> ret(*this);
 		operator--();
 		return ret;
 	}

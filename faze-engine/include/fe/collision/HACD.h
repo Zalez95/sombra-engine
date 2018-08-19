@@ -2,6 +2,7 @@
 #define HACD_H
 
 #include "AABB.h"
+#include "Graph.h"
 #include "QuickHull.h"
 
 namespace fe { namespace collision {
@@ -11,26 +12,6 @@ namespace fe { namespace collision {
 	 */
 	class HACD
 	{
-	private:	// Nested types
-		/** Struct GraphVertex, it represents a vertex inside of a Graph */
-		struct GraphVertex
-		{
-			/** The id of the current vertex */
-			int id;
-
-			/** The ids of the neighbour vertices sorted from lowest to
-			 * highest */
-			std::vector<int> neighbours;
-		};
-
-		/** Struct Graph, it's used to store a generic Graph */
-		struct Graph
-		{
-			/** The vertices of the graph sorted by id from lowest to
-			 * highest */
-			std::vector<GraphVertex> vertices;
-		};
-
 	private:	// Attributes
 		/** The minimum concavity needed for HACD algorithm */
 		const float mMinimumConcavity;
@@ -97,15 +78,6 @@ namespace fe { namespace collision {
 		/** Resets the HACD data for the next calculations */
 		void resetData();
 	private:
-		/** Compares the given vertex with the given id
-		 *
-		 * @param	vertex the vertex to compare
-		 * @param	id the id to compare
-		 * @return	true if the vertex id is less than the given id, false
-		 *			otherwise */
-		bool lessVertexId(const GraphVertex& vertex, int id) const
-		{ return vertex.id < id; };
-
 		/** Initializes all the data needed for the HACD algorithm computation
 		 *
 		 * @param	meshData the Half-Edge data structure with the 3D Mesh to
@@ -118,15 +90,6 @@ namespace fe { namespace collision {
 		 *			the dual graph
 		 * @return	the dual graph of the mesh */
 		Graph createDualGraph(const HalfEdgeMesh& meshData) const;
-
-		/** Collapses the given nodes into the first one by removing second
-		 * one and adding its relationships to the first one
-		 *
-		 * @param	v1 the index of the graph node where second one is going
-		 *			to be collapsed
-		 * @param	v2 the index of the graph node to collapse
-		 * @param	dualGraph the graph where the nodes are located in */
-		void halfEdgeCollapse(int v1, int v2, Graph& dualGraph) const;
 
 		/** Calculates the decimation cost of the edge between the given
 		 * GraphNodes with the aspect ratio and the concavity of the surface

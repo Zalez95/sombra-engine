@@ -27,7 +27,7 @@ namespace fe { namespace collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		meshData.vertices.free(iVertex);
+		meshData.vertices.release(iVertex);
 	}
 
 
@@ -172,8 +172,8 @@ namespace fe { namespace collision {
 				meshData.vertexEdgeMap.erase(std::make_pair(iVertex2, iVertex1));
 
 				// Remove the Edges
-				meshData.edges.free(iCurrentEdge);
-				meshData.edges.free(iOppositeEdge);
+				meshData.edges.release(iCurrentEdge);
+				meshData.edges.release(iOppositeEdge);
 			}
 			else {
 				// Reset the HEFace data of the current HEEdge
@@ -196,7 +196,7 @@ namespace fe { namespace collision {
 			}
 		}
 
-		meshData.faces.free(iFace);
+		meshData.faces.release(iFace);
 	}
 
 
@@ -282,8 +282,8 @@ namespace fe { namespace collision {
 				// Remove both HEEdges
 				meshData.vertexEdgeMap.erase(std::make_pair(oppositeEdge.vertex, currentEdge.vertex));
 				meshData.vertexEdgeMap.erase(std::make_pair(currentEdge.vertex, oppositeEdge.vertex));
-				meshData.edges.free(currentEdge.oppositeEdge);
-				meshData.edges.free(iCurrentEdge);
+				meshData.edges.release(currentEdge.oppositeEdge);
+				meshData.edges.release(iCurrentEdge);
 
 				newSection = false;
 			}
@@ -299,7 +299,7 @@ namespace fe { namespace collision {
 		meshData.faces[iFace1].edge = iCurrentEdge;
 
 		// Remove the second HEFace
-		meshData.faces.free(iFace2);
+		meshData.faces.release(iFace2);
 
 		return iFace1;
 	}

@@ -1,4 +1,5 @@
 #include <limits>
+#include <algorithm>
 #include <glm/gtc/constants.hpp>
 #include "fe/collision/HACD.h"
 #include "Geometry.h"
@@ -81,15 +82,14 @@ namespace fe { namespace collision {
 	}
 
 
-	HACD::Graph HACD::createDualGraph(const HalfEdgeMesh& meshData) const
+	Graph HACD::createDualGraph(const HalfEdgeMesh& meshData) const
 	{
 		Graph dualGraph;
 
 		// Create the dual graph from the Mesh HEFaces
-		dualGraph.vertices.resize(meshData.faces.size());
-		auto itFace = meshData.faces.begin();
-		for (GraphVertex& v : dualGraph.vertices) {
-			v.id = (itFace++).getIndex();
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end();) {
+			int iVertex = dualGraph.vertices.create();
+			dualGraph.vertices[iVertex].id = (itFace++).getIndex();
 		}
 
 		// Create the graph edges from the Mesh adjacent HEFaces
@@ -120,41 +120,6 @@ namespace fe { namespace collision {
 		}
 
 		return dualGraph;
-	}
-
-
-	void HACD::halfEdgeCollapse(int v1, int v2, Graph& dualGraph) const
-	{
-		auto itVertex1 = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), v1, lessVertexId);
-		auto itVertex2 = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), v2, lessVertexId);
-		if ((itVertex1 == dualGraph.vertices.end()) || (itVertex2 == dualGraph.vertices.end())) { return; }
-
-		// Get all the neighbour vertices of the vertex 2 but not of the
-		// vertex 1
-		std::vector<int> neighbourDifference;
-		std::set_symmetric_difference(
-			itVertex1->neighbours.begin(), itVertex1->neighbours.end(),
-			itVertex2->neighbours.begin(), itVertex2->neighbours.end(),
-			std::back_inserter(neighbourDifference)
-		);
-
-		// Add the vertex 2 neighbours vertices to the first vertex
-		for (int v : neighbourDifference) {
-			itVertex1->neighbours.insert(
-				std::lower_bound(itVertex1->neighbours.begin(), itVertex1->neighbours.end(), v),
-				v
-			);
-		}
-
-		// Remove all the vertex 2 neighbours 
-		for (int v : itVertex2->neighbours) {
-			auto itVertex = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), v, lessVertexId);
-			if (itVertex != dualGraph.vertices.end()) {
-				auto itVertexNeighbour = std::lower_bound(itVertex->neighbours.begin(), itVertex->neighbours.end(), v);
-				itVertex->neighbours.erase(itVertexNeighbour);
-			}
-		}
-		itVertex2->neighbours.clear();
 	}
 
 
