@@ -10,19 +10,22 @@ namespace fe { namespace collision {
 	{
 		initData(meshData);
 
-		while (true)
+		int iBestVertex1, iBestVertex2;
+		while (iBestVertex1 >= 0)
 		{
-			// 1. Calculate the pair of nodes with the biggest concavity value
+			// 1. Calculate the pair of nodes with the lowest decimation cost
+			iBestVertex1 = -1;
+			iBestVertex2 = -1;
 			float lowestCost = std::numeric_limits<float>::max();
-			int iBestVertex1 = -1, iBestVertex2 = -1;
-
 			for (const GraphVertex& vertex : mDualGraph.vertices) {
 				int iVertex1 = vertex.id;
 				for (int iVertex2 : vertex.neighbours) {
 					// We filter the neighbour nodes already evaluated
 					if (iVertex2 > iVertex1) {
-						float currentCost = calculateDecimationCost(iVertex1, iVertex2);
-						if (currentCost < lowestCost) {
+						float concavity = calculateConcavity(iVertex1, iVertex2, mMesh, mFaceNormals, mConvexHull);
+						float aspectRatio = calculateAspectRatio(iVertex1, iVertex2, mMesh);
+						float currentCost = calculateDecimationCost(concavity, aspectRatio);
+						if ((concavity < mMaximumConcavity) && (currentCost < lowestCost)) {
 							lowestCost = currentCost;
 							iBestVertex1 = iVertex1;
 							iBestVertex2 = iVertex2;
@@ -31,17 +34,28 @@ namespace fe { namespace collision {
 				}
 			}
 
-			// 2. Merge the best nodes
-			halfEdgeCollapse(iBestVertex1, iBestVertex2, mDualGraph);
+			if (iBestVertex1 >= 0) {
+				// 2. Merge the best nodes
+				halfEdgeCollapse(iBestVertex1, iBestVertex2, mDualGraph);
 
-			// 3. 
+				// 3. Update the ancestors of the first vertex with the second one
+				updateAncestors(iBestVertex1, iBestVertex2);
+
+				// 4. Update the partitions of the Dual Graph vertices
+				calculatePartitions();
+			}
 		}
+
+		computeConvexSurfaces();
 	}
 
 
 	void HACD::resetData()
 	{
 		mQuickHull.resetData();
+		mFaceNormals.clear();
+		mVertexAncestors.clear();
+		mConvexSurfaces.clear();
 	}
 
 // Private functions
@@ -120,13 +134,6 @@ namespace fe { namespace collision {
 		}
 
 		return dualGraph;
-	}
-
-
-	float HACD::calculateDecimationCost(int iFace1, int iFace2) const
-	{
-		return calculateConcavity(iFace1, iFace2, mMesh, mFaceNormals, mConvexHull) / mNormalizationFactor
-			+ mAspectRatioFactor * calculateAspectRatio(iFace1, iFace2, mMesh);
 	}
 
 
@@ -291,7 +298,74 @@ namespace fe { namespace collision {
 
 	float HACD::calculateAspectRatioFactor(float normalizationFactor) const
 	{
-		return mMinimumConcavity / (10.0f * normalizationFactor);
+		return mMaximumConcavity / (10.0f * normalizationFactor);
+	}
+
+
+	float HACD::calculateDecimationCost(float concavity, float aspectRatio) const
+	{
+		return concavity / mNormalizationFactor + mAspectRatioFactor * aspectRatio;
+	}
+
+
+	void HACD::updateAncestors(int iVertex1, int iVertex2)
+	{
+		auto itVertex2Ancestors = mVertexAncestors.equal_range(iVertex2);
+		for (auto itAncestor = itVertex2Ancestors.first; itAncestor != itVertex2Ancestors.second; ++itAncestor) {
+			mVertexAncestors.emplace(iVertex1, itAncestor->second);
+		}
+
+		mVertexAncestors.emplace(iVertex1, iVertex2);
+	}
+
+
+	void HACD::calculatePartitions()
+	{
+		mGraphPartitions.clear();
+		for (auto itVertex = mDualGraph.vertices.begin(); itVertex != mDualGraph.vertices.end(); ++itVertex) {
+			int iVertex = itVertex.getIndex();
+			auto itVertexAncestors = mVertexAncestors.equal_range(iVertex);
+
+			GraphPartition partition;
+			partition.push_back(iVertex);
+			for (auto itAncestor = itVertexAncestors.first; itAncestor != itVertexAncestors.second; ++itAncestor) {
+				partition.push_back(itAncestor->second);
+			}
+
+			mGraphPartitions.push_back(partition);
+		}
+	}
+
+
+	void HACD::computeConvexSurfaces()
+	{
+		mConvexSurfaces.resize(mGraphPartitions.size());
+		for (size_t iPartition = 0; iPartition < mGraphPartitions.size(); ++iPartition) {
+			std::map<int, int> vertexIndexMap;
+			for (int iMeshFace : mGraphPartitions[iPartition]) {
+				// Add the HEVertices to the surface if they aren't already in
+				// it
+				std::vector<int> surfaceFaceIndices;
+				for (int iMeshVertex : getFaceIndices(mMesh, iMeshFace)) {
+					int iSurfaceVertex = -1;
+
+					auto itVertexIndex = vertexIndexMap.find(iMeshVertex);
+					if (itVertexIndex != vertexIndexMap.end()) {
+						iSurfaceVertex = itVertexIndex->second;
+					}
+					else {
+						glm::vec3 vertexLocation = mMesh.vertices[iMeshVertex].location;
+						iSurfaceVertex = addVertex(mConvexSurfaces[iPartition], vertexLocation);
+						vertexIndexMap.emplace(iMeshVertex, iSurfaceVertex);
+					}
+
+					surfaceFaceIndices.push_back(iSurfaceVertex);
+				}
+
+				// Add the HEFace to the surface
+				addFace(mConvexSurfaces[iPartition], surfaceFaceIndices);
+			}
+		}
 	}
 
 }}

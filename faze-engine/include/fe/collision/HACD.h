@@ -1,6 +1,7 @@
 #ifndef HACD_H
 #define HACD_H
 
+#include <map>
 #include "AABB.h"
 #include "Graph.h"
 #include "QuickHull.h"
@@ -8,16 +9,18 @@
 namespace fe { namespace collision {
 
 	/**
-	 * Class HACD, TODO: complete
+	 * Class HACD, it's used to calculate the aproximate convex decomposition
+	 * of any given 3D Half-Edge Mesh
 	 */
 	class HACD
 	{
+	private:	// Nested types
+		using GraphPartition = std::vector<int>;
+
 	private:	// Attributes
-		/** The minimum concavity needed for HACD algorithm */
-		const float mMinimumConcavity;
-		
-		/** The precision of the projected points */
-		const float mProjectionPrecision;
+		/** The maximum concavity of the dual graph edges needed for HACD
+		 * algorithm */
+		const float mMaximumConcavity;
 
 		/** The object needed for calculating the convex hulls */
 		QuickHull mQuickHull;
@@ -39,34 +42,38 @@ namespace fe { namespace collision {
 		 * vertex shares an edge with another triangle. */
 		Graph mDualGraph;
 
+		/** The vertex ancestors of each vertex */
+		std::multimap<int, int> mVertexAncestors;
+
+		/** The partitions of the Dual Graph */
+		std::vector<GraphPartition> mGraphPartitions;
+
 		/** The normalization factor used for calculating the decimation cost */
 		float mNormalizationFactor;
 
-		/** The aspect ratio factor used for calculating the decimation cost */		
+		/** The aspect ratio factor used for calculating the decimation cost */
 		float mAspectRatioFactor;
 
-		/** TODO: The convex surfaces in which the concave mesh has been decomposed */
-		// std::vector<HalfEdgeMesh> mConvexSurfaces;
+		/** The convex surfaces in which the concave mesh has been decomposed */
+		std::vector<HalfEdgeMesh> mConvexSurfaces;
 
 	public:		// Functions
 		/** Creates a new HACD object
 		 *
-		 * @param	minimumConcavity the minimum concavity needed for HACD
+		 * @param	maximumConcavity the maximum concavity needed for HACD
 		 *			algorithm
-		 * @param	projectionPrecision the precision of the projected points
-		 * @param	epsilon the epsilon value of the comparisons during the
-		 *			QuickHull algorithm computation */
-		HACD(float minimumConcavity, float projectionPrecision, float epsilon) :
-			mMinimumConcavity(minimumConcavity),
-			mProjectionPrecision(projectionPrecision),
-			mQuickHull(epsilon) {};
+		 * @param	quickHullEpsilon the epsilon value of the comparisons during
+		 *			the QuickHull algorithm computation */
+		HACD(float maximumConcavity, float quickHullEpsilon) :
+			mMaximumConcavity(maximumConcavity),
+			mQuickHull(quickHullEpsilon) {};
 
 		/** Class destructor */
 		~HACD() {};
 
 		/** @return	the HalfEdgeMeshes of the HACD */
-		//const std::vector<HalfEdgeMesh>& getMeshes() const
-		//{ return mConvexSurfaces; };
+		const std::vector<HalfEdgeMesh>& getMeshes() const
+		{ return mConvexSurfaces; };
 
 		/** Decomposes the given mesh into multiple convex ones with the HACD
 		 * algorithm
@@ -90,16 +97,6 @@ namespace fe { namespace collision {
 		 *			the dual graph
 		 * @return	the dual graph of the mesh */
 		Graph createDualGraph(const HalfEdgeMesh& meshData) const;
-
-		/** Calculates the decimation cost of the edge between the given
-		 * GraphNodes with the aspect ratio and the concavity of the surface
-		 * of their faces
-		 *
-		 * @param	v1 the index of the first GraphVertex
-		 * @param	v2 the index of the second GraphVertex
-		 * @return	the cost value of the edge between the given Graph
-		 *			vertices */
-		float calculateDecimationCost(int v1, int v2) const;
 
 		/** Calculates the concavity of the point of the given surface as the
 		 * maximum distance from the points of the surface created from the
@@ -173,6 +170,29 @@ namespace fe { namespace collision {
 		 * @param	normalizationFactor the normalization factor
 		 * @return	the aspect ratio factor */
 		float calculateAspectRatioFactor(float normalizationFactor) const;
+
+		/** Calculates the decimation cost of the edge with the given aspect
+		 * ratio and the concavity of the surface of their faces
+		 *
+		 * @param	concavity the concavity value of the edge
+		 * @param	aspectRatio the aspect ratio factor of the edge
+		 * @return	the cost value of the edge */
+		float calculateDecimationCost(float concavity, float aspectRatio) const;
+
+		/** Adds the vertex 2 and its ancestors to the first one
+		 *
+		 * @param	iVertex1 the index of the first vertex. It's the vertex
+		 *			whose ancestors will be updated
+		 * @param	iVertex1 the index of the second vertex */
+		void updateAncestors(int iVertex1, int iVertex2);
+
+		/** Calculates the current partition of the HACD Dual Graph vertices
+		 * based on their current ancestor vertices */
+		void calculatePartitions();
+
+		/** Computes the convex surfaces from the partitions of the current
+		 * dual graph and the triangulated mesh */
+		void computeConvexSurfaces();
 	};
 
 }}

@@ -140,7 +140,7 @@ namespace fe { namespace collision {
 
 		/** @return	a reference to the current Element that the iterator is
 		 *			pointing at */
-		ElementType& operator*() { return (*mVector)[mIndex]; };
+		ElementType& operator*() const { return (*mVector)[mIndex]; };
 
 		/** @return	a pointer to the current Element that the iterator is
 		 *			pointing at */
