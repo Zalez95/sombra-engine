@@ -9,16 +9,23 @@
 
 namespace fe { namespace graphics {
 
-// Static variables definition
-	const float Renderer2D::Quad2D::mPositions[] = { -1,1, -1,-1, 1,1, 1,-1 };
+	constexpr float Renderer2D::Quad2D::kPositions[];
 
-// Public functions
+
+	Renderer2D::Quad2D::Quad2D() :
+		mPositionsBuffer(kPositions, kNumVertices * kNumComponentsPerVertex, kNumComponentsPerVertex)
+	{
+		mVAO.addBuffer(&mPositionsBuffer, 0);
+	}
+
+
 	void Renderer2D::submit(const Renderable2D* renderable2D)
 	{
 		if (renderable2D) {
 			mRenderable2Ds.push(renderable2D);
 		}
 	}
+
 
 	void Renderer2D::render()
 	{

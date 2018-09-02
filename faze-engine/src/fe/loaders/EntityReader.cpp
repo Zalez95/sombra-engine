@@ -154,9 +154,9 @@ namespace fe { namespace loaders {
 	) const
 	{
 		std::string name;
-		glm::vec3 position;
-		glm::quat orientation;
-		glm::mat4 offsetMatrix;
+		glm::vec3 position(0.0f);
+		glm::quat orientation(1.0f, glm::vec3(0.0f));
+		glm::mat4 offsetMatrix(0.0f);
 		std::unique_ptr<graphics::Camera> camera;
 		std::unique_ptr<graphics::PointLight> pointLight;
 		std::unique_ptr<graphics::Renderable3D> renderable3D;
@@ -247,11 +247,20 @@ namespace fe { namespace loaders {
 
 					// TODO: read other colliders
 					collision::HalfEdgeMesh meshData;
-					for (const glm::vec3& vertexPosition : rawMesh->positions) {
-						collision::addVertex(meshData, vertexPosition);
+					std::map<int, int> vertexMap;
+					for (std::size_t iVertex1 = 0; iVertex1 < rawMesh->positions.size(); ++iVertex1) {
+						int iVertex2 = collision::addVertex(meshData, rawMesh->positions[iVertex1]);
+						vertexMap.emplace(iVertex1, iVertex2);
 					}
 					for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
-						collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
+						collision::addFace(
+							meshData,
+							{
+								vertexMap[ rawMesh->faceIndices[i] ],
+								vertexMap[ rawMesh->faceIndices[i+1] ],
+								vertexMap[ rawMesh->faceIndices[i+2] ]
+							}
+						);
 					}
 
 					// TODO: move to header

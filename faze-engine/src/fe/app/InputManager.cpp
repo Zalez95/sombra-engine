@@ -4,12 +4,6 @@
 
 namespace fe { namespace app {
 
-// Static variables definition
-	const float InputManager::RUN_SPEED		= 7.5f;
-	const float InputManager::JUMP_SPEED	= 10.0f;
-	const float InputManager::MOUSE_SPEED	= 5.0f;
-
-// Public functions definition
 	void InputManager::addEntity(Entity* entity)
 	{
 		if (!entity) return;
@@ -56,11 +50,11 @@ namespace fe { namespace app {
 		);
 
 		// Calculate the rotation around the Entity's y-axis
-		float yaw			= MOUSE_SPEED * mouseDelta.x;
+		float yaw			= kMouseSpeed * mouseDelta.x;
 		glm::quat qYaw		= glm::angleAxis(yaw, glm::vec3(0, 1, 0));
 
 		// Calculate the rotation around the Entity's x-axis
-		float pitch			= MOUSE_SPEED * mouseDelta.y;
+		float pitch			= kMouseSpeed * mouseDelta.y;
 		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 
 		// Apply the change in orientation
@@ -86,14 +80,14 @@ namespace fe { namespace app {
 		if (length > 0) { direction /= length; }
 
 		// Transform the direction to velocity
-		float velocityDiff = RUN_SPEED - glm::length(entity->velocity);
+		float velocityDiff = kRunSpeed - glm::length(entity->velocity);
 		if (velocityDiff > 0) {
 			entity->velocity += velocityDiff * direction;
 		}
 
 		// Add the jump velocity
-		if (inputData.keys[GLFW_KEY_SPACE]) { entity->velocity += JUMP_SPEED * up; }
-		if (inputData.keys[GLFW_KEY_LEFT_CONTROL]) { entity->velocity -= JUMP_SPEED * up; }
+		if (inputData.keys[GLFW_KEY_SPACE]) { entity->velocity += kJumpSpeed * up; }
+		if (inputData.keys[GLFW_KEY_LEFT_CONTROL]) { entity->velocity -= kJumpSpeed * up; }
 	}
 
 

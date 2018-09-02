@@ -2,8 +2,7 @@
 #define GRAVITY_H
 
 #include <glm/glm.hpp>
-#include "Force.h"
-#include "../RigidBody.h"
+#include "../Force.h"
 
 namespace fe { namespace physics {
 
@@ -30,12 +29,7 @@ namespace fe { namespace physics {
 		 *
 		 * @param	rigidBody a pointer to the RigidBody to which we want to
 		 *			apply the Force */
-		void apply(RigidBody* rigidBody)
-		{
-			if (rigidBody->hasFiniteMass()) {
-				rigidBody->addForce(mGravity * rigidBody->getMass());
-			}
-		};
+		void apply(RigidBody* rigidBody);
 	};
 
 }}

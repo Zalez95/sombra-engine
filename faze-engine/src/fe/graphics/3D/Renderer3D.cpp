@@ -33,16 +33,9 @@ namespace fe { namespace graphics {
 			auto material			= renderable3D->getMaterial();
 			auto texture			= renderable3D->getTexture();
 			glm::mat4 modelMatrix	= renderable3D->getModelMatrix();
-			RenderFlags flags		= renderable3D->getRenderFlags();
+			unsigned char flags		= renderable3D->getRenderFlags();
 
 			if (!mesh) { continue; }
-
-			// Set the mesh transparency
-			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
-				GL_WRAP( glEnable(GL_BLEND) );
-				GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-				GL_WRAP( glDisable(GL_DEPTH_TEST) );
-			}
 
 			// Bind the program data
 			mProgram.setModelMatrix(modelMatrix);
@@ -52,21 +45,46 @@ namespace fe { namespace graphics {
 				texture->bind(0);
 			}
 
-			// Draw
-			GLenum renderMode = (flags & RenderFlags::WIREFRAME)? GL_LINES : GL_TRIANGLES;
+			// Set the mesh transparency
+			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
+				GL_WRAP( glEnable(GL_BLEND) );
+				GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+				GL_WRAP( glDisable(GL_DEPTH_TEST) );
+			}
 
+			// Unset face culling
+			if (flags & RenderFlags::DISABLE_FACE_CULLING) {
+				GL_WRAP( glDisable(GL_CULL_FACE) );
+			}
+
+			// Set mesh wireframe
+			if (flags & RenderFlags::WIREFRAME) {
+				GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
+			}
+
+			// Draw
 			mesh->bind();
-			GL_WRAP( glDrawElements(renderMode, mesh->getIndexCount(), GL_UNSIGNED_SHORT, nullptr) );
+			GL_WRAP( glDrawElements(GL_TRIANGLES, mesh->getIndexCount(), GL_UNSIGNED_SHORT, nullptr) );
 			mesh->unbind();
 
-			// Unbind the program data
-			if (texture) { texture->unbind(); }
+			// Unset mesh wireframe
+			if (flags & RenderFlags::WIREFRAME) {
+				GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
+			}
+
+			// Set face culling
+			if (flags & RenderFlags::DISABLE_FACE_CULLING) {
+				GL_WRAP( glEnable(GL_CULL_FACE) );
+			}
 
 			// Unset the mesh transparency
 			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
 				GL_WRAP( glEnable(GL_DEPTH_TEST) );
 				GL_WRAP( glDisable(GL_BLEND) );
 			}
+
+			// Unbind the program data
+			if (texture) { texture->unbind(); }
 		}
 
 		mProgram.disable();

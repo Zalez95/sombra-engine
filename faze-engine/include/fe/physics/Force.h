@@ -3,7 +3,7 @@
 
 namespace fe { namespace physics {
 
-	class RigidBody;
+	struct RigidBody;
 
 
 	/**

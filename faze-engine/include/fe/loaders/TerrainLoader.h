@@ -30,7 +30,7 @@ namespace fe { namespace loaders {
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */
-		static const float MAX_COLOR;
+		static constexpr float kMaxColor = 255.0f;
 
 		/** The MeshLoader used to create the meshes */
 		const MeshLoader& mMeshLoader;

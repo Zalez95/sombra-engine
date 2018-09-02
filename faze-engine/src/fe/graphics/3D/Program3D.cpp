@@ -70,7 +70,7 @@ namespace fe { namespace graphics {
 
 	void Program3D::setLights(const std::vector<const PointLight*>& pointLights)
 	{
-		int numPointLights = (static_cast<int>(pointLights.size()) > sMaxPointLights)? sMaxPointLights : static_cast<int>(pointLights.size());
+		int numPointLights = (static_cast<int>(pointLights.size()) > kMaxPointLights)? kMaxPointLights : static_cast<int>(pointLights.size());
 		mProgram->setUniform(mUniformLocations.numPointLights, numPointLights);
 
 		for (int i = 0; i < numPointLights; ++i) {
@@ -130,7 +130,7 @@ namespace fe { namespace graphics {
 		mUniformLocations.material.shininess		= mProgram->getUniformLocation("uMaterial.shininess");
 
 		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
-		for (size_t i = 0; i < sMaxPointLights; ++i) {
+		for (size_t i = 0; i < kMaxPointLights; ++i) {
 			mUniformLocations.pointLights[i].baseLight.diffuseColor = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].baseLight.diffuseColor").c_str()
 			);

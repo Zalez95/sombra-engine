@@ -64,8 +64,7 @@ namespace fe { namespace collision {
 		 *
 		 * @param	simplex the 4 initial simplex points
 		 * @param	precision the precision of the projected points of the
-		 *			polytope
-		 * @throw	runtime_error if the simplex doesn't have 4 points */
+		 *			polytope */
 		Polytope(const std::array<SupportPoint, 4>& simplex, float precision);
 
 		/** @return	the HalfEdgeMesh of the Polytope */

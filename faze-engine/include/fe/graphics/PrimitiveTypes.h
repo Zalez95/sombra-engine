@@ -6,9 +6,10 @@ namespace fe { namespace graphics {
 	/** The different render ways to render */
 	enum RenderFlags : unsigned char
 	{
-		DEFAULT				= 1 << 0,
-		WIREFRAME			= 1 << 1,
-		DISABLE_DEPTH_TEST	= 1 << 2
+		DEFAULT					= 1 << 0,
+		WIREFRAME				= 1 << 1,
+		DISABLE_DEPTH_TEST		= 1 << 2,
+		DISABLE_FACE_CULLING	= 1 << 3
 	};
 
 

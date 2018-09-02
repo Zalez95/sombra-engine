@@ -4,7 +4,6 @@
 
 namespace fe { namespace loaders {
 
-// Public functions
 	TerrainReader::EntityUPtr TerrainReader::read(utils::FileReader& fileReader)
 	{
 		try {
@@ -25,7 +24,7 @@ namespace fe { namespace loaders {
 	TerrainReader::EntityUPtr TerrainReader::parseEntity(utils::FileReader& fileReader)
 	{
 		std::string name, heightMapPath;
-		float size, maxHeight;
+		float size = 0.0f, maxHeight = 0.0f;
 
 		std::string trash;
 		fileReader >> name >> trash;

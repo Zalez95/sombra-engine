@@ -22,6 +22,7 @@ namespace fe { namespace graphics {
 		typedef std::shared_ptr<Mesh> MeshSPtr;
 		typedef std::shared_ptr<Material> MaterialSPtr;
 		typedef std::shared_ptr<Texture> TextureSPtr;
+
 	private:	// Attributes
 		/** The Mesh of the Renderable3D */
 		MeshSPtr mMesh;
@@ -33,7 +34,7 @@ namespace fe { namespace graphics {
 		TextureSPtr mTexture;
 
 		/** The render flags of the materials */
-		RenderFlags mRenderFlags;
+		unsigned char mRenderFlags;
 
 		/** The matrix that transforms the coordinates of the Mesh from
 		 * Local space to World space */
@@ -48,7 +49,7 @@ namespace fe { namespace graphics {
 		 * @param	renderFlags the render flags of the Renderable3D */
 		Renderable3D(
 			MeshSPtr mesh, MaterialSPtr material, TextureSPtr texture,
-			RenderFlags renderFlags = RenderFlags::DEFAULT
+			unsigned char renderFlags = RenderFlags::DEFAULT
 		) : mMesh(mesh), mMaterial(material), mTexture(texture),
 			mRenderFlags(renderFlags), mModelMatrix(1.0f) {};
 
@@ -74,7 +75,7 @@ namespace fe { namespace graphics {
 		{ mModelMatrix = modelMatrix; };
 
 		/** @return the RenderFlags of the Renderable3D */
-		inline RenderFlags getRenderFlags() const { return mRenderFlags; };
+		inline unsigned char getRenderFlags() const { return mRenderFlags; };
 	};
 
 }}

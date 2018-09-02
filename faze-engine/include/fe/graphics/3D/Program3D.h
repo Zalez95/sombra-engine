@@ -20,7 +20,7 @@ namespace fe { namespace graphics {
 	{
 	private:	// Attributes
 		/** The maximum number of point lights in the program */
-		static const int sMaxPointLights = 4;
+		static constexpr int kMaxPointLights = 4;
 
 		/** The Program of the renderer */
 		Program* mProgram;
@@ -61,8 +61,8 @@ namespace fe { namespace graphics {
 			{
 				BaseLight baseLight;
 				Attenuation attenuation;
-			} pointLights[sMaxPointLights];
-			unsigned int pointLightsPositions[sMaxPointLights];
+			} pointLights[kMaxPointLights];
+			unsigned int pointLightsPositions[kMaxPointLights];
 		} mUniformLocations;
 
 	public:		// Functions

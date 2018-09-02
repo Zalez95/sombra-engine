@@ -32,7 +32,7 @@ namespace fe { namespace physics {
 			EntityForce(PhysicsEntity* entity, Force* force) :
 				entity(entity), force(force) {};
 
-			/** Class destructor */
+			/** Destructor */
 			~EntityForce() {};
 		};
 

@@ -11,16 +11,16 @@ namespace fe { namespace window {
 	struct InputData
 	{
 		/** Max number of buttons in the mouse */
-		static const int sMaxMouseButtons	= 32;
+		static constexpr int kMaxMouseButtons = 32;
 
 		/** Max number of buttons in the keys */
-		static const int sMaxKeys			= 1024;
+		static constexpr int kMaxKeys = 1024;
 
 		/** An array with the keyboard pressed keys */
-		std::array<bool, sMaxKeys> keys;
+		std::array<bool, kMaxKeys> keys;
 
 		/** An array with the mouse pressed keys */
-		std::array<bool, sMaxMouseButtons> mouseButtons;
+		std::array<bool, kMaxMouseButtons> mouseButtons;
 
 		/** The Mouse X coordinate relative to the top left corner of the
 		 * window*/

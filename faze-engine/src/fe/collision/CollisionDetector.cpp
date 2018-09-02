@@ -4,7 +4,6 @@
 
 namespace fe { namespace collision {
 
-// Public functions
 	void CollisionDetector::addCollider(const Collider* collider)
 	{
 		if (!collider) { return; }

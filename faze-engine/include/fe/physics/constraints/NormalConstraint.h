@@ -2,7 +2,7 @@
 #define NORMAL_CONSTRAINT_H
 
 #include <glm/glm.hpp>
-#include "Constraint.h"
+#include "../Constraint.h"
 
 namespace fe { namespace physics {
 

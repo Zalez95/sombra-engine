@@ -2,6 +2,7 @@
 #define LAYER_3D_H
 
 #include <vector>
+#include <glm/glm.hpp>
 #include "../ILayer.h"
 #include "Renderer3D.h"
 
@@ -19,11 +20,11 @@ namespace fe { namespace graphics {
 	class Layer3D : public ILayer
 	{
 	private:	// Attributes
-		static const unsigned int WIDTH = 640;
-		static const unsigned int HEIGHT = 480;
-		static const float FOV;
-		static const float Z_NEAR;
-		static const float Z_FAR;
+		static constexpr unsigned int kWidth	= 640;
+		static constexpr unsigned int kHeight	= 480;
+		static constexpr float kFOV				= glm::radians(60.0f);
+		static constexpr float kZNear			= 1.0f;
+		static constexpr float kZFar			= 250.0f;
 
 		/** The Renderer used by the layer to render the Scene */
 		Renderer3D mRenderer3D;

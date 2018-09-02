@@ -9,10 +9,10 @@ namespace fe { namespace app {
 
 		// The rigid body initial data is overrided by the entity one
 		physics::RigidBody* rigidBody = physicsEntity->getRigidBody();
-		rigidBody->setPosition(entity->position);
-		rigidBody->setLinearVelocity(entity->velocity);
-		rigidBody->setOrientation(entity->orientation);
-		rigidBody->updateData();
+		rigidBody->position			= entity->position;
+		rigidBody->linearVelocity	= entity->velocity;
+		rigidBody->orientation		= entity->orientation;
+		physics::updateRigidBodyData(*rigidBody);
 
 		mPhysicsEngine.addPhysicsEntity(physicsEntity.get());
 		mEntityMap[entity] = std::move(physicsEntity);
@@ -31,28 +31,28 @@ namespace fe { namespace app {
 
 	void PhysicsManager::update(float delta)
 	{
-		// We update the rigid body data with the changes to the entity data
+		// Update the RigidBodies with the changes made to the Entities
 		for (auto& entry : mEntityMap) {
 			Entity* entity = entry.first;
 			physics::RigidBody* rigidBody = entry.second->getRigidBody();
 
-			rigidBody->setPosition(entity->position);
-			rigidBody->setLinearVelocity(entity->velocity);
-			rigidBody->setOrientation(entity->orientation);
-			rigidBody->updateData();
+			rigidBody->position			= entity->position;
+			rigidBody->linearVelocity	= entity->velocity;
+			rigidBody->orientation		= entity->orientation;
+			physics::updateRigidBodyData(*rigidBody);
 		}
 
-		// Update the rigid bodies
+		// Update the RigidBodies
 		mPhysicsEngine.update(delta);
 
-		// We update the entity data with the changes to the rigid body data
+		// Update the Entities with the changes made to the RigidBodies
 		for (auto& entry : mEntityMap) {
 			Entity* entity					= entry.first;
 			physics::RigidBody* rigidBody	= entry.second->getRigidBody();
 
-			entity->position	= rigidBody->getPosition();
-			entity->velocity	= rigidBody->getLinearVelocity();
-			entity->orientation	= rigidBody->getOrientation();
+			entity->position	= rigidBody->position;
+			entity->velocity	= rigidBody->linearVelocity;
+			entity->orientation	= rigidBody->orientation;
 		}
 	}
 

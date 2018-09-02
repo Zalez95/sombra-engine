@@ -8,7 +8,7 @@
 namespace fe { namespace physics {
 
 	class Constraint;
-	class RigidBody;
+	struct RigidBody;
 
 
 	/**
@@ -20,7 +20,7 @@ namespace fe { namespace physics {
 	private:	// Constants
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run */
-		static const int sMaxIterations = 16;
+		static constexpr int kMaxIterations = 16;
 
 	private:	// Attributes
 		/** The vector that holds the registered Constraints in the

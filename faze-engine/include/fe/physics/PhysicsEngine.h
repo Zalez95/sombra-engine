@@ -4,10 +4,9 @@
 #include <set>
 #include <map>
 #include "../collision/CollisionDetector.h"
-#include "forces/ForceManager.h"
-#include "constraints/ConstraintBounds.h"
+#include "ForceManager.h"
+#include "ConstraintManager.h"
 #include "constraints/NormalConstraint.h"
-#include "constraints/ConstraintManager.h"
 
 namespace fe { namespace physics {
 
@@ -23,10 +22,12 @@ namespace fe { namespace physics {
 	{
 	private:	// Constants
 		/** The CounstraintBounds shared by all the NormalConstraints */
-		static const ConstraintBounds sCollisionConstraintBounds;
+		static constexpr ConstraintBounds kCollisionConstraintBounds = {
+			0.0f, std::numeric_limits<float>::max()
+		};
 
 		/** The velocity of the constraint resolution process */
-		static const float sCollisionConstraintBeta;
+		static constexpr float kCollisionConstraintBeta = 1.1f;
 
 	private:	// Attributes
 		/** The ForceManager of the PhysicsEngine. It's used to store the

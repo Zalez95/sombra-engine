@@ -16,9 +16,9 @@ namespace fe { namespace app {
 	class InputManager
 	{
 	private:	// Attributes
-		static const float RUN_SPEED;
-		static const float JUMP_SPEED;
-		static const float MOUSE_SPEED;
+		static constexpr float kRunSpeed	= 7.5f;
+		static constexpr float kJumpSpeed	= 10.0f;
+		static constexpr float kMouseSpeed	= 5.0f;
 
 		/** The Window System used for checking the player's input data */
 		window::WindowSystem& mWindowSystem;

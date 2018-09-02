@@ -5,8 +5,23 @@
 
 namespace fe { namespace physics {
 
-	class RigidBody;
-	class ConstraintBounds;
+	struct RigidBody;
+
+
+	/**
+	 * Struct ConstraintBounds. It defines the bounds of the lambda variable of
+	 * a Constraint.
+	 */
+	struct ConstraintBounds
+	{
+		/** The minimum value that the alpha variable of the constraint could
+		 * have */
+		float alphaMin;
+
+		/** The maximum value that the alpha variable of the constraint could
+		 * have */
+		float alphaMax;
+	};
 
 
 	/**

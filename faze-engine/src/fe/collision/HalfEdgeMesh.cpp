@@ -204,15 +204,17 @@ namespace fe { namespace collision {
 	{
 		std::vector<int> indices;
 
-		int initialEdgeIndex = meshData.faces[iFace].edge;
-		int currentEdgeIndex = initialEdgeIndex;
-		do {
-			const HEEdge& currentEdge	= meshData.edges[currentEdgeIndex];
-			const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
-			indices.push_back(oppositeEdge.vertex);
-			currentEdgeIndex = currentEdge.nextEdge;
+		if (meshData.faces.isActive(iFace)) {
+			int initialEdgeIndex = meshData.faces[iFace].edge;
+			int currentEdgeIndex = initialEdgeIndex;
+			do {
+				const HEEdge& currentEdge	= meshData.edges[currentEdgeIndex];
+				const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
+				indices.push_back(oppositeEdge.vertex);
+				currentEdgeIndex = currentEdge.nextEdge;
+			}
+			while (currentEdgeIndex != initialEdgeIndex);
 		}
-		while (currentEdgeIndex != initialEdgeIndex);
 
 		return indices;
 	}
@@ -220,10 +222,11 @@ namespace fe { namespace collision {
 
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2)
 	{
-		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)
-			|| (iFace1 == iFace2)
-		) {
+		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)) {
 			return -1;
+		}
+		if (iFace1 == iFace2) {
+			return iFace1;
 		}
 
 		// Get an HEEdge of an HEEdge loop section which belongs to the HEFace

@@ -5,8 +5,8 @@ namespace fe { namespace physics {
 
 	float NormalConstraint::getBias() const
 	{
-		glm::vec3 p1 = mRigidBodies[0]->getPosition() + mConstraintPoints[0];
-		glm::vec3 p2 = mRigidBodies[1]->getPosition() + mConstraintPoints[1];
+		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintPoints[0];
+		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintPoints[1];
 		float positionConstraint = glm::dot((p2 - p1), mNormal);
 
 		return glm::pow(1 - mDeltaTime * mBeta, mK) * positionConstraint;

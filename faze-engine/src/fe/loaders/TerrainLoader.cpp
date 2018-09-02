@@ -11,10 +11,6 @@
 
 namespace fe { namespace loaders {
 
-// Static variables definition
-	const float TerrainLoader::MAX_COLOR = 255.0f;
-
-// Public functions
 	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
 		const std::string& name, float size,
 		const utils::Image& heightMap, float maxHeight
@@ -140,7 +136,7 @@ namespace fe { namespace loaders {
 		unsigned char* heightMapPixels = heightMap.getPixels();
 		unsigned char l = heightMapPixels[z * heightMap.getWidth() + x];
 
-		return (l / MAX_COLOR - 0.5f);
+		return (l / kMaxColor - 0.5f);
 	}
 
 }}

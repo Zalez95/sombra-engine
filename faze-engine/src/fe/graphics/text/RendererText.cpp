@@ -11,7 +11,6 @@
 
 namespace fe { namespace graphics {
 
-// Public functions
 	RendererText::RendererText()
 	{
 		// 1. Read the shader text from the shader files

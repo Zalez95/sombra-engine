@@ -1,9 +1,9 @@
-#include "fe/physics/constraints/ConstraintManager.h"
 #include <numeric>
 #include <algorithm>
+#include "fe/physics/ConstraintManager.h"
 #include "fe/physics/RigidBody.h"
-#include "fe/physics/constraints/Constraint.h"
-#include "fe/physics/constraints/ConstraintBounds.h"
+#include "fe/physics/Constraint.h"
+#include "fe/physics/RigidBodyDynamics.h"
 
 namespace fe { namespace physics {
 
@@ -23,8 +23,8 @@ namespace fe { namespace physics {
 			}
 			else {
 				mRigidBodies.push_back(rb);
-				mInverseMassMatrix.emplace_back(rb->getInvertedMass());
-				mInverseMassMatrix.push_back(rb->getInvertedInertiaTensor());
+				mInverseMassMatrix.emplace_back(rb->invertedMass);
+				mInverseMassMatrix.push_back(rb->invertedInertiaTensor);
 
 				constraintRB[i] = mRigidBodies.size() - 1;
 			}
@@ -35,8 +35,8 @@ namespace fe { namespace physics {
 		mConstraintRBMap.push_back(constraintRB);
 		mLambdaMatrix.push_back(0.0f);
 		const ConstraintBounds* cb = constraint->getConstraintBounds();
-		mLambdaMinMatrix.push_back(cb->getAlphaMin());
-		mLambdaMaxMatrix.push_back(cb->getAlphaMax());
+		mLambdaMinMatrix.push_back(cb->alphaMin);
+		mLambdaMaxMatrix.push_back(cb->alphaMax);
 	}
 
 
@@ -117,8 +117,8 @@ namespace fe { namespace physics {
 		mVelocityMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
-			mVelocityMatrix.push_back(rb->getLinearVelocity());
-			mVelocityMatrix.push_back(rb->getAngularVelocity());
+			mVelocityMatrix.push_back(rb->linearVelocity);
+			mVelocityMatrix.push_back(rb->angularVelocity);
 		}
 	}
 
@@ -129,8 +129,8 @@ namespace fe { namespace physics {
 		mForceExtMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
-			mForceExtMatrix.push_back(rb->getForceSum());
-			mForceExtMatrix.push_back(rb->getTorqueSum());
+			mForceExtMatrix.push_back(rb->forceSum);
+			mForceExtMatrix.push_back(rb->torqueSum);
 		}
 	}
 
@@ -154,7 +154,7 @@ namespace fe { namespace physics {
 		auto aMat = getAMatrix(bMat, mLambdaMatrix);
 		auto dMat = getDMatrix(bMat, mJacobianMatrix);
 
-		for (int iteration = 0; iteration < sMaxIterations; ++iteration) {
+		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
 			for (size_t i = 0; i < mConstraints.size(); ++i) {
 				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
@@ -301,16 +301,16 @@ namespace fe { namespace physics {
 
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {
-					mRigidBodies[i]->setLinearVelocity(v2);
-					mRigidBodies[i]->integrateLinearVelocity(deltaTime);
+					mRigidBodies[i]->linearVelocity = v2;
+					integrateLinearVelocity(*mRigidBodies[i], deltaTime);
 				}
 				else {
-					mRigidBodies[i]->setAngularVelocity(v2);
-					mRigidBodies[i]->integrateAngularVelocity(deltaTime);
+					mRigidBodies[i]->angularVelocity = v2;
+					integrateAngularVelocity(*mRigidBodies[i], deltaTime);
 				}
 			}
 
-			mRigidBodies[i]->updateData();
+			updateRigidBodyData(*mRigidBodies[i]);
 		}
 	}
 

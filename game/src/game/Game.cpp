@@ -22,7 +22,9 @@
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/ConvexPolyhedron.h>
+#include <fe/collision/MeshCollider.h>
 #include <fe/collision/QuickHull.h>
+#include <fe/collision/HACD.h>
 
 #include <fe/physics/PhysicsEngine.h>
 #include <fe/physics/PhysicsEntity.h>
@@ -69,6 +71,33 @@ namespace game {
 	}
 
 
+	fe::loaders::RawMesh createRawMesh(const fe::collision::HalfEdgeMesh& heMesh)
+	{
+		fe::loaders::RawMesh rawMesh("heMeshTriangles");
+
+		// The faces must be triangles
+		fe::collision::HalfEdgeMesh heMeshTriangles = heMesh;
+		fe::collision::triangulateFaces(heMeshTriangles);
+
+		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
+		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
+
+		std::map<int, int> vertexMap;
+		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
+			rawMesh.positions.push_back(itVertex->location);
+			vertexMap.emplace(itVertex.getIndex(), rawMesh.positions.size() - 1);
+		}
+
+		for (auto itFace = heMeshTriangles.faces.begin(); itFace != heMeshTriangles.faces.end(); ++itFace) {
+			for (int iVertex : fe::collision::getFaceIndices(heMeshTriangles, itFace.getIndex())) {
+				rawMesh.faceIndices.push_back(vertexMap[iVertex]);
+			}
+		}
+
+		return rawMesh;
+	}
+
+
 	void Game::init()
 	{
 		/*********************************************************************
@@ -77,6 +106,7 @@ namespace game {
 		fe::loaders::MeshLoader meshLoader;
 		fe::loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager, *mPhysicsManager);
 		fe::collision::QuickHull qh(0.0001f);
+		fe::collision::HACD hacd(0.003f, 0.0001f);
 
 		std::shared_ptr<fe::graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<fe::loaders::RawMesh>> fileRawMeshes;
@@ -267,7 +297,7 @@ namespace game {
 				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
 			);
 			if (i == 2) { mAudioManager->addSource(cube.get(), std::move(source1)); }
-			if (i == 3) { physicsEntityCube2->getRigidBody()->setAngularVelocity(glm::vec3(0, 10, 0)); }
+			if (i == 3) { physicsEntityCube2->getRigidBody()->angularVelocity = glm::vec3(0, 10, 0); }
 			if (i == 4) { cube->velocity += glm::vec3(-1, 0, 0); }
 
 			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
@@ -314,6 +344,17 @@ namespace game {
 					fe::collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
 				}
 
+				/*hacd.calculate(meshData);
+				std::vector<fe::collision::ConvexPolyhedron> convexParts;
+				for (const fe::collision::HalfEdgeMesh& mesh : hacd.getMeshes()) {
+					convexParts.emplace_back(mesh);
+				}
+
+				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
+					fe::physics::RigidBody(),
+					std::make_unique<fe::collision::MeshCollider>(convexParts),
+					glm::mat4(1.0f)
+				);*/
 				qh.calculate(meshData);
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
@@ -321,18 +362,36 @@ namespace game {
 					glm::mat4(1.0f)
 				);
 				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
+
+				auto tmpMaterial = std::make_shared<fe::graphics::Material>(
+					"tmp_material",
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					0.2f
+				);
+
+				fe::loaders::RawMesh qhRawMesh = createRawMesh(qh.getMesh());
+				std::shared_ptr<fe::graphics::Mesh> qhGraphicsMesh1 = meshLoader.createMesh(qhRawMesh);
+				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(qhGraphicsMesh1, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
+				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+
+				//std::shared_ptr<fe::graphics::Mesh> qhGraphicsMesh2 = meshLoader.createMesh(*rawMesh);
+				//auto renderable3D3 = std::make_unique<fe::graphics::Renderable3D>(qhGraphicsMesh2, tmpMaterial, nullptr);
+				//mGraphicsManager->addEntity(building.get(), std::move(renderable3D3), glm::mat4(1.0f));
 			}
+			else {
+				auto tmpMaterial = std::make_shared<fe::graphics::Material>(
+					"tmp_material",
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+					0.2f
+				);
 
-			auto tmpMaterial = std::make_shared<fe::graphics::Material>(
-				"tmp_material",
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				0.2f
-			);
-
-			auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(*it, tmpMaterial, nullptr);
-			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(*it, tmpMaterial, nullptr);
+				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+			}
 
 			mEntities.push_back(std::move(building));
 		}

@@ -1,16 +1,16 @@
-#include "fe/physics/PhysicsEngine.h"
 #include <limits>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/physics/PhysicsEngine.h"
 #include "fe/physics/PhysicsEntity.h"
+#include "fe/physics/RigidBodyDynamics.h"
 
 namespace fe { namespace physics {
 
-// Constants definition
-	const ConstraintBounds PhysicsEngine::sCollisionConstraintBounds(0.0f, std::numeric_limits<float>::max());
-	const float PhysicsEngine::sCollisionConstraintBeta = 1.1f;
+	constexpr ConstraintBounds PhysicsEngine::kCollisionConstraintBounds;
+	constexpr float PhysicsEngine::kCollisionConstraintBeta;
 
-// Public functions
+
 	void PhysicsEngine::update(float delta)
 	{
 		mForceManager.applyForces();
@@ -40,7 +40,7 @@ namespace fe { namespace physics {
 
 		if (collision::Collider* collider = entity->getCollider()) {
 			mCollisionDetector.removeCollider(collider);
-			for (auto it = mColliderEntityMap.begin(); it != mColliderEntityMap.end(); ) {
+			for (auto it = mColliderEntityMap.begin(); it != mColliderEntityMap.end();) {
 				if (it->second == entity) {
 					mColliderEntityMap.erase(it);
 					break;
@@ -60,12 +60,12 @@ namespace fe { namespace physics {
 
 			// Update the RigidBody data
 			RigidBody* rigidBody = physicsEntity->getRigidBody();
-			rigidBody->integrate(delta);
+			fe::physics::integrate(*rigidBody, delta);
 
 			// Update the Collider data
 			if (collision::Collider* collider = physicsEntity->getCollider()) {
 				glm::mat4 colliderOffset = physicsEntity->getColliderOffset();
-				collider->setTransforms(rigidBody->getTransformsMatrix() * colliderOffset);
+				collider->setTransforms(rigidBody->transformsMatrix * colliderOffset);
 			}
 		}
 	}
@@ -90,7 +90,7 @@ namespace fe { namespace physics {
 					it = mContactConstraints.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(&contact),
-						std::forward_as_tuple(&sCollisionConstraintBounds, std::array<RigidBody*, 2>{ rb1, rb2 }, sCollisionConstraintBeta)
+						std::forward_as_tuple(&kCollisionConstraintBounds, std::array<RigidBody*, 2>{ rb1, rb2 }, kCollisionConstraintBeta)
 					).first;
 					mConstraintManager.addConstraint(&it->second);
 				}

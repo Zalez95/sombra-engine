@@ -1,5 +1,5 @@
-#include "fe/physics/forces/ForceManager.h"
-#include "fe/physics/forces/Force.h"
+#include "fe/physics/ForceManager.h"
+#include "fe/physics/Force.h"
 #include "fe/physics/PhysicsEntity.h"
 
 namespace fe { namespace physics {
@@ -25,7 +25,8 @@ namespace fe { namespace physics {
 	{
 		// Clean the older forces
 		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			it->entity->getRigidBody()->cleanForces();
+			it->entity->getRigidBody()->forceSum	= glm::vec3(0.0f);
+			it->entity->getRigidBody()->torqueSum	= glm::vec3(0.0f);
 		}
 
 		// Apply the current forces

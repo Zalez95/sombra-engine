@@ -11,8 +11,7 @@ namespace fe { namespace collision {
 		initData(meshData);
 
 		int iBestVertex1, iBestVertex2;
-		while (iBestVertex1 >= 0)
-		{
+		while (iBestVertex1 >= 0) {
 			// 1. Calculate the pair of nodes with the lowest decimation cost
 			iBestVertex1 = -1;
 			iBestVertex2 = -1;
@@ -25,7 +24,9 @@ namespace fe { namespace collision {
 						float concavity = calculateConcavity(iVertex1, iVertex2, mMesh, mFaceNormals, mConvexHull);
 						float aspectRatio = calculateAspectRatio(iVertex1, iVertex2, mMesh);
 						float currentCost = calculateDecimationCost(concavity, aspectRatio);
-						if ((concavity < mMaximumConcavity) && (currentCost < lowestCost)) {
+						if ((concavity < mMaximumConcavity * mNormalizationFactor)
+							&& (currentCost < lowestCost)
+						) {
 							lowestCost = currentCost;
 							iBestVertex1 = iVertex1;
 							iBestVertex2 = iVertex2;

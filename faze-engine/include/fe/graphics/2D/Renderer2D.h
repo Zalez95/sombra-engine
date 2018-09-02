@@ -27,14 +27,16 @@ namespace fe { namespace graphics {
 		private:	// Attributes
 			/** The positions of the only quad needed for rendering the 2D
 			 * entities */
-			static const float mPositions[];
+			static constexpr float kPositions[] = {
+				-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f,-1.0f
+			};
 
 			/** The number of vertices in the positions array */
-			static const unsigned int mNumVertices = 4;
+			static constexpr int kNumVertices = 4;
 
 			/** The number of components in the positions array needed for each
 			 * vertex */
-			static const unsigned int mNumComponentsPerVertex = 2;
+			static constexpr int kNumComponentsPerVertex = 2;
 
 			/** The vertex buffer for the positions of the quad  of the renderer */
 			VertexBuffer mPositionsBuffer;
@@ -44,20 +46,13 @@ namespace fe { namespace graphics {
 
 		public:		// Functions
 			/** Creates a new 2DQuad */
-			Quad2D() :
-				mPositionsBuffer(
-					mPositions,
-					mNumVertices * mNumComponentsPerVertex,
-					mNumComponentsPerVertex
-				)
-			{ mVAO.addBuffer(&mPositionsBuffer, 0); };
+			Quad2D();
 
 			/** Class destructor */
 			~Quad2D() {};
 
 			/** @return	the number of vertices of the quad */
-			inline unsigned int getNumVertices() const
-			{ return mNumVertices; };
+			inline int getNumVertices() const { return kNumVertices; };
 
 			/** Binds the VAO of the 2DQuad */
 			inline void bindVAO() const { mVAO.bind(); };
