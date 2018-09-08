@@ -158,7 +158,7 @@ namespace fe { namespace utils {
 		}
 
 		// Get the position of the separator in the token
-		size_t separatorPosition = token.find(separator);
+		std::size_t separatorPosition = token.find(separator);
 		if (separatorPosition == std::string::npos) {
 			mCurrentState = FileState::FAILED;
 			return mCurrentState;

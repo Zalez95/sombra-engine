@@ -155,7 +155,7 @@ namespace fe { namespace physics {
 		auto dMat = getDMatrix(bMat, mJacobianMatrix);
 
 		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
-			for (size_t i = 0; i < mConstraints.size(); ++i) {
+			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 				float ja1 = std::inner_product(mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6, aMat.begin() + 6*iRB1, 0.0f);
@@ -179,7 +179,7 @@ namespace fe { namespace physics {
 	{
 		std::vector<std::array<float, 12>> bMatrix(mConstraints.size());
 
-		for (size_t i = 0; i < mConstraints.size(); ++i) {
+		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			for (int j = 0; j < 2; ++j) {
 				int iRB = mConstraintRBMap[i][j];
 
@@ -208,7 +208,7 @@ namespace fe { namespace physics {
 		std::vector<float> hMatrix;
 		hMatrix.reserve(mConstraints.size());
 
-		for (size_t i = 0; i < mConstraints.size(); ++i) {
+		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			float bias = mBiasMatrix[i];
 
 			std::array<float, 12> tmp;
@@ -247,7 +247,7 @@ namespace fe { namespace physics {
 	{
 		std::vector<float> aMatrix(6 * mRigidBodies.size());
 
-		for (size_t i = 0; i < mConstraints.size(); ++i) {
+		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 			for (int j = 0; j < 6; ++j) {
@@ -268,7 +268,7 @@ namespace fe { namespace physics {
 		std::vector<float> dMatrix;
 		dMatrix.reserve(mConstraints.size());
 
-		for (size_t i = 0; i < mConstraints.size(); ++i) {
+		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			dMatrix.push_back(std::inner_product(
 				jacobianMatrix[i].begin(), jacobianMatrix[i].end(),
 				bMatrix[i].begin(),
@@ -283,7 +283,7 @@ namespace fe { namespace physics {
 	void ConstraintManager::updateRigidBodies(float deltaTime)
 	{
 		std::vector<float> jLambdaMat(6 * mRigidBodies.size());
-		for (size_t i = 0; i < mConstraints.size(); ++i) {
+		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 			for (int j = 0; j < 6; ++j) {
@@ -292,7 +292,7 @@ namespace fe { namespace physics {
 			}
 		}
 
-		for (size_t i = 0; i < mRigidBodies.size(); ++i) {
+		for (std::size_t i = 0; i < mRigidBodies.size(); ++i) {
 			for (int j = 0; j < 2; ++j) {
 				const glm::vec3& v1				= mVelocityMatrix[2*i + j];
 				const glm::vec3& forceExt		= mForceExtMatrix[2*i + j];

@@ -22,7 +22,7 @@
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/ConvexPolyhedron.h>
-#include <fe/collision/MeshCollider.h>
+#include <fe/collision/CompoundCollider.h>
 #include <fe/collision/QuickHull.h>
 #include <fe/collision/HACD.h>
 
@@ -285,7 +285,7 @@ namespace game {
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
-		for (size_t i = 0; i < 5; ++i) {
+		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("non-random-cube");
 			cube->position = cubePositions[i];
 
@@ -309,7 +309,7 @@ namespace game {
 		}
 
 		// Random cubes
-		for (size_t i = 0; i < sNumCubes; ++i) {
+		for (std::size_t i = 0; i < sNumCubes; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("random-cube");
 			cube->position = glm::ballRand(50.0f);
 
@@ -352,7 +352,7 @@ namespace game {
 
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::MeshCollider>(convexParts),
+					std::make_unique<fe::collision::CompoundCollider>(convexParts),
 					glm::mat4(1.0f)
 				);*/
 				qh.calculate(meshData);

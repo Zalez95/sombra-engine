@@ -42,16 +42,15 @@ namespace fe { namespace collision {
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the
 		 *			ConvexPolyhedron */
-		virtual void setTransforms(const glm::mat4& transforms);
+		void setTransforms(const glm::mat4& transforms) override;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			ConvexPolyhedron */
-		inline virtual glm::mat4 getTransforms() const
-		{ return mTransformsMatrix; };
+		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
 		/** @return	the Axis Aligned Bounding Box that contains the
 		 *			ConvexPolyhedron */
-		virtual AABB getAABB() const;
+		AABB getAABB() const override;
 
 		/** Calculates the coordinates of the ConvexPolyhedron's furthest point
 		 * in the given direction
@@ -64,10 +63,10 @@ namespace fe { namespace collision {
 		 * @param	pointLocal the vector where we are going to store the
 		 *			coordinates in local space of ConvexPolyhedron's
 		 *			furthest point */
-		virtual void getFurthestPointInDirection(
+		void getFurthestPointInDirection(
 			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal
-		) const;
+		) const override;
 	};
 
 }}

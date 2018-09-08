@@ -32,7 +32,7 @@ namespace fe { namespace graphics {
 			GL_FLOAT;
 
 		int glFilters[2], glWrappings[2];
-		for (size_t i = 0; i < 2; ++i) {
+		for (std::size_t i = 0; i < 2; ++i) {
 			glFilters[i] = (mFilters[i] == TextureFilter::NEAREST)? GL_NEAREST : GL_LINEAR;
 			glWrappings[i] = (mWrappings[i] == TextureWrap::REPEAT)? GL_REPEAT : GL_CLAMP_TO_EDGE;
 		}

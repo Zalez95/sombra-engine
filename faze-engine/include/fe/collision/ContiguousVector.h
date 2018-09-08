@@ -77,8 +77,11 @@ namespace fe { namespace collision {
 		/** Creates a new Element in the vector or reuses an already released
 		 * one
 		 *
+		 * @param	args the arguments needed for calling the constructor of
+		 *			the new Element
 		 * @return	the index of the element */
-		std::size_t create();
+		template<typename... Args>
+		std::size_t create(Args... args);
 
 		/** Marks the Element located at the given index as released for
 		 * future use
@@ -187,11 +190,12 @@ namespace fe { namespace collision {
 
 // Template functions definition
 	template<class T>
-	std::size_t ContiguousVector<T>::create()
+	template<typename... Args>
+	std::size_t ContiguousVector<T>::create(Args... args)
 	{
 		std::size_t index;
 		if (mFreeIndices.empty()) {
-			mElements.emplace_back();
+			mElements.emplace_back(std::forward<Args>(args)...);
 			index = mElements.size() - 1;
 		}
 		else {

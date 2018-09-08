@@ -50,23 +50,22 @@ namespace fe { namespace collision {
 		);
 
 		/** Class destructor */
-		virtual ~TerrainCollider() {};
+		~TerrainCollider() {};
 
 		/** Updates the scale, translation and orientation of the
 		 * TerrainCollider with the given transformations matrix
 		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the TerrainCollider */
-		virtual void setTransforms(const glm::mat4& transforms);
+		void setTransforms(const glm::mat4& transforms) override;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			TerrainCollider */
-		inline virtual glm::mat4 getTransforms() const
-		{ return mTransformsMatrix; };
+		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			TerrainCollider */
-		inline virtual AABB getAABB() const { return mAABB; };
+		AABB getAABB() const override { return mAABB; };
 
 		/** @return a set with the posible overlaping parts of the Collider
 		 * with the given AABB
@@ -74,9 +73,9 @@ namespace fe { namespace collision {
 		 * @param	aabb the AABB to compare
 		 * @return	a set with Convex parts of the collider that can be
 		 *			overlaping with the given AABB */
-		virtual std::vector<const ConvexCollider*> getOverlapingParts(
+		std::vector<const ConvexCollider*> getOverlapingParts(
 			const AABB& aabb
-		) const;
+		) const override;
 	private:
 		/** Calculates the AABB of the TerrainCollider with its local heights
 		 * and transforms matrix */

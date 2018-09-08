@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
-#include <fe/collision/MeshCollider.h>
+#include <fe/collision/CompoundCollider.h>
 #include <fe/collision/Manifold.h>
 #include <fe/collision/FineCollisionDetector.h>
 
@@ -220,9 +220,8 @@ TEST(FineCollisionDetector, SphereMesh1)
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
 	bs1.setTransforms(t1 * r1);
 
-	fe::collision::HalfEdgeMesh meshData;
-	fe::collision::createTestPolyhedron3(meshData);
-	fe::collision::MeshCollider mc1(meshData, fe::collision::ConvexExtrategy::QuickHull);
+	fe::collision::HalfEdgeMesh meshData = fe::collision::createTestPolyhedron3();
+	fe::collision::CompoundCollider mc1(meshData, fe::collision::ConvexExtrategy::QuickHull);
 	glm::mat4 r2 = glm::mat4_cast(o2);
 	glm::mat4 t2 = glm::translate(glm::mat4(1.0f), v2);
 	mc1.setTransforms(t2 * r2);

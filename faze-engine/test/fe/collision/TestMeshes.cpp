@@ -1,7 +1,8 @@
 #include "TestMeshes.h"
 
-void createTestPolyhedron1(fe::collision::HalfEdgeMesh& meshData)
+fe::collision::HalfEdgeMesh createTestPolyhedron1()
 {
+	fe::collision::HalfEdgeMesh meshData;
 	fe::collision::addVertex(meshData, {  1.0f,  1.0f, -1.0f });
 	fe::collision::addVertex(meshData, {  1.0f, -1.0f, -1.0f });
 	fe::collision::addVertex(meshData, { -1.0f, -1.0f, -1.0f });
@@ -17,11 +18,13 @@ void createTestPolyhedron1(fe::collision::HalfEdgeMesh& meshData)
 	fe::collision::addFace(meshData, { 0, 3, 7, 4 });
 	fe::collision::addFace(meshData, { 4, 7, 6, 5 });
 	fe::collision::addFace(meshData, { 0, 1, 2, 3 });
+	return meshData;
 }
 
 
-void createTestPolyhedron2(fe::collision::HalfEdgeMesh& meshData)
+fe::collision::HalfEdgeMesh createTestPolyhedron2()
 {
+	fe::collision::HalfEdgeMesh meshData;
 	fe::collision::addVertex(meshData, { 0.0f, 0.0f, 0.0f });
 	fe::collision::addVertex(meshData, { 1.0f, 0.0f, 0.0f });
 	fe::collision::addVertex(meshData, { 1.0f, 1.0f, 0.0f });
@@ -32,11 +35,13 @@ void createTestPolyhedron2(fe::collision::HalfEdgeMesh& meshData)
 	fe::collision::addFace(meshData, { 1, 2, 4 });
 	fe::collision::addFace(meshData, { 2, 3, 4 });
 	fe::collision::addFace(meshData, { 3, 0, 4 });
+	return meshData;
 }
 
 
-void createTestPolyhedron3(fe::collision::HalfEdgeMesh& meshData)
+fe::collision::HalfEdgeMesh createTestPolyhedron3()
 {
+	fe::collision::HalfEdgeMesh meshData;
 	fe::collision::addVertex(meshData, { -1.0f, -0.5f,  0.5f });
 	fe::collision::addVertex(meshData, { -1.0f, -0.5f, -0.5f });
 	fe::collision::addVertex(meshData, { -1.0f,  0.5f, -0.5f });
@@ -47,11 +52,13 @@ void createTestPolyhedron3(fe::collision::HalfEdgeMesh& meshData)
 	fe::collision::addFace(meshData, { 1, 2, 4 });
 	fe::collision::addFace(meshData, { 2, 3, 4 });
 	fe::collision::addFace(meshData, { 3, 0, 4 });
+	return meshData;
 }
 
 
-void createTestMesh1(fe::collision::HalfEdgeMesh& meshData)
+fe::collision::HalfEdgeMesh createTestMesh1()
 {
+	fe::collision::HalfEdgeMesh meshData;
 	fe::collision::addVertex(meshData, {  1.25f,  1.0f, -2.75f });
 	fe::collision::addVertex(meshData, {  1.25f, -1.0f, -2.75f });
 	fe::collision::addVertex(meshData, { -0.25f, -1.0f, -2.75f });
@@ -75,11 +82,38 @@ void createTestMesh1(fe::collision::HalfEdgeMesh& meshData)
 	fe::collision::addFace(meshData, { 2, 1, 6 });
 	fe::collision::addFace(meshData, { 2, 6, 3 });
 	fe::collision::addFace(meshData, { 7, 4, 3 });
+	return meshData;
 }
 
 
-void createTestMesh2(fe::collision::HalfEdgeMesh& meshData, std::map<int, glm::vec3>& normals)
+fe::collision::HalfEdgeMesh createTestMesh2()
 {
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::addVertex(meshData, { 1.25f,  1.0f, -2.75f });
+	fe::collision::addVertex(meshData, { 1.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(meshData, { -0.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(meshData, { -0.25f,  1.0f,  0.0f });
+	fe::collision::addVertex(meshData, { 1.25f,  1.0f,  2.75f });
+	fe::collision::addVertex(meshData, { 1.25f, -1.0f,  2.75f });
+	fe::collision::addVertex(meshData, { -0.25f, -1.0f,  0.0f });
+	fe::collision::addVertex(meshData, { -0.25f,  1.0f,  2.75f });
+	fe::collision::addFace(meshData, { 0, 1, 2 });
+	fe::collision::addFace(meshData, { 0, 2, 3 });
+	fe::collision::addFace(meshData, { 3, 2, 6, 7 });
+	fe::collision::addFace(meshData, { 7, 6, 5 });
+	fe::collision::addFace(meshData, { 7, 5, 4 });
+	fe::collision::addFace(meshData, { 2, 1, 5, 6 });
+	fe::collision::addFace(meshData, { 1, 0, 4, 5 });
+	fe::collision::addFace(meshData, { 0, 3, 7, 4 });
+	return meshData;
+}
+
+
+std::pair<fe::collision::HalfEdgeMesh, std::map<int, glm::vec3>> createTestMesh3()
+{
+	fe::collision::HalfEdgeMesh meshData;
+	std::map<int, glm::vec3> normals;
+
 	int iFace;
 	fe::collision::addVertex(meshData, { -3.208401441f,  2.893295764f,  0.028006464f });
 	fe::collision::addVertex(meshData, { -6.086990833f,  3.260166883f, -0.342617660f });
@@ -183,4 +217,307 @@ void createTestMesh2(fe::collision::HalfEdgeMesh& meshData, std::map<int, glm::v
 	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
 	iFace = fe::collision::addFace(meshData, { 7, 0, 8 });
 	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+
+	return std::make_pair(meshData, normals);
+}
+
+
+fe::collision::HalfEdgeMesh createTestTube1()
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.0f, 1.0f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.0f, 1.0f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f });
+	fe::collision::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f });
+	fe::collision::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f });
+	fe::collision::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f });
+	fe::collision::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f });
+	fe::collision::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f });
+	fe::collision::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f });
+	fe::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f });
+	fe::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f });
+	fe::collision::addFace(meshData, { 0, 2, 3, 1 });
+	fe::collision::addFace(meshData, { 2, 4, 5, 3 });
+	fe::collision::addFace(meshData, { 4, 6, 7, 5 });
+	fe::collision::addFace(meshData, { 6, 8, 9, 7 });
+	fe::collision::addFace(meshData, { 8, 10, 11, 9 });
+	fe::collision::addFace(meshData, { 10, 12, 13, 11 });
+	fe::collision::addFace(meshData, { 12, 14, 15, 13 });
+	fe::collision::addFace(meshData, { 14, 16, 17, 15 });
+	fe::collision::addFace(meshData, { 16, 18, 19, 17 });
+	fe::collision::addFace(meshData, { 18, 20, 21, 19 });
+	fe::collision::addFace(meshData, { 20, 22, 23, 21 });
+	fe::collision::addFace(meshData, { 22, 0, 1, 23 });
+	fe::collision::addFace(meshData, { 24, 25, 27, 26 });
+	fe::collision::addFace(meshData, { 26, 27, 29, 28 });
+	fe::collision::addFace(meshData, { 28, 29, 31, 30 });
+	fe::collision::addFace(meshData, { 30, 31, 33, 32 });
+	fe::collision::addFace(meshData, { 32, 33, 35, 34 });
+	fe::collision::addFace(meshData, { 34, 35, 37, 36 });
+	fe::collision::addFace(meshData, { 36, 37, 39, 38 });
+	fe::collision::addFace(meshData, { 38, 39, 41, 40 });
+	fe::collision::addFace(meshData, { 40, 41, 43, 42 });
+	fe::collision::addFace(meshData, { 42, 43, 45, 44 });
+	fe::collision::addFace(meshData, { 44, 45, 47, 46 });
+	fe::collision::addFace(meshData, { 46, 47, 25, 24 });
+	fe::collision::addFace(meshData, { 13, 15, 39, 37 });
+	fe::collision::addFace(meshData, { 37, 35, 11, 13 });
+	fe::collision::addFace(meshData, { 35, 33, 9, 11 });
+	fe::collision::addFace(meshData, { 33, 31, 7, 9 });
+	fe::collision::addFace(meshData, { 31, 29, 5, 7 });
+	fe::collision::addFace(meshData, { 29, 27, 3, 5 });
+	fe::collision::addFace(meshData, { 27, 25, 1, 3 });
+	fe::collision::addFace(meshData, { 25, 47, 23, 1 });
+	fe::collision::addFace(meshData, { 47, 45, 21, 23 });
+	fe::collision::addFace(meshData, { 45, 43, 19, 21 });
+	fe::collision::addFace(meshData, { 43, 41, 17, 19 });
+	fe::collision::addFace(meshData, { 41, 39, 15, 17 });
+	fe::collision::addFace(meshData, { 20, 18, 42, 44 });
+	fe::collision::addFace(meshData, { 16, 40, 42, 18 });
+	fe::collision::addFace(meshData, { 14, 38, 40, 16 });
+	fe::collision::addFace(meshData, { 12, 36, 38, 14 });
+	fe::collision::addFace(meshData, { 10, 34, 36, 12 });
+	fe::collision::addFace(meshData, { 8, 32, 34, 10 });
+	fe::collision::addFace(meshData, { 6, 30, 32, 8 });
+	fe::collision::addFace(meshData, { 4, 28, 30, 6 });
+	fe::collision::addFace(meshData, { 2, 26, 28, 4 });
+	fe::collision::addFace(meshData, { 0, 24, 26, 2 });
+	fe::collision::addFace(meshData, { 22, 46, 24, 0 });
+	fe::collision::addFace(meshData, { 20, 44, 46, 22 });
+	return meshData;
+}
+
+
+std::vector<fe::collision::HalfEdgeMesh> createTestTube2()
+{
+	fe::collision::HalfEdgeMesh m0;
+	fe::collision::addVertex(m0, { -0.000000014f, 0.499999761f, -1.0f });
+	fe::collision::addVertex(m0, { -0.000000014f, 0.499999761f, 1.0f });
+	fe::collision::addVertex(m0, { 0.24999997f, 0.433012485f, -1.0f });
+	fe::collision::addVertex(m0, { 0.24999997f, 0.433012485f, 1.0f });
+	fe::collision::addVertex(m0, { 0.0f, 1.0f, -1.0f });
+	fe::collision::addVertex(m0, { 0.0f, 1.0f, 1.0f });
+	fe::collision::addVertex(m0, { 0.5f, 0.866025388f, -1.0f });
+	fe::collision::addVertex(m0, { 0.5f, 0.866025388f, 1.0f });
+	fe::collision::addFace(m0, { 0, 2, 3, 1 });
+	fe::collision::addFace(m0, { 5, 7, 6, 4 });
+	fe::collision::addFace(m0, { 0, 1, 5, 4 });
+	fe::collision::addFace(m0, { 3, 7, 5, 1 });
+	fe::collision::addFace(m0, { 2, 0, 4, 6 });
+	fe::collision::addFace(m0, { 2, 6, 7, 3 });
+
+	fe::collision::HalfEdgeMesh m1;
+	fe::collision::addVertex(m1, { 0.249999970f, 0.433012455f, -1.0f });
+	fe::collision::addVertex(m1, { 0.249999970f, 0.433012455f, 1.0f });
+	fe::collision::addVertex(m1, { 0.433012664f, 0.249999776f, -1.0f });
+	fe::collision::addVertex(m1, { 0.433012664f, 0.249999776f, 1.0f });
+	fe::collision::addVertex(m1, { 0.500000119f, 0.866025328f, -1.0f });
+	fe::collision::addVertex(m1, { 0.500000119f, 0.866025328f, 1.0f });
+	fe::collision::addVertex(m1, { 0.866025507f, 0.49999991f, -1.0f });
+	fe::collision::addVertex(m1, { 0.866025507f, 0.49999991f, 1.0f });
+	fe::collision::addFace(m1, { 5, 7, 6, 4 });
+	fe::collision::addFace(m1, { 0, 2, 3, 1 });
+	fe::collision::addFace(m1, { 0, 1, 5, 4 });
+	fe::collision::addFace(m1, { 3, 7, 5, 1 });
+	fe::collision::addFace(m1, { 2, 0, 4, 6 });
+	fe::collision::addFace(m1, { 2, 6, 7, 3 });
+
+	fe::collision::HalfEdgeMesh m2;
+	fe::collision::addVertex(m2, { 0.433012694f, 0.249999791f, -1.0f });
+	fe::collision::addVertex(m2, { 0.433012694f, 0.249999791f, 1.0f });
+	fe::collision::addVertex(m2, { 0.5f, -0.000000209f, -1.0f });
+	fe::collision::addVertex(m2, { 0.5f, -0.000000209f, 1.0f });
+	fe::collision::addVertex(m2, { 0.866025447f, 0.49999997f, -1.0f });
+	fe::collision::addVertex(m2, { 0.866025447f, 0.49999997f, 1.0f });
+	fe::collision::addVertex(m2, { 1.0f, -0.000000043f, -1.0f });
+	fe::collision::addVertex(m2, { 1.0f, -0.000000043f, 1.0f });
+	fe::collision::addFace(m2, { 0, 2, 3, 1 });
+	fe::collision::addFace(m2, { 7, 6, 4, 5 });
+	fe::collision::addFace(m2, { 0, 1, 5, 4 });
+	fe::collision::addFace(m2, { 3, 7, 5, 1 });
+	fe::collision::addFace(m2, { 4, 6, 2, 0 });
+	fe::collision::addFace(m2, { 2, 6, 7, 3 });
+
+	fe::collision::HalfEdgeMesh m3;
+	fe::collision::addVertex(m3, { 0.499999970f, -0.000000238f, -1.0f });
+	fe::collision::addVertex(m3, { 0.499999970f, -0.000000238f, 1.0f });
+	fe::collision::addVertex(m3, { 0.433012723f, -0.250000238f, -1.0f });
+	fe::collision::addVertex(m3, { 0.433012723f, -0.250000238f, 1.0f });
+	fe::collision::addVertex(m3, { 1.000000119f, -0.000000149f, -1.0f });
+	fe::collision::addVertex(m3, { 1.000000119f, -0.000000149f, 1.0f });
+	fe::collision::addVertex(m3, { 0.866025388f, -0.500000059f, -1.0f });
+	fe::collision::addVertex(m3, { 0.866025388f, -0.500000059f, 1.0f });
+	fe::collision::addFace(m3, { 7, 6, 4, 5 });
+	fe::collision::addFace(m3, { 0, 2, 3, 1 });
+	fe::collision::addFace(m3, { 0, 1, 5, 4 });
+	fe::collision::addFace(m3, { 3, 7, 5, 1 });
+	fe::collision::addFace(m3, { 4, 6, 2, 0 });
+	fe::collision::addFace(m3, { 2, 6, 7, 3 });
+
+	fe::collision::HalfEdgeMesh m4;
+	fe::collision::addVertex(m4, { 0.433012694f, -0.250000208f, -1.0f });
+	fe::collision::addVertex(m4, { 0.433012694f, -0.250000208f, 1.0f });
+	fe::collision::addVertex(m4, { 0.250000029f, -0.433012902f, -1.0f });
+	fe::collision::addVertex(m4, { 0.250000029f, -0.433012902f, 1.0f });
+	fe::collision::addVertex(m4, { 0.866025388f, -0.500000059f, -1.0f });
+	fe::collision::addVertex(m4, { 0.866025388f, -0.500000059f, 1.0f });
+	fe::collision::addVertex(m4, { 0.500000059f, -0.866025388f, -1.0f });
+	fe::collision::addVertex(m4, { 0.500000059f, -0.866025388f, 1.0f });
+	fe::collision::addFace(m4, { 0, 2, 3, 1 });
+	fe::collision::addFace(m4, { 2, 6, 7, 3 });
+	fe::collision::addFace(m4, { 5, 7, 6, 4 });
+	fe::collision::addFace(m4, { 3, 7, 5, 1 });
+	fe::collision::addFace(m4, { 0, 1, 5, 4 });
+	fe::collision::addFace(m4, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m5;
+	fe::collision::addVertex(m5, { 0.24999997f, -0.433012902f, -1.0f });
+	fe::collision::addVertex(m5, { 0.24999997f, -0.433012902f, 1.0f });
+	fe::collision::addVertex(m5, { 0.0f, -0.500000238f, -1.0f });
+	fe::collision::addVertex(m5, { 0.0f, -0.500000238f, 1.0f });
+	fe::collision::addVertex(m5, { 0.5f, -0.866025567f, -1.0f });
+	fe::collision::addVertex(m5, { 0.5f, -0.866025567f, 1.0f });
+	fe::collision::addVertex(m5, { 0.00000017f, -1.0f, -1.0f });
+	fe::collision::addVertex(m5, { 0.00000017f, -1.0f, 1.0f });
+	fe::collision::addFace(m5, { 5, 7, 6, 4 });
+	fe::collision::addFace(m5, { 2, 6, 7, 3 });
+	fe::collision::addFace(m5, { 0, 2, 3, 1 });
+	fe::collision::addFace(m5, { 3, 7, 5, 1 });
+	fe::collision::addFace(m5, { 0, 1, 5, 4 });
+	fe::collision::addFace(m5, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m6;
+	fe::collision::addVertex(m6, { 0.000000059f, -0.500000178f, -1.0f });
+	fe::collision::addVertex(m6, { 0.000000059f, -0.500000178f, 1.0f });
+	fe::collision::addVertex(m6, { -0.249999910f, -0.433012962f, -1.0f });
+	fe::collision::addVertex(m6, { -0.249999910f, -0.433012962f, 1.0f });
+	fe::collision::addVertex(m6, { 0.000000150f, -1.0f, -1.0f });
+	fe::collision::addVertex(m6, { 0.000000150f, -1.0f, 1.0f });
+	fe::collision::addVertex(m6, { -0.499999791f, -0.866025507f, -1.0f });
+	fe::collision::addVertex(m6, { -0.499999791f, -0.866025507f, 1.0f });
+	fe::collision::addFace(m6, { 5, 7, 6, 4 });
+	fe::collision::addFace(m6, { 0, 2, 3, 1 });
+	fe::collision::addFace(m6, { 3, 7, 5, 1 });
+	fe::collision::addFace(m6, { 2, 6, 7, 3 });
+	fe::collision::addFace(m6, { 0, 1, 5, 4 });
+	fe::collision::addFace(m6, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m7;
+	fe::collision::addVertex(m7, { -0.249999925f, -0.433012932f, -1.0f });
+	fe::collision::addVertex(m7, { -0.249999925f, -0.433012932f, 1.0f });
+	fe::collision::addVertex(m7, { -0.433012634f, -0.250000298f, -1.0f });
+	fe::collision::addVertex(m7, { -0.433012634f, -0.250000298f, 1.0f });
+	fe::collision::addVertex(m7, { -0.499999761f, -0.866025567f, -1.0f });
+	fe::collision::addVertex(m7, { -0.499999761f, -0.866025567f, 1.0f });
+	fe::collision::addVertex(m7, { -0.866025149f, -0.500000238f, -1.0f });
+	fe::collision::addVertex(m7, { -0.866025149f, -0.500000238f, 1.0f });
+	fe::collision::addFace(m7, { 5, 7, 6, 4 });
+	fe::collision::addFace(m7, { 0, 2, 3, 1 });
+	fe::collision::addFace(m7, { 3, 7, 5, 1 });
+	fe::collision::addFace(m7, { 2, 6, 7, 3 });
+	fe::collision::addFace(m7, { 0, 1, 5, 4 });
+	fe::collision::addFace(m7, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m8;
+	fe::collision::addVertex(m8, { -0.433012634f, -0.250000357f, -1.0f });
+	fe::collision::addVertex(m8, { -0.433012634f, -0.250000357f, 1.0f });
+	fe::collision::addVertex(m8, { -0.5f, -0.000000421f, -1.0f });
+	fe::collision::addVertex(m8, { -0.5f, -0.000000421f, 1.0f });
+	fe::collision::addVertex(m8, { -0.866025209f, -0.500000298f, -1.0f });
+	fe::collision::addVertex(m8, { -0.866025209f, -0.500000298f, 1.0f });
+	fe::collision::addVertex(m8, { -1.0f, -0.000000464f, -1.0f });
+	fe::collision::addVertex(m8, { -1.0f, -0.000000464f, 1.0f });
+	fe::collision::addFace(m8, { 0, 2, 3, 1 });
+	fe::collision::addFace(m8, { 5, 7, 6, 4 });
+	fe::collision::addFace(m8, { 3, 7, 5, 1 });
+	fe::collision::addFace(m8, { 2, 6, 7, 3 });
+	fe::collision::addFace(m8, { 0, 1, 5, 4 });
+	fe::collision::addFace(m8, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m9;
+	fe::collision::addVertex(m9, { -0.500000059f, -0.0000004f, -1.0f });
+	fe::collision::addVertex(m9, { -0.500000059f, -0.0000004f, 1.0f });
+	fe::collision::addVertex(m9, { -0.433012783f, 0.249999582f, -1.0f });
+	fe::collision::addVertex(m9, { -0.433012783f, 0.249999582f, 1.0f });
+	fe::collision::addVertex(m9, { -0.999999821f, -0.000000387f, -1.0f });
+	fe::collision::addVertex(m9, { -0.999999821f, -0.000000387f, 1.0f });
+	fe::collision::addVertex(m9, { -0.866025507f, 0.499999523f, -1.0f });
+	fe::collision::addVertex(m9, { -0.866025507f, 0.499999523f, 1.0f });
+	fe::collision::addFace(m9, { 5, 7, 6, 4 });
+	fe::collision::addFace(m9, { 0, 2, 3, 1 });
+	fe::collision::addFace(m9, { 3, 7, 5, 1 });
+	fe::collision::addFace(m9, { 2, 6, 7, 3 });
+	fe::collision::addFace(m9, { 0, 1, 5, 4 });
+	fe::collision::addFace(m9, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m10;
+	fe::collision::addVertex(m10, { -0.433012872f, 0.249999567f, -1.0f });
+	fe::collision::addVertex(m10, { -0.433012872f, 0.249999567f, 1.0f });
+	fe::collision::addVertex(m10, { -0.250000327f, 0.433012336f, -1.0f });
+	fe::collision::addVertex(m10, { -0.250000327f, 0.433012336f, 1.0f });
+	fe::collision::addVertex(m10, { -0.866025686f, 0.499999493f, -1.0f });
+	fe::collision::addVertex(m10, { -0.866025686f, 0.499999493f, 1.0f });
+	fe::collision::addVertex(m10, { -0.500000596f, 0.866025090f, -1.0f });
+	fe::collision::addVertex(m10, { -0.500000596f, 0.866025090f, 1.0f });
+	fe::collision::addFace(m10, { 0, 2, 3, 1 });
+	fe::collision::addFace(m10, { 5, 7, 6, 4 });
+	fe::collision::addFace(m10, { 3, 7, 5, 1 });
+	fe::collision::addFace(m10, { 2, 6, 7, 3 });
+	fe::collision::addFace(m10, { 0, 1, 5, 4 });
+	fe::collision::addFace(m10, { 4, 6, 2, 0 });
+
+	fe::collision::HalfEdgeMesh m11;
+	fe::collision::addVertex(m11, { -0.250000268f, 0.433012396f, -1.0f });
+	fe::collision::addVertex(m11, { -0.250000268f, 0.433012396f, 1.0f });
+	fe::collision::addVertex(m11, { -0.000000357f, 0.499999791f, -1.0f });
+	fe::collision::addVertex(m11, { -0.000000357f, 0.499999791f, 1.0f });
+	fe::collision::addVertex(m11, { -0.500000417f, 0.866024971f, -1.0f });
+	fe::collision::addVertex(m11, { -0.500000417f, 0.866024971f, 1.0f });
+	fe::collision::addVertex(m11, { -0.000000536f, 1.0f, -1.0f });
+	fe::collision::addVertex(m11, { -0.000000536f, 1.0f, 1.0f });
+	fe::collision::addFace(m11, { 5, 7, 6, 4 });
+	fe::collision::addFace(m11, { 0, 2, 3, 1 });
+	fe::collision::addFace(m11, { 3, 7, 5, 1 });
+	fe::collision::addFace(m11, { 2, 6, 7, 3 });
+	fe::collision::addFace(m11, { 0, 1, 5, 4 });
+	fe::collision::addFace(m11, { 4, 6, 2, 0 });
+
+	return { m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11 };
 }

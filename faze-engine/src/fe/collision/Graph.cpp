@@ -33,11 +33,13 @@ namespace fe { namespace collision {
 		}
 
 		// Remove all the vertex 2 neighbours
-		for (int iVertex : itVertex2->neighbours) {
-			auto itVertex = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iVertex, lessVertexId);
-			if (itVertex != dualGraph.vertices.end()) {
-				auto itVertexNeighbour = std::lower_bound(itVertex->neighbours.begin(), itVertex->neighbours.end(), iVertex);
-				itVertex->neighbours.erase(itVertexNeighbour);
+		for (int iVertex2Neighbour : itVertex2->neighbours) {
+			auto itVertex2Neighbour = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iVertex2Neighbour, lessVertexId);
+			if (itVertex2Neighbour != dualGraph.vertices.end()) {
+				auto itVertex2NN = std::lower_bound(itVertex2Neighbour->neighbours.begin(), itVertex2Neighbour->neighbours.end(), iVertex2);
+				if (itVertex2NN != itVertex2Neighbour->neighbours.end()) {
+					itVertex2Neighbour->neighbours.erase(itVertex2NN);
+				}
 			}
 		}
 		itVertex2->neighbours.clear();

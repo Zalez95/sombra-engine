@@ -44,7 +44,7 @@ namespace fe { namespace graphics {
 		void removeRenderable2D(const Renderable2D* renderable2D);
 
 		/** Draws the scene */
-		virtual void render();
+		void render() override;
 	};
 
 }}

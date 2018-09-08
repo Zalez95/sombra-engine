@@ -40,9 +40,9 @@ namespace fe { namespace loaders {
 	) const
 	{
 		// Get the data from the image
-		const size_t xSize	= heightMap.getWidth();
-		const size_t zSize	= heightMap.getHeight();
-		const size_t count	= xSize * zSize;
+		const std::size_t xSize = heightMap.getWidth();
+		const std::size_t zSize = heightMap.getHeight();
+		const std::size_t count = xSize * zSize;
 
 		// The mesh data of the Terrain
 		auto rawMesh = std::make_unique<RawMesh>(name);
@@ -51,9 +51,9 @@ namespace fe { namespace loaders {
 		rawMesh->uvs.reserve(2 * count);
 		rawMesh->faceIndices.reserve(6 * (xSize - 1) * (zSize - 1));
 
-		for (size_t z = 0; z < zSize; ++z) {
+		for (std::size_t z = 0; z < zSize; ++z) {
 			float zPos = z / static_cast<float>(zSize - 1) - 0.5f;
-			for (size_t x = 0; x < xSize; ++x) {
+			for (std::size_t x = 0; x < xSize; ++x) {
 				float xPos = x / static_cast<float>(xSize - 1) - 0.5f;
 				float yPos = getHeight(heightMap, x, z);
 
@@ -113,13 +113,13 @@ namespace fe { namespace loaders {
 		const utils::Image& heightMap
 	) const
 	{
-		const size_t xSize	= heightMap.getWidth();
-		const size_t zSize	= heightMap.getHeight();
+		const std::size_t xSize = heightMap.getWidth();
+		const std::size_t zSize = heightMap.getHeight();
 
 		std::vector<float> heights;
 		heights.reserve(xSize * zSize);
-		for (size_t z = 0; z < zSize; ++z) {
-			for (size_t x = 0; x < xSize; ++x) {
+		for (std::size_t z = 0; z < zSize; ++z) {
+			for (std::size_t x = 0; x < xSize; ++x) {
 				heights.push_back( getHeight(heightMap, x, z) );
 			}
 		}
@@ -128,7 +128,7 @@ namespace fe { namespace loaders {
 	}
 
 
-	float TerrainLoader::getHeight(const utils::Image& heightMap, size_t x, size_t z) const
+	float TerrainLoader::getHeight(const utils::Image& heightMap, std::size_t x, std::size_t z) const
 	{
 		assert(x < heightMap.getWidth() && "x must be smaller than the image width");
 		assert(z < heightMap.getHeight() && "z must be smaller than the image height");

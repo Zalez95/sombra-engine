@@ -63,18 +63,11 @@ namespace fe { namespace collision {
 	{
 		glm::vec3 v12 = triangle[1] - triangle[0];
 		glm::vec3 v13 = triangle[2] - triangle[0];
-		float sinTheta = std::sqrt(1.0f - std::pow(glm::dot(v12, v13), 2.0f));
-		return glm::length(v12) * glm::length(v13) * sinTheta / 2.0f;
-	}
-
-
-	float calculatePolygonPerimeter(const std::vector<glm::vec3>& vertices)
-	{
-		float perimeter = 0.0f;
-		for (size_t i = 0; i < vertices.size(); ++i) {
-			perimeter += glm::length(vertices[(i + 1) % vertices.size()] - vertices[i]);
-		}
-		return perimeter;
+		return 0.5f * std::sqrt(
+			std::pow(v12.y * v13.z - v12.z * v13.y, 2)
+			+ std::pow(v12.z * v13.x - v12.x * v13.z, 2)
+			+ std::pow(v12.x * v13.y - v12.y * v13.x, 2)
+		);
 	}
 
 }}

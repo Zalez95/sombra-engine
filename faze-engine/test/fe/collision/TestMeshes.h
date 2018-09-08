@@ -1,7 +1,10 @@
 #include <fe/collision/HalfEdgeMesh.h>
 
-void createTestPolyhedron1(fe::collision::HalfEdgeMesh& meshData);
-void createTestPolyhedron2(fe::collision::HalfEdgeMesh& meshData);
-void createTestPolyhedron3(fe::collision::HalfEdgeMesh& meshData);
-void createTestMesh1(fe::collision::HalfEdgeMesh& meshData);
-void createTestMesh2(fe::collision::HalfEdgeMesh& meshData, std::map<int, glm::vec3>& normals);
+fe::collision::HalfEdgeMesh createTestPolyhedron1();
+fe::collision::HalfEdgeMesh createTestPolyhedron2();
+fe::collision::HalfEdgeMesh createTestPolyhedron3();
+fe::collision::HalfEdgeMesh createTestMesh1();
+fe::collision::HalfEdgeMesh createTestMesh2();
+std::pair<fe::collision::HalfEdgeMesh, std::map<int, glm::vec3>> createTestMesh3();
+fe::collision::HalfEdgeMesh createTestTube1();
+std::vector<fe::collision::HalfEdgeMesh> createTestTube2();

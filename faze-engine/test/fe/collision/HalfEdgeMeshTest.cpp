@@ -1,3 +1,4 @@
+#include <tuple>
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,7 +11,7 @@ TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
 {
 	fe::collision::HalfEdgeMesh meshData;
 	std::map<int, glm::vec3> normals;
-	createTestMesh2(meshData, normals);
+	std::tie(meshData, normals) = createTestMesh3();
 	const glm::vec3 direction(-0.549725532f, -0.870150089f, 1.638233065f);
 	int iExpectedVertex = 19;
 	
@@ -26,7 +27,7 @@ TEST(HalfEdgeMesh, getFaceIndices1)
 
 	fe::collision::HalfEdgeMesh meshData;
 	std::map<int, glm::vec3> normals;
-	createTestMesh2(meshData, normals);
+	std::tie(meshData, normals) = createTestMesh3();
 
 	std::vector<int> faceIndices = fe::collision::getFaceIndices(meshData, iFace);
 	EXPECT_EQ(faceIndices, expectedFaceIndices);
@@ -37,7 +38,7 @@ TEST(HalfEdgeMesh, mergeFace1)
 {
 	fe::collision::HalfEdgeMesh meshData;
 	std::map<int, glm::vec3> normals;
-	createTestMesh2(meshData, normals);
+	std::tie(meshData, normals) = createTestMesh3();
 
 	const std::vector<int> expectedVertices = { 19, 18, 2, 17 };
 	const int iMergedFace1 = 17, iMergedFace2 = 6;
@@ -123,7 +124,7 @@ TEST(HalfEdgeMesh, calculateHorizon1)
 {
 	fe::collision::HalfEdgeMesh meshData;
 	std::map<int, glm::vec3> normals;
-	createTestMesh2(meshData, normals);
+	std::tie(meshData, normals) = createTestMesh3();
 
 	const glm::vec3 eyePoint(-3.49067f, 2.15318f, 1.14567f);
 	const std::vector<int> expectedHorizonVertices = { 2, 13, 8, 0, 11, 17 };

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <glm/gtc/constants.hpp>
 #include "fe/collision/HACD.h"
+#include "fe/collision/QuickHull.h"
 #include "Geometry.h"
 
 namespace fe { namespace collision {
@@ -10,23 +11,26 @@ namespace fe { namespace collision {
 	{
 		initData(meshData);
 
-		int iBestVertex1, iBestVertex2;
-		while (iBestVertex1 >= 0) {
-			// 1. Calculate the pair of nodes with the lowest decimation cost
-			iBestVertex1 = -1;
-			iBestVertex2 = -1;
+		bool end = false;
+		while (!end) {
+			// 1. Calculate the pair of vertices with the lowest decimation cost
+			int iBestVertex1 = -1, iBestVertex2 = -1;
 			float lowestCost = std::numeric_limits<float>::max();
 			for (const GraphVertex& vertex : mDualGraph.vertices) {
 				int iVertex1 = vertex.id;
 				for (int iVertex2 : vertex.neighbours) {
-					// We filter the neighbour nodes already evaluated
+					// We filter the neighbour vertices already evaluated
 					if (iVertex2 > iVertex1) {
-						float concavity = calculateConcavity(iVertex1, iVertex2, mMesh, mFaceNormals, mConvexHull);
-						float aspectRatio = calculateAspectRatio(iVertex1, iVertex2, mMesh);
+						// Calculate the surface created from the current
+						// vertices and their ancestors
+						auto surfaceFaceIndices = calculateSurfaceFaceIndices(iVertex1, iVertex2);
+
+						// Calculate the cost of the surface
+						float concavity = calculateConcavity(surfaceFaceIndices, mMesh, mFaceNormals);
+						float aspectRatio = calculateAspectRatio(surfaceFaceIndices, mMesh);
 						float currentCost = calculateDecimationCost(concavity, aspectRatio);
-						if ((concavity < mMaximumConcavity * mNormalizationFactor)
-							&& (currentCost < lowestCost)
-						) {
+
+						if ((concavity < mMaximumConcavity * mNormalizationFactor) && (currentCost < lowestCost)) {
 							lowestCost = currentCost;
 							iBestVertex1 = iVertex1;
 							iBestVertex2 = iVertex2;
@@ -35,15 +39,19 @@ namespace fe { namespace collision {
 				}
 			}
 
-			if (iBestVertex1 >= 0) {
+			if ((iBestVertex1 >= 0) && (iBestVertex2 >= 0)) {
 				// 2. Merge the best nodes
 				halfEdgeCollapse(iBestVertex1, iBestVertex2, mDualGraph);
 
 				// 3. Update the ancestors of the first vertex with the second one
+				// TODO: compute the convex hull of the surface partitions here
 				updateAncestors(iBestVertex1, iBestVertex2);
 
 				// 4. Update the partitions of the Dual Graph vertices
 				calculatePartitions();
+			}
+			else {
+				end = true;
 			}
 		}
 
@@ -53,7 +61,6 @@ namespace fe { namespace collision {
 
 	void HACD::resetData()
 	{
-		mQuickHull.resetData();
 		mFaceNormals.clear();
 		mVertexAncestors.clear();
 		mConvexSurfaces.clear();
@@ -71,10 +78,8 @@ namespace fe { namespace collision {
 			mFaceNormals.emplace(it.getIndex(), calculateFaceNormal(mMesh, it.getIndex()));
 		}
 
-		// 3. Calculate the convex hull of the mesh
-		mQuickHull.calculate(mMesh);
-		mConvexHull = mQuickHull.getMesh();
-		triangulateFaces(mConvexHull);
+		// 3. Calculate the initial dual graph of the triangulated mesh
+		mDualGraph = createDualGraph(mMesh);
 
 		// 4. Calculate the AABB of the mesh TODO: move
 		AABB meshAABB = {
@@ -86,13 +91,10 @@ namespace fe { namespace collision {
 			meshAABB.maximum = glm::max(meshAABB.maximum, vertex.location);
 		}
 
-		// 5. Calculate the initial dual graph of the triangulated mesh
-		Graph dualGraph = createDualGraph(mMesh);
-
-		// 6. Calculate the normalization factor of the triangulated mesh
+		// 5. Calculate the normalization factor of the triangulated mesh
 		mNormalizationFactor = calculateNormalizationFactor(meshAABB);
 
-		// 7. Calculate the aspect ratio factor of the triangulated mesh
+		// 6. Calculate the aspect ratio factor of the triangulated mesh
 		mAspectRatioFactor = calculateAspectRatioFactor(mNormalizationFactor);
 	}
 
@@ -102,17 +104,20 @@ namespace fe { namespace collision {
 		Graph dualGraph;
 
 		// Create the dual graph from the Mesh HEFaces
-		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end();) {
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
 			int iVertex = dualGraph.vertices.create();
-			dualGraph.vertices[iVertex].id = (itFace++).getIndex();
+			dualGraph.vertices[iVertex].id = itFace.getIndex();
 		}
 
-		// Create the graph edges from the Mesh adjacent HEFaces
+		// Create the vertices neighbours from the Mesh adjacent HEFaces
 		for (GraphVertex& v : dualGraph.vertices) {
 			int iInitialEdge = meshData.faces[v.id].edge;
 			int iCurrentEdge = iInitialEdge;
 			do {
-				int iOtherVertex = meshData.edges[iCurrentEdge].face;
+				HEEdge currentEdge = meshData.edges[iCurrentEdge];
+				HEEdge oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
+
+				int iOtherVertex = oppositeEdge.face;
 				auto itOtherVertex = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iOtherVertex, lessVertexId);
 
 				// Check if we already set the other vertex as a neighbour of
@@ -138,35 +143,68 @@ namespace fe { namespace collision {
 	}
 
 
-	float HACD::calculateConcavity(
-		int iFace1, int iFace2,
-		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals,
-		const HalfEdgeMesh& convexHull
-	) const
+	std::vector<int> HACD::calculateSurfaceFaceIndices(int iVertex1, int iVertex2) const
 	{
-		// Get all the vertices in the given faces
-		std::vector<int> allVertices;
+		std::vector<int> surfaceFaceIndices = { iVertex1, iVertex2 };
 
-		std::vector<int> face1Indices = getFaceIndices(meshData, iFace1);
-		std::sort(face1Indices.begin(), face1Indices.end());
-
-		std::vector<int> face2Indices = getFaceIndices(meshData, iFace2);
-		std::sort(face2Indices.begin(), face2Indices.end());
-
-		std::set_union(
-			face1Indices.begin(), face1Indices.end(),
-			face2Indices.begin(), face2Indices.end(),
-			std::back_inserter(allVertices)
+		auto itVertex1Ancestors = mVertexAncestors.equal_range(iVertex1);
+		std::transform(
+			itVertex1Ancestors.first, itVertex1Ancestors.second, std::back_inserter(surfaceFaceIndices),
+			[](const std::pair<int, int>& p) { return p.second; }
 		);
 
-		// Calculate the maximum concavity as the distance of a point to its
-		// projection on the convex hull of its mesh
-		float maxConcavity;
-		for (int iVertex : allVertices) {
-			glm::vec3 vertexLocation = meshData.vertices[iVertex].location;
-			glm::vec3 vertexNormal = calculateVertexNormal(meshData, faceNormals, iVertex);
+		auto itVertex2Ancestors = mVertexAncestors.equal_range(iVertex2);
+		std::transform(
+			itVertex2Ancestors.first, itVertex2Ancestors.second, std::back_inserter(surfaceFaceIndices),
+			[](const std::pair<int, int>& p) { return p.second; }
+		);
 
-			glm::vec3 raycastedPoint = raycastInsideMesh(convexHull, vertexLocation, vertexNormal);
+		return surfaceFaceIndices;
+	}
+
+
+	float HACD::calculateConcavity(
+		const std::vector<int>& iFaces,
+		const HalfEdgeMesh& meshData, const std::map<int, glm::vec3>& faceNormals
+	) const
+	{
+		// 1. Create a new surface HEMesh from the given meshData's HEFaces
+		HalfEdgeMesh surface;
+		std::map<int, int> vertexMap, faceMap;
+
+		for (int iFace1 : iFaces) {
+			std::vector<int> iFace1Vertices = getFaceIndices(meshData, iFace1);
+			std::vector<int> iFace2Vertices;
+
+			for (int iVertex1 : iFace1Vertices) {
+				auto itVertex1 = vertexMap.find(iVertex1);
+				if (itVertex1 != vertexMap.end()) {
+					iFace2Vertices.push_back(itVertex1->second);
+				}
+				else {
+					int iVertex2 = addVertex(surface, meshData.vertices[iVertex1].location);
+					vertexMap.emplace(iVertex1, iVertex2);
+					iFace2Vertices.push_back(iVertex2);
+				}
+			}
+
+			int iFace2 = addFace(surface, iFace2Vertices);
+			faceMap.emplace(iFace1, iFace2);
+		}
+
+		// 2. Calculate the convex hull of the surface HEMesh
+		QuickHull qh(mQuickHullEpsilon);
+		qh.calculate(surface);
+		const HalfEdgeMesh& surfaceConvexHull = qh.getMesh();
+
+		// 3. Calculate the maximum concavity as the distance of a point to its
+		// projection on the convex hull of its mesh
+		float maxConcavity = -std::numeric_limits<float>::max();
+		for (auto iVertexPair : vertexMap) {
+			glm::vec3 vertexLocation = meshData.vertices[iVertexPair.first].location;
+			glm::vec3 vertexNormal = calculateVertexNormal(meshData, faceNormals, iVertexPair.first);
+
+			glm::vec3 raycastedPoint = raycastInsideMesh(surfaceConvexHull, vertexLocation, vertexNormal);
 			float currentConcavity = glm::length(raycastedPoint - vertexLocation);
 			maxConcavity = std::max(maxConcavity, currentConcavity);
 		}
@@ -175,50 +213,38 @@ namespace fe { namespace collision {
 	}
 
 
-	float HACD::calculateAspectRatio(int iFace1, int iFace2, const HalfEdgeMesh& meshData) const
+	float HACD::calculateAspectRatio(const std::vector<int>& iFaces, const HalfEdgeMesh& meshData) const
 	{
-		std::vector<int> face1Indices = getFaceIndices(meshData, iFace1);
-		std::vector<int> face2Indices = getFaceIndices(meshData, iFace2);
-
-		// 1. Calculate the perimeter of the surface (excluding the internal
-		// edges of the triangles of the graph vertices v and w)
-		float perimeter1 = calculatePolygonPerimeter({
-			meshData.vertices[face1Indices[0]].location,
-			meshData.vertices[face1Indices[1]].location,
-			meshData.vertices[face1Indices[2]].location
-		});
-		float perimeter2 = calculatePolygonPerimeter({
-			meshData.vertices[face2Indices[0]].location,
-			meshData.vertices[face2Indices[1]].location,
-			meshData.vertices[face2Indices[2]].location
-		});
-
-		HEEdge currentEdge = meshData.edges[meshData.faces[iFace1].edge];
-		HEEdge oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
-		while (oppositeEdge.face != iFace2) {
-			currentEdge = meshData.edges[currentEdge.nextEdge];
-			oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
+		// 1. Calculate the perimeter of the surface of the triangles
+		float perimeter = 0.0f;
+		for (int iFace : iFaces) {
+			int iInitialEdge = meshData.faces[iFace].edge;
+			int iCurrentEdge = iInitialEdge;
+			do {
+				const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
+				const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
+				if (std::none_of(iFaces.begin(), iFaces.end(), [&](int iFace) { return iFace == oppositeEdge.face; })) {
+					glm::vec3 sharedV1 = meshData.vertices[oppositeEdge.vertex].location;
+					glm::vec3 sharedV2 = meshData.vertices[currentEdge.vertex].location;
+					perimeter += glm::length(sharedV2 - sharedV1);
+				}
+				iCurrentEdge = currentEdge.nextEdge;
+			}
+			while (iCurrentEdge != iInitialEdge);
 		}
-		glm::vec3 sharedV1 = meshData.vertices[oppositeEdge.vertex].location;
-		glm::vec3 sharedV2 = meshData.vertices[currentEdge.vertex].location;
-		float sharedEdgeLength = glm::length(sharedV2 - sharedV1);
-
-		float perimeter = perimeter1 + perimeter2 - 2 * sharedEdgeLength;
 
 		// 2. Calculate the area of the surface as the sum of the areas of the
-		// triangles of the graph vertices v and w
-		float area1 = calculateTriangleArea({
-			meshData.vertices[face1Indices[0]].location,
-			meshData.vertices[face1Indices[1]].location,
-			meshData.vertices[face1Indices[2]].location
-		});
-		float area2 = calculateTriangleArea({
-			meshData.vertices[face2Indices[0]].location,
-			meshData.vertices[face2Indices[1]].location,
-			meshData.vertices[face2Indices[2]].location
-		});
-
-		float area = area1 + area2;
+		// triangles
+		float area = 0.0f;
+		std::vector<std::vector<int>> faceVertexIndices;
+		for (int iFace : iFaces) {
+			auto faceIndices = getFaceIndices(meshData, iFace);
+			area += calculateTriangleArea({
+				meshData.vertices[faceIndices[0]].location,
+				meshData.vertices[faceIndices[1]].location,
+				meshData.vertices[faceIndices[2]].location
+			});
+		}
 
 		return std::pow(perimeter, 2) / (4 * glm::pi<float>() * area);
 	}
@@ -341,7 +367,7 @@ namespace fe { namespace collision {
 	void HACD::computeConvexSurfaces()
 	{
 		mConvexSurfaces.resize(mGraphPartitions.size());
-		for (size_t iPartition = 0; iPartition < mGraphPartitions.size(); ++iPartition) {
+		for (std::size_t iPartition = 0; iPartition < mGraphPartitions.size(); ++iPartition) {
 			std::map<int, int> vertexIndexMap;
 			for (int iMeshFace : mGraphPartitions[iPartition]) {
 				// Add the HEVertices to the surface if they aren't already in

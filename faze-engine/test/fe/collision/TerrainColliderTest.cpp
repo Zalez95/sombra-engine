@@ -142,7 +142,7 @@ TEST(TerrainCollider, getOverlapingParts)
 	}
 
 	ASSERT_EQ(result.size(), expectedRes.size());
-	for (size_t i = 0; i < result.size(); ++i) {
+	for (std::size_t i = 0; i < result.size(); ++i) {
 		fe::collision::AABB aabb2 = result[i]->getAABB();
 		fe::collision::AABB aabb3 = expectedRes[i].getAABB();
 		for (int j = 0; j < 3; ++j) {

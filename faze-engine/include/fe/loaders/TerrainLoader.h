@@ -107,7 +107,7 @@ namespace fe { namespace loaders {
 		 * @param	z the position in the Z axis that we want to read
 		 * @return	the height at the given position in the range [-0.5, 0.5] */
 		float getHeight(
-			const utils::Image& heightMap, size_t x, size_t z
+			const utils::Image& heightMap, std::size_t x, std::size_t z
 		) const;
 	};
 

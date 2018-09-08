@@ -54,16 +54,6 @@ namespace fe { namespace collision {
 	 * @return	the area of the triangle */
 	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
 
-
-	/** Calculates the perimeter of the polygon created from the given vertices
-	 *
-	 * @param	vertices the vertices of the polygon
-	 * @return	the perimeter of the polygon
-	 * @note	the perimeter will be calculated as if the given vertices were
-	 *			contiguous in the polygon. I.e. the first edge will go from
-	 *			the first vertex to the second one, etc. */
-	float calculatePolygonPerimeter(const std::vector<glm::vec3>& vertices);
-
 }}
 
 #endif		// TRIANGLE_H

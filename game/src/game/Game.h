@@ -38,12 +38,12 @@ namespace game {
 		/**
 		 * Function used to initialize the application's entities data
 		 */
-		virtual void init();
+		void init() override;
 
 		/**
 		 * Function used to remove the application's entities data
 		 */
-		virtual void end();
+		void end() override;
 	};
 
 }

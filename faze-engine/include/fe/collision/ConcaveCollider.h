@@ -24,15 +24,15 @@ namespace fe { namespace collision {
 		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the ConcaveCollider */
-		virtual void setTransforms(const glm::mat4& transforms) = 0;
+		void setTransforms(const glm::mat4& transforms) override = 0;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			ConcaveCollider */
-		virtual glm::mat4 getTransforms() const = 0;
+		glm::mat4 getTransforms() const override = 0;
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			ConcaveCollider */
-		virtual AABB getAABB() const = 0;
+		AABB getAABB() const override = 0;
 
 		/** @return a set with the posible overlaping parts of the Collider
 		 * with the given AABB

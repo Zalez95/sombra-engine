@@ -49,10 +49,10 @@ namespace fe { namespace physics {
 		~NormalConstraint() {};
 
 		/** @return the value of the Bias of the constraint */
-		virtual float getBias() const;
+		float getBias() const override;
 
 		/** @return the Jacobian matrix of the constraint */
-		virtual std::array<float, 12> getJacobianMatrix() const;
+		std::array<float, 12> getJacobianMatrix() const override;
 
 		/** Sets the constraint points of the NormalConstraint
 		 *

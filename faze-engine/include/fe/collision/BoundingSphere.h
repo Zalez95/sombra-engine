@@ -31,27 +31,26 @@ namespace fe { namespace collision {
 		~BoundingSphere() {};
 
 		/** @return	the center of the BoundingSphere in world coordinates */
-		inline glm::vec3 getCenter() const
-		{ return glm::vec3(mTransformsMatrix[3]); };
+		glm::vec3 getCenter() const { return glm::vec3(mTransformsMatrix[3]); };
 
 		/** @return	the radius of the BoundingSphere */
-		inline float getRadius() const { return mRadius; };
+		float getRadius() const { return mRadius; };
 
 		/** Updates the scale, translation and orientation of the BoundingSphere
 		 * with the given transformations matrix
 		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the BoundingSphere */
-		virtual void setTransforms(const glm::mat4& transforms);
+		void setTransforms(const glm::mat4& transforms) override;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			BoundingSphere */
-		inline virtual glm::mat4 getTransforms() const
+		glm::mat4 getTransforms() const override
 		{ return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			BoundingBox */
-		virtual AABB getAABB() const;
+		AABB getAABB() const override;
 
 		/** Calculates the coordinates of the BoundingSphere's furthest point
 		 * in the given direction
@@ -64,10 +63,10 @@ namespace fe { namespace collision {
 		 * @param	pointLocal the vector where we are going to store the
 		 *			coordinates in local space of BoundingSphere's
 		 *			furthest point */
-		virtual void getFurthestPointInDirection(
+		void getFurthestPointInDirection(
 			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal
-		) const;
+		) const override;
 	};
 
 }}

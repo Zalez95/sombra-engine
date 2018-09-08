@@ -19,15 +19,15 @@ namespace fe { namespace collision {
 		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the ConvexCollider */
-		virtual void setTransforms(const glm::mat4& transforms) = 0;
+		void setTransforms(const glm::mat4& transforms) override = 0;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			ConvexCollider */
-		virtual glm::mat4 getTransforms() const = 0;
+		glm::mat4 getTransforms() const override= 0;
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			ConvexCollider */
-		virtual AABB getAABB() const = 0;
+		AABB getAABB() const override= 0;
 
 		/** Calculates the coordinates of the ConvexCollider's furthest point
 		 * in the given direction

@@ -1,10 +1,9 @@
 #ifndef HACD_H
 #define HACD_H
 
-#include <map>
 #include "AABB.h"
 #include "Graph.h"
-#include "QuickHull.h"
+#include "HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 
@@ -22,8 +21,9 @@ namespace fe { namespace collision {
 		 * algorithm */
 		const float mMaximumConcavity;
 
-		/** The object needed for calculating the convex hulls */
-		QuickHull mQuickHull;
+		/** The epsilon value needed for the comparisons during the QuickHull
+		 * algorithm computation */
+		const float mQuickHullEpsilon;
 
 		/** The mesh to apply the HACD algorithm. Its faces must be triangles */
 		HalfEdgeMesh mMesh;
@@ -31,10 +31,6 @@ namespace fe { namespace collision {
 		/** The normal vectors of the HEFaces of the Mesh to apply the HACD
 		 * algorithm */
 		std::map<int, glm::vec3> mFaceNormals;
-
-		/** The Convex Hull mesh of the mesh to apply the HACD algorithm. Its
-		 * faces must be triangles */
-		HalfEdgeMesh mConvexHull;
 
 		/** The Dual Graph asociated with mesh to decompose. Each vertex in
 		 * this graph is a triangle in the mesh, and each vertex in the Graph
@@ -66,7 +62,7 @@ namespace fe { namespace collision {
 		 *			the QuickHull algorithm computation */
 		HACD(float maximumConcavity, float quickHullEpsilon) :
 			mMaximumConcavity(maximumConcavity),
-			mQuickHull(quickHullEpsilon) {};
+			mQuickHullEpsilon(quickHullEpsilon) {};
 
 		/** Class destructor */
 		~HACD() {};
@@ -98,36 +94,39 @@ namespace fe { namespace collision {
 		 * @return	the dual graph of the mesh */
 		Graph createDualGraph(const HalfEdgeMesh& meshData) const;
 
-		/** Calculates the concavity of the point of the given surface as the
-		 * maximum distance from the points of the surface created from the
-		 * given faces to the convex hull
+		/** Calculates the HEFace indices of the surface created from the given
+		 * Graph vertices and their ancestors
 		 *
-		 * @param	iFace1 the index of the first HEFace
-		 * @param	iFace2 the index of the second HEFace
+		 * @param	iVertex1 the index of the first Graph vertex
+		 * @param	iVertex2 the index of the second Graph vertex
+		 * @return	the HEFace indices of the surface */
+		std::vector<int> calculateSurfaceFaceIndices(
+			int iVertex1, int iVertex2
+		) const;
+
+		/** Calculates the maximum concavity of the surface created from the
+		 * given the given HAFaces as the maximum distance from a point on the
+		 * surface to its convex hull.
+		 *
+		 * @param	iFaces the indices of the HEFaces of the surface
 		 * @param	meshData the HalfEdgeMesh that holds both HEFaces
 		 * @param	faceNormals a map with the normal vectors of the meshData
 		 *			HEFaces
-		 * @param	convexHull the Mesh that holds the convex hull of the
-		 *			meshData
 		 * @return	the concavity of the surface */
 		float calculateConcavity(
-			int iFace1, int iFace2,
+			const std::vector<int>& iFaces,
 			const HalfEdgeMesh& meshData,
-			const std::map<int, glm::vec3>& faceNormals,
-			const HalfEdgeMesh& convexHull
+			const std::map<int, glm::vec3>& faceNormals
 		) const;
 
 		/** Calculate the aspect ratio of the surface resulting of the merge of
-		 * the HEFaces iFace1 and iFace2
+		 * the given HEFaces
 		 *
-		 * @param	iFace1 the index of the first HEFace
-		 * @param	iFace2 the index of the second HEFace
+		 * @param	iFaces the indices of the HEFaces
 		 * @param	meshData the mesh where the HEFaces are located in
-		 * @return	the aspect ratio of the surface
-		 * @note	the HEFaces must be adjacent triangles */
+		 * @return	the aspect ratio of the surface */
 		float calculateAspectRatio(
-			int iFace1, int iFace2,
-			const HalfEdgeMesh& meshData
+			const std::vector<int>& iFaces, const HalfEdgeMesh& meshData
 		) const;
 
 		/** Calculates the normal vector of the mesh surface at the given

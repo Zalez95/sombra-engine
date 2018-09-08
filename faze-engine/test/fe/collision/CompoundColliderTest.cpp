@@ -1,23 +1,19 @@
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <fe/collision/QuickHull.h>
-#include <fe/collision/MeshCollider.h>
+#include <fe/collision/CompoundCollider.h>
 #include "TestMeshes.h"
 
 #define TOLERANCE 0.000001f
 
-TEST(MeshCollider, getAABB1)
+TEST(CompoundCollider, getAABB1)
 {
-	fe::collision::QuickHull qh(0.0001f);
-	fe::collision::HalfEdgeMesh meshData;
-	createTestMesh1(meshData);
-	qh.calculate(meshData);
-
 	const glm::vec3 expectedMinimum(-0.25f, -1.0f, -2.75f);
 	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
 
-	fe::collision::MeshCollider mc1({ qh.getMesh() });
+	fe::collision::HalfEdgeMesh meshData = createTestMesh2();
+	fe::collision::CompoundCollider mc1({ meshData });
+
 	fe::collision::AABB aabb1 = mc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], TOLERANCE);
@@ -26,19 +22,17 @@ TEST(MeshCollider, getAABB1)
 }
 
 
-TEST(MeshCollider, getAABBTransforms1)
+TEST(CompoundCollider, getAABBTransforms1)
 {
-	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
-	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
-	fe::collision::QuickHull qh(0.0001f);
-	fe::collision::HalfEdgeMesh meshData;
-	createTestMesh1(meshData);
-	qh.calculate(meshData);
-
 	const glm::vec3 expectedMinimum(3.026389360f, -3.532424926f, -12.166131973f);
 	const glm::vec3 expectedMaximum(7.695832729f, 1.698557257f, -7.145406246f);
 
-	fe::collision::MeshCollider mc1({ qh.getMesh() });
+	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
+	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
+
+	fe::collision::HalfEdgeMesh meshData = createTestMesh2();
+	fe::collision::CompoundCollider mc1({ meshData });
+
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	mc1.setTransforms(t * r);
@@ -51,26 +45,8 @@ TEST(MeshCollider, getAABBTransforms1)
 }
 
 
-TEST(MeshCollider, getOverlapingParts1)
+TEST(CompoundCollider, getOverlapingPartsQH1)
 {
-	fe::collision::HalfEdgeMesh expectedMesh;
-	fe::collision::addVertex(expectedMesh, { 1.25f,  1.0f, -2.75f });
-	fe::collision::addVertex(expectedMesh, { 1.25f, -1.0f, -2.75f });
-	fe::collision::addVertex(expectedMesh, { -0.25f, -1.0f, -2.75f });
-	fe::collision::addVertex(expectedMesh, { -0.25f,  1.0f,  0.0f });
-	fe::collision::addVertex(expectedMesh, { 1.25f,  1.0f,  2.75f });
-	fe::collision::addVertex(expectedMesh, { 1.25f, -1.0f,  2.75f });
-	fe::collision::addVertex(expectedMesh, { -0.25f, -1.0f,  0.0f });
-	fe::collision::addVertex(expectedMesh, { -0.25f,  1.0f,  2.75f });
-	fe::collision::addFace(expectedMesh, { 0, 1, 2 });
-	fe::collision::addFace(expectedMesh, { 0, 2, 3 });
-	fe::collision::addFace(expectedMesh, { 3, 2, 6, 7 });
-	fe::collision::addFace(expectedMesh, { 7, 6, 5 });
-	fe::collision::addFace(expectedMesh, { 7, 5, 4 });
-	fe::collision::addFace(expectedMesh, { 2, 1, 5, 6 });
-	fe::collision::addFace(expectedMesh, { 1, 0, 4, 5 });
-	fe::collision::addFace(expectedMesh, { 0, 3, 7, 4 });
-
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
 	const fe::collision::AABB aabb1{
@@ -78,19 +54,16 @@ TEST(MeshCollider, getOverlapingParts1)
 		glm::vec3(5.47687816f, -1.09886074f, -8.11952781f)
 	};
 
-	fe::collision::QuickHull qh(0.0001f);
-	fe::collision::HalfEdgeMesh meshData;
-	createTestMesh1(meshData);
-	qh.calculate(meshData);
-
-	fe::collision::MeshCollider mc1({ qh.getMesh() });
-	fe::collision::ConvexPolyhedron expectedRes(expectedMesh);
-
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 transforms = t * r;
 
+	fe::collision::HalfEdgeMesh meshData = createTestMesh2();
+
+	fe::collision::CompoundCollider mc1({ meshData });
 	mc1.setTransforms(transforms);
+
+	fe::collision::ConvexPolyhedron expectedRes(meshData);
 	expectedRes.setTransforms(transforms);
 
 	auto result = mc1.getOverlapingParts(aabb1);

@@ -9,14 +9,12 @@ TEST(CoarseCollisionDetector, collide)
 {
 	fe::collision::CoarseCollisionDetector ccd;
 
-	fe::collision::HalfEdgeMesh meshData1;
-	createTestPolyhedron1(meshData1);
+	fe::collision::HalfEdgeMesh meshData1 = createTestPolyhedron1();
 	fe::collision::ConvexPolyhedron cp1(meshData1);
 	cp1.setTransforms(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 4.0f, 4.0f)));
 	ccd.submit(&cp1);
 
-	fe::collision::HalfEdgeMesh meshData2;
-	createTestPolyhedron3(meshData2);
+	fe::collision::HalfEdgeMesh meshData2 = createTestPolyhedron3();
 	fe::collision::ConvexPolyhedron cp2(meshData2);
 	cp2.setTransforms(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 4.0f, 4.0f)));
 	ccd.submit(&cp2);

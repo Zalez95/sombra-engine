@@ -14,7 +14,7 @@ TEST(RigidBody, linearVelocityIntegration)
 
 	fe::physics::integrateLinearVelocity(rb, 0.016f);
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (std::size_t i = 0; i < 3; ++i) {
 		EXPECT_NEAR(rb.position[i], expectedPosition[i], TOLERANCE);
 	}
 }
@@ -30,7 +30,7 @@ TEST(RigidBody, angularVelocityIntegration)
 
 	fe::physics::integrateAngularVelocity(rb, 0.016f);
 
-	for (size_t i = 0; i < 4; ++i) {
+	for (std::size_t i = 0; i < 4; ++i) {
 		EXPECT_NEAR(rb.orientation[i], expectedOrientation[i], TOLERANCE);
 	}
 }
@@ -49,7 +49,7 @@ TEST(RigidBody, forceIntegration)
 
 	fe::physics::integrate(rb, 0.016f);
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (std::size_t i = 0; i < 3; ++i) {
 		EXPECT_NEAR(rb.position[i], expectedPosition[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearVelocity[i], expectedLinearVelocity[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearAcceleration[i], expectedLinearAcceleration[i], TOLERANCE);
@@ -76,14 +76,14 @@ TEST(RigidBody, torqueIntegration)
 
 	fe::physics::integrate(rb, 0.016f);
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (std::size_t i = 0; i < 3; ++i) {
 		EXPECT_NEAR(rb.position[i], expectedPosition[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearVelocity[i], expectedLinearVelocity[i], TOLERANCE);
 		EXPECT_NEAR(rb.angularVelocity[i], expectedAngularVelocity[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearAcceleration[i], expectedLinearAcceleration[i], TOLERANCE);
 		EXPECT_NEAR(rb.angularAcceleration[i], expectedAngularAcceleration[i], TOLERANCE);
 	}
-	for (size_t i = 0; i < 4; ++i) {
+	for (std::size_t i = 0; i < 4; ++i) {
 		EXPECT_NEAR(rb.orientation[i], expectedOrientation[i], TOLERANCE);
 	}
 }
@@ -114,16 +114,16 @@ TEST(RigidBody, transformsIntegration)
 
 	fe::physics::integrate(rb, 1.56f);
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (std::size_t i = 0; i < 3; ++i) {
 		EXPECT_NEAR(rb.position[i], expectedPosition[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearVelocity[i], expectedLinearVelocity[i], TOLERANCE);
 		EXPECT_NEAR(rb.angularVelocity[i], expectedAngularVelocity[i], TOLERANCE);
 		EXPECT_NEAR(rb.linearAcceleration[i], expectedLinearAcceleration[i], TOLERANCE);
 		EXPECT_NEAR(rb.angularAcceleration[i], expectedAngularAcceleration[i], TOLERANCE);
 	}
-	for (size_t i = 0; i < 4; ++i) {
+	for (std::size_t i = 0; i < 4; ++i) {
 		EXPECT_NEAR(rb.orientation[i], expectedOrientation[i], TOLERANCE);
-		for (size_t j = 0; j < 4; ++j) {
+		for (std::size_t j = 0; j < 4; ++j) {
 			EXPECT_NEAR(rb.transformsMatrix[i][j], expectedTransformsMatrix[i][j], TOLERANCE);
 		}
 	}

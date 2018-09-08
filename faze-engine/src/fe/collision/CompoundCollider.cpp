@@ -1,16 +1,16 @@
 #include <limits>
-#include "fe/collision/MeshCollider.h"
+#include "fe/collision/CompoundCollider.h"
 
 namespace fe { namespace collision {
 
-	MeshCollider::MeshCollider(const std::vector<ConvexPolyhedron>& convexParts) :
+	CompoundCollider::CompoundCollider(const std::vector<ConvexPolyhedron>& convexParts) :
 		mConvexParts(convexParts), mTransformsMatrix(1.0f)
 	{
 		calculateAABB();
 	}
 
 
-	void MeshCollider::setTransforms(const glm::mat4& transforms)
+	void CompoundCollider::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;
 
@@ -22,7 +22,7 @@ namespace fe { namespace collision {
 	}
 
 
-	std::vector<const ConvexCollider*> MeshCollider::getOverlapingParts(const AABB& aabb) const
+	std::vector<const ConvexCollider*> CompoundCollider::getOverlapingParts(const AABB& aabb) const
 	{
 		std::vector<const ConvexCollider*> overlapingParts;
 
@@ -36,7 +36,7 @@ namespace fe { namespace collision {
 	}
 
 // Private functions
-	void MeshCollider::calculateAABB()
+	void CompoundCollider::calculateAABB()
 	{
 		mAABB = {
 			glm::vec3( std::numeric_limits<float>::max()),

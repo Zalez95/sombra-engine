@@ -75,7 +75,7 @@ namespace fe { namespace graphics {
 		void setCamera(Camera* camera) { mCamera = camera; };
 
 		/** Draws the scene */
-		virtual void render();
+		void render() override;
 	};
 
 }}

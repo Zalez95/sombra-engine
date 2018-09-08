@@ -40,7 +40,7 @@ namespace fe { namespace loaders {
 
 		// Sum to the normal of every vertex, the normal of the faces
 		// which it belongs
-		for (size_t i = 0; i < faceIndices.size(); i+=3) {
+		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
 			// Get the normal of triangle
 			const glm::vec3& v1 = positions[faceIndices[i]] - positions[faceIndices[i+1]];
 			const glm::vec3& v2 = positions[faceIndices[i]] - positions[faceIndices[i+2]];
@@ -212,7 +212,7 @@ namespace fe { namespace loaders {
 			rawMesh->faceIndices = std::vector<unsigned short>(posIndices.size());
 			std::map<std::pair<unsigned short, unsigned short>, unsigned short> faceIndicesMap;
 
-			for (size_t i = 0; i < rawMesh->faceIndices.size(); ++i) {
+			for (std::size_t i = 0; i < rawMesh->faceIndices.size(); ++i) {
 				auto mapKey = std::make_pair(posIndices[i], uvIndices[i]);
 				if (faceIndicesMap.find(mapKey) != faceIndicesMap.end()) {
 					rawMesh->faceIndices[i] = faceIndicesMap[mapKey];
