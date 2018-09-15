@@ -120,6 +120,22 @@ TEST(HalfEdgeMesh, calculateFaceNormal2)
 }
 
 
+TEST(HalfEdgeMesh, calculateFaceNormal3)
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::addVertex(meshData, { -2.0f, -1.0f, 7.0f });
+	fe::collision::addVertex(meshData, { -2.0f, -1.0f, 2.3f });
+	fe::collision::addVertex(meshData, { -2.0f, -1.0f, 5.0f });
+	fe::collision::addFace(meshData, { 0, 1, 2 });
+
+	const glm::vec3 expectedNormal(0.0f);
+	glm::vec3 normal = fe::collision::calculateFaceNormal(meshData, 0);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(normal[i], expectedNormal[i], TOLERANCE);
+	}
+}
+
+
 TEST(HalfEdgeMesh, calculateHorizon1)
 {
 	fe::collision::HalfEdgeMesh meshData;

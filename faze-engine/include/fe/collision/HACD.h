@@ -14,7 +14,8 @@ namespace fe { namespace collision {
 	class HACD
 	{
 	private:	// Nested types
-		using GraphPartition = std::vector<int>;
+		using DualGraphVertex = GraphVertex< std::vector<int> >;
+		using DualGraph = Graph< std::vector<int> >;
 
 	private:	// Attributes
 		/** The maximum concavity of the dual graph edges needed for HACD
@@ -35,14 +36,9 @@ namespace fe { namespace collision {
 		/** The Dual Graph asociated with mesh to decompose. Each vertex in
 		 * this graph is a triangle in the mesh, and each vertex in the Graph
 		 * is connected to another one if the triangle that corresponds to that
-		 * vertex shares an edge with another triangle. */
-		Graph mDualGraph;
-
-		/** The vertex ancestors of each vertex */
-		std::multimap<int, int> mVertexAncestors;
-
-		/** The partitions of the Dual Graph */
-		std::vector<GraphPartition> mGraphPartitions;
+		 * vertex shares an edge with another triangle. The data of each vertex
+		 * is a vector of ancestor vertices ordered ascendently */
+		DualGraph mDualGraph;
 
 		/** The normalization factor used for calculating the decimation cost */
 		float mNormalizationFactor;
@@ -92,16 +88,16 @@ namespace fe { namespace collision {
 		 * @param	meshData the Half-Edge Mesh from which we want to create
 		 *			the dual graph
 		 * @return	the dual graph of the mesh */
-		Graph createDualGraph(const HalfEdgeMesh& meshData) const;
+		DualGraph createDualGraph(const HalfEdgeMesh& meshData) const;
 
 		/** Calculates the HEFace indices of the surface created from the given
 		 * Graph vertices and their ancestors
 		 *
-		 * @param	iVertex1 the index of the first Graph vertex
-		 * @param	iVertex2 the index of the second Graph vertex
+		 * @param	iVertex1 the first Graph vertex
+		 * @param	iVertex2 the second Graph vertex
 		 * @return	the HEFace indices of the surface */
 		std::vector<int> calculateSurfaceFaceIndices(
-			int iVertex1, int iVertex2
+			const DualGraphVertex& vertex1, const DualGraphVertex& vertex2
 		) const;
 
 		/** Calculates the maximum concavity of the surface created from the
@@ -129,30 +125,19 @@ namespace fe { namespace collision {
 			const std::vector<int>& iFaces, const HalfEdgeMesh& meshData
 		) const;
 
-		/** Calculates the normal vector of the mesh surface at the given
-		 * HEVertex
-		 *
-		 * @param	meshData the mesh that holds the HEVertex
-		 * @param	faceNormals a map with the normals of each HEFace of the
-		 *			mesh
-		 * @param	iVertex the index of the HEVertex where we want to
-		 *			calculate the normal vector
-		 * @return	the normal vector */
-		glm::vec3 calculateVertexNormal(
-			const HalfEdgeMesh& meshData,
-			const std::map<int, glm::vec3>& faceNormals,
-			int iVertex
-		) const;
-
 		/** Calculates the intersection of the given ray on the given mesh
 		 *
-		 * @param	meshData the convex Mesh to project the point on. Its
-		 *			faces must be triangles
+		 * @param	meshData the convex Mesh to project the point on. The
+		 *			points of its faces must lie in the same plane
+		 * @param	faceNormals a map with the normals of each HEFace of the
+		 *			mesh
 		 * @param	origin the origin of the ray. It must be inside of the mesh
 		 * @param	direction the direction of the ray
-		 * @return	the intersection point of the ray with the mesh */
-		glm::vec3 raycastInsideMesh(
+		 * @return	a pair with a flag that tells if the ray intersects the
+		 *			mesh and the 3D coordinates of the intersection point */
+		std::pair<bool, glm::vec3> raycastInsideMesh(
 			const HalfEdgeMesh& meshData,
+			const std::map<int, glm::vec3>& faceNormals,
 			const glm::vec3& origin, const glm::vec3& direction
 		) const;
 
@@ -180,14 +165,12 @@ namespace fe { namespace collision {
 
 		/** Adds the vertex 2 and its ancestors to the first one
 		 *
-		 * @param	iVertex1 the index of the first vertex. It's the vertex
-		 *			whose ancestors will be updated
-		 * @param	iVertex1 the index of the second vertex */
-		void updateAncestors(int iVertex1, int iVertex2);
-
-		/** Calculates the current partition of the HACD Dual Graph vertices
-		 * based on their current ancestor vertices */
-		void calculatePartitions();
+		 * @param	vertex1 the first vertex. It's the vertex whose ancestors
+		 *			will be updated
+		 * @param	vertex2 the second vertex */
+		void updateAncestors(
+			DualGraphVertex& vertex1, const DualGraphVertex& vertex2
+		) const;
 
 		/** Computes the convex surfaces from the partitions of the current
 		 * dual graph and the triangulated mesh */

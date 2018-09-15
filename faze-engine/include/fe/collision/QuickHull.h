@@ -25,7 +25,8 @@ namespace fe { namespace collision {
 		/** Maps each convex hull face with its normal vector */
 		std::map<int, glm::vec3> mFaceNormals;
 
-		/** Maps each convex hull face with its outside vertex indices */
+		/** Maps each convex hull face with its outside vertex indices.
+		 * @note	the outside vertex indices are sorted ascendently */
 		std::map<int, std::vector<int>> mFaceOutsideVertices;
 
 		/** Maps the indices of the vertices in the current Mesh with the ones
@@ -84,7 +85,8 @@ namespace fe { namespace collision {
 		 *			want to test
 		 * @param	meshData the Mesh data with the Vertices
 		 * @param	iFace the index of the HEFace in the convex hull
-		 * @return	the indices of the vertices that are in front of the face */
+		 * @return	the indices of the vertices that are in front of the face.
+		 *			The order of the vertices will be preserved */
 		std::vector<int> getVerticesOutside(
 			const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
 			int iFace

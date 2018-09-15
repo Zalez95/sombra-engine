@@ -43,17 +43,17 @@ namespace fe { namespace collision {
 					mFaceNormals.erase(iFaceToRemove);
 
 					auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToRemove);
+					if (itFOutsideVertices != mFaceOutsideVertices.end()) {
+						std::vector<int> joinedOutsideVertices;
+						std::set_union(
+							allOutsideVertices.begin(), allOutsideVertices.end(),
+							itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
+							std::back_inserter(joinedOutsideVertices)
+						);
+						allOutsideVertices = joinedOutsideVertices;
 
-					std::vector<int> joinedOutsideVertices;
-					std::sort(itFOutsideVertices->second.begin(), itFOutsideVertices->second.end());
-					std::set_union(
-						allOutsideVertices.begin(), allOutsideVertices.end(),
-						itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
-						std::back_inserter(joinedOutsideVertices)
-					);
-					allOutsideVertices = joinedOutsideVertices;
-
-					mFaceOutsideVertices.erase(itFOutsideVertices);
+						mFaceOutsideVertices.erase(itFOutsideVertices);
+					}
 				}
 
 				// 3.4. Create new HEFaces by joining the edges of the horizon
@@ -124,11 +124,14 @@ namespace fe { namespace collision {
 		mFaceNormals.emplace(iF2, calculateFaceNormal(mConvexHull, iF2));
 		mFaceNormals.emplace(iF3, calculateFaceNormal(mConvexHull, iF3));
 
-		// Add the HEFaces outside vertices
+		// Get all the vertex indices from the original mesh sorted ascendently
 		std::vector<int> meshVertexIndices;
 		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 			meshVertexIndices.push_back(it.getIndex());
 		}
+		std::sort(meshVertexIndices.begin(), meshVertexIndices.end());
+
+		// Add the HEFaces outside vertices
 		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, meshData, iF0));
 		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(meshVertexIndices, meshData, iF1));
 		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(meshVertexIndices, meshData, iF2));
@@ -191,12 +194,13 @@ namespace fe { namespace collision {
 		glm::vec3 tNormal = glm::normalize(glm::cross(dirP0P1, dirP0P2));
 		maxLength = -std::numeric_limits<float>::max();
 		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
-			float currentLength = std::abs(glm::dot(it->location, tNormal));
+			float currentLength = std::abs( glm::dot(it->location - p0, tNormal) );
 			if (currentLength > maxLength) {
 				iSimplexVertices[3] = it.getIndex();
 				maxLength = currentLength;
 			}
 		}
+		// TODO: if maxLength == 0 -> quick hull 2D
 
 		return iSimplexVertices;
 	}
@@ -212,7 +216,7 @@ namespace fe { namespace collision {
 
 		// Get the face data from the convex hull
 		const HEFace& face = mConvexHull.faces[iFace];
-		const glm::vec3 faceNormal = mFaceNormals.find(iFace)->second;
+		const glm::vec3 faceNormal = mFaceNormals.at(iFace);
 		const HEVertex& faceVertex = mConvexHull.vertices[ mConvexHull.edges[face.edge].vertex ];
 
 		for (int i : vertexIndices) {
@@ -243,7 +247,7 @@ namespace fe { namespace collision {
 	void QuickHull::mergeCoplanarFaces(int iFace)
 	{
 		HEFace inputFace = mConvexHull.faces[iFace];
-		glm::vec3 inputFaceNormal = mFaceNormals.find(iFace)->second;
+		glm::vec3 inputFaceNormal = mFaceNormals[iFace];
 
 		// Calculate the HEFaces to merge by testing all the HEFaces of the
 		// HEEdge loop of the current HEFace
@@ -258,7 +262,7 @@ namespace fe { namespace collision {
 			if (oppositeEdge.face >= 0) {
 				// Test if the current HEFace is coplanar with the opposite
 				// one by the current edge
-				glm::vec3 oppositeFaceNormal = mFaceNormals.find(oppositeEdge.face)->second;
+				glm::vec3 oppositeFaceNormal = mFaceNormals[oppositeEdge.face];
 				if (inputFaceNormal == oppositeFaceNormal) {
 					facesToMerge.insert(oppositeEdge.face);
 				}
@@ -269,6 +273,7 @@ namespace fe { namespace collision {
 		while (iCurrentEdge != iInitialEdge);
 
 		// Merge the HEFaces
+		std::vector<int> allOutsideVertices = mFaceOutsideVertices[iFace];
 		for (int iMergedFace : facesToMerge) {
 			// Merge the two HEFaces into the current one
 			mergeFaces(mConvexHull, iFace, iMergedFace);
@@ -276,9 +281,22 @@ namespace fe { namespace collision {
 			// Remove the opposite HEFace normal
 			mFaceNormals.erase(iMergedFace);
 
-			// Remove the opposite HEFace outside HEVertices
-			mFaceOutsideVertices.erase(iMergedFace);
+			// Collect and remove all the opposite HEFace outside HEVertices
+			auto itFOutsideVertices = mFaceOutsideVertices.find(iMergedFace);
+			if (itFOutsideVertices != mFaceOutsideVertices.end()) {
+				std::vector<int> joinedOutsideVertices;
+				std::set_union(
+					allOutsideVertices.begin(), allOutsideVertices.end(),
+					itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
+					std::back_inserter(joinedOutsideVertices)
+				);
+				allOutsideVertices = joinedOutsideVertices;
+
+				mFaceOutsideVertices.erase(itFOutsideVertices);
+			}
 		}
+
+		mFaceOutsideVertices[iFace] = allOutsideVertices;
 	}
 
 }}

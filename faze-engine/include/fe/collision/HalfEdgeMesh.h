@@ -104,20 +104,6 @@ namespace fe { namespace collision {
 	void removeVertex(HalfEdgeMesh& meshData, int iVertex);
 
 
-	/** Calculates the furthest point of the Mesh in the given direction with
-	 * the Hill-Climbing algorithm
-	 *
-	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
-	 * @param	direction the direction in which we are going to search
-	 * @return	the index of the furthest Mesh HEVertex
-	 * @note	the Mesh must be convex, otherwise the furthest point found
-	 *			could be a local maximum */
-	int getFurthestVertexInDirection(
-		const HalfEdgeMesh& meshData,
-		const glm::vec3& direction
-	);
-
-
 	/** Creates a new HEFace from the given HEVertex indices and adds it
 	 * to the Mesh
 	 *
@@ -138,14 +124,6 @@ namespace fe { namespace collision {
 	 *			only update its internal data (remove the loop data and the
 	 *			face) */
 	void removeFace(HalfEdgeMesh& meshData, int iFace);
-
-
-	/** Returns the HEVertex indices of the given HEFace
-	 *
-	 * @param	meshData the Mesh where the HEFace is located in
-	 * @param	iFace the index of the HEFace
-	 * @return	a vector with the indices of the HEFace's HEVertices */
-	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
 
 
 	/** Merges the given two HEFaces into a single one
@@ -169,12 +147,48 @@ namespace fe { namespace collision {
 	void triangulateFaces(HalfEdgeMesh& meshData);
 
 
+	/** Returns the HEVertex indices of the given HEFace
+	 *
+	 * @param	meshData the Mesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
+	 * @return	a vector with the indices of the HEFace's HEVertices */
+	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
+
+
+	/** Calculates the normal vector of the mesh surface at the given HEVertex
+	 *
+	 * @param	meshData the mesh that holds the HEVertex
+	 * @param	faceNormals a map with the normals of each HEFace of the mesh
+	 * @param	iVertex the index of the HEVertex where we want to calculate
+	 *			the normal vector
+	 * @return	the normal vector */
+	glm::vec3 calculateVertexNormal(
+		const HalfEdgeMesh& meshData,
+		const std::map<int, glm::vec3>& faceNormals,
+		int iVertex
+	);
+
+
 	/** Calculates the normal of the given HEFace
 	 *
 	 * @param	meshData the Mesh where the HEFace is located in
 	 * @param	iFace the index of the HEFace
 	 * @return	the normal of the HEFace */
 	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace);
+
+
+	/** Calculates the furthest point of the Mesh in the given direction with
+	 * the Hill-Climbing algorithm
+	 *
+	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
+	 * @param	direction the direction in which we are going to search
+	 * @return	the index of the furthest Mesh HEVertex
+	 * @note	the Mesh must be convex, otherwise the furthest point found
+	 *			could be a local maximum */
+	int getFurthestVertexInDirection(
+		const HalfEdgeMesh& meshData,
+		const glm::vec3& direction
+	);
 
 
 	/** Calculates the boundary of the given HalfEdgeMesh as seen from the given

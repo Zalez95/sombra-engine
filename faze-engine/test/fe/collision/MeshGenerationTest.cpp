@@ -74,6 +74,17 @@ TEST(MeshGeneration, calculateQuickHull1)
 }
 
 
+TEST(MeshGeneration, calculateQuickHull2)
+{
+	fe::collision::HalfEdgeMesh originalMesh = createTestPlane1();
+	fe::collision::HalfEdgeMesh expectedMesh = createTestPlane2();
+
+	fe::collision::QuickHull qh(0.0001f);
+	qh.calculate(originalMesh);
+	EXPECT_TRUE(compareMeshes(expectedMesh, qh.getMesh()));
+}
+
+
 TEST(MeshGeneration, calculateHACD1)
 {
 	fe::collision::HACD hacd(0.03f, 0.0001f);

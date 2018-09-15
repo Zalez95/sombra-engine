@@ -46,7 +46,7 @@ TEST(FineCollisionDetector, SphereSphere2)
 		{ -1.154848634f, 0.771644742f, -2.078674167f },
 		{ 4.095410456f, -3.183182967f, -0.384987776f }
 	};
-	const glm::vec3 expectedNormal(-0.461935907f, 0.317791491f, -0.828024029f);
+	const glm::vec3 expectedNormal(-0.461796492f, 0.311872839f, -0.830348908f);
 	const float expectedPenetration = 0.000000159f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(9.943065643f, -2.873334407f, 0.697683811f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);

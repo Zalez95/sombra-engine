@@ -36,6 +36,36 @@ namespace fe { namespace collision {
 	}
 
 
+	std::pair<bool, glm::vec3> projectPointInDirection(
+		const glm::vec3& point, const glm::vec3& direction,
+		const glm::vec3& planePoint, const glm::vec3& planeNormal
+	) {
+		bool intersects = true;
+		glm::vec3 intersection;
+
+		float distancePointFace = glm::dot(point - planePoint, planeNormal);
+		if (distancePointFace == 0) {
+			// The origin is on the HEFace
+			intersection = point;
+		}
+		else {
+			float dotDN = glm::dot(direction, planeNormal);
+			// Check if the point can be projected on the HEFace in the
+			// given direction
+			if ((dotDN > 0) && (distancePointFace < 0)) {
+				glm::vec3 projection = point + distancePointFace * planeNormal;
+				float distanceInDirection = glm::dot(projection - point, planeNormal) / dotDN;
+				intersection = point + direction * distanceInDirection;
+			}
+			else {
+				intersects = false;
+			}
+		}
+
+		return std::make_pair(intersects, intersection);
+	}
+
+
 	bool projectPointOnTriangle(
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision, glm::vec3& projectedPoint

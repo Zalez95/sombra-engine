@@ -71,6 +71,21 @@ namespace game {
 	}
 
 
+	fe::collision::HalfEdgeMesh createHEMesh(const fe::loaders::RawMesh& rawMesh)
+	{
+		fe::collision::HalfEdgeMesh heMesh;
+
+		for (const glm::vec3& position : rawMesh.positions) {
+			fe::collision::addVertex(heMesh, position);
+		}
+		for (std::size_t i = 0; i < rawMesh.faceIndices.size(); i += 3) {
+			fe::collision::addFace(heMesh, { rawMesh.faceIndices[i], rawMesh.faceIndices[i+1], rawMesh.faceIndices[i+2] });
+		}
+
+		return heMesh;
+	}
+
+
 	fe::loaders::RawMesh createRawMesh(const fe::collision::HalfEdgeMesh& heMesh)
 	{
 		fe::loaders::RawMesh rawMesh("heMeshTriangles");
@@ -156,7 +171,7 @@ namespace game {
 			};
 			rawMesh1.normals = meshReader.calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
 			rawMesh1.uvs = std::vector<glm::vec2>(8);
-			mesh1 = std::move(meshLoader.createMesh(rawMesh1));
+			mesh1 = std::move( meshLoader.createMesh(rawMesh1) );
 
 			fe::loaders::RawMesh rawMesh2("Plane");
 			rawMesh2.positions = {
@@ -181,12 +196,11 @@ namespace game {
 				0, 1, 2,
 				1, 3, 2,
 			};
-			mesh2 = std::move(meshLoader.createMesh(rawMesh2));
+			mesh2 = std::move( meshLoader.createMesh(rawMesh2) );
 
 			fe::utils::FileReader fileReader1("res/meshes/test.fzmsh");
 			auto loadedRawMeshes = meshReader.read(fileReader1);
 			for (auto& meshRawUPtr : loadedRawMeshes) {
-				fileMeshes.push_back( meshLoader.createMesh(*meshRawUPtr) );
 				fileRawMeshes.push_back( std::move(meshRawUPtr) );
 			}
 
@@ -194,7 +208,7 @@ namespace game {
 			fe::utils::FileReader fileReader2("res/materials/game_materials.fzmat");
 			auto loadedMaterials = materialReader.read(fileReader2);
 			for (std::unique_ptr<fe::graphics::Material>& materialUPtr : loadedMaterials) {
-				fileMaterials.push_back(std::move(materialUPtr));
+				fileMaterials.push_back( std::move(materialUPtr) );
 			}
 
 			// Images
@@ -329,33 +343,13 @@ namespace game {
 		}
 
 		// Buildings
-		for (auto it = fileMeshes.begin(); it != fileMeshes.end(); ++it) {
-			auto building = std::make_unique<fe::app::Entity>("building");
-			building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+		for (std::size_t i = 0; i < fileRawMeshes.size(); ++i) {
+			const fe::loaders::RawMesh& rawMesh = *fileRawMeshes[i];
+			if (i == 0) {
+				auto building = std::make_unique<fe::app::Entity>("building");
+				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 
-			if (it == fileMeshes.begin()) {
-				auto rawMesh = *fileRawMeshes.begin();
-
-				fe::collision::HalfEdgeMesh meshData;
-				for (const glm::vec3& position : rawMesh->positions) {
-					fe::collision::addVertex(meshData, position);
-				}
-				for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
-					fe::collision::addFace(meshData, { rawMesh->faceIndices[i], rawMesh->faceIndices[i+1], rawMesh->faceIndices[i+2] });
-				}
-
-				/*hacd.calculate(meshData);
-				std::vector<fe::collision::ConvexPolyhedron> convexParts;
-				for (const fe::collision::HalfEdgeMesh& mesh : hacd.getMeshes()) {
-					convexParts.emplace_back(mesh);
-				}
-
-				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
-					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::CompoundCollider>(convexParts),
-					glm::mat4(1.0f)
-				);*/
-				qh.calculate(meshData);
+				qh.calculate( createHEMesh(rawMesh) );
 				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					fe::physics::RigidBody(),
 					std::make_unique<fe::collision::ConvexPolyhedron>(qh.getMesh()),
@@ -371,16 +365,44 @@ namespace game {
 					0.2f
 				);
 
-				fe::loaders::RawMesh qhRawMesh = createRawMesh(qh.getMesh());
-				std::shared_ptr<fe::graphics::Mesh> qhGraphicsMesh1 = meshLoader.createMesh(qhRawMesh);
-				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(qhGraphicsMesh1, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
+				std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh( createRawMesh(qh.getMesh()) );
+				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
 				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
 
-				//std::shared_ptr<fe::graphics::Mesh> qhGraphicsMesh2 = meshLoader.createMesh(*rawMesh);
-				//auto renderable3D3 = std::make_unique<fe::graphics::Renderable3D>(qhGraphicsMesh2, tmpMaterial, nullptr);
-				//mGraphicsManager->addEntity(building.get(), std::move(renderable3D3), glm::mat4(1.0f));
+				mEntities.push_back(std::move(building));
+			}
+			else if (i == 0) {// FIXME: infinite loop
+				hacd.calculate( createHEMesh(rawMesh) );
+				for (const fe::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
+					auto building = std::make_unique<fe::app::Entity>("building");
+					building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+
+					// auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
+					// 	fe::physics::RigidBody(),
+					// 	std::make_unique<fe::collision::ConvexPolyhedron>(heMesh),
+					// 	glm::mat4(1.0f)
+					// );
+					// mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
+
+					auto tmpMaterial = std::make_shared<fe::graphics::Material>(
+						"tmp_material",
+						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+						0.2f
+					);
+
+					std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh( createRawMesh(heMesh) );
+					auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
+					mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+
+					mEntities.push_back(std::move(building));
+				}
 			}
 			else {
+				auto building = std::make_unique<fe::app::Entity>("building");
+				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+
 				auto tmpMaterial = std::make_shared<fe::graphics::Material>(
 					"tmp_material",
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
@@ -389,11 +411,12 @@ namespace game {
 					0.2f
 				);
 
-				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(*it, tmpMaterial, nullptr);
+				std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh(rawMesh);
+				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr);
 				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
-			}
 
-			mEntities.push_back(std::move(building));
+				mEntities.push_back(std::move(building));
+			}
 		}
 
 		// Lights

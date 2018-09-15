@@ -30,6 +30,20 @@ namespace fe { namespace collision {
 	);
 
 
+	/** Projects the given point on the given plane along th egiven direction
+	 *
+	 * @param	point the point to project
+	 * @param	direction the direction along we want to project the point
+	 * @param	planePoint a point in the plane
+	 * @param	planeNormal the normal vector of the plane
+	 * @return	a pair with a flag that tells if the point could be projected
+	 *			and the 3D coordinates of the projected point */
+	std::pair<bool, glm::vec3> projectPointInDirection(
+		const glm::vec3& point, const glm::vec3& direction,
+		const glm::vec3& planePoint, const glm::vec3& planeNormal
+	);
+
+
 	/** Projects the given point onto the the given 3D triangle 
 	 *
 	 * @param	point the 3D coordinates of the point in world space

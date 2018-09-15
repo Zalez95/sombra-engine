@@ -222,6 +222,35 @@ std::pair<fe::collision::HalfEdgeMesh, std::map<int, glm::vec3>> createTestMesh3
 }
 
 
+fe::collision::HalfEdgeMesh createTestPlane1()
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 5.25000095f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 2.31236959f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 2.31236959f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 7.00000095f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 5.25000095f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 7.00000095f });
+	fe::collision::addFace(meshData, { 0, 1, 2 });
+	fe::collision::addFace(meshData, { 3, 4, 0 });
+	fe::collision::addFace(meshData, { 0, 4, 1 });
+	fe::collision::addFace(meshData, { 3, 5, 4 });
+	return meshData;
+}
+
+
+fe::collision::HalfEdgeMesh createTestPlane2()
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 2.31236959f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 2.31236959f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 7.00000095f });
+	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 7.00000095f });
+	fe::collision::addFace(meshData, { 0, 1, 3, 2 });
+	return meshData;
+}
+
+
 fe::collision::HalfEdgeMesh createTestTube1()
 {
 	fe::collision::HalfEdgeMesh meshData;
