@@ -246,7 +246,7 @@ fe::collision::HalfEdgeMesh createTestPlane2()
 	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 2.31236959f });
 	fe::collision::addVertex(meshData, { -17.2071228f, -10.5431643f, 7.00000095f });
 	fe::collision::addVertex(meshData, { -17.2071228f, -8.54316425f, 7.00000095f });
-	fe::collision::addFace(meshData, { 0, 1, 3, 2 });
+	fe::collision::addFace(meshData, { 0, 1, 2, 3 });
 	return meshData;
 }
 

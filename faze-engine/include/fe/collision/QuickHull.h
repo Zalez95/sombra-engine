@@ -13,6 +13,22 @@ namespace fe { namespace collision {
 	 */
 	class QuickHull
 	{
+	private:	// Nested types
+		/** Struct QH2DData, its the data structure used in the QuickHull 2D
+		 * algorithm for storing its state in a stack instead of using a
+		 * recursive algorithm */
+		struct QH2DData
+		{
+			/** The state of the current iteration */
+			enum { Search, Add, End } state;
+
+			/** The indices of the vertices of the current edge */
+			int iVertex1, iVertex2;
+
+			/** The indices of the outside vertices of the current interation */
+			std::vector<int> outsideVertices;
+		};
+
 	private:	// Attributes
 		/** The precision with which we will compare the HEVertices to the
 		 * HEFaces of the Meshes when checking if they're over or inside
@@ -51,23 +67,16 @@ namespace fe { namespace collision {
 		const std::map<int, glm::vec3>& getNormalsMap() const
 		{ return mFaceNormals; };
 
-		/** Calculates the convex hull of the given 3D Mesh with the QuickHull
-		 * 3D algorithm
+		/** Calculates the convex hull of the given Mesh with the QuickHull
+		 * algorithm
 		 *
-		 * @param	meshData the Half-Edge data structure with the 3D Mesh to
+		 * @param	meshData the Half-Edge data structure with the Mesh to
 		 *			calculate its convex hull */
 		void calculate(const HalfEdgeMesh& meshData);
 
 		/** Resets the convex hull data for the next calculations */
 		void resetData();
 	private:
-		/** Calculates the initial simplex needed for calculating the QuickHull
-		 * algorithm from the Mesh vertices and stores it in mConvexHull
-		 *
-		 * @param	meshData the Mesh with the vertices vertices with which we
-		 *			will calculate the initial simplex */
-		void createInitialConvexHull(const HalfEdgeMesh& meshData);
-
 		/** Calculates the indices of the vertices that creates an initial
 		 * simplex
 		 *
@@ -77,6 +86,68 @@ namespace fe { namespace collision {
 		std::vector<int> calculateInitialSimplex(
 			const HalfEdgeMesh& meshData
 		) const;
+
+		/** Calculates the convex hull of the given 2D Mesh with the QuickHull
+		 * 2D algorithm
+		 *
+		 * @param	meshData the Half-Edge data structure with the 2D Mesh to
+		 *			calculate its convex hull
+		 * @param	iSimplexVertices the indices of the simplex vertices
+		 * @note	the mesh must have at least 3 vertices */
+		void calculateQuickHull2D(
+			const HalfEdgeMesh& meshData,
+			const std::vector<int>& iSimplexVertices
+		);
+
+		/** Calculates which of the given vertices is the furthest from the
+		 * given edge
+		 *
+		 * @param	vertices the 3D positions of the vertices
+		 * @param	vertexIndices the indices of the vertices to evaluate
+		 * @param	iVertex1 the first of the vertices of the edge
+		 * @param	iVertex2 the second of the vertices of the edge
+		 * @return	the index of the furthest vertex */
+		int getFurthestVertexFromEdge(
+			const ContiguousVector<HEVertex>& vertices,
+			const std::vector<int>& vertexIndices, int iVertex1, int iVertex2
+		) const;
+
+		/** Checks which of the given vertices are outside of the edge between
+		 * the vertex 1 and 2
+		 *
+		 * @param	vertices the coordinates of the vertices to check
+		 * @param	vertexIndices the indices of the vertices to check
+		 * @param	planeNormal the normal vector of the plane where all the
+		 *			vertices lie on
+		 * @param	iVertex1 the index of the first vertex of the edge
+		 * @param	iVertex1 the index of the second vertex of the edge
+		 * @return	the indices of the vertices that are outside the edge */
+		std::vector<int> filterOutsideVertices(
+			const ContiguousVector<HEVertex>& vertices,
+			const std::vector<int>& vertexIndices,
+			const glm::vec3& planeNormal, int iVertex1, int iVertex2
+		) const;
+
+		/** Calculates the convex hull of the given 3D Mesh with the QuickHull
+		 * 3D algorithm
+		 *
+		 * @param	meshData the Half-Edge data structure with the 3D Mesh to
+		 *			calculate its convex hull
+		 * @param	iSimplexVertices the indices of the simplex vertices */
+		void calculateQuickHull3D(
+			const HalfEdgeMesh& meshData,
+			const std::vector<int>& iSimplexVertices
+		);
+
+		/** Calculates the initial HEMesh needed for calculating the 3D
+		 * QuickHull algorithm from the given Mesh vertices
+		 *
+		 * @param	meshData the Mesh to calculate its convex hull
+		 * @param	iSimplexVertices the indices of the simplex vertices */
+		void createInitial3DConvexHull(
+			const HalfEdgeMesh& meshData,
+			const std::vector<int>& iSimplexVertices
+		);
 
 		/** Calculates which of the given vertices are outside of the current
 		 * Hull by the given HEFace
@@ -92,8 +163,8 @@ namespace fe { namespace collision {
 			int iFace
 		) const;
 
-		/** Calculates which of the given HEVertices is the the furthest point
-		 * in the HEFace normal direction
+		/** Calculates which of the given HEVertices is the the furthest in
+		 * the given direction
 		 *
 		 * @param	vertexIndices the index of the meshData Vertices to check
 		 * @param	meshData the Mesh data that contains the Vertices
@@ -101,7 +172,7 @@ namespace fe { namespace collision {
 		 *			HEVertex
 		 * @return	the index of the furthest meshData HEVertex, -1 if iFace is
 		 *			not valid or vertexIndices is empty */
-		int getFurthestVertexFrom(
+		int getFurthestVertexInDirection(
 			const std::vector<int>& vertexIndices, const HalfEdgeMesh& meshData,
 			const glm::vec3& direction
 		) const;

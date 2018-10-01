@@ -35,15 +35,15 @@ namespace fe { namespace utils {
 
 		// Write the level of the log text
 		switch (level) {
-			case LogLevel::WARNING:
-				mLogFile << " [WARNING]";
-				break;
-			case LogLevel::ERROR:
-				mLogFile << " [ERROR]";
-				break;
-			case LogLevel::DEBUG:
-				mLogFile << " [DEBUG]";
-				break;
+		case LogLevel::WARNING:
+			mLogFile << " [WARNING]";
+			break;
+		case LogLevel::ERROR:
+			mLogFile << " [ERROR]";
+			break;
+		case LogLevel::DEBUG:
+			mLogFile << " [DEBUG]";
+			break;
 		}
 
 		// Write the text
