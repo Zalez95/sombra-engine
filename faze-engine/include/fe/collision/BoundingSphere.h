@@ -45,8 +45,7 @@ namespace fe { namespace collision {
 
 		/** @return	the transformations matrix currently applied to the
 		 *			BoundingSphere */
-		glm::mat4 getTransforms() const override
-		{ return mTransformsMatrix; };
+		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			BoundingBox */

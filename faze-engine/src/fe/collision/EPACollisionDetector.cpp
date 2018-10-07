@@ -13,8 +13,8 @@ namespace fe { namespace collision {
 	) : mMinFThreshold(minFDifference),
 		mProjectionPrecision(projectionPrecision)
 	{
-		assert(minFDifference >= 0 && "The minimum face difference must be at least 0");
-		assert(projectionPrecision >= 0 && "The precision of the projected points must be at least 0");
+		assert(minFDifference >= 0.0f && "The minimum face difference must be at least 0");
+		assert(projectionPrecision >= 0.0f && "The precision of the projected points must be at least 0");
 	}
 
 

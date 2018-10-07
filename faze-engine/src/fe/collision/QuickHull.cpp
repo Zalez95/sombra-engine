@@ -3,31 +3,38 @@
 #include <tuple>
 #include <limits>
 #include <algorithm>
+#include <glm/gtc/epsilon.hpp>
+#include "fe/collision/AABB.h"
 #include "fe/collision/QuickHull.h"
 
 namespace fe { namespace collision {
 
-	void QuickHull::calculate(const HalfEdgeMesh& meshData)
+	void QuickHull::calculate(const HalfEdgeMesh& originalMesh)
 	{
-		// Calculate an initial simplex from the meshData
-		std::vector<int> iSimplexVertices = calculateInitialSimplex(meshData);
+		// Calculate the scaled epsilon value
+		AABB meshAABB = calculateAABB(originalMesh);
+		mScaledEpsilon = glm::length(meshAABB.maximum - meshAABB.minimum) * mEpsilon;
 
+		// Calculate an initial simplex from the originalMesh
+		std::vector<int> iSimplexVertices = calculateInitialSimplex(originalMesh);
+
+		// Calculate the convex hull
 		if (iSimplexVertices.size() < 3) {
-			mConvexHull = meshData;
+			mConvexHullMesh = originalMesh;
 		}
 		else if (iSimplexVertices.size() < 4) {
-			calculateQuickHull2D(meshData, iSimplexVertices);
+			calculateQuickHull2D(originalMesh, iSimplexVertices);
 		}
 		else {
-			calculateQuickHull3D(meshData, iSimplexVertices);
+			calculateQuickHull3D(originalMesh, iSimplexVertices);
 		}
 	}
 
 
 	void QuickHull::resetData()
 	{
-		mConvexHull = HalfEdgeMesh();
-		mFaceNormals.clear();
+		mConvexHullMesh = HalfEdgeMesh();
+		mConvexHullNormals.clear();
 		mFaceOutsideVertices.clear();
 		mVertexIndexMap.clear();
 	}
@@ -74,7 +81,7 @@ namespace fe { namespace collision {
 			}
 		}
 
-		if (maxLength <= 0) {
+		if (maxLength <= 0.0f) {
 			// The point 1 is also the 0
 			iSimplexVertices[1] = -1;
 		}
@@ -93,7 +100,7 @@ namespace fe { namespace collision {
 				}
 			}
 
-			if (maxLength <= 0) {
+			if (maxLength <= 0.0f) {
 				// The point 2 is on the same line as 1 and 0
 				iSimplexVertices[2] = -1;
 			}
@@ -112,7 +119,7 @@ namespace fe { namespace collision {
 					}
 				}
 
-				if (maxLength <= 0) {
+				if (maxLength <= 0.0f) {
 					// The point 3 is on the same plane as 0, 1 and 2
 					iSimplexVertices[3] = -1;
 				}
@@ -129,25 +136,25 @@ namespace fe { namespace collision {
 	}
 
 
-	void QuickHull::calculateQuickHull2D(const HalfEdgeMesh& meshData, const std::vector<int>& iSimplexVertices)
+	void QuickHull::calculateQuickHull2D(const HalfEdgeMesh& originalMesh, const std::vector<int>& iSimplexVertices)
 	{
-		assert(meshData.vertices.size() >= 3 && "The mesh must have at least 3 vertices");
+		assert(originalMesh.vertices.size() >= 3 && "The mesh must have at least 3 vertices");
 
-		glm::vec3 p0 = meshData.vertices[0].location, p1 = meshData.vertices[1].location, p2 = meshData.vertices[2].location;
+		glm::vec3 p0 = originalMesh.vertices[0].location, p1 = originalMesh.vertices[1].location, p2 = originalMesh.vertices[2].location;
 		glm::vec3 dirP0P1 = p1 - p0, dirP0P2 = p2 - p1, planeNormal = glm::cross(dirP0P1, dirP0P2);
 
 		// Calculate the convex hull vertices with the iterative quickhull 2D algorithm
 		std::stack<QH2DData> quickHull2DStack;
 
 		std::vector<int> allVertexIndices, faceIndices;
-		for (auto itVertex = meshData.vertices.begin(); itVertex != meshData.vertices.end(); ++itVertex) {
+		for (auto itVertex = originalMesh.vertices.begin(); itVertex != originalMesh.vertices.end(); ++itVertex) {
 			allVertexIndices.push_back(itVertex.getIndex());
 		}
 
-		auto halfVertexIndices2 = filterOutsideVertices(meshData.vertices, allVertexIndices, planeNormal, iSimplexVertices[1], iSimplexVertices[0]);
+		auto halfVertexIndices2 = filterOutsideVertices(originalMesh.vertices, allVertexIndices, planeNormal, iSimplexVertices[1], iSimplexVertices[0]);
 		quickHull2DStack.push({ QH2DData::Add, iSimplexVertices[1], iSimplexVertices[0], halfVertexIndices2 });
 
-		auto halfVertexIndices1 = filterOutsideVertices(meshData.vertices, allVertexIndices, planeNormal, iSimplexVertices[0], iSimplexVertices[1]);
+		auto halfVertexIndices1 = filterOutsideVertices(originalMesh.vertices, allVertexIndices, planeNormal, iSimplexVertices[0], iSimplexVertices[1]);
 		quickHull2DStack.push({ QH2DData::Add, iSimplexVertices[0], iSimplexVertices[1], halfVertexIndices1 });
 
 		while (!quickHull2DStack.empty()) {
@@ -157,18 +164,18 @@ namespace fe { namespace collision {
 				if (!currentQH2DData.outsideVertices.empty()) {
 					// 1. Get the furthest vertex from the edge between the vertex 1 and 2
 					int iFurthestVertex = getFurthestVertexFromEdge(
-						meshData.vertices, currentQH2DData.outsideVertices,
+						originalMesh.vertices, currentQH2DData.outsideVertices,
 						currentQH2DData.iVertex1, currentQH2DData.iVertex2
 					);
 
 					// 4. Search the next convex hull vertex in the set of vertices
 					// outside the edge furthest-vertex2
-					auto outsideVertices2 = filterOutsideVertices(meshData.vertices, currentQH2DData.outsideVertices, planeNormal, iFurthestVertex, currentQH2DData.iVertex2);
+					auto outsideVertices2 = filterOutsideVertices(originalMesh.vertices, currentQH2DData.outsideVertices, planeNormal, iFurthestVertex, currentQH2DData.iVertex2);
 					quickHull2DStack.push({ QH2DData::Add, iFurthestVertex, currentQH2DData.iVertex2, outsideVertices2 });
 
 					// 2. Search the next convex hull vertex in the set of vertices
 					// outside the edge vertex1-furthest
-					auto outsideVertices1 = filterOutsideVertices(meshData.vertices, currentQH2DData.outsideVertices, planeNormal, currentQH2DData.iVertex1, iFurthestVertex);
+					auto outsideVertices1 = filterOutsideVertices(originalMesh.vertices, currentQH2DData.outsideVertices, planeNormal, currentQH2DData.iVertex1, iFurthestVertex);
 					quickHull2DStack.push({ QH2DData::Search, currentQH2DData.iVertex1, iFurthestVertex, outsideVertices1 });
 				}
 				currentQH2DData.state = QH2DData::End;
@@ -176,7 +183,7 @@ namespace fe { namespace collision {
 			}
 			case QH2DData::Add:
 				// 3. Add the furthest vertex (iV1) to the convex hull
-				faceIndices.push_back( addVertex(mConvexHull, meshData.vertices[currentQH2DData.iVertex1].location) );
+				faceIndices.push_back( addVertex(mConvexHullMesh, originalMesh.vertices[currentQH2DData.iVertex1].location) );
 				currentQH2DData.state = QH2DData::Search;	// Continue searching
 				break;
 			case QH2DData::End:
@@ -186,8 +193,8 @@ namespace fe { namespace collision {
 		}
 
 		// Add the convex hull face
-		int iNewFace = addFace(mConvexHull, faceIndices);
-		mFaceNormals.emplace(iNewFace, calculateFaceNormal(mConvexHull, iNewFace));
+		int iNewFace = addFace(mConvexHullMesh, faceIndices);
+		mConvexHullNormals.emplace(iNewFace, calculateFaceNormal(mConvexHullMesh, iNewFace));
 	}
 
 
@@ -221,16 +228,16 @@ namespace fe { namespace collision {
 
 		std::copy_if(
 			vertexIndices.begin(), vertexIndices.end(), std::back_inserter(filteredVertices),
-			[&](int iVertex) { return glm::dot(vertices[iVertex].location - p1, dirOutside) > mEpsilon; }
+			[&](int iVertex) { return glm::dot(vertices[iVertex].location - p1, dirOutside) > mScaledEpsilon; }
 		);
 
 		return filteredVertices;
 	}
 
 
-	void QuickHull::calculateQuickHull3D(const HalfEdgeMesh& meshData, const std::vector<int>& iSimplexVertices)
+	void QuickHull::calculateQuickHull3D(const HalfEdgeMesh& originalMesh, const std::vector<int>& iSimplexVertices)
 	{
-		createInitial3DConvexHull(meshData, iSimplexVertices);
+		createInitial3DConvexHull(originalMesh, iSimplexVertices);
 
 		// 1. Find a convex hull face with a non empty outside vertices vector
 		auto itFace = mFaceOutsideVertices.begin();
@@ -241,28 +248,23 @@ namespace fe { namespace collision {
 			) != mFaceOutsideVertices.end()
 		) {
 			// 2. Get the furthest HEVertex in the direction of the face normal
-			int iEyeVertex = getFurthestVertexInDirection(itFace->second, meshData, mFaceNormals[itFace->first]);
-			glm::vec3 eyePoint = meshData.vertices[iEyeVertex].location;
+			int iEyeVertex = getFurthestVertexInDirection(itFace->second, originalMesh, mConvexHullNormals[itFace->first]);
+			glm::vec3 eyePoint = originalMesh.vertices[iEyeVertex].location;
 
 			// 3. Check if the eyePoint is already inside in the convex hull
-			int iEyeVertexConvexHull;
 			auto itVertex = mVertexIndexMap.find(iEyeVertex);
 			if (itVertex == mVertexIndexMap.end()) {
-				// 3.1 Add the eyePoint to the convex hull
-				iEyeVertexConvexHull = addVertex(mConvexHull, eyePoint);
-				mVertexIndexMap.emplace(iEyeVertex, iEyeVertexConvexHull);
-
-				// 3.2. Calculate the horizon HEEdges and HEFaces to remove from
-				// the current eyePoint perspective
+				// 3.1. Calculate the convex hull's horizon HEEdges and HEFaces
+				// to remove from the current eyePoint perspective
 				std::vector<int> horizon, facesToRemove;
-				std::tie(horizon, facesToRemove) = calculateHorizon(mConvexHull, mFaceNormals, eyePoint, itFace->first);
+				std::tie(horizon, facesToRemove) = calculateHorizon(mConvexHullMesh, mConvexHullNormals, eyePoint, itFace->first);
 
-				// 3.3. Remove the HEFaces seen from the current eyePoint and
-				// collect all their outside HEVertices
+				// 3.2. Remove the convex hull's HEFaces seen from the current
+				// eyePoint perspective and collect all their outside HEVertices
 				std::vector<int> allOutsideVertices;
 				for (int iFaceToRemove : facesToRemove) {
-					removeFace(mConvexHull, iFaceToRemove);
-					mFaceNormals.erase(iFaceToRemove);
+					removeFace(mConvexHullMesh, iFaceToRemove);
+					mConvexHullNormals.erase(iFaceToRemove);
 
 					auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToRemove);
 					if (itFOutsideVertices != mFaceOutsideVertices.end()) {
@@ -278,17 +280,21 @@ namespace fe { namespace collision {
 					}
 				}
 
+				// 3.3. Add the eyePoint to the convex hull
+				int iEyeVertexConvexHull = addVertex(mConvexHullMesh, eyePoint);
+				mVertexIndexMap.emplace(iEyeVertex, iEyeVertexConvexHull);
+
 				// 3.4. Create new HEFaces by joining the edges of the horizon
 				// with the convex hull eyePoint
 				for (int iHorizonEdge : horizon) {
-					const HEEdge& currentEdge	= mConvexHull.edges[iHorizonEdge];
-					const HEEdge& oppositeEdge	= mConvexHull.edges[currentEdge.oppositeEdge];
+					const HEEdge& currentEdge	= mConvexHullMesh.edges[iHorizonEdge];
+					const HEEdge& oppositeEdge	= mConvexHullMesh.edges[currentEdge.oppositeEdge];
 
 					// Create the new HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
-					int iNewFace = addFace(mConvexHull, { iV0, iV1, iEyeVertexConvexHull });
-					mFaceNormals.emplace(iNewFace, calculateFaceNormal(mConvexHull, iNewFace));
-					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, meshData, iNewFace));
+					int iNewFace = addFace(mConvexHullMesh, { iV0, iV1, iEyeVertexConvexHull });
+					mConvexHullNormals.emplace(iNewFace, calculateFaceNormal(mConvexHullMesh, iNewFace));
+					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, originalMesh, iNewFace));
 
 					// Merge the coplanar faces
 					mergeCoplanarFaces(iNewFace);
@@ -298,54 +304,54 @@ namespace fe { namespace collision {
 	}
 
 
-	void QuickHull::createInitial3DConvexHull(const HalfEdgeMesh& meshData, const std::vector<int>& iSimplexVertices)
+	void QuickHull::createInitial3DConvexHull(const HalfEdgeMesh& originalMesh, const std::vector<int>& iSimplexVertices)
 	{
 		// Add the vertices to the convex hull
 		std::vector<int> chVertexIndices;
 		for (int iMeshVertex : iSimplexVertices) {
-			int iConvexHullVertex = addVertex(mConvexHull, meshData.vertices[iMeshVertex].location);
+			int iConvexHullVertex = addVertex(mConvexHullMesh, originalMesh.vertices[iMeshVertex].location);
 			mVertexIndexMap.emplace(iMeshVertex, iConvexHullVertex);
 			chVertexIndices.push_back(iConvexHullVertex);
 		}
 
 		// Add the faces to the convex hull, 
-		const glm::vec3 p0 = mConvexHull.vertices[chVertexIndices[0]].location,
-						p1 = mConvexHull.vertices[chVertexIndices[1]].location,
-						p2 = mConvexHull.vertices[chVertexIndices[2]].location,
-						p3 = mConvexHull.vertices[chVertexIndices[3]].location;
+		const glm::vec3 p0 = mConvexHullMesh.vertices[chVertexIndices[0]].location,
+						p1 = mConvexHullMesh.vertices[chVertexIndices[1]].location,
+						p2 = mConvexHullMesh.vertices[chVertexIndices[2]].location,
+						p3 = mConvexHullMesh.vertices[chVertexIndices[3]].location;
 		int iF0, iF1, iF2, iF3;
 		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
 		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
-			iF0 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
-			iF1 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
-			iF2 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
-			iF3 = addFace(mConvexHull, { chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
+			iF0 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
+			iF1 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
+			iF2 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
+			iF3 = addFace(mConvexHullMesh, { chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
 		}
 		else {
-			iF0 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
-			iF1 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
-			iF2 = addFace(mConvexHull, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
-			iF3 = addFace(mConvexHull, { chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
+			iF0 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
+			iF1 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
+			iF2 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
+			iF3 = addFace(mConvexHullMesh, { chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
 		}
 
 		// Add the HEFaces normals
-		mFaceNormals.emplace(iF0, calculateFaceNormal(mConvexHull, iF0));
-		mFaceNormals.emplace(iF1, calculateFaceNormal(mConvexHull, iF1));
-		mFaceNormals.emplace(iF2, calculateFaceNormal(mConvexHull, iF2));
-		mFaceNormals.emplace(iF3, calculateFaceNormal(mConvexHull, iF3));
+		mConvexHullNormals.emplace(iF0, calculateFaceNormal(mConvexHullMesh, iF0));
+		mConvexHullNormals.emplace(iF1, calculateFaceNormal(mConvexHullMesh, iF1));
+		mConvexHullNormals.emplace(iF2, calculateFaceNormal(mConvexHullMesh, iF2));
+		mConvexHullNormals.emplace(iF3, calculateFaceNormal(mConvexHullMesh, iF3));
 
 		// Get all the vertex indices from the original mesh sorted ascendently
 		std::vector<int> meshVertexIndices;
-		for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
+		for (auto it = originalMesh.vertices.begin(); it != originalMesh.vertices.end(); ++it) {
 			meshVertexIndices.push_back(it.getIndex());
 		}
 		std::sort(meshVertexIndices.begin(), meshVertexIndices.end());
 
 		// Add the HEFaces outside vertices
-		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, meshData, iF0));
-		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(meshVertexIndices, meshData, iF1));
-		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(meshVertexIndices, meshData, iF2));
-		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(meshVertexIndices, meshData, iF3));
+		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, originalMesh, iF0));
+		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(meshVertexIndices, originalMesh, iF1));
+		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(meshVertexIndices, originalMesh, iF2));
+		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(meshVertexIndices, originalMesh, iF3));
 	}
 
 
@@ -355,16 +361,16 @@ namespace fe { namespace collision {
 	) const
 	{
 		std::vector<int> verticesOutside;
-		if (!mConvexHull.faces.isActive(iFace)) { return verticesOutside; }
+		if (!mConvexHullMesh.faces.isActive(iFace)) { return verticesOutside; }
 
 		// Get the face data from the convex hull
-		const HEFace& face = mConvexHull.faces[iFace];
-		const glm::vec3 faceNormal = mFaceNormals.at(iFace);
-		const HEVertex& faceVertex = mConvexHull.vertices[ mConvexHull.edges[face.edge].vertex ];
+		const HEFace& face = mConvexHullMesh.faces[iFace];
+		const glm::vec3 faceNormal = mConvexHullNormals.at(iFace);
+		const HEVertex& faceVertex = mConvexHullMesh.vertices[ mConvexHullMesh.edges[face.edge].vertex ];
 
 		std::copy_if(
 			vertexIndices.begin(), vertexIndices.end(), std::back_inserter(verticesOutside),
-			[&](int i) { return glm::dot(meshData.vertices[i].location - faceVertex.location, faceNormal) > mEpsilon; }
+			[&](int i) { return glm::dot(meshData.vertices[i].location - faceVertex.location, faceNormal) > mScaledEpsilon; }
 		);
 
 		return verticesOutside;
@@ -387,25 +393,25 @@ namespace fe { namespace collision {
 
 	void QuickHull::mergeCoplanarFaces(int iFace)
 	{
-		HEFace inputFace = mConvexHull.faces[iFace];
-		glm::vec3 inputFaceNormal = mFaceNormals[iFace];
+		HEFace inputFace = mConvexHullMesh.faces[iFace];
+		glm::vec3 inputFaceNormal = mConvexHullNormals[iFace];
 
-		// Calculate the HEFaces to merge by testing all the HEFaces of the
-		// HEEdge loop of the current HEFace
-		std::set<int> facesToMerge;
+		// Calculate the HEFaces to merge by testing all the opposite  HEFaces
+		// of the HEEdge loop of the current HEFace
+		std::vector<int> facesToMerge;
 		int iInitialEdge = inputFace.edge;
 		int iCurrentEdge = iInitialEdge;
 		do {
-			const HEEdge& currentEdge	= mConvexHull.edges[iCurrentEdge];
-			const HEEdge& oppositeEdge	= mConvexHull.edges[currentEdge.oppositeEdge];
+			const HEEdge& currentEdge	= mConvexHullMesh.edges[iCurrentEdge];
+			const HEEdge& oppositeEdge	= mConvexHullMesh.edges[currentEdge.oppositeEdge];
 
 			// Check if the opposite HEFace exists
 			if (oppositeEdge.face >= 0) {
 				// Test if the current HEFace is coplanar with the opposite
 				// one by the current edge
-				glm::vec3 oppositeFaceNormal = mFaceNormals[oppositeEdge.face];
-				if (inputFaceNormal == oppositeFaceNormal) {
-					facesToMerge.insert(oppositeEdge.face);
+				glm::vec3 oppositeFaceNormal = mConvexHullNormals[oppositeEdge.face];
+				if (glm::all( glm::epsilonEqual(inputFaceNormal, oppositeFaceNormal, mScaledEpsilon) )) {
+					facesToMerge.push_back(oppositeEdge.face);
 				}
 			}
 
@@ -415,15 +421,15 @@ namespace fe { namespace collision {
 
 		// Merge the HEFaces
 		std::vector<int> allOutsideVertices = mFaceOutsideVertices[iFace];
-		for (int iMergedFace : facesToMerge) {
+		for (int iFaceToMerge : facesToMerge) {
 			// Merge the two HEFaces into the current one
-			mergeFaces(mConvexHull, iFace, iMergedFace);
+			mergeFaces(mConvexHullMesh, iFace, iFaceToMerge);
 
 			// Remove the opposite HEFace normal
-			mFaceNormals.erase(iMergedFace);
+			mConvexHullNormals.erase(iFaceToMerge);
 
 			// Collect and remove all the opposite HEFace outside HEVertices
-			auto itFOutsideVertices = mFaceOutsideVertices.find(iMergedFace);
+			auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToMerge);
 			if (itFOutsideVertices != mFaceOutsideVertices.end()) {
 				std::vector<int> joinedOutsideVertices;
 				std::set_union(

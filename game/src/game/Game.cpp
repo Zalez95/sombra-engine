@@ -91,8 +91,7 @@ namespace game {
 		fe::loaders::RawMesh rawMesh("heMeshTriangles");
 
 		// The faces must be triangles
-		fe::collision::HalfEdgeMesh heMeshTriangles = heMesh;
-		fe::collision::triangulateFaces(heMeshTriangles);
+		fe::collision::HalfEdgeMesh heMeshTriangles = fe::collision::triangulateFaces(heMesh);
 
 		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
 		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());

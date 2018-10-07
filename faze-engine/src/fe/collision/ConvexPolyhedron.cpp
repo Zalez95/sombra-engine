@@ -16,17 +16,7 @@ namespace fe { namespace collision {
 
 	AABB ConvexPolyhedron::getAABB() const
 	{
-		AABB ret{
-			glm::vec3( std::numeric_limits<float>::max()),
-			glm::vec3(-std::numeric_limits<float>::max())
-		};
-
-		for (const HEVertex& vertex : mMesh.vertices) {
-			ret.minimum = glm::min(ret.minimum, vertex.location);
-			ret.maximum = glm::max(ret.maximum, vertex.location);
-		}
-
-		return ret;
+		return calculateAABB(mMesh);
 	}
 
 

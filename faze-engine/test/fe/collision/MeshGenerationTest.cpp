@@ -65,7 +65,7 @@ bool compareMeshes(const fe::collision::HalfEdgeMesh& mesh1, const fe::collision
 
 TEST(MeshGeneration, calculateQuickHull1)
 {
-	fe::collision::HalfEdgeMesh originalMesh = createTestMesh1();
+	fe::collision::HalfEdgeMesh originalMesh = createTestMesh1().first;
 	fe::collision::HalfEdgeMesh expectedMesh = createTestMesh2();
 
 	fe::collision::QuickHull qh(0.0001f);
@@ -86,6 +86,29 @@ TEST(MeshGeneration, calculateQuickHull2)
 
 
 TEST(MeshGeneration, calculateHACD1)
+{
+	fe::collision::HACD hacd(0.03f, 0.0001f);
+	hacd.calculate( createTestMesh1().first );
+
+	auto resultMeshes = hacd.getMeshes();
+	auto expectedMeshes = createTestMesh3();
+
+	EXPECT_TRUE(
+		(resultMeshes.size() == expectedMeshes.size())
+		&& std::all_of(
+			resultMeshes.begin(), resultMeshes.end(),
+			[&](const fe::collision::HalfEdgeMesh& mesh1) {
+				return std::any_of(
+					expectedMeshes.begin(), expectedMeshes.end(),
+					[&](const fe::collision::HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
+				);
+			}
+		)
+	);
+}
+
+
+TEST(MeshGeneration, calculateHACD2)
 {
 	fe::collision::HACD hacd(0.03f, 0.0001f);
 	hacd.calculate( createTestTube1() );

@@ -5,7 +5,7 @@ namespace fe { namespace physics {
 
 	void Gravity::apply(RigidBody* rigidBody)
 	{
-		if (rigidBody->invertedMass > 0) {
+		if (rigidBody->invertedMass > 0.0f) {
 			rigidBody->forceSum += mGravity / rigidBody->invertedMass;
 		}
 	}

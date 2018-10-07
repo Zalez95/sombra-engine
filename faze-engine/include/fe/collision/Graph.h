@@ -34,6 +34,14 @@ namespace fe { namespace collision {
 		/** Compares the given vertex with the current one
 		 *
 		 * @param	other the other graph vertex to compare with
+		 * @return	true if the given vertex is the same than current one, false
+		 *			otherwise */
+		bool operator==(const GraphVertex<T>& other) const
+		{ return id == other.id; }
+
+		/** Compares the given vertex with the current one
+		 *
+		 * @param	other the other graph vertex to compare with
 		 * @return	true if the given vertex id is less than current one, false
 		 *			otherwise */
 		bool operator<(const GraphVertex<T>& other) const

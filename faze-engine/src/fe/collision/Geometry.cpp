@@ -9,10 +9,10 @@ namespace fe { namespace collision {
 		float ret = -1;
 
 		glm::vec3 ve1p = p - e1, ve2p = p - e2, ve1e2 = glm::normalize(e2 - e1);
-		if (float dot1 = glm::dot(ve1p, ve1e2) < 0) {
+		if (float dot1 = glm::dot(ve1p, ve1e2) < 0.0f) {
 			ret = glm::length(ve1p);
 		}
-		else if (glm::dot(ve2p, ve1e2) > 0) {
+		else if (glm::dot(ve2p, ve1e2) > 0.0f) {
 			ret = glm::length(ve2p);
 		}
 		else {
@@ -44,7 +44,7 @@ namespace fe { namespace collision {
 		glm::vec3 intersection;
 
 		float distancePointFace = glm::dot(point - planePoint, planeNormal);
-		if (distancePointFace == 0) {
+		if (distancePointFace == 0.0f) {
 			// The origin is on the HEFace
 			intersection = point;
 		}
@@ -52,7 +52,7 @@ namespace fe { namespace collision {
 			float dotDN = glm::dot(direction, planeNormal);
 			// Check if the point can be projected on the HEFace in the
 			// given direction
-			if ((dotDN > 0) && (distancePointFace < 0)) {
+			if ((dotDN > 0.0f) && (distancePointFace < 0.0f)) {
 				glm::vec3 projection = point + distancePointFace * planeNormal;
 				float distanceInDirection = glm::dot(projection - point, planeNormal) / dotDN;
 				intersection = point + direction * distanceInDirection;

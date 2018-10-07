@@ -50,7 +50,7 @@ namespace fe { namespace collision {
 		HalfEdgeMesh mMesh;
 
 		/** Maps each HalfEdgeMesh HEFace with its normal vector */
-		std::map<int, glm::vec3> mFaceNormals;
+		NormalMap mFaceNormals;
 
 		/** Maps each HalfEdgeMesh HEFace with its distance data */
 		std::map<int, FaceDistanceData> mFaceDistances;
@@ -72,29 +72,28 @@ namespace fe { namespace collision {
 
 		/** @return	the map with the normal vectors of the HEFaces of the
 		 *			Polytope's HalfEdgeMesh */
-		const std::map<int, glm::vec3>& getNormalsMap() const
-		{ return mFaceNormals; };
+		const NormalMap& getNormalsMap() const { return mFaceNormals; };
 
 		/** Returns the SupportPoint of the given Polytope HEVertex
 		 *
 		 * @param	iVertex the index of the HEVertex in the Polytope
-		 * @return	the SupportPoint of the HEVertex
-		 * @throw	runtime_error if the HEVertex isn't found */
-		const SupportPoint& getSupportPoint(int iVertex) const;
+		 * @return	the SupportPoint of the HEVertex */
+		const SupportPoint& getSupportPoint(int iVertex) const
+		{ return mVertexSupportPoints.at(iVertex); };
 
 		/** Returns the normal vector of the given Polytope HEFace
 		 *
 		 * @param	iFace the index of the HEFace in the Polytope
-		 * @return	the normal vector of the HEFace
-		 * @throw	runtime_error if the HEFace isn't found */
-		const glm::vec3& getNormal(int iFace) const;
+		 * @return	the normal vector of the HEFace */
+		const glm::vec3& getNormal(int iFace) const
+		{ return mFaceNormals.at(iFace); };
 
 		/** Returns the FaceDistanceData of the given Polytope HEFace
 		 *
 		 * @param	iFace the index of the HEFace in the Polytope
-		 * @return	the FaceDistanceData of the HEFace
-		 * @throw	runtime_error if the HEFace isn't found */
-		const FaceDistanceData& getDistanceData(int iFace) const;
+		 * @return	the FaceDistanceData of the HEFace */
+		const FaceDistanceData& getDistanceData(int iFace) const
+		{ return mFaceDistances.at(iFace); };
 
 		/** Creates a new HEVertex from the given SupportPoint and adds it to
 		 * the Polytope Mesh

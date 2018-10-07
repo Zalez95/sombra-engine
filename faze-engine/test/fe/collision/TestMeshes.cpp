@@ -56,9 +56,12 @@ fe::collision::HalfEdgeMesh createTestPolyhedron3()
 }
 
 
-fe::collision::HalfEdgeMesh createTestMesh1()
+std::pair<fe::collision::HalfEdgeMesh, fe::collision::NormalMap> createTestMesh1()
 {
 	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::NormalMap normals;
+
+	int iFace;
 	fe::collision::addVertex(meshData, {  1.25f,  1.0f, -2.75f });
 	fe::collision::addVertex(meshData, {  1.25f, -1.0f, -2.75f });
 	fe::collision::addVertex(meshData, { -0.25f, -1.0f, -2.75f });
@@ -68,21 +71,36 @@ fe::collision::HalfEdgeMesh createTestMesh1()
 	fe::collision::addVertex(meshData, { -0.25f, -1.0f,  0.0f  });
 	fe::collision::addVertex(meshData, { -0.25f,  1.0f,  2.75f });
 	fe::collision::addVertex(meshData, {  0.25f,  0.0f,  0.0f  });
-	fe::collision::addFace(meshData, { 0, 1, 2 });
-	fe::collision::addFace(meshData, { 7, 6, 5 });
-	fe::collision::addFace(meshData, { 1, 5, 6 });
-	fe::collision::addFace(meshData, { 6, 7, 3 });
-	fe::collision::addFace(meshData, { 4, 0, 3 });
-	fe::collision::addFace(meshData, { 0, 4, 8 });
-	fe::collision::addFace(meshData, { 1, 0, 8 });
-	fe::collision::addFace(meshData, { 4, 5, 8 });
-	fe::collision::addFace(meshData, { 5, 1, 8 });
-	fe::collision::addFace(meshData, { 3, 0, 2 });
-	fe::collision::addFace(meshData, { 4, 7, 5 });
-	fe::collision::addFace(meshData, { 2, 1, 6 });
-	fe::collision::addFace(meshData, { 2, 6, 3 });
-	fe::collision::addFace(meshData, { 7, 4, 3 });
-	return meshData;
+	iFace = fe::collision::addFace(meshData, { 0, 1, 2 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 7, 6, 5 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 1, 5, 6 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 6, 7, 3 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 4, 0, 3 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 0, 4, 8 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 1, 0, 8 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 4, 5, 8 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 5, 1, 8 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 3, 0, 2 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 4, 7, 5 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 2, 1, 6 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 2, 6, 3 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	iFace = fe::collision::addFace(meshData, { 7, 4, 3 });
+	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
+	
+	return std::make_pair(meshData, normals);
 }
 
 
@@ -109,10 +127,68 @@ fe::collision::HalfEdgeMesh createTestMesh2()
 }
 
 
-std::pair<fe::collision::HalfEdgeMesh, std::map<int, glm::vec3>> createTestMesh3()
+std::vector<fe::collision::HalfEdgeMesh> createTestMesh3()
+{
+	fe::collision::HalfEdgeMesh m1;
+	fe::collision::addVertex(m1, { -0.25f,  1.0f, 0.0f });
+	fe::collision::addVertex(m1, { 1.25f,  1.0f, 2.75f });
+	fe::collision::addVertex(m1, { 1.25f, -1.0f, 2.75f });
+	fe::collision::addVertex(m1, { -0.25f, -1.0f, 0.0f });
+	fe::collision::addVertex(m1, { -0.25f,  1.0f, 2.75f });
+	fe::collision::addVertex(m1, { 0.25f,  0.0f, 0.0f });
+	fe::collision::addFace(m1, { 4, 3, 2 });
+	fe::collision::addFace(m1, { 3, 4, 0 });
+	fe::collision::addFace(m1, { 1, 2, 5 });
+	fe::collision::addFace(m1, { 1, 4, 2 });
+	fe::collision::addFace(m1, { 4, 1, 0 });
+	fe::collision::addFace(m1, { 3, 5, 2 });
+	fe::collision::addFace(m1, { 3, 0, 5 });
+	fe::collision::addFace(m1, { 1, 5, 0 });
+
+	fe::collision::HalfEdgeMesh m2;
+	fe::collision::addVertex(m2, { 0.25f,  0.0f,  0.0f });
+	fe::collision::addVertex(m2, { 1.25f,  1.0f,  2.75f });
+	fe::collision::addVertex(m2, { -0.25f,  1.0f,  0.0f });
+	fe::collision::addVertex(m2, { 1.25f,  1.0f, -2.75f });
+	fe::collision::addFace(m2, { 3, 1, 0 });
+	fe::collision::addFace(m2, { 1, 3, 2 });
+	fe::collision::addFace(m2, { 1, 2, 0 });
+	fe::collision::addFace(m2, { 0, 2, 3 });
+
+	fe::collision::HalfEdgeMesh m3;
+	fe::collision::addVertex(m3, { 1.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(m3, { 1.25f, -1.0f,  2.75f });
+	fe::collision::addVertex(m3, { -0.25f, -1.0f,  0.0f });
+	fe::collision::addVertex(m3, { 0.25f,  0.0f,  0.0f });
+	fe::collision::addFace(m3, { 0, 1, 2 });
+	fe::collision::addFace(m3, { 1, 0, 3 });
+	fe::collision::addFace(m3, { 2, 1, 3 });
+	fe::collision::addFace(m3, { 2, 3, 0 });
+
+	fe::collision::HalfEdgeMesh m4;
+	fe::collision::addVertex(m4, { 1.25f,  1.0f, -2.75f });
+	fe::collision::addVertex(m4, { 1.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(m4, { -0.25f, -1.0f, -2.75f });
+	fe::collision::addVertex(m4, { -0.25f,  1.0f,  0.0f });
+	fe::collision::addVertex(m4, { -0.25f, -1.0f,  0.0f });
+	fe::collision::addVertex(m4, { 0.25f,  0.0f,  0.0f });
+	fe::collision::addFace(m4, { 0, 1, 2 });
+	fe::collision::addFace(m4, { 1, 0, 5 });
+	fe::collision::addFace(m4, { 3, 0, 2 });
+	fe::collision::addFace(m4, { 2, 1, 4 });
+	fe::collision::addFace(m4, { 2, 4, 3 });
+	fe::collision::addFace(m4, { 3, 5, 0 });
+	fe::collision::addFace(m4, { 4, 1, 5 });
+	fe::collision::addFace(m4, { 4, 5, 3 });
+
+	return { m1, m2, m3, m4 };
+}
+
+
+std::pair<fe::collision::HalfEdgeMesh, fe::collision::NormalMap> createTestMesh4()
 {
 	fe::collision::HalfEdgeMesh meshData;
-	std::map<int, glm::vec3> normals;
+	fe::collision::NormalMap normals;
 
 	int iFace;
 	fe::collision::addVertex(meshData, { -3.208401441f,  2.893295764f,  0.028006464f });
@@ -137,7 +213,7 @@ std::pair<fe::collision::HalfEdgeMesh, std::map<int, glm::vec3>> createTestMesh3
 	fe::collision::addVertex(meshData, { -5.062996387f,  3.463579893f,  3.451099872f });
 	fe::collision::addVertex(meshData, { -3.574266433f,  4.290853500f,  3.687945365f });
 	fe::collision::addVertex(meshData, { -6.311958789f,  4.639792919f,  3.335471153f });
-	iFace = fe::collision::addFace(meshData, { 6, 3, 4, });
+	iFace = fe::collision::addFace(meshData, { 6, 3, 4 });
 	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);
 	iFace = fe::collision::addFace(meshData, { 0, 7, 9 });
 	normals[iFace] = fe::collision::calculateFaceNormal(meshData, iFace);

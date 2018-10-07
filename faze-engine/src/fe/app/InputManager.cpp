@@ -77,11 +77,11 @@ namespace fe { namespace app {
 
 		// Normalize the direction
 		float length = glm::length(direction);
-		if (length > 0) { direction /= length; }
+		if (length > 0.0f) { direction /= length; }
 
 		// Transform the direction to velocity
 		float velocityDiff = kRunSpeed - glm::length(entity->velocity);
-		if (velocityDiff > 0) {
+		if (velocityDiff > 0.0f) {
 			entity->velocity += velocityDiff * direction;
 		}
 

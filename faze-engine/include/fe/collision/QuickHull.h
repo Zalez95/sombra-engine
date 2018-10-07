@@ -35,11 +35,15 @@ namespace fe { namespace collision {
 		 * them */
 		const float mEpsilon;
 
+		/** The precision of the comparison scaled with the size of the
+		 * HalfEdgeMesh to calculate */
+		float mScaledEpsilon;
+
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
-		HalfEdgeMesh mConvexHull;
+		HalfEdgeMesh mConvexHullMesh;
 
 		/** Maps each convex hull face with its normal vector */
-		std::map<int, glm::vec3> mFaceNormals;
+		NormalMap mConvexHullNormals;
 
 		/** Maps each convex hull face with its outside vertex indices.
 		 * @note	the outside vertex indices are sorted ascendently */
@@ -60,19 +64,18 @@ namespace fe { namespace collision {
 		~QuickHull() {};
 
 		/** @return	the HalfEdgeMesh of the convex hull */
-		const HalfEdgeMesh& getMesh() const { return mConvexHull; };
+		const HalfEdgeMesh& getMesh() const { return mConvexHullMesh; };
 
 		/** @return	the map with the normal vectors of the HEFaces of the
 		 *			convex hull HalfEdgeMesh */
-		const std::map<int, glm::vec3>& getNormalsMap() const
-		{ return mFaceNormals; };
+		const NormalMap& getNormalsMap() const { return mConvexHullNormals; };
 
 		/** Calculates the convex hull of the given Mesh with the QuickHull
 		 * algorithm
 		 *
-		 * @param	meshData the Half-Edge data structure with the Mesh to
+		 * @param	originalMesh the Half-Edge data structure with the Mesh to
 		 *			calculate its convex hull */
-		void calculate(const HalfEdgeMesh& meshData);
+		void calculate(const HalfEdgeMesh& originalMesh);
 
 		/** Resets the convex hull data for the next calculations */
 		void resetData();
@@ -90,12 +93,12 @@ namespace fe { namespace collision {
 		/** Calculates the convex hull of the given 2D Mesh with the QuickHull
 		 * 2D algorithm
 		 *
-		 * @param	meshData the Half-Edge data structure with the 2D Mesh to
-		 *			calculate its convex hull
+		 * @param	originalMesh the Half-Edge data structure with the 2D Mesh
+		 *			to calculate its convex hull
 		 * @param	iSimplexVertices the indices of the simplex vertices
 		 * @note	the mesh must have at least 3 vertices */
 		void calculateQuickHull2D(
-			const HalfEdgeMesh& meshData,
+			const HalfEdgeMesh& originalMesh,
 			const std::vector<int>& iSimplexVertices
 		);
 
@@ -131,21 +134,22 @@ namespace fe { namespace collision {
 		/** Calculates the convex hull of the given 3D Mesh with the QuickHull
 		 * 3D algorithm
 		 *
-		 * @param	meshData the Half-Edge data structure with the 3D Mesh to
-		 *			calculate its convex hull
+		 * @param	originalMesh the Half-Edge data structure with the 3D Mesh
+		 *			to calculate its convex hull
 		 * @param	iSimplexVertices the indices of the simplex vertices */
 		void calculateQuickHull3D(
-			const HalfEdgeMesh& meshData,
+			const HalfEdgeMesh& originalMesh,
 			const std::vector<int>& iSimplexVertices
 		);
 
 		/** Calculates the initial HEMesh needed for calculating the 3D
 		 * QuickHull algorithm from the given Mesh vertices
 		 *
-		 * @param	meshData the Mesh to calculate its convex hull
+		 * @param	originalMesh the Half-Edge data structure with the 3D Mesh
+		 *			to calculate its initial convex hull
 		 * @param	iSimplexVertices the indices of the simplex vertices */
 		void createInitial3DConvexHull(
-			const HalfEdgeMesh& meshData,
+			const HalfEdgeMesh& originalMesh,
 			const std::vector<int>& iSimplexVertices
 		);
 

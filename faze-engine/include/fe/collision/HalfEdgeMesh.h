@@ -7,6 +7,10 @@
 
 namespace fe { namespace collision {
 
+	using NormalMap = std::map<int, glm::vec3>;
+	struct AABB;
+
+
 	/**
 	 * Struct HEVertex
 	 */
@@ -19,6 +23,7 @@ namespace fe { namespace collision {
 		int edge;
 
 		HEVertex() : location(0.0f), edge(-1) {};
+		HEVertex(const glm::vec3& location) : location(location), edge(-1) {};
 		~HEVertex() {};
 	};
 
@@ -138,13 +143,15 @@ namespace fe { namespace collision {
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2);
 
 
-	/** Replaces the polygon HEFaces of the given HalfEdgeMesh for triangles
+	/** Creates a new HalfEdgeMesh from the given one with its the polygon
+	 * HEFaces converted to triangles
 	 *
-	 * @param	meshData the Mesh where the HEFaces are located in
+	 * @param	originalMesh the Mesh where the HEFaces are located in
+	 * @return	
 	 * @note	we will use the ear clipping method, which only works with
 	 *			convex polygons (The HEFaces are ensured to be convex if we
 	 *			had added them with the addFace method) */
-	void triangulateFaces(HalfEdgeMesh& meshData);
+	HalfEdgeMesh triangulateFaces(const HalfEdgeMesh& originalMesh);
 
 
 	/** Returns the HEVertex indices of the given HEFace
@@ -157,14 +164,15 @@ namespace fe { namespace collision {
 
 	/** Calculates the normal vector of the mesh surface at the given HEVertex
 	 *
+	 * @note	the normal vector is calculated from the normals of the faces
+	 *			that share the vertex without any kind of normalization
 	 * @param	meshData the mesh that holds the HEVertex
 	 * @param	faceNormals a map with the normals of each HEFace of the mesh
 	 * @param	iVertex the index of the HEVertex where we want to calculate
 	 *			the normal vector
 	 * @return	the normal vector */
 	glm::vec3 calculateVertexNormal(
-		const HalfEdgeMesh& meshData,
-		const std::map<int, glm::vec3>& faceNormals,
+		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
 		int iVertex
 	);
 
@@ -197,18 +205,43 @@ namespace fe { namespace collision {
 	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
 	 * @param	faceNormals the normals of each HEFace
 	 * @param	eyePoint the 3D coordinates of the eye point
-	 * @param	iFace the index of the initial HEFace from which we will start
-	 *			searching
+	 * @param	iInitialFace the index of the initial HEFace from which we will
+	 *			start searching
 	 * @return	a pair with the list of HEEdge indices that represents the
 	 *			boundary of the ConvexHull and the list of HEFace indices with
 	 *			the visible HEFaces
 	 * @note	the initial HEFace must be visible from the eyePoint
 	 *			perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const HalfEdgeMesh& meshData,
-		const std::map<int, glm::vec3>& faceNormals,
-		const glm::vec3& eyePoint, int iFace
+		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const glm::vec3& eyePoint, int iInitialFace
 	);
+
+
+	/** Calculates the intersection of the given ray with the given mesh
+	 *
+	 * @param	meshData the convex Mesh to project the point on. The
+	 *			points of its faces must lie in the same plane
+	 * @param	faceNormals a map with the normals of each HEFace of the
+	 *			mesh
+	 * @param	origin the origin of the ray. It must be inside of the mesh
+	 * @param	direction the direction of the ray
+	 * @param	epsilon the epsilon value used for checking if a ray intersects
+	 *			a HEFace
+	 * @return	a pair with a flag that tells if the ray intersects the
+	 *			mesh and the 3D coordinates of the intersection point */
+	std::pair<bool, glm::vec3> raycastMesh(
+		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const glm::vec3& origin, const glm::vec3& direction,
+		float epsilon
+	);
+
+
+	/** Calculates the Axis Aligned Bounding Box of the given HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh to calculate its AABB
+	 * @return	the AABB of the HalfEdgeMesh */
+	AABB calculateAABB(const HalfEdgeMesh& meshData);
 
 }}
 

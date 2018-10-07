@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <fe/collision/Manifold.h>
 #include <fe/collision/BoundingBox.h>
 #include <fe/collision/BoundingSphere.h>
-#include <fe/collision/CompoundCollider.h>
-#include <fe/collision/Manifold.h>
 #include <fe/collision/FineCollisionDetector.h>
+#include "TestMeshes.h"
 
 #define TOLERANCE 0.0001f
 #define MIN_F_DIFFERENCE	0.0001f
@@ -83,7 +83,7 @@ TEST(FineCollisionDetector, SphereSphere2)
 }
 
 /** Non colliding */
-TEST(FineCollisionDetector, CVXPolyCVXPoly1)
+TEST(FineCollisionDetector, CPolyCPoly1)
 {
 	const glm::vec3 v1(-5.65946f, -2.8255f, -1.52118f), v2(-4.58841f, -2.39753f, -0.164247f);
 	const glm::quat o1(0.890843f, 0.349613f, 0.061734f, 0.283475f), o2(0.962876f, -0.158823f, 0.216784f, -0.025477f);
@@ -107,7 +107,7 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly1)
 }
 
 /** Colliding - vertex face */
-TEST(FineCollisionDetector, CVXPolyCVXPoly2)
+TEST(FineCollisionDetector, CPolyCPoly2)
 {
 	const glm::vec3 expectedWorldPos[] = {
 		{ -3.471183140f, 4.671001170f, -2.168255635f },
@@ -153,7 +153,7 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly2)
 }
 
 /** Colliding vertex - vertex */
-TEST(FineCollisionDetector, CVXPolyCVXPoly3)
+TEST(FineCollisionDetector, CPolyCPoly3)
 {
 	const glm::vec3 expectedWorldPos[] = {
 		{ 2.647833347f, 1.175995111f, 0.072492107f },
@@ -198,20 +198,20 @@ TEST(FineCollisionDetector, CVXPolyCVXPoly3)
 	}
 }
 
-/*
-TEST(FineCollisionDetector, SphereMesh1)
+
+TEST(FineCollisionDetector, SphereCPoly1)
 {
 	const glm::vec3 expectedWorldPos[] = {
-		{ 15.029119491f, -6.232823848f, 8.426028251f },
-		{ 14.939769744f, -6.063839912f, 8.329644203f }
+		{ 14.383110774f, -7.013699324f, 8.182463250f },
+		{ 14.315420150f, -6.879015922f, 8.099131584f }
 	};
 	const glm::vec3 expectedLocalPos[] = {
-		{ 1.529119491f, -0.982823848f, 1.326028347f },
-		{ 1.249999523f, -0.999999284f, 0.213817119f }
+		{ 0.883110774f, -1.763699324f, 1.082463345f },
+		{ 1.0f, 0.0f, 0.0f }
 	};
-	const glm::vec3 expectedNormal(0.416512221f, -0.789699912f, 0.450434893f);
-	const float expectedPenetration = glm::length(expectedWorldPos[1] - expectedWorldPos[0]);
-	const float radius = 2.25;
+	const glm::vec3 expectedNormal(0.393006712f, -0.781962514f, 0.483818501f);
+	const float expectedPenetration = 0.172238088f;
+	const float radius = 2.25f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(14.67f, -7.62f, 8.667f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.473f, -0.313f, 0.057f, 0.821f);
 
@@ -220,28 +220,22 @@ TEST(FineCollisionDetector, SphereMesh1)
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
 	bs1.setTransforms(t1 * r1);
 
-	fe::collision::HalfEdgeMesh meshData = fe::collision::createTestPolyhedron3();
-	fe::collision::CompoundCollider mc1(meshData, fe::collision::ConvexExtrategy::QuickHull);
+	fe::collision::ConvexPolyhedron cp1( createTestPolyhedron3() );
 	glm::mat4 r2 = glm::mat4_cast(o2);
 	glm::mat4 t2 = glm::translate(glm::mat4(1.0f), v2);
-	mc1.setTransforms(t2 * r2);
+	cp1.setTransforms(t2 * r2);
 
-	fe::collision::Manifold manifold(&bs1, &mc1);
+	fe::collision::Manifold manifold(&bs1, &cp1);
 	fe::collision::FineCollisionDetector fineCollisionDetector(
 		MIN_F_DIFFERENCE, CONTACT_PRECISION,
 		CONTACT_SEPARATION
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
- 	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
-	EXPECT_EQ(static_cast<int>(contacts.size()), 4);
+	std::vector<fe::collision::Contact> contacts = manifold.getContacts();
+	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
 
-	auto it = std::max_element(
-		contacts.begin(), contacts.end(),
-		[](fe::collision::Contact& c1, fe::collision::Contact& c2) { return c1.getPenetration() > c2.getPenetration(); }
-	);
-	fe::collision::Contact& res = *it;
-
+	fe::collision::Contact& res = contacts.front();
 	EXPECT_NEAR(res.getPenetration(), expectedPenetration, TOLERANCE);
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], TOLERANCE);
@@ -250,7 +244,4 @@ TEST(FineCollisionDetector, SphereMesh1)
 			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], TOLERANCE);
 		}
 	}
-
-	// TODO: Compare the rest
 }
-*/

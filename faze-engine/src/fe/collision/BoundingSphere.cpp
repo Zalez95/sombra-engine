@@ -7,7 +7,7 @@ namespace fe { namespace collision {
 		mRadius(radius),
 		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
-		assert(radius >= 0 && "The radius of the sphere can't be smaller than zero.");
+		assert(radius >= 0.0f && "The radius of the sphere can't be smaller than zero.");
 	}
 
 

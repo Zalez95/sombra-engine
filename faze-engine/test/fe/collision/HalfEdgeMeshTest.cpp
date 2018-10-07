@@ -10,8 +10,8 @@
 TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
 {
 	fe::collision::HalfEdgeMesh meshData;
-	std::map<int, glm::vec3> normals;
-	std::tie(meshData, normals) = createTestMesh3();
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
 	const glm::vec3 direction(-0.549725532f, -0.870150089f, 1.638233065f);
 	int iExpectedVertex = 19;
 	
@@ -26,8 +26,8 @@ TEST(HalfEdgeMesh, getFaceIndices1)
 	std::vector<int> expectedFaceIndices = { 2, 17, 19 };
 
 	fe::collision::HalfEdgeMesh meshData;
-	std::map<int, glm::vec3> normals;
-	std::tie(meshData, normals) = createTestMesh3();
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
 
 	std::vector<int> faceIndices = fe::collision::getFaceIndices(meshData, iFace);
 	EXPECT_EQ(faceIndices, expectedFaceIndices);
@@ -37,8 +37,8 @@ TEST(HalfEdgeMesh, getFaceIndices1)
 TEST(HalfEdgeMesh, mergeFace1)
 {
 	fe::collision::HalfEdgeMesh meshData;
-	std::map<int, glm::vec3> normals;
-	std::tie(meshData, normals) = createTestMesh3();
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
 
 	const std::vector<int> expectedVertices = { 19, 18, 2, 17 };
 	const int iMergedFace1 = 17, iMergedFace2 = 6;
@@ -74,7 +74,7 @@ TEST(HalfEdgeMesh, triangulateFaces1)
 	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3( 0.7f, -0.7f,  0.0f)) );
 	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3( 0.7f,  0.7f,  0.0f)) );
 	fe::collision::addFace(meshData, vertexIndices);
-	fe::collision::triangulateFaces(meshData);
+	meshData = fe::collision::triangulateFaces(meshData);
 
 	ASSERT_EQ(static_cast<int>(meshData.faces.size()), 4);
 	for (int iFace = 0; iFace < 4; ++iFace) {
@@ -82,6 +82,47 @@ TEST(HalfEdgeMesh, triangulateFaces1)
 		for (int i = 0; i < 3; ++i) {
 			EXPECT_EQ(currentFaceIndices[i], expectedFaceIndices[iFace][i]);
 		}
+	}
+}
+
+
+TEST(HalfEdgeMesh, calculateVertexNormal1)
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh1();
+
+	const glm::vec3 expectedNormal(1.0f, 0.0f, 0.0f);
+	glm::vec3 normal = fe::collision::calculateVertexNormal(meshData, normals, 8);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(normal[i], expectedNormal[i], TOLERANCE);
+	}
+}
+
+
+TEST(HalfEdgeMesh, calculateVertexNormal2)
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::NormalMap normals;
+
+	std::vector<int> vertexIndices;
+	int iFace;
+	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3(-5.035281181f, 2.496228456f, 2.278198242f)) );
+	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3(-5.734357833f, 2.502610445f, 0.927823066f)) );
+	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3(-3.627435207f, 2.880870103f, 2.705149173f)) );
+	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3(-6.365145683f, 3.229807853f, 2.352669477f)) );
+	vertexIndices.push_back( fe::collision::addVertex(meshData, glm::vec3(-5.062996387f, 3.463579893f, 3.451099872f)) );
+	iFace = fe::collision::addFace(meshData, { vertexIndices[0], vertexIndices[3], vertexIndices[1] });
+	normals.emplace(iFace, fe::collision::calculateFaceNormal(meshData, iFace));
+	iFace = fe::collision::addFace(meshData, { vertexIndices[0], vertexIndices[4], vertexIndices[3] });
+	normals.emplace(iFace, fe::collision::calculateFaceNormal(meshData, iFace));
+	iFace = fe::collision::addFace(meshData, { vertexIndices[0], vertexIndices[2], vertexIndices[4] });
+	normals.emplace(iFace, fe::collision::calculateFaceNormal(meshData, iFace));
+
+	const glm::vec3 expectedNormal(-0.280267089f, -0.815811336f, 0.505867838f);
+	glm::vec3 normal = fe::collision::calculateVertexNormal(meshData, normals, 0);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(normal[i], expectedNormal[i], TOLERANCE);
 	}
 }
 
@@ -139,8 +180,8 @@ TEST(HalfEdgeMesh, calculateFaceNormal3)
 TEST(HalfEdgeMesh, calculateHorizon1)
 {
 	fe::collision::HalfEdgeMesh meshData;
-	std::map<int, glm::vec3> normals;
-	std::tie(meshData, normals) = createTestMesh3();
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
 
 	const glm::vec3 eyePoint(-3.49067f, 2.15318f, 1.14567f);
 	const std::vector<int> expectedHorizonVertices = { 2, 13, 8, 0, 11, 17 };

@@ -1,4 +1,3 @@
-#include <exception>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Polytope.h"
@@ -34,42 +33,6 @@ namespace fe { namespace collision {
 			addFace({ vertexIndices[0], vertexIndices[1], vertexIndices[3] });
 			addFace({ vertexIndices[0], vertexIndices[3], vertexIndices[2] });
 			addFace({ vertexIndices[1], vertexIndices[2], vertexIndices[3] });
-		}
-	}
-
-
-	const SupportPoint& Polytope::getSupportPoint(int iVertex) const
-	{
-		auto itSupportPoint = mVertexSupportPoints.find(iVertex);
-		if (itSupportPoint != mVertexSupportPoints.end()) {
-			return itSupportPoint->second;
-		}
-		else {
-			throw std::runtime_error("HEVertex not found in Polytope");
-		}
-	}
-
-
-	const glm::vec3& Polytope::getNormal(int iFace) const
-	{
-		auto itFaceNormal = mFaceNormals.find(iFace);
-		if (itFaceNormal != mFaceNormals.end()) {
-			return itFaceNormal->second;
-		}
-		else {
-			throw std::runtime_error("HEFace not found in Polytope");
-		}
-	}
-
-
-	const FaceDistanceData& Polytope::getDistanceData(int iFace) const
-	{
-		auto itFaceDistance = mFaceDistances.find(iFace);
-		if (itFaceDistance != mFaceDistances.end()) {
-			return itFaceDistance->second;
-		}
-		else {
-			throw std::runtime_error("HEFace not found in Polytope");
 		}
 	}
 
