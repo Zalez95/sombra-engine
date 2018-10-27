@@ -3,36 +3,10 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <fe/collision/HalfEdgeMesh.h>
+#include <fe/collision/HalfEdgeMeshExt.h>
 #include "TestMeshes.h"
 
 #define TOLERANCE 0.000001f
-
-TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
-{
-	fe::collision::HalfEdgeMesh meshData;
-	fe::collision::NormalMap normals;
-	std::tie(meshData, normals) = createTestMesh4();
-	const glm::vec3 direction(-0.549725532f, -0.870150089f, 1.638233065f);
-	int iExpectedVertex = 19;
-	
-	int iVertex = fe::collision::getFurthestVertexInDirection(meshData, direction);
-	EXPECT_EQ(iVertex, iExpectedVertex);
-}
-
-
-TEST(HalfEdgeMesh, getFaceIndices1)
-{
-	int iFace = 6;
-	std::vector<int> expectedFaceIndices = { 2, 17, 19 };
-
-	fe::collision::HalfEdgeMesh meshData;
-	fe::collision::NormalMap normals;
-	std::tie(meshData, normals) = createTestMesh4();
-
-	std::vector<int> faceIndices = fe::collision::getFaceIndices(meshData, iFace);
-	EXPECT_EQ(faceIndices, expectedFaceIndices);
-}
-
 
 TEST(HalfEdgeMesh, mergeFace1)
 {
@@ -58,6 +32,20 @@ TEST(HalfEdgeMesh, mergeFace1)
 	}
 	while (iCurrentEdge != iInitialEdge);
 	EXPECT_EQ(nVertices, expectedVertices.size());
+}
+
+
+TEST(HalfEdgeMesh, getFaceIndices1)
+{
+	int iFace = 6;
+	std::vector<int> expectedFaceIndices = { 2, 17, 19 };
+
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
+
+	std::vector<int> faceIndices = fe::collision::getFaceIndices(meshData, iFace);
+	EXPECT_EQ(faceIndices, expectedFaceIndices);
 }
 
 
@@ -174,6 +162,19 @@ TEST(HalfEdgeMesh, calculateFaceNormal3)
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(normal[i], expectedNormal[i], TOLERANCE);
 	}
+}
+
+
+TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
+{
+	fe::collision::HalfEdgeMesh meshData;
+	fe::collision::NormalMap normals;
+	std::tie(meshData, normals) = createTestMesh4();
+	const glm::vec3 direction(-0.549725532f, -0.870150089f, 1.638233065f);
+	int iExpectedVertex = 19;
+	
+	int iVertex = fe::collision::getFurthestVertexInDirection(meshData, direction);
+	EXPECT_EQ(iVertex, iExpectedVertex);
 }
 
 

@@ -23,6 +23,7 @@
 #include <fe/collision/BoundingSphere.h>
 #include <fe/collision/ConvexPolyhedron.h>
 #include <fe/collision/CompoundCollider.h>
+#include <fe/collision/HalfEdgeMeshExt.h>
 #include <fe/collision/QuickHull.h>
 #include <fe/collision/HACD.h>
 
@@ -79,7 +80,15 @@ namespace game {
 			fe::collision::addVertex(heMesh, position);
 		}
 		for (std::size_t i = 0; i < rawMesh.faceIndices.size(); i += 3) {
-			fe::collision::addFace(heMesh, { rawMesh.faceIndices[i], rawMesh.faceIndices[i+1], rawMesh.faceIndices[i+2] });
+			int iFace = fe::collision::addFace(heMesh, { rawMesh.faceIndices[i], rawMesh.faceIndices[i+1], rawMesh.faceIndices[i+2] });
+			if (iFace < 0) {
+				throw std::runtime_error("Bad face");
+			}
+		}
+
+		auto result = fe::collision::validateMesh(heMesh);
+		if (!result.first) {
+			throw std::runtime_error("Bad mesh: " + result.second);
 		}
 
 		return heMesh;
@@ -112,6 +121,109 @@ namespace game {
 	}
 
 
+	fe::collision::HalfEdgeMesh createTestTube1()
+	{
+		fe::collision::HalfEdgeMesh meshData;
+		fe::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.0f, 1.0f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.0f, 1.0f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f });
+		fe::collision::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f });
+		fe::collision::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f });
+		fe::collision::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f });
+		fe::collision::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f });
+		fe::collision::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f });
+		fe::collision::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f });
+		fe::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f });
+		fe::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f });
+		fe::collision::addFace(meshData, { 0, 2, 3, 1 });
+		fe::collision::addFace(meshData, { 2, 4, 5, 3 });
+		fe::collision::addFace(meshData, { 4, 6, 7, 5 });
+		fe::collision::addFace(meshData, { 6, 8, 9, 7 });
+		fe::collision::addFace(meshData, { 8, 10, 11, 9 });
+		fe::collision::addFace(meshData, { 10, 12, 13, 11 });
+		fe::collision::addFace(meshData, { 12, 14, 15, 13 });
+		fe::collision::addFace(meshData, { 14, 16, 17, 15 });
+		fe::collision::addFace(meshData, { 16, 18, 19, 17 });
+		fe::collision::addFace(meshData, { 18, 20, 21, 19 });
+		fe::collision::addFace(meshData, { 20, 22, 23, 21 });
+		fe::collision::addFace(meshData, { 22, 0, 1, 23 });
+		fe::collision::addFace(meshData, { 24, 25, 27, 26 });
+		fe::collision::addFace(meshData, { 26, 27, 29, 28 });
+		fe::collision::addFace(meshData, { 28, 29, 31, 30 });
+		fe::collision::addFace(meshData, { 30, 31, 33, 32 });
+		fe::collision::addFace(meshData, { 32, 33, 35, 34 });
+		fe::collision::addFace(meshData, { 34, 35, 37, 36 });
+		fe::collision::addFace(meshData, { 36, 37, 39, 38 });
+		fe::collision::addFace(meshData, { 38, 39, 41, 40 });
+		fe::collision::addFace(meshData, { 40, 41, 43, 42 });
+		fe::collision::addFace(meshData, { 42, 43, 45, 44 });
+		fe::collision::addFace(meshData, { 44, 45, 47, 46 });
+		fe::collision::addFace(meshData, { 46, 47, 25, 24 });
+		fe::collision::addFace(meshData, { 13, 15, 39, 37 });
+		fe::collision::addFace(meshData, { 37, 35, 11, 13 });
+		fe::collision::addFace(meshData, { 35, 33, 9, 11 });
+		fe::collision::addFace(meshData, { 33, 31, 7, 9 });
+		fe::collision::addFace(meshData, { 31, 29, 5, 7 });
+		fe::collision::addFace(meshData, { 29, 27, 3, 5 });
+		fe::collision::addFace(meshData, { 27, 25, 1, 3 });
+		fe::collision::addFace(meshData, { 25, 47, 23, 1 });
+		fe::collision::addFace(meshData, { 47, 45, 21, 23 });
+		fe::collision::addFace(meshData, { 45, 43, 19, 21 });
+		fe::collision::addFace(meshData, { 43, 41, 17, 19 });
+		fe::collision::addFace(meshData, { 41, 39, 15, 17 });
+		fe::collision::addFace(meshData, { 20, 18, 42, 44 });
+		fe::collision::addFace(meshData, { 16, 40, 42, 18 });
+		fe::collision::addFace(meshData, { 14, 38, 40, 16 });
+		fe::collision::addFace(meshData, { 12, 36, 38, 14 });
+		fe::collision::addFace(meshData, { 10, 34, 36, 12 });
+		fe::collision::addFace(meshData, { 8, 32, 34, 10 });
+		fe::collision::addFace(meshData, { 6, 30, 32, 8 });
+		fe::collision::addFace(meshData, { 4, 28, 30, 6 });
+		fe::collision::addFace(meshData, { 2, 26, 28, 4 });
+		fe::collision::addFace(meshData, { 0, 24, 26, 2 });
+		fe::collision::addFace(meshData, { 22, 46, 24, 0 });
+		fe::collision::addFace(meshData, { 20, 44, 46, 22 });
+		return meshData;
+	}
+
+
 	void Game::init()
 	{
 		/*********************************************************************
@@ -120,7 +232,7 @@ namespace game {
 		fe::loaders::MeshLoader meshLoader;
 		fe::loaders::TerrainLoader terrainLoader(meshLoader, *mGraphicsManager, *mPhysicsManager);
 		fe::collision::QuickHull qh(0.0001f);
-		fe::collision::HACD hacd(0.003f, 0.0001f);
+		fe::collision::HACD hacd(0.002f, 0.0002f);
 
 		std::shared_ptr<fe::graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
 		std::vector<std::shared_ptr<fe::loaders::RawMesh>> fileRawMeshes;
@@ -371,10 +483,11 @@ namespace game {
 				mEntities.push_back(std::move(building));
 			}
 			else if (i == 0) {// FIXME: infinite loop
-				hacd.calculate( createHEMesh(rawMesh) );
+				hacd.calculate( createTestTube1()/*createHEMesh(rawMesh) */);
 				for (const fe::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
 					auto building = std::make_unique<fe::app::Entity>("building");
 					building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+					building->position = glm::vec3(0.0f, 2.0f, -100.0f);
 
 					// auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
 					// 	fe::physics::RigidBody(),

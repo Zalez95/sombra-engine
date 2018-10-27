@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include "fe/collision/HalfEdgeMeshExt.h"
 #include "Polytope.h"
 #include "Geometry.h"
 

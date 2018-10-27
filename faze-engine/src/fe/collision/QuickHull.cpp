@@ -6,6 +6,7 @@
 #include <glm/gtc/epsilon.hpp>
 #include "fe/collision/AABB.h"
 #include "fe/collision/QuickHull.h"
+#include "fe/collision/HalfEdgeMeshExt.h"
 
 namespace fe { namespace collision {
 
@@ -27,6 +28,14 @@ namespace fe { namespace collision {
 		}
 		else {
 			calculateQuickHull3D(originalMesh, iSimplexVertices);
+		}
+
+		// Remove the vertices without HEEdge that has been left alone in the
+		// merge HEFace steps
+		for (auto itVertex = mConvexHullMesh.vertices.begin(); itVertex != mConvexHullMesh.vertices.end(); ++itVertex) {
+			if (itVertex->edge < 0) {
+				removeVertex(mConvexHullMesh, itVertex.getIndex());
+			}
 		}
 	}
 

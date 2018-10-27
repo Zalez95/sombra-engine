@@ -1,4 +1,5 @@
 #include <limits>
+#include "fe/collision/HalfEdgeMeshExt.h"
 #include "fe/collision/ConvexPolyhedron.h"
 
 namespace fe { namespace collision {

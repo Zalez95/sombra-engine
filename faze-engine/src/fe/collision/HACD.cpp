@@ -5,6 +5,7 @@
 #include <glm/gtc/constants.hpp>
 #include "fe/collision/HACD.h"
 #include "fe/collision/QuickHull.h"
+#include "fe/collision/HalfEdgeMeshExt.h"
 #include "Geometry.h"
 
 namespace fe { namespace collision {

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "fe/collision/Contact.h"
 #include "fe/collision/ConvexCollider.h"
+#include "fe/collision/HalfEdgeMeshExt.h"
 #include "fe/collision/FineCollisionDetector.h"
 #include "Polytope.h"
 

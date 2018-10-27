@@ -1,4 +1,5 @@
 #include "TestMeshes.h"
+#include <fe/collision/HalfEdgeMeshExt.h>
 
 fe::collision::HalfEdgeMesh createTestPolyhedron1()
 {

@@ -8,7 +8,6 @@
 namespace fe { namespace collision {
 
 	using NormalMap = std::map<int, glm::vec3>;
-	struct AABB;
 
 
 	/**
@@ -69,7 +68,7 @@ namespace fe { namespace collision {
 
 
 	/**
-	 * Struct HalfEdgeMesh, it holds the data of a 3D Mesh in a Half-Edge
+	 * Struct HalfEdgeMesh, it holds the data of a 3D mesh in a Half-Edge
 	 * data structure so we can store the adjacency of the Faces and Edges
 	 * for faster computations.
 	 *
@@ -79,13 +78,13 @@ namespace fe { namespace collision {
 	 */
 	struct HalfEdgeMesh
 	{
-		/** The HEVertices of the Mesh */
+		/** The HEVertices of the HalfEdgeMesh */
 		ContiguousVector<HEVertex> vertices;
 
-		/** The HEEdges of the Mesh */
+		/** The HEEdges of the HalfEdgeMesh */
 		ContiguousVector<HEEdge> edges;
 
-		/** The HEFaces of the Mesh */
+		/** The HEFaces of the HalfEdgeMesh */
 		ContiguousVector<HEFace> faces;
 
 		/** Maps two HEVertex indices with the HEEdge that references them */
@@ -93,26 +92,48 @@ namespace fe { namespace collision {
 	};
 
 
-	/** Adds the given point as a new HEVertex in the Mesh
+	/** Adds the given point as a new HEVertex in the HalfEdgeMesh
 	 *
-	 * @param	meshData the Mesh to add the HEVertex
+	 * @param	meshData the HalfEdgeMesh to add the HEVertex
 	 * @param	point the 3D coordintes of the new HEVertex
 	 * @return	the index of the new HEVertex */
 	int addVertex(HalfEdgeMesh& meshData, const glm::vec3& point);
 
 
 	/** Removes the given HEVertex and the HEFaces and HEEdges that
-	 * references it from the given Mesh
+	 * references it from the given HalfEdgeMesh
 	 *
-	 * @param	meshData the Mesh where the HEVertex is located in
+	 * @param	meshData the HalfEdgeMesh where the HEVertex is located in
 	 * @param	iVertex the index of the HEVertex to remove */
 	void removeVertex(HalfEdgeMesh& meshData, int iVertex);
 
 
-	/** Creates a new HEFace from the given HEVertex indices and adds it
-	 * to the Mesh
+	/** Creates a new HEEdge from the given HEVertex indices and adds it
+	 * to the HalfEdgeMesh
 	 *
-	 * @param	meshData the Mesh to add the HEFace
+	 * @param	meshData the HalfEdgeMesh to add the HEEdge
+	 * @param	iVertex1 the index of first HEVertex of the HalfEdgeMesh
+	 * @param	iVertex2 the index of second HEVertex of the HalfEdgeMesh. It's
+	 *			the HEVertex towards the new HEEdge will point to
+	 * @return	the index of the new HEEdge, -1 if there already is another
+	 *			HEEdge with the same indices in the HalfEdgeMesh */
+	int addEdge(HalfEdgeMesh& meshData, int iVertex1, int iVertex2);
+
+
+	/** Removes the given HEEdge from the given HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
+	 * @param	iEdge the index of the HEEdge to remove
+	 * @note	the HEEdge will only be removed if its opposite one hasn't
+	 *			setted its HEFace, otherwise it will only update its data
+	 *			(remove the loop data and the HEFace index) */
+	void removeEdge(HalfEdgeMesh& meshData, int iEdge);
+
+
+	/** Creates a new HEFace from the given HEVertex indices and adds it
+	 * to the HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh to add the HEFace
 	 * @param	vertexIndices the indices of the HEVertex of the new HEFace
 	 * @return	the index of the new HEFace, -1 if the number of HEVertices is
 	 *			less than 3 */
@@ -120,20 +141,17 @@ namespace fe { namespace collision {
 
 
 	/** Removes the given HEFace and the HEEdges that references it from the
-	 * given Mesh
+	 * given HalfEdgeMesh
 	 *
-	 * @param	meshData the Mesh where the HEFace is located in
-	 * @param	iFace the index of the HEFace to remove
-	 * @note	the HEEdges of the HEEFace will only be removed if its
-	 *			opposite one hasn't setted its HEFace, otherwise it will
-	 *			only update its internal data (remove the loop data and the
-	 *			face) */
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace to remove */
 	void removeFace(HalfEdgeMesh& meshData, int iFace);
 
 
-	/** Merges the given two HEFaces into a single one
+	/** Merges the given two HEFaces into a single one by their longest shared
+	 * HEEdge loop section
 	 *
-	 * @param	meshData the Mesh where the HEFaces are located in
+	 * @param	meshData the HalfEdgeMesh where the HEFaces are located in
 	 * @param	iFace1 the first of the HEFaces to merge. This HEFace will
 	 *			be the one preserved
 	 * @param	iFace2 the second of the HEFaces to merge. This HEFace will
@@ -143,105 +161,12 @@ namespace fe { namespace collision {
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2);
 
 
-	/** Creates a new HalfEdgeMesh from the given one with its the polygon
-	 * HEFaces converted to triangles
-	 *
-	 * @param	originalMesh the Mesh where the HEFaces are located in
-	 * @return	
-	 * @note	we will use the ear clipping method, which only works with
-	 *			convex polygons (The HEFaces are ensured to be convex if we
-	 *			had added them with the addFace method) */
-	HalfEdgeMesh triangulateFaces(const HalfEdgeMesh& originalMesh);
-
-
 	/** Returns the HEVertex indices of the given HEFace
 	 *
-	 * @param	meshData the Mesh where the HEFace is located in
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
 	 * @param	iFace the index of the HEFace
 	 * @return	a vector with the indices of the HEFace's HEVertices */
 	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
-
-
-	/** Calculates the normal vector of the mesh surface at the given HEVertex
-	 *
-	 * @note	the normal vector is calculated from the normals of the faces
-	 *			that share the vertex without any kind of normalization
-	 * @param	meshData the mesh that holds the HEVertex
-	 * @param	faceNormals a map with the normals of each HEFace of the mesh
-	 * @param	iVertex the index of the HEVertex where we want to calculate
-	 *			the normal vector
-	 * @return	the normal vector */
-	glm::vec3 calculateVertexNormal(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
-		int iVertex
-	);
-
-
-	/** Calculates the normal of the given HEFace
-	 *
-	 * @param	meshData the Mesh where the HEFace is located in
-	 * @param	iFace the index of the HEFace
-	 * @return	the normal of the HEFace */
-	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace);
-
-
-	/** Calculates the furthest point of the Mesh in the given direction with
-	 * the Hill-Climbing algorithm
-	 *
-	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
-	 * @param	direction the direction in which we are going to search
-	 * @return	the index of the furthest Mesh HEVertex
-	 * @note	the Mesh must be convex, otherwise the furthest point found
-	 *			could be a local maximum */
-	int getFurthestVertexInDirection(
-		const HalfEdgeMesh& meshData,
-		const glm::vec3& direction
-	);
-
-
-	/** Calculates the boundary of the given HalfEdgeMesh as seen from the given
-	 * eye point
-	 *
-	 * @param	meshData the Mesh that holds the HEVertices and HEFaces
-	 * @param	faceNormals the normals of each HEFace
-	 * @param	eyePoint the 3D coordinates of the eye point
-	 * @param	iInitialFace the index of the initial HEFace from which we will
-	 *			start searching
-	 * @return	a pair with the list of HEEdge indices that represents the
-	 *			boundary of the ConvexHull and the list of HEFace indices with
-	 *			the visible HEFaces
-	 * @note	the initial HEFace must be visible from the eyePoint
-	 *			perspective */
-	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
-		const glm::vec3& eyePoint, int iInitialFace
-	);
-
-
-	/** Calculates the intersection of the given ray with the given mesh
-	 *
-	 * @param	meshData the convex Mesh to project the point on. The
-	 *			points of its faces must lie in the same plane
-	 * @param	faceNormals a map with the normals of each HEFace of the
-	 *			mesh
-	 * @param	origin the origin of the ray. It must be inside of the mesh
-	 * @param	direction the direction of the ray
-	 * @param	epsilon the epsilon value used for checking if a ray intersects
-	 *			a HEFace
-	 * @return	a pair with a flag that tells if the ray intersects the
-	 *			mesh and the 3D coordinates of the intersection point */
-	std::pair<bool, glm::vec3> raycastMesh(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
-		const glm::vec3& origin, const glm::vec3& direction,
-		float epsilon
-	);
-
-
-	/** Calculates the Axis Aligned Bounding Box of the given HalfEdgeMesh
-	 *
-	 * @param	meshData the HalfEdgeMesh to calculate its AABB
-	 * @return	the AABB of the HalfEdgeMesh */
-	AABB calculateAABB(const HalfEdgeMesh& meshData);
 
 }}
 
