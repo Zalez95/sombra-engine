@@ -50,7 +50,9 @@ namespace fe { namespace physics {
 		/** The linear velocity of the RigidBody in world space */
 		glm::vec3 linearVelocity;
 
-		/** The angular velocity of the RigidBody in world space */
+		/** The angular velocity of the RigidBody in world space represented as
+		 * a scaled vector, where the magnitude is the rotation rate around the
+		 * normalized axis */
 		glm::vec3 angularVelocity;
 
 		/** The linear acceleration of the RigidBody in world space */

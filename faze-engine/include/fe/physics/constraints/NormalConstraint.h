@@ -7,11 +7,18 @@
 namespace fe { namespace physics {
 
 	/**
-	 * Class NormalConstraint, TODO: complete documentation
+	 * Class NormalConstraint, its used to push the given RigidBodies appart
+	 * from each other
 	 */
 	class NormalConstraint : public Constraint
 	{
 	private:	// Attributes
+		/** The ConstraintBounds of all the NormalConstraints */
+		static constexpr ConstraintBounds kConstraintBounds = {
+			0.0f,
+			std::numeric_limits<float>::max()
+		};
+
 		/** The positions of the RigidBodies that will be affected by the
 		 * constraint in local space */
 		std::array<glm::vec3, 2> mConstraintPoints;
@@ -32,18 +39,15 @@ namespace fe { namespace physics {
 	public:		// Functions
 		/** Creates a new NormalConstraint
 		 *
-		 * @param	constraintBounds a pointer to the bounds of the Constraint
 		 * @param	rigidBodies the two rigidBodies affected by the
 		 *			Constraint
 		 * @param	beta the velocity at which is going to be solved constraint
 		 * @note	the movements of the RigidBodies will be restricted
 		 *			relative to its origins */
 		NormalConstraint(
-			const ConstraintBounds* constraintBounds,
 			const std::array<RigidBody*, 2>& rigidBodies,
 			float beta
-		) : Constraint(constraintBounds, rigidBodies),
-			mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
+		);
 
 		/** Class destructor */
 		~NormalConstraint() {};

@@ -7,7 +7,6 @@
 
 namespace fe { namespace physics {
 
-	constexpr ConstraintBounds PhysicsEngine::kCollisionConstraintBounds;
 	constexpr float PhysicsEngine::kCollisionConstraintBeta;
 
 
@@ -90,7 +89,7 @@ namespace fe { namespace physics {
 					it = mContactConstraints.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(&contact),
-						std::forward_as_tuple(&kCollisionConstraintBounds, std::array<RigidBody*, 2>{ rb1, rb2 }, kCollisionConstraintBeta)
+						std::forward_as_tuple(std::array<RigidBody*, 2>{ rb1, rb2 }, kCollisionConstraintBeta)
 					).first;
 					mConstraintManager.addConstraint(&it->second);
 				}

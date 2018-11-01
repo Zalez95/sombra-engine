@@ -17,12 +17,14 @@ namespace fe { namespace physics {
 	 */
 	class ConstraintManager
 	{
-	private:	// Constants
+	private:	// Nested types
+		using vec12 = std::array<float, 12>;
+
+	private:	// Attributes
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run */
 		static constexpr int kMaxIterations = 16;
 
-	private:	// Attributes
 		/** The vector that holds the registered Constraints in the
 		 * ConstraintManager */
 		std::vector<Constraint*> mConstraints;
@@ -71,7 +73,7 @@ namespace fe { namespace physics {
 		 * with a size of (number of Constraints) by 6*(number of RigidBodies),
 		 * but in our case it's represented by 12*(number of Constraints)
 		 * floats so we can access to its data with the ConstraintRBMap. */
-		std::vector<std::array<float, 12>> mJacobianMatrix;
+		std::vector<vec12> mJacobianMatrix;
 
 	public:		// Constraints
 		/** Creates a new ConstraintManager */
@@ -114,21 +116,48 @@ namespace fe { namespace physics {
 		void updateJacobianMatrix();
 
 		/** Runs the Gauss-Seidel algorithm for solving:
-		 * jacobianMat * bMat * lambdaMat = hMat
+		 * mJacobianMatrix * bMatrix * mLambdaMatrix = etaMatrix
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
 		void solveConstraints(float deltaTime);
 
-		std::vector<std::array<float, 12>> getBMatrix() const;
-		std::vector<float> getHMatrix(float deltaTime) const;
-		std::vector<float> getAMatrix(
-			const std::vector<std::array<float, 12>>& bMatrix,
+		/** Calculates the transposed B matrix which is equal to
+		 * mInverseMassMatrix * transpose(mJacobianMatrix)
+		 *
+		 * @return	the transposed B matrix. Its size is
+		 *			(number of Constraints)*12 */
+		std::vector<vec12> calculateBMatrix() const;
+
+		/** Calculates the Eta Matrix, which is equal to
+		 * mBiasMatrix / deltaTime - mJacobianMatrix *
+		 * (mVelocityMatrix / deltaTime + mInverseMassMatrix * mForceExtMatrix)
+		 *
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds
+		 * @return	the Eta matrix. Its size is (number of Constraints) */
+		std::vector<float> calculateEtaMatrix(float deltaTime) const;
+
+		/** Calculates the A matrix which is equal to
+		 * B * lambda
+		 *
+		 * @param	bMatrix the transposed B matrix
+		 * @param	lambdaMatrix the lambda matrix
+		 * @return	the A matrix. Its size is 6*(number of RigidBodies) */
+		std::vector<float> calculateAMatrix(
+			const std::vector<vec12>& bMatrix,
 			const std::vector<float>& lambdaMatrix
 		) const;
-		std::vector<float> getDMatrix(
-			const std::vector<std::array<float, 12>>& bMatrix,
-			const std::vector<std::array<float, 12>>& jacobianMatrix
+
+		/** Calculates the D matrix, which is equal to,
+		 * mJacobianMatrix * bMatrix
+		 *
+		 * @param	bMatrix the transposed B matrix
+		 * @param	jacobianMatrix the jacobian matrix
+		 * @return	the D matrix. Its size is (number of Constraints) */
+		std::vector<float> calculateDMatrix(
+			const std::vector<vec12>& bMatrix,
+			const std::vector<vec12>& jacobianMatrix
 		) const;
 
 		/** Updates the velocity and position of the RigidBodies with the

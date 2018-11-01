@@ -92,7 +92,7 @@ namespace fe { namespace physics {
 		updateForceExtMatrix();
 		updateJacobianMatrix();
 
-		// 2. Solve: jacobianMat * bMat * lambdaMat = hMat
+		// 2. Solve: mJacobianMatrix * bMatrix * mLambdaMatrix = etaMatrix
 		solveConstraints(deltaTime);
 
 		// 3. Update the velocity and position of the RigidBodies
@@ -137,7 +137,7 @@ namespace fe { namespace physics {
 
 	void ConstraintManager::updateJacobianMatrix()
 	{
-		mJacobianMatrix = std::vector<std::array<float, 12>>();
+		mJacobianMatrix = std::vector<vec12>();
 		mJacobianMatrix.reserve(mConstraints.size());
 
 		for (const Constraint* c : mConstraints) {
@@ -148,36 +148,36 @@ namespace fe { namespace physics {
 
 	void ConstraintManager::solveConstraints(float deltaTime)
 	{
-		auto bMat = getBMatrix();
-		auto hMat = getHMatrix(deltaTime);
+		auto bMatrix = calculateBMatrix();
+		auto etaMatrix = calculateEtaMatrix(deltaTime);
 
-		auto aMat = getAMatrix(bMat, mLambdaMatrix);
-		auto dMat = getDMatrix(bMat, mJacobianMatrix);
+		auto aMatrix = calculateAMatrix(bMatrix, mLambdaMatrix);
+		auto dMatrix = calculateDMatrix(bMatrix, mJacobianMatrix);
 
 		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
 			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-				float ja1 = std::inner_product(mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6, aMat.begin() + 6*iRB1, 0.0f);
-				float ja2 = std::inner_product(mJacobianMatrix[i].begin() + 6, mJacobianMatrix[i].end(), aMat.begin() + 6*iRB2, 0.0f);
-				float deltaLambda = (hMat[i] - ja1 - ja2) / dMat[i];
+				float ja1 = std::inner_product(mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6, aMatrix.begin() + 6*iRB1, 0.0f);
+				float ja2 = std::inner_product(mJacobianMatrix[i].begin() + 6, mJacobianMatrix[i].end(), aMatrix.begin() + 6*iRB2, 0.0f);
+				float deltaLambda = (etaMatrix[i] - ja1 - ja2) / dMatrix[i];
 
 				float oldLambda = mLambdaMatrix[i];
-				mLambdaMatrix[i] = std::max(mLambdaMinMatrix[i], std::min(mLambdaMatrix[i] + deltaLambda, mLambdaMaxMatrix[i]));
+				mLambdaMatrix[i] = std::max(mLambdaMinMatrix[i], std::min(oldLambda + deltaLambda, mLambdaMaxMatrix[i]));
 				deltaLambda = mLambdaMatrix[i] - oldLambda;
 
 				for (int j = 0; j < 6; ++j) {
-					aMat[6*iRB1 + j] += deltaLambda * bMat[i][j];
-					aMat[6*iRB2 + j] += deltaLambda * bMat[i][6 + j];
+					aMatrix[6*iRB1 + j] += deltaLambda * bMatrix[i][j];
+					aMatrix[6*iRB2 + j] += deltaLambda * bMatrix[i][6 + j];
 				}
 			}
 		}
 	}
 
 
-	std::vector<std::array<float, 12>> ConstraintManager::getBMatrix() const
+	std::vector<ConstraintManager::vec12> ConstraintManager::calculateBMatrix() const
 	{
-		std::vector<std::array<float, 12>> bMatrix(mConstraints.size());
+		std::vector<vec12> bMatrix(mConstraints.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			for (int j = 0; j < 2; ++j) {
@@ -203,15 +203,15 @@ namespace fe { namespace physics {
 	}
 
 
-	std::vector<float> ConstraintManager::getHMatrix(float deltaTime) const
+	std::vector<float> ConstraintManager::calculateEtaMatrix(float deltaTime) const
 	{
-		std::vector<float> hMatrix;
-		hMatrix.reserve(mConstraints.size());
+		std::vector<float> etaMatrix;
+		etaMatrix.reserve(mConstraints.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			float bias = mBiasMatrix[i];
 
-			std::array<float, 12> tmp;
+			vec12 tmp;
 			for (int j = 0; j < 2; ++j) {
 				int iRB = mConstraintRBMap[i][j];
 
@@ -233,15 +233,15 @@ namespace fe { namespace physics {
 				0.0f
 			);
 
-			hMatrix.push_back(currentH);
+			etaMatrix.push_back(currentH);
 		}
 
-		return hMatrix;
+		return etaMatrix;
 	}
 
 
-	std::vector<float> ConstraintManager::getAMatrix(
-		const std::vector<std::array<float, 12>>& bMatrix,
+	std::vector<float> ConstraintManager::calculateAMatrix(
+		const std::vector<ConstraintManager::vec12>& bMatrix,
 		const std::vector<float>& lambdaMatrix
 	) const
 	{
@@ -251,8 +251,8 @@ namespace fe { namespace physics {
 			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 			for (int j = 0; j < 6; ++j) {
-				aMatrix[6*iRB1 + j] += lambdaMatrix[i] * bMatrix[i][j];
-				aMatrix[6*iRB2 + j] += lambdaMatrix[i] * bMatrix[i][6 + j];
+				aMatrix[6*iRB1 + j] += bMatrix[i][j] * lambdaMatrix[i];
+				aMatrix[6*iRB2 + j] += bMatrix[i][6 + j] * lambdaMatrix[i];
 			}
 		}
 
@@ -260,9 +260,9 @@ namespace fe { namespace physics {
 	}
 
 
-	std::vector<float> ConstraintManager::getDMatrix(
-		const std::vector<std::array<float, 12>>& bMatrix,
-		const std::vector<std::array<float, 12>>& jacobianMatrix
+	std::vector<float> ConstraintManager::calculateDMatrix(
+		const std::vector<ConstraintManager::vec12>& bMatrix,
+		const std::vector<ConstraintManager::vec12>& jacobianMatrix
 	) const
 	{
 		std::vector<float> dMatrix;
@@ -282,13 +282,13 @@ namespace fe { namespace physics {
 
 	void ConstraintManager::updateRigidBodies(float deltaTime)
 	{
-		std::vector<float> jLambdaMat(6 * mRigidBodies.size());
+		std::vector<float> jLambdaMatrix(6 * mRigidBodies.size());
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 			for (int j = 0; j < 6; ++j) {
-				jLambdaMat[6*iRB1 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][j];
-				jLambdaMat[6*iRB2 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][6 + j];
+				jLambdaMatrix[6*iRB1 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][j];
+				jLambdaMatrix[6*iRB2 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][6 + j];
 			}
 		}
 
@@ -297,7 +297,7 @@ namespace fe { namespace physics {
 				const glm::vec3& v1				= mVelocityMatrix[2*i + j];
 				const glm::vec3& forceExt		= mForceExtMatrix[2*i + j];
 				const glm::mat3& inverseMass	= mInverseMassMatrix[2*i + j];
-				const glm::vec3 jLambda(jLambdaMat[6*i + 3*j], jLambdaMat[6*i + 3*j + 1], jLambdaMat[6*i + 3*j + 2]);
+				const glm::vec3 jLambda(jLambdaMatrix[6*i + 3*j], jLambdaMatrix[6*i + 3*j + 1], jLambdaMatrix[6*i + 3*j + 2]);
 
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {

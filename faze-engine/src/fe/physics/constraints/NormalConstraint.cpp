@@ -3,6 +3,14 @@
 
 namespace fe { namespace physics {
 
+	constexpr ConstraintBounds NormalConstraint::kConstraintBounds;
+
+
+	NormalConstraint::NormalConstraint(const std::array<RigidBody*, 2>& rigidBodies, float beta) :
+		Constraint(&kConstraintBounds, rigidBodies),
+		mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {}
+
+
 	float NormalConstraint::getBias() const
 	{
 		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintPoints[0];

@@ -20,16 +20,10 @@ namespace fe { namespace physics {
 	 */
 	class PhysicsEngine
 	{
-	private:	// Constants
-		/** The CounstraintBounds shared by all the NormalConstraints */
-		static constexpr ConstraintBounds kCollisionConstraintBounds = {
-			0.0f, std::numeric_limits<float>::max()
-		};
-
+	private:	// Attributes
 		/** The velocity of the constraint resolution process */
 		static constexpr float kCollisionConstraintBeta = 1.1f;
 
-	private:	// Attributes
 		/** The ForceManager of the PhysicsEngine. It's used to store the
 		 * relationships between the PhysicsEntities and the Forces and
 		 * applying them */
