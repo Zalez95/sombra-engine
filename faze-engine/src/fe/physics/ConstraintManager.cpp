@@ -92,8 +92,11 @@ namespace fe { namespace physics {
 		updateForceExtMatrix();
 		updateJacobianMatrix();
 
-		// 2. Solve: mJacobianMatrix * bMatrix * mLambdaMatrix = etaMatrix
-		solveConstraints(deltaTime);
+		// 2. Solve the lambda values in:
+		// mJacobianMatrix * mInverseMassMatrix * transpose(mJacobianMatrix)
+		//	* mLambdaMatrix = etaMatrix
+		// With the Gauss-Seidel algorithm
+		calculateGaussSeidel(deltaTime);
 
 		// 3. Update the velocity and position of the RigidBodies
 		updateRigidBodies(deltaTime);
@@ -146,60 +149,77 @@ namespace fe { namespace physics {
 	}
 
 
-	void ConstraintManager::solveConstraints(float deltaTime)
+	void ConstraintManager::calculateGaussSeidel(float deltaTime)
 	{
-		auto bMatrix = calculateBMatrix();
-		auto etaMatrix = calculateEtaMatrix(deltaTime);
+		const std::vector<float> etaMatrix = calculateEtaMatrix(deltaTime);
+		const std::vector<vec12> invMassJacobianMatrix = calculateInvMassJacobianMatrix();
 
-		auto aMatrix = calculateAMatrix(bMatrix, mLambdaMatrix);
-		auto dMatrix = calculateDMatrix(bMatrix, mJacobianMatrix);
+		// The factorization is for skipping the storage of the matrix
+		// mJacobianMatrix * mInverseMassMatrix * transpose(mJacobianMatrix)
+		// which is too big, by exploiting the sparsity of invMassJacobianMatrix
+		// and mJacobian matrices
+		const std::vector<float> diagonalJInvMJMatrix = calculateDiagonalJInvMJMatrix(mJacobianMatrix, invMassJacobianMatrix);
+		std::vector<float> invMJLambdaMatrix = calculateInvMJLambdaMatrix(invMassJacobianMatrix, mLambdaMatrix);
 
+		// We use a fixed number of iterations for the Gauss-Seidel algorithm
 		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
 			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-				float ja1 = std::inner_product(mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6, aMatrix.begin() + 6*iRB1, 0.0f);
-				float ja2 = std::inner_product(mJacobianMatrix[i].begin() + 6, mJacobianMatrix[i].end(), aMatrix.begin() + 6*iRB2, 0.0f);
-				float deltaLambda = (etaMatrix[i] - ja1 - ja2) / dMatrix[i];
+				// Calculate the current change to lambda
+				float curJInvMJLambda = std::inner_product(
+					mJacobianMatrix[i].begin(), mJacobianMatrix[i].begin() + 6,
+					invMJLambdaMatrix.begin() + 6*iRB1,
+					0.0f
+				);
+				curJInvMJLambda += std::inner_product(
+					mJacobianMatrix[i].begin() + 6, mJacobianMatrix[i].end(),
+					invMJLambdaMatrix.begin() + 6*iRB2,
+					0.0f
+				);
 
+				float deltaLambda = (etaMatrix[i] - curJInvMJLambda) / diagonalJInvMJMatrix[i];
+
+				// Clamp the change to lambda to the Constraint lambda bounds
 				float oldLambda = mLambdaMatrix[i];
 				mLambdaMatrix[i] = std::max(mLambdaMinMatrix[i], std::min(oldLambda + deltaLambda, mLambdaMaxMatrix[i]));
-				deltaLambda = mLambdaMatrix[i] - oldLambda;
 
+				// Update the invMJLambdaMatrix with the current change
+				deltaLambda = mLambdaMatrix[i] - oldLambda;
 				for (int j = 0; j < 6; ++j) {
-					aMatrix[6*iRB1 + j] += deltaLambda * bMatrix[i][j];
-					aMatrix[6*iRB2 + j] += deltaLambda * bMatrix[i][6 + j];
+					invMJLambdaMatrix[6*iRB1 + j] += deltaLambda * invMassJacobianMatrix[i][j];
+					invMJLambdaMatrix[6*iRB2 + j] += deltaLambda * invMassJacobianMatrix[i][6 + j];
 				}
 			}
 		}
 	}
 
 
-	std::vector<ConstraintManager::vec12> ConstraintManager::calculateBMatrix() const
+	std::vector<ConstraintManager::vec12> ConstraintManager::calculateInvMassJacobianMatrix() const
 	{
-		std::vector<vec12> bMatrix(mConstraints.size());
+		std::vector<vec12> invMassJacobianMatrix(mConstraints.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			for (int j = 0; j < 2; ++j) {
 				int iRB = mConstraintRBMap[i][j];
 
 				for (int k = 0; k < 2; ++k) {
-					const glm::mat3& inverseMass	= mInverseMassMatrix[2*iRB + k];
-					const glm::vec3 jacobian		= glm::vec3(
+					const glm::mat3& inverseMass = mInverseMassMatrix[2*iRB + k];
+					const glm::vec3 jacobian = glm::vec3(
 						mJacobianMatrix[i][6*j + 3*k],
 						mJacobianMatrix[i][6*j + 3*k + 1],
 						mJacobianMatrix[i][6*j + 3*k + 2]
 					);
 
-					const glm::vec3 curB = inverseMass * jacobian;
-					bMatrix[i][6*j + 3*k]		= curB.x;
-					bMatrix[i][6*j + 3*k + 1]	= curB.y;
-					bMatrix[i][6*j + 3*k + 2]	= curB.z;
+					const glm::vec3 curInvMassJacobian = inverseMass * jacobian;
+					invMassJacobianMatrix[i][6*j + 3*k]		= curInvMassJacobian.x;
+					invMassJacobianMatrix[i][6*j + 3*k + 1]	= curInvMassJacobian.y;
+					invMassJacobianMatrix[i][6*j + 3*k + 2]	= curInvMassJacobian.z;
 				}
 			}
 		}
 
-		return bMatrix;
+		return invMassJacobianMatrix;
 	}
 
 
@@ -211,72 +231,72 @@ namespace fe { namespace physics {
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			float bias = mBiasMatrix[i];
 
-			vec12 tmp;
+			vec12 extAccelerations;
 			for (int j = 0; j < 2; ++j) {
 				int iRB = mConstraintRBMap[i][j];
 
 				for (int k = 0; k < 2; ++k) {
 					const glm::vec3& velocity		= mVelocityMatrix[2*iRB + k];
-					const glm::vec3& forceExt		= mForceExtMatrix[2*iRB + k];
 					const glm::mat3& inverseMass	= mInverseMassMatrix[2*iRB + k];
+					const glm::vec3& forceExt		= mForceExtMatrix[2*iRB + k];
 
-					const glm::vec3 toInsert = velocity / deltaTime + inverseMass * forceExt;
-					tmp[6*j + 3*k]		= toInsert.x;
-					tmp[6*j + 3*k + 1]	= toInsert.y;
-					tmp[6*j + 3*k + 2]	= toInsert.z;
+					const glm::vec3 extAcceleration = velocity / deltaTime + inverseMass * forceExt;
+					extAccelerations[6*j + 3*k]		= extAcceleration.x;
+					extAccelerations[6*j + 3*k + 1]	= extAcceleration.y;
+					extAccelerations[6*j + 3*k + 2]	= extAcceleration.z;
 				}
 			}
 
-			float currentH = bias / deltaTime - std::inner_product(
+			float currentEta = bias / deltaTime - std::inner_product(
 				mJacobianMatrix[i].begin(), mJacobianMatrix[i].end(),
-				tmp.begin(),
+				extAccelerations.begin(),
 				0.0f
 			);
 
-			etaMatrix.push_back(currentH);
+			etaMatrix.push_back(currentEta);
 		}
 
 		return etaMatrix;
 	}
 
 
-	std::vector<float> ConstraintManager::calculateAMatrix(
-		const std::vector<ConstraintManager::vec12>& bMatrix,
+	std::vector<float> ConstraintManager::calculateInvMJLambdaMatrix(
+		const std::vector<ConstraintManager::vec12>& invMassJacobianMatrix,
 		const std::vector<float>& lambdaMatrix
 	) const
 	{
-		std::vector<float> aMatrix(6 * mRigidBodies.size());
+		std::vector<float> invMJLambdaMatrix(6 * mRigidBodies.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 			for (int j = 0; j < 6; ++j) {
-				aMatrix[6*iRB1 + j] += bMatrix[i][j] * lambdaMatrix[i];
-				aMatrix[6*iRB2 + j] += bMatrix[i][6 + j] * lambdaMatrix[i];
+				invMJLambdaMatrix[6*iRB1 + j] += invMassJacobianMatrix[i][j] * lambdaMatrix[i];
+				invMJLambdaMatrix[6*iRB2 + j] += invMassJacobianMatrix[i][6 + j] * lambdaMatrix[i];
 			}
 		}
 
-		return aMatrix;
+		return invMJLambdaMatrix;
 	}
 
 
-	std::vector<float> ConstraintManager::calculateDMatrix(
-		const std::vector<ConstraintManager::vec12>& bMatrix,
-		const std::vector<ConstraintManager::vec12>& jacobianMatrix
+	std::vector<float> ConstraintManager::calculateDiagonalJInvMJMatrix(
+		const std::vector<ConstraintManager::vec12>& jacobianMatrix,
+		const std::vector<ConstraintManager::vec12>& invMassJacobianMatrix
 	) const
 	{
-		std::vector<float> dMatrix;
-		dMatrix.reserve(mConstraints.size());
+		std::vector<float> diagonalJInvMJ;
+		diagonalJInvMJ.reserve(mConstraints.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
-			dMatrix.push_back(std::inner_product(
+			diagonalJInvMJ.push_back(std::inner_product(
 				jacobianMatrix[i].begin(), jacobianMatrix[i].end(),
-				bMatrix[i].begin(),
+				invMassJacobianMatrix[i].begin(),
 				0.0f
 			));
 		}
 
-		return dMatrix;
+		return diagonalJInvMJ;
 	}
 
 

@@ -11,6 +11,7 @@
 #include "fe/app/InputManager.h"
 #include "fe/app/GraphicsManager.h"
 #include "fe/app/PhysicsManager.h"
+#include "fe/app/CollisionManager.h"
 #include "fe/app/AudioManager.h"
 
 namespace fe { namespace app {
@@ -34,6 +35,10 @@ namespace fe { namespace app {
 			mPhysicsEngine = new physics::PhysicsEngine();
 			mPhysicsManager = new PhysicsManager(*mPhysicsEngine);
 
+			// Collision
+			mCollisionDetector = new collision::CollisionDetector();
+			mCollisionManager = new CollisionManager(*mCollisionDetector, *mPhysicsEngine);
+
 			// Audio
 			mAudioEngine = new audio::AudioEngine();
 			mAudioManager = new AudioManager(*mAudioEngine);
@@ -52,6 +57,8 @@ namespace fe { namespace app {
 	{
 		delete mAudioManager;
 		delete mAudioEngine;
+		delete mCollisionManager;
+		delete mCollisionDetector;
 		delete mPhysicsManager;
 		delete mPhysicsEngine;
 		delete mGraphicsManager;
@@ -90,7 +97,9 @@ namespace fe { namespace app {
 					mState = AppState::STOPPED;
 				}
 				mInputManager->update();
-				mPhysicsManager->update(deltaTime);
+				mPhysicsManager->doDynamics(deltaTime);
+				mCollisionManager->update(deltaTime);
+				mPhysicsManager->doConstraints(deltaTime);
 				mAudioManager->update();
 				mGraphicsManager->update();
 

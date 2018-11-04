@@ -7,6 +7,7 @@
 #include <fe/app/InputManager.h>
 #include <fe/app/GraphicsManager.h>
 #include <fe/app/PhysicsManager.h>
+#include <fe/app/CollisionManager.h>
 #include <fe/app/AudioManager.h>
 
 #include <fe/graphics/Texture.h>
@@ -28,9 +29,9 @@
 #include <fe/collision/HACD.h>
 
 #include <fe/physics/PhysicsEngine.h>
-#include <fe/physics/PhysicsEntity.h>
 #include <fe/physics/RigidBody.h>
 #include <fe/physics/forces/Gravity.h>
+#include <fe/physics/constraints/DistanceConstraint.h>
 
 #include <fe/audio/Buffer.h>
 #include <fe/audio/Source.h>
@@ -60,18 +61,6 @@ namespace game {
 	const unsigned int Game::sNumCubes	= 50;
 
 // Public functions
-	Game::Game() : fe::app::Application(sTitle, sWidth, sHeight, sUpdateTime)
-	{
-		mGraphicsSystem->addLayer(&mLayer2D);
-	}
-
-
-	Game::~Game()
-	{
-		mGraphicsSystem->removeLayer(&mLayer2D);
-	}
-
-
 	fe::collision::HalfEdgeMesh createHEMesh(const fe::loaders::RawMesh& rawMesh)
 	{
 		fe::collision::HalfEdgeMesh heMesh;
@@ -226,6 +215,8 @@ namespace game {
 
 	void Game::init()
 	{
+		mGraphicsSystem->addLayer(&mLayer2D);
+
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
@@ -380,19 +371,17 @@ namespace game {
 		auto player	= std::make_unique<fe::app::Entity>("player");
 		player->position = glm::vec3(0, 1, 10);
 
-		auto physicsEntity1 = std::make_unique<fe::physics::PhysicsEntity>(
-			fe::physics::RigidBody(
-				40.0f, 0.01f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.01f
-			),
-			std::make_unique<fe::collision::BoundingSphere>(0.5f), glm::mat4(1.0f)
-			//std::make_unique<fe::collision::BoundingBox>(glm::vec3(1, 1, 1)), glm::mat4(1.0f)
+		auto rigidBody1 = std::make_unique<fe::physics::RigidBody>(
+			40.0f, 0.01f,
+			2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.01f
 		);
+		auto collider1 = std::make_unique<fe::collision::BoundingSphere>(0.5f);
+		mCollisionManager->addEntity(player.get(), std::move(collider1), rigidBody1.get());
+		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
 
-		mInputManager->addEntity(player.get());
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
-		mPhysicsManager->addEntity(player.get(), std::move(physicsEntity1));
 		mAudioManager->setListener(player.get());
+		mInputManager->addEntity(player.get());
 
 		mEntities.push_back(std::move(player));
 
@@ -410,22 +399,31 @@ namespace game {
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
+		fe::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("non-random-cube");
 			cube->position = cubePositions[i];
 
-			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
-				fe::physics::RigidBody(
-					20.0f, 0.95f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.95f
-				),
-				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
+			auto rigidBody2 = std::make_unique<fe::physics::RigidBody>(
+				20.0f, 0.95f,
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.95f
 			);
-			if (i == 2) { mAudioManager->addSource(cube.get(), std::move(source1)); }
-			if (i == 3) { physicsEntityCube2->getRigidBody()->angularVelocity = glm::vec3(0, 10, 0); }
-			if (i == 4) { cube->velocity += glm::vec3(-1, 0, 0); }
-
-			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
+			if (i == 1) {
+				rb1 = rigidBody2.get();
+			}
+			if (i == 2) {
+				mAudioManager->addSource(cube.get(), std::move(source1));
+			}
+			if (i == 3) {
+				rigidBody2->angularVelocity = glm::vec3(0, 10, 0);
+			}
+			if (i == 4) {
+				cube->velocity += glm::vec3(-1, 0, 0);
+				rb2 = rigidBody2.get();
+			}
+			auto collider2 = std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1));
+			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
+			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4(1.0f));
@@ -433,19 +431,43 @@ namespace game {
 			mEntities.push_back(std::move(cube));
 		}
 
+		constraint = new fe::physics::DistanceConstraint({ rb1, rb2 });
+		mPhysicsEngine->getConstraintManager().addConstraint(constraint);
+
+		// HACD Tube
+		hacd.calculate( createTestTube1() );
+		for (const fe::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
+			auto building = std::make_unique<fe::app::Entity>("tube");
+			building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+			building->position = glm::vec3(0.0f, 2.0f, 75.0f);
+
+			auto tmpMaterial = std::make_shared<fe::graphics::Material>(
+				"tmp_material",
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
+				0.2f
+			);
+
+			std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh( createRawMesh(heMesh) );
+			auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
+			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+
+			mEntities.push_back(std::move(building));
+		}
+
 		// Random cubes
 		for (std::size_t i = 0; i < sNumCubes; ++i) {
 			auto cube = std::make_unique<fe::app::Entity>("random-cube");
 			cube->position = glm::ballRand(50.0f);
 
-			auto physicsEntityCube2 = std::make_unique<fe::physics::PhysicsEntity>(
-				fe::physics::RigidBody(
-					10.0f, 0.9f,
-					2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.9f
-				),
-				std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1)), glm::mat4(1.0f)
+			auto rigidBody2 = std::make_unique<fe::physics::RigidBody>(
+				10.0f, 0.9f,
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.9f
 			);
-			mPhysicsManager->addEntity(cube.get(), std::move(physicsEntityCube2));
+			auto collider2 = std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1));
+			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
+			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4(1.0f));
@@ -461,12 +483,10 @@ namespace game {
 				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 
 				qh.calculate( createHEMesh(rawMesh) );
-				auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
-					fe::physics::RigidBody(),
-					std::make_unique<fe::collision::ConvexPolyhedron>(qh.getMesh()),
-					glm::mat4(1.0f)
-				);
-				mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
+				auto rigidBody2 = std::make_unique<fe::physics::RigidBody>();
+				auto collider2 = std::make_unique<fe::collision::ConvexPolyhedron>(qh.getMesh());
+				mCollisionManager->addEntity(building.get(), std::move(collider2), rigidBody2.get());
+				mPhysicsManager->addEntity(building.get(), std::move(rigidBody2));
 
 				auto tmpMaterial = std::make_shared<fe::graphics::Material>(
 					"tmp_material",
@@ -475,41 +495,12 @@ namespace game {
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					0.2f
 				);
-
 				std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh( createRawMesh(qh.getMesh()) );
 				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
+
 				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
 
 				mEntities.push_back(std::move(building));
-			}
-			else if (i == 0) {// FIXME: infinite loop
-				hacd.calculate( createTestTube1()/*createHEMesh(rawMesh) */);
-				for (const fe::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
-					auto building = std::make_unique<fe::app::Entity>("building");
-					building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
-					building->position = glm::vec3(0.0f, 2.0f, -100.0f);
-
-					// auto physicsEntityMesh = std::make_unique<fe::physics::PhysicsEntity>(
-					// 	fe::physics::RigidBody(),
-					// 	std::make_unique<fe::collision::ConvexPolyhedron>(heMesh),
-					// 	glm::mat4(1.0f)
-					// );
-					// mPhysicsManager->addEntity(building.get(), std::move(physicsEntityMesh));
-
-					auto tmpMaterial = std::make_shared<fe::graphics::Material>(
-						"tmp_material",
-						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-						glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-						0.2f
-					);
-
-					std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh( createRawMesh(heMesh) );
-					auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, fe::graphics::RenderFlags::WIREFRAME | fe::graphics::RenderFlags::DISABLE_FACE_CULLING);
-					mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
-
-					mEntities.push_back(std::move(building));
-				}
 			}
 			else {
 				auto building = std::make_unique<fe::app::Entity>("building");
@@ -522,7 +513,6 @@ namespace game {
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					0.2f
 				);
-
 				std::shared_ptr<fe::graphics::Mesh> tmpGraphicsMesh = meshLoader.createMesh(rawMesh);
 				auto renderable3D2 = std::make_unique<fe::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr);
 				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
@@ -549,9 +539,13 @@ namespace game {
 		for (EntityUPtr& entity : mEntities) {
 			mInputManager->removeEntity(entity.get());
 			mPhysicsManager->removeEntity(entity.get());
+			mCollisionManager->removeEntity(entity.get());
 			mGraphicsManager->removeEntity(entity.get());
 		}
 		mEntities.clear();
+		delete constraint;
+
+		mGraphicsSystem->removeLayer(&mLayer2D);
 	}
 
 }

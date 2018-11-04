@@ -54,7 +54,7 @@ namespace fe { namespace physics {
 			mRigidBodies(rigidBodies) {};
 
 		/** Class destructor */
-		~Constraint() {};
+		virtual ~Constraint() {};
 
 		/** @return the a pointer to the ConstraintBounds of the Constraint */
 		inline const ConstraintBounds* getConstraintBounds() const

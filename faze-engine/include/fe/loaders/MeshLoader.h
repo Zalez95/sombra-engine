@@ -17,7 +17,7 @@ namespace fe { namespace loaders {
 	class MeshLoader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<graphics::Mesh> MeshUPtr;
+		using MeshUPtr = std::unique_ptr<graphics::Mesh>;
 
 		/** The attribute indices of the Meshes */
 		enum Attributes : unsigned int

@@ -26,7 +26,7 @@ namespace fe { namespace collision {
 		/** If the calculated closest point is inside the face or not */
 		bool inside;
 
-		/** The barycentric coordinates of the cloest point in the face to
+		/** The barycentric coordinates of the closest point in the face to
 		 * the origin */
 		glm::vec3 closestPointBarycentricCoords;
 	};

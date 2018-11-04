@@ -5,7 +5,7 @@
 
 namespace fe { namespace physics {
 
-	class PhysicsEntity;
+	struct RigidBody;
 	class Force;
 
 
@@ -15,30 +15,30 @@ namespace fe { namespace physics {
 	class ForceManager
 	{
 	private:	// Nested types
-		/** Struct EntityForce, it's used to pair PhysicsEntities with Forces
+		/** Struct RBForce, it's used to pair RigidBodies with Forces
 		 * in the ForceManager */
-		struct EntityForce
+		struct RBForce
 		{
-			/** The entity that we want to pair */
-			PhysicsEntity* entity;
+			/** A pointer to the RigidBody that we want to pair */
+			RigidBody* rigidBody;
 
-			/** The force that we want to pair with the entity */
+			/** A pointer to the force that we want to pair */
 			Force* force;
 
-			/** Creates a new EntityForce
+			/** Creates a new RBForce
 			 *
-			 * @param	entity a pointer to the PhysicsEntity of EntityForce
-			 * @param	force a pointer to the Force of EntityForce */
-			EntityForce(PhysicsEntity* entity, Force* force) :
-				entity(entity), force(force) {};
+			 * @param	rigidBody a pointer to the RigidBody of RBForce
+			 * @param	force a pointer to the Force of RBForce */
+			RBForce(RigidBody* rigidBody, Force* force) :
+				rigidBody(rigidBody), force(force) {};
 
 			/** Destructor */
-			~EntityForce() {};
+			~RBForce() {};
 		};
 
 	private:	// Attributes
-		/** The vector that pairs the entities with the forces */
-		std::vector<EntityForce> mEntityForces;
+		/** The vector that pairs the RigidBodies with the Forces */
+		std::vector<RBForce> mRBForces;
 
 	public:		// Forces
 		/** Creates a new ForceManager */
@@ -47,21 +47,21 @@ namespace fe { namespace physics {
 		/** Class destructor */
 		~ForceManager() {};
 
-		/** Registers the given PhisicsEntity with the given Force, so the
-		 * Entity will be affected by the Force
+		/** Registers the given RigidBody with the given Force, so the
+		 * RigidBody will be affected by the Force
 		 *
-		 * @param	entity a pointer to the PhysicsEntity that we want to be
+		 * @param	rigidBody a pointer to the RigidBody that we want to be
 		 *			affected by the Force
 		 * @param	force a pointer to the Force that we want to register */
-		void addEntity(PhysicsEntity* entity, Force* force);
+		void addRigidBody(RigidBody* rigidBody, Force* force);
 
-		/** Unregisters the given Entity and given Force so the Entity
-		 * won't longer be affected by the Force
+		/** Unregisters the given RigidBody and given Force so it won't longer
+		 * be affected by the Force
 		 *
-		 * @param	entity a pointer to the PhysicsEntity that we want to
+		 * @param	rigidBody a pointer to the RigidBody that we want to
 		 *			unregister
 		 * @param	force a pointer to the Force that we want to unregister */
-		void removeEntity(PhysicsEntity* entity, Force* force);
+		void removeRigidBody(RigidBody* rigidBody, Force* force);
 
 		/** Applies the forces stored in the ForceManager */
 		void applyForces();

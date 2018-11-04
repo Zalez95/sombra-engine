@@ -3,7 +3,7 @@
 
 #include <map>
 #include <glm/glm.hpp>
-#include "fe/collision/HalfEdgeMesh.h"
+#include "HalfEdgeMesh.h"
 
 namespace fe { namespace collision {
 

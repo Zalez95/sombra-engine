@@ -3,7 +3,7 @@
 
 #include <set>
 #include <deque>
-#include "fe/collision/AABB.h"
+#include "AABB.h"
 
 namespace fe { namespace collision {
 

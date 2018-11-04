@@ -17,7 +17,7 @@ namespace fe { namespace loaders {
 	class FontReader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<graphics::Font> FontUPtr;
+		using FontUPtr = std::unique_ptr<graphics::Font>;
 
 	private:	// Nested types
 		/** The ImageReader used to read the texture atlases of the fonts */

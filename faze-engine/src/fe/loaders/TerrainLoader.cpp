@@ -6,7 +6,7 @@
 #include "fe/utils/Image.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Renderable3D.h"
-#include "fe/physics/PhysicsEntity.h"
+#include "fe/physics/RigidBody.h"
 #include "fe/collision/TerrainCollider.h"
 
 namespace fe { namespace loaders {
@@ -26,10 +26,9 @@ namespace fe { namespace loaders {
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), transforms);
 
 		// Physics data
-		physics::RigidBody rb;
+		auto rb = std::make_unique<physics::RigidBody>();
 		auto terrainCollider = createTerrainCollider(heightMap);
-		auto physicsEntity = std::make_unique<physics::PhysicsEntity>(rb, std::move(terrainCollider), transforms);
-		mPhysicsManager.addEntity(entity.get(), std::move(physicsEntity));
+		mPhysicsManager.addEntity(entity.get(), std::move(rb));
 
 		return entity;
 	}

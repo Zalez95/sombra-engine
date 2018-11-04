@@ -7,7 +7,7 @@
 #include "fe/graphics/3D/Renderable3D.h"
 #include "fe/graphics/3D/Mesh.h"
 #include "fe/graphics/3D/Material.h"
-#include "fe/physics/PhysicsEntity.h"
+#include "fe/physics/RigidBody.h"
 #include "fe/collision/ConvexPolyhedron.h"
 #include "fe/collision/QuickHull.h"
 #include "fe/loaders/RawMesh.h"
@@ -160,7 +160,8 @@ namespace fe { namespace loaders {
 		std::unique_ptr<graphics::Camera> camera;
 		std::unique_ptr<graphics::PointLight> pointLight;
 		std::unique_ptr<graphics::Renderable3D> renderable3D;
-		std::unique_ptr<physics::PhysicsEntity> physicsEntity;
+		std::unique_ptr<physics::RigidBody> rigidBody;
+		std::unique_ptr<collision::Collider> collider;
 
 		std::string trash;
 		fileReader >> name >> trash;
@@ -228,6 +229,9 @@ namespace fe { namespace loaders {
 				// TODO: read light
 			}
 			else if (token == "physics") {
+				rigidBody = std::make_unique<physics::RigidBody>();
+			}
+			else if (token == "collision") {
 				std::string meshName;
 				glm::mat4 mat;
 				fileReader >> meshName >>
@@ -266,12 +270,7 @@ namespace fe { namespace loaders {
 					// TODO: move to header
 					collision::QuickHull qh(0.001f);
 					qh.calculate(meshData);
-
-					physicsEntity = std::make_unique<physics::PhysicsEntity>(
-						physics::RigidBody(),
-						std::make_unique<collision::ConvexPolyhedron>(qh.getMesh()),
-						mat
-					);
+					collider = std::make_unique<collision::ConvexPolyhedron>(qh.getMesh());
 				}
 			}
 			else if (token == "}") { end = true; }
@@ -293,8 +292,11 @@ namespace fe { namespace loaders {
 		if (renderable3D) {
 			mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), offsetMatrix);
 		}
-		if (physicsEntity) {
-			mPhysicsManager.addEntity(entity.get(), std::move(physicsEntity));
+		if (rigidBody) {
+			mPhysicsManager.addEntity(entity.get(), std::move(rigidBody));
+		}
+		if (collider) {
+			mCollisionManager.addEntity(entity.get(), std::move(collider));
 		}
 
 		return std::move(entity);

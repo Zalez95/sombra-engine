@@ -115,19 +115,22 @@ namespace fe { namespace physics {
 		/** Updates the jacobian matrix value */
 		void updateJacobianMatrix();
 
-		/** Runs the Gauss-Seidel algorithm for solving:
-		 * mJacobianMatrix * bMatrix * mLambdaMatrix = etaMatrix
+		/** Runs the Gauss-Seidel algorithm for solving the mLambdaMatrix in:
+		 * mJacobianMatrix * mInverseMassMatrix * transpose(mJacobianMatrix)
+		 *	* mLambdaMatrix = etaMatrix
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
-		void solveConstraints(float deltaTime);
+		void calculateGaussSeidel(float deltaTime);
 
-		/** Calculates the transposed B matrix which is equal to
-		 * mInverseMassMatrix * transpose(mJacobianMatrix)
+		/** Calculates the transposed invMassJacobianMatrix which is
+		 * equal to mInverseMassMatrix * transpose(mJacobianMatrix)
 		 *
-		 * @return	the transposed B matrix. Its size is
-		 *			(number of Constraints)*12 */
-		std::vector<vec12> calculateBMatrix() const;
+		 * @return	the invMassJacobianMatrix matrix. Its size is the same than
+		 *			(number of RigidBodies) * (number of Constraints), but 
+		 *			because it has the same sparsity than mJacobianMatrix
+		 *			it is stored in the same way */
+		std::vector<vec12> calculateInvMassJacobianMatrix() const;
 
 		/** Calculates the Eta Matrix, which is equal to
 		 * mBiasMatrix / deltaTime - mJacobianMatrix *
@@ -138,26 +141,29 @@ namespace fe { namespace physics {
 		 * @return	the Eta matrix. Its size is (number of Constraints) */
 		std::vector<float> calculateEtaMatrix(float deltaTime) const;
 
-		/** Calculates the A matrix which is equal to
+		/** Calculates the invMJLambdaMatrix which is equal to
 		 * B * lambda
 		 *
-		 * @param	bMatrix the transposed B matrix
+		 * @param	invMassJacobianMatrix the matrix equal to
+		 *			mInverseMassMatrix * transpose(mJacobianMatrix)
 		 * @param	lambdaMatrix the lambda matrix
 		 * @return	the A matrix. Its size is 6*(number of RigidBodies) */
-		std::vector<float> calculateAMatrix(
-			const std::vector<vec12>& bMatrix,
+		std::vector<float> calculateInvMJLambdaMatrix(
+			const std::vector<vec12>& invMassJacobianMatrix,
 			const std::vector<float>& lambdaMatrix
 		) const;
 
-		/** Calculates the D matrix, which is equal to,
-		 * mJacobianMatrix * bMatrix
+		/** Calculates the diagonal of the JMJMatrix, which is equal to,
+		 * mJacobianMatrix * invMassJacobianMatrix
 		 *
-		 * @param	bMatrix the transposed B matrix
 		 * @param	jacobianMatrix the jacobian matrix
-		 * @return	the D matrix. Its size is (number of Constraints) */
-		std::vector<float> calculateDMatrix(
-			const std::vector<vec12>& bMatrix,
-			const std::vector<vec12>& jacobianMatrix
+		 * @param	invMassJacobianMatrix the matrix equal to
+		 *			mInverseMassMatrix * transpose(mJacobianMatrix)
+		 * @return	the diagonal of the JMJMatrix. Its size is
+		 *			(number of Constraints) */
+		std::vector<float> calculateDiagonalJInvMJMatrix(
+			const std::vector<vec12>& jacobianMatrix,
+			const std::vector<vec12>& invMassJacobianMatrix
 		) const;
 
 		/** Updates the velocity and position of the RigidBodies with the

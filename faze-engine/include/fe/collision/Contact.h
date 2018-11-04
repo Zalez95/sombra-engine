@@ -39,8 +39,9 @@ namespace fe { namespace collision {
 		/** @return	the penetration depth of the Contact */
 		inline float getPenetration() const { return mPenetration; };
 
-		/** @return	the normal direction of the Contact from the first Collider
-		 * to to the second one in world space */
+		/** @return	the normal direction of the Contact in world space pointing
+		 *			from the first Collider to the second one. It's the
+		 *			direction along we should separate the Colliders */
 		inline glm::vec3 getNormal() const { return mNormal; };
 
 		/** Returns the position of the Contact in world space relative to the

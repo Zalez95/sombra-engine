@@ -16,7 +16,7 @@ namespace fe { namespace loaders {
 	class TerrainReader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<app::Entity> EntityUPtr;
+		using EntityUPtr = std::unique_ptr<app::Entity>;
 
 	private:	// Attributes
 		/** The TerrainLoader that we will use to create the Terrains */

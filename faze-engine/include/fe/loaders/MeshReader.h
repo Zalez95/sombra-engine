@@ -15,7 +15,7 @@ namespace fe { namespace loaders {
 	class MeshReader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<RawMesh> RawMeshUPtr;
+		using RawMeshUPtr = std::unique_ptr<RawMesh>;
 
 		/** Struct FileFormat, it holds the name, version and other data of
 		 * our Mesh file format */

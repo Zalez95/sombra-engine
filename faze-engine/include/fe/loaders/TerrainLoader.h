@@ -24,9 +24,9 @@ namespace fe { namespace loaders {
 	class TerrainLoader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<app::Entity> EntityUPtr;
-		typedef std::unique_ptr<collision::TerrainCollider> TerrainColliderUPtr;
-		typedef std::unique_ptr<RawMesh> RawMeshUPtr;
+		using EntityUPtr = std::unique_ptr<app::Entity>;
+		using TerrainColliderUPtr = std::unique_ptr<collision::TerrainCollider>;
+		using RawMeshUPtr = std::unique_ptr<RawMesh>;
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */

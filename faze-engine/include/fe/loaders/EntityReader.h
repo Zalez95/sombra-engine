@@ -4,8 +4,9 @@
 #include "MeshLoader.h"
 #include "MeshReader.h"
 #include "MaterialReader.h"
-#include "../app/PhysicsManager.h"
 #include "../app/GraphicsManager.h"
+#include "../app/PhysicsManager.h"
+#include "../app/CollisionManager.h"
 
 namespace fe { namespace app { struct Entity; }}
 namespace fe { namespace utils { class FileReader; }}
@@ -19,7 +20,7 @@ namespace fe { namespace loaders {
 	class EntityReader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<app::Entity> EntityUPtr;
+		using EntityUPtr = std::unique_ptr<app::Entity>;
 
 		/** Struct FileFormat, it holds the name, version and other data of
 		 * our Entity file format */
@@ -54,18 +55,25 @@ namespace fe { namespace loaders {
 		/** The PhysicsManager that will store the readed physics data */
 		app::PhysicsManager& mPhysicsManager;
 
+		/** The CollisionManager that will store the readed collider data */
+		app::CollisionManager& mCollisionManager;
+
 	public:		// Functions
 		/** Creates a new EntityReader
 		 *
 		 * @param	graphicsManager the GraphicsManager where we will store
 		 *			the readed graphics data
 		 * @param	physicsManager the PhysicsManager where we will store
-		 *			the readed physics data */
+		 *			the readed physics data
+		 * @param	collisionManager the CollisionManager where we will store
+		 *			the readed collider data */
 		EntityReader(
 			app::GraphicsManager& graphicsManager,
-			app::PhysicsManager& physicsManager
+			app::PhysicsManager& physicsManager,
+			app::CollisionManager& collisionManager
 		) : mGraphicsManager(graphicsManager),
-			mPhysicsManager(physicsManager) {};
+			mPhysicsManager(physicsManager),
+			mCollisionManager(collisionManager) {};
 
 		/** Class destructor */
 		~EntityReader() {};

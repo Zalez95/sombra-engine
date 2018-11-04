@@ -20,9 +20,9 @@ namespace fe { namespace app {
 	class GraphicsManager
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<graphics::Camera> CameraUPtr;
-		typedef std::unique_ptr<graphics::PointLight> PointLightUPtr;
-		typedef std::unique_ptr<graphics::Renderable3D> Renderable3DUPtr;
+		using CameraUPtr = std::unique_ptr<graphics::Camera>;
+		using PointLightUPtr = std::unique_ptr<graphics::PointLight>;
+		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
 
 	private:	// Attributes
 		/** The System used for rendering the data of the Entities */

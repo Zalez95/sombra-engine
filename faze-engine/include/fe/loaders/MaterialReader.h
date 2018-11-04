@@ -16,7 +16,7 @@ namespace fe { namespace loaders {
 	class MaterialReader
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<graphics::Material> MaterialUPtr;
+		using MaterialUPtr = std::unique_ptr<graphics::Material>;
 
 		/** Struct FileFormat, it holds the name, version and other data of
 		 * our material file format */

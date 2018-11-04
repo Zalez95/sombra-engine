@@ -23,23 +23,22 @@ namespace fe { namespace physics {
 		 * constraint in local space */
 		std::array<glm::vec3, 2> mAnchorPoints;
 
-		/** The desired distance between the RigidBodies */
-		glm::vec3 mDistance;
-
 	public:		// Functions
 		/** Creates a new DistanceConstraint
 		 *
 		 * @param	rigidBodies the two rigidBodies affected by the
 		 *			Constraint
-		 * @note	the movements of the RigidBodies will be restricted
-		 *			relative to its origins */
-		DistanceConstraint(const std::array<RigidBody*, 2>& rigidBodies);
+		 * @note	initially the anchor points are located in the RigidBody
+		 *			origins */
+		DistanceConstraint(const std::array<RigidBody*, 2>& rigidBodies) :
+			Constraint(&kConstraintBounds, rigidBodies),
+			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
 		/** Class destructor */
 		~DistanceConstraint() {};
 
 		/** @return the value of the Bias of the constraint */
-		float getBias() const override;
+		float getBias() const override { return 0.0f; };
 
 		/** @return the Jacobian matrix of the constraint */
 		std::array<float, 12> getJacobianMatrix() const override;
@@ -48,7 +47,8 @@ namespace fe { namespace physics {
 		 *
 		 * @param	anchorPoints the positions of the RigidBodies that
 		 *			will be affected by the constraint in local space */
-		void setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints);
+		void setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints)
+		{ mAnchorPoints = anchorPoints; };
 	};
 
 }}

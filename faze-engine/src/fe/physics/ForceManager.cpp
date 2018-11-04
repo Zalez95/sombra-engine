@@ -1,20 +1,20 @@
 #include "fe/physics/ForceManager.h"
 #include "fe/physics/Force.h"
-#include "fe/physics/PhysicsEntity.h"
+#include "fe/physics/RigidBody.h"
 
 namespace fe { namespace physics {
 
-	void ForceManager::addEntity(PhysicsEntity* entity, Force* force)
+	void ForceManager::addRigidBody(RigidBody* rigidBody, Force* force)
 	{
-		mEntityForces.emplace_back(entity, force);
+		mRBForces.emplace_back(rigidBody, force);
 	}
 
 
-	void ForceManager::removeEntity(PhysicsEntity* entity, Force* force)
+	void ForceManager::removeRigidBody(RigidBody* rigidBody, Force* force)
 	{
-		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			if ((it->entity == entity) && (it->force == force)) {
-				mEntityForces.erase(it);
+		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
+			if ((it->rigidBody == rigidBody) && (it->force == force)) {
+				mRBForces.erase(it);
 				break;
 			}
 		}
@@ -24,14 +24,14 @@ namespace fe { namespace physics {
 	void ForceManager::applyForces()
 	{
 		// Clean the older forces
-		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			it->entity->getRigidBody()->forceSum	= glm::vec3(0.0f);
-			it->entity->getRigidBody()->torqueSum	= glm::vec3(0.0f);
+		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
+			it->rigidBody->forceSum	= glm::vec3(0.0f);
+			it->rigidBody->torqueSum	= glm::vec3(0.0f);
 		}
 
 		// Apply the current forces
-		for (auto it = mEntityForces.begin(); it != mEntityForces.end(); ++it) {
-			it->force->apply(it->entity->getRigidBody());
+		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
+			it->force->apply(it->rigidBody);
 		}
 	}
 

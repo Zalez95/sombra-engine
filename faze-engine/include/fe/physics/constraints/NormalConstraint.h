@@ -42,12 +42,14 @@ namespace fe { namespace physics {
 		 * @param	rigidBodies the two rigidBodies affected by the
 		 *			Constraint
 		 * @param	beta the velocity at which is going to be solved constraint
-		 * @note	the movements of the RigidBodies will be restricted
-		 *			relative to its origins */
+		 * @note	initially the constraint points are located in the RigidBody
+		 *			origins */
 		NormalConstraint(
 			const std::array<RigidBody*, 2>& rigidBodies,
 			float beta
-		);
+		) : Constraint(&kConstraintBounds, rigidBodies),
+			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
 
 		/** Class destructor */
 		~NormalConstraint() {};

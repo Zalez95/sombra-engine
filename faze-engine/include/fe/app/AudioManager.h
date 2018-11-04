@@ -1,8 +1,8 @@
 #ifndef AUDIO_MANAGER_H
 #define AUDIO_MANAGER_H
 
-#include <memory>
 #include <map>
+#include <memory>
 #include "../audio/AudioEngine.h"
 #include "../audio/Source.h"
 
@@ -18,7 +18,7 @@ namespace fe { namespace app {
 	class AudioManager
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<audio::Source> SourceUPtr;
+		using SourceUPtr = std::unique_ptr<audio::Source>;
 
 	private:	// Attributes
 		/** The AudioEngine used for playing the audio data of the Entities */

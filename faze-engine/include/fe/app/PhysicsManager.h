@@ -1,10 +1,9 @@
 #ifndef PHYSICS_MANAGER_H
 #define PHYSICS_MANAGER_H
 
-#include <memory>
 #include <map>
-#include "Entity.h"
-#include "../physics/PhysicsEntity.h"
+#include <memory>
+#include "../physics/RigidBody.h"
 #include "../physics/PhysicsEngine.h"
 
 namespace fe { namespace app {
@@ -19,12 +18,11 @@ namespace fe { namespace app {
 	class PhysicsManager
 	{
 	private:	// Nested types
-		typedef std::unique_ptr<physics::PhysicsEntity> PhysicsEntityUPtr;
+		using RigidBodyUPtr = std::unique_ptr<physics::RigidBody>;
 
 	private:	// Attributes
-		/** Maps the Entries added to the PhysicsManager and its physics
-		 * data */
-		std::map<Entity*, PhysicsEntityUPtr> mEntityMap;
+		/** Maps the Entries added to the PhysicsManager and its physics data */
+		std::map<Entity*, RigidBodyUPtr> mEntityMap;
 
 		/** The Engine used for updating the data of the PhysicsEntities */
 		physics::PhysicsEngine& mPhysicsEngine;
@@ -40,12 +38,11 @@ namespace fe { namespace app {
 		/** Adds the given Entity to the PhysicsManager and its physics data
 		 * to the manager
 		 *
-		 * @param	entity a pointer to the Entity to add to the
+		 * @param	rigidBody a pointer to the RigidBody to add to the
 		 *			PhysicsManager
-		 * @param	physicsEntity the physics data of the Entity
-		 * @note	The rigid body initial data is overrided by the entity
-		 *			one */
-		void addEntity(Entity* entity, PhysicsEntityUPtr physicsEntity);
+		 * @param	rigidBody the physics data of the Entity
+		 * @note	The RigidBody initial data is overrided by the Entity one */
+		void addEntity(Entity* entity, RigidBodyUPtr rigidBody);
 
 		/** Removes the given Entity from the PhysicsManager so it won't
 		 * longer be updated
@@ -54,10 +51,15 @@ namespace fe { namespace app {
 		 *			PhysicsManager */
 		void removeEntity(Entity* entity);
 
-		/** Updates the physics data of the entities
+		/** Integrates the RigidBodies data of the entities
 		 *
 		 * @param	delta the elapsed time since the last update in seconds */
-		void update(float delta);
+		void doDynamics(float delta);
+
+		/** Solves the Constraints between the RigidBodies of the entities
+		 *
+		 * @param	delta the elapsed time since the last update in seconds */
+		void doConstraints(float delta);
 	};
 
 }}

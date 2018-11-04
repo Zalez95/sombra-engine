@@ -8,6 +8,7 @@
 namespace fe { namespace window { class WindowSystem; }}
 namespace fe { namespace graphics { class GraphicsSystem; }}
 namespace fe { namespace physics { class PhysicsEngine; }}
+namespace fe { namespace collision { class CollisionDetector; }}
 namespace fe { namespace audio { class AudioEngine; }}
 
 namespace fe { namespace app {
@@ -16,6 +17,7 @@ namespace fe { namespace app {
 	class InputManager;
 	class GraphicsManager;
 	class PhysicsManager;
+	class CollisionManager;
 	class AudioManager;
 
 
@@ -25,7 +27,7 @@ namespace fe { namespace app {
 	class Application
 	{
 	protected:	// Nested Types
-		typedef std::unique_ptr<Entity> EntityUPtr;
+		using EntityUPtr = std::unique_ptr<Entity>;
 
 		/** The different states in which the application could be */
 		enum class AppState
@@ -45,6 +47,7 @@ namespace fe { namespace app {
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
 		physics::PhysicsEngine* mPhysicsEngine;
+		collision::CollisionDetector* mCollisionDetector;
 		audio::AudioEngine* mAudioEngine;
 
 		/** The Entities that exists currently in the application */
@@ -54,6 +57,7 @@ namespace fe { namespace app {
 		InputManager* mInputManager;
 		GraphicsManager* mGraphicsManager;
 		PhysicsManager* mPhysicsManager;
+		CollisionManager* mCollisionManager;
 		AudioManager* mAudioManager;
 
 	public:		// Functions
@@ -64,12 +68,12 @@ namespace fe { namespace app {
 		);
 
 		/** Class destructor */
-		~Application();
+		virtual ~Application();
 
 		/** Runs the Game
 		 *
 		 * @return	true if the Game exited succesfully, false otherwise */
-		bool run();
+		virtual bool run();
 	protected:
 		/**  Function used to initialize the application's entities data */
 		virtual void init() = 0;
