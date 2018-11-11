@@ -21,7 +21,7 @@ namespace fe { namespace collision {
 	{
 	private:	// Attributes
 		/** The minimum difference between the distances to the origin of
-		 * a face and the next SupportPoint during the Polytope expansion step
+		 * a HEFace and the next SupportPoint during the Polytope expansion step
 		 * needed for determinate the closest face to the origin */
 		const float mMinFThreshold;
 
@@ -54,16 +54,6 @@ namespace fe { namespace collision {
 			std::vector<SupportPoint>& simplex, Contact& ret
 		) const;
 	private:
-		/** Creates a contact from the given degenerate simplex (only one or
-		 * two SupportPoints)
-		 *
-		 * @param	simplex the points of the initial simplex
-		 * @param	ret a reference to the deepest Contact (return
-		 *			parameter) */
-		void calculateDegenerateContact(
-			const std::vector<SupportPoint>& simplex, Contact& ret
-		) const;
-
 		/** Creates an initial polytope from the given simplex
 		 *
 		 * @param	collider1 the first of the ConvexColliders that are
@@ -72,9 +62,35 @@ namespace fe { namespace collision {
 		 *			intersecting
 		 * @param	simplex the points of the initial simplex
 		 * @return	the polytope
-		 * @note	if the given simplex is a triangle it will be expanded to
-		 *			a tetrahedron */
+		 * @note	if the given simplex is an edge or a triangle it will be
+		 *			expanded to a tetrahedron */
 		Polytope createInitialPolytope(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
+			std::vector<SupportPoint>& simplex
+		) const;
+
+		/** Expands the given edge simplex to a tetrahedron
+		 *
+		 * @param	collider1 the first of the colliders used to create the
+		 *			simplex
+		 * @param	collider2 the second of the colliders used to create the
+		 *			simplex
+		 * @param	the initial simplex used to create the polytope. In this
+		 *			case the simplex must be an edge (size == 2) */
+		void tetrahedronFromEdge(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
+			std::vector<SupportPoint>& simplex
+		) const;
+
+		/** Expands the given triangle simplex to a tetrahedron
+		 *
+		 * @param	collider1 the first of the colliders used to create the
+		 *			simplex
+		 * @param	collider2 the second of the colliders used to create the
+		 *			simplex
+		 * @param	the initial simplex used to create the polytope. In this
+		 *			case the simplex must be a triangle (size == 3) */
+		void tetrahedronFromTriangle(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			std::vector<SupportPoint>& simplex
 		) const;

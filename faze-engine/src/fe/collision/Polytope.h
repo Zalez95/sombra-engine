@@ -11,12 +11,12 @@ namespace fe { namespace collision {
 
 
 	/**
-	 * Struct FaceDistanceData, it stores the distance data of a Face to
+	 * Struct FaceDistanceData, it stores the distance data of a face to
 	 * the origin
 	 */
 	struct FaceDistanceData
 	{
-		/** The 3D coordinates of the closest point in the Face to the
+		/** The 3D coordinates of the closest point in the face to the
 		 * origin */
 		glm::vec3 closestPoint;
 

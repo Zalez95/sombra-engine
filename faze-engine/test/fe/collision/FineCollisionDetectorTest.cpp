@@ -46,7 +46,7 @@ TEST(FineCollisionDetector, SphereSphere2)
 		{ -1.154848634f, 0.771644742f, -2.078674167f },
 		{ 4.095410456f, -3.183182967f, -0.384987776f }
 	};
-	const glm::vec3 expectedNormal(-0.461796492f, 0.311872839f, -0.830348908f);
+	const glm::vec3 expectedNormal(-0.460017949f, 0.312695205f, -0.831026614f);
 	const float expectedPenetration = 0.000000159f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(9.943065643f, -2.873334407f, 0.697683811f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);
@@ -163,7 +163,7 @@ TEST(FineCollisionDetector, CPolyCPoly3)
 		{ 0.5f, -1.1f, -1.0f },
 		{ -1.0f, -0.6f, -0.025f }
 	};
-	const glm::vec3 expectedNormal(0.866025507f, -0.369224995f, 0.337154150f);
+	const glm::vec3 expectedNormal(0.929280221, -0.272765338f, 0.249072999f);
 	const float expectedPenetration = 0.0f;
 	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0f), v2(3.065070390f, 0.126420855f, 0.363925933f);
 	const glm::quat o1(0.900554239f, -0.349306106f, -0.093596287f, -0.241302788f), o2(0.637856543f, -0.079467326f, -0.094705462f, -0.760167777f);
@@ -202,15 +202,15 @@ TEST(FineCollisionDetector, CPolyCPoly3)
 TEST(FineCollisionDetector, SphereCPoly1)
 {
 	const glm::vec3 expectedWorldPos[] = {
-		{ 14.383110774f, -7.013699324f, 8.182463250f },
+		{ 14.383758805f, -7.014018252f, 8.181325494f },
 		{ 14.315420150f, -6.879015922f, 8.099131584f }
 	};
 	const glm::vec3 expectedLocalPos[] = {
-		{ 0.883110774f, -1.763699324f, 1.082463345f },
+		{ 0.883758805f, -1.764018252f, 1.081325589f },
 		{ 1.0f, 0.0f, 0.0f }
 	};
-	const glm::vec3 expectedNormal(0.393006712f, -0.781962514f, 0.483818501f);
-	const float expectedPenetration = 0.172238088f;
+	const glm::vec3 expectedNormal(0.396864354f, -0.784001648f, 0.477326035f);
+	const float expectedPenetration = 0.172196496f;
 	const float radius = 2.25f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(14.67f, -7.62f, 8.667f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.473f, -0.313f, 0.057f, 0.821f);

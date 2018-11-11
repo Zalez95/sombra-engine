@@ -31,7 +31,9 @@ namespace fe { namespace collision {
 
 	public:		// Functions
 		/** Creates a new Contact */
-		Contact() {};
+		Contact() : mPenetration(0.0f), mNormal(0.0f),
+			mWorldPosition{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mLocalPosition{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
 		/** Class destructor */
 		~Contact() {};

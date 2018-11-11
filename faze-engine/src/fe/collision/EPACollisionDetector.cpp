@@ -1,6 +1,7 @@
 #include <limits>
 #include <cassert>
 #include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 #include "fe/collision/Contact.h"
 #include "fe/collision/ConvexCollider.h"
 #include "fe/collision/HalfEdgeMeshExt.h"
@@ -24,83 +25,114 @@ namespace fe { namespace collision {
 		std::vector<SupportPoint>& simplex, Contact& ret
 	) const
 	{
-		// 1. Handle the weird initial simplex cases
-		if (simplex.empty()) {
-			return false;
-		}
-		else if (simplex.size() < 3) {
-			calculateDegenerateContact(simplex, ret);
-			return true;
-		}
+		bool contactUpdated = false;
 
-		// 2. Create the initial polytope to expand from the simplex points
-		Polytope polytope = createInitialPolytope(collider1, collider2, simplex);
-
-		// 3. Calculate the closest face to the origin
-		int iClosestFace = expandPolytope(collider1, collider2, polytope);
-		if (iClosestFace < 0) {
-			return false;
-		}
-
-		// 4. Fill the Contact data with the cloest face of the Polytope
-		fillContactData(polytope, iClosestFace, ret);
-
-		return true;
-	}
-
-// Private functions
-	void EPACollisionDetector::calculateDegenerateContact(
-		const std::vector<SupportPoint>& simplex, Contact& ret
-	) const
-	{
-		int nVertices = simplex.size();
-		if (nVertices == 1) {
+		if (simplex.size() == 1) {
+			// The simplex's only point is the origin
 			ret.mPenetration = 0.0f;
 			ret.mNormal = glm::vec3(0.0f);
 			for (int i = 0; i < 2; ++i) {
 				ret.mWorldPosition[i] = simplex[0].getWorldPosition(i);
 				ret.mLocalPosition[i] = simplex[0].getLocalPosition(i);
 			}
+			contactUpdated = true;
 		}
-		else if (nVertices == 2) {
-			std::vector<float> distances = {
-				glm::length(simplex[0].getCSOPosition()),
-				glm::length(simplex[1].getCSOPosition())
-			};
+		else if (simplex.size() > 1) {
+			// Create the initial polytope to expand from the simplex points
+			Polytope polytope = createInitialPolytope(collider1, collider2, simplex);
 
-			int iClosestSP = (distances[0] > distances[1])? 0 : 1;
-			ret.mPenetration = distances[iClosestSP];
-			ret.mNormal = glm::normalize( simplex[iClosestSP].getCSOPosition() );
-			for (int i = 0; i < 2; ++i) {
-				ret.mWorldPosition[i] = simplex[iClosestSP].getWorldPosition(i);
-				ret.mLocalPosition[i] = simplex[iClosestSP].getLocalPosition(i);
+			// Calculate the closest face to the origin
+			int iClosestFace = expandPolytope(collider1, collider2, polytope);
+			if (iClosestFace >= 0) {
+				// Fill the Contact data with the closest face of the Polytope
+				fillContactData(polytope, iClosestFace, ret);
+				contactUpdated = true;
 			}
 		}
+
+		return contactUpdated;
 	}
 
-
+// Private functions
 	Polytope EPACollisionDetector::createInitialPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		std::vector<SupportPoint>& simplex
 	) const
 	{
-		if (simplex.size() == 3) {
-			// Expand the initial triangle simplex to a tetrahedron
-			// Search a support point along the simplex's triangle normal
-			glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
-			glm::vec3 v02 = simplex[2].getCSOPosition() - simplex[0].getCSOPosition();
-			glm::vec3 tNormal = glm::cross(v01, v02);
-
-			SupportPoint sp(collider1, collider2, tNormal);
-			if (glm::dot(sp.getCSOPosition() - simplex[0].getCSOPosition(), tNormal) < 0) {
-				// Try the opposite direction
-				sp = SupportPoint(collider1, collider2, -tNormal);
-			}
-
-			simplex.push_back(sp);
+		if (simplex.size() == 2) {
+			tetrahedronFromEdge(collider1, collider2, simplex);
 		}
-	
+		else if (simplex.size() == 3) {
+			tetrahedronFromTriangle(collider1, collider2, simplex);
+		}
+
 		return Polytope({ simplex[0], simplex[1], simplex[2], simplex[3] }, mProjectionPrecision);
+	}
+
+
+	void EPACollisionDetector::tetrahedronFromEdge(
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
+		std::vector<SupportPoint>& simplex
+	) const
+	{
+		std::vector<SupportPoint> vertices;
+		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
+
+		// 1. Find the closest coordinate axis to being orthonormal to the
+		// direction v01
+		glm::vec3 vAxis(0.0f);
+		auto absCompare = [](float f1, float f2) { return std::abs(f1) < std::abs(f2); };
+		int iAxis = std::distance(&v01.x, std::min_element(&v01.x, &v01.x + 3, absCompare));
+		vAxis[iAxis] = 1.0f;
+
+		// 2. Calculate an orthonormal vector to the vector v01 with vAxis
+		glm::vec3 vNormal = glm::cross(v01, vAxis);
+
+		// 3. Calculate 3 new points around the vector v01 by rotating vNormal
+		// 2*pi/3 radians around v01
+		glm::mat3 rotate2Pi3 = glm::mat3(glm::rotate(glm::mat4(1.0f), 2.0f * glm::pi<float>() / 3.0f, v01));
+		glm::vec3 searchDir = vNormal;
+		for (int i = 0; i < 3; ++i) {
+			vertices.emplace_back(collider1, collider2, searchDir);
+			searchDir = rotate2Pi3 * searchDir;
+		}
+
+		// 4. The fourth point of the polytope must be either simplex[0] or
+		// simplex[1], we select the one that creates a tetrahedron with the
+		// origin inside
+		glm::vec3 a = vertices[0].getCSOPosition(), b = vertices[1].getCSOPosition(), c = vertices[2].getCSOPosition();
+		glm::vec3 tNormal = glm::cross(b - a, c - a);
+		if ((glm::dot(a, tNormal) > 0.0f) && (glm::dot(simplex[0].getCSOPosition(), tNormal) > 0.0f)) {
+			vertices.push_back(simplex[1]);
+		}
+		if ((glm::dot(a, tNormal) < 0.0f) && (glm::dot(simplex[0].getCSOPosition(), tNormal) < 0.0f)) {
+			vertices.push_back(simplex[1]);
+		}
+		else {
+			vertices.push_back(simplex[0]);
+		}
+
+		simplex = vertices;
+	}
+
+
+	void EPACollisionDetector::tetrahedronFromTriangle(
+		const ConvexCollider& collider1, const ConvexCollider& collider2,
+		std::vector<SupportPoint>& simplex
+	) const
+	{
+		// Search a support point along the simplex's triangle normal
+		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
+		glm::vec3 v02 = simplex[2].getCSOPosition() - simplex[0].getCSOPosition();
+		glm::vec3 tNormal = glm::cross(v01, v02);
+
+		SupportPoint sp(collider1, collider2, tNormal);
+		if (glm::dot(sp.getCSOPosition() - simplex[0].getCSOPosition(), tNormal) < 0.0f) {
+			// Try the opposite direction
+			sp = SupportPoint(collider1, collider2, -tNormal);
+		}
+
+		simplex.push_back(sp);
 	}
 
 
@@ -114,40 +146,54 @@ namespace fe { namespace collision {
 			return (polytope.getDistanceData(iF1).distance > polytope.getDistanceData(iF2).distance);
 		};
 
-		// Store the HEFace indices in a vector ordered by their distance
+		// Store the HEFace indices in a vector ordered by their distance to
+		// the origin
 		std::vector<int> facesByDistance;
 		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
-			facesByDistance.insert(
-				std::lower_bound(facesByDistance.begin(), facesByDistance.end(), itFace.getIndex(), compareDistances),
-				itFace.getIndex()
-			);
+			if (polytope.getDistanceData(itFace.getIndex()).inside) {
+				facesByDistance.insert(
+					std::lower_bound(facesByDistance.begin(), facesByDistance.end(), itFace.getIndex(), compareDistances),
+					itFace.getIndex()
+				);
+			}
 		}
 
-		int iClosestFace = -1;
-		std::vector<int> closestFaceIndices, overlappingFaces;
+		// Check if there is no polytope face with its closest point to the
+		// origin inside
+		if (facesByDistance.empty()) {
+			return -1;
+		}
+
+		// Check if the closest HEFace to the origin is already touching it
+		int iCurrentFace = facesByDistance.back();
+		facesByDistance.pop_back();
+		FaceDistanceData faceDistance = polytope.getDistanceData(iCurrentFace);
+		if (faceDistance.distance == 0.0f) {
+			return iCurrentFace;
+		}
+
+		// Expand the polytope until the closest HEFace is found
+		int iClosestFace;
 		float closestSeparation = std::numeric_limits<float>::max();
-		while (!facesByDistance.empty() && (closestSeparation >= mMinFThreshold)) {
-			// 1. Get the next closest HEFace to the origin
-			int iCurrentFace = facesByDistance.back();
-			const glm::vec3& faceNormal = polytope.getNormal(iCurrentFace);
-			const FaceDistanceData& faceDistance = polytope.getDistanceData(iCurrentFace);
-			facesByDistance.pop_back();
+		std::vector<int> closestFaceIndices, overlappingFaces;
+		do {
+			// 1. Search a new SupportPoint along the HEFace's closest point direction
+			SupportPoint sp(collider1, collider2, faceDistance.closestPoint);
 
-			// 2. Add a new SupportPoint along the HEFace normal
-			int iSp = polytope.addVertex(SupportPoint(collider1, collider2, faceNormal));
-			SupportPoint sp = polytope.getSupportPoint(iSp);
-
-			// 3. Update the HEFace with the closest separation
-			float currentSeparation = glm::dot(sp.getCSOPosition(), faceNormal) - faceDistance.distance;
+			// 2. Update the closest separation and HEFace
+			float currentSeparation = glm::dot(sp.getCSOPosition(), glm::normalize(faceDistance.closestPoint));
 			if (currentSeparation < closestSeparation) {
 				closestSeparation = currentSeparation;
 				iClosestFace = iCurrentFace;
 			}
 
-			// 4. If the new SupportPoint is further from the current HEFace
-			// than mMinFThreshold then we expand the polytope
-			if (closestSeparation >= mMinFThreshold) {
-				// 4.1. Calculate the horizon HEEdges and HEFaces to remove
+			// 3. If the current HEFace is closer to the origin than the closest
+			// one then we expand the polytope
+			if (closestSeparation - faceDistance.distance > mMinFThreshold) {
+				// 3.1 Add the SupportPoint to the Polytope
+				int iSp = polytope.addVertex(sp);
+
+				// 3.2. Calculate the horizon HEEdges and HEFaces to remove
 				// from the current eyePoint perspective
 				std::vector<int> horizon, facesToRemove;
 				std::tie(horizon, facesToRemove) = calculateHorizon(
@@ -155,7 +201,7 @@ namespace fe { namespace collision {
 					sp.getCSOPosition(), iCurrentFace
 				);
 
-				// 4.2. Remove all the HEFaces that can be seen from the new
+				// 3.3. Remove all the HEFaces that can be seen from the new
 				// SupportPoint
 				for (int iFaceToRemove : facesToRemove) {
 					// If we are going to remove the closest HEFace then we
@@ -172,7 +218,7 @@ namespace fe { namespace collision {
 					);
 				}
 
-				// 4.3. Add new HEFaces to the Polytope by connecting the
+				// 3.4. Add new HEFaces to the Polytope by connecting the
 				// HEEdges of the horizon to the new SupportPoint
 				if (iClosestFace < 0) { overlappingFaces.clear(); }
 				for (int iHorizonEdge : horizon) {
@@ -196,7 +242,15 @@ namespace fe { namespace collision {
 					if (iClosestFace < 0) { overlappingFaces.push_back(iNewFace); }
 				}
 			}
+
+			// 4. Get the next closest HEFace to the origin
+			if (!facesByDistance.empty()) {
+				iCurrentFace = facesByDistance.back();
+				facesByDistance.pop_back();
+				faceDistance = polytope.getDistanceData(iCurrentFace);
+			}
 		}
+		while (!facesByDistance.empty() && (closestSeparation - faceDistance.distance > mMinFThreshold));
 
 		// If we removed the closestFace then we have to recover it
 		if (iClosestFace < 0) {

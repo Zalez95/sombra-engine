@@ -416,10 +416,10 @@ namespace game {
 			}
 			if (i == 3) {
 				rigidBody2->angularVelocity = glm::vec3(0, 10, 0);
+				rb2 = rigidBody2.get();
 			}
 			if (i == 4) {
 				cube->velocity += glm::vec3(-1, 0, 0);
-				rb2 = rigidBody2.get();
 			}
 			auto collider2 = std::make_unique<fe::collision::BoundingBox>(glm::vec3(1,1,1));
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
@@ -543,7 +543,7 @@ namespace game {
 			mGraphicsManager->removeEntity(entity.get());
 		}
 		mEntities.clear();
-		delete constraint;
+		//delete constraint;
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
 	}
