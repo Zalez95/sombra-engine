@@ -4,18 +4,18 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include <fe/app/Application.h>
-#include <fe/graphics/2D/Layer2D.h>
-#include <fe/graphics/2D/Renderable2D.h>
-#include <fe/audio/Buffer.h>
-#include <fe/physics/Constraint.h>
+#include <se/app/Application.h>
+#include <se/graphics/2D/Layer2D.h>
+#include <se/graphics/2D/Renderable2D.h>
+#include <se/audio/Buffer.h>
+#include <se/physics/Constraint.h>
 
 namespace game {
 
 	/**
 	 * Class Engine
 	 */
-	class Game : public fe::app::Application
+	class Game : public se::app::Application
 	{
 	private:	// Constants
 		static const std::string sTitle;
@@ -25,14 +25,14 @@ namespace game {
 		static const unsigned int sNumCubes;
 
 	private:	// Attributes
-		fe::graphics::Layer2D mLayer2D;
-		std::vector<fe::graphics::Renderable2D> mRenderable2Ds;
-		fe::audio::Buffer buffer1;
-		fe::physics::Constraint* constraint;
+		se::graphics::Layer2D mLayer2D;
+		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
+		se::audio::Buffer buffer1;
+		se::physics::Constraint* constraint;
 
 	public:		// Functions
 		/** Creates a new Game */
-		Game() : fe::app::Application(sTitle, sWidth, sHeight, sUpdateTime) {};
+		Game() : se::app::Application(sTitle, sWidth, sHeight, sUpdateTime) {};
 
 		/** Class destructor */
 		~Game() {};

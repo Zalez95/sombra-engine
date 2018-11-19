@@ -12,7 +12,7 @@ target_include_directories(game PRIVATE
 
 # Add the compiler options
 set_target_properties(game PROPERTIES
-	CXX_STANDARD			14
+	CXX_STANDARD			17
 	CXX_STANDARD_REQUIRED	On
 	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 )
@@ -23,4 +23,4 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 # Link the dependencies
-target_link_libraries(game PRIVATE fazeEngine)
+target_link_libraries(game PRIVATE sombraEngine)

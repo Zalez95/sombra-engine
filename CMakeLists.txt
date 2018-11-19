@@ -1,14 +1,14 @@
-cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8.2 FATAL_ERROR)
 
 ###############################################################################
-# 								FAZE ENGINE
+# 								SOMBRA ENGINE
 ###############################################################################
 # Project name and version
-project(FazeEngine VERSION 0.5.0 LANGUAGES CXX)
+project(SombraEngine VERSION 0.5.0 LANGUAGES CXX)
 
 # Project options
-option(FAZE_ENGINE_BUILD_DOC "Generate the FazeEngine documentation" ON)
-option(FAZE_ENGINE_BUILD_TESTS "Build the Faze Engine test programs" ON)
+option(SOMBRA_ENGINE_BUILD_DOC "Generate the SombraEngine documentation" ON)
+option(SOMBRA_ENGINE_BUILD_TESTS "Build the SombraEngine test programs" ON)
 
 # Set the project module directories
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -48,5 +48,5 @@ include(Dependencies)
 
 # Create the libraries and the executables
 enable_testing()
-add_subdirectory(faze-engine)
+add_subdirectory(sombra-engine)
 add_subdirectory(game)

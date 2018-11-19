@@ -7,23 +7,23 @@ Requirements:
 - Linux only: libgl1-mesa-dev, libasound2-dev and xorg-dev packages.
 
 Third party libraries used:
-- OpenGL		- The OpenGL library.
-- GLM			- OpenGL Mathematics Library (http://glm.g-truc.net/0.9.8/index.html).
-- GLEW			- The OpenGL Extension Wrangler Library (http://glew.sourceforge.net/).
-- GLFW			- Library used to create windows and access to the user's input (http://www.glfw.org/).
-- SOIL			- Library used to read common image file formats (http://www.lonesock.net/soil.html).
-- OpenAL Soft	- Library for playing audio in 3D virtual environments (http://openal-soft.org/)
-- AudioFile		- Library for reading WAV audio files (https://github.com/adamstark/AudioFile)
-- Google Test	- Library used to create tests for the FazeEngine library (https://github.com/google/googletest).
+- OpenGL			- The OpenGL library.
+- GLM				- OpenGL Mathematics Library (http://glm.g-truc.net/0.9.8/index.html).
+- GLEW				- The OpenGL Extension Wrangler Library (http://glew.sourceforge.net/).
+- GLFW				- Library used to create windows and access to the user's input (http://www.glfw.org/).
+- SOIL				- Library used to read common image file formats (http://www.lonesock.net/soil.html).
+- OpenAL Soft		- Library for playing audio in 3D virtual environments (http://openal-soft.org/)
+- AudioFile			- Library for reading WAV audio files (https://github.com/adamstark/AudioFile)
+- Google Test		- Library used to create tests for the SombraEngine library (https://github.com/google/googletest).
 
 Project structure:
-- /bin			- Output binaries
-- /build		- Object files and other CMake output
-- /cmake		- CMake files used to find or download the third party libraries used in this project
-- /ext			- Project dependencies source dir
-- /faze-engine	- FazeEngine library source dir
-- /game			- Game source dir
-- /lib			- Output libraries
+- /bin				- Output binaries
+- /build			- Object files and other CMake output
+- /cmake			- CMake files used to find or download the third party libraries used in this project
+- /ext				- Project dependencies source dir
+- /sombra-engine	- SombraEngine library source dir
+- /game				- Game source dir
+- /lib				- Output libraries
 
 Naming conventions:
 - Shader extensions:

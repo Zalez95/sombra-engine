@@ -9,7 +9,7 @@ option(INSTALLED_GTEST		"Use installed gtest library"		ON)
 
 find_package(Git REQUIRED)
 
-if(FAZE_ENGINE_BUILD_DOC)
+if(SOMBRA_ENGINE_BUILD_DOC)
 	find_package(Doxygen)
 endif()
 
