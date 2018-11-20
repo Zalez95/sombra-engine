@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "se/loaders/EntityReader.h"
+#include "se/loaders/MeshLoader.h"
 #include "se/utils/FileReader.h"
 #include "se/app/Entity.h"
 #include "se/graphics/3D/Camera.h"
@@ -211,7 +212,7 @@ namespace se::loaders {
 					);
 
 					if (itRawMesh != sharedData.rawMeshes.end()) {
-						sharedData.meshes.push_back( mMeshLoader.createMesh(**itRawMesh) );
+						sharedData.meshes.push_back( MeshLoader::createGraphicsMesh(**itRawMesh) );
 						itMesh = sharedData.meshes.end();
 					}
 				}
@@ -247,30 +248,13 @@ namespace se::loaders {
 					}
 				);
 				if (itRawMesh != sharedData.rawMeshes.end()) {
-					auto rawMesh = *itRawMesh;
-
-					// TODO: read other colliders
-					collision::HalfEdgeMesh meshData;
-					std::map<int, int> vertexMap;
-					for (std::size_t iVertex1 = 0; iVertex1 < rawMesh->positions.size(); ++iVertex1) {
-						int iVertex2 = collision::addVertex(meshData, rawMesh->positions[iVertex1]);
-						vertexMap.emplace(iVertex1, iVertex2);
+					auto heMesh = MeshLoader::createHalfEdgeMesh(**itRawMesh);
+					if (heMesh) {
+						// TODO: move to header
+						collision::QuickHull qh(0.001f);
+						qh.calculate(*heMesh);
+						collider = std::make_unique<collision::ConvexPolyhedron>(qh.getMesh());
 					}
-					for (std::size_t i = 0; i < rawMesh->faceIndices.size(); i += 3) {
-						collision::addFace(
-							meshData,
-							{
-								vertexMap[ rawMesh->faceIndices[i] ],
-								vertexMap[ rawMesh->faceIndices[i+1] ],
-								vertexMap[ rawMesh->faceIndices[i+2] ]
-							}
-						);
-					}
-
-					// TODO: move to header
-					collision::QuickHull qh(0.001f);
-					qh.calculate(meshData);
-					collider = std::make_unique<collision::ConvexPolyhedron>(qh.getMesh());
 				}
 			}
 			else if (token == "}") { end = true; }

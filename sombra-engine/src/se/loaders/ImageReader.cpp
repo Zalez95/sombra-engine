@@ -22,7 +22,7 @@ namespace se::loaders {
 			);
 		}
 
-		return new utils::Image(pixels, width, height, channels, imageFormat);
+		return new utils::Image(reinterpret_cast<std::byte*>(pixels), width, height, channels, imageFormat);
 	}
 
 }

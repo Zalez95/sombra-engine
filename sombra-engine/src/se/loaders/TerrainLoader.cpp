@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/loaders/RawMesh.h"
 #include "se/loaders/TerrainLoader.h"
+#include "se/loaders/MeshLoader.h"
 #include "se/app/Entity.h"
 #include "se/utils/Image.h"
 #include "se/graphics/3D/Mesh.h"
@@ -21,7 +22,7 @@ namespace se::loaders {
 		auto entity = std::make_unique<app::Entity>(name);
 
 		// Graphics data
-		auto graphicsMesh = mMeshLoader.createMesh(*rawMesh);
+		auto graphicsMesh = MeshLoader::createGraphicsMesh(*rawMesh);
 		auto renderable3D = std::make_unique<graphics::Renderable3D>(std::move(graphicsMesh), nullptr, nullptr);
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), transforms);
 
@@ -132,10 +133,10 @@ namespace se::loaders {
 		assert(x < heightMap.getWidth() && "x must be smaller than the image width");
 		assert(z < heightMap.getHeight() && "z must be smaller than the image height");
 
-		unsigned char* heightMapPixels = heightMap.getPixels();
-		unsigned char l = heightMapPixels[z * heightMap.getWidth() + x];
+		std::byte* heightMapPixels = heightMap.getPixels();
+		std::byte l = heightMapPixels[z * heightMap.getWidth() + x];
 
-		return (l / kMaxColor - 0.5f);
+		return (std::to_integer<int>(l) / kMaxColor - 0.5f);
 	}
 
 }

@@ -4,6 +4,7 @@
 #include <memory>
 
 namespace se::graphics { class Mesh; }
+namespace se::collision { class HalfEdgeMesh; }
 
 namespace se::loaders {
 
@@ -11,13 +12,13 @@ namespace se::loaders {
 
 
 	/**
-	 * Class MeshLoader, it's used to create meshes from raw data or from the
-	 * given files
+	 * Class MeshLoader, it's used to create meshes from raw meshes data
 	 */
 	class MeshLoader
 	{
 	private:	// Nested types
-		using MeshUPtr = std::unique_ptr<graphics::Mesh>;
+		using GraphicsMeshUPtr = std::unique_ptr<graphics::Mesh>;
+		using HalfEdgeMeshUPtr = std::unique_ptr<collision::HalfEdgeMesh>;
 
 		/** The attribute indices of the Meshes */
 		enum Attributes : unsigned int
@@ -30,18 +31,18 @@ namespace se::loaders {
 		};
 
 	public:		// Functions
-		/** Creates a new MeshLoader */
-		MeshLoader() {};
-
-		/** Class destructor */
-		~MeshLoader() {};
-
-		/** creates a Mesh with the given mesh data
+		/** creates a Graphics Mesh with the given mesh data
 		 *
 		 * @param	rawMesh the data with which we will create the graphics
 		 *			mesh
-		 * @return	a pointer to the new created Mesh */
-		MeshUPtr createMesh(const RawMesh& rawMesh) const;
+		 * @return	a pointer to the new Graphics Mesh */
+		static GraphicsMeshUPtr createGraphicsMesh(const RawMesh& rawMesh);
+
+		/** creates a HalfEdgeMesh with the given mesh data
+		 *
+		 * @param	rawMesh the data with which we will create the HalfEdgeMesh
+		 * @return	a pointer to the new HalfEdgeMesh */
+		static HalfEdgeMeshUPtr createHalfEdgeMesh(const RawMesh& rawMesh);
 	};
 
 }

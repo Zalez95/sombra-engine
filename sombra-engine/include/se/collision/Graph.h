@@ -9,7 +9,7 @@ namespace se::collision {
 	/**
 	 * Struct GraphVertex, it represents a vertex inside of a Graph
 	 */
-	template<typename T>
+	template <typename T>
 	struct GraphVertex
 	{
 		/** The id of the current vertex */
@@ -59,7 +59,7 @@ namespace se::collision {
 	/**
 	 * Struct Graph, it's used to store a generic Graph
 	 */
-	template<typename T>
+	template <typename T>
 	struct Graph
 	{
 		/** The vertices of the graph sorted by id from lowest to highest */
@@ -74,7 +74,7 @@ namespace se::collision {
 	 *			to be collapsed
 	 * @param	iVertex2 the index of the graph node to collapse
 	 * @param	dualGraph the graph where the nodes are located in */
-	template<typename T>
+	template <typename T>
 	void halfEdgeCollapse(int iVertex1, int iVertex2, Graph<T>& dualGraph)
 	{
 		auto itVertex1 = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iVertex1);

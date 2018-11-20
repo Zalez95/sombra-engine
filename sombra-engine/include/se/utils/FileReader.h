@@ -74,7 +74,7 @@ namespace se::utils {
 		 *			value
 		 * @note	if there was an error parsing the parameter, the fail
 		 *			function will return true */
-		template<typename T>
+		template <typename T>
 		FileState getValue(T& token);
 
 		/** Extraction operator. It does the same than the @see getValue
@@ -84,7 +84,7 @@ namespace se::utils {
 		 *			value
 		 * @note	if there was an error parsing the parameter, the fail
 		 *			function will return true */
-		template<typename T>
+		template <typename T>
 		FileReader& operator>>(T& token);
 
 		/** Reads the next value and splits it by the given separator, storing
@@ -97,7 +97,7 @@ namespace se::utils {
 		 *			second readed value
 		 * @return	true if the values were readed and loaded succesfully,
 		 *			false otherwise */
-		template<typename T1, typename T2>
+		template <typename T1, typename T2>
 		FileState getValuePair(
 			T1& first, const std::string& separator, T2& second
 		);
@@ -109,7 +109,7 @@ namespace se::utils {
 
 
 // Template functions definition
-	template<typename T>
+	template <typename T>
 	FileState FileReader::getValue(T& token)
 	{
 		int t = mCurLineStream.tellg();
@@ -139,7 +139,7 @@ namespace se::utils {
 	}
 
 
-	template<typename T>
+	template <typename T>
 	FileReader& FileReader::operator>>(T& token)
 	{
 		getValue(token);
@@ -147,7 +147,7 @@ namespace se::utils {
 	}
 
 
-	template<typename T1, typename T2>
+	template <typename T1, typename T2>
 	FileState FileReader::getValuePair(
 		T1& first, const std::string& separator, T2& second
 	) {

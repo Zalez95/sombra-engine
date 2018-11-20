@@ -1,7 +1,6 @@
 #ifndef ENTITY_READER_H
 #define ENTITY_READER_H
 
-#include "MeshLoader.h"
 #include "MeshReader.h"
 #include "MaterialReader.h"
 #include "../app/GraphicsManager.h"
@@ -37,10 +36,6 @@ namespace se::loaders {
 		struct SharedData;
 
 	private:	// Attributes
-		/** The MeshLoader used for loading the Meshes for the
-		 * graphics data of the Entities */
-		MeshLoader mMeshLoader;
-
 		/** The MeshReader used for reading the Meshes for the
 		 * graphics data of the Entities */
 		MeshReader mMeshReader;

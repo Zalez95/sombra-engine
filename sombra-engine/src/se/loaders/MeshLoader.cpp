@@ -5,12 +5,14 @@
 #include "se/graphics/buffers/VertexBuffer.h"
 #include "se/graphics/buffers/IndexBuffer.h"
 #include "se/graphics/buffers/VertexArray.h"
+#include "se/collision/HalfEdgeMesh.h"
+#include "se/collision/HalfEdgeMeshExt.h"
 
 namespace se::loaders {
 
-	MeshLoader::MeshUPtr MeshLoader::createMesh(const RawMesh& rawMesh) const
+	MeshLoader::GraphicsMeshUPtr MeshLoader::createGraphicsMesh(const RawMesh& rawMesh)
 	{
-		MeshUPtr graphicsMesh = nullptr;
+		GraphicsMeshUPtr graphicsMesh;
 
 		auto vao = std::make_unique<graphics::VertexArray>();
 		std::vector<std::unique_ptr<graphics::VertexBuffer>> vbos;
@@ -69,6 +71,42 @@ namespace se::loaders {
 		}
 
 		return graphicsMesh;
+	}
+
+
+	MeshLoader::HalfEdgeMeshUPtr MeshLoader::createHalfEdgeMesh(const RawMesh& rawMesh)
+	{
+		auto heMesh = std::make_unique<collision::HalfEdgeMesh>();
+
+		// Add the HEVertices
+		std::map<int, int> vertexMap;
+		for (std::size_t iVertex1 = 0; iVertex1 < rawMesh.positions.size(); ++iVertex1) {
+			int iVertex2 = collision::addVertex(*heMesh, rawMesh.positions[iVertex1]);
+			vertexMap.emplace(iVertex1, iVertex2);
+		}
+
+		// Add the HEFaces
+		for (std::size_t i = 0; i < rawMesh.faceIndices.size(); i += 3) {
+			int iFace = collision::addFace(
+				*heMesh,
+				{
+					vertexMap[ rawMesh.faceIndices[i] ],
+					vertexMap[ rawMesh.faceIndices[i+1] ],
+					vertexMap[ rawMesh.faceIndices[i+2] ]
+				}
+			);
+
+			if (iFace < 0) {
+				return nullptr;
+			}
+		}
+
+		// Validate the HEMesh
+		if (!collision::validateMesh(*heMesh).first) {
+			return nullptr;
+		}
+
+		return heMesh;
 	}
 
 }

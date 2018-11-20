@@ -1,6 +1,8 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include <cstddef>
+
 namespace se::utils {
 
 	/**
@@ -26,7 +28,7 @@ namespace se::utils {
 	{
 	private:	// Attributes
 		/** The pixel data of the image */
-		unsigned char* mPixels;
+		std::byte* mPixels;
 
 		/** The width of the image in pixels */
 		unsigned int mWidth;
@@ -43,13 +45,13 @@ namespace se::utils {
 	public:		// Functions
 		/** Creates a new Image from the given data
 		 *
-		 * @param	pixels the pixel data of the new image
+		 * @param	pixels a pointer to the pixel data of the new image
 		 * @param	width the width in pixels of the new image
 		 * @param	height the height in pixels of the new image
 		 * @param	channels the number of channels of the new image
 		 * @param	imageFormat the format of the new Image */
 		Image(
-			unsigned char* pixels, unsigned int width, unsigned int height,
+			std::byte* pixels, unsigned int width, unsigned int height,
 			unsigned int channels, ImageFormat imageFormat
 		) : mPixels(pixels), mWidth(width), mHeight(height),
 			mChannels(channels), mImageFormat(imageFormat) {};
@@ -58,7 +60,7 @@ namespace se::utils {
 		~Image() { delete[] mPixels; };
 
 		/** @return	a pointer to the pixel data of the image */
-		inline unsigned char* getPixels() const { return mPixels; };
+		inline std::byte* getPixels() const { return mPixels; };
 
 		/** @return	the width of the image in pixels */
 		inline unsigned int getWidth() const { return mWidth; };

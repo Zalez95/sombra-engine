@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <string>
-#include "MeshLoader.h"
 #include "../app/GraphicsManager.h"
 #include "../app/PhysicsManager.h"
 
@@ -32,9 +31,6 @@ namespace se::loaders {
 		/** The maximum color value that a pixel can have in the heightMaps */
 		static constexpr float kMaxColor = 255.0f;
 
-		/** The MeshLoader used to create the meshes */
-		const MeshLoader& mMeshLoader;
-
 		/** The GraphicsManager used to store the Renderable3Ds of the
 		 * Terrains */
 		app::GraphicsManager& mGraphicsManager;
@@ -46,18 +42,14 @@ namespace se::loaders {
 	public:		// Functions
 		/** Creates a new TerrainLoader
 		 *
-		 * @param	meshLoader the MeshLoader used to load the Terrain mesh to
-		 *			a VAO
 		 * @param	graphicsManager the GraphicsManager that holds the graphics
 		 *			data of the Terrain Entities
 		 * @param	physicsManager the PhysicsManager that holds the physics
 		 *			data of the Terrain Entities */
 		TerrainLoader(
-			const MeshLoader& meshLoader,
 			app::GraphicsManager& graphicsManager,
 			app::PhysicsManager& physicsManager
-		) : mMeshLoader(meshLoader),
-			mGraphicsManager(graphicsManager),
+		) : mGraphicsManager(graphicsManager),
 			mPhysicsManager(physicsManager) {};
 
 		/** Class destructor */

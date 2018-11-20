@@ -7,7 +7,7 @@
 
 namespace se::collision {
 
-	template<class T, bool isConst> class ContiguousVectorIterator;
+	template <class T, bool isConst> class ContiguousVectorIterator;
 
 
 	/**
@@ -19,7 +19,7 @@ namespace se::collision {
 	 *			increment of the vector size with new allocations, also the
 	 *			released elements will be reused in the following allocations
 	 */
-	template<class T>
+	template <class T>
 	class ContiguousVector
 	{
 	public:		// Nested types
@@ -80,8 +80,8 @@ namespace se::collision {
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
 		 * @return	the index of the element */
-		template<typename... Args>
-		std::size_t create(Args... args);
+		template <typename... Args>
+		std::size_t create(Args&&... args);
 
 		/** Marks the Element located at the given index as released for
 		 * future use
@@ -105,7 +105,7 @@ namespace se::collision {
 	 * Class ContiguousVectorIterator, the class used to iterate through the
 	 * elements of a ContiguousVector
 	 */
-	template<class T, bool isConst = false>
+	template <class T, bool isConst = false>
 	class ContiguousVectorIterator : public std::iterator<
 		std::bidirectional_iterator_tag, T
 	> {
@@ -189,9 +189,9 @@ namespace se::collision {
 	};
 
 // Template functions definition
-	template<class T>
-	template<typename... Args>
-	std::size_t ContiguousVector<T>::create(Args... args)
+	template <class T>
+	template <typename... Args>
+	std::size_t ContiguousVector<T>::create(Args&&... args)
 	{
 		std::size_t index;
 		if (mFreeIndices.empty()) {
@@ -209,7 +209,7 @@ namespace se::collision {
 	}
 
 
-	template<class T>
+	template <class T>
 	void ContiguousVector<T>::release(std::size_t i)
 	{
 		if (isActive(i)) {
@@ -220,7 +220,7 @@ namespace se::collision {
 	}
 
 
-	template<class T>
+	template <class T>
 	bool ContiguousVector<T>::isActive(std::size_t i) const
 	{
 		return (i < mElements.size())
@@ -228,7 +228,7 @@ namespace se::collision {
 	}
 
 
-	template<class T, bool isConst>
+	template <class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>::ContiguousVectorIterator(
 		VectorType* vector
 	) : mVector(vector), mIndex(0)
@@ -239,7 +239,7 @@ namespace se::collision {
 	}
 
 
-	template<class T, bool isConst>
+	template <class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>&
 		ContiguousVectorIterator<T, isConst>::operator++()
 	{
@@ -255,7 +255,7 @@ namespace se::collision {
 	}
 
 
-	template<class T, bool isConst>
+	template <class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>
 		ContiguousVectorIterator<T, isConst>::operator++(int)
 	{
@@ -265,7 +265,7 @@ namespace se::collision {
 	}
 
 
-	template<class T, bool isConst>
+	template <class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>&
 		ContiguousVectorIterator<T, isConst>::operator--()
 	{
@@ -281,7 +281,7 @@ namespace se::collision {
 	}
 
 
-	template<class T, bool isConst>
+	template <class T, bool isConst>
 	ContiguousVectorIterator<T, isConst>
 		ContiguousVectorIterator<T, isConst>::operator--(int)
 	{

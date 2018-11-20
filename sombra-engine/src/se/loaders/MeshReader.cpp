@@ -205,7 +205,8 @@ namespace se::loaders {
 		const std::vector<glm::vec2>& uvs,
 		const std::vector<unsigned short>& posIndices,
 		const std::vector<unsigned short>& uvIndices
-	) const {
+	) const
+	{
 		auto rawMesh = std::make_unique<RawMesh>(name);
 
 		if (!uvIndices.empty()) {
