@@ -9,11 +9,7 @@ namespace se::graphics {
 	class FontProgram
 	{
 	public:		// Functions
-		/** Creates a new FontProgram */
-		FontProgram() {};
-
-		/** Class destructor */
-		~FontProgram() {};
+		/** TODO: implement */
 	};
 
 }

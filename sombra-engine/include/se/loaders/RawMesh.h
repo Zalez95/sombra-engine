@@ -24,8 +24,6 @@ namespace se::loaders {
 		std::vector<unsigned short> jointIndices;
 
 		RawMesh(const std::string& name) : name(name) {};
-
-		~RawMesh() {};
 	};
 
 }

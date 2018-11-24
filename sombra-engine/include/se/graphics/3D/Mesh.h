@@ -1,45 +1,31 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <memory>
 #include <vector>
-#include <string>
+#include "../buffers/VertexBuffer.h"
+#include "../buffers/IndexBuffer.h"
+#include "../buffers/VertexArray.h"
 
 namespace se::graphics {
 
-	class VertexBuffer;
-	class IndexBuffer;
-	class VertexArray;
-
-
 	/**
 	 * Class Mesh, it holds the buffers that creates a 3D mesh
-	 * TODO: complete documentation
 	 */
 	class Mesh
 	{
-	private:	// Nested Types
-		typedef std::unique_ptr<VertexBuffer> VertexBufferUPtr;
-		typedef std::unique_ptr<IndexBuffer> IndexBufferUPtr;
-		typedef std::unique_ptr<VertexArray> VertexArrayUPtr;
-
 	private:	// Attributes
-		/** The name of the Mesh */
-		const std::string mName;
-
 		/** The vertex buffers of the Mesh */
-		std::vector<VertexBufferUPtr> mVBOs;
+		std::vector<VertexBuffer> mVBOs;
 
 		/** The IBO of the Mesh */
-		IndexBufferUPtr mIBO;
+		IndexBuffer mIBO;
 
 		/** The VAO of the Mesh */
-		VertexArrayUPtr mVAO;
+		VertexArray mVAO;
 
 	public:		// Functions
 		/** Creates a new Mesh from the given data
 		 *
-		 * @param	name the name of the Mesh
 		 * @param	vbos the vertex buffers that coint all the vertex data of
 		 *			the mesh
 		 * @param	ibo the IBO of the mesh that cointains the data of the
@@ -48,16 +34,9 @@ namespace se::graphics {
 		 * @note	the vertexBuffers must be already bound to the VAO with its
 		 *			respective attribute indices */
 		Mesh(
-			const std::string& name,
-			std::vector<VertexBufferUPtr>&& vbos,
-			IndexBufferUPtr ibo, VertexArrayUPtr vao
+			std::vector<VertexBuffer>&& vbos,
+			IndexBuffer&& ibo, VertexArray&& vao
 		);
-
-		/** Class destructor */
-		~Mesh();
-
-		/** @return the name of the Mesh */
-		inline std::string getName() const { return mName; };
 
 		/** @return the number of Indices of the faces of the Mesh */
 		unsigned int getIndexCount() const;

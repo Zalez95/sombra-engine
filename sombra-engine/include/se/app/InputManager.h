@@ -33,10 +33,7 @@ namespace se::app {
 		 *			input of the player */
 
 		InputManager(window::WindowSystem& windowSystem) :
-			mWindowSystem(windowSystem) { resetMousePosition(); }
-
-		/** Class destructor */
-		~InputManager() {};
+			mWindowSystem(windowSystem) { resetMousePosition(); };
 
 		/** Adds the given Entity to the InputManager
 		 *

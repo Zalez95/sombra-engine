@@ -15,7 +15,7 @@ namespace se::graphics {
 	Renderer2D::Quad2D::Quad2D() :
 		mPositionsBuffer(kPositions, kNumVertices * kNumComponentsPerVertex, kNumComponentsPerVertex)
 	{
-		mVAO.addBuffer(&mPositionsBuffer, 0);
+		mVAO.addBuffer(mPositionsBuffer, 0);
 	}
 
 

@@ -6,23 +6,45 @@ namespace se::graphics {
 
 	VertexArray::VertexArray()
 	{
-		GL_WRAP( glGenVertexArrays(1, &mArrayID) );
+		GL_WRAP( glGenVertexArrays(1, &mArrayId) );
+	}
+
+
+	VertexArray::VertexArray(VertexArray&& other)
+	{
+		mArrayId = other.mArrayId;
+		other.mArrayId = 0;
 	}
 
 
 	VertexArray::~VertexArray()
 	{
-		GL_WRAP( glDeleteVertexArrays(1, &mArrayID) );
+		if (mArrayId != 0) {
+			GL_WRAP( glDeleteVertexArrays(1, &mArrayId) );
+		}
 	}
 
 
-	void VertexArray::addBuffer(const VertexBuffer* vertexBuffer, unsigned int index)
+	VertexArray& VertexArray::operator=(VertexArray&& other)
+	{
+		if (mArrayId != 0) {
+			GL_WRAP( glDeleteVertexArrays(1, &mArrayId) );
+		}
+
+		mArrayId = other.mArrayId;
+		other.mArrayId = 0;
+
+		return *this;
+	}
+
+
+	void VertexArray::addBuffer(const VertexBuffer& vertexBuffer, unsigned int index)
 	{
 		bind();
 
-		vertexBuffer->bind();
+		vertexBuffer.bind();
 		GL_WRAP( glEnableVertexAttribArray(index) );
-		GL_WRAP( glVertexAttribPointer(index, vertexBuffer->getComponentSize(), GL_FLOAT, GL_FALSE, 0, 0) );
+		GL_WRAP( glVertexAttribPointer(index, vertexBuffer.getComponentSize(), GL_FLOAT, GL_FALSE, 0, 0) );
 
 		unbind();
 	}
@@ -30,7 +52,7 @@ namespace se::graphics {
 
 	void VertexArray::bind() const
 	{
-		GL_WRAP( glBindVertexArray(mArrayID) );
+		GL_WRAP( glBindVertexArray(mArrayId) );
 	}
 
 

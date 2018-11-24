@@ -36,9 +36,6 @@ namespace se::collision {
 		 * @param	epsilon the comparison precision of the algorithm */
 		GJKCollisionDetector(float epsilon) : mEpsilon(epsilon) {};
 
-		/** Class destructor */
-		~GJKCollisionDetector() {};
-
 		/** Checks if the given ConvexColliders are intersecting with the GJK
 		 * algorithm
 		 *

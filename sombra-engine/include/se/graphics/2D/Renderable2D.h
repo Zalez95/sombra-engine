@@ -39,9 +39,6 @@ namespace se::graphics {
 			const TextureSPtr texture
 		) :	mPosition(position), mScale(scale), mTexture(texture) {};
 
-		/** Class destructor */
-		~Renderable2D() {};
-
 		/** @return the position of the Renderable2D */
 		inline glm::vec2 getPosition() const { return mPosition; };
 

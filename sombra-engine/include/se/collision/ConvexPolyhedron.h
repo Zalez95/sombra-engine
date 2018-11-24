@@ -33,9 +33,6 @@ namespace se::collision {
 			mMesh(meshData), mLocalVertices(meshData.vertices),
 			mTransformsMatrix(1.0f) {};
 
-		/** Class destructor */
-		~ConvexPolyhedron() {};
-
 		/** Updates the scale, translation and orientation of the
 		 * ConvexPolyhedron with the given transformations matrix
 		 *

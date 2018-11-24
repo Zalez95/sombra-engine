@@ -22,8 +22,8 @@ namespace se::loaders {
 		auto entity = std::make_unique<app::Entity>(name);
 
 		// Graphics data
-		auto graphicsMesh = MeshLoader::createGraphicsMesh(*rawMesh);
-		auto renderable3D = std::make_unique<graphics::Renderable3D>(std::move(graphicsMesh), nullptr, nullptr);
+		auto graphicsMesh = std::make_shared<graphics::Mesh>( MeshLoader::createGraphicsMesh(*rawMesh) );
+		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, nullptr, nullptr);
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), transforms);
 
 		// Physics data

@@ -1,10 +1,8 @@
 #ifndef MESH_LOADER_H
 #define MESH_LOADER_H
 
-#include <memory>
-
-namespace se::graphics { class Mesh; }
-namespace se::collision { class HalfEdgeMesh; }
+#include "se/graphics/3D/Mesh.h"
+#include "se/collision/HalfEdgeMesh.h"
 
 namespace se::loaders {
 
@@ -17,9 +15,6 @@ namespace se::loaders {
 	class MeshLoader
 	{
 	private:	// Nested types
-		using GraphicsMeshUPtr = std::unique_ptr<graphics::Mesh>;
-		using HalfEdgeMeshUPtr = std::unique_ptr<collision::HalfEdgeMesh>;
-
 		/** The attribute indices of the Meshes */
 		enum Attributes : unsigned int
 		{
@@ -35,14 +30,17 @@ namespace se::loaders {
 		 *
 		 * @param	rawMesh the data with which we will create the graphics
 		 *			mesh
-		 * @return	a pointer to the new Graphics Mesh */
-		static GraphicsMeshUPtr createGraphicsMesh(const RawMesh& rawMesh);
+		 * @return	the new Graphics Mesh */
+		static graphics::Mesh createGraphicsMesh(const RawMesh& rawMesh);
 
 		/** creates a HalfEdgeMesh with the given mesh data
 		 *
 		 * @param	rawMesh the data with which we will create the HalfEdgeMesh
-		 * @return	a pointer to the new HalfEdgeMesh */
-		static HalfEdgeMeshUPtr createHalfEdgeMesh(const RawMesh& rawMesh);
+		 * @return	a pair with the loaded HafEdgeMesh and a bool that indicates
+		 *			if the HalfEdgeMesh was loaded correctly or not */
+		static std::pair<collision::HalfEdgeMesh, bool> createHalfEdgeMesh(
+			const RawMesh& rawMesh
+		);
 	};
 
 }

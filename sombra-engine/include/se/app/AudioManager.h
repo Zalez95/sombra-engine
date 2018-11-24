@@ -38,9 +38,6 @@ namespace se::app {
 		AudioManager(audio::AudioEngine& audioEngine) :
 			mAudioEngine(audioEngine) {};
 
-		/** Class destructor */
-		~AudioManager() {};
-
 		/** Adds the given Entity as an audio Source to the AudioManager
 		 *
 		 * @param	entity a pointer to the Entity to add to the

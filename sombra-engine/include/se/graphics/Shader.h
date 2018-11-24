@@ -10,8 +10,8 @@ namespace se::graphics {
 	class Shader
 	{
 	private:	// Attributes
-		/** The ID of the Shader */
-		unsigned int mShaderID;
+		/** The id of the Shader */
+		unsigned int mShaderId;
 
 	public:		// Functions
 		/** Creates and compiles a shader from the specified source code.
@@ -22,12 +22,18 @@ namespace se::graphics {
 		 *			(Usually GL_VERTEX_SHADER or GL_FRAGMENT_SHADER)
 		 * @throw	runtime_error if the Shader couldn't be created */
 		Shader(const char* source, unsigned int shaderType);
+		Shader(const Shader& other) = delete;
+		Shader(Shader&& other);
 
 		/** Class destructor */
 		~Shader();
 
-		/** @return the ID of the Shader */
-		inline unsigned int getShaderID() const { return mShaderID; };
+		/** Assignment operator */
+		Shader& operator=(const Shader& other) = delete;
+		Shader& operator=(Shader&& other);
+
+		/** @return the id of the Shader */
+		inline unsigned int getShaderId() const { return mShaderId; };
 	};
 
 }

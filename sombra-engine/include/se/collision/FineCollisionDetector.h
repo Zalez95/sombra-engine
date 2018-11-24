@@ -49,10 +49,7 @@ namespace se::collision {
 			float contactSeparation
 		) : mGJKCollisionDetector(contactPrecision),
 			mEPACollisionDetector(minFDifference, contactPrecision),
-			mContactSeparation(contactSeparation) {}
-
-		/** Class destructor */
-		~FineCollisionDetector() {};
+			mContactSeparation(contactSeparation) {};
 
 		/** Checks if the Colliders of the given manifold are intersecting,
 		 * and if that is the case, calculates the contact data of the

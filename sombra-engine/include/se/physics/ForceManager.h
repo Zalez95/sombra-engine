@@ -31,9 +31,6 @@ namespace se::physics {
 			 * @param	force a pointer to the Force of RBForce */
 			RBForce(RigidBody* rigidBody, Force* force) :
 				rigidBody(rigidBody), force(force) {};
-
-			/** Destructor */
-			~RBForce() {};
 		};
 
 	private:	// Attributes
@@ -41,12 +38,6 @@ namespace se::physics {
 		std::vector<RBForce> mRBForces;
 
 	public:		// Forces
-		/** Creates a new ForceManager */
-		ForceManager() {};
-
-		/** Class destructor */
-		~ForceManager() {};
-
 		/** Registers the given RigidBody with the given Force, so the
 		 * RigidBody will be affected by the Force
 		 *

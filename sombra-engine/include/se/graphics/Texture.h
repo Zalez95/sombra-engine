@@ -60,8 +60,8 @@ namespace se::graphics {
 	class Texture
 	{
 	private:	// Attributes
-		/** The reference of the texture object */
-		unsigned int mTextureID;
+		/** The id of the texture object */
+		unsigned int mTextureId;
 
 		/** The filters used for minification and magnification (NEAREST by
 		 * default) */
@@ -74,26 +74,31 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new Texture */
 		Texture();
+		Texture(const Texture& other) = delete;
+		Texture(Texture&& other);
 
 		/** Class destructor */
 		~Texture();
+
+		/** Assignment operator */
+		Texture& operator=(const Texture& other) = delete;
+		Texture& operator=(Texture&& other);
 
 		/** Sets the filtering method used by the texture
 		 *
 		 * @param	minification the method used in the minification process
 		 * @param	magnification the method used in the magnification
-		 * 			process */
-		inline void setFiltering(
+		 *			process */
+		void setFiltering(
 			TextureFilter minification, TextureFilter magnification
-		) { mFilters[0] = minification; mFilters[1] = magnification; };
+		);
 
 		/** Sets the behavior of the texture in each axis when a requested
 		 * position falls out of the [0.0, 1.0] range.
 		 *
 		 * @param	x the TextureWrap in the x axis
 		 * @param	y the TextureWrap in the y axis */
-		inline void setWrapping(TextureWrap x, TextureWrap y)
-		{ mWrappings[0] = x; mWrappings[1] = y; };
+		void setWrapping(TextureWrap x, TextureWrap y);
 
 		/** Sets the image data of the Texture
 		 *

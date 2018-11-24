@@ -17,8 +17,8 @@ namespace se::graphics {
 	class Program
 	{
 	private:	// Attributes
-		/** The reference of the shader object */
-		unsigned int mProgramID;
+		/** The id of the shader object */
+		unsigned int mProgramId;
 
 	public:		// Functions
 		/** Creates and compiles a OpenGL program from the specified shaders
@@ -27,9 +27,15 @@ namespace se::graphics {
 		 *			Program
 		 * @throw	runtime_error if the Program couldn't be created */
 		Program(const std::vector<const Shader*>& shaders);
+		Program(const Program& other) = delete;
+		Program(Program&& other);
 
 		/** Class destructor */
 		~Program();
+
+		/** Assignment operator */
+		Program& operator=(const Program& other) = delete;
+		Program& operator=(Program&& other);
 
 		/** Return the location of the given uniform name
 		 *

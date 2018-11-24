@@ -27,12 +27,6 @@ namespace se::collision {
 		std::deque<AABB> mAABBs;
 
 	public:		// Functions
-		/** Creates a new CoarseCollisionDetector */
-		CoarseCollisionDetector() {};
-
-		/** Class destructor */
-		~CoarseCollisionDetector() {};
-
 		/** Adds the given Collider to the Detector so it will check if the
 		 * Collider intersecs with the other Colliders in it.
 		 *

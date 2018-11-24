@@ -32,9 +32,6 @@ namespace se::app {
 		PhysicsManager(physics::PhysicsEngine& physicsEngine) :
 			mPhysicsEngine(physicsEngine) {};
 
-		/** Class destructor */
-		~PhysicsManager() {};
-
 		/** Adds the given Entity to the PhysicsManager and its physics data
 		 * to the manager
 		 *

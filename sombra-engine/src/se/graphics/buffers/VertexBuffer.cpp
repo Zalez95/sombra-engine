@@ -8,9 +8,9 @@ namespace se::graphics {
 		unsigned int count, unsigned int componentSize
 	) : mComponentSize(componentSize)
 	{
-		GL_WRAP( glGenBuffers(1, &mBufferID) );
+		GL_WRAP( glGenBuffers(1, &mBufferId) );
 
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
 		GL_WRAP( glBufferData(
 			GL_ARRAY_BUFFER,
 			count * sizeof(GLfloat),
@@ -26,9 +26,9 @@ namespace se::graphics {
 		unsigned int count, unsigned int componentSize
 	) : mComponentSize(componentSize)
 	{
-		GL_WRAP( glGenBuffers(1, &mBufferID) );
+		GL_WRAP( glGenBuffers(1, &mBufferId) );
 
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
 		GL_WRAP( glBufferData(
 			GL_ARRAY_BUFFER,
 			count * sizeof(GLushort),
@@ -39,15 +39,41 @@ namespace se::graphics {
 	}
 
 
+	VertexBuffer::VertexBuffer(VertexBuffer&& other)
+	{
+		mBufferId = other.mBufferId;
+		mComponentSize = other.mComponentSize;
+
+		other.mBufferId = 0;
+	}
+
+
 	VertexBuffer::~VertexBuffer()
 	{
-		GL_WRAP( glDeleteBuffers(1, &mBufferID) );
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+		}
+	}
+
+
+	VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other)
+	{
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+		}
+
+		mBufferId = other.mBufferId;
+		mComponentSize = other.mComponentSize;
+
+		other.mBufferId = 0;
+
+		return *this;
 	}
 
 
 	void VertexBuffer::bind() const
 	{
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
 	}
 
 

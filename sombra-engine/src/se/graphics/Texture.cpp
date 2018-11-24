@@ -7,14 +7,55 @@ namespace se::graphics {
 		mFilters{TextureFilter::NEAREST, TextureFilter::NEAREST},
 		mWrappings{TextureWrap::REPEAT, TextureWrap::REPEAT}
 	{
-		GL_WRAP( glGenTextures(1, &mTextureID) );
+		GL_WRAP( glGenTextures(1, &mTextureId) );
 	}
 
+
+	Texture::Texture(Texture&& other)
+	{
+		mTextureId = other.mTextureId;
+		setFiltering(other.mFilters[0], other.mFilters[1]);
+		setWrapping(other.mWrappings[0], other.mWrappings[1]);
+
+		other.mTextureId = 0;
+	}
 
 
 	Texture::~Texture()
 	{
-		GL_WRAP( glDeleteTextures(1, &mTextureID) );
+		if (mTextureId != 0) {
+			GL_WRAP( glDeleteTextures(1, &mTextureId) );
+		}
+	}
+
+
+	Texture& Texture::operator=(Texture&& other)
+	{
+		if (mTextureId != 0) {
+			GL_WRAP( glDeleteTextures(1, &mTextureId) );
+		}
+
+		mTextureId = other.mTextureId;
+		setFiltering(other.mFilters[0], other.mFilters[1]);
+		setWrapping(other.mWrappings[0], other.mWrappings[1]);
+
+		other.mTextureId = 0;
+
+		return *this;
+	}
+
+
+	void Texture::setFiltering(TextureFilter minification, TextureFilter magnification)
+	{
+		mFilters[0] = minification;
+		mFilters[1] = magnification;
+	}
+
+
+	void Texture::setWrapping(TextureWrap x, TextureWrap y)
+	{
+		mWrappings[0] = x;
+		mWrappings[1] = y;
 	}
 
 
@@ -37,7 +78,7 @@ namespace se::graphics {
 			glWrappings[i] = (mWrappings[i] == TextureWrap::REPEAT)? GL_REPEAT : GL_CLAMP_TO_EDGE;
 		}
 
-		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureID) );
+		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
 
 		GL_WRAP( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilters[0]) );
 		GL_WRAP( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilters[1]) );
@@ -53,7 +94,7 @@ namespace se::graphics {
 	void Texture::bind(unsigned int slot) const
 	{
 		GL_WRAP( glActiveTexture(GL_TEXTURE0 + slot) );
-		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureID) );
+		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
 	}
 
 

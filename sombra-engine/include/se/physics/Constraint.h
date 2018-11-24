@@ -54,7 +54,7 @@ namespace se::physics {
 			mRigidBodies(rigidBodies) {};
 
 		/** Class destructor */
-		virtual ~Constraint() {};
+		virtual ~Constraint() = default;
 
 		/** @return the a pointer to the ConstraintBounds of the Constraint */
 		inline const ConstraintBounds* getConstraintBounds() const

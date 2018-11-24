@@ -28,9 +28,6 @@ namespace se::collision {
 		/** Creates a new GraphVertex */
 		GraphVertex(int id, T data) : id(id), data(data) {};
 
-		/** Destructor */
-		~GraphVertex() {};
-
 		/** Compares the given vertex with the current one
 		 *
 		 * @param	other the other graph vertex to compare with

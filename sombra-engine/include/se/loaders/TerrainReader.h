@@ -2,7 +2,6 @@
 #define TERRAIN_READER_H
 
 #include <memory>
-#include "ImageReader.h"
 #include "TerrainLoader.h"
 
 namespace se::utils { class FileReader; }
@@ -22,24 +21,13 @@ namespace se::loaders {
 		/** The TerrainLoader that we will use to create the Terrains */
 		TerrainLoader& mTerrainLoader;
 
-		/** The ImageReader used to read the height maps and textures of the
-		 * Terrains */
-		ImageReader& mImageReader;
-
 	public:		// Functions
 		/** Creates a new TerrainReader
 		 *
 		 * @param	terrainLoader a reference to the TerrainLoader that we will
-		 *			use to create the Terrains
-		 * @param	imageReader a reference to the ImageReader the that we will
 		 *			use to create the Terrains */
-		TerrainReader(
-			TerrainLoader& terrainLoader,
-			ImageReader& imageReader
-		) : mTerrainLoader(terrainLoader), mImageReader(imageReader) {};
-
-		/** Class destructor */
-		~TerrainReader() {};
+		TerrainReader(TerrainLoader& terrainLoader) :
+			mTerrainLoader(terrainLoader) {};
 
 		/** Parses the Terrain in the given file and returns it
 		 *

@@ -6,9 +6,9 @@ namespace se::graphics {
 	IndexBuffer::IndexBuffer(const unsigned short* data, unsigned int count) :
 		mIndexCount(count)
 	{
-		GL_WRAP( glGenBuffers(1, &mBufferID) );
+		GL_WRAP( glGenBuffers(1, &mBufferId) );
 
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );
 		GL_WRAP( glBufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			mIndexCount * sizeof(unsigned short),
@@ -19,15 +19,41 @@ namespace se::graphics {
 	}
 
 
+	IndexBuffer::IndexBuffer(IndexBuffer&& other)
+	{
+		mBufferId = other.mBufferId;
+		mIndexCount = other.mIndexCount;
+
+		other.mBufferId = 0;
+	}
+
+
 	IndexBuffer::~IndexBuffer()
 	{
-		GL_WRAP( glDeleteBuffers(1, &mBufferID) );
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+		}
+	}
+
+
+	IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other)
+	{
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+		}
+
+		mBufferId = other.mBufferId;
+		mIndexCount = other.mIndexCount;
+
+		other.mBufferId = 0;
+
+		return *this;
 	}
 
 
 	void IndexBuffer::bind() const
 	{
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferID) );
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );
 	}
 
 

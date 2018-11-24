@@ -43,9 +43,6 @@ namespace se::collision {
 		/** Creates a new ContiguousVector */
 		ContiguousVector() : mNumElements(0) {};
 
-		/** Class destructor */
-		~ContiguousVector() {};
-
 		/** @return	the number of Elements in the ContiguousVector */
 		std::size_t size() const { return mNumElements; };
 
@@ -134,9 +131,6 @@ namespace se::collision {
 		 * @param	index the inital index of the iterator */
 		ContiguousVectorIterator(VectorType* vector, std::size_t index) :
 			mVector(vector), mIndex(index) {};
-
-		/** Class destructor */
-		~ContiguousVectorIterator() {};
 
 		/** @return	the index of the Element that the iterator is pointing to */
 		std::size_t getIndex() const { return mIndex; };

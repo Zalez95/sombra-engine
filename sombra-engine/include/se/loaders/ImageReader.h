@@ -12,21 +12,15 @@ namespace se::loaders {
 	class ImageReader
 	{
 	public:		// Functions
-		/** Creates a new ImageReader */
-		ImageReader() {};
-
-		/** Class destructor */
-		~ImageReader() {};
-
 		/** Reads the image located at the given position
 		 *
 		 * @param	path the location of the image
 		 * @param	imageFormat the format in which the image is stored
-		 * @return	a pointe to the new image
+		 * @return	the new Image
 		 * @throw	runtime_error if the image wasn't found */
-		utils::Image* read(
+		static utils::Image read(
 			const std::string& path, utils::ImageFormat imageFormat
-		) const;
+		);
 	};
 
 }

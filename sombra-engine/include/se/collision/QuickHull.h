@@ -60,9 +60,6 @@ namespace se::collision {
 		 *			QuickHull algorithm computation */
 		QuickHull(float epsilon) : mEpsilon(epsilon) {};
 
-		/** Class destructor */
-		~QuickHull() {};
-
 		/** @return	the HalfEdgeMesh of the convex hull */
 		const HalfEdgeMesh& getMesh() const { return mConvexHullMesh; };
 

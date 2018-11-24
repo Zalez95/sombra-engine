@@ -34,9 +34,6 @@ namespace se::physics {
 			Constraint(&kConstraintBounds, rigidBodies),
 			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
-		/** Class destructor */
-		~DistanceConstraint() {};
-
 		/** @return the value of the Bias of the constraint */
 		float getBias() const override { return 0.0f; };
 

@@ -95,9 +95,6 @@ namespace se::collision {
 		HACD(float maximumConcavity, float epsilon) :
 			mMaximumConcavity(maximumConcavity), mEpsilon(epsilon) {};
 
-		/** Class destructor */
-		~HACD() {};
-
 		/** @return	the HalfEdgeMeshes of the HACD */
 		const std::vector<HalfEdgeMesh>& getMeshes() const
 		{ return mConvexMeshes; };

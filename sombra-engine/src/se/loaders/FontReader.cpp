@@ -1,4 +1,5 @@
 #include "se/loaders/FontReader.h"
+#include "se/loaders/ImageReader.h"
 #include "se/utils/Image.h"
 #include "se/utils/FileReader.h"
 #include "se/graphics/text/Font.h"
@@ -45,10 +46,10 @@ namespace se::loaders {
 				fileReader.getValuePair(trash, "=", fontTextureName);
 				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
 
-				std::unique_ptr<utils::Image> atlasImg( mImageReader.read(fontTexturePath, utils::ImageFormat::L_IMAGE) );
+				utils::Image atlasImg = ImageReader::read(fontTexturePath, utils::ImageFormat::L_IMAGE);
 				textureAtlas->setImage(
-					atlasImg->getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::L,
-					atlasImg->getWidth(), atlasImg->getHeight()
+					atlasImg.getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::L,
+					atlasImg.getWidth(), atlasImg.getHeight()
 				);
 			}
 			else if (token == "chars") {

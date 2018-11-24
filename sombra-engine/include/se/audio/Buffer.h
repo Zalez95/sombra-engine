@@ -13,17 +13,24 @@ namespace se::audio {
 	class Buffer
 	{
 	private:	// Attributes
-		friend class Source;
-
 		/** The index used to access to the audio data */
 		unsigned int mBufferId;
 
 	public:		// Functions
 		/** Creates a new Buffer */
 		Buffer();
+		Buffer(const Buffer& other) = delete;
+		Buffer(Buffer&& other);
 
 		/** Class destructor */
 		~Buffer();
+
+		/** Assignment operator */
+		Buffer& operator=(const Buffer& other) = delete;
+		Buffer& operator=(Buffer&& other);
+
+		/** @return the id of the Buffer */
+		inline unsigned int getBufferId() const { return mBufferId; };
 
 		/** Sets the given raw float data as the audio data of the current
 		 * buffer

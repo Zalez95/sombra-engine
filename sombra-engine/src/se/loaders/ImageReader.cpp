@@ -4,7 +4,7 @@
 
 namespace se::loaders {
 
-	utils::Image* ImageReader::read(const std::string& path, utils::ImageFormat imageFormat) const
+	utils::Image ImageReader::read(const std::string& path, utils::ImageFormat imageFormat)
 	{
 		// Load the image data with SOIL
 		int soilFormat = imageFormat == (utils::ImageFormat::RGB_IMAGE)? SOIL_LOAD_RGB :
@@ -22,7 +22,8 @@ namespace se::loaders {
 			);
 		}
 
-		return new utils::Image(reinterpret_cast<std::byte*>(pixels), width, height, channels, imageFormat);
+		std::unique_ptr<std::byte> pixelsUPtr( reinterpret_cast<std::byte*>(pixels) );
+		return utils::Image(std::move(pixelsUPtr), width, height, channels, imageFormat);
 	}
 
 }

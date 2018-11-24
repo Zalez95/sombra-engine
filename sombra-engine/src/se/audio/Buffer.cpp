@@ -11,9 +11,31 @@ namespace se::audio {
 	}
 
 
+	Buffer::Buffer(Buffer&& other)
+	{
+		mBufferId = other.mBufferId;
+		other.mBufferId = 0;
+	}
+
+
 	Buffer::~Buffer()
 	{
-		AL_WRAP( alDeleteBuffers(1, &mBufferId) );
+		if (mBufferId != 0) {
+			AL_WRAP( alDeleteBuffers(1, &mBufferId) );
+		}
+	}
+
+
+	Buffer& Buffer::operator=(Buffer&& other)
+	{
+		if (mBufferId != 0) {
+			AL_WRAP( alDeleteBuffers(1, &mBufferId) );
+		}
+
+		mBufferId = other.mBufferId;
+		other.mBufferId = 0;
+
+		return *this;
 	}
 
 

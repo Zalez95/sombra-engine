@@ -10,7 +10,7 @@ namespace se::graphics {
 	class ILayer {
 	public:		// Functions
 		/** Class destructor */
-		virtual ~ILayer() {};
+		virtual ~ILayer() = default;
 
 		/** Draws the Layer */
 		virtual void render() = 0;

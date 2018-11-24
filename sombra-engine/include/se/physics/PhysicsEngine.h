@@ -31,12 +31,6 @@ namespace se::physics {
 		std::set<RigidBody*> mRigidBodies;
 
 	public:		// Functions
-		/** Creates a new PhysicsEngine */
-		PhysicsEngine() {};
-
-		/** Class destructor */
-		~PhysicsEngine() {};
-
 		/** @return	the ForceManager of the PhysicsEngine */
 		inline ForceManager& getForceManager() { return mForceManager; };
 

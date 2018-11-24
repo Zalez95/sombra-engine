@@ -16,7 +16,7 @@ namespace se::collision {
 	/**
 	 * Class CollisionDetector, it's the main class used to detect collisions
 	 * between Colliders and calculate the Manifolds and its Contact data.
-	 * 
+	 *
 	 * The collision detection it splitted in two phases, one coarse collision
 	 * detection where we're going to check which colliders could be
 	 * intersecting by its AABB intersections, and one fine collision detection
@@ -27,7 +27,7 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
-		
+
 	private:	// Attributes
 		static constexpr float kMinFDifference		= 0.00001f;
 		static constexpr float kContactPrecision	= 0.0000001f;
@@ -59,9 +59,6 @@ namespace se::collision {
 				kMinFDifference, kContactPrecision,
 				kContactSeparation
 			) {};
-
-		/** Class destructor */
-		~CollisionDetector() {};
 
 		/** @return all the contact manifolds of the detected collisions */
 		inline std::set<Manifold*> getCollisionManifolds() const

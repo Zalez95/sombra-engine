@@ -1,4 +1,5 @@
 #include "se/loaders/TerrainReader.h"
+#include "se/loaders/ImageReader.h"
 #include "se/utils/FileReader.h"
 #include "se/app/Entity.h"
 
@@ -48,8 +49,8 @@ namespace se::loaders {
 			}
 		}
 
-		std::unique_ptr<utils::Image> heightMap( mImageReader.read(heightMapPath, utils::ImageFormat::L_IMAGE) );
-		return mTerrainLoader.createTerrain(name, size, *heightMap, maxHeight);
+		utils::Image heightMap = ImageReader::read(heightMapPath, utils::ImageFormat::L_IMAGE);
+		return mTerrainLoader.createTerrain(name, size, heightMap, maxHeight);
 	}
 
 }

@@ -13,6 +13,9 @@ namespace se::physics {
 	class Force
 	{
 	public:		// Functions
+		/** Class destructor */
+		virtual ~Force() = default;
+
 		/** Applyes the force to the given RigidBody
 		 *
 		 * @param	rigidBody a pointer to the RigidBody to which we want to

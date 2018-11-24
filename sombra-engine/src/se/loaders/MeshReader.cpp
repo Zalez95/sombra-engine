@@ -214,7 +214,7 @@ namespace se::loaders {
 			std::map<std::pair<unsigned short, unsigned short>, unsigned short> faceIndicesMap;
 
 			for (std::size_t i = 0; i < rawMesh->faceIndices.size(); ++i) {
-				auto mapKey = std::make_pair(posIndices[i], uvIndices[i]);
+				auto mapKey = std::pair(posIndices[i], uvIndices[i]);
 				if (faceIndicesMap.find(mapKey) != faceIndicesMap.end()) {
 					rawMesh->faceIndices[i] = faceIndicesMap[mapKey];
 				}

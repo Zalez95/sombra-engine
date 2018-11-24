@@ -35,9 +35,6 @@ namespace se::collision {
 			mWorldPosition{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mLocalPosition{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
-		/** Class destructor */
-		~Contact() {};
-
 		/** @return	the penetration depth of the Contact */
 		inline float getPenetration() const { return mPenetration; };
 

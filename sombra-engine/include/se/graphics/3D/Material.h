@@ -48,10 +48,7 @@ namespace se::graphics {
 			mAmbientColor(ambientColor),
 			mDiffuseColor(diffuseColor),
 			mSpecularColor(specularColor),
-			mShininess(shininess) {}
-
-		/** Class destructor */
-		~Material() {};
+			mShininess(shininess) {};
 
 		/** @return the name of the material */
 		inline std::string getName() const { return mName; };

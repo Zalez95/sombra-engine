@@ -11,9 +11,6 @@ namespace se::app {
 	}
 
 
-	GraphicsManager::~GraphicsManager() {}
-
-
 	void GraphicsManager::addEntity(Entity* entity, CameraUPtr camera)
 	{
 		if (!entity || !camera) return;
@@ -28,7 +25,7 @@ namespace se::app {
 		if (!entity || !renderable3D) return;
 
 		mLayer3D.addRenderable3D(renderable3D.get());
-		mRenderable3DEntities.emplace(entity, std::make_pair(std::move(renderable3D), offset));
+		mRenderable3DEntities.emplace(entity, std::pair(std::move(renderable3D), offset));
 	}
 
 

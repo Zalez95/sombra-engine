@@ -32,9 +32,6 @@ namespace se::app {
 			name(name),
 			position(0.0f), velocity(0.0f),
 			orientation(1.0f, glm::vec3(0.0f)) {};
-
-		/** Destructor */
-		~Entity() {};
 	};
 
 }

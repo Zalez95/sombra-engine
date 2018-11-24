@@ -10,15 +10,21 @@ namespace se::graphics {
 	class FrameBuffer
 	{
 	private:	// Attributes
-		/** The ID of the Frame Buffer Object */
-		unsigned int mBufferID;
+		/** The id of the Frame Buffer Object */
+		unsigned int mBufferId;
 
 	public:		// Functions
 		/** Creates a new FrameBuffer */
 		FrameBuffer();
+		FrameBuffer(const FrameBuffer& other) = delete;
+		FrameBuffer(FrameBuffer&& other);
 
 		/** Class destructor */
 		~FrameBuffer();
+
+		/** Assignment operator */
+		FrameBuffer& operator=(const FrameBuffer& other) = delete;
+		FrameBuffer& operator=(FrameBuffer&& other);
 
 		/** Binds the Frame Buffer Object for reading data from it */
 		void bindForReading() const;

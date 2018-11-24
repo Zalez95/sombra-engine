@@ -52,9 +52,6 @@ namespace se::loaders {
 		) : mGraphicsManager(graphicsManager),
 			mPhysicsManager(physicsManager) {};
 
-		/** Class destructor */
-		~TerrainLoader() {};
-
 		/** Creates an Entity that represents a Terrain from the given data
 		 *
 		 * @param	name the name of the new Entity

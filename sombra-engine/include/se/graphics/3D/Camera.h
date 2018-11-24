@@ -32,10 +32,7 @@ namespace se::graphics {
 			const glm::vec3& position,
 			const glm::vec3& target,
 			const glm::vec3& up
-		) : mPosition(position), mTarget(target), mUp(up) {}
-
-		/** Class destructor */
-		~Camera() {};
+		) : mPosition(position), mTarget(target), mUp(up) {};
 
 		/** @return the position of the Camera in world space */
 		inline glm::vec3 getPosition() const { return mPosition; };

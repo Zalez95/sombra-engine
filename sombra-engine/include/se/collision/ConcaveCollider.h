@@ -16,9 +16,6 @@ namespace se::collision {
 	class ConcaveCollider : public Collider
 	{
 	public:		// Functions
-		/** Class destructor */
-		virtual ~ConcaveCollider() {};
-
 		/** Updates the scale, translation and orientation of the
 		 * ConcaveCollider with the given transformations matrix
 		 *

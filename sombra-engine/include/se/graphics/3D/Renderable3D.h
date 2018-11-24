@@ -53,9 +53,6 @@ namespace se::graphics {
 		) : mMesh(mesh), mMaterial(material), mTexture(texture),
 			mRenderFlags(renderFlags), mModelMatrix(1.0f) {};
 
-		/** Class destructor */
-		~Renderable3D() {};
-
 		/** @return a pointer to the Mesh of the Renderable3D */
 		inline const MeshSPtr getMesh() const { return mMesh; };
 

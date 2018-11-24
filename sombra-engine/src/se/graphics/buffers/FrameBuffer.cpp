@@ -8,8 +8,8 @@ namespace se::graphics {
 	FrameBuffer::FrameBuffer()
 	{
 		// Create the FBO
-		GL_WRAP( glGenFramebuffers(1, &mBufferID) );
-		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferID) );
+		GL_WRAP( glGenFramebuffers(1, &mBufferId) );
+		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferId) );
 
 		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
 		if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -21,21 +21,43 @@ namespace se::graphics {
 	}
 
 
+	FrameBuffer::FrameBuffer(FrameBuffer&& other)
+	{
+		mBufferId = other.mBufferId;
+		other.mBufferId = 0;
+	}
+
+
 	FrameBuffer::~FrameBuffer()
 	{
-		GL_WRAP( glDeleteFramebuffers(1, &mBufferID) );
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteFramebuffers(1, &mBufferId) );
+		}
+	}
+
+
+	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other)
+	{
+		if (mBufferId != 0) {
+			GL_WRAP( glDeleteFramebuffers(1, &mBufferId) );
+		}
+
+		mBufferId = other.mBufferId;
+		other.mBufferId = 0;
+
+		return *this;
 	}
 
 
 	void FrameBuffer::bindForReading() const
 	{
-		GL_WRAP( glBindFramebuffer(GL_READ_FRAMEBUFFER, mBufferID) );
+		GL_WRAP( glBindFramebuffer(GL_READ_FRAMEBUFFER, mBufferId) );
 	}
 
 
 	void FrameBuffer::bindForWriting() const
 	{
-		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferID) );
+		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferId) );
 	}
 
 }

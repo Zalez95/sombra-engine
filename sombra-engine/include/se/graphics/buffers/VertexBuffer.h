@@ -6,14 +6,15 @@ namespace se::graphics {
 	/**
 	 * Class VertexBuffer, it's used for creating, binding and unbinding a
 	 * Vertex Buffer Object
-	 * <br>A Vertex Buffer Object is a buffer with the vertex data of a mesh
+	 *
+	 * A Vertex Buffer Object is a buffer with the vertex data of a Mesh
 	 * (position, color, normals, UVs...)
 	 */
 	class VertexBuffer
 	{
 	private:	// Attributes
-		/** The ID of the Buffer Array */
-		unsigned int mBufferID;
+		/** The id of the Buffer Array */
+		unsigned int mBufferId;
 
 		/** The number of components per generic Vertex Attribute */
 		unsigned int mComponentSize;
@@ -40,9 +41,15 @@ namespace se::graphics {
 			const unsigned short* data,
 			unsigned int count, unsigned int componentSize
 		);
+		VertexBuffer(const VertexBuffer& other) = delete;
+		VertexBuffer(VertexBuffer&& other);
 
 		/** Class destructor */
 		~VertexBuffer();
+
+		/** Assignment operator */
+		VertexBuffer& operator=(const VertexBuffer& other) = delete;
+		VertexBuffer& operator=(VertexBuffer&& other);
 
 		/** @return	the number of components per generic Vertex Attribute */
 		inline unsigned int getComponentSize() const { return mComponentSize; };

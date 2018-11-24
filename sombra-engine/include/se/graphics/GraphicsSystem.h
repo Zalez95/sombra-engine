@@ -20,9 +20,6 @@ namespace se::graphics {
 		/** Creates a new Graphics System */
 		GraphicsSystem();
 
-		/** Class destructor */
-		~GraphicsSystem() {};
-
 		/** Adds the given ILayer to the GraphicsSystem so it will
 		 * be rendered in each render call
 		 *

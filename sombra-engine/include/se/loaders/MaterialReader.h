@@ -29,12 +29,6 @@ namespace se::loaders {
 		};
 
 	public:		// Functions
-		/** Creates a new MaterialReader */
-		MaterialReader() {};
-
-		/** Class destructor */
-		~MaterialReader() {};
-
 		/** Parses the Materials in the given file and returns them
 		 *
 		 * @note	the cursor of the FileReader will be moved after parsing

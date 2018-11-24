@@ -32,9 +32,6 @@ namespace se::collision {
 		Manifold(const Collider* c1, const Collider* c2) :
 			mColliders{ c1, c2 } {};
 
-		/** Class destructor */
-		~Manifold() {};
-
 		/** @return	all the Contacs that the Manifold holds */
 		inline std::vector<Contact> getContacts() const
 		{ return mContacts; };

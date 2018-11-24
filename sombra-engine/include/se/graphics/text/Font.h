@@ -36,12 +36,6 @@ namespace se::graphics {
 		/** The horizontal advance to the next Character after adding the
 		 * current Character to a text */
 		int advance;
-
-		/** Creates a new Character */
-		Character() {};
-
-		/** Class destructor */
-		~Character() {};
 	};
 
 
@@ -71,13 +65,10 @@ namespace se::graphics {
 		 * @param	textureAtlas a pointer to the texture atlas of the Font */
 		Font(
 			const std::string& name,
-		   	const std::vector<Character>& characters,
+			const std::vector<Character>& characters,
 			const TextureSPtr textureAtlas
 		) : mName(name), mCharacters(characters),
 			mTextureAtlas(textureAtlas) {};
-
-		/** Class destructor */
-		~Font() {};
 
 		/** @return	the name of the Font */
 		std::string getName() const { return mName; };

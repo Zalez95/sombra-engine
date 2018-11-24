@@ -32,9 +32,6 @@ namespace se::window {
 
 		/** Creates a new InputData */
 		InputData() : mouseX(0.0f), mouseY(0.0f) {};
-
-		/** Destructor */
-		~InputData() {};
 	};
 
 }

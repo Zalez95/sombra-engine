@@ -91,9 +91,6 @@ namespace se::physics {
 			float mass, float linearSlowDown,
 			const glm::mat3& inertiaTensor, float angularSlowDown
 		);
-
-		/** Destructor */
-		~RigidBody() {};
 	};
 
 

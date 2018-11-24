@@ -70,9 +70,6 @@ namespace se::loaders {
 			mPhysicsManager(physicsManager),
 			mCollisionManager(collisionManager) {};
 
-		/** Class destructor */
-		~EntityReader() {};
-
 		/** Parses the Entities in the given file and returns them
 		 *
 		 * @note	the cursor of the file reader will be moved after parsing

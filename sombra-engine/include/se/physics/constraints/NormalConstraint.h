@@ -51,9 +51,6 @@ namespace se::physics {
 			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
 
-		/** Class destructor */
-		~NormalConstraint() {};
-
 		/** @return the value of the Bias of the constraint */
 		float getBias() const override;
 

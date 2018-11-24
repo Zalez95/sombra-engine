@@ -10,24 +10,24 @@ namespace se::graphics {
 	Program::Program(const std::vector<const Shader*>& shaders)
 	{
 		// 1. Create the program
-		GL_WRAP( mProgramID = glCreateProgram() );
+		GL_WRAP( mProgramId = glCreateProgram() );
 
 		// 2. Attach the shaders to the program
 		for (const Shader* shader : shaders) {
-			GL_WRAP( glAttachShader(mProgramID, shader->getShaderID()) );
+			GL_WRAP( glAttachShader(mProgramId, shader->getShaderId()) );
 		}
 
-		GL_WRAP( glLinkProgram(mProgramID) );
+		GL_WRAP( glLinkProgram(mProgramId) );
 
 		// 3. Check program related errors
 		GLint status;
-		GL_WRAP( glGetProgramiv(mProgramID, GL_LINK_STATUS, &status) );
+		GL_WRAP( glGetProgramiv(mProgramId, GL_LINK_STATUS, &status) );
 		if (status == GL_FALSE) {
 			GLint infoLogLength;
-			GL_WRAP( glGetProgramiv(mProgramID, GL_INFO_LOG_LENGTH, &infoLogLength) );
+			GL_WRAP( glGetProgramiv(mProgramId, GL_INFO_LOG_LENGTH, &infoLogLength) );
 
 			char* infoLog = new char[infoLogLength + 1];
-			GL_WRAP( glGetProgramInfoLog(mProgramID, infoLogLength, NULL, infoLog) );
+			GL_WRAP( glGetProgramInfoLog(mProgramId, infoLogLength, NULL, infoLog) );
 
 			std::string strInfoLog = "Failed to compile the program\n" + std::string(infoLog);
 			delete[] infoLog;
@@ -37,28 +37,51 @@ namespace se::graphics {
 
 		// 4. Remove the shaders from the program
 		for (const Shader* shader: shaders) {
-			GL_WRAP( glDetachShader(mProgramID, shader->getShaderID()) );
+			GL_WRAP( glDetachShader(mProgramId, shader->getShaderId()) );
 		}
+	}
+
+
+	Program::Program(Program&& other)
+	{
+		mProgramId = other.mProgramId;
+		other.mProgramId = 0;
 	}
 
 
 	Program::~Program()
 	{
 		disable();
-		GL_WRAP( glDeleteProgram(mProgramID) );
+
+		if (mProgramId != 0) {
+			GL_WRAP( glDeleteProgram(mProgramId) );
+		}
+	}
+
+
+	Program& Program::operator=(Program&& other)
+	{
+		if (mProgramId != 0) {
+			GL_WRAP( glDeleteProgram(mProgramId) );
+		}
+
+		mProgramId = other.mProgramId;
+		other.mProgramId = 0;
+
+		return *this;
 	}
 
 
 	unsigned int Program::getUniformLocation(const char* name) const
 	{
-		GL_WRAP( unsigned int uniformLocation = glGetUniformLocation(mProgramID, name) );
+		GL_WRAP( unsigned int uniformLocation = glGetUniformLocation(mProgramId, name) );
 		return uniformLocation;
 	}
 
 
 	void Program::setUniform(const char* name, int value) const
 	{
-		GL_WRAP( glUniform1i(glGetUniformLocation(mProgramID, name), value) );
+		GL_WRAP( glUniform1i(glGetUniformLocation(mProgramId, name), value) );
 	}
 
 
@@ -70,7 +93,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, float value) const
 	{
-		GL_WRAP( glUniform1f(glGetUniformLocation(mProgramID, name), value) );
+		GL_WRAP( glUniform1f(glGetUniformLocation(mProgramId, name), value) );
 	}
 
 
@@ -82,7 +105,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec2& vector) const
 	{
-		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramID, name), vector.x, vector.y) );
+		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramId, name), vector.x, vector.y) );
 	}
 
 
@@ -94,7 +117,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec3& vector) const
 	{
-		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name), vector.x, vector.y, vector.z) );
+		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramId, name), vector.x, vector.y, vector.z) );
 	}
 
 
@@ -106,7 +129,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec4& vector) const
 	{
-		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name), vector.x, vector.y, vector.z, vector.w) );
+		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramId, name), vector.x, vector.y, vector.z, vector.w) );
 	}
 
 
@@ -118,7 +141,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat3& matrix) const
 	{
-		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramID, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramId, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
@@ -130,7 +153,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat4& matrix) const
 	{
-		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramID, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramId, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
@@ -142,7 +165,7 @@ namespace se::graphics {
 
 	void Program::enable() const
 	{
-		GL_WRAP( glUseProgram(mProgramID) );
+		GL_WRAP( glUseProgram(mProgramId) );
 	}
 
 

@@ -24,12 +24,6 @@ namespace se::graphics {
 		std::vector<const Renderable2D*> mRenderable2Ds;
 
 	public:		// Functions
-		/** Creates a new Layer 3D */
-		Layer2D() {};
-
-		/** Class destructor */
-		~Layer2D() {};
-
 		/** Adds the given Renderable to the Layer so it will be rendered
 		 *
 		 * @param	renderable2D renderable2D a pointer to the Renderable2D to

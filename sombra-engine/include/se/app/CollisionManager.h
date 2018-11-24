@@ -55,9 +55,6 @@ namespace se::app {
 		) : mCollisionDetector(collisionDetector),
 			mPhysicsEngine(physicsEngine) {};
 
-		/** Class destructor */
-		~CollisionManager() {};
-
 		/** Adds the given Entity to the CollisionManager and its collider data
 		 * to the manager
 		 *

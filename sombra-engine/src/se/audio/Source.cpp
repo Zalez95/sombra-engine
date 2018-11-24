@@ -11,10 +11,26 @@ namespace se::audio {
 	}
 
 
+	Source::Source(Source&& other)
+	{
+		// FIXME: handle the other id
+		mSourceId = other.mSourceId;
+	}
+
+
 	Source::~Source()
 	{
 		stop();
 		AL_WRAP( alDeleteSources(1, &mSourceId) );
+	}
+
+
+	Source& Source::operator=(Source&& other)
+	{
+		// FIXME: handle the other id
+		mSourceId = other.mSourceId;
+
+		return *this;
 	}
 
 
@@ -72,7 +88,7 @@ namespace se::audio {
 	void Source::bind(const Buffer& buffer) const
 	{
 		stop();
-		AL_WRAP( alSourcei(mSourceId, AL_BUFFER, buffer.mBufferId) );
+		AL_WRAP( alSourcei(mSourceId, AL_BUFFER, buffer.getBufferId()) );
 	}
 
 

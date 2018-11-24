@@ -49,9 +49,6 @@ namespace se::collision {
 			const std::vector<float>& heights, int xSize, int zSize
 		);
 
-		/** Class destructor */
-		~TerrainCollider() {};
-
 		/** Updates the scale, translation and orientation of the
 		 * TerrainCollider with the given transformations matrix
 		 *

@@ -43,9 +43,6 @@ namespace se::graphics {
 		) :	mText(text), mFont(font), mFontSize(fontSize),
 			mPosition(position) {};
 
-		/** Class destructor */
-		~RenderableText() {};
-
 		/** @return	the string text of the RenderableText */
 		inline std::string getText() const { return mText; };
 

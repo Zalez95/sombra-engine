@@ -35,9 +35,6 @@ namespace se::collision {
 		 * @param	projectionPrecision precision of the Contact coordinates */
 		EPACollisionDetector(float minFThreshold, float projectionPrecision);
 
-		/** Class destructor */
-		~EPACollisionDetector() {};
-
 		/** Calculates the deepest Contact point between the given colliders
 		 * using the EPA algorithm
 		 *

@@ -23,7 +23,6 @@ namespace se::collision {
 
 		HEVertex() : location(0.0f), edge(-1) {};
 		HEVertex(const glm::vec3& location) : location(location), edge(-1) {};
-		~HEVertex() {};
 	};
 
 
@@ -50,7 +49,6 @@ namespace se::collision {
 		HEEdge() :
 			vertex(-1), face(-1),
 			previousEdge(-1), nextEdge(-1), oppositeEdge(-1) {};
-		~HEEdge() {};
 	};
 
 
@@ -63,7 +61,6 @@ namespace se::collision {
 		int edge;
 
 		HEFace() : edge(-1) {};
-		~HEFace() {};
 	};
 
 

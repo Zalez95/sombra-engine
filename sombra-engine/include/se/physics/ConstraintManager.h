@@ -76,12 +76,6 @@ namespace se::physics {
 		std::vector<vec12> mJacobianMatrix;
 
 	public:		// Constraints
-		/** Creates a new ConstraintManager */
-		ConstraintManager() {};
-
-		/** Class destructor */
-		~ConstraintManager() {};
-
 		/** Registers the given Constraint in the ConstraintManager, so the
 		 * movement of the RigidBodies that it holds will be restricted.
 		 *

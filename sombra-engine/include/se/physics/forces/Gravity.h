@@ -21,9 +21,6 @@ namespace se::physics {
 		 * @param	gravity the acceleration of the gravity */
 		Gravity(const glm::vec3& gravity) : mGravity(gravity) {};
 
-		/** Class destructor */
-		~Gravity() {};
-
 		/** Applies the gravitational force to the given RigidBody based in the
 		 * time
 		 *

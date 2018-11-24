@@ -41,9 +41,6 @@ namespace se::collision {
 			const glm::vec3& searchDir
 		);
 
-		/** Class destructor */
-		~SupportPoint() {};
-
 		/** @return	true if the given SupportPoint is the same than the given
 		 *			one, false otherwise */
 		bool operator==(const SupportPoint& other) const;

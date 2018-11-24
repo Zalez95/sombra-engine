@@ -42,9 +42,6 @@ namespace se::graphics {
 		/** Creates a new Layer 3D */
 		Layer3D();
 
-		/** Class destructor */
-		~Layer3D() {};
-
 		/** Adds the given Renderable to the Layer so it will be rendered
 		 *
 		 * @param	renderable3D renderable3D a pointer to the Renderable3D to

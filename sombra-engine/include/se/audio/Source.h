@@ -23,9 +23,15 @@ namespace se::audio {
 	public:		// Functions
 		/** Creates a new Source */
 		Source();
+		Source(const Source& other) = delete;
+		Source(Source&& other);
 
 		/** Class destructor */
 		~Source();
+
+		/** Assignment operator */
+		Source& operator=(const Source& other) = delete;
+		Source& operator=(Source&& other);
 
 		/** @return	true if the current Source is playing some sound, false
 		 *			otherwise */

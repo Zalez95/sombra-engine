@@ -22,11 +22,8 @@ namespace se::graphics {
 		 * @param	specularColor the specular color that emits the light */
 		BaseLight(
 			const glm::vec3& diffuseColor,
-		   	const glm::vec3& specularColor
+			const glm::vec3& specularColor
 		) : mDiffuseColor(diffuseColor), mSpecularColor(specularColor) {};
-
-		/** Class destructor */
-		~BaseLight() {};
 
 		/** @return the specular color that emits the light */
 		inline glm::vec3 getSpecularColor() const { return mSpecularColor; };
@@ -66,9 +63,6 @@ namespace se::graphics {
 		DirectionalLight(
 			const BaseLight& baseLight, const glm::vec3& direction
 		) :mBase(baseLight), mDirection(direction) {};
-
-		/** Class destructor */
-		~DirectionalLight() {};
 	};
 
 
@@ -95,9 +89,6 @@ namespace se::graphics {
 		) : mBase(baseLight), mAttenuation(attenuation),
 			mPosition(position) {};
 
-		/** Class destructor */
-		~PointLight() {};
-
 		/** @return the base light of the Point Light */
 		inline BaseLight getBaseLight() const { return mBase; };
 
@@ -118,7 +109,8 @@ namespace se::graphics {
 	/**
 	 * Class SpotLight, it's a Light source that has a position and
 	 * shines in one direction with a fading effect called attenuation.
-	 * <br>The effect of a SpotLight lights only within a limited cone that
+	 *
+	 * The effect of a SpotLight lights only within a limited cone that
 	 * grows wider as light moves further away from the light source
 	 */
 	class SpotLight
@@ -133,12 +125,8 @@ namespace se::graphics {
 		 *
 		 * @param	baseLight the basis PointLight of the SpotLight
 		 * @param	direction the direction of the SpotLight */
-		SpotLight(
-			const PointLight& baseLight, const glm::vec3& direction
-		) : mBase(baseLight), mDirection(direction) {};
-
-		/** Class destructor */
-		~SpotLight() {};
+		SpotLight(const PointLight& baseLight, const glm::vec3& direction) :
+			mBase(baseLight), mDirection(direction) {};
 	};
 
 }

@@ -28,12 +28,6 @@ namespace se::loaders {
 		};
 
 	public:		// Functions
-		/** Creates a new MeshReader */
-		MeshReader() {};
-
-		/** Class destructor */
-		~MeshReader() {};
-
 		/** Parses the Meshes in the given file and returns them
 		 *
 		 * @note	the cursor of the file reader will be moved after parsing

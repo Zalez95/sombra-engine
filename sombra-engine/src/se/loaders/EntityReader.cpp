@@ -196,12 +196,13 @@ namespace se::loaders {
 					offsetMatrix[2][0] >> offsetMatrix[2][1] >> offsetMatrix[2][2] >> offsetMatrix[2][3] >>
 					offsetMatrix[3][0] >> offsetMatrix[3][1] >> offsetMatrix[3][2] >> offsetMatrix[3][3];
 
-				auto itMesh = std::find_if(
+				auto itMesh = sharedData.meshes.end();/* TODO: find by mesh name
+					std::find_if(
 					sharedData.meshes.begin(), sharedData.meshes.end(),
 					[&meshName](std::shared_ptr<graphics::Mesh> mesh) {
 						return mesh->getName() == meshName;
 					}
-				);
+				);*/
 
 				if (itMesh == sharedData.meshes.end()) {
 					auto itRawMesh = std::find_if(
@@ -212,7 +213,8 @@ namespace se::loaders {
 					);
 
 					if (itRawMesh != sharedData.rawMeshes.end()) {
-						sharedData.meshes.push_back( MeshLoader::createGraphicsMesh(**itRawMesh) );
+						auto graphicsMesh = std::make_shared<graphics::Mesh>( MeshLoader::createGraphicsMesh(**itRawMesh) );
+						sharedData.meshes.push_back( std::move(graphicsMesh) );
 						itMesh = sharedData.meshes.end();
 					}
 				}
@@ -248,11 +250,10 @@ namespace se::loaders {
 					}
 				);
 				if (itRawMesh != sharedData.rawMeshes.end()) {
-					auto heMesh = MeshLoader::createHalfEdgeMesh(**itRawMesh);
-					if (heMesh) {
-						// TODO: move to header
-						collision::QuickHull qh(0.001f);
-						qh.calculate(*heMesh);
+					auto pair = MeshLoader::createHalfEdgeMesh(**itRawMesh);
+					if (pair.second) {
+						collision::QuickHull qh(0.001f);	// TODO: move to header
+						qh.calculate(pair.first);
 						collider = std::make_unique<collision::ConvexPolyhedron>(qh.getMesh());
 					}
 				}

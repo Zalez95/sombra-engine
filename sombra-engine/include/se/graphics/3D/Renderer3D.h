@@ -36,9 +36,6 @@ namespace se::graphics {
 		Renderer3D(const glm::mat4& projectionMatrix) :
 			mProjectionMatrix(projectionMatrix) {};
 
-		/** Class destructor */
-		~Renderer3D() {};
-
 		/** Sets the projection matrix of the Renderer
 		 *
 		 * @param	projectionMatrix the perspective matrix used to project

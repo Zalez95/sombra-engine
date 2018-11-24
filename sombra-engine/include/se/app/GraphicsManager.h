@@ -43,9 +43,6 @@ namespace se::app {
 		 * 			the GraphicsManager to render the entities */
 		GraphicsManager(graphics::GraphicsSystem& graphicsSystem);
 
-		/** Class destructor */
-		~GraphicsManager();
-
 		/** Adds the given Entity and its Camera data to the GraphicsManager
 		 *
 		 * @param	entity a pointer to the Entity to add to the
