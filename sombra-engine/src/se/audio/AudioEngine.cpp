@@ -2,6 +2,8 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "se/audio/AudioEngine.h"
+#include "se/audio/ALWrapper.h"
+#include "se/audio/ALCWrapper.h"
 
 namespace se::audio {
 
@@ -12,8 +14,10 @@ namespace se::audio {
 			throw std::runtime_error("Can't open the Device");
 		}
 
-		mContext = alcCreateContext(mDevice, nullptr);
-		if (!alcMakeContextCurrent(mContext)) {
+		ALC_WRAP( mContext = alcCreateContext(mDevice, nullptr), mDevice );
+
+		ALC_WRAP( bool currentContext = alcMakeContextCurrent(mContext), mDevice );
+		if (!currentContext) {
 			alcCloseDevice(mDevice);
 			throw std::runtime_error("Context creation error");
 		}
@@ -22,15 +26,15 @@ namespace se::audio {
 
 	AudioEngine::~AudioEngine()
 	{
-		alcMakeContextCurrent(nullptr);
-		alcDestroyContext(mContext);
+		ALC_WRAP( alcMakeContextCurrent(nullptr), mDevice );
+		ALC_WRAP( alcDestroyContext(mContext), mDevice );
 		alcCloseDevice(mDevice);
 	}
 
 
 	void AudioEngine::setListenerPosition(const glm::vec3& position) const
 	{
-		alListener3f(AL_POSITION, position.x, position.y, position.z);
+		AL_WRAP( alListener3f(AL_POSITION, position.x, position.y, position.z) );
 	}
 
 
@@ -42,13 +46,13 @@ namespace se::audio {
 			forwardVector.x, forwardVector.y, forwardVector.z,
 			upVector.x, upVector.y, upVector.z
 		};
-		alListenerfv(AL_ORIENTATION, orientation);
+		AL_WRAP( alListenerfv(AL_ORIENTATION, orientation) );
 	}
 
 
 	void AudioEngine::setListenerVelocity(const glm::vec3& velocity) const
 	{
-		alListener3f(AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+		AL_WRAP( alListener3f(AL_VELOCITY, velocity.x, velocity.y, velocity.z) );
 	}
 
 }

@@ -8,7 +8,7 @@ namespace se::graphics {
 	Shader::Shader(const char* source, unsigned int shaderType)
 	{
 		// 1. Create the Shader
-		mShaderID = glCreateShader(shaderType);
+		GL_WRAP( mShaderID = glCreateShader(shaderType) );
 		GL_WRAP( glShaderSource(mShaderID, 1, &source, NULL) );
 
 		// 2. Compile the shader

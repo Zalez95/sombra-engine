@@ -11,7 +11,7 @@ namespace se::graphics {
 		GL_WRAP( glGenFramebuffers(1, &mBufferID) );
 		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferID) );
 
-		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
 		if (status != GL_FRAMEBUFFER_COMPLETE) {
 			throw std::runtime_error("FB error, status: 0x" + std::to_string(status));
 		}

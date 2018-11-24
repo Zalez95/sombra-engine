@@ -1,26 +1,27 @@
 #include <AL/al.h>
 #include "se/audio/Source.h"
 #include "se/audio/Buffer.h"
+#include "se/audio/ALWrapper.h"
 
 namespace se::audio {
 
 	Source::Source()
 	{
-		alGenSources(1, &mSourceId);
+		AL_WRAP( alGenSources(1, &mSourceId) );
 	}
 
 
 	Source::~Source()
 	{
 		stop();
-		alDeleteSources(1, &mSourceId);
+		AL_WRAP( alDeleteSources(1, &mSourceId) );
 	}
 
 
 	bool Source::isPlaying() const
 	{
-		int state;
-		alGetSourcei(mSourceId, AL_SOURCE_STATE, &state);
+		int state = AL_INVALID_VALUE;
+		AL_WRAP( alGetSourcei(mSourceId, AL_SOURCE_STATE, &state) );
 
 		return (state == AL_PLAYING);
 	}
@@ -28,7 +29,7 @@ namespace se::audio {
 
 	void Source::setPosition(const glm::vec3& position) const
 	{
-		alSource3f(mSourceId, AL_POSITION, position.x, position.y, position.z);
+		AL_WRAP( alSource3f(mSourceId, AL_POSITION, position.x, position.y, position.z) );
 	}
 
 
@@ -40,69 +41,69 @@ namespace se::audio {
 			forwardVector.x, forwardVector.y, forwardVector.z,
 			upVector.x, upVector.y, upVector.z
 		};
-		alSourcefv(mSourceId, AL_ORIENTATION, orientation);
+		AL_WRAP( alSourcefv(mSourceId, AL_ORIENTATION, orientation) );
 	}
 
 
 	void Source::setVelocity(const glm::vec3& velocity) const
 	{
-		alSource3f(mSourceId, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+		AL_WRAP( alSource3f(mSourceId, AL_VELOCITY, velocity.x, velocity.y, velocity.z) );
 	}
 
 
 	void Source::setVolume(float volume) const
 	{
-		alSourcef(mSourceId, AL_GAIN, volume);
+		AL_WRAP( alSourcef(mSourceId, AL_GAIN, volume) );
 	}
 
 
 	void Source::setPitch(float pitch) const
 	{
-		alSourcef(mSourceId, AL_PITCH, pitch);
+		AL_WRAP( alSourcef(mSourceId, AL_PITCH, pitch) );
 	}
 
 
 	void Source::setLooping(bool looping) const
 	{
-		alSourcei(mSourceId, AL_LOOPING, (looping)? AL_TRUE : AL_FALSE);
+		AL_WRAP( alSourcei(mSourceId, AL_LOOPING, (looping)? AL_TRUE : AL_FALSE) );
 	}
 
 
 	void Source::bind(const Buffer& buffer) const
 	{
 		stop();
-		alSourcei(mSourceId, AL_BUFFER, buffer.mBufferId);
+		AL_WRAP( alSourcei(mSourceId, AL_BUFFER, buffer.mBufferId) );
 	}
 
 
 	void Source::unbind() const
 	{
 		stop();
-		alSourcei(mSourceId, AL_BUFFER, 0);
+		AL_WRAP( alSourcei(mSourceId, AL_BUFFER, 0) );
 	}
 
 
 	void Source::play() const
 	{
-		alSourcePlay(mSourceId);
+		AL_WRAP( alSourcePlay(mSourceId) );
 	}
 
 
 	void Source::pause() const
 	{
-		alSourcePause(mSourceId);
+		AL_WRAP( alSourcePause(mSourceId) );
 	}
 
 
 	void Source::rewind() const
 	{
-		alSourceRewind(mSourceId);
+		AL_WRAP( alSourceRewind(mSourceId) );
 	}
 
 
 	void Source::stop() const
 	{
-		alSourceStop(mSourceId);
+		AL_WRAP( alSourceStop(mSourceId) );
 	}
 
 }

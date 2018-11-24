@@ -30,13 +30,13 @@ namespace se::graphics {
 
 	void VertexArray::bind() const
 	{
-		glBindVertexArray(mArrayID);
+		GL_WRAP( glBindVertexArray(mArrayID) );
 	}
 
 
 	void VertexArray::unbind() const
 	{
-		glBindVertexArray(0);
+		GL_WRAP( glBindVertexArray(0) );
 	}
 
 }

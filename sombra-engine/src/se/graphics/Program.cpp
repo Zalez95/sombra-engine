@@ -10,7 +10,7 @@ namespace se::graphics {
 	Program::Program(const std::vector<const Shader*>& shaders)
 	{
 		// 1. Create the program
-		mProgramID = glCreateProgram();
+		GL_WRAP( mProgramID = glCreateProgram() );
 
 		// 2. Attach the shaders to the program
 		for (const Shader* shader : shaders) {
@@ -51,7 +51,8 @@ namespace se::graphics {
 
 	unsigned int Program::getUniformLocation(const char* name) const
 	{
-		return glGetUniformLocation(mProgramID, name);
+		GL_WRAP( unsigned int uniformLocation = glGetUniformLocation(mProgramID, name) );
+		return uniformLocation;
 	}
 
 
@@ -81,8 +82,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec2& vector) const
 	{
-		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y) );
+		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramID, name), vector.x, vector.y) );
 	}
 
 
@@ -94,8 +94,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec3& vector) const
 	{
-		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y, vector.z) );
+		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramID, name), vector.x, vector.y, vector.z) );
 	}
 
 
@@ -107,8 +106,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec4& vector) const
 	{
-		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name),
-					vector.x, vector.y, vector.z, vector.w) );
+		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramID, name), vector.x, vector.y, vector.z, vector.w) );
 	}
 
 
@@ -120,8 +118,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat3& matrix) const
 	{
-		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramID, name),
-					1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramID, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
@@ -133,8 +130,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat4& matrix) const
 	{
-		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramID, name),
-					1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramID, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 

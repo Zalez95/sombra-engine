@@ -21,19 +21,19 @@ namespace se::graphics {
 
 	IndexBuffer::~IndexBuffer()
 	{
-		glDeleteBuffers(1, &mBufferID);
+		GL_WRAP( glDeleteBuffers(1, &mBufferID) );
 	}
 
 
 	void IndexBuffer::bind() const
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferID);
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferID) );
 	}
 
 
 	void IndexBuffer::unbind() const
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
 	}
 
 }
