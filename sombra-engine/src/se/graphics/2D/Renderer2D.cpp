@@ -47,9 +47,9 @@ namespace se::graphics {
 			mProgram.setModelMatrix(transforms);
 			mProgram.setTextureSampler(0);
 
-			texture->bind(0);
+			if (texture) { texture->bind(0); }
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
-			texture->unbind();
+			if (texture) { texture->unbind(); }
 		}
 
 		glBindVertexArray(0);

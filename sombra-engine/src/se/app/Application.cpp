@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
-#include "se/utils/Logger.h"
+#include "se/utils/Log.h"
 #include "se/window/WindowSystem.h"
 #include "se/graphics/GraphicsSystem.h"
 #include "se/physics/PhysicsEngine.h"
@@ -17,12 +17,13 @@
 namespace se::app {
 
 	Application::Application(const std::string& title, int width, int height, float updateTime) :
-		mUpdateTime(updateTime), mState(AppState::STOPPED)
+		mUpdateTime(updateTime), mState(AppState::Stopped)
 	{
+		SOMBRA_INFO_LOG << "Creating the Application";
 		try {
 			// Window
 			mWindowSystem = new window::WindowSystem({ title, width, height, false, false });
-			std::cout << mWindowSystem->getGLInfo() << std::endl;
+			SOMBRA_INFO_LOG << mWindowSystem->getGLInfo();
 
 			// Input
 			mInputManager = new InputManager(*mWindowSystem);
@@ -44,17 +45,16 @@ namespace se::app {
 			mAudioManager = new AudioManager(*mAudioEngine);
 		}
 		catch (std::exception& e) {
-			mState = AppState::ERROR;
-			utils::Logger::getInstance().write(
-				utils::LogLevel::ERROR,
-				"Error creating the application: " + std::string(e.what())
-			);
+			mState = AppState::Error;
+			SOMBRA_ERROR_LOG << " Error creating the application: " << e.what();
 		}
+		SOMBRA_INFO_LOG << "Application created";
 	}
 
 
 	Application::~Application()
 	{
+		SOMBRA_INFO_LOG << "Deleting the Application";
 		delete mAudioManager;
 		delete mAudioEngine;
 		delete mCollisionManager;
@@ -65,24 +65,26 @@ namespace se::app {
 		delete mGraphicsSystem;
 		delete mInputManager;
 		delete mWindowSystem;
+		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
 
 	bool Application::run()
 	{
+		SOMBRA_INFO_LOG << "Start running";
 		init();
 
-		if (mState != AppState::STOPPED) {
-			utils::Logger::getInstance().write(utils::LogLevel::ERROR, "Bad game state");
+		if (mState != AppState::Stopped) {
+			SOMBRA_ERROR_LOG << " Bad game state";
 			return false;
 		}
 
 		/*********************************************************************
 		 * MAIN LOOP
 		 *********************************************************************/
-		mState = AppState::RUNNING;
+		mState = AppState::Running;
 		float lastTime = mWindowSystem->getTime();
-		while (mState == AppState::RUNNING) {
+		while (mState == AppState::Running) {
 			// Calculate the elapsed time since the last update
 			float curTime	= mWindowSystem->getTime();
 			float deltaTime	= curTime - lastTime;
@@ -92,9 +94,10 @@ namespace se::app {
 				std::cout << deltaTime << "ms\r";
 
 				// Update the Systems
+				SOMBRA_INFO_LOG << "Update phase";
 				mWindowSystem->update();
 				if (mWindowSystem->getInputData()->keys[GLFW_KEY_ESCAPE]) {
-					mState = AppState::STOPPED;
+					mState = AppState::Stopped;
 				}
 				mInputManager->update();
 				mPhysicsManager->doDynamics(deltaTime);
@@ -104,16 +107,18 @@ namespace se::app {
 				mGraphicsManager->update();
 
 				// Draw
+				SOMBRA_INFO_LOG << "Render phase";
 				mGraphicsManager->render();
 				mWindowSystem->swapBuffers();
 			}
 			else {
+				SOMBRA_DEBUG_LOG << "Wait " << mUpdateTime - deltaTime << " seconds";
 				std::this_thread::sleep_for( std::chrono::duration<float>(mUpdateTime - deltaTime) );
 			}
 		}
 
 		end();
-
+		SOMBRA_INFO_LOG << "End running";
 		return true;
 	}
 

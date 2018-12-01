@@ -32,9 +32,9 @@ namespace se::app {
 		/** The different states in which the application could be */
 		enum class AppState
 		{
-			ERROR,
-			RUNNING,
-			STOPPED
+			Error,
+			Running,
+			Stopped
 		};
 
 	protected:	// Attributes

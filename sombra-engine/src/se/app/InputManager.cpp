@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "se/utils/Log.h"
 #include "se/app/InputManager.h"
 #include "se/app/Entity.h"
 
@@ -6,26 +7,35 @@ namespace se::app {
 
 	void InputManager::addEntity(Entity* entity)
 	{
-		if (!entity) return;
+		if (!entity) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
+			return;
+		}
 
 		mEntities.push_back(entity);
+		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully";
 	}
 
 
 	void InputManager::removeEntity(Entity* entity)
 	{
-		mEntities.erase(
-			std::remove(mEntities.begin(), mEntities.end(), entity),
-			mEntities.end()
-		);
+		auto itEntity = std::find(mEntities.begin(), mEntities.end(), entity);
+		if (itEntity != mEntities.end()) {
+			mEntities.erase(itEntity);
+			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		}
+		else {
+			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
+		}
 	}
 
 
 	void InputManager::update()
 	{
+		SOMBRA_INFO_LOG << "Updating the InputManager";
+
 		// Get the player's input data
 		const window::InputData* inputData = mWindowSystem.getInputData();
-
 		if (inputData) {
 			// Update the entities
 			for (Entity* entity : mEntities) {
@@ -35,6 +45,11 @@ namespace se::app {
 
 			resetMousePosition();
 		}
+		else {
+			SOMBRA_ERROR_LOG << "The InputData couldn't be retrieved";
+		}
+
+		SOMBRA_INFO_LOG << "InputManager updated";
 	}
 
 // Private functions definition

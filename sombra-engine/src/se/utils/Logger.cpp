@@ -1,53 +1,69 @@
 #include <ctime>
 #include <chrono>
+#include <thread>
 #include <iomanip>
 #include "se/utils/Logger.h"
 
 namespace se::utils {
 
-	Logger::~Logger()
+	Logger::Logger(Logger&& other) :
+		mLogFile(std::move(other.mLogFile)), mMaxLogLevel(other.mMaxLogLevel) {}
+
+
+	Logger& Logger::operator=(Logger&& other)
 	{
-		mLogFile.close();
+		mLogFile = std::move(other.mLogFile);
+		mMaxLogLevel = other.mMaxLogLevel;
+		return *this;
 	}
 
 
-	Logger& Logger::getInstance()
+	LogStream Logger::operator()(LogLevel level)
 	{
-		static Logger mInstance(LOG_PATH);		// Create the static instance
-		return mInstance;
+		return LogStream(*this, level);
 	}
 
 
 	void Logger::write(LogLevel level, const std::string& text)
 	{
-		static const char timeFormat[] = "[%Y/%m/%d %H:%M:%S]";
-
-		// Lock the log mutex
-		std::lock_guard<std::mutex> locker(mMutex);
-
 		// Check if the text should be written with the current log level
 		if (level < mMaxLogLevel) { return; }
 
-		// Write the current time
-		std::time_t t = std::time(nullptr);
-		std::tm* now = std::localtime(&t);
-		mLogFile << std::put_time(now, timeFormat);
-
-		// Write the level of the log text
+		// Get the level label
+		std::string label;
 		switch (level) {
-		case LogLevel::WARNING:
-			mLogFile << " [WARNING]";
-			break;
-		case LogLevel::ERROR:
-			mLogFile << " [ERROR]";
-			break;
-		case LogLevel::DEBUG:
-			mLogFile << " [DEBUG]";
-			break;
+			case LogLevel::Trace:	label = "TRACE";	break;
+			case LogLevel::Debug:	label = "DEBUG";	break;
+			case LogLevel::Info:	label = "INFO";		break;
+			case LogLevel::Warning:	label = "WARNING";	break;
+			case LogLevel::Error:	label = "ERROR";	break;
 		}
 
-		// Write the text
-		mLogFile << '\t' << text << std::endl;
+		// Write to the log file
+		std::lock_guard<std::mutex> locker(mMutex);
+		mLogFile
+			<< getTimeString()
+			<< " [" << label << "]"
+			<< std::hex << " 0x" << std::this_thread::get_id()
+			<< "\t" << text << "\n";
+	}
+
+// Private functions
+	std::string Logger::getTimeString()
+	{
+		static const char timeFormat[] = "%Y/%m/%d %H:%M:%S";
+		using namespace std::chrono;
+
+		system_clock::time_point now = system_clock::now();
+		system_clock::duration tp = now.time_since_epoch();
+		tp -= duration_cast<seconds>(tp);
+
+		std::stringstream ss;
+		std::time_t tt = system_clock::to_time_t(now);
+		ss	<< std::put_time(std::localtime(&tt), timeFormat)
+			<< '.' << std::setw(3) << std::setfill('0') << tp / milliseconds(1);
+
+		return ss.str();
 	}
 
 }

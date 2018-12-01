@@ -48,7 +48,7 @@ namespace se::loaders {
 
 				utils::Image atlasImg = ImageReader::read(fontTexturePath, utils::ImageFormat::L_IMAGE);
 				textureAtlas->setImage(
-					atlasImg.getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::L,
+					atlasImg.getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::RED,
 					atlasImg.getWidth(), atlasImg.getHeight()
 				);
 			}

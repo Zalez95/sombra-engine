@@ -1,3 +1,4 @@
+#include "se/utils/Log.h"
 #include "se/app/Entity.h"
 #include "se/app/PhysicsManager.h"
 #include "se/physics/RigidBody.h"
@@ -6,7 +7,10 @@ namespace se::app {
 
 	void PhysicsManager::addEntity(Entity* entity, RigidBodyUPtr rigidBody)
 	{
-		if (!entity || !rigidBody) return;
+		if (!entity || !rigidBody) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
+			return;
+		}
 
 		// The rigid body initial data is overrided by the entity one
 		rigidBody->position			= entity->position;
@@ -15,7 +19,8 @@ namespace se::app {
 		physics::updateRigidBodyData(*rigidBody);
 
 		mPhysicsEngine.addRigidBody(rigidBody.get());
-		mEntityMap[entity] = std::move(rigidBody);
+		mEntityMap.emplace(entity, std::move(rigidBody));
+		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully";
 	}
 
 
@@ -25,12 +30,18 @@ namespace se::app {
 		if (itEntity != mEntityMap.end()) {
 			mPhysicsEngine.removeRigidBody(itEntity->second.get());
 			mEntityMap.erase(itEntity);
+			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		}
+		else {
+			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
 		}
 	}
 
 
 	void PhysicsManager::doDynamics(float delta)
 	{
+		SOMBRA_INFO_LOG << "Start (" << delta << ")";
+
 		// Update the RigidBodies with the changes made to the Entities
 		for (auto& pair : mEntityMap) {
 			Entity* entity = pair.first;
@@ -53,11 +64,15 @@ namespace se::app {
 			entity->velocity	= rigidBody->linearVelocity;
 			entity->orientation	= rigidBody->orientation;
 		}
+
+		SOMBRA_INFO_LOG << "End (" << delta << ")";
 	}
 
 
 	void PhysicsManager::doConstraints(float delta)
 	{
+		SOMBRA_INFO_LOG << "Start (" << delta << ")";
+
 		// Update the RigidBodies with the changes made to the Entities
 		for (auto& pair : mEntityMap) {
 			Entity* entity = pair.first;
@@ -80,6 +95,8 @@ namespace se::app {
 			entity->velocity	= rigidBody->linearVelocity;
 			entity->orientation	= rigidBody->orientation;
 		}
+
+		SOMBRA_INFO_LOG << "End";
 	}
 
 }

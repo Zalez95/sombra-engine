@@ -63,10 +63,12 @@ namespace se::graphics {
 		const void* pixels, TexturePixelType type, TextureFormat format,
 		unsigned int width, unsigned int height
 	) {
-		int glFormat = (format == TextureFormat::RGB)? GL_RGB :
-			(format == TextureFormat::RGBA)? GL_RGBA :
-			(format == TextureFormat::L)? GL_LUMINANCE :
-			GL_LUMINANCE_ALPHA;
+		int glFormat = (format == TextureFormat::RED)? GL_RED :
+			(format == TextureFormat::GREEN)? GL_GREEN :
+			(format == TextureFormat::BLUE)? GL_BLUE :
+			(format == TextureFormat::ALPHA)? GL_ALPHA :
+			(format == TextureFormat::RGB)? GL_RGB :
+			GL_RGBA;
 		int glType = (type == TexturePixelType::BYTE)? GL_BYTE :
 			(type == TexturePixelType::U_BYTE)? GL_UNSIGNED_BYTE :
 			(type == TexturePixelType::INT)? GL_INT :

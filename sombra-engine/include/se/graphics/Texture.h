@@ -12,10 +12,12 @@ namespace se::graphics {
 	 */
 	enum class TextureFormat
 	{
+		RED,
+		GREEN,
+		BLUE,
+		ALPHA,
 		RGB,
-		RGBA,
-		L,
-		LA
+		RGBA
 	};
 
 

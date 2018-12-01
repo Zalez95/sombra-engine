@@ -1,11 +1,11 @@
 #include <string>
 #include <AL/al.h>
-#include "se/utils/Logger.h"
+#include "se/utils/Log.h"
 
 #define AL_WRAP(x)					\
 	se::audio::alClearError();		\
 	x;								\
-	se::audio::alLogError(#x);
+	se::audio::alLogError(#x, LOCATION);
 
 
 namespace se::audio {
@@ -16,15 +16,13 @@ namespace se::audio {
 	}
 
 
-	static bool alLogError(const std::string& functionName)
+	static bool alLogError(const char* alFunction, const std::string& location)
 	{
 		ALenum error = alGetError();
 		while (error != AL_NO_ERROR) {
-			utils::Logger::getInstance().write(
-				utils::LogLevel::ERROR,
-				"OpenAL function \"" + functionName + "\" returned error: "
-					+ std::to_string(error)
-			);
+			utils::Log::getInstance()(utils::LogLevel::Error) << location
+				<< "OpenAL function \"" << alFunction << "\" returned error code " << error
+				<< ": \"" << alGetString(error) << "\"";
 			return true;
 		}
 

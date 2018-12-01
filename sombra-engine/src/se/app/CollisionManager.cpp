@@ -1,4 +1,5 @@
 #include <glm/gtc/matrix_transform.hpp>
+#include "se/utils/Log.h"
 #include "se/app/Entity.h"
 #include "se/app/CollisionManager.h"
 
@@ -9,20 +10,28 @@ namespace se::app {
 
 	void CollisionManager::addEntity(Entity* entity, ColliderUPtr collider)
 	{
-		if (!entity || !collider) return;
+		if (!entity || !collider) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
+			return;
+		}
 
 		mCollisionDetector.addCollider(collider.get());
-		mEntityMap[entity] = std::move(collider);
+		mEntityMap.emplace(entity, std::move(collider));
+		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully";
 	}
 
 
 	void CollisionManager::addEntity(Entity* entity, ColliderUPtr collider, physics::RigidBody* rigidBody)
 	{
-		if (!entity || !collider) return;
+		if (!entity || !collider || !rigidBody) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
+			return;
+		}
 
 		mCollisionDetector.addCollider(collider.get());
-		mColliderRigidBodyMap[collider.get()] = rigidBody;
-		mEntityMap[entity] = std::move(collider);
+		mColliderRigidBodyMap.emplace(collider.get(), rigidBody);
+		mEntityMap.emplace(entity, std::move(collider));
+		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully with RigidBody " << rigidBody;
 	}
 
 
@@ -33,12 +42,18 @@ namespace se::app {
 			mCollisionDetector.removeCollider(itEntity->second.get());
 			mColliderRigidBodyMap.erase(itEntity->second.get());
 			mEntityMap.erase(itEntity);
+			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		}
+		else {
+			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
 		}
 	}
 
 
 	void CollisionManager::update(float delta)
 	{
+		SOMBRA_INFO_LOG << "Updating the CollisionManager (" << delta << ")";
+
 		// Update the Colliders with the changes made to the Entities
 		for (auto& pair : mEntityMap) {
 			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), pair.first->position);
@@ -68,10 +83,14 @@ namespace se::app {
 							)
 						).first;
 						mPhysicsEngine.getConstraintManager().addConstraint(&it->second);
+						SOMBRA_INFO_LOG << "Added normal constraint " << &it->second
+							<< " between " << itRB1->second << " and " << itRB2->second;
 					}
 				}
 
 				if (it != mContactConstraints.end()) {
+					SOMBRA_INFO_LOG << "Updating normal constraint " << &it->second;
+
 					// Update the constraint data
 					it->second.setConstraintPoints({ contact.getLocalPosition(0), contact.getLocalPosition(1) });
 					it->second.setConstraintNormal(contact.getNormal());
@@ -87,6 +106,7 @@ namespace se::app {
 		// Remove the inactive contact constraints
 		for (auto it = mContactConstraints.begin(); it != mContactConstraints.end();) {
 			if (active.find(it->first) == active.end()) {
+				SOMBRA_INFO_LOG << "Removing normal constraint " << &it->second;
 				mPhysicsEngine.getConstraintManager().removeConstraint(&it->second);
 				it = mContactConstraints.erase(it);
 			}
@@ -94,6 +114,8 @@ namespace se::app {
 				++it;
 			}
 		}
+
+		SOMBRA_INFO_LOG << "CollisionManager updated";
 	}
 
 }

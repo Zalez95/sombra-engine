@@ -1,11 +1,11 @@
 #include <string>
 #include <AL/alc.h>
-#include "se/utils/Logger.h"
+#include "se/utils/Log.h"
 
 #define ALC_WRAP(x, device)				\
 	se::audio::alcClearError(device);	\
 	x;									\
-	se::audio::alcLogError(device, #x);
+	se::audio::alcLogError(device, #x, LOCATION);
 
 
 namespace se::audio {
@@ -16,15 +16,13 @@ namespace se::audio {
 	}
 
 
-	static bool alcLogError(ALCdevice* device, const std::string& functionName)
+	static bool alcLogError(ALCdevice* device, const char* alcFunction, const std::string& location)
 	{
 		ALCenum error = alcGetError(device);
 		while (error != ALC_NO_ERROR) {
-			utils::Logger::getInstance().write(
-				utils::LogLevel::ERROR,
-				"Audio Library Context function \"" + functionName + "\" returned error: "
-					+ std::to_string(error)
-			);
+			utils::Log::getInstance()(utils::LogLevel::Error) << location
+				<< "Audio Library Context function \"" << alcFunction << "\" returned error code " << error
+				<< ": \"" << alGetString(error) << "\"";
 			return true;
 		}
 

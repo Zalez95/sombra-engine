@@ -46,7 +46,7 @@
 #include <AudioFile.h>
 
 #include <se/utils/Image.h>
-#include <se/utils/Logger.h>
+#include <se/utils/Log.h>
 #include <se/utils/FileReader.h>
 
 #include "game/Game.h"
@@ -327,8 +327,8 @@ namespace game {
 			}
 		}
 		catch (std::exception& e) {
-			mState = AppState::ERROR;
-			se::utils::Logger::getInstance().write(se::utils::LogLevel::ERROR, e.what());
+			mState = AppState::Error;
+			SOMBRA_ERROR_LOG << "Error: " << e.what();
 		}
 
 		// RenderableTexts

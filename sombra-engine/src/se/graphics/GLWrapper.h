@@ -1,11 +1,10 @@
-#include <string>
 #include <GL/glew.h>
-#include "se/utils/Logger.h"
+#include "se/utils/Log.h"
 
 #define GL_WRAP(x)					\
 	se::graphics::glClearError();	\
 	x;								\
-	se::graphics::glLogError(#x);
+	se::graphics::glLogError(#x, LOCATION);
 
 
 namespace se::graphics {
@@ -16,15 +15,13 @@ namespace se::graphics {
 	}
 
 
-	static bool glLogError(const std::string& functionName)
+	static bool glLogError(const char* glFunction, const std::string& location)
 	{
 		GLenum error = glGetError();
 		while (error != GL_NO_ERROR) {
-			utils::Logger::getInstance().write(
-				utils::LogLevel::ERROR,
-				"OpenGL function \"" + functionName + "\" returned error: "
-					+ std::to_string(error)
-			);
+			utils::Log::getInstance()(utils::LogLevel::Error) << location
+				<< "OpenGL function \"" << glFunction << "\" returned error code " << error
+				<< ": \"" << glGetString(error) << "\"";
 			return true;
 		}
 
