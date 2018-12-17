@@ -4,6 +4,8 @@
 #	GLM_INCLUDE_DIR	- GLM header "glm/glm.hpp"
 #	glm				- GLM target
 
+include(FindPackageHandleStandardArgs)
+
 # Search for the headers
 find_path(
 	GLM_INCLUDE_DIR
@@ -11,7 +13,6 @@ find_path(
 	NAMES "glm/glm.hpp"
 )
 
-include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
 	glm
 	REQUIRED_VARS GLM_INCLUDE_DIR

@@ -33,9 +33,7 @@ namespace se::graphics {
 		std::queue<const RenderableText*> mRenderableTexts;
 
 	public:		// Functions
-		/** Creates a new RendererText
-		 *
-		 * @param	program the Program with which the renderer will render */
+		/** Creates a new RendererText */
 		RendererText();
 
 		/** Class destructor */

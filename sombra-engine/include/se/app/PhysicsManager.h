@@ -35,6 +35,7 @@ namespace se::app {
 		/** Adds the given Entity to the PhysicsManager and its physics data
 		 * to the manager
 		 *
+		 * @param	entity a pointer to the Entity to add to the PhysicsManager
 		 * @param	rigidBody a pointer to the RigidBody to add to the
 		 *			PhysicsManager
 		 * @param	rigidBody the physics data of the Entity

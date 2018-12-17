@@ -1,7 +1,7 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(soilDownload
+ExternalProject_Add(SoilDownload
 	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/soil"
 	SOURCE_DIR			"${EXTERNAL_PATH}/soil"
 	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/soil"
@@ -16,7 +16,7 @@ ExternalProject_Add(soilDownload
 )
 
 # Get the properties from the downloaded target
-ExternalProject_Get_Property(soilDownload INSTALL_DIR)
+ExternalProject_Get_Property(SoilDownload INSTALL_DIR)
 
 set(SOIL_FOUND TRUE)
 set(SOIL_INCLUDE_DIR "${INSTALL_DIR}/include/")
@@ -30,10 +30,10 @@ else()
 endif()
 
 # Create the target and add its properties
-add_library(soil INTERFACE)
-target_include_directories(soil INTERFACE ${SOIL_INCLUDE_DIR})
-target_link_libraries(soil INTERFACE
+add_library(Soil INTERFACE)
+target_include_directories(Soil INTERFACE ${SOIL_INCLUDE_DIR})
+target_link_libraries(Soil INTERFACE
 	optimized "${SOIL_LIBRARY_DIR}${SOIL_LIBRARY}"
 	debug "${SOIL_LIBRARY_DIR}${SOIL_DEBUG_LIBRARY}"
 )
-add_dependencies(soil soilDownload)
+add_dependencies(Soil SoilDownload)

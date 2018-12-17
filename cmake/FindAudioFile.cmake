@@ -3,7 +3,7 @@
 #	AUDIOFILE_FOUND			- AUDIOFILE was succesfully found
 #	AUDIOFILE_INCLUDE_DIR	- AUDIOFILE header "AudioFile.h"
 #	AUDIOFILE_LIBRARY		- AUDIOFILE libraries
-#	audioFile				- AUDIOFILE target
+#	AudioFile				- AUDIOFILE target
 
 include(FindPackageHandleStandardArgs)
 
@@ -22,14 +22,14 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	audioFile
+	AudioFile
 	REQUIRED_VARS AUDIOFILE_INCLUDE_DIR AUDIOFILE_LIBRARY
 )
 
 if(AUDIOFILE_FOUND)
 	# Create the dependency target
-	add_library(audioFile UNKNOWN IMPORTED)
-	set_target_properties(audioFile PROPERTIES
+	add_library(AudioFile UNKNOWN IMPORTED)
+	set_target_properties(AudioFile PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${AUDIOFILE_INCLUDE_DIR}
 		IMPORTED_LOCATION ${AUDIOFILE_LIBRARY}
 	)

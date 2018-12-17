@@ -1,5 +1,3 @@
-bin/
 build/
-lib/
 sombra-engine/doc/*
 !sombra-engine/doc/Doxyfile.in

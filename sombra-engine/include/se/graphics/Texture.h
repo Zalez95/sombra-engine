@@ -106,7 +106,7 @@ namespace se::graphics {
 		 *
 		 * @param	pixels the pixel data of the new Texture
 		 * @param	type the type of the pixel data of the new Texture
-		 * @param	textureFormat the format of the new Texture
+		 * @param	format the TextureFormat of the new Texture
 		 * @param	width the width of the new Texture
 		 * @param	height the height of the new Texture */
 		void setImage(

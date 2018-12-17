@@ -1,7 +1,7 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(audioFileDownload
+ExternalProject_Add(AudioFileDownload
 	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/audiofile"
 	SOURCE_DIR			"${EXTERNAL_PATH}/audiofile"
 	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/audiofile"
@@ -15,7 +15,7 @@ ExternalProject_Add(audioFileDownload
 )
 
 # Get the properties from the downloaded target
-ExternalProject_Get_Property(audioFileDownload INSTALL_DIR)
+ExternalProject_Get_Property(AudioFileDownload INSTALL_DIR)
 
 set(AUDIOFILE_FOUND TRUE)
 set(AUDIOFILE_INCLUDE_DIR "${INSTALL_DIR}/include")
@@ -29,10 +29,10 @@ else()
 endif()
 
 # Create the target and add its properties
-add_library(audioFile INTERFACE)
-target_include_directories(audioFile INTERFACE ${AUDIOFILE_INCLUDE_DIR})
-target_link_libraries(audioFile INTERFACE
+add_library(AudioFile INTERFACE)
+target_include_directories(AudioFile INTERFACE ${AUDIOFILE_INCLUDE_DIR})
+target_link_libraries(AudioFile INTERFACE
 	optimized "${AUDIOFILE_LIBRARY_DIR}${AUDIOFILE_LIBRARY}"
 	debug "${AUDIOFILE_LIBRARY_DIR}${AUDIOFILE_DEBUG_LIBRARY}"
 )
-add_dependencies(audioFile audioFileDownload)
+add_dependencies(AudioFile AudioFileDownload)

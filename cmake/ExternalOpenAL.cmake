@@ -1,7 +1,7 @@
 include(ExternalProject)
 
 # Download the project
-ExternalProject_Add(openalDownload
+ExternalProject_Add(OpenALDownload
 	DOWNLOAD_COMMAND	git submodule update --init "${EXTERNAL_PATH}/openal"
 	SOURCE_DIR			"${EXTERNAL_PATH}/openal"
 	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/openal"
@@ -22,7 +22,7 @@ ExternalProject_Add(openalDownload
 )
 
 # Get the properties from the downloaded target
-ExternalProject_Get_Property(openalDownload INSTALL_DIR)
+ExternalProject_Get_Property(OpenALDownload INSTALL_DIR)
 
 set(OPENAL_FOUND TRUE)
 set(OPENAL_INCLUDE_DIR "${INSTALL_DIR}/include")
@@ -41,10 +41,10 @@ else()
 endif()
 
 # Create the target and add its properties
-add_library(openal INTERFACE)
-target_include_directories(openal INTERFACE ${OPENAL_INCLUDE_DIR})
-target_link_libraries(openal INTERFACE
+add_library(OpenAL INTERFACE)
+target_include_directories(OpenAL INTERFACE ${OPENAL_INCLUDE_DIR})
+target_link_libraries(OpenAL INTERFACE
 	optimized "${OPENAL_LIBRARY_DIR}${OPENAL_LIBRARY}"
 	debug "${OPENAL_LIBRARY_DIR}${OPENAL_DEBUG_LIBRARY}"
 )
-add_dependencies(openal openalDownload)
+add_dependencies(OpenAL OpenALDownload)

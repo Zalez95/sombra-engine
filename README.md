@@ -14,16 +14,15 @@ Third party libraries used:
 - SOIL				- Library used to read common image file formats (http://www.lonesock.net/soil.html).
 - OpenAL Soft		- Library for playing audio in 3D virtual environments (http://openal-soft.org/)
 - AudioFile			- Library for reading WAV audio files (https://github.com/adamstark/AudioFile)
+- Nlohmann JSON		- Library for parsing JSON Objects (https://github.com/nlohmann/json)
 - Google Test		- Library used to create tests for the SombraEngine library (https://github.com/google/googletest).
 
 Project structure:
-- /bin				- Output binaries
 - /build			- Object files and other CMake output
 - /cmake			- CMake files used to find or download the third party libraries used in this project
 - /ext				- Project dependencies source dir
-- /sombra-engine	- SombraEngine library source dir
 - /game				- Game source dir
-- /lib				- Output libraries
+- /sombra-engine	- SombraEngine library source dir
 
 Naming conventions:
 - Shader extensions:

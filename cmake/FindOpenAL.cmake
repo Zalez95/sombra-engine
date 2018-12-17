@@ -3,7 +3,7 @@
 #	OPENAL_FOUND		- OPENAL was succesfully found
 #	OPENAL_INCLUDE_DIR	- OPENAL header "AL/al.h"
 #	OPENAL_LIBRARY		- OPENAL libraries
-#	openal				- OPENAL target
+#	OpenAL::OpenAL		- OPENAL target
 
 include(FindPackageHandleStandardArgs)
 
@@ -22,14 +22,14 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	openal
+	OpenAL
 	REQUIRED_VARS OPENAL_INCLUDE_DIR OPENAL_LIBRARY
 )
 
 if(OPENAL_FOUND)
 	# Create the dependency target
-	add_library(openal UNKNOWN IMPORTED)
-	set_target_properties(openal PROPERTIES
+	add_library(OpenAL::OpenAL UNKNOWN IMPORTED)
+	set_target_properties(OpenAL::OpenAL PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${OPENAL_INCLUDE_DIR}
 		IMPORTED_LOCATION ${OPENAL_LIBRARY}
 	)

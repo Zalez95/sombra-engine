@@ -3,7 +3,7 @@
 #	SOIL_FOUND			- SOIL was succesfully found
 #	SOIL_INCLUDE_DIR	- SOIL header "SOIL/SOIL.h"
 #	SOIL_LIBRARY		- SOIL libraries
-#	soil				- SOIL target
+#	Soil				- SOIL target
 
 include(FindPackageHandleStandardArgs)
 
@@ -22,14 +22,14 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	soil
+	Soil
 	REQUIRED_VARS SOIL_INCLUDE_DIR SOIL_LIBRARY
 )
 
 if(SOIL_FOUND)
 	# Create the dependency target
-	add_library(soil UNKNOWN IMPORTED)
-	set_target_properties(soil PROPERTIES
+	add_library(Soil UNKNOWN IMPORTED)
+	set_target_properties(Soil PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${SOIL_INCLUDE_DIR}
 		IMPORTED_LOCATION ${SOIL_LIBRARY}
 	)

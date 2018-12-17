@@ -39,7 +39,7 @@ namespace se::collision {
 		 *
 		 * @param	minFDifference the minimum difference between the distances
 		 *			to the origin of two faces needed for the EPA algorithm
-		 * @param	contactPrecission the precision of the calculated Contact
+		 * @param	contactPrecision the precision of the calculated Contact
 		 *			points
 		 * @param	contactSeparation the minimum distance between the
 		 *			coordinates of two Contact used to determine if a contact

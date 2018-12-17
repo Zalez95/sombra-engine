@@ -3,7 +3,7 @@
 #	GTEST_FOUND			- GTEST was succesfully found
 #	GTEST_INCLUDE_DIR	- GTEST header "gtest/gtest.h"
 #	GTEST_LIBRARY		- GTEST libraries
-#	gtest				- GTEST target
+#	GTest				- GTEST target
 
 include(FindPackageHandleStandardArgs)
 
@@ -22,14 +22,14 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	gtest
+	GTest
 	REQUIRED_VARS GTEST_INCLUDE_DIR GTEST_LIBRARY
 )
 
 if(GTEST_FOUND)
 	# Create the dependency target
-	add_library(gtest UNKNOWN IMPORTED)
-	set_target_properties(gtest PROPERTIES
+	add_library(GTest UNKNOWN IMPORTED)
+	set_target_properties(GTest PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${GTEST_INCLUDE_DIR}
 		IMPORTED_LOCATION ${GTEST_LIBRARY}
 	)
