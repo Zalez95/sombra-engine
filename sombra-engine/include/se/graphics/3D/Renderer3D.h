@@ -22,27 +22,10 @@ namespace se::graphics {
 		/** The Program of the renderer */
 		Program3D mProgram;
 
-		/** The projection matrix of the renderer that transforms from View
-		 * Space to Projection Space */
-		glm::mat4 mProjectionMatrix;
-
 		/** The Renderable3Ds that we want to render */
 		std::queue<const Renderable3D*> mRenderable3Ds;
 
 	public:		// Functions
-		/** Creates a new Renderer3D
-		 *
-		 * @param	projectionMatrix the projectionMatrix of the renderer */
-		Renderer3D(const glm::mat4& projectionMatrix) :
-			mProjectionMatrix(projectionMatrix) {};
-
-		/** Sets the projection matrix of the Renderer
-		 *
-		 * @param	projectionMatrix the perspective matrix used to project
-		 *			the 3D scene */
-		inline void setProjectionMatrix(const glm::mat4& projectionMatrix)
-		{ mProjectionMatrix = projectionMatrix; };
-
 		/** Submits the given Renderable3D to the queue of Renderable3Ds to
 		 * render
 		 *

@@ -12,6 +12,10 @@ namespace se::graphics {
 	class Camera
 	{
 	private:	// Attributes
+		/** The projection matrix of the renderer that transforms from View
+		 * Space to Projection Space */
+		glm::mat4 mProjectionMatrix;
+
 		/** The position coordinates of the Camera in world space */
 		glm::vec3 mPosition;
 
@@ -22,17 +26,34 @@ namespace se::graphics {
 		glm::vec3 mUp;
 
 	public:		// Functions
-		/** Creates a new Camera
+		/** Creates a new Camera */
+		Camera() :
+			mProjectionMatrix(1.0f),
+			mPosition(0.0f), mTarget(0.0f), mUp(0.0f) {};
+
+		/** Sets the projection matrix of the Camera
 		 *
-		 * @param	position the position of the new camera in world space
-		 * @param	target the point where the Camera is pointing towards in
-		 *			world space
-		 * @param	up the up vector of the camera */
-		Camera(
-			const glm::vec3& position,
-			const glm::vec3& target,
-			const glm::vec3& up
-		) : mPosition(position), mTarget(target), mUp(up) {};
+		 * @param	xMagnification the horizontal magnification of the view
+		 * @param	yMagnification the vertical magnification of the view
+		 * @param	zNear the distance to the near clipping plane
+		 * @param	zFar the distance to the far clipping plane */
+		void setOrthographicProjectionMatrix(
+			float xMagnification, float yMagnification, float zNear, float zFar
+		);
+
+		/** Sets the projection matrix of the Camera
+		 *
+		 * @param	fovy the vertical field of view in radians
+		 * @param	aspectRatio the aspect ratio of the field of view
+		 * @param	zNear the distance to the near clipping plane
+		 * @param	zFar the distance to the far clipping plane */
+		void setPerspectiveProjectionMatrix(
+			float fovy, float aspectRatio, float zNear, float zFar
+		);
+
+		/** @return	the projection matrix of the Camera that transforms from
+		 *			view space to projection space */
+		glm::mat4 getProjectionMatrix() const { return mProjectionMatrix; };
 
 		/** @return the position of the Camera in world space */
 		inline glm::vec3 getPosition() const { return mPosition; };

@@ -1,12 +1,7 @@
 #include <algorithm>
-#include <glm/gtc/matrix_transform.hpp>
 #include "se/graphics/3D/Layer3D.h"
 
 namespace se::graphics {
-
-	Layer3D::Layer3D() :
-		mRenderer3D(glm::perspective(kFOV, kWidth / float(kHeight) , kZNear, kZFar)) {}
-
 
 	void Layer3D::addRenderable3D(const Renderable3D* renderable3D)
 	{

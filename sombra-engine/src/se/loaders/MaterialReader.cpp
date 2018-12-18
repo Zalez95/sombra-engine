@@ -114,7 +114,8 @@ namespace se::loaders {
 			}
 		}
 
-		return std::make_unique<graphics::Material>(name, ambientColor, diffuseColor, specularColor, shininess);
+		//return std::make_unique<graphics::Material>({ name, ambientColor, diffuseColor, specularColor, shininess });
+		return nullptr;
 	}
 
 }

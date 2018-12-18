@@ -58,7 +58,7 @@ namespace se::utils {
 		system_clock::duration tp = now.time_since_epoch();
 		tp -= duration_cast<seconds>(tp);
 
-		std::stringstream ss;
+		std::ostringstream ss;
 		std::time_t tt = system_clock::to_time_t(now);
 		ss	<< std::put_time(std::localtime(&tt), timeFormat)
 			<< '.' << std::setw(3) << std::setfill('0') << tp / milliseconds(1);

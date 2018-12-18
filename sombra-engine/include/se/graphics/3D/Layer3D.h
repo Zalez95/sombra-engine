@@ -22,9 +22,6 @@ namespace se::graphics {
 	private:	// Attributes
 		static constexpr unsigned int kWidth	= 640;
 		static constexpr unsigned int kHeight	= 480;
-		static constexpr float kFOV				= glm::radians(60.0f);
-		static constexpr float kZNear			= 1.0f;
-		static constexpr float kZFar			= 250.0f;
 
 		/** The Renderer used by the layer to render the Scene */
 		Renderer3D mRenderer3D;
@@ -39,9 +36,6 @@ namespace se::graphics {
 		std::vector<const PointLight*> mPointLights;
 
 	public:		// Functions
-		/** Creates a new Layer 3D */
-		Layer3D();
-
 		/** Adds the given Renderable to the Layer so it will be rendered
 		 *
 		 * @param	renderable3D renderable3D a pointer to the Renderable3D to

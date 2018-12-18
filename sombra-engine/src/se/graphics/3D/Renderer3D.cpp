@@ -18,11 +18,15 @@ namespace se::graphics {
 
 	void Renderer3D::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
 	{
-		glm::mat4 viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
+		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f);
+		if (camera) {
+			viewMatrix = camera->getViewMatrix();
+			projectionMatrix = camera->getProjectionMatrix();
+		}
 
 		mProgram.enable();
 		mProgram.setViewMatrix(viewMatrix);
-		mProgram.setProjectionMatrix(mProjectionMatrix);
+		mProgram.setProjectionMatrix(projectionMatrix);
 		mProgram.setLights(pointLights);
 
 		while (!mRenderable3Ds.empty()) {
@@ -39,7 +43,9 @@ namespace se::graphics {
 
 			// Bind the program data
 			mProgram.setModelMatrix(modelMatrix);
-			if (material) { mProgram.setMaterial(material.get()); }
+			if (material) {
+				mProgram.setMaterial(*material);
+			}
 			if (texture) {
 				mProgram.setColorTexture(0);
 				texture->bind(0);
@@ -84,7 +90,9 @@ namespace se::graphics {
 			}
 
 			// Unbind the program data
-			if (texture) { texture->unbind(); }
+			if (texture) {
+				texture->unbind();
+			}
 		}
 
 		mProgram.disable();

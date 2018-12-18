@@ -8,7 +8,7 @@
 namespace se::graphics {
 
 	class Mesh;
-	class Material;
+	struct Material;
 	class Texture;
 
 

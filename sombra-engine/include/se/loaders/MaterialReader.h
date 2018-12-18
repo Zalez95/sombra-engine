@@ -5,7 +5,7 @@
 #include <vector>
 
 namespace se::utils { class FileReader; }
-namespace se::graphics { class Material; }
+namespace se::graphics { struct Material; }
 
 namespace se::loaders {
 

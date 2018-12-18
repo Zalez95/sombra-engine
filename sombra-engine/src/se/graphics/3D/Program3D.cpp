@@ -59,12 +59,12 @@ namespace se::graphics {
 	}
 
 
-	void Program3D::setMaterial(const Material* material)
+	void Program3D::setMaterial(const Material& material)
 	{
-		mProgram->setUniform(mUniformLocations.material.ambientColor, material->getAmbientColor());
-		mProgram->setUniform(mUniformLocations.material.diffuseColor, material->getDiffuseColor());
-		mProgram->setUniform(mUniformLocations.material.specularColor, material->getSpecularColor());
-		mProgram->setUniform(mUniformLocations.material.shininess, material->getShininess());
+		mProgram->setUniform(mUniformLocations.material.ambientColor, material.ambientColor);
+		mProgram->setUniform(mUniformLocations.material.diffuseColor, material.diffuseColor);
+		mProgram->setUniform(mUniformLocations.material.specularColor, material.specularColor);
+		mProgram->setUniform(mUniformLocations.material.shininess, material.shininess);
 	}
 
 

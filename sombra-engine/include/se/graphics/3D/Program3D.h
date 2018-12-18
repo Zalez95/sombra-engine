@@ -7,7 +7,7 @@
 namespace se::graphics {
 
 	class Program;
-	class Material;
+	struct Material;
 	class PointLight;
 
 
@@ -102,9 +102,9 @@ namespace se::graphics {
 
 		/** Sets the uniform variables for the given material
 		 *
-		 * @param	material a pointer to the material with the data that we
-		 *			want to set as uniform variables in the shaders */
-		void setMaterial(const Material* material);
+		 * @param	material the material with the data that we want to set as
+		 *			uniform variables in the shaders */
+		void setMaterial(const Material& material);
 
 		/** Sets the uniform variables for the given PointLights
 		 *

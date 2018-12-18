@@ -184,12 +184,7 @@ namespace se::loaders {
 				fileReader >> scale.x >> scale.y >> scale.z;
 			}
 			else if (token == "camera") {
-				glm::vec3 cameraPosition, cameraTarget, cameraUp;
-				fileReader >> cameraPosition.x	>> cameraPosition.y	>> cameraPosition.z;
-				fileReader >> cameraTarget.x	>> cameraTarget.y	>> cameraTarget.z;
-				fileReader >> cameraUp.x		>> cameraUp.y		>> cameraUp.z;
-
-				camera = std::make_unique<graphics::Camera>(cameraPosition, cameraTarget, cameraUp);
+				// TODO: change
 			}
 			else if (token == "renderable3D") {
 				std::string meshName, materialName, textureName;
@@ -225,7 +220,7 @@ namespace se::loaders {
 				auto itMaterial = std::find_if(
 					sharedData.materials.begin(), sharedData.materials.end(),
 					[&materialName](std::shared_ptr<graphics::Material> material) {
-						return material->getName() == materialName;
+						return material->name == materialName;
 					}
 				);
 

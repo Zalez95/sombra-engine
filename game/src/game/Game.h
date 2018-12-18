@@ -18,11 +18,14 @@ namespace game {
 	class Game : public se::app::Application
 	{
 	private:	// Constants
-		static const std::string sTitle;
-		static const unsigned int sWidth;
-		static const unsigned int sHeight;
-		static const float sUpdateTime;
-		static const unsigned int sNumCubes;
+		static const std::string kTitle;
+		static const unsigned int kWidth;
+		static const unsigned int kHeight;
+		static const float kUpdateTime;
+		static const unsigned int kNumCubes;
+		static const float kFOV;
+		static const float kZNear;
+		static const float kZFar;
 
 	private:	// Attributes
 		se::graphics::Layer2D mLayer2D;
@@ -32,10 +35,10 @@ namespace game {
 
 	public:		// Functions
 		/** Creates a new Game */
-		Game() : se::app::Application(sTitle, sWidth, sHeight, sUpdateTime) {};
+		Game();
 
 		/** Class destructor */
-		~Game() {};
+		~Game();
 	private:
 		/**
 		 * Function used to initialize the application's entities data

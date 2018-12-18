@@ -54,13 +54,22 @@
 namespace game {
 
 // static variables definition
-	const std::string Game::sTitle		= "< SOMBRA >";
-	const unsigned int Game::sWidth		= 1280;
-	const unsigned int Game::sHeight	= 720;
-	const float Game::sUpdateTime		= 0.016f;
-	const unsigned int Game::sNumCubes	= 50;
+	const std::string Game::kTitle		= "< SOMBRA >";
+	const unsigned int Game::kWidth		= 1280;
+	const unsigned int Game::kHeight	= 720;
+	const float Game::kUpdateTime		= 0.016f;
+	const unsigned int Game::kNumCubes	= 50;
+	const float Game::kFOV				= glm::radians(60.0f);
+	const float Game::kZNear			= 1.0f;
+	const float Game::kZFar				= 250.0f;
 
 // Public functions
+	Game::Game() : se::app::Application(kTitle, kWidth, kHeight, kUpdateTime) {}
+
+
+	Game::~Game() {}
+
+
 	se::loaders::RawMesh createRawMesh(const se::collision::HalfEdgeMesh& heMesh)
 	{
 		se::loaders::RawMesh rawMesh("heMeshTriangles");
@@ -306,7 +315,8 @@ namespace game {
 			texture2->setImage(pixels, se::graphics::TexturePixelType::FLOAT, se::graphics::TextureFormat::RGB, 2, 2);
 
 			// Cameras
-			camera1 = std::make_unique<se::graphics::Camera>(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+			camera1 = std::make_unique<se::graphics::Camera>();
+			camera1->setPerspectiveProjectionMatrix(kFOV, kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
 			se::graphics::BaseLight baseLight1(glm::vec3(0.5f, 0.6f, 0.3f), glm::vec3(0.1f, 0.5f, 0.6f));
@@ -415,13 +425,13 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f);
 
-			auto tmpMaterial = std::make_shared<se::graphics::Material>(
+			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				0.2f
-			);
+			});
 
 			auto tmpRawMesh = createRawMesh(heMesh);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
@@ -432,7 +442,7 @@ namespace game {
 		}
 
 		// Random cubes
-		for (std::size_t i = 0; i < sNumCubes; ++i) {
+		for (std::size_t i = 0; i < kNumCubes; ++i) {
 			auto cube = std::make_unique<se::app::Entity>("random-cube");
 			cube->position = glm::ballRand(50.0f);
 
@@ -464,13 +474,13 @@ namespace game {
 				mCollisionManager->addEntity(building.get(), std::move(collider2), rigidBody2.get());
 				mPhysicsManager->addEntity(building.get(), std::move(rigidBody2));
 
-				auto tmpMaterial = std::make_shared<se::graphics::Material>(
+				std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 					"tmp_material",
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					0.2f
-				);
+				});
 				auto tmpRawMesh = createRawMesh(qh.getMesh());
 				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
 				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
@@ -483,13 +493,13 @@ namespace game {
 				auto building = std::make_unique<se::app::Entity>("building");
 				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 
-				auto tmpMaterial = std::make_shared<se::graphics::Material>(
+				std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 					"tmp_material",
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 					0.2f
-				);
+				});
 				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh));
 				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr);
 				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
