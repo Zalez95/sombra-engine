@@ -173,7 +173,7 @@ namespace se::collision {
 		}
 
 		// Expand the polytope until the closest HEFace is found
-		int iClosestFace;
+		int iClosestFace = -1;
 		float closestSeparation = std::numeric_limits<float>::max();
 		std::vector<int> closestFaceIndices, overlappingFaces;
 		do {
