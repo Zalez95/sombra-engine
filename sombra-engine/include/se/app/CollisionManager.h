@@ -14,7 +14,7 @@ namespace se::app {
 
 
 	/**
-	 * Class CollisionManager, it's an Manager used for storing and updating
+	 * Class CollisionManager, it's a Manager used for storing and updating
 	 * the Entities' collision data
 	 */
 	class CollisionManager

@@ -5,6 +5,7 @@
 #include "se/window/WindowSystem.h"
 #include "se/graphics/GraphicsSystem.h"
 #include "se/physics/PhysicsEngine.h"
+#include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Entity.h"
 #include "se/app/Application.h"
@@ -12,6 +13,7 @@
 #include "se/app/GraphicsManager.h"
 #include "se/app/PhysicsManager.h"
 #include "se/app/CollisionManager.h"
+#include "se/app/AnimationManager.h"
 #include "se/app/AudioManager.h"
 
 namespace se::app {
@@ -40,6 +42,10 @@ namespace se::app {
 			mCollisionDetector = new collision::CollisionDetector();
 			mCollisionManager = new CollisionManager(*mCollisionDetector, *mPhysicsEngine);
 
+			// Animation
+			mAnimationSystem = new animation::AnimationSystem();
+			mAnimationManager = new AnimationManager(*mAnimationSystem);
+
 			// Audio
 			mAudioEngine = new audio::AudioEngine();
 			mAudioManager = new AudioManager(*mAudioEngine);
@@ -57,6 +63,8 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Deleting the Application";
 		delete mAudioManager;
 		delete mAudioEngine;
+		delete mAnimationManager;
+		delete mAnimationSystem;
 		delete mCollisionManager;
 		delete mCollisionDetector;
 		delete mPhysicsManager;
@@ -103,6 +111,7 @@ namespace se::app {
 				mPhysicsManager->doDynamics(deltaTime);
 				mCollisionManager->update(deltaTime);
 				mPhysicsManager->doConstraints(deltaTime);
+				mAnimationManager->update(deltaTime);
 				mAudioManager->update();
 				mGraphicsManager->update();
 

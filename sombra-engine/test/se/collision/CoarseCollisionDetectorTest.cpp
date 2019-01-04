@@ -36,9 +36,9 @@ TEST(CoarseCollisionDetector, collide)
 	};
 
 	ASSERT_EQ(result.size(), expectedRes.size());
-	for (auto pair1 : result) {
+	for (auto& pair1 : result) {
 		bool flag = false;
-		for (auto pair2 : result) {
+		for (auto& pair2 : result) {
 			if ((pair1.first == pair2.first && pair1.second == pair2.second)
 				|| (pair1.first == pair2.second && pair1.second == pair2.first)
 			) {

@@ -9,6 +9,7 @@ namespace se::window { class WindowSystem; }
 namespace se::graphics { class GraphicsSystem; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { class CollisionDetector; }
+namespace se::animation { class AnimationSystem; }
 namespace se::audio { class AudioEngine; }
 
 namespace se::app {
@@ -18,6 +19,7 @@ namespace se::app {
 	class GraphicsManager;
 	class PhysicsManager;
 	class CollisionManager;
+	class AnimationManager;
 	class AudioManager;
 
 
@@ -48,6 +50,7 @@ namespace se::app {
 		graphics::GraphicsSystem* mGraphicsSystem;
 		physics::PhysicsEngine* mPhysicsEngine;
 		collision::CollisionDetector* mCollisionDetector;
+		animation::AnimationSystem* mAnimationSystem;
 		audio::AudioEngine* mAudioEngine;
 
 		/** The Entities that exists currently in the application */
@@ -58,6 +61,7 @@ namespace se::app {
 		GraphicsManager* mGraphicsManager;
 		PhysicsManager* mPhysicsManager;
 		CollisionManager* mCollisionManager;
+		AnimationManager* mAnimationManager;
 		AudioManager* mAudioManager;
 
 	public:		// Functions

@@ -12,8 +12,8 @@ namespace se::app {
 
 
 	/**
-	 * Class AudioManager, it's an Manager used for storing, updating and
-	 * rendering the Entities' audio data
+	 * Class AudioManager, it's a Manager used for storing, updating and
+	 * playing the Entities' audio data
 	 */
 	class AudioManager
 	{
@@ -34,7 +34,7 @@ namespace se::app {
 		/** Creates a new AudioManager
 		 *
 		 * @param	audioEngine a reference to the AudioEngine used by
-		 * 			the AudioManager play the sound sources */
+		 * 			the AudioManager to play the sound sources */
 		AudioManager(audio::AudioEngine& audioEngine) :
 			mAudioEngine(audioEngine) {};
 

@@ -7,9 +7,9 @@ namespace se::loaders {
 	utils::Image ImageReader::read(const std::string& path, utils::ImageFormat imageFormat)
 	{
 		// Load the image data with SOIL
-		int soilFormat = imageFormat == (utils::ImageFormat::RGB_IMAGE)? SOIL_LOAD_RGB :
-			imageFormat == (utils::ImageFormat::RGBA_IMAGE)? SOIL_LOAD_RGBA :
-			imageFormat == (utils::ImageFormat::L_IMAGE)? SOIL_LOAD_L :
+		int soilFormat = (imageFormat == utils::ImageFormat::RGB_IMAGE)? SOIL_LOAD_RGB :
+			(imageFormat == utils::ImageFormat::RGBA_IMAGE)? SOIL_LOAD_RGBA :
+			(imageFormat == utils::ImageFormat::L_IMAGE)? SOIL_LOAD_L :
 			SOIL_LOAD_LA;
 
 		int width, height, channels;

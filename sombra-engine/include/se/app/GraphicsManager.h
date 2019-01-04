@@ -14,7 +14,7 @@ namespace se::app {
 
 
 	/**
-	 * Class GraphicsManager, it's an Manager used for storing, updating and
+	 * Class GraphicsManager, it's a Manager used for storing, updating and
 	 * rendering the Entities' graphics data
 	 */
 	class GraphicsManager

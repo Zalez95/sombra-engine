@@ -12,7 +12,7 @@ namespace se::app {
 
 
 	/**
-	 * Class PhysicsManager, it's an Manager used for storing and updating
+	 * Class PhysicsManager, it's a Manager used for storing and updating
 	 * the Entities' physics data
 	 */
 	class PhysicsManager
