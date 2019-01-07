@@ -66,8 +66,8 @@ namespace se::collision {
 	 * @param	meshData the HalfEdgeMesh that holds the HEVertices and HEFaces
 	 * @param	direction the direction in which we are going to search
 	 * @return	the index of the furthest HalfEdgeMesh HEVertex
-	 * @note	the HalfEdgeMesh must be convex, otherwise the furthest point
-	 *			found could be a local maximum */
+	 * @note	the HalfEdgeMesh must be a 3D convex mesh, otherwise the
+	 *			furthest point found could be a local maximum */
 	int getFurthestVertexInDirection(
 		const HalfEdgeMesh& meshData,
 		const glm::vec3& direction
@@ -83,32 +83,13 @@ namespace se::collision {
 	 * @param	iInitialFace the index of the initial HEFace from which we will
 	 *			start searching
 	 * @return	a pair with the list of HEEdge indices that represents the
-	 *			boundary of the ConvexHull and the list of HEFace indices with
-	 *			the visible HEFaces
+	 *			boundary of the mesh horizon and the list of HEFace indices
+	 *			with the visible HEFaces
 	 * @note	the initial HEFace must be visible from the eyePoint
 	 *			perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
 		const glm::vec3& eyePoint, int iInitialFace
-	);
-
-
-	/** Calculates the intersection of the given ray with the given mesh
-	 *
-	 * @param	meshData the convex HalfEdgeMesh to project the point on. The
-	 *			points of its faces must lie in the same plane
-	 * @param	faceNormals a map with the normals of each HEFace of the
-	 *			mesh
-	 * @param	origin the origin of the ray. It must be inside of the mesh
-	 * @param	direction the direction of the ray
-	 * @param	epsilon the epsilon value used for checking if a ray intersects
-	 *			a HEFace
-	 * @return	a pair with a flag that tells if the ray intersects the
-	 *			mesh and the 3D coordinates of the intersection point */
-	std::pair<bool, glm::vec3> raycastMesh(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
-		const glm::vec3& origin, const glm::vec3& direction,
-		float epsilon
 	);
 
 }

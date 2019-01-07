@@ -1,8 +1,16 @@
 #include <limits>
+#include <cassert>
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "se/collision/ConvexPolyhedron.h"
 
 namespace se::collision {
+
+	ConvexPolyhedron::ConvexPolyhedron(const HalfEdgeMesh& meshData) :
+		mMesh(meshData), mLocalVertices(meshData.vertices), mTransformsMatrix(1.0f)
+	{
+		assert(meshData.vertices.size() >= 4 && "The mesh must have at least a 4 vertices");
+	}
+
 
 	void ConvexPolyhedron::setTransforms(const glm::mat4& transforms)
 	{

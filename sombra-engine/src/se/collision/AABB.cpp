@@ -1,3 +1,4 @@
+#include <limits>
 #include <algorithm>
 #include "se/collision/AABB.h"
 
@@ -16,6 +17,24 @@ namespace se::collision {
 		bool intersecZ = (b1->maximum.z >= b2->minimum.z) && (b1->minimum.z <= b2->maximum.z);
 
 		return (intersecX && intersecY && intersecZ);
+	}
+
+
+	AABB transform(const AABB& aabb, const glm::mat4& transforms)
+	{
+		AABB ret{ glm::vec3(std::numeric_limits<float>::max()), glm::vec3(-std::numeric_limits<float>::max()) };
+
+		for (float x : { aabb.minimum.x, aabb.maximum.x }) {
+			for (float y : { aabb.minimum.y, aabb.maximum.y }) {
+				for (float z : { aabb.minimum.z, aabb.maximum.z }) {
+					glm::vec3 cubePoint = transforms * glm::vec4(x, y, z, 1.0f);
+					ret.minimum = glm::min(ret.minimum, cubePoint);
+					ret.maximum = glm::max(ret.maximum, cubePoint);
+				}
+			}
+		}
+
+		return ret;
 	}
 
 }

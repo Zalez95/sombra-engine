@@ -79,6 +79,7 @@ TEST(BoundingSphere, getFurthestPointInDirection)
 	const float radius = 2.0f;
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
+	const glm::vec3 direction(-0.565685425f, 0.707106781f, 0.424264069f);
 	const glm::vec3 expectedPWorld(3.86862915f, 0.414213562f, -9.151471862f);
 	const glm::vec3 expectedPLocal(-0.13894384f, 1.99500793f, 0.02526247f);
 
@@ -87,7 +88,7 @@ TEST(BoundingSphere, getFurthestPointInDirection)
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	bs1.setTransforms(t * r);
 
-	glm::vec3 direction(-0.565685425f, 0.707106781f, 0.424264069f), pointWorld, pointLocal;
+	glm::vec3 pointWorld, pointLocal;
 	bs1.getFurthestPointInDirection(direction, pointWorld, pointLocal);
 
 	for (int i = 0; i < 3; ++i) {

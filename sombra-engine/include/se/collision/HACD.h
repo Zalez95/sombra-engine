@@ -39,14 +39,6 @@ namespace se::collision {
 			 *			the given one, false otherwise */
 			bool operator>(const QHACDData& other) const
 			{ return cost > other.cost; };
-
-			/** Compares the given QHACDData with the current one
-			 *
-			 * @param	other the other QHACDData to compare
-			 * @return	true if both QHACDData are the same */
-			bool compareVertexIds(const QHACDData& other) const
-			{ return iVertex1 == other.iVertex1 || iVertex1 == other.iVertex2
-				|| iVertex2 == other.iVertex1 || iVertex2 == other.iVertex2; };
 		};
 
 	private:	// Attributes
@@ -134,6 +126,15 @@ namespace se::collision {
 			DualGraphVertex& vertex1, const DualGraphVertex& vertex2
 		);
 
+		/** Compares the given QHACDDatas
+		 *
+		 * @param	qd1 the first QHACDData to compare
+		 * @param	qd2 the second QHACDData to compare
+		 * @return	true if both QHACDData holds the same vertex id */
+		static bool compareVertexIds(
+			const QHACDData& qd1, const QHACDData& qd2
+		);
+
 		/** Computes the convex surfaces from the partitions of the current
 		 * dual graph and the triangulated mesh */
 		void computeConvexSurfaces();
@@ -143,7 +144,7 @@ namespace se::collision {
 		 * @param	meshData the Half-Edge Mesh from which we want to create
 		 *			the dual graph
 		 * @return	the dual graph of the mesh */
-		DualGraph createDualGraph(const HalfEdgeMesh& meshData) const;
+		static DualGraph createDualGraph(const HalfEdgeMesh& meshData);
 
 		/** Calculates the normalization factor as the length of the diagonal
 		 * of the MeshCollider's AABB

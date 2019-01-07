@@ -2,17 +2,16 @@
 #include <cassert>
 #include <algorithm>
 #include "se/collision/TerrainCollider.h"
-#include "se/collision/ConvexPolyhedron.h"
+#include "se/collision/TriangleCollider.h"
 
 namespace se::collision {
 
 	TerrainCollider::TerrainCollider(
-		const std::vector<float>& heights, int xSize, int zSize
+		const std::vector<float>& heights, std::size_t xSize, std::size_t zSize
 	) : mHeights(heights), mXSize(xSize), mZSize(zSize),
 		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
-		assert(static_cast<int>(mHeights.size()) >= mXSize * mZSize
-			&& "There aren't enough heights");
+		assert(mHeights.size() >= mXSize * mZSize && "There aren't enough heights");
 		calculateAABB();
 	}
 
@@ -33,7 +32,7 @@ namespace se::collision {
 		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize - 1) - 0.5f; };
 
 		// Get the AABB in local coordinates
-		AABB localAABB = calculateLocalAABB(aabb);
+		AABB localAABB = transform(aabb, mInverseTransformsMatrix);
 
 		// Calculate the indices of the terrain vertices to check with the
 		// local position of the AABB
@@ -56,16 +55,16 @@ namespace se::collision {
 					glm::vec3 v3(xIndexToX(x+1), mHeights[(z+1) * mXSize + (x+1)], zIndexToZ(z+1));
 
 					std::vector<glm::vec3> triangleVertices1 = { v0, v1, v2 };
-					if (checkYAxis(localAABB, triangleVertices1)) {
-						triangleColliders.emplace_back(std::make_unique<ConvexPolyhedron>(triangleVertices1));
+					//if (checkYAxis(localAABB, triangleVertices1)) {
+						triangleColliders.emplace_back(std::make_unique<TriangleCollider>(triangleVertices1));
 						triangleColliders.back()->setTransforms(mTransformsMatrix);
-					}
+					//}
 
 					std::vector<glm::vec3> triangleVertices2 = { v1, v3, v2 };
-					if (checkYAxis(localAABB, triangleVertices2)) {
-						triangleColliders.push_back(std::make_unique<ConvexPolyhedron>(triangleVertices2));
+					//if (checkYAxis(localAABB, triangleVertices2)) {
+						triangleColliders.push_back(std::make_unique<TriangleCollider>(triangleVertices2));
 						triangleColliders.back()->setTransforms(mTransformsMatrix);
-					}
+					//}
 				}
 			}
 		}
@@ -81,9 +80,9 @@ namespace se::collision {
 			glm::vec3(-std::numeric_limits<float>::max())
 		};
 
-		for (int z = 0; z < mZSize; ++z) {
+		for (std::size_t z = 0; z < mZSize; ++z) {
 			float zPos = z / static_cast<float>(mZSize - 1) - 0.5f;
-			for (int x = 0; x < mXSize; ++x) {
+			for (std::size_t x = 0; x < mXSize; ++x) {
 				float xPos = x / static_cast<float>(mXSize - 1) - 0.5f;
 				float yPos = mHeights[z * mXSize + x];
 
@@ -93,26 +92,6 @@ namespace se::collision {
 				mAABB.maximum = glm::max(mAABB.maximum, worldPosition);
 			}
 		}
-	}
-
-
-	AABB TerrainCollider::calculateLocalAABB(const AABB& worldAABB) const
-	{
-		glm::vec3 lengths = worldAABB.maximum - worldAABB.minimum,
-			localMinimum(std::numeric_limits<float>::max()),
-			localMaximum(-std::numeric_limits<float>::max());
-		for (int i = 0; i < 2; ++i) {
-			for (int j = 0; j < 2; ++j) {
-				for (int k = 0; k < 2; ++k) {
-					glm::vec3 cubePoint = worldAABB.minimum + glm::vec3(i * lengths.x, j * lengths.y, k * lengths.z);
-					cubePoint = mInverseTransformsMatrix * glm::vec4(cubePoint, 1.0f);
-					localMinimum = glm::min(localMinimum, cubePoint);
-					localMaximum = glm::max(localMaximum, cubePoint);
-				}
-			}
-		}
-
-		return { localMinimum, localMaximum };
 	}
 
 

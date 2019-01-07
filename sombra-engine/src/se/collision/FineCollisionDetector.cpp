@@ -1,4 +1,3 @@
-#include <tuple>
 #include <algorithm>
 #include "se/collision/Contact.h"
 #include "se/collision/Manifold.h"

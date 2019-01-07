@@ -1,6 +1,5 @@
 #include <set>
 #include <stack>
-#include <tuple>
 #include <limits>
 #include <algorithm>
 #include <glm/gtc/epsilon.hpp>

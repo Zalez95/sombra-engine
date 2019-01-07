@@ -28,6 +28,14 @@ namespace se::collision {
 	 * @return true if the given AABB overlaps each other, false otherwise */
 	bool overlaps(const AABB& aabb1, const AABB& aabb2);
 
+
+	/** Creates a new AABB by computing the AABB of the transformed initial AABB
+	 *
+	 * @param	aabb the initial AABB
+	 * @param	transforms the transformation matrix
+	 * @return	the new AABB */
+	AABB transform(const AABB& aabb, const glm::mat4& transforms);
+
 }
 
 #endif		// AABB_H

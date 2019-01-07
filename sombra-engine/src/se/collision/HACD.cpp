@@ -1,4 +1,3 @@
-#include <tuple>
 #include <limits>
 #include <algorithm>
 #include <glm/gtc/epsilon.hpp>
@@ -19,33 +18,36 @@ namespace se::collision {
 		std::vector<QHACDData> vertexPairsByCost;
 		for (const DualGraphVertex& vertex1 : mDualGraph.vertices) {
 			for (int iVertex2 : vertex1.neighbours) {
+				// Filter bad vertices
 				auto itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), iVertex2);
+				if (itVertex2 == mDualGraph.vertices.end()) continue;
 
-				// We filter the neighbour vertices already evaluated
-				if ((itVertex2 != mDualGraph.vertices.end()) && (itVertex2->id > vertex1.id)) {
-					QHACDData curData = createQHACDData(vertex1, *itVertex2);
-					vertexPairsByCost.insert(
-						std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
-						curData
-					);
-				}
+				// Filter the neighbour vertices already evaluated
+				const DualGraphVertex& vertex2 = *itVertex2;
+				if (vertex2.id <= vertex1.id) continue;
+
+				// Filter the Graph Edges with a concavity measure larger than
+				// the concavity threshold
+				QHACDData curData = createQHACDData(vertex1, *itVertex2);
+				if (curData.concavity > mMaximumConcavity * mNormalizationFactor) continue;
+
+				vertexPairsByCost.insert(
+					std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
+					curData
+				);
 			}
 		}
 
-		// Collapse the Graph Edge with the lowest cost until there's no one
-		// unther the concavity threshold
-		while(std::any_of(
-				vertexPairsByCost.begin(), vertexPairsByCost.end(),
-				[this](const QHACDData& qd) { return qd.concavity < mMaximumConcavity * mNormalizationFactor; }
-			)
-		) {
+		// Collapse the Graph Edge with the lowest cost until there's no more
+		while(!vertexPairsByCost.empty()) {
 			QHACDData curData = vertexPairsByCost.back();
 			vertexPairsByCost.pop_back();
 
 			auto itVertex1 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex1);
 			auto itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex2);
 
-			// 1. Update the ancestors of the first vertex with the second one
+			// 1. Update the ancestors of the first vertex with the second one's
+			// ancestors
 			updateAncestors(*itVertex1, *itVertex2);
 
 			// 2. Merge both nodes into the first one
@@ -56,7 +58,7 @@ namespace se::collision {
 			vertexPairsByCost.erase(
 				std::remove_if(
 					vertexPairsByCost.begin(), vertexPairsByCost.end(),
-					[&](const QHACDData& other) { return curData.compareVertexIds(other); }
+					[&](const QHACDData& other) { return compareVertexIds(curData, other); }
 				),
 				vertexPairsByCost.end()
 			);
@@ -66,7 +68,11 @@ namespace se::collision {
 			for (int iVertex2 : itVertex1->neighbours) {
 				itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), iVertex2);
 
+				// Filter the Graph Edges with a concavity measure larger than
+				// the concavity threshold
 				curData = createQHACDData(*itVertex1, *itVertex2);
+				if (curData.concavity > mMaximumConcavity * mNormalizationFactor) continue;
+
 				vertexPairsByCost.insert(
 					std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
 					curData
@@ -150,6 +156,13 @@ namespace se::collision {
 	}
 
 
+	bool HACD::compareVertexIds(const QHACDData& qd1, const QHACDData& qd2)
+	{
+		return qd1.iVertex1 == qd2.iVertex1 || qd1.iVertex1 == qd2.iVertex2
+			|| qd1.iVertex2 == qd2.iVertex1 || qd1.iVertex2 == qd2.iVertex2;
+	}
+
+
 	void HACD::computeConvexSurfaces()
 	{
 		QuickHull qh(mEpsilon);
@@ -194,7 +207,7 @@ namespace se::collision {
 	}
 
 
-	HACD::DualGraph HACD::createDualGraph(const HalfEdgeMesh& meshData) const
+	HACD::DualGraph HACD::createDualGraph(const HalfEdgeMesh& meshData)
 	{
 		DualGraph dualGraph;
 
@@ -344,7 +357,8 @@ namespace se::collision {
 			});
 		}
 
-		return std::sqrt(convexHullArea - originalMeshArea);
+		float areaDifference = convexHullArea - originalMeshArea;
+		return (areaDifference < 0.0f)? 0.0f : std::sqrt(areaDifference);
 	}
 
 

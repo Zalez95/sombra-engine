@@ -23,10 +23,10 @@ namespace se::collision {
 		const std::vector<float> mHeights;
 
 		/** The number of vertices of the Terrain in the X axis */
-		int mXSize;
+		std::size_t mXSize;
 
 		/** The number of vertices of the Terrain in the Z axis */
-		int mZSize;
+		std::size_t mZSize;
 
 		/** The transformation matrix of the TerrainCollider */
 		glm::mat4 mTransformsMatrix;
@@ -46,7 +46,8 @@ namespace se::collision {
 		 * @param	xSize the number of vertices in the X axis
 		 * @param	zSize the number of vertices in the Z axis */
 		TerrainCollider(
-			const std::vector<float>& heights, int xSize, int zSize
+			const std::vector<float>& heights,
+			std::size_t xSize, std::size_t zSize
 		);
 
 		/** Updates the scale, translation and orientation of the
@@ -77,14 +78,6 @@ namespace se::collision {
 		/** Calculates the AABB of the TerrainCollider with its local heights
 		 * and transforms matrix */
 		void calculateAABB();
-
-		/** Creates a local AABB from the given aabb in world space
-		 *
-		 * @param	aabb the AABB in world space
-		 * @return	the new AABB in local space
-		 * @note	the AABB in local space could have a larger volume and
-		 *			surface than the original one */
-		AABB calculateLocalAABB(const AABB& aabb) const;
 
 		/** Checks if the given AABB is inside the given mesh in the Y axis
 		 *

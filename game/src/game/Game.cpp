@@ -411,9 +411,9 @@ namespace game {
 		// HACD Tube
 		hacd.calculate( createTestTube1() );
 		for (const se::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
-			auto building = std::make_unique<se::app::Entity>("tube");
-			building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
-			building->position = glm::vec3(0.0f, 2.0f, 75.0f);
+			auto tubeSlice = std::make_unique<se::app::Entity>("tube");
+			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f);
 
 			auto tmpMaterial = std::make_shared<se::graphics::Material>(
 				"tmp_material",
@@ -426,9 +426,9 @@ namespace game {
 			auto tmpRawMesh = createRawMesh(heMesh);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
-			mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2), glm::mat4(1.0f));
 
-			mEntities.push_back(std::move(building));
+			mEntities.push_back(std::move(tubeSlice));
 		}
 
 		// Random cubes
