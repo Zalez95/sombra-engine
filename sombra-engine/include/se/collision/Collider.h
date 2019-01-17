@@ -13,6 +13,7 @@ namespace se::collision {
 	class Collider
 	{
 	public:		// Functions
+		/** Class destructor */
 		virtual ~Collider() = default;
 
 		/** Updates the translation and orientation of the Collider with the

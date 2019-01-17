@@ -11,6 +11,9 @@ namespace se::collision {
 	class ConvexCollider : public Collider
 	{
 	public:		// Functions
+		/** Class destructor */
+		virtual ~ConvexCollider() = default;
+
 		/** Updates the scale, translation and orientation of the ConvexCollider
 		 * with the given transformations matrix
 		 *

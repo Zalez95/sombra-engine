@@ -5,6 +5,7 @@
 #include <string>
 #include "../app/GraphicsManager.h"
 #include "../app/PhysicsManager.h"
+#include "../app/CollisionManager.h"
 
 namespace se::app { struct Entity; }
 namespace se::utils { class Image; }
@@ -29,7 +30,7 @@ namespace se::loaders {
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */
-		static constexpr float kMaxColor = 255.0f;
+		static constexpr unsigned char kMaxColor = 255;
 
 		/** The GraphicsManager used to store the Renderable3Ds of the
 		 * Terrains */
@@ -39,18 +40,25 @@ namespace se::loaders {
 		 * Terrains */
 		app::PhysicsManager& mPhysicsManager;
 
+		/** The CollisionManager used to store the Colliders of the Terrains */
+		app::CollisionManager& mCollisionManager;
+
 	public:		// Functions
 		/** Creates a new TerrainLoader
 		 *
 		 * @param	graphicsManager the GraphicsManager that holds the graphics
 		 *			data of the Terrain Entities
 		 * @param	physicsManager the PhysicsManager that holds the physics
-		 *			data of the Terrain Entities */
+		 *			data of the Terrain Entities
+		 * @param	collisionManager the CollisionManager that holds the
+		 *			collider data of the Terrain Entities */
 		TerrainLoader(
 			app::GraphicsManager& graphicsManager,
-			app::PhysicsManager& physicsManager
+			app::PhysicsManager& physicsManager,
+			app::CollisionManager& collisionManager
 		) : mGraphicsManager(graphicsManager),
-			mPhysicsManager(physicsManager) {};
+			mPhysicsManager(physicsManager),
+			mCollisionManager(collisionManager) {};
 
 		/** Creates an Entity that represents a Terrain from the given data
 		 *

@@ -65,13 +65,13 @@ namespace se::collision {
 		 *			TerrainCollider */
 		AABB getAABB() const override { return mAABB; };
 
-		/** @return a set with the posible overlaping parts of the Collider
-		 * with the given AABB
+		/** Calculates the posible overlaping parts of the Collider with the
+		 * given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	a set with Convex parts of the collider that can be
-		 *			overlaping with the given AABB */
-		std::vector<const ConvexCollider*> getOverlapingParts(
+		 * @return	the pointers to the Convex parts of the collider that could
+		 *			be overlaping with the given AABB */
+		std::vector<ConvexColliderSPtr> getOverlapingParts(
 			const AABB& aabb
 		) const override;
 	private:
@@ -79,14 +79,14 @@ namespace se::collision {
 		 * and transforms matrix */
 		void calculateAABB();
 
-		/** Checks if the given AABB is inside the given mesh in the Y axis
+		/** Checks if the given AABB is inside the given triangle in the Y axis
 		 *
 		 * @param	aabb the AABB in local space
-		 * @param	vertices the vertices of the mesh
-		 * @return	true if the AABB (or part of it) is inside the vertices in
+		 * @param	vertices the vertices of the triangle
+		 * @return	true if the AABB (or part of it) is inside the triangle in
 		 *			the Y axis, false otherwise */
 		bool checkYAxis(
-			const AABB& aabb, const std::vector<glm::vec3>& vertices
+			const AABB& aabb, const std::array<glm::vec3, 3>& vertices
 		) const;
 	};
 

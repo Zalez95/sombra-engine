@@ -27,9 +27,6 @@ namespace se::collision {
 		 * @param	radius the Radius of the new BoundingSphere */
 		BoundingSphere(float radius);
 
-		/** Class destructor */
-		~BoundingSphere() {};
-
 		/** @return	the center of the BoundingSphere in world coordinates */
 		glm::vec3 getCenter() const { return glm::vec3(mTransformsMatrix[3]); };
 

@@ -79,8 +79,7 @@ namespace se::collision {
 
 		// Get the overlapping convex parts of the concave collider with the
 		// convex one
-		auto overlappingParts = concaveCollider.getOverlapingParts(convexCollider.getAABB());
-		for (const ConvexCollider* part : overlappingParts) {	
+		for (auto part : concaveCollider.getOverlapingParts(convexCollider.getAABB())) {
 			// GJK algorithm
 			auto [collides, simplex] = (convexFirst)?
 				mGJKCollisionDetector.calculate(convexCollider, *part) :
@@ -130,10 +129,8 @@ namespace se::collision {
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider
-		auto overlappingParts1 = collider1.getOverlapingParts(collider2.getAABB());
-		for (const ConvexCollider* part1 : overlappingParts1) {
-			auto overlappingParts2 = collider2.getOverlapingParts(part1->getAABB());
-			for (const ConvexCollider* part2 : overlappingParts2) {
+		for (auto part1 : collider1.getOverlapingParts(collider2.getAABB())) {
+			for (auto part2 : collider2.getOverlapingParts(part1->getAABB())) {
 				// GJK algorithm
 				auto [collides, simplex] = mGJKCollisionDetector.calculate(*part1, *part2);
 				if (!collides) {

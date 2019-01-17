@@ -18,9 +18,6 @@ namespace se::collision {
 		 * @param	lengths the lenght in each aixs of the BoundingBox */
 		BoundingBox(const glm::vec3& lengths) :
 			ConvexPolyhedron(meshFromLengths(lengths)) {};
-
-		/** Class destructor */
-		~BoundingBox() {};
 	private:
 		/** Calculates the HalfEdgeMesh of the BoundingBox from its lenghts in
 		 * each axis

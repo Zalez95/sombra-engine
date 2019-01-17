@@ -58,7 +58,8 @@ namespace se::app {
 		for (auto& pair : mEntityMap) {
 			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), pair.first->position);
 			glm::mat4 rotation		= glm::mat4_cast(pair.first->orientation);
-			pair.second->setTransforms(translation * rotation);
+			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), pair.first->scale);
+			pair.second->setTransforms(translation * rotation * scale);
 		}
 
 		mCollisionDetector.update();

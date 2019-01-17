@@ -25,13 +25,16 @@ namespace se::app {
 		/** The Entity orientation in world space */
 		glm::quat orientation;
 
+		/** The Entity scale in world space */
+		glm::vec3 scale;
+
 		/** Creates a new Entity
 		 *
 		 * @param	name the name of the Entity */
 		Entity(const std::string& name) :
 			name(name),
 			position(0.0f), velocity(0.0f),
-			orientation(1.0f, glm::vec3(0.0f)) {};
+			orientation(1.0f, glm::vec3(0.0f)), scale(1.0f) {};
 	};
 
 }

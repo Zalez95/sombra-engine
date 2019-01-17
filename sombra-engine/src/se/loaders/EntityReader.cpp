@@ -155,7 +155,7 @@ namespace se::loaders {
 	) const
 	{
 		std::string name;
-		glm::vec3 position(0.0f);
+		glm::vec3 position(0.0f), scale(1.0f);
 		glm::quat orientation(1.0f, glm::vec3(0.0f));
 		glm::mat4 offsetMatrix(0.0f);
 		std::unique_ptr<graphics::Camera> camera;
@@ -179,6 +179,9 @@ namespace se::loaders {
 			}
 			else if (token == "orientation") {
 				fileReader >> orientation.w >> orientation.x >> orientation.y >> orientation.z;
+			}
+			else if (token == "scale") {
+				fileReader >> scale.x >> scale.y >> scale.z;
 			}
 			else if (token == "camera") {
 				glm::vec3 cameraPosition, cameraTarget, cameraUp;
@@ -267,6 +270,7 @@ namespace se::loaders {
 		auto entity = std::make_unique<app::Entity>(name);
 		entity->position	= position;
 		entity->orientation	= orientation;
+		entity->scale		= scale;
 
 		if (camera) {
 			mGraphicsManager.addEntity(entity.get(), std::move(camera));

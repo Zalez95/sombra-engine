@@ -15,7 +15,13 @@ namespace se::collision {
 	 */
 	class ConcaveCollider : public Collider
 	{
+	public:		// Nested types
+		using ConvexColliderSPtr = std::shared_ptr<ConvexCollider>;
+
 	public:		// Functions
+		/** Class destructor */
+		virtual ~ConcaveCollider() = default;
+
 		/** Updates the scale, translation and orientation of the
 		 * ConcaveCollider with the given transformations matrix
 		 *
@@ -31,13 +37,13 @@ namespace se::collision {
 		 *			ConcaveCollider */
 		AABB getAABB() const override = 0;
 
-		/** @return a set with the posible overlaping parts of the Collider
-		 * with the given AABB
+		/** Calculates the posible overlaping parts of the Collider with the
+		 * given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	a set with the pointers to the Convex parts of the collider
-		 *			that could be overlaping with the given AABB */
-		virtual std::vector<const ConvexCollider*> getOverlapingParts(
+		 * @return	the pointers to the Convex parts of the collider that could
+		 *			be overlaping with the given AABB */
+		virtual std::vector<ConvexColliderSPtr> getOverlapingParts(
 			const AABB& aabb
 		) const = 0;
 	};

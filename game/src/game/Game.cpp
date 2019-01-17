@@ -23,7 +23,7 @@
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/ConvexPolyhedron.h>
-#include <se/collision/CompoundCollider.h>
+#include <se/collision/CompositeCollider.h>
 #include <se/collision/HalfEdgeMeshExt.h>
 #include <se/collision/QuickHull.h>
 #include <se/collision/HACD.h>
@@ -197,7 +197,7 @@ namespace game {
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::loaders::TerrainLoader terrainLoader(*mGraphicsManager, *mPhysicsManager);
+		se::loaders::TerrainLoader terrainLoader(*mGraphicsManager, *mPhysicsManager, *mCollisionManager);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 

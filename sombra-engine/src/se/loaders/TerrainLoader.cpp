@@ -17,19 +17,27 @@ namespace se::loaders {
 		const utils::Image& heightMap, float maxHeight
 	) {
 		auto rawMesh = createRawMesh(name, heightMap);
-		glm::mat4 transforms = glm::scale(glm::mat4(1.0f), glm::vec3(size, maxHeight, size));
+		glm::vec3 scaleVector(size, maxHeight, size);
 
+		// Entity
 		auto entity = std::make_unique<app::Entity>(name);
+		entity->scale = scaleVector;
 
 		// Graphics data
 		auto graphicsMesh = std::make_shared<graphics::Mesh>( MeshLoader::createGraphicsMesh(*rawMesh) );
 		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, nullptr, nullptr);
-		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), transforms);
+		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D), glm::mat4(1.0f));
 
 		// Physics data
 		auto rb = std::make_unique<physics::RigidBody>();
-		auto terrainCollider = createTerrainCollider(heightMap);
+		physics::RigidBody* rbPtr = rb.get();
 		mPhysicsManager.addEntity(entity.get(), std::move(rb));
+
+		// Collider data
+		glm::mat4 scale = glm::scale(glm::mat4(1.0f), scaleVector);
+		auto terrainCollider = createTerrainCollider(heightMap);
+		terrainCollider->setTransforms(scale);
+		mCollisionManager.addEntity(entity.get(), std::move(terrainCollider), rbPtr);
 
 		return entity;
 	}
@@ -134,9 +142,9 @@ namespace se::loaders {
 		assert(z < heightMap.getHeight() && "z must be smaller than the image height");
 
 		std::byte* heightMapPixels = heightMap.getPixels();
-		std::byte l = heightMapPixels[z * heightMap.getWidth() + x];
+		std::byte h = heightMapPixels[z * heightMap.getWidth() + x];
 
-		return (std::to_integer<int>(l) / kMaxColor - 0.5f);
+		return std::to_integer<unsigned char>(h) / static_cast<float>(kMaxColor) - 0.5f;
 	}
 
 }

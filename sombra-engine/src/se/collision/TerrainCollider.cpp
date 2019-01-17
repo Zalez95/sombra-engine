@@ -24,10 +24,12 @@ namespace se::collision {
 	}
 
 
-	std::vector<const ConvexCollider*> TerrainCollider::getOverlapingParts(const AABB& /*aabb*/) const
+	std::vector<TerrainCollider::ConvexColliderSPtr> TerrainCollider::getOverlapingParts(
+		const AABB& aabb
+	) const
 	{
-		std::vector<const ConvexCollider*> triangleColliders;
-/*
+		std::vector<ConvexColliderSPtr> triangleColliders;
+
 		auto xIndexToX = [this](int i) { return i / static_cast<float>(mXSize - 1) - 0.5f; };
 		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize - 1) - 0.5f; };
 
@@ -36,39 +38,41 @@ namespace se::collision {
 
 		// Calculate the indices of the terrain vertices to check with the
 		// local position of the AABB
-		int iMinX = mXSize * (localAABB.minimum.x + 0.5f), iMaxX = std::ceil(mXSize * (localAABB.maximum.x + 0.5f)),
-			iMinZ = mZSize * (localAABB.minimum.z + 0.5f), iMaxZ = std::ceil(mZSize * (localAABB.maximum.z + 0.5f));
-		if ((iMinX < mXSize) && (iMaxX >= 0) && (iMinZ < mZSize) && (iMaxZ >= 0)) {
-			if (iMinX < 0) { iMinX = 0; }
-			if (iMaxX >= mXSize) { iMaxX = mXSize - 1; }
-			if (iMinZ < 0) { iMinZ = 0; }
-			if (iMaxZ >= mZSize) { iMaxZ = mZSize - 1; }
+		int iSizeX	= static_cast<int>(mXSize),
+			iMinX	= static_cast<int>(iSizeX * (localAABB.minimum.x + 0.5f)),
+			iMaxX	= static_cast<int>(std::ceil(iSizeX * (localAABB.maximum.x + 0.5f))),
+			iSizeZ	= static_cast<int>(mZSize),
+			iMinZ	= static_cast<int>(iSizeZ * (localAABB.minimum.z + 0.5f)),
+			iMaxZ	= static_cast<int>(std::ceil(iSizeZ * (localAABB.maximum.z + 0.5f)));
 
+		if ((iMinX < 0) && (iMaxX >= 0))			{ iMinX = 0; }
+		if ((iMaxX >= iSizeZ) && (iMinX < iSizeX))	{ iMaxX = mXSize - 1; }
+		if ((iMinZ < 0) && (iMaxZ >= 0))			{ iMinZ = 0; }
+		if ((iMaxZ >= iSizeZ) && (iMinZ < iSizeZ))	{ iMaxZ = mZSize - 1; }
+
+		if ((iMinX >= 0) && (iMaxX < iSizeZ) && (iMinZ >= 0) && (iMaxZ < iSizeZ)) {
 			for (int z = iMinZ; z < iMaxZ; ++z) {
-				if (z == mZSize - 1) { break; }
 				for (int x = iMinX; x < iMaxX; ++x) {
-					if (x == mXSize - 1) { continue; }
+					glm::vec3 v0(xIndexToX(x), mHeights[z * iSizeX + x], zIndexToZ(z));
+					glm::vec3 v1(xIndexToX(x+1), mHeights[z * iSizeX + (x+1)], zIndexToZ(z));
+					glm::vec3 v2(xIndexToX(x), mHeights[(z+1) * iSizeX + x], zIndexToZ(z+1));
+					glm::vec3 v3(xIndexToX(x+1), mHeights[(z+1) * iSizeX + (x+1)], zIndexToZ(z+1));
 
-					glm::vec3 v0(xIndexToX(x), mHeights[z * mXSize + x], zIndexToZ(z));
-					glm::vec3 v1(xIndexToX(x+1), mHeights[z * mXSize + (x+1)], zIndexToZ(z));
-					glm::vec3 v2(xIndexToX(x), mHeights[(z+1) * mXSize + x], zIndexToZ(z+1));
-					glm::vec3 v3(xIndexToX(x+1), mHeights[(z+1) * mXSize + (x+1)], zIndexToZ(z+1));
-
-					std::vector<glm::vec3> triangleVertices1 = { v0, v1, v2 };
-					//if (checkYAxis(localAABB, triangleVertices1)) {
-						triangleColliders.emplace_back(std::make_unique<TriangleCollider>(triangleVertices1));
+					std::array<glm::vec3, 3> triangleVertices1{ v0, v1, v2 };
+					if (checkYAxis(localAABB, triangleVertices1)) {
+						triangleColliders.push_back( std::make_shared<TriangleCollider>(triangleVertices1) );
 						triangleColliders.back()->setTransforms(mTransformsMatrix);
-					//}
+					}
 
-					std::vector<glm::vec3> triangleVertices2 = { v1, v3, v2 };
-					//if (checkYAxis(localAABB, triangleVertices2)) {
-						triangleColliders.push_back(std::make_unique<TriangleCollider>(triangleVertices2));
+					std::array<glm::vec3, 3> triangleVertices2{ v1, v3, v2 };
+					if (checkYAxis(localAABB, triangleVertices2)) {
+						triangleColliders.push_back( std::make_shared<TriangleCollider>(triangleVertices2) );
 						triangleColliders.back()->setTransforms(mTransformsMatrix);
-					//}
+					}
 				}
 			}
 		}
-*/
+
 		return triangleColliders;
 	}
 
@@ -96,19 +100,14 @@ namespace se::collision {
 
 
 	bool TerrainCollider::checkYAxis(
-		const AABB& aabb, const std::vector<glm::vec3>& vertices
+		const AABB& aabb, const std::array<glm::vec3, 3>& vertices
 	) const
 	{
 		float	minY1 = aabb.minimum.y, minY2 = std::numeric_limits<float>::max(),
-				maxY1 = aabb.maximum.y, maxY2 = -std::numeric_limits<float>::max();
+				maxY1 = aabb.maximum.y, maxY2 =-std::numeric_limits<float>::max();
 		for (const glm::vec3& v : vertices) {
 			if (v.y < minY2) { minY2 = v.y; }
 			if (v.y > maxY2) { maxY2 = v.y; }
-		}
-
-		if (minY2 < minY1) {
-			std::swap(minY1, minY2);
-			std::swap(maxY1, maxY2);
 		}
 
 		return (maxY1 >= minY2) && (minY1 <= maxY2);

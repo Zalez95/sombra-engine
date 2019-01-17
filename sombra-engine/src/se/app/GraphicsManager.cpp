@@ -94,8 +94,9 @@ namespace se::app {
 		for (auto& re : mRenderable3DEntities) {
 			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), re.first->position);
 			glm::mat4 rotation		= glm::mat4_cast(re.first->orientation);
+			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), re.first->scale);
 			glm::mat4 offset		= re.second.second;
-			re.second.first->setModelMatrix(offset * translation * rotation);
+			re.second.first->setModelMatrix(offset * translation * rotation * scale);
 		}
 
 		SOMBRA_INFO_LOG << "Updating PointLights";

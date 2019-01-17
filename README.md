@@ -3,7 +3,7 @@
 Requirements:
 - Git
 - CMake
-- A compiler with C++14 support
+- A compiler with C++17 support
 - Linux only: libgl1-mesa-dev, libasound2-dev and xorg-dev packages.
 
 Third party libraries used:

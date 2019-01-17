@@ -3,7 +3,6 @@
 
 #include <set>
 #include <map>
-#include <memory>
 #include "Manifold.h"
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
