@@ -13,7 +13,7 @@ namespace se::collision {
 		// 1. Get an initial point in the direction from one collider to another
 		glm::vec3 c1Location = collider1.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 c2Location = collider2.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		glm::vec3 direction = c2Location - c1Location;
+		glm::vec3 direction = (c1Location == c2Location)? glm::sphericalRand(1.0f) : glm::normalize(c2Location - c1Location);
 		SupportPointVector simplex = { SupportPoint(collider1, collider2, direction) };
 
 		bool containsOrigin = doSimplex(simplex, direction);
@@ -71,13 +71,13 @@ namespace se::collision {
 	{
 		bool ret = false;
 
-		SupportPoint a = simplex[0];
-		glm::vec3 ao = -a.getCSOPosition();
+		SupportPoint &a = simplex[0];
+		glm::vec3 a0 = -a.getCSOPosition();
 
-		if (!glm::all( glm::epsilonEqual(ao, glm::vec3(0.0f), mEpsilon) )) {
-			// Mantain a and search in the direction to the origin
-			simplex = { a };
-			searchDir = ao;
+		if (!glm::all(glm::epsilonEqual(a0, glm::vec3(0.0f), mEpsilon))) {
+			// Preserve the current simplex and search in the direction to the
+			// origin
+			searchDir = glm::normalize(a0);
 		}
 		else {
 			// The support point is the origin
@@ -94,24 +94,22 @@ namespace se::collision {
 	{
 		bool ret = false;
 
-		SupportPoint b = simplex[0], a = simplex[1];
-		glm::vec3 ab = b.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition(),
-			abo = glm::cross(ab, ao);
+		SupportPoint &a = simplex[0], &b = simplex[1];
+		glm::vec3	ba = a.getCSOPosition() - b.getCSOPosition(), b0 = -b.getCSOPosition();
 
-		float dot = glm::dot(ab, ao);
-		if (dot < -mEpsilon) {
+		if (glm::dot(ba, b0) < -mEpsilon) {
 			// The origin is outside the segment between b and a
-			// Discard b and do the same than with 0 dimensions
-			simplex = { a };
+			// Discard the a point and test the simplex in 0 dimensions
+			simplex = { b };
 			ret = doSimplex0D(simplex, searchDir);
 		}
 		else {
 			// The origin is between b and a
-			if (!glm::all( glm::epsilonEqual(abo, glm::vec3(0.0f), mEpsilon) )) {
-				// Mantain a and b and search towards a normal vector to the
-				// ab segment
-				simplex = { b, a };
-				searchDir = glm::cross(abo, ab);
+			glm::vec3 n = glm::normalize(glm::cross(glm::cross(ba, b0), ba));
+			if (glm::dot(b0, n) > mEpsilon) {
+				// Preserve the current simplex and search towards the normal
+				// vector to the ab segment
+				searchDir = n;
 			}
 			else {
 				// The origin is on the segment
@@ -129,35 +127,36 @@ namespace se::collision {
 	{
 		bool ret = false;
 
-		SupportPoint c = simplex[0], b = simplex[1], a = simplex[2];
-		glm::vec3	ab = b.getCSOPosition() - a.getCSOPosition(), ac = c.getCSOPosition() - a.getCSOPosition(),
-					ao = -a.getCSOPosition(),
-					abc = glm::cross(ab, ac);
+		SupportPoint &a = simplex[0], &b = simplex[1], &c = simplex[2];
+		glm::vec3	ca = a.getCSOPosition() - c.getCSOPosition(), cb = b.getCSOPosition() - c.getCSOPosition(),
+					c0 = -c.getCSOPosition(), n = glm::normalize(glm::cross(cb, ca)),
+					nxca = glm::normalize(glm::cross(n, ca)), cbxn = glm::normalize(glm::cross(cb, n));
 
-		if (glm::dot(glm::cross(ab, abc), ao) > mEpsilon) {
-			// The origin is outside the triangle from the ab edge
-			// Discard c point and test the edge in 1 dimension
-			simplex = { b, a };
+		if (glm::dot(nxca, c0) > mEpsilon) {
+			// The origin is outside the triangle from the ca edge
+			// Discard the b point and test the simplex in 1 dimension
+			simplex = { a, c };
 			ret = doSimplex1D(simplex, searchDir);
 		}
-		else if (glm::dot(glm::cross(abc, ac), ao) > mEpsilon) {
-			// The origin is outside the triangle from the ac edge
-			// Discard b point and test the edge in 1 dimension
-			simplex = { c, a };
+		else if (glm::dot(cbxn, c0) > mEpsilon) {
+			// The origin is outside the triangle from the cb edge
+			// Discard the a point and test the simplex in 1 dimension
+			simplex = { b, c };
 			ret = doSimplex1D(simplex, searchDir);
 		}
 		else {
 			// The origin is inside the triangle in 2D
-			float dot = glm::dot(abc, ao);
+			float dot = glm::dot(n, c0);
 			if (dot > mEpsilon) {
-				// The origin is above the triangle
-				simplex = { c, b, a };
-				searchDir = abc;
+				// The origin is above the triangle, preserve the current
+				// simplex and search towards the normal vector
+				searchDir = n;
 			}
 			else if (dot < -mEpsilon) {
-				// The origin is below the triangle
-				simplex = { b, c, a };
-				searchDir = -abc;
+				// The origin is below the triangle, reverse the current
+				// simplex and search towards the -normal vector
+				simplex = { b, a, c };
+				searchDir = -n;
 			}
 			else {
 				// The origin is on the triangle
@@ -175,31 +174,33 @@ namespace se::collision {
 	{
 		bool ret = false;
 
-		SupportPoint d = simplex[0], c = simplex[1], b = simplex[2], a = simplex[3];
-		glm::vec3	ab = b.getCSOPosition() - a.getCSOPosition(), ac = c.getCSOPosition() - a.getCSOPosition(),
-					ad = d.getCSOPosition() - a.getCSOPosition(), ao = -a.getCSOPosition(),
-					abc = glm::cross(ab, ac), acd = glm::cross(ac, ad), adb = glm::cross(ad, ab);
+		SupportPoint &a = simplex[0], &b = simplex[1], &c = simplex[2], &d = simplex[3];
+		glm::vec3	da = a.getCSOPosition() - d.getCSOPosition(), db = b.getCSOPosition() - d.getCSOPosition(),
+					dc = c.getCSOPosition() - d.getCSOPosition(), d0 = -d.getCSOPosition(),
+					dbxda = glm::normalize(glm::cross(db, da)), daxdc = glm::normalize(glm::cross(da, dc)),
+					dcxdb = glm::normalize(glm::cross(dc, db));
 
-		if (glm::dot(abc, ao) > mEpsilon) {
-			// The origin is outside the tetrahedron from the abc face
-			// Discard d and check the triangle in 2 dimensions
-			simplex = { c, b, a };
+		if (glm::dot(dbxda, d0) > mEpsilon) {
+			// The origin is outside the tetrahedron from the bda face
+			// Discard c and check the triangle in 2 dimensions
+			simplex = { a, b, d };
 			ret = doSimplex2D(simplex, searchDir);
 		}
-		else if (glm::dot(acd, ao) > mEpsilon) {
-			// The origin is outside the tetrahedron from the acd face
+		else if (glm::dot(daxdc, d0) > mEpsilon) {
+			// The origin is outside the tetrahedron from the adc face
 			// Discard b and check the triangle in 2 dimensions
-			simplex = { d, c, a };
+			simplex = { c, a, d };
 			ret = doSimplex2D(simplex, searchDir);
-		}	
-		else if (glm::dot(adb, ao) > mEpsilon) {
-			// The origin is outside the tetrahedron from the adb face
-			// Discard c and check the triangle in 2 dimensions
-			simplex = { b, d, a };
+		}
+		else if (glm::dot(dcxdb, d0) > mEpsilon) {
+			// The origin is outside the tetrahedron from the cdb face
+			// Discard a and check the triangle in 2 dimensions
+			simplex = { b, c, d };
 			ret = doSimplex2D(simplex, searchDir);
 		}
 		else {
-			// The origin is inside the tetrahedron
+			// The origin is inside the tetrahedron, preserve the current
+			// simplex
 			ret = true;
 		}
 

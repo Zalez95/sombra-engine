@@ -15,7 +15,7 @@ namespace se::collision {
 		/** Creates a new BoundingBox located at the origin of
 		 * coordinates
 		 *
-		 * @param	lengths the lenght in each aixs of the BoundingBox */
+		 * @param	lengths the lenght in each axis of the BoundingBox */
 		BoundingBox(const glm::vec3& lengths) :
 			ConvexPolyhedron(meshFromLengths(lengths)) {};
 	private:

@@ -55,7 +55,8 @@ namespace se::collision {
 		 * @param	simplex a vector with the coordinates in world space of
 		 * 			the points of the simplex. The last point added should be
 		 *			in the last position
-		 * @param	searchDir the direction to search the next SupportPoint
+		 * @param	searchDir the normalized direction used to search the next
+		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex(SupportPointVector& simplex, glm::vec3& direction) const;
@@ -65,7 +66,8 @@ namespace se::collision {
 		 * @param	simplex a vector with the coordinates in world space of
 		 * 			the points of the simplex. The simplex must have 0
 		 * 			dimensions (one point)
-		 * @param	searchDir the direction to search the next SupportPoint
+		 * @param	searchDir the normalized direction used to search the next
+		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex0D(
@@ -78,7 +80,8 @@ namespace se::collision {
 		 * 			the points of the simplex. The simplex must have 1
 		 * 			dimensions (a line) with the newest point in the last
 		 * 			position
-		 * @param	searchDir the direction to search the next SupportPoint
+		 * @param	searchDir the normalized direction used to search the next
+		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex1D(
@@ -91,7 +94,8 @@ namespace se::collision {
 		 * 			the points of the simplex. The simplex must have 2
 		 * 			dimensions (a triangle) with the newest point in the
 		 * 			last position
-		 * @param	searchDir the direction to search the next SupportPoint
+		 * @param	searchDir the normalized direction used to search the next
+		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex2D(
@@ -104,7 +108,8 @@ namespace se::collision {
 		 * 			the points of the simplex. The simplex must have 3
 		 * 			dimensions (a tetrahedron) with the newest point in
 		 * 			the last position
-		 * @param	searchDir the direction to search the next SupportPoint
+		 * @param	searchDir the normalized direction used to search the next
+		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
 		bool doSimplex3D(

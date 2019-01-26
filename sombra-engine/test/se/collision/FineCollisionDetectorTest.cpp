@@ -4,6 +4,7 @@
 #include <se/collision/Manifold.h>
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
+#include <se/collision/TriangleCollider.h>
 #include <se/collision/FineCollisionDetector.h>
 #include "TestMeshes.h"
 
@@ -47,7 +48,7 @@ TEST(FineCollisionDetector, SphereSphere2)
 		{ -1.154848634f, 0.771644742f, -2.078674167f },
 		{ 4.095410456f, -3.183182967f, -0.384987776f }
 	};
-	const glm::vec3 expectedNormal(-0.460017949f, 0.312695205f, -0.831026614f);
+	const glm::vec3 expectedNormal(-0.463621795f, 0.311643868f, -0.829417228f);
 	const float expectedPenetration = 0.000000159f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(9.943065643f, -2.873334407f, 0.697683811f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);
@@ -164,9 +165,9 @@ TEST(FineCollisionDetector, CPolyCPoly3)
 		{ 0.5f, -1.1f, -1.0f },
 		{ -1.0f, -0.6f, -0.025f }
 	};
-	const glm::vec3 expectedNormal(0.929280221, -0.272765338f, 0.249072999f);
+	const glm::vec3 expectedNormal(0.907657742f, -0.345736473f, -0.237957358f);
 	const float expectedPenetration = 0.0f;
-	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0f), v2(3.065070390f, 0.126420855f, 0.363925933f);
+	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0f), v2(3.065070390f, 0.126421570f, 0.363925665f);
 	const glm::quat o1(0.900554239f, -0.349306106f, -0.093596287f, -0.241302788f), o2(0.637856543f, -0.079467326f, -0.094705462f, -0.760167777f);
 	BoundingBox bb1(glm::vec3(1.0f, 2.2f, 2.0f)), bb2(glm::vec3(2.0f, 1.2f, 0.05f));
 
@@ -245,4 +246,33 @@ TEST(FineCollisionDetector, SphereCPoly1)
 			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], kTolerance);
 		}
 	}
+}
+
+
+TEST(FineCollisionDetector, TriangleCPoly1)
+{
+	TriangleCollider tr1({
+		glm::vec3( 0.072549045f, 0.107843161f, -0.158823520f ),
+		glm::vec3( 0.072549045f, 0.111764729f, -0.154901952f ),
+		glm::vec3( 0.068627476f, 0.088235318f, -0.154901952f )
+	});
+	glm::mat4 transforms2 = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f, 10.0f, 100.0f));
+	tr1.setTransforms(transforms2);
+
+	BoundingBox bb1(glm::vec3(1.0f, 1.0f, 1.0f));
+	glm::mat4 transforms1{
+		{0.165384650f, -0.909461260f, 0.381481737f, 0.0f},
+		{0.909961343f, -0.008435368f, -0.414607644f, 0.0f},
+		{0.380287439f, 0.415703356f, 0.826179266f, 0.0f},
+		{6.803552150f, 1.749064920f, -15.065380100f, 1.0f}
+	};
+	bb1.setTransforms(transforms1);
+
+	Manifold manifold(&tr1, &bb1);
+	FineCollisionDetector fineCollisionDetector(
+		kMinFDifference, kContactPrecision,
+		kContactSeparation
+	);
+
+	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
