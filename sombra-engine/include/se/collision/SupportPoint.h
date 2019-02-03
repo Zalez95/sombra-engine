@@ -41,9 +41,15 @@ namespace se::collision {
 			const glm::vec3& searchDir
 		);
 
-		/** @return	true if the given SupportPoint is the same than the given
-		 *			one, false otherwise */
-		bool operator==(const SupportPoint& other) const;
+		/** Compares the given SupportPoints
+		 *
+		 * @param	sp1 the first SupportPoint to compare
+		 * @param	sp2 the second SupportPoint to compare
+		 * @return	true if the both SupportPoints are the same, false
+		 *			otherwise */
+		friend bool operator==(
+			const SupportPoint& sp1, const SupportPoint& sp2
+		);
 
 		/** @return	the SupportPoint's coordinates in the Configuration Space
 		 *			Object */

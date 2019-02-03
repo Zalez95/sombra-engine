@@ -70,19 +70,21 @@ namespace se::utils {
 			 *			pointing at */
 			TreeNodeType* operator->() { return mTreeNode; };
 
-			/** Compares the current iterator with the given one
+			/** Compares the given TNIterators
 			 *
-			 * @param	other the other iterator to compare
+			 * @param	it1 the first TNIterator to compare
+			 * @param	it2 the second TNIterator to compare
 			 * @return	true if both iterators are equal, false otherwise */
-			bool operator==(const TNIterator& other) const
-			{ return mTreeNode == other.mTreeNode; };
+			friend bool operator==(const TNIterator& it1, const TNIterator& it2)
+			{ return it1.mTreeNode == it2.mTreeNode; };
 
-			/** Compares the current iterator with the given one
+			/** Compares the given TNIterators
 			 *
-			 * @param	other the other iterator to compare
+			 * @param	it1 the first TNIterator to compare
+			 * @param	it2 the second TNIterator to compare
 			 * @return	true if both iterators are different, false otherwise */
-			bool operator!=(const TNIterator& other) const
-			{ return !operator==(other); };
+			friend bool operator!=(const TNIterator& it1, const TNIterator& it2)
+			{ return !(it1 == it2); };
 
 			/** Preincrement operator
 			 *
@@ -148,19 +150,21 @@ namespace se::utils {
 		TreeNode& operator=(const TreeNode& other);
 		TreeNode& operator=(TreeNode&& other) = default;
 
-		/** Compares the given TreeNode with the current one
+		/** Compares the given TreeNodes
 		 *
-		 * @param	other the other TreeNode
-		 * @return	true if both TreeNode are equal, false otherwise */
-		bool operator==(const TreeNode& other) const
-		{ return mData == other.mData; };
+		 * @param	tn1 the first TreeNode to compare
+		 * @param	tn2 the second TreeNode to compare
+		 * @return	true if both TreeNodes are equal, false otherwise */
+		friend bool operator==(const TreeNode& tn1, const TreeNode& tn2)
+		{ return tn1.mData == tn2.mData; };
 
-		/** Compares the given TreeNode with the current one
+		/** Compares the given TreeNodes
 		 *
-		 * @param	other the other TreeNode
-		 * @return	true if both TreeNode are different, false otherwise */
-		bool operator!=(const TreeNode& other) const
-		{ return !operator==(other); };
+		 * @param	tn1 the first TreeNode to compare
+		 * @param	tn2 the second TreeNode to compare
+		 * @return	true if both TreeNodes are different, false otherwise */
+		friend bool operator!=(const TreeNode& tn1, const TreeNode& tn2)
+		{ return !(tn1 == tn2); };
 
 		/** @return	the initial iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>

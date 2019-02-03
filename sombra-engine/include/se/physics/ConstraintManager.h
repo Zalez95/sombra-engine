@@ -121,7 +121,7 @@ namespace se::physics {
 		 * equal to mInverseMassMatrix * transpose(mJacobianMatrix)
 		 *
 		 * @return	the invMassJacobianMatrix matrix. Its size is the same than
-		 *			(number of RigidBodies) * (number of Constraints), but 
+		 *			(number of RigidBodies) * (number of Constraints), but
 		 *			because it has the same sparsity than mJacobianMatrix
 		 *			it is stored in the same way */
 		std::vector<vec12> calculateInvMassJacobianMatrix() const;

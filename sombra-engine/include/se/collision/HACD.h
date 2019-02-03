@@ -32,13 +32,14 @@ namespace se::collision {
 			 * ancestors */
 			float concavity;
 
-			/** Compares the given QHACDData with the current one
+			/** Compares the given QHACDData
 			 *
-			 * @param	other the other QHACDData to compare
-			 * @return	true if the current QHACDData has a higher cost than
-			 *			the given one, false otherwise */
-			bool operator>(const QHACDData& other) const
-			{ return cost > other.cost; };
+			 * @param	d1 the first QHACDData to compare
+			 * @param	d2 the second QHACDData to compare
+			 * @return	true if the first QHACDData has a higher cost than
+			 *			the second one, false otherwise */
+			friend bool operator>(const QHACDData& d1, const QHACDData& d2)
+			{ return d1.cost > d2.cost; };
 		};
 
 	private:	// Attributes

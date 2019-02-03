@@ -13,10 +13,10 @@ namespace se::collision {
 	}
 
 
-	bool SupportPoint::operator==(const SupportPoint& other) const
+	bool operator==(const SupportPoint& sp1, const SupportPoint& sp2)
 	{
-		return (mWorldPosition[0] == other.mWorldPosition[0])
-			&& (mWorldPosition[1] == other.mWorldPosition[1]);
+		return (sp1.mWorldPosition[0] == sp2.mWorldPosition[0])
+			&& (sp1.mWorldPosition[1] == sp2.mWorldPosition[1]);
 	}
 
 }

@@ -165,7 +165,7 @@ TEST(HalfEdgeMesh, getFurthestVertexInDirection1)
 	auto meshData = std::get<0>( createTestMesh4() );
 	const glm::vec3 direction(-0.549725532f, -0.870150089f, 1.638233065f);
 	int iExpectedVertex = 19;
-	
+
 	int iVertex = getFurthestVertexInDirection(meshData, direction);
 	EXPECT_EQ(iVertex, iExpectedVertex);
 }

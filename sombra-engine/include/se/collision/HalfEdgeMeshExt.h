@@ -23,7 +23,7 @@ namespace se::collision {
 	 * HEFaces converted to triangles
 	 *
 	 * @param	originalMesh the HalfEdgeMesh where the HEFaces are located in
-	 * @return	
+	 * @return	the new HalfEdgeMesh with the triangulated HEFaces
 	 * @note	we will use the ear clipping method, which only works with
 	 *			convex polygons (The HEFaces are ensured to be convex if we
 	 *			had added them with the addFace method) */

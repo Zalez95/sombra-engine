@@ -9,7 +9,7 @@ namespace se::utils {
 	{
 		if (other.mChild) {
 			mChild = std::make_unique<TreeNode>(*other.mChild);
-			
+
 			TreeNode* child = mChild.get();
 			while (child) {
 				child->mParent = this;
@@ -31,7 +31,7 @@ namespace se::utils {
 
 		if (other.mChild) {
 			mChild = std::make_unique<TreeNode>(*other.mChild);
-			
+
 			TreeNode* child = mChild.get();
 			while (child) {
 				child->mParent = this;

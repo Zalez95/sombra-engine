@@ -14,11 +14,11 @@ namespace se::collision {
 	 * Class GJKCollisionDetector, it's the class used to detect collisions
 	 * between arbitrary convex shapes with the GJK (Gilbert–Johnson–Keerthi)
 	 * Algorithm.
-	 * 
+	 *
 	 * The GJK algorithm is an iterative algorithm that in each iteration tries
 	 * to create a simplex from the points in the Configuration Space Object
 	 * between the two convex shapes that contains the origin of coordinates.
-	 * 
+	 *
 	 * @note The algorithm implemented only works for 3 dimensions or less.
 	 */
 	class GJKCollisionDetector

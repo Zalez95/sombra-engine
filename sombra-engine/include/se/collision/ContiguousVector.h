@@ -25,6 +25,9 @@ namespace se::collision {
 		class CVIterator
 		{
 		public:		// Nested types
+			template <bool isConst2>
+			friend class CVIterator;
+
 			using VectorType = std::conditional_t<isConst,
 				const ContiguousVector, ContiguousVector
 			>;
@@ -57,9 +60,20 @@ namespace se::collision {
 			CVIterator(VectorType* vector, size_type index) :
 				mVector(vector), mIndex(index) {};
 
+			/** Implicit conversion operator between const CVIterator and non
+			 * const CVIterator
+			 *
+			 * @return	the new CVIterator with a different template const
+			 *			type */
+			operator CVIterator<!isConst>() const;
+
 			/** @return	the index of the Element that the iterator is pointing
 			 *			to */
 			size_type getIndex() const { return mIndex; };
+
+			/** @return	the index of the Element that the iterator is pointing
+			 *			to */
+			CVIterator& setIndex(size_type index);
 
 			/** @return	a reference to the current Element that the iterator is
 			 *			pointing to */
@@ -69,17 +83,21 @@ namespace se::collision {
 			 *			pointing to */
 			pointer operator->() { return &(*mVector)[mIndex]; };
 
-			/** Compares the current iterator with the given one
+			/** Compares the given CVIterators
 			 *
-			 * @param	other the other iterator to compare
+			 * @param	it1 the first iterator to compare
+			 * @param	it2 the second iterator to compare
 			 * @return	true if both iterators are equal, false otherwise */
-			bool operator==(const CVIterator& other) const;
+			friend bool operator==(const CVIterator& it1, const CVIterator& it2)
+			{ return it1.mVector == it2.mVector && it1.mIndex == it2.mIndex; };
 
-			/** Compares the current iterator with the given one
+			/** Compares the given CVIterators
 			 *
-			 * @param	other the other iterator to compare
+			 * @param	it1 the first iterator to compare
+			 * @param	it2 the second iterator to compare
 			 * @return	true if both iterators are different, false otherwise */
-			bool operator!=(const CVIterator& other) const;
+			friend bool operator!=(const CVIterator& it1, const CVIterator& it2)
+			{ return !(it1 == it2); };
 
 			/** Preincrement operator
 			 *
@@ -139,19 +157,26 @@ namespace se::collision {
 		 * @return	a const reference to the Element */
 		const T& operator[](size_type i) const { return mElements[i]; };
 
-		/** Compares the given ContiguousVector with the current one
+		/** Compares the given ContiguousVectors
 		 *
-		 * @param	other the other ContiguousVector
+		 * @param	cv1 the first ContiguousVector to compare
+		 * @param	cv2 the second ContiguousVector to compare
 		 * @return	true if both ContiguousVector are equal, false otherwise */
-		bool operator==(const ContiguousVector& other) const;
+		template <typename U>
+		friend bool operator==(
+			const ContiguousVector& cv1, const ContiguousVector& cv2
+		);
 
-		/** Compares the given ContiguousVector with the current one
+		/** Compares the given ContiguousVectors
 		 *
-		 * @param	other the other ContiguousVector
+		 * @param	cv1 the first ContiguousVector to compare
+		 * @param	cv2 the second ContiguousVector to compare
 		 * @return	true if both ContiguousVector are different, false
 		 *			otherwise */
-		bool operator!=(const ContiguousVector& other) const
-		{ return !operator==(other); };
+		template <typename U>
+		friend bool operator!=(
+			const ContiguousVector& cv1, const ContiguousVector& cv2
+		);
 
 		/** @return	the initial iterator of the ContiguousVector */
 		iterator begin() { return iterator(this); };
@@ -178,18 +203,17 @@ namespace se::collision {
 		 *
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
-		 * @return	the index of the element */
+		 * @return	an iterator to the element */
 		template <typename... Args>
-		size_type create(Args&&... args);
+		iterator emplace(Args&&... args);
 
-		/** Marks the Element located at the given index as released for
-		 * future use
+		/** Removes the element located at the given iterator from the
+		 * ContiguousVector
 		 *
-		 * @param	i the index of the Element
-		 * @note	by releasing the elements instead than erasing them we
-		 *			don't have to iterate through the elements for fixing
-		 *			its indices */
-		void release(size_type i);
+		 * @param	it an iterator to the Element
+		 * @note	the element will be released instead of deleted so the
+		 *			indices to the other elements won't need to be updated */
+		void erase(const_iterator it);
 
 		/** Checks if the Element given located at the given index is valid and
 		 * active

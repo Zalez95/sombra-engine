@@ -35,7 +35,7 @@ namespace se::physics {
 		inline ForceManager& getForceManager() { return mForceManager; };
 
 		/** @return	the ConstraintManager of the PhysicsEngine */
-		inline ConstraintManager& getConstraintManager() 
+		inline ConstraintManager& getConstraintManager()
 		{ return mConstraintManager; };
 
 		/** Adds the given RigidBody to the PhysicsEngine so it will

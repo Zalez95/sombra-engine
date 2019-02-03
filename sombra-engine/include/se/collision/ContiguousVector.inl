@@ -4,17 +4,17 @@
 namespace se::collision {
 
 	template <typename T>
-	bool ContiguousVector<T>::operator==(const ContiguousVector& other) const
+	bool operator==(const ContiguousVector<T>& cv1, const ContiguousVector<T>& cv2)
 	{
-		return (mElements == other.mElements)
-			&& (mNumElements == other.mNumElements)
-			&& (mFreeIndices == other.mFreeIndices);
+		return (cv1.mElements == cv2.mElements)
+			&& (cv1.mNumElements == cv2.mNumElements)
+			&& (cv1.mFreeIndices == cv2.mFreeIndices);
 	}
 
 
 	template <typename T>
 	template <typename... Args>
-	typename ContiguousVector<T>::size_type ContiguousVector<T>::create(Args&&... args)
+	typename ContiguousVector<T>::iterator ContiguousVector<T>::emplace(Args&&... args)
 	{
 		size_type index;
 		if (mFreeIndices.empty()) {
@@ -28,16 +28,17 @@ namespace se::collision {
 		}
 		mNumElements++;
 
-		return index;
+		return iterator(this, index);
 	}
 
 
 	template <typename T>
-	void ContiguousVector<T>::release(size_type i)
+	void ContiguousVector<T>::erase(const_iterator it)
 	{
-		if (isActive(i)) {
-			mFreeIndices.insert(i);
-			mElements[i] = T();
+		size_type index = it.getIndex();
+		if (isActive(index)) {
+			mFreeIndices.insert(index);
+			mElements[index] = T();
 			mNumElements--;
 		}
 	}
@@ -63,23 +64,36 @@ namespace se::collision {
 
 	template <typename T>
 	template <bool isConst>
-	bool ContiguousVector<T>::CVIterator<isConst>::operator==(const CVIterator& other) const
+	ContiguousVector<T>::CVIterator<isConst>::operator
+		ContiguousVector<T>::CVIterator<!isConst>() const
 	{
-		return (mVector == other.mVector) && (mIndex == other.mIndex);
+		CVIterator<!isConst> ret(nullptr, mIndex);
+
+		if constexpr (isConst) {
+			ret.mVector = const_cast<ContiguousVector*>(mVector);
+		}
+		else {
+			ret.mVector = mVector;
+		}
+
+		return ret;
 	}
 
 
 	template <typename T>
 	template <bool isConst>
-	bool ContiguousVector<T>::CVIterator<isConst>::operator!=(const CVIterator& other) const
+	ContiguousVector<T>::CVIterator<isConst>&
+		ContiguousVector<T>::CVIterator<isConst>::setIndex(size_type index)
 	{
-		return !operator==(other);
+		mIndex = index;
+		return *this;
 	}
 
 
 	template <typename T>
 	template <bool isConst>
-	ContiguousVector<T>::CVIterator<isConst>& ContiguousVector<T>::CVIterator<isConst>::operator++()
+	ContiguousVector<T>::CVIterator<isConst>&
+		ContiguousVector<T>::CVIterator<isConst>::operator++()
 	{
 		do {
 			mIndex++;
@@ -95,7 +109,8 @@ namespace se::collision {
 
 	template <typename T>
 	template <bool isConst>
-	ContiguousVector<T>::CVIterator<isConst> ContiguousVector<T>::CVIterator<isConst>::operator++(int)
+	ContiguousVector<T>::CVIterator<isConst>
+		ContiguousVector<T>::CVIterator<isConst>::operator++(int)
 	{
 		CVIterator ret(*this);
 		operator++();
@@ -105,7 +120,8 @@ namespace se::collision {
 
 	template <typename T>
 	template <bool isConst>
-	ContiguousVector<T>::CVIterator<isConst>& ContiguousVector<T>::CVIterator<isConst>::operator--()
+	ContiguousVector<T>::CVIterator<isConst>&
+		ContiguousVector<T>::CVIterator<isConst>::operator--()
 	{
 		do {
 			mIndex--;

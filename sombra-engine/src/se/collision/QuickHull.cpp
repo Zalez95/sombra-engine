@@ -321,7 +321,7 @@ namespace se::collision {
 			chVertexIndices.push_back(iConvexHullVertex);
 		}
 
-		// Add the faces to the convex hull, 
+		// Add the faces to the convex hull
 		const glm::vec3 p0 = mConvexHullMesh.vertices[chVertexIndices[0]].location,
 						p1 = mConvexHullMesh.vertices[chVertexIndices[1]].location,
 						p2 = mConvexHullMesh.vertices[chVertexIndices[2]].location,

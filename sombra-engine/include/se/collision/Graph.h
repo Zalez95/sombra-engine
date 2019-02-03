@@ -27,28 +27,31 @@ namespace se::collision {
 		/** Creates a new GraphVertex */
 		GraphVertex(int id, T data) : id(id), data(data) {};
 
-		/** Compares the given vertex with the current one
+		/** Compares the given GraphVertex
 		 *
-		 * @param	other the other graph vertex to compare with
-		 * @return	true if the given vertex is the same than current one, false
-		 *			otherwise */
-		bool operator==(const GraphVertex<T>& other) const
-		{ return id == other.id; }
+		 * @param	gv1 the first GraphVertex to compare
+		 * @param	gv2 the second GraphVertex to compare
+		 * @return	true if both GraphVertex are the same, false otherwise */
+		friend bool operator==(const GraphVertex& gv1, const GraphVertex& gv2)
+		{ return gv1.id == gv2.id; };
 
-		/** Compares the given vertex with the current one
+		/** Compares the given GraphVertex
 		 *
-		 * @param	other the other graph vertex to compare with
-		 * @return	true if the given vertex id is less than current one, false
-		 *			otherwise */
-		bool operator<(const GraphVertex<T>& other) const
-		{ return id < other.id; }
+		 * @param	gv1 the first GraphVertex to compare
+		 * @param	gv2 the second GraphVertex to compare
+		 * @return	true if the first GraphVertex has a smaller id than the
+		 *			second one, false otherwise */
+		friend bool operator<(const GraphVertex& gv1, const GraphVertex& gv2)
+		{ return gv1.id < gv2.id; };
 
-		/** Compares the vertex id with the current one
+		/** Compares the given GraphVertex with the given index
 		 *
-		 * @param	otherId the other graph vertex id to compare with
-		 * @return	true if the given vertex id is less than current one, false
-		 *			otherwise */
-		bool operator<(int otherId) const { return id < otherId; }
+		 * @param	gv the GraphVertex to compare
+		 * @param	id the id to compare
+		 * @return	true if the GraphVertex has a smaller id than the given one,
+		 *			false otherwise */
+		friend bool operator<(const GraphVertex& gv, int id)
+		{ return gv.id < id; };
 	};
 
 

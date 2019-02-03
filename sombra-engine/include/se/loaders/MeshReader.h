@@ -62,7 +62,9 @@ namespace se::loaders {
 		 *			parse
 		 * @return	a vector with the parsed RawMeshes
 		 * @throw	runtime_error in case of any error while parsing */
-		std::vector<RawMeshUPtr> parseRawMeshes(utils::FileReader& fileReader) const;
+		std::vector<RawMeshUPtr> parseRawMeshes(
+			utils::FileReader& fileReader
+		) const;
 
 		/** Parses the Mesh at the current position of the given file and
 		 * returns it

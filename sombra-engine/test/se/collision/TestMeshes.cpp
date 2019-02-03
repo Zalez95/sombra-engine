@@ -103,7 +103,7 @@ std::pair<HalfEdgeMesh, NormalMap> createTestMesh1()
 	normals[iFace] = calculateFaceNormal(meshData, iFace);
 	iFace = addFace(meshData, { 7, 4, 3 });
 	normals[iFace] = calculateFaceNormal(meshData, iFace);
-	
+
 	return std::make_pair(meshData, normals);
 }
 

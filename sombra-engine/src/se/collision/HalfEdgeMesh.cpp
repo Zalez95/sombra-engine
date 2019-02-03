@@ -7,7 +7,7 @@ namespace se::collision {
 
 	int addVertex(HalfEdgeMesh& meshData, const glm::vec3& point)
 	{
-		return meshData.vertices.create(point);
+		return meshData.vertices.emplace(point).getIndex();
 	}
 
 
@@ -34,7 +34,7 @@ namespace se::collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		meshData.vertices.release(iVertex);
+		meshData.vertices.erase( meshData.vertices.begin().setIndex(iVertex) );
 	}
 
 
@@ -47,8 +47,8 @@ namespace se::collision {
 			&& (meshData.vertexEdgeMap.find(std::make_pair(iVertex1, iVertex2)) == meshData.vertexEdgeMap.end())
 		) {
 			// Create the HEEdge and its opposite one
-			int iEdge1 = meshData.edges.create();
-			int iEdge2 = meshData.edges.create();
+			int iEdge1 = meshData.edges.emplace().getIndex();
+			int iEdge2 = meshData.edges.emplace().getIndex();
 
 			// Set the HEVertices of both HEEdges
 			meshData.edges[iEdge1].vertex = iVertex2;
@@ -96,8 +96,8 @@ namespace se::collision {
 			meshData.vertexEdgeMap.erase(std::make_pair(iVertex2, iVertex1));
 
 			// Remove the HEEdges
-			meshData.edges.release(iOppositeEdge);
-			meshData.edges.release(iEdge);
+			meshData.edges.erase( meshData.edges.begin().setIndex(iOppositeEdge) );
+			meshData.edges.erase( meshData.edges.begin().setIndex(iEdge) );
 
 			// Update the HEEdge of the HEVertices
 			if (meshData.vertices[iVertex1].edge == iEdge) {
@@ -133,7 +133,7 @@ namespace se::collision {
 		if (vertexIndices.size() < 3) { return -1; }
 
 		// Create a new HEFace
-		int iFace = meshData.faces.create();
+		int iFace = meshData.faces.emplace().getIndex();
 
 		// Set the HEFace and HEVertices data and recover all the HEEdges
 		int iFailingEdge = -1;
@@ -172,7 +172,7 @@ namespace se::collision {
 		// Clean the HEFace data if an HEEdge was already in use in another one
 		if (iFailingEdge >= 0) {
 			for (int i = 0; i < iFailingEdge; ++i) { removeEdge(meshData, faceEdgeIndices[i]); }
-			meshData.faces.release(iFace);
+			meshData.faces.erase( meshData.faces.begin().setIndex(iFace) );
 			iFace = -1;
 		}
 
@@ -196,7 +196,7 @@ namespace se::collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		meshData.faces.release(iFace);
+		meshData.faces.erase( meshData.faces.begin().setIndex(iFace) );
 	}
 
 
@@ -274,8 +274,8 @@ namespace se::collision {
 					iCurrentEdge = iNextEdge;
 				}
 
-				// Release the second HEFace
-				meshData.faces.release(iFace2);
+				// erase the second HEFace
+				meshData.faces.erase( meshData.faces.begin().setIndex(iFace2) );
 
 				iFace = iFace1;
 			}
