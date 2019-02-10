@@ -46,10 +46,10 @@ namespace se::loaders {
 				fileReader.getValuePair(trash, "=", fontTextureName);
 				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
 
-				utils::Image atlasImg = ImageReader::read(fontTexturePath, utils::ImageFormat::L_IMAGE);
+				utils::Image atlasImg = ImageReader::read(fontTexturePath, utils::ImageFormat::L);
 				textureAtlas->setImage(
-					atlasImg.getPixels(), graphics::TexturePixelType::BYTE, graphics::TextureFormat::RED,
-					atlasImg.getWidth(), atlasImg.getHeight()
+					atlasImg.pixels.get(), graphics::TypeId::Byte, graphics::ColorFormat::Red,
+					atlasImg.width, atlasImg.height
 				);
 			}
 			else if (token == "chars") {
@@ -78,7 +78,7 @@ namespace se::loaders {
 
 	graphics::Character FontReader::parseCharacter(utils::FileReader& fileReader) const
 	{
-		graphics::Character ret;
+		graphics::Character ret = {};
 		std::string name, trash;
 		int intValue;
 

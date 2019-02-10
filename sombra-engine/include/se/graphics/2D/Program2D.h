@@ -45,6 +45,9 @@ namespace se::graphics {
 		 *			Model matrix in the shaders */
 		void setModelMatrix(const glm::mat4& modelMatrix);
 
+		/** Sets the uniform variables for the texture sampler
+		 *
+		 * @param	unit the id of the texture sampler */
 		void setTextureSampler(int unit);
 	private:
 		/** Creates the Shaders and the Program that the current class will use

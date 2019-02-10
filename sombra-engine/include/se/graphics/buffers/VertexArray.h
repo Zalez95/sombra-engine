@@ -2,6 +2,7 @@
 #define VERTEX_ARRAY_H
 
 #include <vector>
+#include "../Constants.h"
 
 namespace se::graphics {
 
@@ -36,10 +37,18 @@ namespace se::graphics {
 
 		/** Adds the given Vertex Buffer Object to the Vertex Array Object
 		 *
-		 * @param	vertexBuffer the VBO that we want to add to the current VAO
 		 * @param	index the index of the attribute where we want to bind the
-		 *			given VBO */
-		void addBuffer(const VertexBuffer& vertexBuffer, unsigned int index);
+		 *			given VBO
+		 * @param	vertexBuffer the VBO that we want to add to the current VAO
+		 * @param	type the TypeId of the data stored in the VBO
+		 * @param	normalized specifies if the vertexBuffer values should be
+		 *			normalized or not
+		 * @param	componentSize the number of components per vertex attribute
+		 * @param	stride the byte offset between each vertex attribute */
+		void addBuffer(
+			unsigned int index, const VertexBuffer& vertexBuffer,
+			TypeId type, bool normalized, int componentSize, int stride
+		);
 
 		/** Binds the Vertex Array Object */
 		void bind() const;

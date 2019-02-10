@@ -70,7 +70,11 @@ namespace se::graphics {
 
 			// Draw
 			mesh->bind();
-			GL_WRAP( glDrawElements(GL_TRIANGLES, mesh->getIndexCount(), GL_UNSIGNED_SHORT, nullptr) );
+			const IndexBuffer& ibo = mesh->getIBO();
+			GL_WRAP( glDrawElements(
+				GL_TRIANGLES,
+				static_cast<GLsizei>(ibo.getIndexCount()), toGLType(ibo.getIndexType()), nullptr
+			) );
 			mesh->unbind();
 
 			// Unset mesh wireframe

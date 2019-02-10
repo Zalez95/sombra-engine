@@ -8,7 +8,7 @@
 #include "../app/CollisionManager.h"
 
 namespace se::app { struct Entity; }
-namespace se::utils { class Image; }
+namespace se::utils { struct Image; }
 namespace se::graphics { class Mesh; }
 namespace se::collision { class TerrainCollider; }
 

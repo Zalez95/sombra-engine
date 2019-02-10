@@ -3,25 +3,17 @@
 
 namespace se::graphics {
 
-	IndexBuffer::IndexBuffer(const unsigned short* data, unsigned int count) :
-		mIndexCount(count)
+	IndexBuffer::IndexBuffer(const void* data, std::size_t size, TypeId type, std::size_t count) :
+		mIndexType(type), mIndexCount(count)
 	{
-		GL_WRAP( glGenBuffers(1, &mBufferId) );
-
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );
-		GL_WRAP( glBufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
-			mIndexCount * sizeof(unsigned short),
-			data,
-			GL_STATIC_DRAW
-		) );
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
+		createBuffer(data, size);
 	}
 
 
 	IndexBuffer::IndexBuffer(IndexBuffer&& other)
 	{
 		mBufferId = other.mBufferId;
+		mIndexType = other.mIndexType;
 		mIndexCount = other.mIndexCount;
 
 		other.mBufferId = 0;
@@ -43,6 +35,7 @@ namespace se::graphics {
 		}
 
 		mBufferId = other.mBufferId;
+		mIndexType = other.mIndexType;
 		mIndexCount = other.mIndexCount;
 
 		other.mBufferId = 0;
@@ -59,6 +52,21 @@ namespace se::graphics {
 
 	void IndexBuffer::unbind() const
 	{
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
+	}
+
+// Private functions
+	void IndexBuffer::createBuffer(const void* data, std::size_t size)
+	{
+		GL_WRAP( glGenBuffers(1, &mBufferId) );
+
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );
+		GL_WRAP( glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			size,
+			data,
+			GL_STATIC_DRAW
+		) );
 		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
 	}
 

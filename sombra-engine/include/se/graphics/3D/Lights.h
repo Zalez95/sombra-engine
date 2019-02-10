@@ -59,7 +59,7 @@ namespace se::graphics {
 		/** Creates a new DirectionalLight
 		 *
 		 * @param	baseLight the basis Light of the DirectionalLight
-		 * @param	directional the direction of the DirectionalLight */
+		 * @param	direction the direction of the DirectionalLight */
 		DirectionalLight(
 			const BaseLight& baseLight, const glm::vec3& direction
 		) :mBase(baseLight), mDirection(direction) {};

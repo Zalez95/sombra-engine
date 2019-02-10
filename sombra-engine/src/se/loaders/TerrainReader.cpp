@@ -49,7 +49,7 @@ namespace se::loaders {
 			}
 		}
 
-		utils::Image heightMap = ImageReader::read(heightMapPath, utils::ImageFormat::L_IMAGE);
+		utils::Image heightMap = ImageReader::read(heightMapPath, utils::ImageFormat::L);
 		return mTerrainLoader.createTerrain(name, size, heightMap, maxHeight);
 	}
 

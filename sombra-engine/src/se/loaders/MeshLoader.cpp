@@ -14,31 +14,31 @@ namespace se::loaders {
 		std::vector<graphics::VertexBuffer> vbos;
 
 		if (!rawMesh.positions.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.positions.front()), 3 * rawMesh.positions.size(), 3);
-			vao.addBuffer(vbos.back(), Attributes::POSITION_ATTRIBUTE);
+			vbos.emplace_back(glm::value_ptr(rawMesh.positions.front()), 3 * rawMesh.positions.size());
+			vao.addBuffer(Attributes::POSITION_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 3, 0);
 		}
 
 		if (!rawMesh.normals.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.normals.front()), 3 * rawMesh.normals.size(), 3);
-			vao.addBuffer(vbos.back(), Attributes::NORMAL_ATTRIBUTE);
+			vbos.emplace_back(glm::value_ptr(rawMesh.normals.front()), 3 * rawMesh.normals.size());
+			vao.addBuffer(Attributes::NORMAL_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 3, 0);
 		}
 
 		if (!rawMesh.uvs.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.uvs.front()), 2 * rawMesh.uvs.size(), 2);
-			vao.addBuffer(vbos.back(), Attributes::UV_ATTRIBUTE);
+			vbos.emplace_back(glm::value_ptr(rawMesh.uvs.front()), 2 * rawMesh.uvs.size());
+			vao.addBuffer(Attributes::UV_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 2, 0);
 		}
 
 		if (!rawMesh.jointWeights.empty()) {
-			vbos.emplace_back(rawMesh.jointWeights.data(), rawMesh.jointWeights.size(), 4);
-			vao.addBuffer(vbos.back(), Attributes::JOINT_WEIGHT_ATTRIBUTE);
+			vbos.emplace_back(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
+			vao.addBuffer(Attributes::JOINT_WEIGHT_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 4, 0);
 		}
 
 		if (!rawMesh.jointIndices.empty()) {
-			vbos.emplace_back(rawMesh.jointIndices.data(), rawMesh.jointIndices.size(), 4);
-			vao.addBuffer(vbos.back(), Attributes::JOINT_INDEX_ATTRIBUTE);
+			vbos.emplace_back(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
+			vao.addBuffer(Attributes::JOINT_INDEX_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 4, 0);
 		}
 
-		graphics::IndexBuffer ibo(rawMesh.faceIndices.data(), rawMesh.faceIndices.size());
+		graphics::IndexBuffer ibo(rawMesh.faceIndices.data(), graphics::TypeId::UnsignedShort, rawMesh.faceIndices.size());
 		vao.bind();
 		ibo.bind();
 		vao.unbind();
@@ -53,7 +53,7 @@ namespace se::loaders {
 
 		// Add the HEVertices
 		std::map<int, int> vertexMap;
-		for (std::size_t iVertex1 = 0; iVertex1 < rawMesh.positions.size(); ++iVertex1) {
+		for (int iVertex1 = 0; iVertex1 < static_cast<int>(rawMesh.positions.size()); ++iVertex1) {
 			int iVertex2 = collision::addVertex(heMesh, rawMesh.positions[iVertex1]);
 			vertexMap.emplace(iVertex1, iVertex2);
 		}

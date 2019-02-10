@@ -2,15 +2,13 @@
 
 namespace se::graphics {
 
-	Mesh::Mesh(
-		std::vector<VertexBuffer>&& vbos,
-		IndexBuffer&& ibo, VertexArray&& vao
-	) : mVBOs(std::move(vbos)), mIBO(std::move(ibo)), mVAO(std::move(vao)) {}
+	Mesh::Mesh(std::vector<VertexBuffer>&& vbos, IndexBuffer&& ibo, VertexArray&& vao) :
+		mVBOs(std::move(vbos)), mIBO(std::move(ibo)), mVAO(std::move(vao)) {}
 
 
-	unsigned int Mesh::getIndexCount() const
+	const IndexBuffer& Mesh::getIBO() const
 	{
-		return mIBO.getIndexCount();
+		return mIBO;
 	}
 
 

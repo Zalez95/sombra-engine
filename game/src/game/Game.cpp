@@ -297,14 +297,16 @@ namespace game {
 			}
 
 			// Images
-			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png", se::utils::ImageFormat::RGBA_IMAGE);
-			heightMap1 = std::make_unique<se::utils::Image>( se::loaders::ImageReader::read("res/images/terrain.png", se::utils::ImageFormat::L_IMAGE) );
+			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png", se::utils::ImageFormat::RGBA);
+			heightMap1 = std::make_unique<se::utils::Image>( se::loaders::ImageReader::read("res/images/terrain.png", se::utils::ImageFormat::L) );
 
 			// Textures
 			texture1 = std::make_shared<se::graphics::Texture>();
+			texture1->setFiltering(se::graphics::TextureFilter::Nearest, se::graphics::TextureFilter::Nearest);
+			texture1->setWrapping(se::graphics::TextureWrap::Repeat, se::graphics::TextureWrap::Repeat);
 			texture1->setImage(
-				image1.getPixels(), se::graphics::TexturePixelType::U_BYTE, se::graphics::TextureFormat::RGBA,
-				image1.getWidth(), image1.getHeight()
+				image1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
+				image1.width, image1.height
 			);
 
 			float pixels[] = {
@@ -312,7 +314,9 @@ namespace game {
 				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
 			texture2 = std::make_shared<se::graphics::Texture>();
-			texture2->setImage(pixels, se::graphics::TexturePixelType::FLOAT, se::graphics::TextureFormat::RGB, 2, 2);
+			texture2->setFiltering(se::graphics::TextureFilter::Nearest, se::graphics::TextureFilter::Nearest);
+			texture2->setWrapping(se::graphics::TextureWrap::Repeat, se::graphics::TextureWrap::Repeat);
+			texture2->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, 2, 2);
 
 			// Cameras
 			camera1 = std::make_unique<se::graphics::Camera>();

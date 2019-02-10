@@ -16,31 +16,20 @@ namespace se::graphics {
 		/** The id of the Buffer Array */
 		unsigned int mBufferId;
 
-		/** The number of components per generic Vertex Attribute */
-		unsigned int mComponentSize;
-
 	public:		// Functions
 		/** Creates a new VertexBuffer
 		 *
-		 * @param	data a pointer to the data of the buffer (float)
-		 * @param	count the number of components in the data array
-		 * @param	componentSize the number of components per generic
-		 * 			Vertex Attribute */
-		VertexBuffer(
-			const float* data,
-			unsigned int count, unsigned int componentSize
-		);
+		 * @param	data a pointer to the data of the buffer
+		 * @param	size the size of the data buffer */
+		VertexBuffer(const void* data, std::size_t size);
 
 		/** Creates a new VertexBuffer
 		 *
-		 * @param	data a pointer to the data of the buffer (unsigned short)
-		 * @param	count the number of components in the data array
-		 * @param	componentSize the number of components per generic
-		 * 			Vertex Attribute */
-		VertexBuffer(
-			const unsigned short* data,
-			unsigned int count, unsigned int componentSize
-		);
+		 * @param	data a pointer to the data of the buffer
+		 * @param	count the number of components in the data array */
+		template <typename T>
+		VertexBuffer(const T* data, std::size_t count);
+
 		VertexBuffer(const VertexBuffer& other) = delete;
 		VertexBuffer(VertexBuffer&& other);
 
@@ -51,15 +40,25 @@ namespace se::graphics {
 		VertexBuffer& operator=(const VertexBuffer& other) = delete;
 		VertexBuffer& operator=(VertexBuffer&& other);
 
-		/** @return	the number of components per generic Vertex Attribute */
-		inline unsigned int getComponentSize() const { return mComponentSize; };
-
 		/** Binds the Vertex Buffer Object */
 		void bind() const;
 
 		/** Unbinds the Vertex Buffer Object */
 		void unbind() const;
+	private:
+		/** Creates the actual buffer
+		 *
+		 * @param	data a pointer to the data of the new buffer
+		 * @param	size the size of the data buffer */
+		void createBuffer(const void* data, std::size_t size);
 	};
+
+
+	template <typename T>
+	VertexBuffer::VertexBuffer(const T* data, std::size_t count)
+	{
+		createBuffer(data, count * sizeof(T));
+	}
 
 }
 

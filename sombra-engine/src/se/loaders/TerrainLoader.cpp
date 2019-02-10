@@ -48,8 +48,8 @@ namespace se::loaders {
 	) const
 	{
 		// Get the data from the image
-		const std::size_t xSize = heightMap.getWidth();
-		const std::size_t zSize = heightMap.getHeight();
+		const std::size_t xSize = heightMap.width;
+		const std::size_t zSize = heightMap.height;
 		const std::size_t count = xSize * zSize;
 
 		// The mesh data of the Terrain
@@ -121,8 +121,8 @@ namespace se::loaders {
 		const utils::Image& heightMap
 	) const
 	{
-		const std::size_t xSize = heightMap.getWidth();
-		const std::size_t zSize = heightMap.getHeight();
+		const std::size_t xSize = heightMap.width;
+		const std::size_t zSize = heightMap.height;
 
 		std::vector<float> heights;
 		heights.reserve(xSize * zSize);
@@ -138,11 +138,11 @@ namespace se::loaders {
 
 	float TerrainLoader::getHeight(const utils::Image& heightMap, std::size_t x, std::size_t z) const
 	{
-		assert(x < heightMap.getWidth() && "x must be smaller than the image width");
-		assert(z < heightMap.getHeight() && "z must be smaller than the image height");
+		assert(x < heightMap.width && "x must be smaller than the image width");
+		assert(z < heightMap.height && "z must be smaller than the image height");
 
-		std::byte* heightMapPixels = heightMap.getPixels();
-		std::byte h = heightMapPixels[z * heightMap.getWidth() + x];
+		std::byte* heightMapPixels = heightMap.pixels.get();
+		std::byte h = heightMapPixels[z * heightMap.width + x];
 
 		return std::to_integer<unsigned char>(h) / static_cast<float>(kMaxColor) - 0.5f;
 	}

@@ -38,13 +38,15 @@ namespace se::graphics {
 	}
 
 
-	void VertexArray::addBuffer(const VertexBuffer& vertexBuffer, unsigned int index)
-	{
+	void VertexArray::addBuffer(
+		unsigned int index, const VertexBuffer& vertexBuffer,
+		TypeId type, bool normalized, int componentSize, int stride
+	) {
 		bind();
 
 		vertexBuffer.bind();
 		GL_WRAP( glEnableVertexAttribArray(index) );
-		GL_WRAP( glVertexAttribPointer(index, vertexBuffer.getComponentSize(), GL_FLOAT, GL_FALSE, 0, 0) );
+		GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
 
 		unbind();
 	}

@@ -38,8 +38,8 @@ namespace se::graphics {
 			IndexBuffer&& ibo, VertexArray&& vao
 		);
 
-		/** @return the number of Indices of the faces of the Mesh */
-		unsigned int getIndexCount() const;
+		/** @return a reference to the IndexBuffer of the Mesh */
+		const IndexBuffer& getIBO() const;
 
 		/** Binds the VAO of the Mesh */
 		void bind() const;
