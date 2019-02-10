@@ -21,7 +21,7 @@ set_target_properties(Game PROPERTIES
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(Game PRIVATE -Wall -Wextra -Wpedantic -Werror)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options(Game PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(Game PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Link the dependencies

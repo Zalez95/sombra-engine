@@ -7,6 +7,7 @@ ExternalProject_Add(glmDownload
 	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/glm"
 	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 						-DCMAKE_BUILD_TYPE=$<CONFIG>
+						-DGLM_TEST_ENABLE=OFF
 )
 
 # Get the properties from the downloaded target

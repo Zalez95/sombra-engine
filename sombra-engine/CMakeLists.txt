@@ -23,11 +23,11 @@ set_target_properties(SombraEngine PROPERTIES
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(SombraEngine PRIVATE -Wall -Wextra -Wpedantic -Werror)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options(SombraEngine PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(SombraEngine PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Add the compiler definitions
-target_compile_definitions(SombraEngine PUBLIC GLEW_NO_GLU)
+target_compile_definitions(SombraEngine PUBLIC GLM_FORCE_SILENT_WARNINGS GLEW_NO_GLU)
 if(NOT BUILD_SHARED_LIBS)
 	target_compile_definitions(SombraEngine PUBLIC AL_LIBTYPE_STATIC GLEW_STATIC)
 endif()
@@ -61,7 +61,7 @@ if(SOMBRA_ENGINE_BUILD_TESTS)
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(SombraEngineTest PRIVATE -Wall -Wextra -Werror)
 	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-		target_compile_options(SombraEngineTest PRIVATE /W4 /Za -D_CRT_SECURE_NO_WARNINGS)
+		target_compile_options(SombraEngineTest PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
 	endif()
 
 	# Link the dependencies

@@ -3,7 +3,7 @@
 
 #include <string>
 #include <istream>
-#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include "../app/Entity.h"
 #include "../graphics/Texture.h"
 #include "../graphics/3D/Mesh.h"

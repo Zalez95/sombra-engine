@@ -4,7 +4,7 @@
 #include <se/physics/constraints/DistanceConstraint.h>
 
 using namespace se::physics;
-static constexpr float kTolerance = 0.000001;
+static constexpr float kTolerance = 0.000001f;
 
 TEST(RigidBody, distanceConstraint)
 {

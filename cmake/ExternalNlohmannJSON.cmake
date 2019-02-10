@@ -7,6 +7,8 @@ ExternalProject_Add(NlohmannJSONDownload
 	INSTALL_DIR			"${EXTERNAL_INSTALL_PATH}/nlohmann-json"
 	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 						-DCMAKE_BUILD_TYPE=$<CONFIG>
+						-DJSON_BuildTests=OFF
+						-DJSON_MultipleHeaders=ON
 )
 
 # Get the properties from the downloaded target

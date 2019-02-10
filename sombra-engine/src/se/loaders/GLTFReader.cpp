@@ -1,4 +1,5 @@
 #include <sstream>
+#include <nlohmann/json.hpp>
 #include "se/loaders/GLTFReader.h"
 
 namespace se::loaders {
