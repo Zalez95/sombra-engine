@@ -1,8 +1,8 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "se/graphics/GLWrapper.h"
 #include "se/graphics/Texture.h"
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/2D/Renderable2D.h"
@@ -15,7 +15,10 @@ namespace se::graphics {
 	Renderer2D::Quad2D::Quad2D() :
 		mPositionsBuffer(kPositions, kNumVertices * kNumComponentsPerVertex)
 	{
-		mVAO.addBuffer(0, mPositionsBuffer, TypeId::Float, false, kNumComponentsPerVertex, 0);
+		mVAO.bind();
+		mPositionsBuffer.bind();
+		mVAO.setVertexAttribute(0, TypeId::Float, false, kNumComponentsPerVertex, 0);
+		mVAO.unbind();
 	}
 
 
@@ -29,12 +32,12 @@ namespace se::graphics {
 
 	void Renderer2D::render()
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDisable(GL_DEPTH_TEST);
+		GL_WRAP( glEnable(GL_BLEND) );
+		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+		GL_WRAP( glDisable(GL_DEPTH_TEST) );
 
 		mProgram.enable();
-		mQuad.bindVAO();
+		mQuad.bind();
 
 		while (!mRenderable2Ds.empty()) {
 			const Renderable2D* renderable2D = mRenderable2Ds.front();
@@ -48,15 +51,15 @@ namespace se::graphics {
 			mProgram.setTextureSampler(0);
 
 			if (texture) { texture->bind(0); }
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
+			GL_WRAP( glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices()) );
 			if (texture) { texture->unbind(); }
 		}
 
-		glBindVertexArray(0);
+		mQuad.unbind();
 		mProgram.disable();
 
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
+		GL_WRAP( glEnable(GL_DEPTH_TEST) );
+		GL_WRAP( glDisable(GL_BLEND) );
 	}
 
 }

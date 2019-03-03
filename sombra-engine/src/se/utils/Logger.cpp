@@ -45,7 +45,7 @@ namespace se::utils {
 			<< getTimeString()
 			<< " [" << label << "]"
 			<< std::hex << " 0x" << std::this_thread::get_id()
-			<< "\t" << text << "\n";
+			<< "\t" << text << std::endl;
 	}
 
 // Private functions

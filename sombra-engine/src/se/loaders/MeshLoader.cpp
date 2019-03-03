@@ -10,40 +10,57 @@ namespace se::loaders {
 
 	graphics::Mesh MeshLoader::createGraphicsMesh(const RawMesh& rawMesh)
 	{
-		graphics::VertexArray vao;
-		std::vector<graphics::VertexBuffer> vbos;
+		using namespace graphics;
+
+		VertexArray vao;
+		std::vector<VertexBuffer> vbos;
 
 		if (!rawMesh.positions.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.positions.front()), 3 * rawMesh.positions.size());
-			vao.addBuffer(Attributes::POSITION_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 3, 0);
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.positions.front()), 3 * rawMesh.positions.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::PositionAttribute), TypeId::Float, false, 3, 0);
+			vao.unbind();
 		}
 
 		if (!rawMesh.normals.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.normals.front()), 3 * rawMesh.normals.size());
-			vao.addBuffer(Attributes::NORMAL_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 3, 0);
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.normals.front()), 3 * rawMesh.normals.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::NormalAttribute), TypeId::Float, false, 3, 0);
+			vao.unbind();
 		}
 
 		if (!rawMesh.uvs.empty()) {
-			vbos.emplace_back(glm::value_ptr(rawMesh.uvs.front()), 2 * rawMesh.uvs.size());
-			vao.addBuffer(Attributes::UV_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 2, 0);
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.uvs.front()), 2 * rawMesh.uvs.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::UVAttribute), TypeId::Float, false, 2, 0);
+			vao.unbind();
 		}
 
 		if (!rawMesh.jointWeights.empty()) {
-			vbos.emplace_back(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
-			vao.addBuffer(Attributes::JOINT_WEIGHT_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 4, 0);
+			auto& vbo = vbos.emplace_back(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointWeightAttribute), TypeId::Float, false, 4, 0);
+			vao.unbind();
 		}
 
 		if (!rawMesh.jointIndices.empty()) {
-			vbos.emplace_back(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
-			vao.addBuffer(Attributes::JOINT_INDEX_ATTRIBUTE, vbos.back(), graphics::TypeId::Float, false, 4, 0);
+			auto& vbo = vbos.emplace_back(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointIndexAttribute), TypeId::Float, false, 4, 0);
+			vao.unbind();
 		}
 
-		graphics::IndexBuffer ibo(rawMesh.faceIndices.data(), graphics::TypeId::UnsignedShort, rawMesh.faceIndices.size());
+		IndexBuffer ibo(rawMesh.faceIndices.data(), TypeId::UnsignedShort, rawMesh.faceIndices.size());
 		vao.bind();
 		ibo.bind();
 		vao.unbind();
 
-		return graphics::Mesh(std::move(vbos), std::move(ibo), std::move(vao));
+		return Mesh(std::move(vbos), std::move(ibo), std::move(vao));
 	}
 
 

@@ -14,6 +14,9 @@ namespace se::utils {
 		/** The path to the log file */
 		static constexpr char kLogFile[] = "sombra.log";
 
+		/** The starting log level */
+		static constexpr LogLevel kLogLevel = LogLevel::Trace;
+
 	public:
 		/** @return	the only instance of the Logger */
 		static Logger& getInstance();
@@ -30,6 +33,8 @@ namespace se::utils {
 #define LOCATION std::string(__FILE__) + ":" + std::to_string(__LINE__) \
 	+ " in \"" + __FUNCTION__ + "\": "
 
+#define SOMBRA_TRACE_LOG	\
+	se::utils::Log::getInstance()(se::utils::LogLevel::Trace)	<< LOCATION
 #define SOMBRA_DEBUG_LOG	\
 	se::utils::Log::getInstance()(se::utils::LogLevel::Debug)	<< LOCATION
 #define SOMBRA_INFO_LOG		\

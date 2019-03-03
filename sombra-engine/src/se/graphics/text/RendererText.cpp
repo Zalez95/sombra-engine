@@ -1,8 +1,8 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "se/graphics/GLWrapper.h"
 #include "se/graphics/Shader.h"
 #include "se/graphics/Program.h"
 #include "se/graphics/Texture.h"
@@ -50,9 +50,9 @@ namespace se::graphics {
 
 	void RendererText::render()
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDisable(GL_DEPTH_TEST);
+		GL_WRAP( glEnable(GL_BLEND) );
+		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+		GL_WRAP( glDisable(GL_DEPTH_TEST) );
 
 		mProgram->enable();
 
@@ -64,15 +64,15 @@ namespace se::graphics {
 
 			textureAtlas->bind();
 //			for (char c : renderableText->getText()) {
-//				glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices());
+//				GL_WRAP( glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices()) );
 //			}
 			textureAtlas->unbind();
 		}
 
 		mProgram->disable();
 
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
+		GL_WRAP( glEnable(GL_DEPTH_TEST) );
+		GL_WRAP( glDisable(GL_BLEND) );
 	}
 
 }

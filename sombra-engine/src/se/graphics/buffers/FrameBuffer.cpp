@@ -18,6 +18,8 @@ namespace se::graphics {
 
 		// Restore the default FBO
 		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) );
+
+		SOMBRA_TRACE_LOG << "Created FBO " << mBufferId;
 	}
 
 
@@ -32,6 +34,7 @@ namespace se::graphics {
 	{
 		if (mBufferId != 0) {
 			GL_WRAP( glDeleteFramebuffers(1, &mBufferId) );
+			SOMBRA_TRACE_LOG << "Deleted FBO " << mBufferId;
 		}
 	}
 

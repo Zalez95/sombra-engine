@@ -8,6 +8,7 @@ namespace se::audio {
 	Source::Source()
 	{
 		AL_WRAP( alGenSources(1, &mSourceId) );
+		SOMBRA_TRACE_LOG << "Created Source " << mSourceId;
 	}
 
 
@@ -22,6 +23,7 @@ namespace se::audio {
 	{
 		stop();
 		AL_WRAP( alDeleteSources(1, &mSourceId) );
+		SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
 	}
 
 

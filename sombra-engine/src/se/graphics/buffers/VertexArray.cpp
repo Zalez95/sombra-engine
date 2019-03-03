@@ -7,6 +7,7 @@ namespace se::graphics {
 	VertexArray::VertexArray()
 	{
 		GL_WRAP( glGenVertexArrays(1, &mArrayId) );
+		SOMBRA_TRACE_LOG << "Created VAO " << mArrayId;
 	}
 
 
@@ -21,6 +22,7 @@ namespace se::graphics {
 	{
 		if (mArrayId != 0) {
 			GL_WRAP( glDeleteVertexArrays(1, &mArrayId) );
+			SOMBRA_TRACE_LOG << "Deleted VAO " << mArrayId;
 		}
 	}
 
@@ -38,17 +40,12 @@ namespace se::graphics {
 	}
 
 
-	void VertexArray::addBuffer(
-		unsigned int index, const VertexBuffer& vertexBuffer,
+	void VertexArray::setVertexAttribute(
+		unsigned int index,
 		TypeId type, bool normalized, int componentSize, int stride
 	) {
-		bind();
-
-		vertexBuffer.bind();
 		GL_WRAP( glEnableVertexAttribArray(index) );
 		GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
-
-		unbind();
 	}
 
 

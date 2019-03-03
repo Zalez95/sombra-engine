@@ -1,28 +1,26 @@
 #ifndef SCENE_READER_H
 #define SCENE_READER_H
 
-#include <map>
 #include <vector>
 #include <memory>
 #include "../app/Entity.h"
-#include "../utils/Image.h"
-#include "../graphics/Texture.h"
-#include "../graphics/3D/Mesh.h"
 #include "../graphics/3D/Camera.h"
-#include "../graphics/3D/Material.h"
+#include "../graphics/3D/Renderable3D.h"
 
 namespace se::loaders {
 
-	/** Struct DataHolder, it holds all the data loaded by the SceneReader */
+	/**
+	 * Struct DataHolder, it holds all the data loaded by the SceneReader
+	 */
 	struct DataHolder
 	{
+		using EntityIndex = std::size_t;
+		using Renderable3DIndices = std::vector<std::size_t>;
+
 		std::vector<std::unique_ptr<app::Entity>> entities;
-		std::vector<std::unique_ptr<utils::Image>> images;
-		std::vector<std::unique_ptr<graphics::Mesh>> meshes;
 		std::vector<std::unique_ptr<graphics::Camera>> cameras;
-		std::vector<std::unique_ptr<graphics::Texture>> textures;
-		std::vector<std::unique_ptr<graphics::Material>> materials;
-		std::map<std::size_t, std::size_t> entityMeshMap;
+		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;
+		std::vector<std::pair<EntityIndex, Renderable3DIndices>> entityR3DMap;
 	};
 
 

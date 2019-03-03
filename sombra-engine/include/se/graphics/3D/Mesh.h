@@ -9,6 +9,19 @@
 namespace se::graphics {
 
 	/**
+	 * The attribute indices of the VAO of a Mesh
+	 */
+	enum class MeshAttributes : unsigned int
+	{
+		PositionAttribute = 0,
+		NormalAttribute,
+		UVAttribute,
+		JointWeightAttribute,
+		JointIndexAttribute
+	};
+
+
+	/**
 	 * Class Mesh, it holds the buffers that creates a 3D mesh
 	 */
 	class Mesh
@@ -26,13 +39,13 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new Mesh from the given data
 		 *
-		 * @param	vbos the vertex buffers that coint all the vertex data of
+		 * @param	vbos the vertex buffers that cointain all the vertex data of
 		 *			the mesh
 		 * @param	ibo the IBO of the mesh that cointains the data of the
 		 *			faces of the mesh
 		 * @param	vao the VAO of the mesh
-		 * @note	the vertexBuffers must be already bound to the VAO with its
-		 *			respective attribute indices */
+		 * @note	the IBO and the VBOs must be already bound to the VAO with
+		 *			its respective attribute indices */
 		Mesh(
 			std::vector<VertexBuffer>&& vbos,
 			IndexBuffer&& ibo, VertexArray&& vao

@@ -25,7 +25,7 @@ namespace se::app {
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D, const glm::mat4& offset)
+	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D)
 	{
 		if (!entity || !renderable3D) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Renderable3D";
@@ -33,7 +33,7 @@ namespace se::app {
 		}
 
 		mLayer3D.addRenderable3D(renderable3D.get());
-		mRenderable3DEntities.emplace(entity, std::pair(std::move(renderable3D), offset));
+		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
 		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully as Renderable3D";
 	}
 
@@ -62,7 +62,7 @@ namespace se::app {
 
 		auto itRenderable3D = mRenderable3DEntities.find(entity);
 		if (itRenderable3D != mRenderable3DEntities.end()) {
-			mLayer3D.removeRenderable3D(itRenderable3D->second.first.get());
+			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
 			mRenderable3DEntities.erase(itRenderable3D);
 			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully as Renderable3D";
 		}
@@ -95,8 +95,7 @@ namespace se::app {
 			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), re.first->position);
 			glm::mat4 rotation		= glm::mat4_cast(re.first->orientation);
 			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), re.first->scale);
-			glm::mat4 offset		= re.second.second;
-			re.second.first->setModelMatrix(offset * translation * rotation * scale);
+			re.second->setModelMatrix(translation * rotation * scale);
 		}
 
 		SOMBRA_INFO_LOG << "Updating PointLights";

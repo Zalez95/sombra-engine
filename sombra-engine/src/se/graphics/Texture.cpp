@@ -6,6 +6,7 @@ namespace se::graphics {
 	Texture::Texture()
 	{
 		GL_WRAP( glGenTextures(1, &mTextureId) );
+		SOMBRA_TRACE_LOG << "Created Texture " << mTextureId;
 	}
 
 
@@ -20,6 +21,7 @@ namespace se::graphics {
 	{
 		if (mTextureId != 0) {
 			GL_WRAP( glDeleteTextures(1, &mTextureId) );
+			SOMBRA_TRACE_LOG << "Deleted Texture " << mTextureId;
 		}
 	}
 
@@ -69,7 +71,11 @@ namespace se::graphics {
 		GLenum glType = toGLType(type);
 
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
-		GL_WRAP( glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glFormat, glType, pixels) );
+		GL_WRAP( glTexImage2D(
+			GL_TEXTURE_2D, 0,
+			glFormat, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
+			glFormat, glType, pixels
+		) );
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, 0) );
 	}
 

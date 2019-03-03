@@ -389,7 +389,7 @@ namespace game {
 		plane->position = glm::vec3(-5.0f, 1.0f, -5.0f);
 
 		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, fileMaterials[4], texture2);
-		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1), glm::mat4(1.0f));
+		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
 
 		mEntities.push_back(std::move(plane));
 
@@ -422,7 +422,7 @@ namespace game {
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4(1.0f));
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
 		}
@@ -448,7 +448,7 @@ namespace game {
 			auto tmpRawMesh = createRawMesh(heMesh);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
-			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2), glm::mat4(1.0f));
+			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(tubeSlice));
 		}
@@ -467,7 +467,7 @@ namespace game {
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
-			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2), glm::mat4(1.0f));
+			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
 		}
@@ -497,7 +497,7 @@ namespace game {
 				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
 				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
 
-				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
 
 				mEntities.push_back(std::move(building));
 			}
@@ -514,7 +514,7 @@ namespace game {
 				});
 				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh));
 				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr);
-				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2), glm::mat4(1.0f));
+				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
 
 				mEntities.push_back(std::move(building));
 			}
@@ -530,6 +530,14 @@ namespace game {
 		eL2->position = glm::vec3(-3, 1, 5);
 		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
 		mEntities.push_back(std::move(eL2));
+
+		// GLTF scene
+		for (auto& pair : dataHolder1.entityR3DMap) {
+			for (std::size_t iRenderable3D : pair.second) {
+				mGraphicsManager->addEntity(dataHolder1.entities[pair.first].get(), std::move(dataHolder1.renderable3Ds[iRenderable3D]));
+			}
+			mEntities.push_back( std::move(dataHolder1.entities[pair.first]) );
+		}
 	}
 
 

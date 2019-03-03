@@ -4,7 +4,7 @@ namespace se::utils {
 
 	Logger& Log::getInstance()
 	{
-		static Logger instance( std::move(createLogger()) );
+		static Logger instance = createLogger();
 		return instance;
 	}
 
@@ -12,7 +12,7 @@ namespace se::utils {
 	Logger Log::createLogger()
 	{
 		Logger logger(kLogFile);
-		logger.setLogLevel(LogLevel::Debug);
+		logger.setLogLevel(kLogLevel);
 		return logger;
 	}
 

@@ -16,17 +16,14 @@ namespace se::graphics {
 	}
 
 
-	static bool glLogError(const char* glFunction, const std::string& location)
+	static void glLogError(const char* glFunction, const std::string& location)
 	{
-		GLenum error = glGetError();
-		while (error != GL_NO_ERROR) {
+		GLenum error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "OpenGL function \"" << glFunction << "\" returned error code " << error
 				<< ": \"" << glGetString(error) << "\"";
-			return true;
 		}
-
-		return false;
 	}
 
 

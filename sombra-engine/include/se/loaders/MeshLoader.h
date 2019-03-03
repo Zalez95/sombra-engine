@@ -14,17 +14,6 @@ namespace se::loaders {
 	 */
 	class MeshLoader
 	{
-	private:	// Nested types
-		/** The attribute indices of the Meshes */
-		enum Attributes : unsigned int
-		{
-			POSITION_ATTRIBUTE = 0,
-			NORMAL_ATTRIBUTE,
-			UV_ATTRIBUTE,
-			JOINT_WEIGHT_ATTRIBUTE,
-			JOINT_INDEX_ATTRIBUTE
-		};
-
 	public:		// Functions
 		/** creates a Graphics Mesh with the given mesh data
 		 *

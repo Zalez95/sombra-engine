@@ -52,7 +52,10 @@ namespace se::graphics {
 			inline int getNumVertices() const { return kNumVertices; };
 
 			/** Binds the VAO of the 2DQuad */
-			inline void bindVAO() const { mVAO.bind(); };
+			inline void bind() const { mVAO.bind(); };
+
+			/** Unbinds the VAO of the 2DQuad */
+			inline void unbind() const { mVAO.unbind(); };
 		} mQuad;
 
 		/** The Renderable2Ds that we want to render */

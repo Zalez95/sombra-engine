@@ -16,17 +16,14 @@ namespace se::audio {
 	}
 
 
-	static bool alcLogError(ALCdevice* device, const char* alcFunction, const std::string& location)
+	static void alcLogError(ALCdevice* device, const char* alcFunction, const std::string& location)
 	{
-		ALCenum error = alcGetError(device);
-		while (error != ALC_NO_ERROR) {
+		ALCenum error;
+		while ((error = alcGetError(device)) != ALC_NO_ERROR) {
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "Audio Library Context function \"" << alcFunction << "\" returned error code " << error
 				<< ": \"" << alGetString(error) << "\"";
-			return true;
 		}
-
-		return false;
 	}
 
 }

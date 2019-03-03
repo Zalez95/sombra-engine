@@ -16,17 +16,14 @@ namespace se::audio {
 	}
 
 
-	static bool alLogError(const char* alFunction, const std::string& location)
+	static void alLogError(const char* alFunction, const std::string& location)
 	{
-		ALenum error = alGetError();
-		while (error != AL_NO_ERROR) {
+		ALenum error;
+		while ((error = alGetError()) != AL_NO_ERROR) {
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "OpenAL function \"" << alFunction << "\" returned error code " << error
 				<< ": \"" << alGetString(error) << "\"";
-			return true;
 		}
-
-		return false;
 	}
 
 }

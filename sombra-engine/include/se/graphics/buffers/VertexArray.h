@@ -35,18 +35,19 @@ namespace se::graphics {
 		VertexArray& operator=(const VertexArray& other) = delete;
 		VertexArray& operator=(VertexArray&& other);
 
-		/** Adds the given Vertex Buffer Object to the Vertex Array Object
+		/** Sets the bound Vertex Buffer Object as an attribute of the Vertex
+		 * Array Object
 		 *
 		 * @param	index the index of the attribute where we want to bind the
 		 *			given VBO
-		 * @param	vertexBuffer the VBO that we want to add to the current VAO
 		 * @param	type the TypeId of the data stored in the VBO
 		 * @param	normalized specifies if the vertexBuffer values should be
 		 *			normalized or not
 		 * @param	componentSize the number of components per vertex attribute
-		 * @param	stride the byte offset between each vertex attribute */
-		void addBuffer(
-			unsigned int index, const VertexBuffer& vertexBuffer,
+		 * @param	stride the byte offset between each vertex attribute
+		 * @note	the VAO must be bound before calling this function */
+		void setVertexAttribute(
+			unsigned int index,
 			TypeId type, bool normalized, int componentSize, int stride
 		);
 

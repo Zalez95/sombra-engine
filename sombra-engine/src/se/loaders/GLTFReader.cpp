@@ -3,6 +3,9 @@
 #include <nlohmann/json.hpp>
 #include "GLTFReader.h"
 #include "se/loaders/ImageReader.h"
+#include "se/graphics/Texture.h"
+#include "se/graphics/3D/Material.h"
+#include "se/graphics/3D/Mesh.h"
 
 namespace se::loaders {
 
@@ -81,10 +84,10 @@ namespace se::loaders {
 			}
 
 			if (auto itImages = jsonGLTF.find("images"); itImages != jsonGLTF.end()) {
-				output.images.reserve(itImages->size());
+				mGLTFData.images.reserve(itImages->size());
 				for (std::size_t imageId = 0; imageId < itImages->size(); ++imageId) {
 					try {
-						parseImage((*itImages)[imageId], output);
+						parseImage((*itImages)[imageId]);
 					}
 					catch (const std::exception& e) {
 						throw std::runtime_error("Failed to read the images property at image " + std::to_string(imageId) + ": " + e.what());
@@ -93,13 +96,37 @@ namespace se::loaders {
 			}
 
 			if (auto itTextures = jsonGLTF.find("textures"); itTextures != jsonGLTF.end()) {
-				output.textures.reserve(itTextures->size());
+				mGLTFData.textures.reserve(itTextures->size());
 				for (std::size_t textureId = 0; textureId < itTextures->size(); ++textureId) {
 					try {
-						parseTexture((*itTextures)[textureId], output);
+						parseTexture((*itTextures)[textureId]);
 					}
 					catch (const std::exception& e) {
 						throw std::runtime_error("Failed to read the textures property at texture " + std::to_string(textureId) + ": " + e.what());
+					}
+				}
+			}
+
+			if (auto itMaterials = jsonGLTF.find("materials"); itMaterials != jsonGLTF.end()) {
+				mGLTFData.materials.reserve(itMaterials->size());
+				for (std::size_t materialId = 0; materialId < itMaterials->size(); ++materialId) {
+					try {
+						parseMaterial((*itMaterials)[materialId]);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the materials property at material " + std::to_string(materialId) + ": " + e.what());
+					}
+				}
+			}
+
+			if (auto itMeshes = jsonGLTF.find("meshes"); itMeshes != jsonGLTF.end()) {
+				output.renderable3Ds.reserve(itMeshes->size());
+				for (std::size_t meshId = 0; meshId < itMeshes->size(); ++meshId) {
+					try {
+						parseMesh((*itMeshes)[meshId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the meshes property at mesh " + std::to_string(meshId) + ": " + e.what());
 					}
 				}
 			}
@@ -112,30 +139,6 @@ namespace se::loaders {
 					}
 					catch (const std::exception& e) {
 						throw std::runtime_error("Failed to read the cameras property at camera " + std::to_string(cameraId) + ": " + e.what());
-					}
-				}
-			}
-
-			if (auto itMaterials = jsonGLTF.find("materials"); itMaterials != jsonGLTF.end()) {
-				output.materials.reserve(itMaterials->size());
-				for (std::size_t materialId = 0; materialId < itMaterials->size(); ++materialId) {
-					try {
-						parseMaterial((*itMaterials)[materialId], output);
-					}
-					catch (const std::exception& e) {
-						throw std::runtime_error("Failed to read the materials property at material " + std::to_string(materialId) + ": " + e.what());
-					}
-				}
-			}
-
-			if (auto itMeshes = jsonGLTF.find("meshes"); itMeshes != jsonGLTF.end()) {
-				output.meshes.reserve(itMeshes->size());
-				for (std::size_t meshId = 0; meshId < itMeshes->size(); ++meshId) {
-					try {
-						parseMesh((*itMeshes)[meshId], output);
-					}
-					catch (const std::exception& e) {
-						throw std::runtime_error("Failed to read the meshes property at mesh " + std::to_string(meshId) + ": " + e.what());
 					}
 				}
 			}
@@ -194,7 +197,7 @@ namespace se::loaders {
 
 			std::ifstream dataFileStream(mBasePath + path, std::ios::in | std::ios::binary);
 			if (dataFileStream.good()) {
-				GLTFData::Buffer buffer(size);
+				Buffer buffer(size);
 				dataFileStream.read(reinterpret_cast<char*>(buffer.data()), size);
 				if (!dataFileStream.fail()) {
 					mGLTFData.buffers.emplace_back(std::move(buffer));
@@ -224,11 +227,11 @@ namespace se::loaders {
 			std::size_t bufferId = *itBuffer;
 			std::size_t byteLength = *itByteLength;
 			std::size_t byteOffset = (itByteOffset != jsonBufferView.end())? itByteOffset->get<std::size_t>() : 0;
-			std::size_t byteStride = (itByteStride != jsonBufferView.end())? itByteOffset->get<std::size_t>() : 1;
-			GLTFData::BufferView::Type type = GLTFData::BufferView::Type::Undefined;
+			int byteStride = (itByteStride != jsonBufferView.end())? itByteOffset->get<int>() : 0;
+			BufferView::Type type = BufferView::Type::Undefined;
 			if (itTarget != jsonBufferView.end()) {
-				if (*itTarget == 34962) { type = GLTFData::BufferView::Type::Array; }
-				if (*itTarget == 34963) { type = GLTFData::BufferView::Type::ElementArray; }
+				if (*itTarget == 34962) { type = BufferView::Type::Array; }
+				if (*itTarget == 34963) { type = BufferView::Type::ElementArray; }
 			}
 
 			if (bufferId < mGLTFData.buffers.size()) {
@@ -268,7 +271,7 @@ namespace se::loaders {
 				(componentType == 5123)? graphics::TypeId::UnsignedShort :
 				(componentType == 5125)? graphics::TypeId::UnsignedInt :
 				(componentType == 5126)? graphics::TypeId::Float : graphics::TypeId::Int;
-			std::size_t componentSize = (type == "SCALAR")? 1 :
+			int componentSize = (type == "SCALAR")? 1 :
 				(type == "VEC2")? 2 : (type == "VEC3")? 3 : (type == "VEC4")? 4 :
 				(type == "MAT2")? 4 : (type == "MAT3")? 9 : (type == "MAT4")? 16 : 0;
 
@@ -292,7 +295,7 @@ namespace se::loaders {
 
 	void GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
 	{
-		GLTFData::Sampler sampler;
+		Sampler sampler;
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
@@ -332,12 +335,12 @@ namespace se::loaders {
 	}
 
 
-	void GLTFReader::parseImage(const nlohmann::json& jsonImage, DataHolder& output) const
+	void GLTFReader::parseImage(const nlohmann::json& jsonImage)
 	{
 		auto itUri = jsonImage.find("uri");
 		if (itUri != jsonImage.end()) {
-			output.images.emplace_back();
-			*output.images.back() = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
+			auto& image = mGLTFData.images.emplace_back();
+			*image = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
 		}
 		else {
 			throw std::runtime_error("Missing uri property");
@@ -345,7 +348,7 @@ namespace se::loaders {
 	}
 
 
-	void GLTFReader::parseTexture(const nlohmann::json& jsonTexture, DataHolder& output) const
+	void GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
 	{
 		auto texture = std::make_unique<graphics::Texture>();
 
@@ -353,7 +356,7 @@ namespace se::loaders {
 		if (itSampler != jsonTexture.end()) {
 			std::size_t samplerId = *itSampler;
 			if (samplerId < mGLTFData.samplers.size()) {
-				const GLTFData::Sampler& sampler = mGLTFData.samplers[samplerId];
+				const Sampler& sampler = mGLTFData.samplers[samplerId];
 				if (sampler.enableFilter[0] && sampler.enableFilter[1]) {
 					texture->setFiltering(sampler.filters[0], sampler.filters[1]);
 				}
@@ -369,8 +372,8 @@ namespace se::loaders {
 		auto itSource = jsonTexture.find("source");
 		if (itSource != jsonTexture.end()) {
 			std::size_t sourceId = *itSource;
-			if (sourceId < output.images.size()){
-				const utils::Image& image = *output.images[sourceId];
+			if (sourceId < mGLTFData.images.size()){
+				const utils::Image& image = *mGLTFData.images[sourceId];
 
 				graphics::ColorFormat format = graphics::ColorFormat::RGB;
 				switch (image.format)
@@ -388,60 +391,11 @@ namespace se::loaders {
 			}
 		}
 
-		output.textures.push_back( std::move(texture) );
+		mGLTFData.textures.push_back( std::move(texture) );
 	}
 
 
-	void GLTFReader::parseCamera(const nlohmann::json& jsonCamera, DataHolder& output) const
-	{
-		auto itType = jsonCamera.find("name");
-		auto itPerspective = jsonCamera.find("perspective");
-		auto itOrthographic = jsonCamera.find("orthographic");
-
-		if (itType != jsonCamera.end()) {
-			if ((*itType == "perspective") && (itPerspective != jsonCamera.end())) {
-				auto itAspectRatio	= itPerspective->find("aspectRatio");
-				auto itYFov			= itPerspective->find("yfov");
-				auto itZFar			= itPerspective->find("zfar");
-				auto itZNear		= itPerspective->find("znear");
-				if ((itAspectRatio != jsonCamera.end()) && (itYFov != jsonCamera.end())
-					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
-				) {
-					auto camera = std::make_unique<graphics::Camera>();
-					camera->setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
-					output.cameras.emplace_back(std::move(camera));
-				}
-				else {
-					throw std::runtime_error("Missing perspective properties");
-				}
-			}
-			else if ((*itType == "orthographic") && (itOrthographic != jsonCamera.end())) {
-				auto itXMag			= itOrthographic->find("xmag");
-				auto itYMag			= itOrthographic->find("ymag");
-				auto itZFar			= itOrthographic->find("zfar");
-				auto itZNear		= itOrthographic->find("znear");
-				if ((itXMag != jsonCamera.end()) && (itYMag != jsonCamera.end())
-					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
-				) {
-					auto camera = std::make_unique<graphics::Camera>();
-					camera->setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
-					output.cameras.emplace_back(std::move(camera));
-				}
-				else {
-					throw std::runtime_error("Missing orthographic properties");
-				}
-			}
-			else {
-				throw std::runtime_error("Invalid type property \"" + itType->get<std::string>() + "\"");
-			}
-		}
-		else {
-			throw std::runtime_error("Missing type property");
-		}
-	}
-
-
-	void GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial, DataHolder& /*output*/) const
+	void GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
 	{
 		auto itName = jsonMaterial.find("name");
 		if (itName != jsonMaterial.end()) {
@@ -494,72 +448,174 @@ namespace se::loaders {
 		if (itDoubleSide != jsonMaterial.end()) {
 			// TODO: bool doubleSide = *itDoubleSide;
 		}
+
+		mGLTFData.materials.emplace_back();
 	}
 
 
-	void GLTFReader::parseMesh(const nlohmann::json& jsonMesh, DataHolder& output) const
+	void GLTFReader::parsePrimitive(
+		const nlohmann::json& jsonPrimitive, DataHolder& output
+	) const
 	{
-		static const std::map<std::string, MeshAttributes> kAttributeMap = {
-			{ "POSITION", MeshAttributes::PositionAttribute },
-			{ "NORMAL", MeshAttributes::NormalAttribute },
-			{ "TEXCOORD_0", MeshAttributes::UVAttribute },
-			{ "WEIGHTS_0", MeshAttributes::JointWeightAttribute },
-			{ "JOINTS_0", MeshAttributes::JointIndexAttribute }
+		static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
+			{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
+			{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
+			{ "TEXCOORD_0",	graphics::MeshAttributes::UVAttribute },
+			{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute },
+			{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute }
 		};
 
-		auto itPrimitives = jsonMesh.find("primitives");
-		if ((itPrimitives != jsonMesh.end()) && !itPrimitives->empty()) {
-			auto itFirstPrimitive = itPrimitives->front();
+		std::shared_ptr<graphics::Mesh> mesh = nullptr;
+		std::shared_ptr<graphics::Material> material = nullptr;
 
-			graphics::VertexArray vao;
-			std::vector<graphics::VertexBuffer> vbos;
-			auto itAttributes = itFirstPrimitive.find("attributes");
-			if (itAttributes != itFirstPrimitive.end()) {
-				for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
-					if (auto itAttributePair = kAttributeMap.find(itAttribute.key()); itAttributePair != kAttributeMap.end()) {
-						std::size_t accessorId = *itAttribute;
-						if (accessorId < mGLTFData.accessors.size()) {
-							const GLTFData::Accessor& a		= mGLTFData.accessors[accessorId];
-							const GLTFData::BufferView& bv	= mGLTFData.bufferViews[a.bufferViewId];
-							const GLTFData::Buffer& b		= mGLTFData.buffers[bv.bufferId];
-							vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
-							vao.addBuffer(
-								static_cast<unsigned int>(itAttributePair->second), vbos.back(),
-								a.componentTypeId, a.normalized, a.componentSize, bv.stride
-							);
-						}
-						else {
-							throw std::runtime_error("Attribute index " + std::to_string(accessorId) + " out of range");
-						}
+		graphics::VertexArray vao;
+		std::vector<graphics::VertexBuffer> vbos;
+		auto itAttributes = jsonPrimitive.find("attributes");
+		if (itAttributes != jsonPrimitive.end()) {
+			for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
+				if (auto itAttributePair = kAttributeMap.find(itAttribute.key()); itAttributePair != kAttributeMap.end()) {
+					std::size_t accessorId = *itAttribute;
+					if (accessorId < mGLTFData.accessors.size()) {
+						const Accessor& a = mGLTFData.accessors[accessorId];
+						const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+						const Buffer& b = mGLTFData.buffers[bv.bufferId];
+						auto& vbo = vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
+
+						// Add the VBO to the VAO
+						vao.bind();
+						vbo.bind();
+						vao.setVertexAttribute(
+							static_cast<unsigned int>(itAttributePair->second),
+							a.componentTypeId, a.normalized, a.componentSize, bv.stride
+						);
+						vao.unbind();
 					}
 					else {
-						throw std::runtime_error("Invalid attribute \"" + itAttribute.key() + "\"");
+						throw std::runtime_error("Attribute index " + std::to_string(accessorId) + " out of range");
 					}
 				}
-			}
-			else {
-				throw std::runtime_error("Missing attributes property");
-			}
-
-			auto itIndices = itFirstPrimitive.find("indices");
-			if (itIndices != itFirstPrimitive.end()) {
-				std::size_t accessorId = *itIndices;
-				if (accessorId < mGLTFData.accessors.size()) {
-					const GLTFData::Accessor& a		= mGLTFData.accessors[accessorId];
-					const GLTFData::BufferView& bv	= mGLTFData.bufferViews[a.bufferViewId];
-					const GLTFData::Buffer& b		= mGLTFData.buffers[bv.bufferId];
-					graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
-
-					auto mesh = std::make_unique<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-					output.meshes.emplace_back(std::move(mesh));
-				}
 				else {
-					throw std::runtime_error("Accessor index " + std::to_string(accessorId) + " out of range");
+					throw std::runtime_error("Invalid attribute \"" + itAttribute.key() + "\"");
 				}
 			}
 		}
 		else {
+			throw std::runtime_error("Missing attributes property");
+		}
+
+		auto itIndices = jsonPrimitive.find("indices");
+		if (itIndices != jsonPrimitive.end()) {
+			std::size_t accessorId = *itIndices;
+			if (accessorId < mGLTFData.accessors.size()) {
+				const Accessor& a = mGLTFData.accessors[accessorId];
+				const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+				const Buffer& b = mGLTFData.buffers[bv.bufferId];
+
+				if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
+					&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
+					&& (a.componentTypeId != graphics::TypeId::UnsignedInt)
+				) {
+					throw std::runtime_error("Accessor " + std::to_string(accessorId) + " must be UByte or UShort or UInt");
+				}
+				if (a.componentSize != 1) {
+					throw std::runtime_error("Accessor " + std::to_string(accessorId) + " component size must be 1");
+				}
+				if (bv.type != BufferView::Type::ElementArray) {
+					throw std::runtime_error("BufferView " + std::to_string(a.bufferViewId) + " type must be ElementArray");
+				}
+
+				graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
+
+				// Bind the IBO to the VAO
+				vao.bind();
+				ibo.bind();
+				vao.unbind();
+
+				mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+			}
+			else {
+				throw std::runtime_error("Accessor index " + std::to_string(accessorId) + " out of range");
+			}
+		}
+
+		auto itMaterial = jsonPrimitive.find("material");
+		if (itMaterial != jsonPrimitive.end()) {
+			std::size_t materialId = *itMaterial;
+			if (materialId < mGLTFData.materials.size()) {
+				material = mGLTFData.materials[materialId];
+			}
+			else {
+				throw std::runtime_error("Material index " + std::to_string(materialId) + " out of range");
+			}
+		}
+
+		output.renderable3Ds.push_back(std::make_unique<graphics::Renderable3D>(mesh, material, nullptr));
+	}
+
+
+	void GLTFReader::parseMesh(const nlohmann::json& jsonMesh, DataHolder& output)
+	{
+		auto itPrimitives = jsonMesh.find("primitives");
+		if (itPrimitives == jsonMesh.end()) {
 			throw std::runtime_error("Missing primitives property");
+		}
+		if (itPrimitives->empty()) {
+			throw std::runtime_error("A mesh must containt at least one primitive");
+		}
+
+		PrimitiveIndices& primitiveIndices = mGLTFData.meshPrimitivesIndices.emplace_back();
+		for (auto jsonPrimitive : *itPrimitives) {
+			parsePrimitive(jsonPrimitive, output);
+			primitiveIndices.push_back(output.renderable3Ds.size() - 1);
+		}
+	}
+
+
+	void GLTFReader::parseCamera(const nlohmann::json& jsonCamera, DataHolder& output) const
+	{
+		auto itType = jsonCamera.find("name");
+		auto itPerspective = jsonCamera.find("perspective");
+		auto itOrthographic = jsonCamera.find("orthographic");
+
+		if (itType != jsonCamera.end()) {
+			if ((*itType == "perspective") && (itPerspective != jsonCamera.end())) {
+				auto itAspectRatio = itPerspective->find("aspectRatio");
+				auto itYFov = itPerspective->find("yfov");
+				auto itZFar = itPerspective->find("zfar");
+				auto itZNear = itPerspective->find("znear");
+				if ((itAspectRatio != jsonCamera.end()) && (itYFov != jsonCamera.end())
+					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
+					) {
+					auto camera = std::make_unique<graphics::Camera>();
+					camera->setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
+					output.cameras.emplace_back(std::move(camera));
+				}
+				else {
+					throw std::runtime_error("Missing perspective properties");
+				}
+			}
+			else if ((*itType == "orthographic") && (itOrthographic != jsonCamera.end())) {
+				auto itXMag = itOrthographic->find("xmag");
+				auto itYMag = itOrthographic->find("ymag");
+				auto itZFar = itOrthographic->find("zfar");
+				auto itZNear = itOrthographic->find("znear");
+				if ((itXMag != jsonCamera.end()) && (itYMag != jsonCamera.end())
+					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
+					) {
+					auto camera = std::make_unique<graphics::Camera>();
+					camera->setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
+					output.cameras.emplace_back(std::move(camera));
+				}
+				else {
+					throw std::runtime_error("Missing orthographic properties");
+				}
+			}
+			else {
+				throw std::runtime_error("Invalid type property \"" + itType->get<std::string>() + "\"");
+			}
+		}
+		else {
+			throw std::runtime_error("Missing type property");
 		}
 	}
 
@@ -576,8 +632,8 @@ namespace se::loaders {
 		auto itRotation = jsonNode.find("rotation");
 		if (itRotation != jsonNode.end()) {
 			std::vector<float> fVector = *itRotation;
-			if (fVector.size() >= 3) {
-				entity->orientation = *reinterpret_cast<glm::vec3*>(fVector.data());
+			if (fVector.size() >= 4) {
+				entity->orientation = *reinterpret_cast<glm::quat*>(fVector.data());
 			}
 		}
 
@@ -603,8 +659,8 @@ namespace se::loaders {
 		auto itMesh = jsonNode.find("mesh");
 		if (itMesh != jsonNode.end()) {
 			std::size_t meshId = *itMesh;
-			if (meshId < output.meshes.size()) {
-				output.entityMeshMap.emplace(entityId, meshId);
+			if (meshId < mGLTFData.meshPrimitivesIndices.size()) {
+				output.entityR3DMap.emplace_back(entityId, mGLTFData.meshPrimitivesIndices[meshId]);
 			}
 			else {
 				throw std::runtime_error("Mesh index " + std::to_string(meshId) + " out of range");

@@ -24,6 +24,7 @@ namespace se::graphics {
 	{
 		if (mBufferId != 0) {
 			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+			SOMBRA_TRACE_LOG << "Deleted IBO " << mBufferId;
 		}
 	}
 
@@ -68,6 +69,8 @@ namespace se::graphics {
 			GL_STATIC_DRAW
 		) );
 		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
+
+		SOMBRA_TRACE_LOG << "Created IBO " << mBufferId;
 	}
 
 }
