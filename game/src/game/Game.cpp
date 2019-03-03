@@ -38,6 +38,7 @@
 
 #include <se/loaders/MeshLoader.h>
 #include <se/loaders/MeshReader.h>
+#include <se/loaders/SceneReader.h>
 #include <se/loaders/MaterialReader.h>
 #include <se/loaders/ImageReader.h>
 #include <se/loaders/FontReader.h>
@@ -207,6 +208,7 @@ namespace game {
 		 * GRAPHICS DATA
 		 *********************************************************************/
 		se::loaders::TerrainLoader terrainLoader(*mGraphicsManager, *mPhysicsManager, *mCollisionManager);
+		auto sceneReader = se::loaders::SceneReader::createSceneReader(se::loaders::SceneFileType::GLTF);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
@@ -220,6 +222,7 @@ namespace game {
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
+		se::loaders::DataHolder dataHolder1;
 
 		try {
 			// Readers
@@ -328,6 +331,10 @@ namespace game {
 			pointLight1 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 			pointLight2 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 
+			// GLTF scenes
+			dataHolder1 = sceneReader->load("res/CATEDRAL.gltf");
+
+			// Fonts
 			se::utils::FileReader fileReader3("res/fonts/arial.fnt");
 			arial = std::move(fontReader.read(fileReader3));
 
@@ -341,8 +348,9 @@ namespace game {
 			}
 		}
 		catch (std::exception& e) {
-			mState = AppState::Error;
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
+			mState = AppState::Error;
+			return;
 		}
 
 		// RenderableTexts

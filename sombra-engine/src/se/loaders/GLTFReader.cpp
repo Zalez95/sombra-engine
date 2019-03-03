@@ -1,140 +1,162 @@
-#include <map>
 #include <sstream>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include "se/loaders/GLTFReader.h"
+#include "GLTFReader.h"
 #include "se/loaders/ImageReader.h"
 
 namespace se::loaders {
 
-	bool GLTFReader::load(std::istream& input)
+	DataHolder GLTFReader::load(const std::string& path)
 	{
-		bool success = false;
+		DataHolder output;
+		mBasePath = path.substr(0, path.find_last_of("/\\") + 1);
 
-		nlohmann::json jsonGLTF;
-		input >> jsonGLTF;
+		try {
+			std::ifstream inputstream(path);
+			if (!inputstream.good()) {
+				throw std::runtime_error("Can't open the GLTF file");
+			}
 
-		if (!input.fail()) {
+			nlohmann::json jsonGLTF;
+			inputstream >> jsonGLTF;
+			if (inputstream.fail()) {
+				throw std::runtime_error("Failed to read the GLTF file");
+			}
+
 			auto itAsset = jsonGLTF.find("asset");
-			if ((itAsset != jsonGLTF.end())
-				&& checkAssetVersion(*itAsset, FileFormat::sVersion, FileFormat::sRevision)
-			) {
-				success = true;
-				LoadedData loadedData;
+			if (itAsset == jsonGLTF.end()) {
+				throw std::runtime_error("GLTF file must have an asset property");
+			}
 
-				auto itBuffers = jsonGLTF.find("buffers");
-				if ((itBuffers != jsonGLTF.end()) && success) {
-					mGLTFData.buffers.reserve(itBuffers->size());
-					for (const nlohmann::json& jsonBuffer : *itBuffers) {
-						if (!parseBuffer(jsonBuffer)) {
-							success = false;
-							break;
-						}
+			if (!checkAssetVersion(*itAsset, FileFormat::sVersion, FileFormat::sRevision)) {
+				throw std::runtime_error("Asset version not supported");
+			}
+
+			if (auto itBuffers = jsonGLTF.find("buffers"); itBuffers != jsonGLTF.end()) {
+				mGLTFData.buffers.reserve(itBuffers->size());
+				for (std::size_t bufferId = 0; bufferId < itBuffers->size(); ++bufferId) {
+					try {
+						parseBuffer( (*itBuffers)[bufferId] );
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the buffers property at buffer " + std::to_string(bufferId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itBufferViews = jsonGLTF.find("bufferViews");
-				if ((itBufferViews != jsonGLTF.end()) && success) {
-					mGLTFData.bufferViews.reserve(itBufferViews->size());
-					for (const nlohmann::json& jsonBufferView : *itBufferViews) {
-						if (!parseBufferView(jsonBufferView)) {
-							success = false;
-							break;
-						}
+			if (auto itBufferViews = jsonGLTF.find("bufferViews"); itBufferViews != jsonGLTF.end()) {
+				mGLTFData.bufferViews.reserve(itBufferViews->size());
+				for (std::size_t bufferViewId = 0; bufferViewId < itBufferViews->size(); ++bufferViewId) {
+					try {
+						parseBufferView( (*itBufferViews)[bufferViewId] );
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the bufferViews property at bufferView " + std::to_string(bufferViewId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itAccessors = jsonGLTF.find("accessors");
-				if ((itAccessors != jsonGLTF.end()) && success) {
-					mGLTFData.accessors.reserve(itAccessors->size());
-					for (const nlohmann::json& jsonAccessor : *itAccessors) {
-						if (!parseAccessor(jsonAccessor)) {
-							success = false;
-							break;
-						}
+			if (auto itAccessors = jsonGLTF.find("accessors"); itAccessors != jsonGLTF.end()) {
+				mGLTFData.accessors.reserve(itAccessors->size());
+				for (std::size_t accessorId = 0; accessorId < itAccessors->size(); ++accessorId) {
+					try {
+						parseAccessor( (*itAccessors)[accessorId] );
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the accessors property at accessor " + std::to_string(accessorId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itImages = jsonGLTF.find("images");
-				if ((itImages != jsonGLTF.end()) && success) {
-					mLoadedData.images.reserve(itImages->size());
-					for (const nlohmann::json& jsonImage : *itImages) {
-						if (!parseImage(jsonImage)) {
-							success = false;
-							break;
-						}
+			if (auto itSamplers = jsonGLTF.find("samplers"); itSamplers != jsonGLTF.end()) {
+				mGLTFData.samplers.reserve(itSamplers->size());
+				for (std::size_t samplerId = 0; samplerId < itSamplers->size(); ++samplerId) {
+					try {
+						parseSampler( (*itSamplers)[samplerId] );
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the samplers property at sampler " + std::to_string(samplerId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itSamplers = jsonGLTF.find("samplers");
-				if ((itSamplers != jsonGLTF.end()) && success) {
-					mGLTFData.samplers.reserve(itSamplers->size());
-					for (const nlohmann::json& jsonSampler : *itSamplers) {
-						if (!parseSampler(jsonSampler)) {
-							success = false;
-							break;
-						}
+			if (auto itImages = jsonGLTF.find("images"); itImages != jsonGLTF.end()) {
+				output.images.reserve(itImages->size());
+				for (std::size_t imageId = 0; imageId < itImages->size(); ++imageId) {
+					try {
+						parseImage((*itImages)[imageId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the images property at image " + std::to_string(imageId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itTextures = jsonGLTF.find("textures");
-				if ((itTextures != jsonGLTF.end()) && success) {
-					mLoadedData.textures.reserve(itTextures->size());
-					for (const nlohmann::json& jsonTexture : *itTextures) {
-						if (!parseTexture(jsonTexture)) {
-							success = false;
-							break;
-						}
+			if (auto itTextures = jsonGLTF.find("textures"); itTextures != jsonGLTF.end()) {
+				output.textures.reserve(itTextures->size());
+				for (std::size_t textureId = 0; textureId < itTextures->size(); ++textureId) {
+					try {
+						parseTexture((*itTextures)[textureId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the textures property at texture " + std::to_string(textureId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itCameras = jsonGLTF.find("cameras");
-				if ((itCameras != jsonGLTF.end()) && success) {
-					mLoadedData.cameras.reserve(itCameras->size());
-					for (const nlohmann::json& jsonCamera : *itCameras) {
-						if (!parseCamera(jsonCamera)) {
-							success = false;
-							break;
-						}
+			if (auto itCameras = jsonGLTF.find("cameras"); itCameras != jsonGLTF.end()) {
+				output.cameras.reserve(itCameras->size());
+				for (std::size_t cameraId = 0; cameraId < itCameras->size(); ++cameraId) {
+					try {
+						parseCamera((*itCameras)[cameraId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the cameras property at camera " + std::to_string(cameraId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itMaterials = jsonGLTF.find("materials");
-				if ((itMaterials != jsonGLTF.end()) && success) {
-					mLoadedData.materials.reserve(itMaterials->size());
-					for (const nlohmann::json& jsonMaterial : *itMaterials) {
-						if (!parseMaterial(jsonMaterial)) {
-							success = false;
-							break;
-						}
+			if (auto itMaterials = jsonGLTF.find("materials"); itMaterials != jsonGLTF.end()) {
+				output.materials.reserve(itMaterials->size());
+				for (std::size_t materialId = 0; materialId < itMaterials->size(); ++materialId) {
+					try {
+						parseMaterial((*itMaterials)[materialId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the materials property at material " + std::to_string(materialId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itMeshes = jsonGLTF.find("meshes");
-				if ((itMeshes != jsonGLTF.end()) && success) {
-					mLoadedData.meshes.reserve(itMaterials->size());
-					for (const nlohmann::json& jsonMesh : *itMeshes) {
-						if (!parseMesh(jsonMesh)) {
-							success = false;
-							break;
-						}
+			if (auto itMeshes = jsonGLTF.find("meshes"); itMeshes != jsonGLTF.end()) {
+				output.meshes.reserve(itMeshes->size());
+				for (std::size_t meshId = 0; meshId < itMeshes->size(); ++meshId) {
+					try {
+						parseMesh((*itMeshes)[meshId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the meshes property at mesh " + std::to_string(meshId) + ": " + e.what());
 					}
 				}
+			}
 
-				auto itNodes = jsonGLTF.find("nodes");
-				if ((itNodes != jsonGLTF.end()) && success) {
-					mLoadedData.entities.reserve(itNodes->size());
-					for (const nlohmann::json& jsonNode : *itNodes) {
-						if (!parseNode(jsonNode)) {
-							success = false;
-							break;
-						}
+			if (auto itNodes = jsonGLTF.find("nodes"); itNodes != jsonGLTF.end()) {
+				output.entities.reserve(itNodes->size());
+				for (std::size_t nodeId = 0; nodeId < itNodes->size(); ++nodeId) {
+					try {
+						parseNode((*itNodes)[nodeId], output);
+					}
+					catch (const std::exception& e) {
+						throw std::runtime_error("Failed to read the nodes property at node " + std::to_string(nodeId) + ": " + e.what());
 					}
 				}
 			}
 		}
+		catch (const std::exception& e) {
+			throw std::runtime_error("Error while parsing the GLTF file \"" + path + "\": " + e.what());
+		}
 
-		return success;
+		return output;
 	}
 
 
@@ -161,10 +183,8 @@ namespace se::loaders {
 	}
 
 
-	bool GLTFReader::parseBuffer(const nlohmann::json& jsonBuffer)
+	void GLTFReader::parseBuffer(const nlohmann::json& jsonBuffer)
 	{
-		bool success = false;
-
 		auto itByteLength = jsonBuffer.find("byteLength");
 		auto itUri = jsonBuffer.find("uri");
 
@@ -172,26 +192,29 @@ namespace se::loaders {
 			std::size_t size = *itByteLength;
 			std::string path = *itUri;
 
-			std::ifstream dataFileStream(path, std::ios::in | std::ios::binary);
+			std::ifstream dataFileStream(mBasePath + path, std::ios::in | std::ios::binary);
 			if (dataFileStream.good()) {
 				GLTFData::Buffer buffer(size);
 				dataFileStream.read(reinterpret_cast<char*>(buffer.data()), size);
-
 				if (!dataFileStream.fail()) {
 					mGLTFData.buffers.emplace_back(std::move(buffer));
-					success = true;
+				}
+				else {
+					throw std::runtime_error("Failed to read buffer file");
 				}
 			}
+			else {
+				throw std::runtime_error("Can't open buffer file");
+			}
 		}
-
-		return success;
+		else {
+			throw std::runtime_error("Missing buffer properties");
+		}
 	}
 
 
-	bool GLTFReader::parseBufferView(const nlohmann::json& jsonBufferView)
+	void GLTFReader::parseBufferView(const nlohmann::json& jsonBufferView)
 	{
-		bool success = false;
-
 		auto itBuffer = jsonBufferView.find("buffer");
 		auto itByteLength = jsonBufferView.find("byteLength");
 		auto itByteOffset = jsonBufferView.find("byteOffset");
@@ -210,18 +233,19 @@ namespace se::loaders {
 
 			if (bufferId < mGLTFData.buffers.size()) {
 				mGLTFData.bufferViews.push_back({ bufferId, byteLength, byteOffset, byteStride, type });
-				success = true;
+			}
+			else {
+				throw std::runtime_error("Buffer index " + std::to_string(bufferId) + " out of range");
 			}
 		}
-
-		return success;
+		else {
+			throw std::runtime_error("Missing BufferView properties");
+		}
 	}
 
 
-	bool GLTFReader::parseAccessor(const nlohmann::json& jsonAccessor)
+	void GLTFReader::parseAccessor(const nlohmann::json& jsonAccessor)
 	{
-		bool success = false;
-
 		auto itBufferView = jsonAccessor.find("bufferView");
 		auto itByteOffset = jsonAccessor.find("byteOffset");
 		auto itComponentType = jsonAccessor.find("componentType");
@@ -232,7 +256,7 @@ namespace se::loaders {
 			&& (itCount != jsonAccessor.end()) && (itType != jsonAccessor.end())
 		) {
 			std::size_t bufferViewId	= *itBufferView;
-			std::size_t byteOffset		= *itByteOffset;
+			std::size_t byteOffset		= (itByteOffset != jsonAccessor.end())? itNormalized->get<std::size_t>() : 0;
 			std::size_t componentType	= *itComponentType;
 			bool normalized				= (itNormalized != jsonAccessor.end())? itNormalized->get<bool>() : false;
 			std::size_t count			= *itCount;
@@ -248,45 +272,35 @@ namespace se::loaders {
 				(type == "VEC2")? 2 : (type == "VEC3")? 3 : (type == "VEC4")? 4 :
 				(type == "MAT2")? 4 : (type == "MAT3")? 9 : (type == "MAT4")? 16 : 0;
 
-			if ((bufferViewId < mGLTFData.bufferViews.size())
-				&& (componentTypeId != graphics::TypeId::Int) && (componentSize > 0)
-			) {
-				mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, componentTypeId, normalized });
-				success = true;
+			if (bufferViewId < mGLTFData.bufferViews.size()) {
+				if ((componentTypeId != graphics::TypeId::Int) && (componentSize > 0)) {
+					mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, componentTypeId, normalized });
+				}
+				else {
+					throw std::runtime_error("Invalid component data");
+				}
+			}
+			else {
+				throw std::runtime_error("BufferView index " + std::to_string(bufferViewId) + " out of range");
 			}
 		}
-
-		return success;
-	}
-
-
-	bool GLTFReader::parseImage(const nlohmann::json& jsonImage)
-	{
-		bool success = false;
-
-		auto itUri = jsonImage.find("uri");
-		if (itUri != jsonImage.end()) {
-			mLoadedData.images.emplace_back();
-			*mLoadedData.images.back() = loaders::ImageReader::read(*itUri, utils::ImageFormat::RGB);
-			success = true;
+		else {
+			throw std::runtime_error("Missing accessor properties");
 		}
-
-		return success;
 	}
 
 
-	bool GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
+	void GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
 	{
-		bool success = true;
 		GLTFData::Sampler sampler;
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
-			if (sampler.enableFilter[idx] && success) {
+			if (sampler.enableFilter[idx]) {
 				switch (filter) {
 					case 9728:	sampler.filters[idx] = graphics::TextureFilter::Nearest;	break;
 					case 9729:	sampler.filters[idx] = graphics::TextureFilter::Linear;		break;
-					default:	success = false;
+					default:	throw std::runtime_error("Invalid filter " + std::to_string(filter));
 				}
 			}
 		};
@@ -300,11 +314,11 @@ namespace se::loaders {
 
 		// Wraps
 		auto doWrap = [&](int wrap, int idx) {
-			if (sampler.enableWrap[idx] && success) {
+			if (sampler.enableWrap[idx]) {
 				switch (wrap) {
 					case 33071:	sampler.wraps[idx] = graphics::TextureWrap::ClampToEdge;	break;
 					case 10497:	sampler.wraps[idx] = graphics::TextureWrap::Repeat;			break;
-					default:	success = false;
+					default:	throw std::runtime_error("Invalid wrap " + std::to_string(wrap));
 				}
 			}
 		};
@@ -315,15 +329,24 @@ namespace se::loaders {
 		sampler.enableWrap[1] = (itWrapT != jsonSampler.end());
 		doWrap(*itWrapS, 0);
 		doWrap(*itWrapT, 1);
-
-		return success;
 	}
 
 
-	bool GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
+	void GLTFReader::parseImage(const nlohmann::json& jsonImage, DataHolder& output) const
 	{
-		bool success = true;
+		auto itUri = jsonImage.find("uri");
+		if (itUri != jsonImage.end()) {
+			output.images.emplace_back();
+			*output.images.back() = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
+		}
+		else {
+			throw std::runtime_error("Missing uri property");
+		}
+	}
 
+
+	void GLTFReader::parseTexture(const nlohmann::json& jsonTexture, DataHolder& output) const
+	{
 		auto texture = std::make_unique<graphics::Texture>();
 
 		auto itSampler = jsonTexture.find("sampler");
@@ -339,17 +362,17 @@ namespace se::loaders {
 				}
 			}
 			else {
-				success = false;
+				throw std::runtime_error("Sampler index " + std::to_string(samplerId) + " out of range");
 			}
 		}
 
 		auto itSource = jsonTexture.find("source");
 		if (itSource != jsonTexture.end()) {
 			std::size_t sourceId = *itSource;
-			if (sourceId < mLoadedData.images.size()){
-				const utils::Image& image = *mLoadedData.images[sourceId];
+			if (sourceId < output.images.size()){
+				const utils::Image& image = *output.images[sourceId];
 
-				graphics::ColorFormat format;
+				graphics::ColorFormat format = graphics::ColorFormat::RGB;
 				switch (image.format)
 				{
 					case utils::ImageFormat::RGB:	format = graphics::ColorFormat::RGB;	break;
@@ -361,20 +384,16 @@ namespace se::loaders {
 				texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, image.width, image.height);
 			}
 			else {
-				success = false;
+				throw std::runtime_error("Source index " + std::to_string(sourceId) + " out of range");
 			}
 		}
 
-		mLoadedData.textures.push_back( std::move(texture) );
-
-		return success;
+		output.textures.push_back( std::move(texture) );
 	}
 
 
-	bool GLTFReader::parseCamera(const nlohmann::json& jsonCamera)
+	void GLTFReader::parseCamera(const nlohmann::json& jsonCamera, DataHolder& output) const
 	{
-		bool success = false;
-
 		auto itType = jsonCamera.find("name");
 		auto itPerspective = jsonCamera.find("perspective");
 		auto itOrthographic = jsonCamera.find("orthographic");
@@ -390,8 +409,10 @@ namespace se::loaders {
 				) {
 					auto camera = std::make_unique<graphics::Camera>();
 					camera->setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
-					mLoadedData.cameras.emplace_back(std::move(camera));
-					success = true;
+					output.cameras.emplace_back(std::move(camera));
+				}
+				else {
+					throw std::runtime_error("Missing perspective properties");
 				}
 			}
 			else if ((*itType == "orthographic") && (itOrthographic != jsonCamera.end())) {
@@ -404,20 +425,24 @@ namespace se::loaders {
 				) {
 					auto camera = std::make_unique<graphics::Camera>();
 					camera->setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
-					mLoadedData.cameras.emplace_back(std::move(camera));
-					success = true;
+					output.cameras.emplace_back(std::move(camera));
+				}
+				else {
+					throw std::runtime_error("Missing orthographic properties");
 				}
 			}
+			else {
+				throw std::runtime_error("Invalid type property \"" + itType->get<std::string>() + "\"");
+			}
 		}
-
-		return success;
+		else {
+			throw std::runtime_error("Missing type property");
+		}
 	}
 
 
-	bool GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
+	void GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial, DataHolder& /*output*/) const
 	{
-		bool success = false;
-
 		auto itName = jsonMaterial.find("name");
 		if (itName != jsonMaterial.end()) {
 			// material->name = *itName;
@@ -469,98 +494,122 @@ namespace se::loaders {
 		if (itDoubleSide != jsonMaterial.end()) {
 			// TODO: bool doubleSide = *itDoubleSide;
 		}
-
-		return success;
 	}
 
 
-	bool GLTFReader::parseMesh(const nlohmann::json& jsonMesh)
+	void GLTFReader::parseMesh(const nlohmann::json& jsonMesh, DataHolder& output) const
 	{
-		static const std::map<std::string, LoadedData::MeshAttributes> kAttributeMap = {
-			{ "POSITION", LoadedData::MeshAttributes::PositionAttribute },
-			{ "NORMAL", LoadedData::MeshAttributes::NormalAttribute },
-			{ "TEXCOORD_0", LoadedData::MeshAttributes::UVAttribute },
-			{ "WEIGHTS_0", LoadedData::MeshAttributes::JointWeightAttribute },
-			{ "JOINTS_0", LoadedData::MeshAttributes::JointIndexAttribute }
+		static const std::map<std::string, MeshAttributes> kAttributeMap = {
+			{ "POSITION", MeshAttributes::PositionAttribute },
+			{ "NORMAL", MeshAttributes::NormalAttribute },
+			{ "TEXCOORD_0", MeshAttributes::UVAttribute },
+			{ "WEIGHTS_0", MeshAttributes::JointWeightAttribute },
+			{ "JOINTS_0", MeshAttributes::JointIndexAttribute }
 		};
 
-		bool success = false;
+		auto itPrimitives = jsonMesh.find("primitives");
+		if ((itPrimitives != jsonMesh.end()) && !itPrimitives->empty()) {
+			auto itFirstPrimitive = itPrimitives->front();
 
-		graphics::VertexArray vao;
-		std::vector<graphics::VertexBuffer> vbos;
-		auto itAttributes = jsonMesh.find("attributes");
-		if (itAttributes != jsonMesh.end()) {
-			for (auto attributePair : kAttributeMap) {
-				auto itAttribute = itAttributes->find(attributePair.first);
-				std::size_t accessorId = (itAttribute != itAttributes->end())? itAttribute->get<std::size_t>() : -1;
+			graphics::VertexArray vao;
+			std::vector<graphics::VertexBuffer> vbos;
+			auto itAttributes = itFirstPrimitive.find("attributes");
+			if (itAttributes != itFirstPrimitive.end()) {
+				for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
+					if (auto itAttributePair = kAttributeMap.find(itAttribute.key()); itAttributePair != kAttributeMap.end()) {
+						std::size_t accessorId = *itAttribute;
+						if (accessorId < mGLTFData.accessors.size()) {
+							const GLTFData::Accessor& a		= mGLTFData.accessors[accessorId];
+							const GLTFData::BufferView& bv	= mGLTFData.bufferViews[a.bufferViewId];
+							const GLTFData::Buffer& b		= mGLTFData.buffers[bv.bufferId];
+							vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
+							vao.addBuffer(
+								static_cast<unsigned int>(itAttributePair->second), vbos.back(),
+								a.componentTypeId, a.normalized, a.componentSize, bv.stride
+							);
+						}
+						else {
+							throw std::runtime_error("Attribute index " + std::to_string(accessorId) + " out of range");
+						}
+					}
+					else {
+						throw std::runtime_error("Invalid attribute \"" + itAttribute.key() + "\"");
+					}
+				}
+			}
+			else {
+				throw std::runtime_error("Missing attributes property");
+			}
+
+			auto itIndices = itFirstPrimitive.find("indices");
+			if (itIndices != itFirstPrimitive.end()) {
+				std::size_t accessorId = *itIndices;
 				if (accessorId < mGLTFData.accessors.size()) {
 					const GLTFData::Accessor& a		= mGLTFData.accessors[accessorId];
 					const GLTFData::BufferView& bv	= mGLTFData.bufferViews[a.bufferViewId];
 					const GLTFData::Buffer& b		= mGLTFData.buffers[bv.bufferId];
-					vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
-					vao.addBuffer(
-						static_cast<int>(attributePair.second), vbos.back(),
-						a.componentTypeId, a.normalized, a.componentSize, bv.stride
-					);
+					graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
+
+					auto mesh = std::make_unique<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+					output.meshes.emplace_back(std::move(mesh));
+				}
+				else {
+					throw std::runtime_error("Accessor index " + std::to_string(accessorId) + " out of range");
 				}
 			}
 		}
-
-		auto itIndices = jsonMesh.find("indices");
-		if (itIndices != jsonMesh.end()) {
-			std::size_t accessorId = *itIndices;
-			const GLTFData::Accessor&	a = mGLTFData.accessors[accessorId];
-			const GLTFData::BufferView&	bv = mGLTFData.bufferViews[a.bufferViewId];
-			const GLTFData::Buffer&		b = mGLTFData.buffers[bv.bufferId];
-			graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
-
-			auto mesh = std::make_unique<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-			mLoadedData.meshes.emplace_back(std::move(mesh));
-			// TODO: renderable - material
-			success = true;
+		else {
+			throw std::runtime_error("Missing primitives property");
 		}
-
-		return success;
 	}
 
 
-	bool GLTFReader::parseNode(const nlohmann::json& jsonNode)
+	void GLTFReader::parseNode(const nlohmann::json& jsonNode, DataHolder& output) const
 	{
-		bool success = false;
-
 		auto itName = jsonNode.find("name");
-		if (itName != jsonNode.end()) {
-			auto entity = std::make_unique<app::Entity>(*itName);
-
-			auto itRotation = jsonNode.find("rotation");
-			if (itRotation != jsonNode.end()) {
-				std::vector<float> fVector = *itRotation;
-				if (fVector.size() >= 3) {
-					entity->orientation = *reinterpret_cast<glm::vec3*>(fVector.data());
-				}
-			}
-
-			auto itScale = jsonNode.find("scale");
-			if (itScale != jsonNode.end()) {
-				std::vector<float> fVector = *itScale;
-				if (fVector.size() >= 3) {
-					entity->scale = *reinterpret_cast<glm::vec3*>(fVector.data());
-				}
-			}
-
-			auto itTranslation = jsonNode.find("translation");
-			if (itTranslation != jsonNode.end()) {
-				std::vector<float> fVector = *itTranslation;
-				if (fVector.size() >= 3) {
-					entity->position = *reinterpret_cast<glm::vec3*>(fVector.data());
-				}
-			}
-
-			mLoadedData.entities.emplace_back(std::move(entity));
-			success = true;
+		if (itName == jsonNode.end()) {
+			throw std::runtime_error("Name property is needed");
 		}
 
-		return success;
+		auto entity = std::make_unique<app::Entity>(*itName);
+
+		auto itRotation = jsonNode.find("rotation");
+		if (itRotation != jsonNode.end()) {
+			std::vector<float> fVector = *itRotation;
+			if (fVector.size() >= 3) {
+				entity->orientation = *reinterpret_cast<glm::vec3*>(fVector.data());
+			}
+		}
+
+		auto itScale = jsonNode.find("scale");
+		if (itScale != jsonNode.end()) {
+			std::vector<float> fVector = *itScale;
+			if (fVector.size() >= 3) {
+				entity->scale = *reinterpret_cast<glm::vec3*>(fVector.data());
+			}
+		}
+
+		auto itTranslation = jsonNode.find("translation");
+		if (itTranslation != jsonNode.end()) {
+			std::vector<float> fVector = *itTranslation;
+			if (fVector.size() >= 3) {
+				entity->position = *reinterpret_cast<glm::vec3*>(fVector.data());
+			}
+		}
+
+		output.entities.emplace_back(std::move(entity));
+		std::size_t entityId = output.entities.size() - 1;
+
+		auto itMesh = jsonNode.find("mesh");
+		if (itMesh != jsonNode.end()) {
+			std::size_t meshId = *itMesh;
+			if (meshId < output.meshes.size()) {
+				output.entityMeshMap.emplace(entityId, meshId);
+			}
+			else {
+				throw std::runtime_error("Mesh index " + std::to_string(meshId) + " out of range");
+			}
+		}
 	}
 
 }

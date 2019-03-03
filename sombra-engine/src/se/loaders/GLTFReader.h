@@ -4,23 +4,17 @@
 #include <string>
 #include <cstddef>
 #include <nlohmann/json_fwd.hpp>
-#include "../app/Entity.h"
-#include "../utils/Image.h"
-#include "../graphics/Texture.h"
-#include "../graphics/3D/Mesh.h"
-#include "../graphics/3D/Camera.h"
-#include "../graphics/3D/Material.h"
+#include "se/loaders/SceneReader.h"
 
 namespace se::loaders {
 
 	/**
 	 * Class GLTFReader, it's used to create meshes from the given texts
 	 */
-	class GLTFReader
+	class GLTFReader : public SceneReader
 	{
 	private:	// Nested types
-		/** Struct FileFormat, it holds the name, version and other data of
-		 * our Entity file format */
+		/** Struct FileFormat, holds the version of a valid GLTF file format */
 		struct FileFormat
 		{
 			static constexpr int sVersion = 2;
@@ -61,51 +55,30 @@ namespace se::loaders {
 			std::vector<Sampler> samplers;
 		};
 
-		/** Struct LoadedData, it holds all the data loaded by the Reader */
-		struct LoadedData
+		/** The attribute indices of the VAOs of the Meshes readed */
+		enum class MeshAttributes : unsigned int
 		{
-			/** The attribute indices of the VAOs */
-			enum class MeshAttributes : unsigned int
-			{
-				PositionAttribute = 0,
-				NormalAttribute,
-				UVAttribute,
-				JointWeightAttribute,
-				JointIndexAttribute
-			};
-
-			std::vector<std::unique_ptr<app::Entity>> entities;
-			std::vector<std::unique_ptr<utils::Image>> images;
-			std::vector<std::unique_ptr<graphics::Mesh>> meshes;
-			std::vector<std::unique_ptr<graphics::Camera>> cameras;
-			std::vector<std::unique_ptr<graphics::Texture>> textures;
-			std::vector<std::unique_ptr<graphics::Material>> materials;
+			PositionAttribute = 0,
+			NormalAttribute,
+			UVAttribute,
+			JointWeightAttribute,
+			JointIndexAttribute
 		};
 
 	private:	// Attributes
 		/** All the validated GLTF raw data */
 		GLTFData mGLTFData;
 
-		/** All the data loaded by the Reader */
-		LoadedData mLoadedData;
-
-		/** The GraphicsManager that will store the readed graphics data */
-		// app::GraphicsManager& mGraphicsManager;
+		/** The base path of the file to parse */
+		std::string mBasePath;
 
 	public:		// Functions
-		/** Creates a new EntityReader
+		/** Parses the GLTF Scene located at the given file
 		 *
-		 * @param	graphicsManager the GraphicsManager where we will store
-		 *			the readed graphics data */
-		// GLTFReader(app::GraphicsManager& graphicsManager) :
-		// 	mGraphicsManager(graphicsManager) {};
-
-		/** Parses the Entities in the given stream
-		 *
-		 * @param	input the input stream to parse
-		 * @return	true if the input was parsed successfully, false
-		 *			otherwise */
-		bool load(std::istream& input);
+		 * @param	path the path to the file to parse
+		 * @return	a DataHolder with the Scene data
+		 * @throw	runtime_error in case of any error while parsing */
+		DataHolder load(const std::string& path) override;
 	private:
 		/** Checks the version of the given GLTF JSON asset
 		 *
@@ -124,7 +97,7 @@ namespace se::loaders {
 		 * @param	jsonBuffer the json object with the buffer data to load
 		 * @return	true if the Buffer was created successfully, false otherwise
 		 * @note	it only supports buffers in GLB files */
-		bool parseBuffer(const nlohmann::json& jsonBuffer);
+		void parseBuffer(const nlohmann::json& jsonBuffer);
 
 		/** Reads the given GLTF JSON BufferView and appends it to the
 		 * GLTFData
@@ -133,7 +106,7 @@ namespace se::loaders {
 		 *			load
 		 * @return	true if the BufferView was loaded successfully, false
 		 *			otherwise */
-		bool parseBufferView(const nlohmann::json& jsonBufferView);
+		void parseBufferView(const nlohmann::json& jsonBufferView);
 
 		/** Loads the Array/Index Buffer from the given GLTF JSON Accessor and
 		 * appends it to the GLTFData
@@ -141,15 +114,7 @@ namespace se::loaders {
 		 * @param	jsonAccessor the json object with the Accessor data to load
 		 * @return	true if the Accessor was loaded successfully, false
 		 *			otherwise */
-		bool parseAccessor(const nlohmann::json& jsonAccessor);
-
-		/** Loads the given GLTF JSON image and appends it to the LoadedData
-		 *
-		 * @param	jsonImage the json object with the Image data to load
-		 * @return	true if the Image was loaded successfully, false
-		 *			otherwise
-		 * @note	bufferView images aren't supported yet */
-		bool parseImage(const nlohmann::json& jsonImage);
+		void parseAccessor(const nlohmann::json& jsonAccessor);
 
 		/** Loads the texture Sampler from the given GLTF JSON Sampler and
 		 * appends it to the GLTFData
@@ -157,55 +122,79 @@ namespace se::loaders {
 		 * @param	jsonSampler the json object with the Sampler data to load
 		 * @return	true if the Sampler was loaded successfully, false
 		 *			otherwise */
-		bool parseSampler(const nlohmann::json& jsonSampler);
+		void parseSampler(const nlohmann::json& jsonSampler);
+
+		/** Loads the given GLTF JSON image and appends it to the DataHolder
+		 *
+		 * @param	jsonImage the json object with the Image data to load
+		 * @param	output the DataHolder where the loaded Image will be stored
+		 * @throw	runtime_error in case of any error while parsing the Image
+		 * @note	bufferView images aren't supported yet */
+		void parseImage(
+			const nlohmann::json& jsonImage, DataHolder& output
+		) const;
 
 		/** Loads the texture from the given GLTF JSON Texture and appends it
-		 * to the LoadedData
+		 * to the DataHolder
 		 *
 		 * @param	jsonTexture the json object with the Texture data to load
-		 * @return	true if the Texture was loaded successfully, false
-		 *			otherwise */
-		bool parseTexture(const nlohmann::json& jsonTexture);
+		 * @param	output the DataHolder where the loaded Texture will be
+		 *			stored
+		 * @throw	runtime_error in case of any error while parsing the
+		 *			Texture */
+		void parseTexture(
+			const nlohmann::json& jsonTexture, DataHolder& output
+		) const;
+
+		/** Creates a new Camera from the given GLTF JSON Camera and appends
+		 * it to the DataHolder
+		 *
+		 * @param	jsonCamera the JSON object with the Camera to parse
+		 * @param	output the DataHolder where the loaded Camera will be stored
+		 * @throw	runtime_error in case of any error while parsing the
+		 *			Camera */
+		void parseCamera(
+			const nlohmann::json& jsonCamera, DataHolder& output
+		) const;
+
+		/** Creates a new Material from the given GLTF JSON Material and appends
+		 * it to the DataHolder
+		 *
+		 * @param	jsonMaterial the JSON object with the Material to parse
+		 * @param	output the DataHolder where the loaded Material will be
+		 *			stored
+		 * @throw	runtime_error in case of any error while parsing the
+		 *			Material */
+		void parseMaterial(
+			const nlohmann::json& jsonMaterial, DataHolder& output
+		) const;
+
+		/** Creates a new Mesh from the given GLTF JSON Mesh and appends it to
+		 * the DataHolder
+		 *
+		 * @param	jsonMesh the JSON object with the Mesh to parse
+		 * @param	output the DataHolder where the loaded Mesh will be stored
+		 * @throw	runtime_error in case of any error while parsing the Mesh
+		 * @note	It only support one primitive per Mesh
+		 * @note	Morph targets arent supported yet */
+		void parseMesh(
+			const nlohmann::json& jsonMesh, DataHolder& output
+		) const;
+
+		/** Creates a new Entity from the given GLTF JSON Node and appends it to
+		 * the DataHolder
+		 *
+		 * @param	jsonNode the JSON object with the Node to parse
+		 * @param	output the DataHolder where the loaded Node will be stored
+		 * @throw	runtime_error in case of any error while parsing the Node */
+		void parseNode(
+			const nlohmann::json& jsonNode, DataHolder& output
+		) const;
 
 		// void loadTextureInfo(const nlohmann::json& jsonObject) {};
 		// void loadAnimation(const nlohmann::json& jsonObject) {};
-		// void loadAsset(const nlohmann::json& jsonObject) {};
 		// void loadExtension(const nlohmann::json& jsonObject) {};
 		// void loadExtras(const nlohmann::json& jsonObject) {};
-
-		/** Creates a new Camera from the given GLTF JSON Camera and appends
-		 * it to the LoadedData
-		 *
-		 * @param	jsonCamera the JSON object with the Camera to parse
-		 * @return	true if the Camera was created successfully, false
-		 *			otherwise */
-		bool parseCamera(const nlohmann::json& jsonCamera);
-
-		/** Creates a new Material from the given GLTF JSON Material and appends
-		 * it to the LoadedData
-		 *
-		 * @param	jsonMaterial the JSON object with the Material to parse
-		 * @return	true if the Material was created successfully, false
-		 *			otherwise */
-		bool parseMaterial(const nlohmann::json& jsonMaterial);
-
-		/** Creates a new Mesh from the given GLTF JSON Mesh and appends it to
-		 * the LoadedData
-		 *
-		 * @param	jsonMesh the JSON object with the Mesh to parse
-		 * @return	true if the Mesh was created successfully, false otherwise
-		 * @note	Morph targets arent supported yet */
-		bool parseMesh(const nlohmann::json& jsonMesh);
-
-		/** Creates a new Entity from the given GLTF JSON Node and appends it to
-		 * the LoadedData
-		 *
-		 * @param	jsonNode the JSON object with the Node to parse
-		 * @return	true if the Entity was created successfully, false
-		 *			otherwise */
-		bool parseNode(const nlohmann::json& jsonNode);
-
-		// void loadSampler(const nlohmann::json& jsonObject) {};
 		// void loadScene(const nlohmann::json& jsonObject) {};
 		// void loadSkin(const nlohmann::json& jsonObject) {};
 	};
