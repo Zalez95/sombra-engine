@@ -30,6 +30,18 @@ namespace se::loaders {
 		static std::pair<collision::HalfEdgeMesh, bool> createHalfEdgeMesh(
 			const RawMesh& rawMesh
 		);
+
+		/** Calculates the Normals of the given vertices
+		 *
+		 * @param	positions a vector with the positions of the vertices
+		 * @param	faceIndices a vector with indices of the vertices that
+		 *			compose the faces of a Mesh
+		 * @return	a vector with the normals of the vertices
+		 * @throw	runtime_error in case of any error while parsing */
+		static std::vector<glm::vec3> calculateNormals(
+			const std::vector<glm::vec3>& positions,
+			const std::vector<unsigned short>& faceIndices
+		);
 	};
 
 }

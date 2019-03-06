@@ -96,4 +96,32 @@ namespace se::loaders {
 		return std::pair(heMesh, allFacesLoaded && collision::validateMesh(heMesh).first);
 	}
 
+
+	std::vector<glm::vec3> MeshLoader::calculateNormals(
+		const std::vector<glm::vec3>& positions,
+		const std::vector<unsigned short>& faceIndices
+	) {
+		std::vector<glm::vec3> normals(positions.size(), glm::vec3(0.0f));
+
+		// Sum to the normal of every vertex, the normal of the faces
+		// which it belongs
+		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
+			// Get the normal of triangle
+			const glm::vec3& v1 = positions[faceIndices[i]] - positions[faceIndices[i+1]];
+			const glm::vec3& v2 = positions[faceIndices[i]] - positions[faceIndices[i+2]];
+			glm::vec3 normal = glm::cross(v1, v2);
+
+			normals[faceIndices[i]]		+= normal;
+			normals[faceIndices[i+1]]	+= normal;
+			normals[faceIndices[i+2]]	+= normal;
+		}
+
+		// Normalize the normal vector of every vertex
+		for (glm::vec3& normal : normals) {
+			normal = glm::normalize(normal);
+		}
+
+		return normals;
+	}
+
 }

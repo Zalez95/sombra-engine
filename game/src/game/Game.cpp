@@ -37,9 +37,7 @@
 #include <se/audio/Source.h>
 
 #include <se/loaders/MeshLoader.h>
-#include <se/loaders/MeshReader.h>
 #include <se/loaders/SceneReader.h>
-#include <se/loaders/MaterialReader.h>
 #include <se/loaders/ImageReader.h>
 #include <se/loaders/FontReader.h>
 #include <se/loaders/TerrainLoader.h>
@@ -208,14 +206,10 @@ namespace game {
 		 * GRAPHICS DATA
 		 *********************************************************************/
 		se::loaders::TerrainLoader terrainLoader(*mGraphicsManager, *mPhysicsManager, *mCollisionManager);
-		auto sceneReader = se::loaders::SceneReader::createSceneReader(se::loaders::SceneFileType::GLTF);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
 		std::shared_ptr<se::graphics::Mesh> mesh1 = nullptr, mesh2 = nullptr;
-		std::vector<std::shared_ptr<se::loaders::RawMesh>> fileRawMeshes;
-		std::vector<std::shared_ptr<se::graphics::Mesh>> fileMeshes;
-		std::vector<std::shared_ptr<se::graphics::Material>> fileMaterials;
 		std::shared_ptr<se::utils::Image> heightMap1 = nullptr;
 		std::shared_ptr<se::graphics::Texture> texture1 = nullptr, texture2 = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
@@ -227,9 +221,8 @@ namespace game {
 		try {
 			// Readers
 			AudioFile<float> audioFile;
-			se::loaders::MeshReader meshReader;
-			se::loaders::MaterialReader materialReader;
 			se::loaders::FontReader fontReader;
+			auto sceneReader = se::loaders::SceneReader::createSceneReader(se::loaders::SceneFileType::GLTF);
 
 			// Meshes
 			se::loaders::RawMesh rawMesh1("Cube");
@@ -257,7 +250,7 @@ namespace game {
 				2, 3, 6,
 				3, 7, 6
 			};
-			rawMesh1.normals = meshReader.calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
+			rawMesh1.normals = se::loaders::MeshLoader::calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
 			rawMesh1.uvs = std::vector<glm::vec2>(8);
 			mesh1 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh1));
 
@@ -286,18 +279,8 @@ namespace game {
 			};
 			mesh2 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh2));
 
-			se::utils::FileReader fileReader1("res/meshes/test.semsh");
-			auto loadedRawMeshes = meshReader.read(fileReader1);
-			for (auto& meshRawUPtr : loadedRawMeshes) {
-				fileRawMeshes.push_back( std::move(meshRawUPtr) );
-			}
-
-			// Materials
-			se::utils::FileReader fileReader2("res/materials/game_materials.semat");
-			auto loadedMaterials = materialReader.read(fileReader2);
-			for (std::unique_ptr<se::graphics::Material>& materialUPtr : loadedMaterials) {
-				fileMaterials.push_back( std::move(materialUPtr) );
-			}
+			// GLTF scenes
+			dataHolder1 = sceneReader->load("res/meshes/test.gltf");
 
 			// Images
 			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png", se::utils::ImageFormat::RGBA);
@@ -330,9 +313,6 @@ namespace game {
 			se::graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
 			pointLight1 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
 			pointLight2 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
-
-			// GLTF scenes
-			dataHolder1 = sceneReader->load("res/CATEDRAL.gltf");
 
 			// Fonts
 			se::utils::FileReader fileReader3("res/fonts/arial.fnt");
@@ -388,7 +368,7 @@ namespace game {
 		auto plane = std::make_unique<se::app::Entity>("plane");
 		plane->position = glm::vec3(-5.0f, 1.0f, -5.0f);
 
-		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, fileMaterials[4], texture2);
+		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, nullptr, texture2);
 		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
 
 		mEntities.push_back(std::move(plane));
@@ -421,7 +401,7 @@ namespace game {
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, fileMaterials[i], nullptr);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr, nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
@@ -466,58 +446,10 @@ namespace game {
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, fileMaterials[4], nullptr);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr, nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
-		}
-
-		// Buildings
-		for (std::size_t i = 0; i < fileRawMeshes.size(); ++i) {
-			const se::loaders::RawMesh& rawMesh = *fileRawMeshes[i];
-			if (i == 0) {
-				auto building = std::make_unique<se::app::Entity>("building");
-				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
-
-				auto tmpPair = se::loaders::MeshLoader::createHalfEdgeMesh(rawMesh);
-				qh.calculate(tmpPair.first);
-				auto rigidBody2 = std::make_unique<se::physics::RigidBody>();
-				auto collider2 = std::make_unique<se::collision::ConvexPolyhedron>(qh.getMesh());
-				mCollisionManager->addEntity(building.get(), std::move(collider2), rigidBody2.get());
-				mPhysicsManager->addEntity(building.get(), std::move(rigidBody2));
-
-				std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
-					"tmp_material",
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					0.2f
-				});
-				auto tmpRawMesh = createRawMesh(qh.getMesh());
-				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
-				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
-
-				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
-
-				mEntities.push_back(std::move(building));
-			}
-			else {
-				auto building = std::make_unique<se::app::Entity>("building");
-				building->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
-
-				std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
-					"tmp_material",
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-					0.2f
-				});
-				auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh));
-				auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr);
-				mGraphicsManager->addEntity(building.get(), std::move(renderable3D2));
-
-				mEntities.push_back(std::move(building));
-			}
 		}
 
 		// Lights
@@ -531,7 +463,7 @@ namespace game {
 		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
 		mEntities.push_back(std::move(eL2));
 
-		// GLTF scene
+		// GLTF meshes
 		for (auto& pair : dataHolder1.entityR3DMap) {
 			for (std::size_t iRenderable3D : pair.second) {
 				mGraphicsManager->addEntity(dataHolder1.entities[pair.first].get(), std::move(dataHolder1.renderable3Ds[iRenderable3D]));
@@ -543,6 +475,9 @@ namespace game {
 
 	void Game::end()
 	{
+		mPhysicsEngine->getConstraintManager().removeConstraint(constraint);
+		delete constraint;
+
 		for (EntityUPtr& entity : mEntities) {
 			mInputManager->removeEntity(entity.get());
 			mPhysicsManager->removeEntity(entity.get());
@@ -550,7 +485,6 @@ namespace game {
 			mGraphicsManager->removeEntity(entity.get());
 		}
 		mEntities.clear();
-		//delete constraint;
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
 	}
