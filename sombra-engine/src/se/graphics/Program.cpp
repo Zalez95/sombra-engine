@@ -29,7 +29,7 @@ namespace se::graphics {
 			char* infoLog = new char[infoLogLength + 1];
 			GL_WRAP( glGetProgramInfoLog(mProgramId, infoLogLength, NULL, infoLog) );
 
-			std::string strInfoLog = "Failed to compile the program\n" + std::string(infoLog);
+			std::string strInfoLog = "Failed to link the program\n" + std::string(infoLog);
 			delete[] infoLog;
 
 			throw std::runtime_error(strInfoLog);
@@ -39,6 +39,8 @@ namespace se::graphics {
 		for (const Shader* shader: shaders) {
 			GL_WRAP( glDetachShader(mProgramId, shader->getShaderId()) );
 		}
+
+		SOMBRA_TRACE_LOG << "Created Program " << mProgramId;
 	}
 
 
@@ -55,6 +57,7 @@ namespace se::graphics {
 
 		if (mProgramId != 0) {
 			GL_WRAP( glDeleteProgram(mProgramId) );
+			SOMBRA_TRACE_LOG << "Deleted Program " << mProgramId;
 		}
 	}
 

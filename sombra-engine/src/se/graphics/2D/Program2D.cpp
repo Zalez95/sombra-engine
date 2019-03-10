@@ -53,14 +53,14 @@ namespace se::graphics {
 
 		std::string vertexShaderText;
 		std::stringstream vertexShaderStream;
-		reader.open("res/shaders/2D.vert");
+		reader.open("res/shaders/vertex2D.glsl");
 		vertexShaderStream << reader.rdbuf();
 		vertexShaderText = vertexShaderStream.str();
 		reader.close();
 
 		std::string fragmentShaderText;
 		std::stringstream fragmentShaderStream;
-		reader.open("res/shaders/2D.frag");
+		reader.open("res/shaders/fragment2D.glsl");
 		fragmentShaderStream << reader.rdbuf();
 		fragmentShaderText = fragmentShaderStream.str();
 		reader.close();

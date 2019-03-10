@@ -3,6 +3,20 @@
 
 namespace se::graphics {
 
+	class Texture;
+
+
+	/** Enum FrameBufferTarget, it represents the different operations that a
+	 * FrameBuffer can be bound to, so the next operation will affect the bound
+	 * FrameBuffer */
+	enum FrameBufferTarget
+	{
+		Read,
+		Write,
+		Both
+	};
+
+
 	/**
 	 * Class FrameBuffer, it's used for creating, binding and unbinding Frame
 	 * Buffer Objects
@@ -26,11 +40,20 @@ namespace se::graphics {
 		FrameBuffer& operator=(const FrameBuffer& other) = delete;
 		FrameBuffer& operator=(FrameBuffer&& other);
 
-		/** Binds the Frame Buffer Object for reading data from it */
-		void bindForReading() const;
+		/** Attachs the given Texture to the current FrameBuffer so the result
+		 * of the write operations will be stored into that Texture
+		 *
+		 * @param	texture the Texture to Attach to the FrameBuffer */
+		void attach(const Texture& texture) const;
 
-		/** Binds the Frame Buffer Object for writing data to it */
-		void bindForWriting() const;
+		/** Binds the Frame Buffer Object
+		 *
+		 * @param	target the operation that we want to bind the FrameBuffer
+		 *			to */
+		void bind(FrameBufferTarget target = FrameBufferTarget::Both) const;
+
+		/** Unbinds the Frame Buffer Object */
+		void unbind() const;
 	};
 
 }

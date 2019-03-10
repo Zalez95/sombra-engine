@@ -97,7 +97,7 @@ namespace se::graphics {
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.constant, att.constant);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.linear, att.linear);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.exponential, att.exponential);
-			mProgram->setUniform(mUniformLocations.pointLights[i].position, position);
+			mProgram->setUniform(mUniformLocations.pointLightsPositions[i], position);
 		}
 	}
 
@@ -109,14 +109,14 @@ namespace se::graphics {
 
 		std::string vertexShaderText;
 		std::stringstream vertexShaderStream;
-		reader.open("res/shaders/3D.vert");
+		reader.open("res/shaders/vertex3D.glsl");
 		vertexShaderStream << reader.rdbuf();
 		vertexShaderText = vertexShaderStream.str();
 		reader.close();
 
 		std::string fragmentShaderText;
 		std::stringstream fragmentShaderStream;
-		reader.open("res/shaders/3D.frag");
+		reader.open("res/shaders/fragment3D.glsl");
 		fragmentShaderStream << reader.rdbuf();
 		fragmentShaderText = fragmentShaderStream.str();
 		reader.close();
@@ -163,8 +163,8 @@ namespace se::graphics {
 			mUniformLocations.pointLights[i].attenuation.exponential = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].attenuation.exponential").c_str()
 			);
-			mUniformLocations.pointLights[i].position = mProgram->getUniformLocation(
-				("uPointLights[" + std::to_string(i) + "].position").c_str()
+			mUniformLocations.pointLightsPositions[i] = mProgram->getUniformLocation(
+				("uPointLightsPositions[" + std::to_string(i) + "]").c_str()
 			);
 		}
 	}

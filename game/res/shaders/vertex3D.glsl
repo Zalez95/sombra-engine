@@ -8,7 +8,7 @@ const int MAX_POINT_LIGHTS = 4;
 // Input data
 layout (location = 0) in vec3 aVertexPosition;			// Position attribute
 layout (location = 1) in vec3 aVertexNormal;			// Normal attribute
-layout (location = 2) in vec2 aVertexUV;				// Vertex UV Coords attribute
+layout (location = 2) in vec2 aVertexTexCoord0;			// Vertex Texture Coords attribute
 
 // Uniform variables
 uniform mat4 uModelMatrix;								// Model space to World space Matrix
@@ -23,7 +23,7 @@ out VertexData
 {
 	vec3 position;
 	vec3 normal;
-	vec2 uv;
+	vec2 texCoord0;
 } vsVertex;
 
 flat out int vsNumPointLights;
@@ -42,7 +42,7 @@ void main()
 	// Calculate the Vertex data for the fragment shader in view space
 	vsVertex.position	= vertexView.xyz;
 	vsVertex.normal		= normalize(inverseTranspose * vec4(aVertexNormal, 0.0f)).xyz;
-	vsVertex.uv			= aVertexUV;
+	vsVertex.texCoord0	= aVertexTexCoord0;
 
 	// Calculate the PointLights coordinates in view space
 	vsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;

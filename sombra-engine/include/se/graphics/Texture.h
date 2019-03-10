@@ -28,6 +28,9 @@ namespace se::graphics {
 		Texture& operator=(const Texture& other) = delete;
 		Texture& operator=(Texture&& other);
 
+		/** @return the id of the Texture */
+		inline unsigned int getTextureId() const { return mTextureId; };
+
 		/** Sets the filtering method used by the texture
 		 *
 		 * @param	minification the method used in the minification process

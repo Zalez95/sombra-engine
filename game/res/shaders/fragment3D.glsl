@@ -8,13 +8,22 @@ const vec2	INVERT_Y_TEXTURE	= vec2(1.0, -1.0);
 
 
 // ____ DATATYPES ____
+struct PBRMetallicRoughness
+{
+	vec4 baseColorFactor;
+	sampler2D baseColorTexture;
+	float metallicFactor;
+	float roughnessFactor;
+	sampler2D metallicRoughnessTexture;
+};
+
 struct Material
 {
-	vec3	ambientColor;
-	vec3	diffuseColor;
-	vec3	specularColor;
-	float	shininess;
-	float	transparency;
+	PBRMetallicRoughness pbrMetallicRoughness;
+	sampler2D normalTexture;
+	sampler2D occlusionTexture;
+	sampler2D emissiveTexture;
+	vec3 emissiveFactor;
 };
 
 struct BaseLight
@@ -43,7 +52,7 @@ in VertexData
 {
 	vec3 position;
 	vec3 normal;
-	vec2 uv;
+	vec2 texCoord0;
 } vsVertex;
 
 flat in int vsNumPointLights;
@@ -51,7 +60,6 @@ in vec3 vsPointLightsPositions[MAX_POINT_LIGHTS];
 
 // Uniform variables
 uniform Material	uMaterial;
-uniform sampler2D	uColorTexture;
 uniform PointLight	uPointLights[MAX_POINT_LIGHTS];
 
 // Output data
@@ -59,7 +67,7 @@ out vec4 glFragColor;
 
 
 // ____ FUNCTION DEFINITIONS ____
-vec3 calcBlinnPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDirection)
+/*vec3 calcBlinnPhongReflection(BaseLight light, vec3 lightDirection, vec3 viewDirection)
 {
 	// Calculate the ambient color
 	vec3 ambientColor	= uMaterial.ambientColor * SCENE_AMBIENT_COLOR;
@@ -118,13 +126,13 @@ vec3 calcDirectLight()
 	}
 
 	return totalLight;
-}
+}*/
 
 
 // ____ MAIN PROGRAM ____
 void main()
 {
-	vec4 lightColor = vec4(calcDirectLight(), 1.0);
-	vec4 texColor	= texture(uColorTexture, INVERT_Y_TEXTURE * vsVertex.uv);
-	glFragColor = pow(texColor + lightColor, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
+	//vec4 lightColor = vec4(calcDirectLight(), 1.0);
+	vec4 texColor	= vec4(0);//texture(uColorTexture, INVERT_Y_TEXTURE * vsVertex.texCoord0);
+	glFragColor = pow(texColor/* + lightColor*/, vec4(1.0 / SCREEN_GAMMA));	// Gamma correction
 }

@@ -1,6 +1,7 @@
 #include <string>
 #include <stdexcept>
 #include "se/graphics/GLWrapper.h"
+#include "se/graphics/Texture.h"
 #include "se/graphics/buffers/FrameBuffer.h"
 
 namespace se::graphics {
@@ -52,15 +53,31 @@ namespace se::graphics {
 	}
 
 
-	void FrameBuffer::bindForReading() const
+	void FrameBuffer::attach(const Texture& texture) const
 	{
-		GL_WRAP( glBindFramebuffer(GL_READ_FRAMEBUFFER, mBufferId) );
+		GL_WRAP( glFramebufferTexture2D(
+			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D, texture.getTextureId(), 0
+		) );
 	}
 
 
-	void FrameBuffer::bindForWriting() const
+	void FrameBuffer::bind(FrameBufferTarget target) const
 	{
-		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferId) );
+		GLenum glTarget = GL_FRAMEBUFFER;
+		switch (target) {
+			case FrameBufferTarget::Read:	glTarget = GL_READ_FRAMEBUFFER;	break;
+			case FrameBufferTarget::Write:	glTarget = GL_DRAW_FRAMEBUFFER;	break;
+			case FrameBufferTarget::Both:	glTarget = GL_FRAMEBUFFER;		break;
+		}
+
+		GL_WRAP( glBindFramebuffer(glTarget, mBufferId) );
+	}
+
+
+	void FrameBuffer::unbind() const
+	{
+		GL_WRAP( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
 	}
 
 }

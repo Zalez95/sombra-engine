@@ -74,9 +74,8 @@ namespace se::graphics {
 					unsigned int linear;
 					unsigned int exponential;
 				} attenuation;
-
-				unsigned int position;
 			} pointLights[kMaxPointLights];
+			unsigned int pointLightsPositions[kMaxPointLights];
 		} mUniformLocations;
 
 	public:		// Functions

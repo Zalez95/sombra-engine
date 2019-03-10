@@ -70,6 +70,7 @@ namespace se::window {
 		glfwMakeContextCurrent(mWindow);
 		glfwSetWindowUserPointer(mWindow, this);
 		glfwSwapInterval(0);
+		glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 		// 3. Set Input event callbacks
 		glfwSetErrorCallback(error_callback);
