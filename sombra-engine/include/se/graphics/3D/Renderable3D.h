@@ -3,13 +3,11 @@
 
 #include <memory>
 #include <glm/glm.hpp>
-#include "../PrimitiveTypes.h"
 
 namespace se::graphics {
 
 	class Mesh;
 	struct Material;
-	class Texture;
 
 
 	/**
@@ -21,7 +19,6 @@ namespace se::graphics {
 	private:	// Nested types
 		typedef std::shared_ptr<Mesh> MeshSPtr;
 		typedef std::shared_ptr<Material> MaterialSPtr;
-		typedef std::shared_ptr<Texture> TextureSPtr;
 
 	private:	// Attributes
 		/** The Mesh of the Renderable3D */
@@ -29,12 +26,6 @@ namespace se::graphics {
 
 		/** The Material of the Renderable3D */
 		MaterialSPtr mMaterial;
-
-		/** The Texture of the Renderable3D */
-		TextureSPtr mTexture;
-
-		/** The render flags of the materials */
-		unsigned char mRenderFlags;
 
 		/** The matrix that transforms the coordinates of the Mesh from
 		 * Local space to World space */
@@ -45,22 +36,18 @@ namespace se::graphics {
 		 *
 		 * @param	mesh a pointer to the Mesh of the Renderable3D
 		 * @param	material a pointer to the Material of the Renderable3D
-		 * @param	texture a pointer to the Texture of the Renderable3D
-		 * @param	renderFlags the render flags of the Renderable3D */
+		 * @param	modelMatrix the model matrix of the Renderable3D, by default
+		 *			the identity matrix */
 		Renderable3D(
-			MeshSPtr mesh, MaterialSPtr material, TextureSPtr texture,
-			unsigned char renderFlags = RenderFlags::DEFAULT
-		) : mMesh(mesh), mMaterial(material), mTexture(texture),
-			mRenderFlags(renderFlags), mModelMatrix(1.0f) {};
+			MeshSPtr mesh, MaterialSPtr material,
+			const glm::mat4& modelMatrix = glm::mat4(1.0f)
+		) : mMesh(mesh), mMaterial(material), mModelMatrix(modelMatrix) {};
 
 		/** @return a pointer to the Mesh of the Renderable3D */
 		inline const MeshSPtr getMesh() const { return mMesh; };
 
 		/** @return a pointer to the Material of the Renderable3D */
 		inline const MaterialSPtr getMaterial() const { return mMaterial; };
-
-		/** @return a pointer to the Texture of the Renderable3D */
-		inline const TextureSPtr getTexture() const { return mTexture; };
 
 		/** @return the model matrix of the Renderable3D */
 		inline glm::mat4 getModelMatrix() const { return mModelMatrix; };
@@ -70,9 +57,6 @@ namespace se::graphics {
 		 * @param	modelMatrix the new model matrix of the Renderable3D */
 		inline void setModelMatrix(const glm::mat4& modelMatrix)
 		{ mModelMatrix = modelMatrix; };
-
-		/** @return the RenderFlags of the Renderable3D */
-		inline unsigned char getRenderFlags() const { return mRenderFlags; };
 	};
 
 }

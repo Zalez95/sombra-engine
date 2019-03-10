@@ -31,11 +31,11 @@ namespace se::loaders {
 			vao.unbind();
 		}
 
-		if (!rawMesh.uvs.empty()) {
-			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.uvs.front()), 2 * rawMesh.uvs.size());
+		if (!rawMesh.texCoords.empty()) {
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.texCoords.front()), 2 * rawMesh.texCoords.size());
 			vao.bind();
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::UVAttribute), TypeId::Float, false, 2, 0);
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TexCoordAttribute0), TypeId::Float, false, 2, 0);
 			vao.unbind();
 		}
 

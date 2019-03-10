@@ -251,7 +251,7 @@ namespace game {
 				3, 7, 6
 			};
 			rawMesh1.normals = se::loaders::MeshLoader::calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
-			rawMesh1.uvs = std::vector<glm::vec2>(8);
+			rawMesh1.texCoords = std::vector<glm::vec2>(8);
 			mesh1 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh1));
 
 			se::loaders::RawMesh rawMesh2("Plane");
@@ -267,7 +267,7 @@ namespace game {
 				{0.0f,	0.0f,	1.0f},
 				{0.0f,	0.0f,	1.0f}
 			};
-			rawMesh2.uvs = {
+			rawMesh2.texCoords = {
 				{0.0f,	0.0f},
 				{1.0f,	0.0f},
 				{0.0f,	1.0f},
@@ -368,7 +368,7 @@ namespace game {
 		auto plane = std::make_unique<se::app::Entity>("plane");
 		plane->position = glm::vec3(-5.0f, 1.0f, -5.0f);
 
-		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, nullptr, texture2);
+		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, nullptr);
 		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
 
 		mEntities.push_back(std::move(plane));
@@ -401,7 +401,7 @@ namespace game {
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr, nullptr);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
@@ -417,17 +417,17 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f);
 
-			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
+			/*std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
 				0.2f
-			});
+			});*/
 
 			auto tmpRawMesh = createRawMesh(heMesh);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial, nullptr, se::graphics::RenderFlags::WIREFRAME | se::graphics::RenderFlags::DISABLE_FACE_CULLING);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, nullptr);
 			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(tubeSlice));
@@ -446,7 +446,7 @@ namespace game {
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr, nullptr);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));

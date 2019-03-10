@@ -25,7 +25,7 @@ namespace se::loaders {
 
 		// Graphics data
 		auto graphicsMesh = std::make_shared<graphics::Mesh>( MeshLoader::createGraphicsMesh(*rawMesh) );
-		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, nullptr, nullptr);
+		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, nullptr);
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D));
 
 		// Physics data
@@ -56,7 +56,7 @@ namespace se::loaders {
 		auto rawMesh = std::make_unique<RawMesh>(name);
 		rawMesh->positions.reserve(3 * count);
 		rawMesh->normals.reserve(3 * count);
-		rawMesh->uvs.reserve(2 * count);
+		rawMesh->texCoords.reserve(2 * count);
 		rawMesh->faceIndices.reserve(6 * (xSize - 1) * (zSize - 1));
 
 		for (std::size_t z = 0; z < zSize; ++z) {
@@ -68,8 +68,8 @@ namespace se::loaders {
 				// Set the position
 				rawMesh->positions.emplace_back(xPos, yPos, zPos);
 
-				// Set the uvs
-				rawMesh->uvs.emplace_back(static_cast<float>(x) / xSize, static_cast<float>(z) / zSize);
+				// Set the texCoords
+				rawMesh->texCoords.emplace_back(static_cast<float>(x) / xSize, static_cast<float>(z) / zSize);
 
 				if ((x > 0) && (z > 0)) {
 					// Calculate the indices of the vertices that creates the faces

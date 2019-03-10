@@ -15,7 +15,8 @@ namespace se::graphics {
 	{
 		PositionAttribute = 0,
 		NormalAttribute,
-		UVAttribute,
+		TexCoordAttribute0,
+		TexCoordAttribute1,
 		JointWeightAttribute,
 		JointIndexAttribute
 	};

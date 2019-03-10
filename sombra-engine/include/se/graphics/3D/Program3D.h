@@ -18,6 +18,15 @@ namespace se::graphics {
 	 */
 	class Program3D
 	{
+	private:	// Nested types
+		struct TextureUnits {
+			static constexpr unsigned int kBaseColor			= 0;
+			static constexpr unsigned int kMetallicRoughness	= 1;
+			static constexpr unsigned int kNormal				= 2;
+			static constexpr unsigned int kOcclusion			= 3;
+			static constexpr unsigned int kEmissive				= 4;
+		};
+
 	private:	// Attributes
 		/** The maximum number of point lights in the program */
 		static constexpr int kMaxPointLights = 4;
@@ -33,36 +42,41 @@ namespace se::graphics {
 			unsigned int viewMatrix;
 			unsigned int projectionMatrix;
 
-			unsigned int colorTexture;
-
 			struct
 			{
-				unsigned int ambientColor;
-				unsigned int diffuseColor;
-				unsigned int specularColor;
-				unsigned int shininess;
+				struct
+				{
+					unsigned int baseColorFactor;
+					unsigned int baseColorTexture;
+					unsigned int metallicFactor;
+					unsigned int roughnessFactor;
+					unsigned int metallicRoughnessTexture;
+				} pbrMetallicRoughness;
+
+				unsigned int normalTexture;
+				unsigned int occlusionTexture;
+				unsigned int emissiveTexture;
+				unsigned int emissiveFactor;
 			} material;
-
-			struct BaseLight
-			{
-				unsigned int diffuseColor;
-				unsigned int specularColor;
-			};
-
-			struct Attenuation
-			{
-				unsigned int constant;
-				unsigned int linear;
-				unsigned int exponential;
-			};
 
 			unsigned int numPointLights;
 			struct
 			{
-				BaseLight baseLight;
-				Attenuation attenuation;
+				struct
+				{
+					unsigned int diffuseColor;
+					unsigned int specularColor;
+				} baseLight;
+
+				struct
+				{
+					unsigned int constant;
+					unsigned int linear;
+					unsigned int exponential;
+				} attenuation;
+
+				unsigned int position;
 			} pointLights[kMaxPointLights];
-			unsigned int pointLightsPositions[kMaxPointLights];
 		} mUniformLocations;
 
 	public:		// Functions
@@ -96,9 +110,6 @@ namespace se::graphics {
 		 * @param	projectionMatrix the matrix that we want to set as the
 		 *			Projection matrix in the shaders */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
-
-		/** TODO: complete documentation */
-		void setColorTexture(int unit);
 
 		/** Sets the uniform variables for the given material
 		 *

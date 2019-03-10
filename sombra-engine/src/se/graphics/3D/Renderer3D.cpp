@@ -5,6 +5,7 @@
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/3D/Renderable3D.h"
+#include "se/graphics/PrimitiveTypes.h"
 
 namespace se::graphics {
 
@@ -35,9 +36,8 @@ namespace se::graphics {
 
 			auto mesh				= renderable3D->getMesh();
 			auto material			= renderable3D->getMaterial();
-			auto texture			= renderable3D->getTexture();
 			glm::mat4 modelMatrix	= renderable3D->getModelMatrix();
-			unsigned char flags		= renderable3D->getRenderFlags();
+			unsigned char flags		= 0;//renderable3D->getRenderFlags();
 
 			if (!mesh) { continue; }
 
@@ -45,10 +45,6 @@ namespace se::graphics {
 			mProgram.setModelMatrix(modelMatrix);
 			if (material) {
 				mProgram.setMaterial(*material);
-			}
-			if (texture) {
-				mProgram.setColorTexture(0);
-				texture->bind(0);
 			}
 
 			// Set the mesh transparency
@@ -91,11 +87,6 @@ namespace se::graphics {
 			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
 				GL_WRAP( glEnable(GL_DEPTH_TEST) );
 				GL_WRAP( glDisable(GL_BLEND) );
-			}
-
-			// Unbind the program data
-			if (texture) {
-				texture->unbind();
 			}
 		}
 

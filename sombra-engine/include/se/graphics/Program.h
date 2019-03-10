@@ -47,6 +47,9 @@ namespace se::graphics {
 		void setUniform(const char* name,		int value) const;
 		void setUniform(unsigned int location,	int value) const;
 
+		void setUniform(const char* name,		unsigned int value) const;
+		void setUniform(unsigned int location,	unsigned int value) const;
+
 		void setUniform(const char* name,		float value) const;
 		void setUniform(unsigned int location,	float value) const;
 

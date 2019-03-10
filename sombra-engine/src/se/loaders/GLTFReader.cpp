@@ -391,65 +391,128 @@ namespace se::loaders {
 			}
 		}
 
-		mGLTFData.textures.push_back( std::move(texture) );
+		mGLTFData.textures.emplace_back(std::move(texture));
 	}
 
 
 	void GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
 	{
+		auto material = std::make_unique<graphics::Material>();
+
 		auto itName = jsonMaterial.find("name");
 		if (itName != jsonMaterial.end()) {
-			// material->name = *itName;
+			material->name = *itName;
 		}
 
-		// TODO: auto itExtensions = jsonMaterial.find("extensions");
-		// TODO: auto itExtras = jsonMaterial.find("extras");
-		// TODO: auto itPBRMetallicRoughness = jsonMaterial.find("pbrMetallicRoughness");
+		auto itPBRMetallicRoughness = jsonMaterial.find("pbrMetallicRoughness");
+		if (itPBRMetallicRoughness != jsonMaterial.end()) {
+			material->pbrMetallicRoughness.baseColorFactor = glm::vec4(0.0f);
+			auto itBaseColorFactor = itPBRMetallicRoughness->find("baseColorFactor");
+			if (itBaseColorFactor != itPBRMetallicRoughness->end()) {
+				std::vector<float> fVector = *itBaseColorFactor;
+				if (fVector.size() >= 4) {
+					material->pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec4*>(fVector.data());
+				}
+			}
+
+			auto itBaseColorTexture = itPBRMetallicRoughness->find("baseColorTexture");
+			if (itBaseColorTexture != itPBRMetallicRoughness->end()) {
+				auto itIndex = itBaseColorTexture->find("index");
+				if (itIndex == itBaseColorTexture->end()) {
+					throw std::runtime_error("Base color texture missing index property");
+				}
+
+				std::size_t index = *itIndex;
+				if (index >= mGLTFData.textures.size()) {
+					throw std::runtime_error("Base color texture index " + std::to_string(index) + " out of range");
+				}
+
+				material->pbrMetallicRoughness.baseColorTexture = mGLTFData.textures[index];
+			}
+
+			auto itMetallicRoughnessTexture = itPBRMetallicRoughness->find("metallicRoughnessTexture");
+			if (itMetallicRoughnessTexture != itPBRMetallicRoughness->end()) {
+				auto itIndex = itMetallicRoughnessTexture->find("index");
+				if (itIndex == itMetallicRoughnessTexture->end()) {
+					throw std::runtime_error("Metallic roughness texture missing index property");
+				}
+
+				std::size_t index = *itIndex;
+				if (index >= mGLTFData.textures.size()) {
+					throw std::runtime_error("Metallic roughness texture index " + std::to_string(index) + " out of range");
+				}
+
+				material->pbrMetallicRoughness.metallicRoughnessTexture = mGLTFData.textures[index];
+			}
+
+			material->pbrMetallicRoughness.metallicFactor = 1.0f;
+			auto itMetallicFactor = itPBRMetallicRoughness->find("metallicFactor");
+			if (itMetallicFactor != itPBRMetallicRoughness->end()) {
+				material->pbrMetallicRoughness.metallicFactor = *itMetallicFactor;
+			}
+
+			material->pbrMetallicRoughness.roughnessFactor = 1.0f;
+			auto itRoughnessFactor = itPBRMetallicRoughness->find("roughnessFactor");
+			if (itRoughnessFactor != itPBRMetallicRoughness->end()) {
+				material->pbrMetallicRoughness.roughnessFactor = *itPBRMetallicRoughness;
+			}
+		}
 
 		auto itNormalTexture = jsonMaterial.find("normalTexture");
 		if (itNormalTexture != jsonMaterial.end()) {
-			// TODO: auto normalTextureInfo = *itNormalTexture;
+			auto itIndex = itNormalTexture->find("index");
+			if (itIndex == itNormalTexture->end()) {
+				throw std::runtime_error("Normal texture missing index property");
+			}
+
+			std::size_t index = *itIndex;
+			if (index >= mGLTFData.textures.size()) {
+				throw std::runtime_error("Normal texture index " + std::to_string(index) + " out of range");
+			}
+
+			material->normalTexture = mGLTFData.textures[index];
 		}
 
 		auto itOcclusionTexture = jsonMaterial.find("occlusionTexture");
 		if (itOcclusionTexture != jsonMaterial.end()) {
-			// TODO: auto occlusionTextureInfo = *itOcclusionTexture;
+			auto itIndex = itOcclusionTexture->find("index");
+			if (itIndex == itOcclusionTexture->end()) {
+				throw std::runtime_error("Occlusion texture missing index property");
+			}
+
+			std::size_t index = *itIndex;
+			if (index >= mGLTFData.textures.size()) {
+				throw std::runtime_error("Occlusion texture index " + std::to_string(index) + " out of range");
+			}
+
+			material->occlusionTexture = mGLTFData.textures[index];
 		}
 
 		auto itEmissiveTexture = jsonMaterial.find("emissiveTexture");
 		if (itEmissiveTexture != jsonMaterial.end()) {
-			// TODO: auto emissiveTextureInfo = *itEmissiveTexture;
+			auto itIndex = itEmissiveTexture->find("index");
+			if (itIndex == itEmissiveTexture->end()) {
+				throw std::runtime_error("Emissive texture missing index property");
+			}
+
+			std::size_t index = *itIndex;
+			if (index >= mGLTFData.textures.size()) {
+				throw std::runtime_error("Emissive texture index " + std::to_string(index) + " out of range");
+			}
+
+			material->emissiveTexture = mGLTFData.textures[index];
 		}
 
+		material->emissiveFactor = glm::vec3(0.0f);
 		auto itEmissiveFactor = jsonMaterial.find("emissiveFactor");
 		if (itEmissiveFactor != jsonMaterial.end()) {
-			// std::vector<float> fVector = *itEmissiveFactor;
-			// if (fVector.size() >= 3) {
-			// 	glm::vec3 emissiveFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
-			// }
-		}
-
-		auto itAlphaMode = jsonMaterial.find("alphaMode");
-		if (itAlphaMode != jsonMaterial.end()) {
-			if (*itAlphaMode == "OPAQUE") {
-			}
-			else if (*itAlphaMode == "MASK") {
-			}
-			else if (*itAlphaMode == "BLEND") {
+			std::vector<float> fVector = *itEmissiveFactor;
+			if (fVector.size() >= 3) {
+				material->emissiveFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
 			}
 		}
 
-		auto itAlphaCutoff = jsonMaterial.find("alphaCutoff");
-		if (itAlphaCutoff != jsonMaterial.end()) {
-			// TODO: float alphaCutoff = *itAlphaCutoff;
-		}
-
-		auto itDoubleSide = jsonMaterial.find("doubleSide");
-		if (itDoubleSide != jsonMaterial.end()) {
-			// TODO: bool doubleSide = *itDoubleSide;
-		}
-
-		mGLTFData.materials.emplace_back();
+		mGLTFData.materials.emplace_back(std::move(material));
 	}
 
 
@@ -460,7 +523,8 @@ namespace se::loaders {
 		static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
 			{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
 			{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
-			{ "TEXCOORD_0",	graphics::MeshAttributes::UVAttribute },
+			{ "TEXCOORD_0",	graphics::MeshAttributes::TexCoordAttribute0 },
+			{ "TEXCOORD_1",	graphics::MeshAttributes::TexCoordAttribute1 },
 			{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute },
 			{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute }
 		};
@@ -549,7 +613,7 @@ namespace se::loaders {
 			}
 		}
 
-		output.renderable3Ds.push_back(std::make_unique<graphics::Renderable3D>(mesh, material, nullptr));
+		output.renderable3Ds.emplace_back(std::make_unique<graphics::Renderable3D>(mesh, material));
 	}
 
 

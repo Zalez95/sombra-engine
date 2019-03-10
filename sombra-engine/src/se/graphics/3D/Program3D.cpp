@@ -53,18 +53,32 @@ namespace se::graphics {
 	}
 
 
-	void Program3D::setColorTexture(int unit)
-	{
-		mProgram->setUniform(mUniformLocations.colorTexture, unit);
-	}
-
-
 	void Program3D::setMaterial(const Material& material)
 	{
-		mProgram->setUniform(mUniformLocations.material.ambientColor, material.ambientColor);
-		mProgram->setUniform(mUniformLocations.material.diffuseColor, material.diffuseColor);
-		mProgram->setUniform(mUniformLocations.material.specularColor, material.specularColor);
-		mProgram->setUniform(mUniformLocations.material.shininess, material.shininess);
+		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
+		if (material.pbrMetallicRoughness.baseColorTexture) {
+			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorTexture, TextureUnits::kBaseColor);
+			material.pbrMetallicRoughness.baseColorTexture->bind(TextureUnits::kBaseColor);
+		}
+		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicFactor, material.pbrMetallicRoughness.metallicFactor);
+		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.roughnessFactor, material.pbrMetallicRoughness.roughnessFactor);
+		if (material.pbrMetallicRoughness.metallicRoughnessTexture) {
+			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture, TextureUnits::kMetallicRoughness);
+			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
+		}
+		if (material.normalTexture) {
+			mProgram->setUniform(mUniformLocations.material.normalTexture, TextureUnits::kNormal);
+			material.normalTexture->bind(TextureUnits::kNormal);
+		}
+		if (material.occlusionTexture) {
+			mProgram->setUniform(mUniformLocations.material.occlusionTexture, TextureUnits::kOcclusion);
+			material.occlusionTexture->bind(TextureUnits::kOcclusion);
+		}
+		if (material.emissiveTexture) {
+			mProgram->setUniform(mUniformLocations.material.emissiveTexture, TextureUnits::kEmissive);
+			material.occlusionTexture->bind(TextureUnits::kEmissive);
+		}
+		mProgram->setUniform(mUniformLocations.material.emissiveFactor, material.emissiveFactor);
 	}
 
 
@@ -74,16 +88,16 @@ namespace se::graphics {
 		mProgram->setUniform(mUniformLocations.numPointLights, numPointLights);
 
 		for (int i = 0; i < numPointLights; ++i) {
-			BaseLight base		= pointLights[i]->getBaseLight();
-			glm::vec3 position	= pointLights[i]->getPosition();
-			Attenuation att		= pointLights[i]->getAttenuation();
+			const BaseLight& base		= pointLights[i]->getBaseLight();
+			const Attenuation& att		= pointLights[i]->getAttenuation();
+			const glm::vec3& position	= pointLights[i]->getPosition();
 
 			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.diffuseColor, base.getDiffuseColor());
 			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.specularColor, base.getSpecularColor());
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.constant, att.constant);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.linear, att.linear);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.exponential, att.exponential);
-			mProgram->setUniform(mUniformLocations.pointLightsPositions[i], position);
+			mProgram->setUniform(mUniformLocations.pointLights[i].position, position);
 		}
 	}
 
@@ -122,12 +136,15 @@ namespace se::graphics {
 		mUniformLocations.viewMatrix				= mProgram->getUniformLocation("uViewMatrix");
 		mUniformLocations.projectionMatrix			= mProgram->getUniformLocation("uProjectionMatrix");
 
-		mUniformLocations.colorTexture				= mProgram->getUniformLocation("uColorTexture");
-
-		mUniformLocations.material.ambientColor	= mProgram->getUniformLocation("uMaterial.ambientColor");
-		mUniformLocations.material.diffuseColor	= mProgram->getUniformLocation("uMaterial.diffuseColor");
-		mUniformLocations.material.specularColor	= mProgram->getUniformLocation("uMaterial.specularColor");
-		mUniformLocations.material.shininess		= mProgram->getUniformLocation("uMaterial.shininess");
+		mUniformLocations.material.pbrMetallicRoughness.baseColorFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorFactor");
+		mUniformLocations.material.pbrMetallicRoughness.baseColorTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorTexture");
+		mUniformLocations.material.pbrMetallicRoughness.metallicFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicFactor");
+		mUniformLocations.material.pbrMetallicRoughness.roughnessFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.roughnessFactor");
+		mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
+		mUniformLocations.material.normalTexture	= mProgram->getUniformLocation("uMaterial.normalTexture");
+		mUniformLocations.material.occlusionTexture	= mProgram->getUniformLocation("uMaterial.occlusionTexture");
+		mUniformLocations.material.emissiveTexture	= mProgram->getUniformLocation("uMaterial.emissiveTexture");
+		mUniformLocations.material.emissiveFactor	= mProgram->getUniformLocation("uMaterial.emissiveFactor");
 
 		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
 		for (std::size_t i = 0; i < kMaxPointLights; ++i) {
@@ -146,8 +163,8 @@ namespace se::graphics {
 			mUniformLocations.pointLights[i].attenuation.exponential = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].attenuation.exponential").c_str()
 			);
-			mUniformLocations.pointLightsPositions[i] = mProgram->getUniformLocation(
-				("uPointLightsPositions[" + std::to_string(i) + "]").c_str()
+			mUniformLocations.pointLights[i].position = mProgram->getUniformLocation(
+				("uPointLights[" + std::to_string(i) + "].position").c_str()
 			);
 		}
 	}

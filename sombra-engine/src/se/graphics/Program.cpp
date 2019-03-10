@@ -91,6 +91,18 @@ namespace se::graphics {
 	}
 
 
+	void Program::setUniform(const char* name, unsigned int value) const
+	{
+		GL_WRAP( glUniform1ui(glGetUniformLocation(mProgramId, name), value) );
+	}
+
+
+	void Program::setUniform(unsigned int location, unsigned int value) const
+	{
+		GL_WRAP( glUniform1ui(location, value) );
+	}
+
+
 	void Program::setUniform(const char* name, float value) const
 	{
 		GL_WRAP( glUniform1f(glGetUniformLocation(mProgramId, name), value) );

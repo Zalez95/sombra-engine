@@ -8,7 +8,7 @@ namespace se::collision {
 		mTransformsMatrix(1.0f)
 	{
 		for (ColliderUPtr& part : parts) {
-			mParts.push_back(std::move(part));
+			mParts.emplace_back(std::move(part));
 		}
 
 		calculateAABB();
