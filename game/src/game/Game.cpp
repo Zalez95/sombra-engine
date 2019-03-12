@@ -309,10 +309,10 @@ namespace game {
 			camera1->setPerspectiveProjectionMatrix(kFOV, kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			se::graphics::BaseLight baseLight1(glm::vec3(0.5f, 0.6f, 0.3f), glm::vec3(0.1f, 0.5f, 0.6f));
+			se::graphics::BaseLight baseLight1{ glm::vec3(0.5f, 0.6f, 0.3f) };
 			se::graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
-			pointLight1 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
-			pointLight2 = std::make_unique<se::graphics::PointLight>(baseLight1, attenuation1, glm::vec3());
+			pointLight1 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3() });
+			pointLight2 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3() });
 
 			// Fonts
 			se::utils::FileReader fileReader3("res/fonts/arial.fnt");

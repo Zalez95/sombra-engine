@@ -8,7 +8,7 @@ namespace se::graphics {
 
 	class Program;
 	struct Material;
-	class PointLight;
+	struct PointLight;
 
 
 	/**
@@ -64,8 +64,7 @@ namespace se::graphics {
 			{
 				struct
 				{
-					unsigned int diffuseColor;
-					unsigned int specularColor;
+					unsigned int lightColor;
 				} baseLight;
 
 				struct

@@ -100,7 +100,7 @@ namespace se::app {
 
 		SOMBRA_INFO_LOG << "Updating PointLights";
 		for (auto& pe : mPointLightEntities) {
-			pe.second->setPosition(pe.first->position);
+			pe.second->position = pe.first->position;
 		}
 
 		SOMBRA_INFO_LOG << "Update end";

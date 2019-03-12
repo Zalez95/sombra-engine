@@ -68,7 +68,7 @@ namespace se::utils {
 
 			/** @return	a pointer to the current TreeNode that the iterator is
 			 *			pointing at */
-			TreeNodeType* operator->() { return mTreeNode; };
+			TreeNodeType* operator->() const { return mTreeNode; };
 
 			/** Compares the given TNIterators
 			 *

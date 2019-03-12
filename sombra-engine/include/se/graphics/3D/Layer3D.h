@@ -10,7 +10,7 @@ namespace se::graphics {
 
 	class Renderable3D;
 	class Camera;
-	class PointLight;
+	struct PointLight;
 
 
 	/**

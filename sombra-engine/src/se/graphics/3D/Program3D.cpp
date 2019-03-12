@@ -88,16 +88,12 @@ namespace se::graphics {
 		mProgram->setUniform(mUniformLocations.numPointLights, numPointLights);
 
 		for (int i = 0; i < numPointLights; ++i) {
-			const BaseLight& base		= pointLights[i]->getBaseLight();
-			const Attenuation& att		= pointLights[i]->getAttenuation();
-			const glm::vec3& position	= pointLights[i]->getPosition();
-
-			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.diffuseColor, base.getDiffuseColor());
-			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.specularColor, base.getSpecularColor());
-			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.constant, att.constant);
-			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.linear, att.linear);
-			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.exponential, att.exponential);
-			mProgram->setUniform(mUniformLocations.pointLightsPositions[i], position);
+			const PointLight& pLight = *pointLights[i];
+			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.lightColor, pLight.base.lightColor);
+			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.constant, pLight.attenuation.constant);
+			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.linear, pLight.attenuation.linear);
+			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.exponential, pLight.attenuation.exponential);
+			mProgram->setUniform(mUniformLocations.pointLightsPositions[i], pLight.position);
 		}
 	}
 
@@ -148,11 +144,8 @@ namespace se::graphics {
 
 		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
 		for (std::size_t i = 0; i < kMaxPointLights; ++i) {
-			mUniformLocations.pointLights[i].baseLight.diffuseColor = mProgram->getUniformLocation(
-				("uPointLights[" + std::to_string(i) + "].baseLight.diffuseColor").c_str()
-			);
-			mUniformLocations.pointLights[i].baseLight.specularColor = mProgram->getUniformLocation(
-				("uPointLights[" + std::to_string(i) + "].baseLight.specularColor").c_str()
+			mUniformLocations.pointLights[i].baseLight.lightColor = mProgram->getUniformLocation(
+				("uPointLights[" + std::to_string(i) + "].baseLight.lightColor").c_str()
 			);
 			mUniformLocations.pointLights[i].attenuation.constant = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].attenuation.constant").c_str()

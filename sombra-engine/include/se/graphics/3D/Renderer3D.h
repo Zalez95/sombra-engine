@@ -8,8 +8,8 @@
 namespace se::graphics {
 
 	class Renderable3D;
-	class PointLight;
 	class Camera;
+	struct PointLight;
 
 
 	/**

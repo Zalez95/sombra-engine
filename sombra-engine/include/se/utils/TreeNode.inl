@@ -101,7 +101,7 @@ namespace se::utils {
 			parentIt->mChild->mParent = &(*parentIt);
 			parentIt->mChild->mSibling = std::move(currentChild);
 
-			ret = iterator<t>(parentIt->mChild.get());
+			ret = ++parentIt;
 		}
 
 		return ret;
@@ -122,7 +122,7 @@ namespace se::utils {
 			parentIt->mChild->mParent = &(*parentIt);
 			parentIt->mChild->mSibling = std::move(currentChild);
 
-			ret = iterator<t>(parentIt->mChild.get());
+			ret = ++parentIt;
 		}
 
 		return ret;
@@ -133,11 +133,9 @@ namespace se::utils {
 	template <Traversal t>
 	TreeNode<T>::iterator<t> TreeNode<T>::erase(iterator<t> it)
 	{
-		auto ret = iterator<t>(&(*it));
+		auto ret = end<t>();	// FIXME: needs decrement
 
 		if (it != end<t>()) {
-			++ret;
-
 			if (it->mParent->mChild.get() == &(*it)) {
 				// Update parent child with sibling
 				it->mParent->mChild = std::move(it->mSibling);

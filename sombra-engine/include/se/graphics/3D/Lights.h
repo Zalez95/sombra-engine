@@ -2,34 +2,15 @@
 #define LIGHTS_H
 
 #include <glm/glm.hpp>
-#include "../PrimitiveTypes.h"
 
 namespace se::graphics {
 
 	/**
-	 * Class BaseLight, it's the common class for all the Lights
+	 * Struct BaseLight, it holds the common properties for all the Lights
 	 */
-	class BaseLight
+	struct BaseLight
 	{
-	private:	// Attributes
-		glm::vec3 mDiffuseColor;
-		glm::vec3 mSpecularColor;
-
-	public:		// Functions
-		/** Creates a new BaseLight
-		 *
-		 * @param	diffuseColor the diffuse color that emits the light
-		 * @param	specularColor the specular color that emits the light */
-		BaseLight(
-			const glm::vec3& diffuseColor,
-			const glm::vec3& specularColor
-		) : mDiffuseColor(diffuseColor), mSpecularColor(specularColor) {};
-
-		/** @return the specular color that emits the light */
-		inline glm::vec3 getSpecularColor() const { return mSpecularColor; };
-
-		/** @return the diffuse color that emits the light */
-		inline glm::vec3 getDiffuseColor() const { return mDiffuseColor; };
+		glm::vec3 lightColor;
 	};
 
 
@@ -46,87 +27,40 @@ namespace se::graphics {
 
 
 	/**
-	 * Class DirectionalLight, it's a Light source that shines in one
+	 * Struct DirectionalLight, it's a Light source that shines in one
 	 * direction without fading
 	 */
-	class DirectionalLight
+	struct DirectionalLight
 	{
-	private:	// Attributes
 		BaseLight	mBase;
 		glm::vec3	mDirection;
-
-	public:		// Functions
-		/** Creates a new DirectionalLight
-		 *
-		 * @param	baseLight the basis Light of the DirectionalLight
-		 * @param	direction the direction of the DirectionalLight */
-		DirectionalLight(
-			const BaseLight& baseLight, const glm::vec3& direction
-		) :mBase(baseLight), mDirection(direction) {};
 	};
 
 
 	/**
-	 * Class PointLight, it's a light source that has a position and shines
+	 * Struct PointLight, it's a light source that has a position and shines
 	 * in all directions with a fading effect called attenuation
 	 */
-	class PointLight
+	struct PointLight
 	{
-	private:	// Attributes
-		BaseLight	mBase;
-		Attenuation mAttenuation;
-		glm::vec3	mPosition;
-
-	public:		// Functions
-		/** Creates a new PointLight
-		 *
-		 * @param	baseLight the basis PointLight of the PointLight
-		 * @param	position the position of the DirectionalLight */
-		PointLight(
-			const BaseLight& baseLight,
-			const Attenuation& attenuation,
-			const glm::vec3& position
-		) : mBase(baseLight), mAttenuation(attenuation),
-			mPosition(position) {};
-
-		/** @return the base light of the Point Light */
-		inline BaseLight getBaseLight() const { return mBase; };
-
-		/** @return the attenuation of the light */
-		inline Attenuation getAttenuation() const { return mAttenuation; };
-
-		/** @return the position of the light */
-		inline glm::vec3 getPosition() const { return mPosition; };
-
-		/** Sets the position of the Light
-		 *
-		 * @param	position the new position of the Light */
-		inline void setPosition(const glm::vec3& position)
-		{ mPosition = position; };
+		BaseLight base;
+		Attenuation attenuation;
+		glm::vec3 position;
 	};
 
 
 	/**
-	 * Class SpotLight, it's a Light source that has a position and
+	 * Struct SpotLight, it's a Light source that has a position and
 	 * shines in one direction with a fading effect called attenuation.
 	 *
 	 * The effect of a SpotLight lights only within a limited cone that
 	 * grows wider as light moves further away from the light source
 	 */
-	class SpotLight
+	struct SpotLight
 	{
-	private:	// Attributes
-		const PointLight mBase;
-		glm::vec3 mDirection;
-		float mCutoff;
-
-	public:		// Functions
-		/** Creates a new SpotLight
-		 *
-		 * @param	baseLight the basis PointLight of the SpotLight
-		 * @param	direction the direction of the SpotLight */
-		SpotLight(const PointLight& baseLight, const glm::vec3& direction) :
-			mBase(baseLight), mDirection(direction) {};
+		const PointLight base;
+		glm::vec3 direction;
+		float cutoff;
 	};
 
 }
