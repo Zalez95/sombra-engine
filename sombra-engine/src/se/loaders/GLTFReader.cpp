@@ -227,7 +227,7 @@ namespace se::loaders {
 			std::size_t bufferId = *itBuffer;
 			std::size_t byteLength = *itByteLength;
 			std::size_t byteOffset = (itByteOffset != jsonBufferView.end())? itByteOffset->get<std::size_t>() : 0;
-			int byteStride = (itByteStride != jsonBufferView.end())? itByteOffset->get<int>() : 0;
+			int byteStride = (itByteStride != jsonBufferView.end())? itByteStride->get<int>() : 0;
 			BufferView::Type type = BufferView::Type::Undefined;
 			if (itTarget != jsonBufferView.end()) {
 				if (*itTarget == 34962) { type = BufferView::Type::Array; }
@@ -249,6 +249,24 @@ namespace se::loaders {
 
 	void GLTFReader::parseAccessor(const nlohmann::json& jsonAccessor)
 	{
+		static const std::map<int, graphics::TypeId> kTypeIdMap = {
+			{ 5120, graphics::TypeId::Byte },
+			{ 5121, graphics::TypeId::UnsignedByte },
+			{ 5122, graphics::TypeId::Short },
+			{ 5123, graphics::TypeId::UnsignedShort },
+			{ 5125, graphics::TypeId::UnsignedInt },
+			{ 5126, graphics::TypeId::Float }
+		};
+		static const std::map<std::string, int> kComponentSizeMap = {
+			{ "SCALAR", 1 },
+			{ "VEC2", 2 },
+			{ "VEC3", 3 },
+			{ "VEC4", 4 },
+			{ "MAT2", 4 },
+			{ "MAT3", 9 },
+			{ "MAT4", 16 }
+		};
+
 		auto itBufferView = jsonAccessor.find("bufferView");
 		auto itByteOffset = jsonAccessor.find("byteOffset");
 		auto itComponentType = jsonAccessor.find("componentType");
@@ -259,29 +277,30 @@ namespace se::loaders {
 			&& (itCount != jsonAccessor.end()) && (itType != jsonAccessor.end())
 		) {
 			std::size_t bufferViewId	= *itBufferView;
-			std::size_t byteOffset		= (itByteOffset != jsonAccessor.end())? itNormalized->get<std::size_t>() : 0;
-			std::size_t componentType	= *itComponentType;
+			std::size_t byteOffset		= (itByteOffset != jsonAccessor.end())? itByteOffset->get<std::size_t>() : 0;
 			bool normalized				= (itNormalized != jsonAccessor.end())? itNormalized->get<bool>() : false;
 			std::size_t count			= *itCount;
-			std::string type			= *itType;
 
-			graphics::TypeId componentTypeId = (componentType == 5120)? graphics::TypeId::Byte :
-				(componentType == 5121)? graphics::TypeId::UnsignedByte :
-				(componentType == 5122)? graphics::TypeId::Short :
-				(componentType == 5123)? graphics::TypeId::UnsignedShort :
-				(componentType == 5125)? graphics::TypeId::UnsignedInt :
-				(componentType == 5126)? graphics::TypeId::Float : graphics::TypeId::Int;
-			int componentSize = (type == "SCALAR")? 1 :
-				(type == "VEC2")? 2 : (type == "VEC3")? 3 : (type == "VEC4")? 4 :
-				(type == "MAT2")? 4 : (type == "MAT3")? 9 : (type == "MAT4")? 16 : 0;
+			graphics::TypeId typeId;
+			auto itTypeIdPair = kTypeIdMap.find(*itComponentType);
+			if (itTypeIdPair != kTypeIdMap.end()) {
+				typeId = itTypeIdPair->second;
+			}
+			else {
+				throw std::runtime_error("Invalid component type");
+			}
+
+			int componentSize = 0;
+			auto itComponentSizePair = kComponentSizeMap.find(*itType);
+			if (itComponentSizePair != kComponentSizeMap.end()) {
+				componentSize = itComponentSizePair->second;
+			}
+			else {
+				throw std::runtime_error("Invalid component size");
+			}
 
 			if (bufferViewId < mGLTFData.bufferViews.size()) {
-				if ((componentTypeId != graphics::TypeId::Int) && (componentSize > 0)) {
-					mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, componentTypeId, normalized });
-				}
-				else {
-					throw std::runtime_error("Invalid component data");
-				}
+				mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, typeId, normalized });
 			}
 			else {
 				throw std::runtime_error("BufferView index " + std::to_string(bufferViewId) + " out of range");
@@ -295,15 +314,31 @@ namespace se::loaders {
 
 	void GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
 	{
+		static const std::map<int, graphics::TextureFilter> kTextureFilterMap = {
+			{ 9728, graphics::TextureFilter::Nearest },
+			{ 9729, graphics::TextureFilter::Linear },
+			{ 9984, graphics::TextureFilter::NearestMipMapNearest },
+			{ 9985, graphics::TextureFilter::LinearMipMapNearest },
+			{ 9986, graphics::TextureFilter::NearestMipMapLinear },
+			{ 9987, graphics::TextureFilter::LinearMipMapLinear }
+		};
+		static const std::map<int, graphics::TextureWrap> kTextureWrapMap = {
+			{ 10497, graphics::TextureWrap::Repeat },
+			{ 33648, graphics::TextureWrap::MirroredRepeat },
+			{ 33071, graphics::TextureWrap::ClampToEdge }
+		};
+
 		Sampler sampler;
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
 			if (sampler.enableFilter[idx]) {
-				switch (filter) {
-					case 9728:	sampler.filters[idx] = graphics::TextureFilter::Nearest;	break;
-					case 9729:	sampler.filters[idx] = graphics::TextureFilter::Linear;		break;
-					default:	throw std::runtime_error("Invalid filter " + std::to_string(filter));
+				auto itFiltering = kTextureFilterMap.find(filter);
+				if (itFiltering != kTextureFilterMap.end()) {
+					sampler.filters[idx] = itFiltering->second;
+				}
+				else {
+					throw std::runtime_error("Invalid filter " + std::to_string(filter));
 				}
 			}
 		};
@@ -318,10 +353,12 @@ namespace se::loaders {
 		// Wraps
 		auto doWrap = [&](int wrap, int idx) {
 			if (sampler.enableWrap[idx]) {
-				switch (wrap) {
-					case 33071:	sampler.wraps[idx] = graphics::TextureWrap::ClampToEdge;	break;
-					case 10497:	sampler.wraps[idx] = graphics::TextureWrap::Repeat;			break;
-					default:	throw std::runtime_error("Invalid wrap " + std::to_string(wrap));
+				auto itWrap = kTextureWrapMap.find(wrap);
+				if (itWrap != kTextureWrapMap.end()) {
+					sampler.wraps[idx] = itWrap->second;
+				}
+				else {
+					throw std::runtime_error("Invalid wrap mode " + std::to_string(wrap));
 				}
 			}
 		};
@@ -332,6 +369,8 @@ namespace se::loaders {
 		sampler.enableWrap[1] = (itWrapT != jsonSampler.end());
 		doWrap(*itWrapS, 0);
 		doWrap(*itWrapT, 1);
+
+		mGLTFData.samplers.push_back(sampler);
 	}
 
 
@@ -339,8 +378,8 @@ namespace se::loaders {
 	{
 		auto itUri = jsonImage.find("uri");
 		if (itUri != jsonImage.end()) {
-			auto& image = mGLTFData.images.emplace_back();
-			*image = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
+			utils::Image& image = mGLTFData.images.emplace_back();
+			image = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
 		}
 		else {
 			throw std::runtime_error("Missing uri property");
@@ -373,7 +412,7 @@ namespace se::loaders {
 		if (itSource != jsonTexture.end()) {
 			std::size_t sourceId = *itSource;
 			if (sourceId < mGLTFData.images.size()){
-				const utils::Image& image = *mGLTFData.images[sourceId];
+				const utils::Image& image = mGLTFData.images[sourceId];
 
 				graphics::ColorFormat format = graphics::ColorFormat::RGB;
 				switch (image.format)
@@ -430,6 +469,18 @@ namespace se::loaders {
 				material->pbrMetallicRoughness.baseColorTexture = mGLTFData.textures[index];
 			}
 
+			material->pbrMetallicRoughness.metallicFactor = 1.0f;
+			auto itMetallicFactor = itPBRMetallicRoughness->find("metallicFactor");
+			if (itMetallicFactor != itPBRMetallicRoughness->end()) {
+				material->pbrMetallicRoughness.metallicFactor = *itMetallicFactor;
+			}
+
+			material->pbrMetallicRoughness.roughnessFactor = 1.0f;
+			auto itRoughnessFactor = itPBRMetallicRoughness->find("roughnessFactor");
+			if (itRoughnessFactor != itPBRMetallicRoughness->end()) {
+				material->pbrMetallicRoughness.roughnessFactor = *itPBRMetallicRoughness;
+			}
+
 			auto itMetallicRoughnessTexture = itPBRMetallicRoughness->find("metallicRoughnessTexture");
 			if (itMetallicRoughnessTexture != itPBRMetallicRoughness->end()) {
 				auto itIndex = itMetallicRoughnessTexture->find("index");
@@ -443,18 +494,6 @@ namespace se::loaders {
 				}
 
 				material->pbrMetallicRoughness.metallicRoughnessTexture = mGLTFData.textures[index];
-			}
-
-			material->pbrMetallicRoughness.metallicFactor = 1.0f;
-			auto itMetallicFactor = itPBRMetallicRoughness->find("metallicFactor");
-			if (itMetallicFactor != itPBRMetallicRoughness->end()) {
-				material->pbrMetallicRoughness.metallicFactor = *itMetallicFactor;
-			}
-
-			material->pbrMetallicRoughness.roughnessFactor = 1.0f;
-			auto itRoughnessFactor = itPBRMetallicRoughness->find("roughnessFactor");
-			if (itRoughnessFactor != itPBRMetallicRoughness->end()) {
-				material->pbrMetallicRoughness.roughnessFactor = *itPBRMetallicRoughness;
 			}
 		}
 
@@ -523,10 +562,12 @@ namespace se::loaders {
 		static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
 			{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
 			{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
+			{ "TANGENT",	graphics::MeshAttributes::TangentAttribute },
 			{ "TEXCOORD_0",	graphics::MeshAttributes::TexCoordAttribute0 },
 			{ "TEXCOORD_1",	graphics::MeshAttributes::TexCoordAttribute1 },
-			{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute },
-			{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute }
+			{ "COLOR_0",	graphics::MeshAttributes::ColorAttribute },
+			{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute },
+			{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute }
 		};
 
 		std::shared_ptr<graphics::Mesh> mesh = nullptr;

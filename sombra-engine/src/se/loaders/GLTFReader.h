@@ -58,7 +58,7 @@ namespace se::loaders {
 			std::vector<BufferView> bufferViews;
 			std::vector<Accessor> accessors;
 			std::vector<Sampler> samplers;
-			std::vector<std::unique_ptr<utils::Image>> images;
+			std::vector<utils::Image> images;
 			std::vector<std::shared_ptr<graphics::Texture>> textures;
 			std::vector<std::shared_ptr<graphics::Material>> materials;
 			std::vector<PrimitiveIndices> meshPrimitivesIndices;

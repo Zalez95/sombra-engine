@@ -57,4 +57,30 @@ namespace se::graphics {
 		}
 	}
 
+
+	constexpr int toGLFilter(TextureFilter filter)
+	{
+		switch (filter) {
+			case TextureFilter::Nearest:				return GL_NEAREST;
+			case TextureFilter::Linear:					return GL_LINEAR;
+			case TextureFilter::NearestMipMapNearest:	return GL_NEAREST_MIPMAP_NEAREST;
+			case TextureFilter::LinearMipMapNearest:	return GL_LINEAR_MIPMAP_NEAREST;
+			case TextureFilter::NearestMipMapLinear:	return GL_NEAREST_MIPMAP_LINEAR;
+			case TextureFilter::LinearMipMapLinear:		return GL_LINEAR_MIPMAP_LINEAR;
+			default:									return GL_NONE;
+		}
+	}
+
+
+	constexpr int toGLWrap(TextureWrap wrap)
+	{
+		switch (wrap) {
+			case TextureWrap::Repeat:			return GL_REPEAT;
+			case TextureWrap::MirroredRepeat:	return GL_MIRRORED_REPEAT;
+			case TextureWrap::ClampToEdge:		return GL_CLAMP_TO_EDGE;
+			case TextureWrap::ClampToBorder:	return GL_CLAMP_TO_BORDER;
+			default:							return GL_NONE;
+		}
+	}
+
 }

@@ -20,11 +20,11 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		struct TextureUnits {
-			static constexpr unsigned int kBaseColor			= 0;
-			static constexpr unsigned int kMetallicRoughness	= 1;
-			static constexpr unsigned int kNormal				= 2;
-			static constexpr unsigned int kOcclusion			= 3;
-			static constexpr unsigned int kEmissive				= 4;
+			static constexpr int kBaseColor			= 0;
+			static constexpr int kMetallicRoughness	= 1;
+			static constexpr int kNormal			= 2;
+			static constexpr int kOcclusion			= 3;
+			static constexpr int kEmissive			= 4;
 		};
 
 	private:	// Attributes
@@ -38,43 +38,43 @@ namespace se::graphics {
 		 * in each render call */
 		struct UniformLocations
 		{
-			unsigned int modelMatrix;
-			unsigned int viewMatrix;
-			unsigned int projectionMatrix;
+			int modelMatrix;
+			int viewMatrix;
+			int projectionMatrix;
 
 			struct
 			{
 				struct
 				{
-					unsigned int baseColorFactor;
-					unsigned int baseColorTexture;
-					unsigned int metallicFactor;
-					unsigned int roughnessFactor;
-					unsigned int metallicRoughnessTexture;
+					int baseColorFactor;
+					int baseColorTexture;
+					int metallicFactor;
+					int roughnessFactor;
+					int metallicRoughnessTexture;
 				} pbrMetallicRoughness;
 
-				unsigned int normalTexture;
-				unsigned int occlusionTexture;
-				unsigned int emissiveTexture;
-				unsigned int emissiveFactor;
+				int normalTexture;
+				int occlusionTexture;
+				int emissiveTexture;
+				int emissiveFactor;
 			} material;
 
-			unsigned int numPointLights;
+			int numPointLights;
 			struct
 			{
 				struct
 				{
-					unsigned int lightColor;
+					int lightColor;
 				} baseLight;
 
 				struct
 				{
-					unsigned int constant;
-					unsigned int linear;
-					unsigned int exponential;
+					int constant;
+					int linear;
+					int exponential;
 				} attenuation;
 			} pointLights[kMaxPointLights];
-			unsigned int pointLightsPositions[kMaxPointLights];
+			int pointLightsPositions[kMaxPointLights];
 		} mUniformLocations;
 
 	public:		// Functions

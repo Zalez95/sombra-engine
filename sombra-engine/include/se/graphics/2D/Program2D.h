@@ -21,8 +21,8 @@ namespace se::graphics {
 		 * in each render call */
 		struct UniformLocations
 		{
-			unsigned int modelMatrix;
-			unsigned int textureSampler;
+			int modelMatrix;
+			int textureSampler;
 		} mUniformLocations;
 
 	public:		// Functions

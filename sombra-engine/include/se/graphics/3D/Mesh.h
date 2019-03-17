@@ -15,10 +15,12 @@ namespace se::graphics {
 	{
 		PositionAttribute = 0,
 		NormalAttribute,
+		TangentAttribute,
 		TexCoordAttribute0,
 		TexCoordAttribute1,
-		JointWeightAttribute,
-		JointIndexAttribute
+		ColorAttribute,
+		JointIndexAttribute,
+		JointWeightAttribute
 	};
 
 

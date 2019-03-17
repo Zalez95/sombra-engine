@@ -41,8 +41,8 @@ namespace se::graphics {
 
 	void Texture::setFiltering(TextureFilter minification, TextureFilter magnification)
 	{
-		int glMinFilter = (minification == TextureFilter::Nearest)? GL_NEAREST : GL_LINEAR;
-		int glMagFilter = (magnification == TextureFilter::Nearest)? GL_NEAREST : GL_LINEAR;
+		int glMinFilter = toGLFilter(minification);
+		int glMagFilter = toGLFilter(magnification);
 
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
 		GL_WRAP( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glMinFilter) );
@@ -53,8 +53,8 @@ namespace se::graphics {
 
 	void Texture::setWrapping(TextureWrap wrapS, TextureWrap wrapT)
 	{
-		int glWrapS = (wrapS == TextureWrap::Repeat)? GL_REPEAT : GL_CLAMP_TO_EDGE;
-		int glWrapT = (wrapT == TextureWrap::Repeat)? GL_REPEAT : GL_CLAMP_TO_EDGE;
+		int glWrapS = toGLWrap(wrapS);
+		int glWrapT = toGLWrap(wrapT);
 
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
 		GL_WRAP( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapS) );

@@ -76,7 +76,7 @@ namespace se::graphics {
 		}
 		if (material.emissiveTexture) {
 			mProgram->setUniform(mUniformLocations.material.emissiveTexture, TextureUnits::kEmissive);
-			material.occlusionTexture->bind(TextureUnits::kEmissive);
+			material.emissiveTexture->bind(TextureUnits::kEmissive);
 		}
 		mProgram->setUniform(mUniformLocations.material.emissiveFactor, material.emissiveFactor);
 	}

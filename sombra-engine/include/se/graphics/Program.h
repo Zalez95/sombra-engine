@@ -42,38 +42,38 @@ namespace se::graphics {
 		 * @param	name the name of the uniform variable that we want
 		 *			the location
 		 * @return	the location of the uniform variable */
-		unsigned int getUniformLocation(const char* name) const;
+		int getUniformLocation(const char* name) const;
 
-		void setUniform(const char* name,		int value) const;
-		void setUniform(unsigned int location,	int value) const;
+		void setUniform(const char* name, int value) const;
+		void setUniform(int location, int value) const;
 
-		void setUniform(const char* name,		unsigned int value) const;
-		void setUniform(unsigned int location,	unsigned int value) const;
+		void setUniform(const char* name, unsigned int value) const;
+		void setUniform(int location, unsigned int value) const;
 
-		void setUniform(const char* name,		float value) const;
-		void setUniform(unsigned int location,	float value) const;
+		void setUniform(const char* name, float value) const;
+		void setUniform(int location, float value) const;
 
-		void setUniform(const char* name,		const glm::vec2& vector) const;
-		void setUniform(unsigned int location,	const glm::vec2& vector) const;
+		void setUniform(const char* name, const glm::vec2& vector) const;
+		void setUniform(int location, const glm::vec2& vector) const;
 
-		void setUniform(const char* name,		const glm::vec3& vector) const;
-		void setUniform(unsigned int location,	const glm::vec3& vector) const;
+		void setUniform(const char* name, const glm::vec3& vector) const;
+		void setUniform(int location, const glm::vec3& vector) const;
 
-		void setUniform(const char* name,		const glm::vec4& vector) const;
-		void setUniform(unsigned int location,	const glm::vec4& vector) const;
+		void setUniform(const char* name, const glm::vec4& vector) const;
+		void setUniform(int location, const glm::vec4& vector) const;
 
-		void setUniform(const char* name,		const glm::mat3& matrix) const;
-		void setUniform(unsigned int location,	const glm::mat3& matrix) const;
+		void setUniform(const char* name, const glm::mat3& matrix) const;
+		void setUniform(int location, const glm::mat3& matrix) const;
 
-		void setUniform(const char* name,		const glm::mat4& matrix) const;
-		void setUniform(unsigned int location,	const glm::mat4& matrix) const;
+		void setUniform(const char* name, const glm::mat4& matrix) const;
+		void setUniform(int location, const glm::mat4& matrix) const;
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
 		void enable() const;
 
 		/** Resets the current shader object */
-		void disable();
+		void disable() const;
 	};
 
 }

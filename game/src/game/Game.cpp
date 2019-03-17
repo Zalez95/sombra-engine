@@ -8,6 +8,7 @@
 #include <se/app/GraphicsManager.h>
 #include <se/app/PhysicsManager.h>
 #include <se/app/CollisionManager.h>
+#include <se/app/AnimationManager.h>
 #include <se/app/AudioManager.h>
 
 #include <se/graphics/Texture.h>
@@ -59,7 +60,7 @@ namespace game {
 	const float Game::kUpdateTime		= 0.016f;
 	const unsigned int Game::kNumCubes	= 50;
 	const float Game::kFOV				= glm::radians(60.0f);
-	const float Game::kZNear			= 1.0f;
+	const float Game::kZNear			= 0.5f;
 	const float Game::kZFar				= 250.0f;
 
 // Public functions
@@ -375,6 +376,7 @@ namespace game {
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
+		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 0.0f }, { 0.2f, 1.0f, 0.2f, 0.0f }, { 0.2f, 0.2f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 0.0f }, { 0.2f, 0.2f, 0.1f, 0.0f } };
 		se::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
@@ -401,7 +403,13 @@ namespace game {
 			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr);
+			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
+				"tmp_material",
+				se::graphics::PBRMetallicRoughness{ colors[i], nullptr, 0.75, 0.5f, nullptr },
+				nullptr, nullptr, nullptr, glm::vec3(0.0f)
+			});
+
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, tmpMaterial);
 			mGraphicsManager->addEntity(cube.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(cube));
@@ -417,17 +425,18 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f);
 
-			/*std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
+			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				glm::vec3( glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f) ),
-				0.2f
-			});*/
+				se::graphics::PBRMetallicRoughness{
+					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 0.0f),
+					nullptr, 0.75, 0.5f, nullptr
+				},
+				nullptr, nullptr, nullptr, glm::vec3(0.0f)
+			});
 
 			auto tmpRawMesh = createRawMesh(heMesh);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, nullptr);
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial);
 			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2));
 
 			mEntities.push_back(std::move(tubeSlice));
@@ -480,9 +489,11 @@ namespace game {
 
 		for (EntityUPtr& entity : mEntities) {
 			mInputManager->removeEntity(entity.get());
+			mGraphicsManager->removeEntity(entity.get());
 			mPhysicsManager->removeEntity(entity.get());
 			mCollisionManager->removeEntity(entity.get());
-			mGraphicsManager->removeEntity(entity.get());
+			mAnimationManager->removeEntity(entity.get());
+			mAudioManager->removeEntity(entity.get());
 		}
 		mEntities.clear();
 

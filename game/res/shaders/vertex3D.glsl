@@ -8,7 +8,7 @@ const int MAX_POINT_LIGHTS = 4;
 // Input data
 layout (location = 0) in vec3 aVertexPosition;			// Position attribute
 layout (location = 1) in vec3 aVertexNormal;			// Normal attribute
-layout (location = 2) in vec2 aVertexTexCoord0;			// Vertex Texture Coords attribute
+layout (location = 3) in vec2 aVertexTexCoord0;			// Vertex Texture Coords attribute
 
 // Uniform variables
 uniform mat4 uModelMatrix;								// Model space to World space Matrix

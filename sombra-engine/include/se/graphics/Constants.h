@@ -36,7 +36,11 @@ namespace se::graphics {
 	enum class TextureFilter
 	{
 		Nearest,
-		Linear
+		Linear,
+		NearestMipMapNearest,
+		LinearMipMapNearest,
+		NearestMipMapLinear,
+		LinearMipMapLinear
 	};
 
 
@@ -49,7 +53,9 @@ namespace se::graphics {
 	enum class TextureWrap
 	{
 		Repeat,
-		ClampToEdge
+		MirroredRepeat,
+		ClampToEdge,
+		ClampToBorder
 	};
 
 }
