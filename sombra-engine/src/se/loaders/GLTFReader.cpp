@@ -228,14 +228,16 @@ namespace se::loaders {
 			std::size_t byteLength = *itByteLength;
 			std::size_t byteOffset = (itByteOffset != jsonBufferView.end())? itByteOffset->get<std::size_t>() : 0;
 			int byteStride = (itByteStride != jsonBufferView.end())? itByteStride->get<int>() : 0;
-			BufferView::Type type = BufferView::Type::Undefined;
+			BufferView::Target target = BufferView::Target::Undefined;
 			if (itTarget != jsonBufferView.end()) {
-				if (*itTarget == 34962) { type = BufferView::Type::Array; }
-				if (*itTarget == 34963) { type = BufferView::Type::ElementArray; }
+				int targetId = *itTarget;
+				if (targetId == 34962) { target = BufferView::Target::Array; }
+				else if (targetId == 34963) { target = BufferView::Target::ElementArray; }
+				else { throw std::runtime_error("Invalid BufferView target " + std::to_string(targetId)); }
 			}
 
 			if (bufferId < mGLTFData.buffers.size()) {
-				mGLTFData.bufferViews.push_back({ bufferId, byteLength, byteOffset, byteStride, type });
+				mGLTFData.bufferViews.push_back({ bufferId, byteLength, byteOffset, byteStride, target });
 			}
 			else {
 				throw std::runtime_error("Buffer index " + std::to_string(bufferId) + " out of range");
@@ -332,43 +334,39 @@ namespace se::loaders {
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
-			if (sampler.enableFilter[idx]) {
-				auto itFiltering = kTextureFilterMap.find(filter);
-				if (itFiltering != kTextureFilterMap.end()) {
-					sampler.filters[idx] = itFiltering->second;
-				}
-				else {
-					throw std::runtime_error("Invalid filter " + std::to_string(filter));
-				}
+			auto itFiltering = kTextureFilterMap.find(filter);
+			if (itFiltering != kTextureFilterMap.end()) {
+				sampler.filters[idx] = itFiltering->second;
+			}
+			else {
+				throw std::runtime_error("Invalid filter " + std::to_string(filter));
 			}
 		};
 
 		auto itMinFilter = jsonSampler.find("minFilter");
 		auto itMagFilter = jsonSampler.find("magFilter");
-		sampler.enableFilter[0] = (itMinFilter != jsonSampler.end());
-		sampler.enableFilter[1] = (itMagFilter != jsonSampler.end());
-		doFilter(*itMinFilter, 0);
-		doFilter(*itMagFilter, 1);
+		int minFilter = (itMinFilter != jsonSampler.end())? itMinFilter->get<int>() : 9728;
+		int magFilter = (itMagFilter != jsonSampler.end())? itMagFilter->get<int>() : 9728;
+		doFilter(minFilter, 0);
+		doFilter(magFilter, 1);
 
 		// Wraps
 		auto doWrap = [&](int wrap, int idx) {
-			if (sampler.enableWrap[idx]) {
-				auto itWrap = kTextureWrapMap.find(wrap);
-				if (itWrap != kTextureWrapMap.end()) {
-					sampler.wraps[idx] = itWrap->second;
-				}
-				else {
-					throw std::runtime_error("Invalid wrap mode " + std::to_string(wrap));
-				}
+			auto itWrap = kTextureWrapMap.find(wrap);
+			if (itWrap != kTextureWrapMap.end()) {
+				sampler.wraps[idx] = itWrap->second;
+			}
+			else {
+				throw std::runtime_error("Invalid wrap mode " + std::to_string(wrap));
 			}
 		};
 
 		auto itWrapS = jsonSampler.find("wrapS");
 		auto itWrapT = jsonSampler.find("wrapT");
-		sampler.enableWrap[0] = (itWrapS != jsonSampler.end());
-		sampler.enableWrap[1] = (itWrapT != jsonSampler.end());
-		doWrap(*itWrapS, 0);
-		doWrap(*itWrapT, 1);
+		int wrapS = (itWrapS != jsonSampler.end())? itWrapS->get<int>() : 10497;
+		int wrapT = (itWrapT != jsonSampler.end())? itWrapS->get<int>() : 10497;
+		doWrap(wrapS, 0);
+		doWrap(wrapT, 1);
 
 		mGLTFData.samplers.push_back(sampler);
 	}
@@ -391,27 +389,10 @@ namespace se::loaders {
 	{
 		auto texture = std::make_unique<graphics::Texture>();
 
-		auto itSampler = jsonTexture.find("sampler");
-		if (itSampler != jsonTexture.end()) {
-			std::size_t samplerId = *itSampler;
-			if (samplerId < mGLTFData.samplers.size()) {
-				const Sampler& sampler = mGLTFData.samplers[samplerId];
-				if (sampler.enableFilter[0] && sampler.enableFilter[1]) {
-					texture->setFiltering(sampler.filters[0], sampler.filters[1]);
-				}
-				if (sampler.enableWrap[0] && sampler.enableWrap[1]) {
-					texture->setWrapping(sampler.wraps[0], sampler.wraps[1]);
-				}
-			}
-			else {
-				throw std::runtime_error("Sampler index " + std::to_string(samplerId) + " out of range");
-			}
-		}
-
 		auto itSource = jsonTexture.find("source");
 		if (itSource != jsonTexture.end()) {
 			std::size_t sourceId = *itSource;
-			if (sourceId < mGLTFData.images.size()){
+			if (sourceId < mGLTFData.images.size()) {
 				const utils::Image& image = mGLTFData.images[sourceId];
 
 				graphics::ColorFormat format = graphics::ColorFormat::RGB;
@@ -427,6 +408,31 @@ namespace se::loaders {
 			}
 			else {
 				throw std::runtime_error("Source index " + std::to_string(sourceId) + " out of range");
+			}
+		}
+
+		auto itSampler = jsonTexture.find("sampler");
+		if (itSampler != jsonTexture.end()) {
+			std::size_t samplerId = *itSampler;
+			if (samplerId < mGLTFData.samplers.size()) {
+				const Sampler& sampler = mGLTFData.samplers[samplerId];
+				if ((sampler.filters[0] == graphics::TextureFilter::NearestMipMapNearest)
+					|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapNearest)
+					|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapNearest)
+					|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapNearest)
+					|| (sampler.filters[0] == graphics::TextureFilter::NearestMipMapLinear)
+					|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapLinear)
+					|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapLinear)
+					|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapLinear)
+				) {
+					texture->generateMipMap();
+				}
+
+				texture->setFiltering(sampler.filters[0], sampler.filters[1]);
+				texture->setWrapping(sampler.wraps[0], sampler.wraps[1]);
+			}
+			else {
+				throw std::runtime_error("Sampler index " + std::to_string(samplerId) + " out of range");
 			}
 		}
 
@@ -449,8 +455,8 @@ namespace se::loaders {
 			auto itBaseColorFactor = itPBRMetallicRoughness->find("baseColorFactor");
 			if (itBaseColorFactor != itPBRMetallicRoughness->end()) {
 				std::vector<float> fVector = *itBaseColorFactor;
-				if (fVector.size() >= 4) {
-					material->pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec4*>(fVector.data());
+				if (fVector.size() >= 3) {
+					material->pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
 				}
 			}
 
@@ -625,8 +631,10 @@ namespace se::loaders {
 				if (a.componentSize != 1) {
 					throw std::runtime_error("Accessor " + std::to_string(accessorId) + " component size must be 1");
 				}
-				if (bv.type != BufferView::Type::ElementArray) {
-					throw std::runtime_error("BufferView " + std::to_string(a.bufferViewId) + " type must be ElementArray");
+				if ((bv.target != BufferView::Target::Undefined)
+					&& (bv.target != BufferView::Target::ElementArray)
+				) {
+					throw std::runtime_error("BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
 				}
 
 				graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
@@ -727,12 +735,13 @@ namespace se::loaders {
 
 	void GLTFReader::parseNode(const nlohmann::json& jsonNode, DataHolder& output) const
 	{
+		std::string name;
 		auto itName = jsonNode.find("name");
-		if (itName == jsonNode.end()) {
-			throw std::runtime_error("Name property is needed");
+		if (itName != jsonNode.end()) {
+			name = *itName;
 		}
 
-		auto entity = std::make_unique<app::Entity>(*itName);
+		auto entity = std::make_unique<app::Entity>(name);
 
 		auto itRotation = jsonNode.find("rotation");
 		if (itRotation != jsonNode.end()) {

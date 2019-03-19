@@ -31,7 +31,7 @@ namespace se::loaders {
 		{
 			std::size_t bufferId, length, offset;
 			int stride;
-			enum class Type { Array, ElementArray, Undefined } type;
+			enum class Target { Array, ElementArray, Undefined } target;
 		};
 
 		/** Struct Accessor, holds the data of a GLTF accessor */
@@ -46,7 +46,6 @@ namespace se::loaders {
 		/** Struct Sampler, holds the data of a GLTF sampler */
 		struct Sampler
 		{
-			bool enableFilter[2], enableWrap[2];
 			graphics::TextureFilter filters[2];
 			graphics::TextureWrap wraps[2];
 		};

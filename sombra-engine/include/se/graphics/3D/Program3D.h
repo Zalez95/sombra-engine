@@ -47,9 +47,11 @@ namespace se::graphics {
 				struct
 				{
 					int baseColorFactor;
+					int useBaseColorTexture;
 					int baseColorTexture;
 					int metallicFactor;
 					int roughnessFactor;
+					int useMetallicRoughnessTexture;
 					int metallicRoughnessTexture;
 				} pbrMetallicRoughness;
 
@@ -95,25 +97,25 @@ namespace se::graphics {
 		 *
 		 * @param	modelMatrix the matrix that we want to set as the
 		 *			Model matrix in the shaders */
-		void setModelMatrix(const glm::mat4& modelMatrix);
+		void setModelMatrix(const glm::mat4& modelMatrix) const;
 
 		/** Sets the uniform variables for the given View matrix
 		 *
 		 * @param	viewMatrix the matrix that we want to set as the
 		 *			View matrix in the shaders */
-		void setViewMatrix(const glm::mat4& viewMatrix);
+		void setViewMatrix(const glm::mat4& viewMatrix) const;
 
 		/** Sets the uniform variables for the given Projection matrix
 		 *
 		 * @param	projectionMatrix the matrix that we want to set as the
 		 *			Projection matrix in the shaders */
-		void setProjectionMatrix(const glm::mat4& projectionMatrix);
+		void setProjectionMatrix(const glm::mat4& projectionMatrix) const;
 
 		/** Sets the uniform variables for the given material
 		 *
 		 * @param	material the material with the data that we want to set as
 		 *			uniform variables in the shaders */
-		void setMaterial(const Material& material);
+		void setMaterial(const Material& material) const;
 
 		/** Sets the uniform variables for the given PointLights
 		 *
@@ -123,7 +125,7 @@ namespace se::graphics {
 		 * @note	the maximum number of PointLights is MAX_LIGHTS, so if
 		 *			there are more lights in the given vector only the first
 		 *			lights of the vector will be submited */
-		void setLights(const std::vector<const PointLight*>& pointLights);
+		void setLights(const std::vector<const PointLight*>& pointLights) const;
 	private:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables */

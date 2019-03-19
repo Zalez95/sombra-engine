@@ -18,7 +18,7 @@ namespace se::graphics {
 	struct PBRMetallicRoughness
 	{
 		/** The base color factor */
-		glm::vec4 baseColorFactor;
+		glm::vec3 baseColorFactor;
 
 		/** The base color texture */
 		TextureSPtr baseColorTexture;

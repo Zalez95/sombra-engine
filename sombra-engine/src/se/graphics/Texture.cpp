@@ -39,7 +39,7 @@ namespace se::graphics {
 	}
 
 
-	void Texture::setFiltering(TextureFilter minification, TextureFilter magnification)
+	void Texture::setFiltering(TextureFilter minification, TextureFilter magnification) const
 	{
 		int glMinFilter = toGLFilter(minification);
 		int glMagFilter = toGLFilter(magnification);
@@ -51,7 +51,7 @@ namespace se::graphics {
 	}
 
 
-	void Texture::setWrapping(TextureWrap wrapS, TextureWrap wrapT)
+	void Texture::setWrapping(TextureWrap wrapS, TextureWrap wrapT) const
 	{
 		int glWrapS = toGLWrap(wrapS);
 		int glWrapT = toGLWrap(wrapT);
@@ -66,7 +66,8 @@ namespace se::graphics {
 	void Texture::setImage(
 		const void* pixels, TypeId type, ColorFormat format,
 		std::size_t width, std::size_t height
-	) {
+	) const
+	{
 		GLenum glFormat = toGLColor(format);
 		GLenum glType = toGLType(type);
 
@@ -76,6 +77,14 @@ namespace se::graphics {
 			glFormat, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
 			glFormat, glType, pixels
 		) );
+		GL_WRAP( glBindTexture(GL_TEXTURE_2D, 0) );
+	}
+
+
+	void Texture::generateMipMap() const
+	{
+		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
+		GL_WRAP( glGenerateMipmap(GL_TEXTURE_2D) );
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, 0) );
 	}
 

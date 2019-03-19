@@ -36,17 +36,17 @@ void main()
 	mat4 modelViewMatrix	= uViewMatrix * uModelMatrix;
 	mat4 inverseTranspose	= transpose(transpose(modelViewMatrix));
 
-	vec4 vertexView			= modelViewMatrix * vec4(aVertexPosition, 1.0f);
+	vec4 vertexView			= modelViewMatrix * vec4(aVertexPosition, 1.0);
 	gl_Position				= uProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in view space
 	vsVertex.position	= vertexView.xyz;
-	vsVertex.normal		= normalize(inverseTranspose * vec4(aVertexNormal, 0.0f)).xyz;
+	vsVertex.normal		= normalize(inverseTranspose * vec4(aVertexNormal, 0.0)).xyz;
 	vsVertex.texCoord0	= aVertexTexCoord0;
 
 	// Calculate the PointLights coordinates in view space
 	vsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
 	for (int i = 0; i < vsNumPointLights; ++i) {
-		vsPointLightsPositions[i] = (uViewMatrix * vec4(uPointLightsPositions[i], 1.0f)).xyz;
+		vsPointLightsPositions[i] = (uViewMatrix * vec4(uPointLightsPositions[i], 1.0)).xyz;
 	}
 }

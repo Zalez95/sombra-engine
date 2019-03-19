@@ -35,54 +35,65 @@ namespace se::graphics {
 	}
 
 
-	void Program3D::setModelMatrix(const glm::mat4& modelMatrix)
+	void Program3D::setModelMatrix(const glm::mat4& modelMatrix) const
 	{
 		mProgram->setUniform(mUniformLocations.modelMatrix, modelMatrix);
 	}
 
 
-	void Program3D::setViewMatrix(const glm::mat4& viewMatrix)
+	void Program3D::setViewMatrix(const glm::mat4& viewMatrix) const
 	{
 		mProgram->setUniform(mUniformLocations.viewMatrix, viewMatrix);
 	}
 
 
-	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix)
+	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix) const
 	{
 		mProgram->setUniform(mUniformLocations.projectionMatrix, projectionMatrix);
 	}
 
 
-	void Program3D::setMaterial(const Material& material)
+	void Program3D::setMaterial(const Material& material) const
 	{
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
-		if (material.pbrMetallicRoughness.baseColorTexture) {
+
+		bool useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
+		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.useBaseColorTexture, useBaseColorTexture);
+		if (useBaseColorTexture) {
 			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorTexture, TextureUnits::kBaseColor);
 			material.pbrMetallicRoughness.baseColorTexture->bind(TextureUnits::kBaseColor);
 		}
+
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicFactor, material.pbrMetallicRoughness.metallicFactor);
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.roughnessFactor, material.pbrMetallicRoughness.roughnessFactor);
-		if (material.pbrMetallicRoughness.metallicRoughnessTexture) {
+
+		bool useMetallicRoughnessTexture = (material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
+		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture, useMetallicRoughnessTexture);
+		if (useMetallicRoughnessTexture) {
 			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture, TextureUnits::kMetallicRoughness);
 			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
 		}
+
 		if (material.normalTexture) {
 			mProgram->setUniform(mUniformLocations.material.normalTexture, TextureUnits::kNormal);
 			material.normalTexture->bind(TextureUnits::kNormal);
 		}
+
 		if (material.occlusionTexture) {
 			mProgram->setUniform(mUniformLocations.material.occlusionTexture, TextureUnits::kOcclusion);
 			material.occlusionTexture->bind(TextureUnits::kOcclusion);
 		}
+
 		if (material.emissiveTexture) {
 			mProgram->setUniform(mUniformLocations.material.emissiveTexture, TextureUnits::kEmissive);
 			material.emissiveTexture->bind(TextureUnits::kEmissive);
 		}
+
 		mProgram->setUniform(mUniformLocations.material.emissiveFactor, material.emissiveFactor);
 	}
 
 
-	void Program3D::setLights(const std::vector<const PointLight*>& pointLights)
+	void Program3D::setLights(const std::vector<const PointLight*>& pointLights) const
 	{
 		int numPointLights = (static_cast<int>(pointLights.size()) > kMaxPointLights)? kMaxPointLights : static_cast<int>(pointLights.size());
 		mProgram->setUniform(mUniformLocations.numPointLights, numPointLights);
@@ -133,9 +144,11 @@ namespace se::graphics {
 		mUniformLocations.projectionMatrix			= mProgram->getUniformLocation("uProjectionMatrix");
 
 		mUniformLocations.material.pbrMetallicRoughness.baseColorFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorFactor");
+		mUniformLocations.material.pbrMetallicRoughness.useBaseColorTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useBaseColorTexture");
 		mUniformLocations.material.pbrMetallicRoughness.baseColorTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorTexture");
 		mUniformLocations.material.pbrMetallicRoughness.metallicFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicFactor");
 		mUniformLocations.material.pbrMetallicRoughness.roughnessFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.roughnessFactor");
+		mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture");
 		mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
 		mUniformLocations.material.normalTexture	= mProgram->getUniformLocation("uMaterial.normalTexture");
 		mUniformLocations.material.occlusionTexture	= mProgram->getUniformLocation("uMaterial.occlusionTexture");

@@ -2,8 +2,7 @@
 
 // ____ CONSTANTS ____
 const float PI					= 3.1415926535897932384626433832795;
-const vec4	BASE_REFLECTIVITY	= vec4(0.04);
-const vec2	INVERT_Y_TEXTURE	= vec2(1.0, -1.0);
+const vec3	BASE_REFLECTIVITY	= vec3(0.04);
 const int	MAX_POINT_LIGHTS	= 4;
 const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 
@@ -11,10 +10,12 @@ const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 // ____ DATATYPES ____
 struct PBRMetallicRoughness
 {
-	vec4 baseColorFactor;
+	vec3 baseColorFactor;
+	bool useBaseColorTexture;
 	sampler2D baseColorTexture;
 	float metallicFactor;
 	float roughnessFactor;
+	bool useMetallicRoughnessTexture;
 	sampler2D metallicRoughnessTexture;
 };
 
@@ -29,19 +30,19 @@ struct Material
 
 struct BaseLight
 {
-	vec3	lightColor;
+	vec3 lightColor;
 };
 
 struct Attenuation
 {
-	float	constant;
-	float	linear;
-	float	exponential;
+	float constant;
+	float linear;
+	float exponential;
 };
 
 struct PointLight
 {
-	BaseLight	baseLight;
+	BaseLight baseLight;
 	Attenuation attenuation;
 };
 
@@ -72,11 +73,11 @@ out vec4 glFragColor;
 float normalDistributionGGX(vec3 surfaceNormal, vec3 halfwayVector, float roughness)
 {
 	float roughness2 = roughness * roughness;
-	float normalDotLightSqrd = dot(surfaceNormal, halfwayVector);
-	normalDotLightSqrd *= normalDotLightSqrd;
+	float normalDotLight2 = max(dot(surfaceNormal, halfwayVector), 0.0);
+	normalDotLight2 *= normalDotLight2;
 
 	float numerator = roughness2;
-	float denominator = normalDotLightSqrd * (roughness2 - 1) + 1;
+	float denominator = normalDotLight2 * (roughness2 - 1.0) + 1.0;
 	denominator = PI * denominator * denominator;
 
 	return numerator / denominator;
@@ -88,80 +89,72 @@ float geometrySub(vec3 surfaceNormal, vec3 direction, float k)
 	float normalDotDirection = max(dot(surfaceNormal, direction), 0.0);
 
 	float numerator = normalDotDirection;
-	float denominator = normalDotDirection * (1 - k) * k;
+	float denominator = normalDotDirection * (1.0 - k) * k;
 	return numerator / denominator;
 }
 
 
 /* Returns the relative surface area of the microfacets hidden behind other
  * microfacets from the viewer persepective */
-float geometrySchlickGGX(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirection, float k)
+float geometrySchlickGGX(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirection, float roughness)
 {
+	float k = roughness + 1.0;
+	k = (k * k) / 8.0;
+
 	return geometrySub(surfaceNormal, viewDirection, k) * geometrySub(surfaceNormal, lightDirection, k);
 }
 
 
 /* Returns the ratio of light that gets reflected over the light that gets
  * refracted*/
-vec4 fresnelSchlick(vec3 halfwayVector, vec3 viewDirection, vec4 reflectivity)
+vec3 fresnelSchlick(vec3 halfwayVector, vec3 viewDirection, vec3 reflectivity)
 {
-	return reflectivity + (vec4(1) - reflectivity) * pow(1 - dot(halfwayVector, viewDirection), 5);
-}
-
-
-/* Cook-Torrance BRDF function. It calculates how much a light ray contributes
- * to the reflected light of the given surface. */
-vec4 calculateBRDF(vec3 viewDirection, vec3 lightDirection, vec3 surfaceNormal)
-{
-	float metallic		= uMaterial.pbrMetallicRoughness.metallicFactor;
-	float roughness		= uMaterial.pbrMetallicRoughness.roughnessFactor;
-	vec4 surfaceColor	= uMaterial.pbrMetallicRoughness.baseColorFactor;	// TODO: texture
-
-	vec3 halfwayVector	= normalize(lightDirection + viewDirection);
-	vec4 reflectivity	= mix(BASE_REFLECTIVITY, surfaceColor, metallic);
-	float k				= (roughness + 1) * (roughness + 1) / 8;
-
-	// Lambertian diffuse
-	vec4 diffuseColor = surfaceColor / PI;
-
-	// Cook-Torrance specular
-	float n	= normalDistributionGGX(surfaceNormal, halfwayVector, roughness);
-	vec4 f	= fresnelSchlick(halfwayVector, viewDirection, reflectivity);
-	float g	= geometrySchlickGGX(surfaceNormal, viewDirection, lightDirection, k);
-
-	vec4 numerator = n * f * g;
-	float denominator = 4 * max(dot(viewDirection, surfaceNormal), 0.0) * max(dot(lightDirection, surfaceNormal), 0.0);
-	vec4 specularColor = numerator / max(denominator, 0.001);
-
-	// Combine both the diffuse color and the specular color
-	vec4 diffuseRatio = (1.0 - f) * (1 - metallic);
-	return diffuseRatio * diffuseColor + specularColor;
+	float cosTheta = max(dot(halfwayVector, viewDirection), 0.0);
+	return reflectivity + (vec3(1.0) - reflectivity) * pow(1.0 - cosTheta, 5.0);
 }
 
 
 /* Calculates the radiance of the given point light */
-vec4 calculateRadiance(PointLight pointLight, vec3 lightDirection, float lightDistance, vec3 surfaceNormal)
+vec3 calculateRadiance(PointLight pointLight, float lightDistance)
 {
 	// Calculate the attenuation of the point light
 	float attenuation	= pointLight.attenuation.constant
 						+ pointLight.attenuation.linear * lightDistance
-						+ pointLight.attenuation.exponential * pow(lightDistance, 2);
+						+ pointLight.attenuation.exponential * lightDistance * lightDistance;
 	attenuation			= (attenuation != 0.0)? 1.0 / attenuation : 1.0;
 
 	// Calculate the light radiance
-	float cosTheta = max(dot(surfaceNormal, lightDirection), 0.0);
-	return attenuation * vec4(pointLight.baseLight.lightColor, 1.0) * cosTheta;
+	return attenuation * pointLight.baseLight.lightColor;
 }
 
 
 /* Calculates the color of the current fragment point with all the PointLights
  * of the scene */
-vec4 calculateDirectLight()
+vec3 calculateDirectLight()
 {
-	// Calculate the view direction (the eye is in the center of the scene)
-	vec3 viewDirection = normalize(-vsVertex.position);
+	vec3 totalLightColor = vec3(0.0);
 
-	vec4 totalLightColor = vec4(0.0);
+	vec3 surfaceNormal = vsVertex.normal;
+
+	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
+	float roughness	= uMaterial.pbrMetallicRoughness.roughnessFactor;
+	if (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture) {
+		vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+		metallic	*= metallicRoughnessColor.b;
+		roughness	*= metallicRoughnessColor.g;
+	}
+
+	vec3 surfaceColor = uMaterial.pbrMetallicRoughness.baseColorFactor;
+	if (uMaterial.pbrMetallicRoughness.useBaseColorTexture) {
+		surfaceColor *= texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0).rgb;
+	}
+
+	float surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
+
+	vec3 viewDirection		= normalize(-vsVertex.position);
+	vec3 reflectivity		= mix(BASE_REFLECTIVITY, surfaceColor, metallic);
+	float normalDotView		= max(dot(surfaceNormal, viewDirection), 0.0);
+
 	for (int i = 0; i < vsNumPointLights; ++i) {
 		// Calculate the light direction and distance from the current point
 		vec3 lightDirection	= vsPointLightsPositions[i] - vsVertex.position;
@@ -169,14 +162,28 @@ vec4 calculateDirectLight()
 		lightDirection		= normalize(lightDirection);
 
 		// Calculate the light radiance
-		vec4 radiance = calculateRadiance(uPointLights[i], lightDirection, lightDistance, vsVertex.normal);
+		vec3 radiance = calculateRadiance(uPointLights[i], lightDistance);
 
-		// Calculate the light reflections
-		vec4 reflectedColor = calculateBRDF(viewDirection, lightDirection, vsVertex.normal);
+		// Calculate the Lambertian diffuse color
+		vec3 diffuseColor = surfaceColor / PI;
 
-		// Add the current ligth color
-		totalLightColor += reflectedColor * radiance * max(dot(vsVertex.normal, lightDirection), 0.0);
+		// Calculate the Cook-Torrance brdf specular color
+		vec3 halfwayVector = normalize(lightDirection + viewDirection);
+
+		float n	= normalDistributionGGX(surfaceNormal, halfwayVector, roughness);
+		vec3 f	= fresnelSchlick(halfwayVector, viewDirection, reflectivity);
+		float g	= geometrySchlickGGX(surfaceNormal, viewDirection, lightDirection, roughness);
+
+		float normalDotLight = max(dot(surfaceNormal, lightDirection), 0.0);
+		vec3 specularColor = (n * f * g) / max(4 * normalDotView * normalDotLight, 0.001);
+
+		// Add the current light color
+		vec3 diffuseRatio = (1.0 - f) * (1.0 - metallic);
+		totalLightColor += (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
 	}
+
+	// Add ambient color
+	totalLightColor += vec3(0.03) * surfaceAO * surfaceColor;
 
 	return totalLightColor;
 }
@@ -185,9 +192,11 @@ vec4 calculateDirectLight()
 // ____ MAIN PROGRAM ____
 void main()
 {
-	vec4 lightColor = calculateDirectLight();
+	vec3 lightColor = calculateDirectLight();
 
 	// Gamma correction
-	lightColor = lightColor / (lightColor + vec4(1.0));
-	glFragColor = pow(lightColor, vec4(1.0 / SCREEN_GAMMA));
+	lightColor = lightColor / (lightColor + vec3(1.0));
+	lightColor = pow(lightColor, vec3(1.0 / SCREEN_GAMMA));
+
+	glFragColor = vec4(lightColor, 1.0);
 }

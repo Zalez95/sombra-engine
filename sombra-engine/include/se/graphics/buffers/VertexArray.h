@@ -49,7 +49,7 @@ namespace se::graphics {
 		void setVertexAttribute(
 			unsigned int index,
 			TypeId type, bool normalized, int componentSize, int stride
-		);
+		) const;
 
 		/** Binds the Vertex Array Object */
 		void bind() const;

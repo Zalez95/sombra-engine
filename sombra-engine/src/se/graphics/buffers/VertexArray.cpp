@@ -43,7 +43,8 @@ namespace se::graphics {
 	void VertexArray::setVertexAttribute(
 		unsigned int index,
 		TypeId type, bool normalized, int componentSize, int stride
-	) {
+	) const
+	{
 		GL_WRAP( glEnableVertexAttribArray(index) );
 		GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
 	}

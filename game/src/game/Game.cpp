@@ -367,16 +367,22 @@ namespace game {
 
 		// Plane
 		auto plane = std::make_unique<se::app::Entity>("plane");
-		plane->position = glm::vec3(-5.0f, 1.0f, -5.0f);
+		plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, nullptr);
+		std::shared_ptr<se::graphics::Material> planeMaterial(new se::graphics::Material{
+			"plane_material",
+			se::graphics::PBRMetallicRoughness{ glm::vec3(1.0f), texture2, 0.2f, 0.5f, nullptr },
+			nullptr, nullptr, nullptr, glm::vec3(0.0f)
+		});
+
+		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, planeMaterial);
 		mGraphicsManager->addEntity(plane.get(), std::move(renderable3D1));
 
 		mEntities.push_back(std::move(plane));
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
-		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 0.0f }, { 0.2f, 1.0f, 0.2f, 0.0f }, { 0.2f, 0.2f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 0.0f }, { 0.2f, 0.2f, 0.1f, 0.0f } };
+		glm::vec3 colors[5] = { { 1.0f, 0.2f, 0.2f }, { 0.2f, 1.0f, 0.2f }, { 0.2f, 0.2f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f } };
 		se::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
@@ -405,7 +411,7 @@ namespace game {
 
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
-				se::graphics::PBRMetallicRoughness{ colors[i], nullptr, 0.75, 0.5f, nullptr },
+				se::graphics::PBRMetallicRoughness{ colors[i], nullptr, 0.2f, 0.5f, nullptr },
 				nullptr, nullptr, nullptr, glm::vec3(0.0f)
 			});
 
@@ -428,8 +434,8 @@ namespace game {
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				se::graphics::PBRMetallicRoughness{
-					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 0.0f),
-					nullptr, 0.75, 0.5f, nullptr
+					glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f)),
+					nullptr, 0.75f, 0.5f, nullptr
 				},
 				nullptr, nullptr, nullptr, glm::vec3(0.0f)
 			});
