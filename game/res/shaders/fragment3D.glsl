@@ -22,6 +22,7 @@ struct PBRMetallicRoughness
 struct Material
 {
 	PBRMetallicRoughness pbrMetallicRoughness;
+	bool useNormalTexture;
 	sampler2D normalTexture;
 	sampler2D occlusionTexture;
 	sampler2D emissiveTexture;
@@ -48,11 +49,10 @@ struct PointLight
 
 
 // ____ GLOBAL VARIABLES ____
-// Input data in view space from the vertex shader
+// Input data in view tangent from the vertex shader
 in VertexData
 {
 	vec3 position;
-	vec3 normal;
 	vec2 texCoord0;
 } vsVertex;
 
@@ -134,7 +134,11 @@ vec3 calculateDirectLight()
 {
 	vec3 totalLightColor = vec3(0.0);
 
-	vec3 surfaceNormal = vsVertex.normal;
+	vec3 surfaceNormal = vec3(0.0, 0.0, 1.0);
+	if (uMaterial.useNormalTexture) {
+		surfaceNormal = texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb;
+		surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
+	}
 
 	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
 	float roughness	= uMaterial.pbrMetallicRoughness.roughnessFactor;

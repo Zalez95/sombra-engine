@@ -214,7 +214,7 @@ namespace game {
 		std::shared_ptr<se::utils::Image> heightMap1 = nullptr;
 		std::shared_ptr<se::graphics::Texture> texture1 = nullptr, texture2 = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
-		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr;
+		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
 		se::loaders::DataHolder dataHolder1;
@@ -251,8 +251,9 @@ namespace game {
 				2, 3, 6,
 				3, 7, 6
 			};
-			rawMesh1.normals = se::loaders::MeshLoader::calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
 			rawMesh1.texCoords = std::vector<glm::vec2>(8);
+			rawMesh1.normals = se::loaders::MeshLoader::calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
+			rawMesh1.tangents = se::loaders::MeshLoader::calculateTangents(rawMesh1.positions, rawMesh1.texCoords, rawMesh1.faceIndices);
 			mesh1 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh1));
 
 			se::loaders::RawMesh rawMesh2("Plane");
@@ -310,10 +311,11 @@ namespace game {
 			camera1->setPerspectiveProjectionMatrix(kFOV, kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			se::graphics::BaseLight baseLight1{ glm::vec3(0.5f, 0.6f, 0.3f) };
+			se::graphics::BaseLight baseLight1{ glm::vec3(1.0f, 0.75f, 0.8f) }, baseLight2{ glm::vec3(1.0f, 0.5f, 0.5f) };
 			se::graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
-			pointLight1 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3() });
-			pointLight2 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3() });
+			pointLight1 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3(0.0f) });
+			pointLight2 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight2, attenuation1, glm::vec3(0.0f) });
+			pointLight3 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3(0.0f) });
 
 			// Fonts
 			se::utils::FileReader fileReader3("res/fonts/arial.fnt");
@@ -357,6 +359,7 @@ namespace game {
 		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
 
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
+		mGraphicsManager->addEntity(player.get(), std::move(pointLight1));
 		mAudioManager->setListener(player.get());
 		mInputManager->addEntity(player.get());
 
@@ -468,15 +471,15 @@ namespace game {
 		}
 
 		// Lights
-		auto eL1 = std::make_unique<se::app::Entity>("point-light1");
-		eL1->position = glm::vec3(2, 1, 5);
-		mGraphicsManager->addEntity(eL1.get(), std::move(pointLight1));
-		mEntities.push_back(std::move(eL1));
-
 		auto eL2 = std::make_unique<se::app::Entity>("point-light2");
 		eL2->position = glm::vec3(-3, 1, 5);
 		mGraphicsManager->addEntity(eL2.get(), std::move(pointLight2));
 		mEntities.push_back(std::move(eL2));
+
+		auto eL3 = std::make_unique<se::app::Entity>("point-light3");
+		eL3->position = glm::vec3(2, 10, 5);
+		mGraphicsManager->addEntity(eL3.get(), std::move(pointLight3));
+		mEntities.push_back(std::move(eL3));
 
 		// GLTF meshes
 		for (auto& pair : dataHolder1.entityR3DMap) {

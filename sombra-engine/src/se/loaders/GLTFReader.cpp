@@ -9,6 +9,52 @@
 
 namespace se::loaders {
 
+	static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
+		{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
+		{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
+		{ "TANGENT",	graphics::MeshAttributes::TangentAttribute },
+		{ "TEXCOORD_0",	graphics::MeshAttributes::TexCoordAttribute0 },
+		{ "TEXCOORD_1",	graphics::MeshAttributes::TexCoordAttribute1 },
+		{ "COLOR_0",	graphics::MeshAttributes::ColorAttribute },
+		{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute },
+		{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute }
+	};
+
+	static const std::map<int, graphics::TypeId> kTypeIdMap = {
+		{ 5120, graphics::TypeId::Byte },
+		{ 5121, graphics::TypeId::UnsignedByte },
+		{ 5122, graphics::TypeId::Short },
+		{ 5123, graphics::TypeId::UnsignedShort },
+		{ 5125, graphics::TypeId::UnsignedInt },
+		{ 5126, graphics::TypeId::Float }
+	};
+
+	static const std::map<std::string, int> kComponentSizeMap = {
+		{ "SCALAR", 1 },
+		{ "VEC2", 2 },
+		{ "VEC3", 3 },
+		{ "VEC4", 4 },
+		{ "MAT2", 4 },
+		{ "MAT3", 9 },
+		{ "MAT4", 16 }
+	};
+
+	static const std::map<int, graphics::TextureFilter> kTextureFilterMap = {
+		{ 9728, graphics::TextureFilter::Nearest },
+		{ 9729, graphics::TextureFilter::Linear },
+		{ 9984, graphics::TextureFilter::NearestMipMapNearest },
+		{ 9985, graphics::TextureFilter::LinearMipMapNearest },
+		{ 9986, graphics::TextureFilter::NearestMipMapLinear },
+		{ 9987, graphics::TextureFilter::LinearMipMapLinear }
+	};
+
+	static const std::map<int, graphics::TextureWrap> kTextureWrapMap = {
+		{ 10497, graphics::TextureWrap::Repeat },
+		{ 33648, graphics::TextureWrap::MirroredRepeat },
+		{ 33071, graphics::TextureWrap::ClampToEdge }
+	};
+
+
 	DataHolder GLTFReader::load(const std::string& path)
 	{
 		DataHolder output;
@@ -251,24 +297,6 @@ namespace se::loaders {
 
 	void GLTFReader::parseAccessor(const nlohmann::json& jsonAccessor)
 	{
-		static const std::map<int, graphics::TypeId> kTypeIdMap = {
-			{ 5120, graphics::TypeId::Byte },
-			{ 5121, graphics::TypeId::UnsignedByte },
-			{ 5122, graphics::TypeId::Short },
-			{ 5123, graphics::TypeId::UnsignedShort },
-			{ 5125, graphics::TypeId::UnsignedInt },
-			{ 5126, graphics::TypeId::Float }
-		};
-		static const std::map<std::string, int> kComponentSizeMap = {
-			{ "SCALAR", 1 },
-			{ "VEC2", 2 },
-			{ "VEC3", 3 },
-			{ "VEC4", 4 },
-			{ "MAT2", 4 },
-			{ "MAT3", 9 },
-			{ "MAT4", 16 }
-		};
-
 		auto itBufferView = jsonAccessor.find("bufferView");
 		auto itByteOffset = jsonAccessor.find("byteOffset");
 		auto itComponentType = jsonAccessor.find("componentType");
@@ -316,20 +344,6 @@ namespace se::loaders {
 
 	void GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
 	{
-		static const std::map<int, graphics::TextureFilter> kTextureFilterMap = {
-			{ 9728, graphics::TextureFilter::Nearest },
-			{ 9729, graphics::TextureFilter::Linear },
-			{ 9984, graphics::TextureFilter::NearestMipMapNearest },
-			{ 9985, graphics::TextureFilter::LinearMipMapNearest },
-			{ 9986, graphics::TextureFilter::NearestMipMapLinear },
-			{ 9987, graphics::TextureFilter::LinearMipMapLinear }
-		};
-		static const std::map<int, graphics::TextureWrap> kTextureWrapMap = {
-			{ 10497, graphics::TextureWrap::Repeat },
-			{ 33648, graphics::TextureWrap::MirroredRepeat },
-			{ 33071, graphics::TextureWrap::ClampToEdge }
-		};
-
 		Sampler sampler;
 
 		// Filters
@@ -565,17 +579,6 @@ namespace se::loaders {
 		const nlohmann::json& jsonPrimitive, DataHolder& output
 	) const
 	{
-		static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
-			{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
-			{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
-			{ "TANGENT",	graphics::MeshAttributes::TangentAttribute },
-			{ "TEXCOORD_0",	graphics::MeshAttributes::TexCoordAttribute0 },
-			{ "TEXCOORD_1",	graphics::MeshAttributes::TexCoordAttribute1 },
-			{ "COLOR_0",	graphics::MeshAttributes::ColorAttribute },
-			{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute },
-			{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute }
-		};
-
 		std::shared_ptr<graphics::Mesh> mesh = nullptr;
 		std::shared_ptr<graphics::Material> material = nullptr;
 

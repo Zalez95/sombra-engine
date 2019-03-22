@@ -35,11 +35,24 @@ namespace se::loaders {
 		 *
 		 * @param	positions a vector with the positions of the vertices
 		 * @param	faceIndices a vector with indices of the vertices that
-		 *			compose the faces of a Mesh
-		 * @return	a vector with the normals of the vertices
-		 * @throw	runtime_error in case of any error while parsing */
+		 *			compose the triangle faces of a Mesh
+		 * @return	a vector with the normals of the vertices */
 		static std::vector<glm::vec3> calculateNormals(
 			const std::vector<glm::vec3>& positions,
+			const std::vector<unsigned short>& faceIndices
+		);
+
+		/** Calculates the Tangents of the given vertices
+		 *
+		 * @param	positions a vector with the positions of the vertices
+		 * @param	texCoords a vector with the texture coordinates of the
+		 *			vertices
+		 * @param	faceIndices a vector with indices of the vertices that
+		 *			compose the triangle faces of a Mesh
+		 * @return	a vector with the tangents of the vertices */
+		static std::vector<glm::vec3> calculateTangents(
+			const std::vector<glm::vec3>& positions,
+			const std::vector<glm::vec2>& texCoords,
 			const std::vector<unsigned short>& faceIndices
 		);
 	};

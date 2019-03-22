@@ -74,7 +74,9 @@ namespace se::graphics {
 			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
 		}
 
-		if (material.normalTexture) {
+		bool useNormalTexture = (material.normalTexture != nullptr);
+		mProgram->setUniform(mUniformLocations.material.useNormalTexture, useNormalTexture);
+		if (useNormalTexture) {
 			mProgram->setUniform(mUniformLocations.material.normalTexture, TextureUnits::kNormal);
 			material.normalTexture->bind(TextureUnits::kNormal);
 		}
@@ -150,6 +152,7 @@ namespace se::graphics {
 		mUniformLocations.material.pbrMetallicRoughness.roughnessFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.roughnessFactor");
 		mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture");
 		mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
+		mUniformLocations.material.useNormalTexture	= mProgram->getUniformLocation("uMaterial.useNormalTexture");
 		mUniformLocations.material.normalTexture	= mProgram->getUniformLocation("uMaterial.normalTexture");
 		mUniformLocations.material.occlusionTexture	= mProgram->getUniformLocation("uMaterial.occlusionTexture");
 		mUniformLocations.material.emissiveTexture	= mProgram->getUniformLocation("uMaterial.emissiveTexture");

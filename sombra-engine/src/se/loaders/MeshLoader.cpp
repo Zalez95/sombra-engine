@@ -31,6 +31,14 @@ namespace se::loaders {
 			vao.unbind();
 		}
 
+		if (!rawMesh.tangents.empty()) {
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.tangents.front()), 3 * rawMesh.tangents.size());
+			vao.bind();
+			vbo.bind();
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TangentAttribute), TypeId::Float, false, 3, 0);
+			vao.unbind();
+		}
+
 		if (!rawMesh.texCoords.empty()) {
 			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.texCoords.front()), 2 * rawMesh.texCoords.size());
 			vao.bind();
@@ -107,8 +115,8 @@ namespace se::loaders {
 		// which it belongs
 		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
 			// Get the normal of triangle
-			const glm::vec3& v1 = positions[faceIndices[i]] - positions[faceIndices[i+1]];
-			const glm::vec3& v2 = positions[faceIndices[i]] - positions[faceIndices[i+2]];
+			const glm::vec3& v1 = positions[faceIndices[i+1]] - positions[faceIndices[i]];
+			const glm::vec3& v2 = positions[faceIndices[i+2]] - positions[faceIndices[i]];
 			glm::vec3 normal = glm::cross(v1, v2);
 
 			normals[faceIndices[i]]		+= normal;
@@ -122,6 +130,30 @@ namespace se::loaders {
 		}
 
 		return normals;
+	}
+
+
+	std::vector<glm::vec3> MeshLoader::calculateTangents(
+		const std::vector<glm::vec3>& positions,
+		const std::vector<glm::vec2>& texCoords,
+		const std::vector<unsigned short>& faceIndices
+	) {
+		std::vector<glm::vec3> tangents(positions.size(), glm::vec3(0.0f));
+
+		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
+			const glm::vec3& e1		= positions[faceIndices[i+1]] - positions[faceIndices[i]];
+			const glm::vec3& e2		= positions[faceIndices[i+2]] - positions[faceIndices[i]];
+			const glm::vec2& dUV1	= texCoords[faceIndices[i+1]] - texCoords[faceIndices[i]];
+			const glm::vec2& dUV2	= texCoords[faceIndices[i+2]] - texCoords[faceIndices[i]];
+
+			float invertedDeterminant = 1.0f / (dUV1.x * dUV2.y - dUV2.x * dUV1.y);
+			tangents[faceIndices[i]].x = invertedDeterminant * (dUV2.y * e1.x - dUV1.y * e2.x);
+			tangents[faceIndices[i]].y = invertedDeterminant * (dUV2.y * e1.y - dUV1.y * e2.y);
+			tangents[faceIndices[i]].z = invertedDeterminant * (dUV2.y * e1.z - dUV1.y * e2.z);
+			tangents[faceIndices[i]] = glm::normalize(tangents[faceIndices[i]]);
+		}
+
+		return tangents;
 	}
 
 }

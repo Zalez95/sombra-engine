@@ -55,6 +55,7 @@ namespace se::graphics {
 					int metallicRoughnessTexture;
 				} pbrMetallicRoughness;
 
+				int useNormalTexture;
 				int normalTexture;
 				int occlusionTexture;
 				int emissiveTexture;
