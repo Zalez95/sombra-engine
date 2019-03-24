@@ -15,11 +15,13 @@ namespace se::loaders {
 		/** Reads the image located at the given position
 		 *
 		 * @param	path the location of the image
-		 * @param	imageFormat the format in which the image is stored
+		 * @param	forceNumChannels the number of channels of the image to
+		 *			load (automatically detected by default)
 		 * @return	the new Image
-		 * @throw	runtime_error if the image wasn't found */
+		 * @throw	runtime_error if there were any errors while reading the
+		 *			image */
 		static utils::Image read(
-			const std::string& path, utils::ImageFormat imageFormat
+			const std::string& path, int forceNumChannels = 0
 		);
 	};
 

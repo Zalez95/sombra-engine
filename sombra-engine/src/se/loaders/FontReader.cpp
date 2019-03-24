@@ -46,7 +46,7 @@ namespace se::loaders {
 				fileReader.getValuePair(trash, "=", fontTextureName);
 				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
 
-				utils::Image atlasImg = ImageReader::read(fontTexturePath, utils::ImageFormat::L);
+				utils::Image atlasImg = ImageReader::read(fontTexturePath, 1);
 				textureAtlas->setImage(
 					atlasImg.pixels.get(), graphics::TypeId::Byte, graphics::ColorFormat::Red,
 					atlasImg.width, atlasImg.height

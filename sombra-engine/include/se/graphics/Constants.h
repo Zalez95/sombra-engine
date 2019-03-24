@@ -58,6 +58,17 @@ namespace se::graphics {
 		ClampToBorder
 	};
 
+
+	/**
+	 * Indicates how the renderer should interpret the alpha color value
+	 */
+	enum class AlphaMode
+	{
+		Opaque,
+		Mask,
+		Blend
+	};
+
 }
 
 #endif		// CONSTANTS_H

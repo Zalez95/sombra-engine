@@ -92,6 +92,12 @@ namespace se::graphics {
 		}
 
 		mProgram->setUniform(mUniformLocations.material.emissiveFactor, material.emissiveFactor);
+
+		bool checkAlphaCutoff = (material.alphaMode == AlphaMode::Mask);
+		mProgram->setUniform(mUniformLocations.material.checkAlphaCutoff, checkAlphaCutoff);
+		if (checkAlphaCutoff) {
+			mProgram->setUniform(mUniformLocations.material.alphaCutoff, material.alphaCutoff);
+		}
 	}
 
 
@@ -157,6 +163,8 @@ namespace se::graphics {
 		mUniformLocations.material.occlusionTexture	= mProgram->getUniformLocation("uMaterial.occlusionTexture");
 		mUniformLocations.material.emissiveTexture	= mProgram->getUniformLocation("uMaterial.emissiveTexture");
 		mUniformLocations.material.emissiveFactor	= mProgram->getUniformLocation("uMaterial.emissiveFactor");
+		mUniformLocations.material.checkAlphaCutoff	= mProgram->getUniformLocation("uMaterial.checkAlphaCutoff");
+		mUniformLocations.material.alphaCutoff		= mProgram->getUniformLocation("uMaterial.alphaCutoff");
 
 		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
 		for (std::size_t i = 0; i < kMaxPointLights; ++i) {

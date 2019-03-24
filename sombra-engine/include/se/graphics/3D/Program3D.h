@@ -60,6 +60,8 @@ namespace se::graphics {
 				int occlusionTexture;
 				int emissiveTexture;
 				int emissiveFactor;
+				int checkAlphaCutoff;
+				int alphaCutoff;
 			} material;
 
 			int numPointLights;

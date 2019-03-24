@@ -9,7 +9,7 @@ namespace se::graphics {
 		// Enable depth-testing
 		GL_WRAP( glEnable(GL_DEPTH_TEST) );
 		GL_WRAP( glDepthMask(GL_TRUE) );
-		GL_WRAP( glDepthFunc(GL_LEQUAL) );		// Write if depth <= depth buffer
+		GL_WRAP( glDepthFunc(GL_LESS) );		// Write if depth <= depth buffer
 		GL_WRAP( glDepthRange(0.0f, 1.0f) );	// The Z coordinate range is [0,1]
 
 		// Enable face culling - tells OpenGL to not draw the faces that

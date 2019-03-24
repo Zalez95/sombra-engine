@@ -5,7 +5,6 @@
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/3D/Renderable3D.h"
-#include "se/graphics/PrimitiveTypes.h"
 
 namespace se::graphics {
 
@@ -37,7 +36,6 @@ namespace se::graphics {
 			auto mesh				= renderable3D->getMesh();
 			auto material			= renderable3D->getMaterial();
 			glm::mat4 modelMatrix	= renderable3D->getModelMatrix();
-			unsigned char flags		= 0;//renderable3D->getRenderFlags();
 
 			if (!mesh) { continue; }
 
@@ -45,23 +43,18 @@ namespace se::graphics {
 			mProgram.setModelMatrix(modelMatrix);
 			if (material) {
 				mProgram.setMaterial(*material);
-			}
 
-			// Set the mesh transparency
-			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
-				GL_WRAP( glEnable(GL_BLEND) );
-				GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-				GL_WRAP( glDisable(GL_DEPTH_TEST) );
-			}
+				// Set the material alphaMode
+				if (material->alphaMode == AlphaMode::Blend) {
+					GL_WRAP( glEnable(GL_BLEND) );
+					GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+					GL_WRAP( glDisable(GL_DEPTH_TEST) );
+				}
 
-			// Unset face culling
-			if (flags & RenderFlags::DISABLE_FACE_CULLING) {
-				GL_WRAP( glDisable(GL_CULL_FACE) );
-			}
-
-			// Set mesh wireframe
-			if (flags & RenderFlags::WIREFRAME) {
-				GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
+				// Unset face culling
+				if (material->doubleSided) {
+					GL_WRAP( glDisable(GL_CULL_FACE) );
+				}
 			}
 
 			// Draw
@@ -73,20 +66,17 @@ namespace se::graphics {
 			) );
 			mesh->unbind();
 
-			// Unset mesh wireframe
-			if (flags & RenderFlags::WIREFRAME) {
-				GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
-			}
+			if (material) {
+				// Set face culling
+				if (material->doubleSided) {
+					GL_WRAP( glEnable(GL_CULL_FACE) );
+				}
 
-			// Set face culling
-			if (flags & RenderFlags::DISABLE_FACE_CULLING) {
-				GL_WRAP( glEnable(GL_CULL_FACE) );
-			}
-
-			// Unset the mesh transparency
-			if (flags & RenderFlags::DISABLE_DEPTH_TEST) {
-				GL_WRAP( glEnable(GL_DEPTH_TEST) );
-				GL_WRAP( glDisable(GL_BLEND) );
+				// Set the material alphaMode
+				if (material->alphaMode == AlphaMode::Blend) {
+					GL_WRAP( glEnable(GL_DEPTH_TEST) );
+					GL_WRAP( glDisable(GL_BLEND) );
+				}
 			}
 		}
 

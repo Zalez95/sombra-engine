@@ -7,18 +7,6 @@
 namespace se::utils {
 
 	/**
-	 * The Color format of the Image
-	 */
-	enum class ImageFormat
-	{
-		RGB,		///< image in color
-		RGBA,		///< image in color with alpha
-		L,			///< image in greyscale
-		LA			///< image in grayscale with alpha
-	};
-
-
-	/**
 	 * Struct Class, it holds the data of an image in memory.
 	 */
 	struct Image
@@ -34,9 +22,6 @@ namespace se::utils {
 
 		/** The number of channels of the image */
 		int channels;
-
-		/** The format of the image color */
-		ImageFormat format;
 	};
 
 }

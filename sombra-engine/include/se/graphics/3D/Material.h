@@ -5,6 +5,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "../Texture.h"
+#include "../Constants.h"
 
 namespace se::graphics {
 
@@ -18,7 +19,7 @@ namespace se::graphics {
 	struct PBRMetallicRoughness
 	{
 		/** The base color factor */
-		glm::vec3 baseColorFactor;
+		glm::vec4 baseColorFactor;
 
 		/** The base color texture */
 		TextureSPtr baseColorTexture;
@@ -57,6 +58,17 @@ namespace se::graphics {
 
 		/** The RGB components of the emissive color of the material */
 		glm::vec3 emissiveFactor;
+
+		/** Indicates how the renderer should interpret the alpha value of the
+		 * baseColorFactor property of the PBRMetallicRoughness */
+		enum AlphaMode alphaMode;
+
+		/** When the AlphaMode is set to Mask specifies the cutoff threshold */
+		float alphaCutoff;
+
+		/** Indicates if each face of the Mesh should be rendered by both
+		 * sides */
+		bool doubleSided;
 	};
 
 }

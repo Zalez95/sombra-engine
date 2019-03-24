@@ -4,16 +4,15 @@
 
 namespace se::loaders {
 
-	utils::Image ImageReader::read(const std::string& path, utils::ImageFormat imageFormat)
+	utils::Image ImageReader::read(const std::string& path, int forceNumChannels)
 	{
-		// Load the image data with SOIL
-		int soilFormat = (imageFormat == utils::ImageFormat::RGB)? SOIL_LOAD_RGB :
-			(imageFormat == utils::ImageFormat::RGBA)? SOIL_LOAD_RGBA :
-			(imageFormat == utils::ImageFormat::L)? SOIL_LOAD_L :
-			SOIL_LOAD_LA;
+		int soilForceChannels = forceNumChannels;
+		if (forceNumChannels <= 0) {
+			soilForceChannels = SOIL_LOAD_AUTO;
+		}
 
 		int width, height, channels;
-		unsigned char* pixels = SOIL_load_image(path.c_str(), &width, &height, &channels, soilFormat);
+		unsigned char* pixels = SOIL_load_image(path.c_str(), &width, &height, &channels, soilForceChannels);
 
 		if (!pixels) {
 			throw std::runtime_error(
@@ -25,7 +24,7 @@ namespace se::loaders {
 		return utils::Image{
 			std::unique_ptr<std::byte>(reinterpret_cast<std::byte*>(pixels)),
 			static_cast<std::size_t>(width), static_cast<std::size_t>(height),
-			channels, imageFormat
+			channels
 		};
 	}
 

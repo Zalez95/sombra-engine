@@ -10,7 +10,7 @@ const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 // ____ DATATYPES ____
 struct PBRMetallicRoughness
 {
-	vec3 baseColorFactor;
+	vec4 baseColorFactor;
 	bool useBaseColorTexture;
 	sampler2D baseColorTexture;
 	float metallicFactor;
@@ -27,6 +27,8 @@ struct Material
 	sampler2D occlusionTexture;
 	sampler2D emissiveTexture;
 	vec3 emissiveFactor;
+	bool checkAlphaCutoff;
+	float alphaCutoff;
 };
 
 struct BaseLight
@@ -130,30 +132,9 @@ vec3 calculateRadiance(PointLight pointLight, float lightDistance)
 
 /* Calculates the color of the current fragment point with all the PointLights
  * of the scene */
-vec3 calculateDirectLight()
+vec3 calculateDirectLight(vec3 surfaceColor, float metallic, float roughness, vec3 surfaceNormal)
 {
 	vec3 totalLightColor = vec3(0.0);
-
-	vec3 surfaceNormal = vec3(0.0, 0.0, 1.0);
-	if (uMaterial.useNormalTexture) {
-		surfaceNormal = texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb;
-		surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
-	}
-
-	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
-	float roughness	= uMaterial.pbrMetallicRoughness.roughnessFactor;
-	if (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture) {
-		vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
-		metallic	*= metallicRoughnessColor.b;
-		roughness	*= metallicRoughnessColor.g;
-	}
-
-	vec3 surfaceColor = uMaterial.pbrMetallicRoughness.baseColorFactor;
-	if (uMaterial.pbrMetallicRoughness.useBaseColorTexture) {
-		surfaceColor *= texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0).rgb;
-	}
-
-	float surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
 
 	vec3 viewDirection		= normalize(-vsVertex.position);
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, surfaceColor, metallic);
@@ -186,9 +167,6 @@ vec3 calculateDirectLight()
 		totalLightColor += (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
 	}
 
-	// Add ambient color
-	totalLightColor += vec3(0.03) * surfaceAO * surfaceColor;
-
 	return totalLightColor;
 }
 
@@ -196,11 +174,43 @@ vec3 calculateDirectLight()
 // ____ MAIN PROGRAM ____
 void main()
 {
-	vec3 lightColor = calculateDirectLight();
+	// Get the texture data for the current fragment
+	vec4 surfaceColor = uMaterial.pbrMetallicRoughness.baseColorFactor;
+	if (uMaterial.pbrMetallicRoughness.useBaseColorTexture) {
+		surfaceColor *= texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+	}
 
-	// Gamma correction
-	lightColor = lightColor / (lightColor + vec3(1.0));
-	lightColor = pow(lightColor, vec3(1.0 / SCREEN_GAMMA));
+	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
+	float roughness	= uMaterial.pbrMetallicRoughness.roughnessFactor;
+	if (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture) {
+		vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+		metallic	*= metallicRoughnessColor.b;
+		roughness	*= metallicRoughnessColor.g;
+	}
 
-	glFragColor = vec4(lightColor, 1.0);
+	vec3 surfaceNormal = vec3(0.0, 0.0, 1.0);
+	if (uMaterial.useNormalTexture) {
+		surfaceNormal = texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb;
+		surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
+	}
+
+	float surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
+
+	// Check alpha cutoff
+	if (uMaterial.checkAlphaCutoff && (surfaceColor.a < uMaterial.alphaCutoff)) {
+		discard;
+	}
+	else {
+		// Calculate direct light
+		vec3 lightColor = calculateDirectLight(surfaceColor.rgb, metallic, roughness, surfaceNormal);
+
+		// Add ambient color
+		lightColor += vec3(0.03) * surfaceAO * surfaceColor.rgb;
+
+		// Gamma correction
+		lightColor = lightColor / (lightColor + vec3(1.0));
+		lightColor = pow(lightColor, vec3(1.0 / SCREEN_GAMMA));
+
+		glFragColor = vec4(lightColor, surfaceColor.a);
+	}
 }

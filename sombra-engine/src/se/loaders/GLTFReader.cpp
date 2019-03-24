@@ -55,6 +55,13 @@ namespace se::loaders {
 	};
 
 
+	static const std::map<std::string, graphics::AlphaMode> kAlphaModeMap = {
+		{ "OPAQUE", graphics::AlphaMode::Opaque },
+		{ "MASK", graphics::AlphaMode::Mask },
+		{ "BLEND", graphics::AlphaMode::Blend }
+	};
+
+
 	DataHolder GLTFReader::load(const std::string& path)
 	{
 		DataHolder output;
@@ -391,7 +398,7 @@ namespace se::loaders {
 		auto itUri = jsonImage.find("uri");
 		if (itUri != jsonImage.end()) {
 			utils::Image& image = mGLTFData.images.emplace_back();
-			image = loaders::ImageReader::read(mBasePath + itUri->get<std::string>(), utils::ImageFormat::RGB);
+			image = loaders::ImageReader::read(mBasePath + itUri->get<std::string>());
 		}
 		else {
 			throw std::runtime_error("Missing uri property");
@@ -410,12 +417,12 @@ namespace se::loaders {
 				const utils::Image& image = mGLTFData.images[sourceId];
 
 				graphics::ColorFormat format = graphics::ColorFormat::RGB;
-				switch (image.format)
+				switch (image.channels)
 				{
-					case utils::ImageFormat::RGB:	format = graphics::ColorFormat::RGB;	break;
-					case utils::ImageFormat::RGBA:	format = graphics::ColorFormat::RGBA;	break;
-					case utils::ImageFormat::L:		format = graphics::ColorFormat::Red;	break;
-					case utils::ImageFormat::LA:	format = graphics::ColorFormat::Alpha;	break;
+					case 1:	format = graphics::ColorFormat::Red;	break;
+					case 2:	format = graphics::ColorFormat::Alpha;	break;
+					case 3:	format = graphics::ColorFormat::RGB;	break;
+					case 4:	format = graphics::ColorFormat::RGBA;	break;
 				}
 
 				texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, image.width, image.height);
@@ -469,8 +476,8 @@ namespace se::loaders {
 			auto itBaseColorFactor = itPBRMetallicRoughness->find("baseColorFactor");
 			if (itBaseColorFactor != itPBRMetallicRoughness->end()) {
 				std::vector<float> fVector = *itBaseColorFactor;
-				if (fVector.size() >= 3) {
-					material->pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
+				if (fVector.size() >= 4) {
+					material->pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec4*>(fVector.data());
 				}
 			}
 
@@ -569,6 +576,30 @@ namespace se::loaders {
 			if (fVector.size() >= 3) {
 				material->emissiveFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
 			}
+		}
+
+		material->alphaMode = graphics::AlphaMode::Opaque;
+		auto itAlphaMode = jsonMaterial.find("alphaMode");
+		if (itAlphaMode != jsonMaterial.end()) {
+			auto itAlphaModePair = kAlphaModeMap.find(*itAlphaMode);
+			if (itAlphaModePair != kAlphaModeMap.end()) {
+				material->alphaMode = itAlphaModePair->second;
+			}
+			else {
+				throw std::runtime_error("Invalid AlphaMode " + itAlphaMode->get<std::string>());
+			}
+		}
+
+		material->alphaCutoff = 0.5f;
+		auto itAlphaCutoff = jsonMaterial.find("alphaCutoff");
+		if (itAlphaCutoff != jsonMaterial.end()) {
+			material->alphaCutoff = *itAlphaCutoff;
+		}
+
+		material->doubleSided = false;
+		auto itDoubleSided = jsonMaterial.find("doubleSided");
+		if (itDoubleSided != jsonMaterial.end()) {
+			material->doubleSided = *itDoubleSided;
 		}
 
 		mGLTFData.materials.emplace_back(std::move(material));

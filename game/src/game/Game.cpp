@@ -285,8 +285,8 @@ namespace game {
 			dataHolder1 = sceneReader->load("res/meshes/test.gltf");
 
 			// Images
-			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png", se::utils::ImageFormat::RGBA);
-			heightMap1 = std::make_unique<se::utils::Image>( se::loaders::ImageReader::read("res/images/terrain.png", se::utils::ImageFormat::L) );
+			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png");
+			heightMap1 = std::make_unique<se::utils::Image>( se::loaders::ImageReader::read("res/images/terrain.png", 1) );
 
 			// Textures
 			texture1 = std::make_shared<se::graphics::Texture>();
@@ -374,8 +374,8 @@ namespace game {
 
 		std::shared_ptr<se::graphics::Material> planeMaterial(new se::graphics::Material{
 			"plane_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec3(1.0f), texture2, 0.2f, 0.5f, nullptr },
-			nullptr, nullptr, nullptr, glm::vec3(0.0f)
+			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), texture2, 0.2f, 0.5f, nullptr },
+			nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 		});
 
 		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, planeMaterial);
@@ -385,7 +385,7 @@ namespace game {
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
-		glm::vec3 colors[5] = { { 1.0f, 0.2f, 0.2f }, { 0.2f, 1.0f, 0.2f }, { 0.2f, 0.2f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f } };
+		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
 		se::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
@@ -415,7 +415,7 @@ namespace game {
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				se::graphics::PBRMetallicRoughness{ colors[i], nullptr, 0.2f, 0.5f, nullptr },
-				nullptr, nullptr, nullptr, glm::vec3(0.0f)
+				nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, tmpMaterial);
@@ -437,10 +437,10 @@ namespace game {
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				se::graphics::PBRMetallicRoughness{
-					glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f)),
+					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f)),
 					nullptr, 0.75f, 0.5f, nullptr
 				},
-				nullptr, nullptr, nullptr, glm::vec3(0.0f)
+				nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
 			auto tmpRawMesh = createRawMesh(heMesh);
