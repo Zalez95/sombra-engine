@@ -10,11 +10,10 @@ namespace se::collision {
 		mPrecision(precision)
 	{
 		// Add the HEVertices
-		std::vector<int> vertexIndices;
-		vertexIndices.push_back( addVertex(simplex[0]) );
-		vertexIndices.push_back( addVertex(simplex[1]) );
-		vertexIndices.push_back( addVertex(simplex[2]) );
-		vertexIndices.push_back( addVertex(simplex[3]) );
+		std::array<int, 4> vertexIndices = {
+			addVertex(simplex[0]), addVertex(simplex[1]),
+			addVertex(simplex[2]), addVertex(simplex[3])
+		};
 
 		const glm::vec3 p0CSO = mMesh.vertices[vertexIndices[0]].location;
 		const glm::vec3 p1CSO = mMesh.vertices[vertexIndices[1]].location;
@@ -41,7 +40,7 @@ namespace se::collision {
 	int Polytope::addVertex(const SupportPoint& sp)
 	{
 		int iVertex = se::collision::addVertex(mMesh, sp.getCSOPosition());
-		mVertexSupportPoints.emplace(iVertex, sp);
+		mVertexSupportPoints.emplace(sp);
 
 		return iVertex;
 	}
@@ -52,7 +51,7 @@ namespace se::collision {
 		int iFace = se::collision::addFace(mMesh, { faceIndices[0], faceIndices[1], faceIndices[2] });
 
 		// Add the normal of the HEFace to mFaceNormals
-		mFaceNormals[iFace] = calculateFaceNormal(mMesh, iFace);
+		mFaceNormals.emplace( calculateFaceNormal(mMesh, iFace) );
 
 		// Add the distance data of the HEFace to mFaceDistances
 		const glm::vec3 p0CSO = mMesh.vertices[faceIndices[0]].location;
@@ -65,7 +64,7 @@ namespace se::collision {
 			closestPoint, { p0CSO, p1CSO, p2CSO },
 			mPrecision, closestPointBarycentricCoords
 		);
-		mFaceDistances[iFace] = { closestPoint, distance, inside, closestPointBarycentricCoords };
+		mFaceDistances.emplace(FaceDistanceData{ closestPoint, distance, inside, closestPointBarycentricCoords });
 
 		return iFace;
 	}
@@ -74,8 +73,8 @@ namespace se::collision {
 	void Polytope::removeFace(int iFace)
 	{
 		se::collision::removeFace(mMesh, iFace);
-		mFaceNormals.erase(iFace);
-		mFaceDistances.erase(iFace);
+		mFaceNormals.erase( mFaceNormals.begin().setIndex(iFace) );
+		mFaceDistances.erase( mFaceDistances.begin().setIndex(iFace) );
 	}
 
 }

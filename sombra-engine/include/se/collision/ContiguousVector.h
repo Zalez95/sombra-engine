@@ -19,6 +19,9 @@ namespace se::collision {
 	class ContiguousVector
 	{
 	public:		// Nested types
+		template <typename U>
+		friend class ContiguousVector;
+
 		/** Class CVIterator, it's the class used to iterate through the
 		 * elements of a ContiguousVector */
 		template <bool isConst>
@@ -198,6 +201,9 @@ namespace se::collision {
 		 *			otherwise */
 		bool empty() const { return (mNumElements == 0); };
 
+		/** Removes all the elements in the ContiguousVector */
+		void clear();
+
 		/** Creates a new Element in the vector or reuses an already released
 		 * one
 		 *
@@ -221,6 +227,16 @@ namespace se::collision {
 		 * @param	i the index of the Element
 		 * @return	true if is valid and active false otherwise */
 		bool isActive(size_type i) const;
+
+		/** Replicates the size and released elements of the given
+		 * ContiguousVector in the current one, so they will have the same
+		 * active indices
+		 *
+		 * @param	other the ContiguousVector to replicate
+		 * @note	the elements currently stored in the vector will be removed
+		 *			and the new ones will be default initialized */
+		template <typename U>
+		void replicate(const ContiguousVector<U>& other);
 	};
 
 }

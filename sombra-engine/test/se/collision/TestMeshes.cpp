@@ -60,10 +60,10 @@ HalfEdgeMesh createTestPolyhedron3()
 }
 
 
-std::pair<HalfEdgeMesh, NormalMap> createTestMesh1()
+std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh1()
 {
 	HalfEdgeMesh meshData;
-	NormalMap normals;
+	ContiguousVector<glm::vec3> normals;
 
 	int iFace;
 	addVertex(meshData, {  1.25f,  1.0f, -2.75f });
@@ -76,33 +76,33 @@ std::pair<HalfEdgeMesh, NormalMap> createTestMesh1()
 	addVertex(meshData, { -0.25f,  1.0f,  2.75f });
 	addVertex(meshData, {  0.25f,  0.0f,  0.0f  });
 	iFace = addFace(meshData, { 0, 1, 2 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 7, 6, 5 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 1, 5, 6 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 6, 7, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 4, 0, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 0, 4, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 1, 0, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 4, 5, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 5, 1, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 3, 0, 2 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 4, 7, 5 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 2, 1, 6 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 2, 6, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 7, 4, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 
 	return std::make_pair(meshData, normals);
 }
@@ -189,10 +189,10 @@ std::vector<HalfEdgeMesh> createTestMesh3()
 }
 
 
-std::pair<HalfEdgeMesh, NormalMap> createTestMesh4()
+std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh4()
 {
 	HalfEdgeMesh meshData;
-	NormalMap normals;
+	ContiguousVector<glm::vec3> normals;
 
 	int iFace;
 	addVertex(meshData, { -3.208401441f,  2.893295764f,  0.028006464f });
@@ -218,85 +218,85 @@ std::pair<HalfEdgeMesh, NormalMap> createTestMesh4()
 	addVertex(meshData, { -3.574266433f,  4.290853500f,  3.687945365f });
 	addVertex(meshData, { -6.311958789f,  4.639792919f,  3.335471153f });
 	iFace = addFace(meshData, { 6, 3, 4 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 0, 7, 9 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 0, 9, 11 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 1, 8, 13 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 0, 11, 14 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 1, 13, 16 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 2, 17, 19 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 3, 18, 21 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 10, 15, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 4, 12, 9 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 6, 10, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 9, 7, 4 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 21, 5, 20 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 7, 6, 4 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 20, 4, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 21, 19, 5 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 21, 18, 19 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 18, 2, 19 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 19, 20, 5 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 19, 17, 20 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 17, 4, 20 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 3, 21, 20 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 16, 18, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 16, 13, 18 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 13, 2, 18 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 14, 17, 2 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 14, 11, 17 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 11, 4, 17 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 15, 16, 3 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 15, 10, 16 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 10, 1, 16 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 13, 14, 2 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 13, 8, 14 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 8, 0, 14 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 11, 12, 4 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 11, 9, 12 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 6, 1, 10 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 6, 8, 1 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 6, 7, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { 7, 0, 8 });
-	normals[iFace] = calculateFaceNormal(meshData, iFace);
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 
 	return std::make_pair(meshData, normals);
 }

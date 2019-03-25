@@ -97,8 +97,9 @@ namespace se::collision {
 		mMesh = triangulateFaces(originalMesh);
 
 		// 2. Calculate the face normals of the mesh
+		mFaceNormals.replicate(mMesh.faces);
 		for (auto it = mMesh.faces.begin(); it != mMesh.faces.end(); ++it) {
-			mFaceNormals.emplace(it.getIndex(), calculateFaceNormal(mMesh, it.getIndex()));
+			mFaceNormals[it.getIndex()] = calculateFaceNormal(mMesh, it.getIndex());
 		}
 
 		// 3. Calculate the initial dual graph of the triangulated mesh
@@ -130,7 +131,7 @@ namespace se::collision {
 		// Calculate the cost of the surface
 		QuickHull qh(mEpsilon);
 		qh.calculate(surface);
-		float concavity = calculateConcavity(surface, surfaceNormals, qh.getMesh(), qh.getNormalsMap());
+		float concavity = calculateConcavity(surface, surfaceNormals, qh.getMesh(), qh.getNormals());
 		float aspectRatio = calculateAspectRatio(surface);
 		float cost = calculateDecimationCost(concavity, aspectRatio);
 
@@ -278,12 +279,12 @@ namespace se::collision {
 	}
 
 
-	std::pair<HalfEdgeMesh, NormalMap> HACD::getMeshFromIndices(
+	std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> HACD::getMeshFromIndices(
 		const std::vector<int>& iFaces,
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals
+		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals
 	) {
 		HalfEdgeMesh newMesh;
-		NormalMap newMeshNormals;
+		ContiguousVector<glm::vec3> newMeshNormals;
 
 		std::map<int, int> vertexMap;
 		for (int iFace1 : iFaces) {
@@ -301,8 +302,8 @@ namespace se::collision {
 				}
 			}
 
-			int iFace2 = addFace(newMesh, iFace2Vertices);
-			newMeshNormals.emplace(iFace2, faceNormals.at(iFace1));
+			addFace(newMesh, iFace2Vertices);
+			newMeshNormals.emplace(faceNormals[iFace1]);
 		}
 
 		return std::make_pair(newMesh, newMeshNormals);
@@ -310,18 +311,16 @@ namespace se::collision {
 
 
 	float HACD::calculateConcavity(
-		const HalfEdgeMesh& originalMesh, const NormalMap& faceNormals,
-		const HalfEdgeMesh& convexHullMesh, const NormalMap& convexHullNormals
+		const HalfEdgeMesh& originalMesh, const ContiguousVector<glm::vec3>& faceNormals,
+		const HalfEdgeMesh& convexHullMesh, const ContiguousVector<glm::vec3>& convexHullNormals
 	) const
 	{
 		float concavity = 0.0f;
 
-		glm::vec3 polygonNormal = (convexHullNormals.empty())? glm::vec3(0.0f) : convexHullNormals.begin()->second;
+		glm::vec3 polygonNormal = (convexHullNormals.empty())? glm::vec3(0.0f) : *convexHullNormals.begin();
 		if (std::all_of(
 				convexHullNormals.begin(), convexHullNormals.end(),
-				[&](const std::pair<int, glm::vec3>& pair) {
-					return glm::all(glm::epsilonEqual(pair.second, polygonNormal, mScaledEpsilon));
-				}
+				[&](const glm::vec3& normal) { return glm::all(glm::epsilonEqual(normal, polygonNormal, mScaledEpsilon)); }
 			)
 		) {
 			HalfEdgeMesh triangulatedConvexHullMesh = triangulateFaces(convexHullMesh);
@@ -363,8 +362,8 @@ namespace se::collision {
 
 
 	float HACD::calculateConcavity3D(
-		const HalfEdgeMesh& originalMesh, const NormalMap& faceNormals,
-		const HalfEdgeMesh& convexHullMesh, const NormalMap& convexHullNormals
+		const HalfEdgeMesh& originalMesh, const ContiguousVector<glm::vec3>& faceNormals,
+		const HalfEdgeMesh& convexHullMesh, const ContiguousVector<glm::vec3>& convexHullNormals
 	) const
 	{
 		float maxConcavity = -std::numeric_limits<float>::max();
@@ -426,7 +425,7 @@ namespace se::collision {
 
 
 	std::pair<bool, glm::vec3> HACD::getInternalIntersection(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
 		const glm::vec3& origin, const glm::vec3& direction
 	) const
 	{
@@ -437,7 +436,7 @@ namespace se::collision {
 		// Search one intersected HEFaces
 		for (; (itFace1 != meshData.faces.end()) && !intersects1; ++itFace1) {
 			face1Point = meshData.vertices[ meshData.edges[itFace1->edge].vertex ].location;
-			face1Normal = faceNormals.at( itFace1.getIndex() );
+			face1Normal = faceNormals[itFace1.getIndex()];
 
 			std::tie(intersects1, intersection1) = projectPointInDirection(origin, direction, face1Point, face1Normal);
 			if (intersects1) {
@@ -454,7 +453,7 @@ namespace se::collision {
 			// two intersections)
 			for (itFace2 = ++itFace1; (itFace2 != meshData.faces.end()) && !intersects2; ++itFace2) {
 				face2Point = meshData.vertices[ meshData.edges[itFace2->edge].vertex ].location;
-				face2Normal = faceNormals.at( itFace2.getIndex() );
+				face2Normal = faceNormals[itFace2.getIndex()];
 
 				std::tie(intersects2, intersection2) = projectPointInDirection(origin, direction, face2Point, face2Normal);
 				if (intersects2) {

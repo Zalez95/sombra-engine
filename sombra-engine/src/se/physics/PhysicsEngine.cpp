@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "se/physics/PhysicsEngine.h"
 #include "se/physics/RigidBody.h"
 #include "se/physics/RigidBodyDynamics.h"
@@ -8,7 +9,7 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		mRigidBodies.emplace(rigidBody);
+		mRigidBodies.push_back(rigidBody);
 	}
 
 
@@ -16,7 +17,10 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		mRigidBodies.erase(rigidBody);
+		mRigidBodies.erase(
+			std::remove(mRigidBodies.begin(), mRigidBodies.end(), rigidBody),
+			mRigidBodies.end()
+		);
 	}
 
 // Private functions

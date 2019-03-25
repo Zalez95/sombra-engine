@@ -77,10 +77,10 @@ namespace se::loaders {
 		collision::HalfEdgeMesh heMesh;
 
 		// Add the HEVertices
-		std::map<int, int> vertexMap;
-		for (int iVertex1 = 0; iVertex1 < static_cast<int>(rawMesh.positions.size()); ++iVertex1) {
-			int iVertex2 = collision::addVertex(heMesh, rawMesh.positions[iVertex1]);
-			vertexMap.emplace(iVertex1, iVertex2);
+		std::vector<int> heVertexIndices;
+		heVertexIndices.reserve(rawMesh.positions.size());
+		for (const glm::vec3& position : rawMesh.positions) {
+			heVertexIndices.push_back( collision::addVertex(heMesh, position) );
 		}
 
 		// Add the HEFaces
@@ -89,9 +89,9 @@ namespace se::loaders {
 			int iFace = collision::addFace(
 				heMesh,
 				{
-					vertexMap[ rawMesh.faceIndices[i] ],
-					vertexMap[ rawMesh.faceIndices[i+1] ],
-					vertexMap[ rawMesh.faceIndices[i+2] ]
+					heVertexIndices[ rawMesh.faceIndices[i] ],
+					heVertexIndices[ rawMesh.faceIndices[i+1] ],
+					heVertexIndices[ rawMesh.faceIndices[i+2] ]
 				}
 			);
 

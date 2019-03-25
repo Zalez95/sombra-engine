@@ -1,7 +1,6 @@
 #ifndef CONVEX_POLYHEDRON_H
 #define CONVEX_POLYHEDRON_H
 
-#include <vector>
 #include "HalfEdgeMesh.h"
 #include "ConvexCollider.h"
 

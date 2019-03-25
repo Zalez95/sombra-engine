@@ -196,7 +196,7 @@ namespace se::collision {
 				// 3.2. Calculate the horizon HEEdges and HEFaces to remove
 				// from the current eyePoint perspective
 				auto [horizon, facesToRemove] = calculateHorizon(
-					meshData, polytope.getNormalsMap(),
+					meshData, polytope.getNormals(),
 					sp.getCSOPosition(), iCurrentFace
 				);
 

@@ -7,14 +7,14 @@
 
 namespace se::graphics {
 
-	Program::Program(const std::vector<const Shader*>& shaders)
+	Program::Program(const Shader* shaders[], std::size_t shaderCount)
 	{
 		// 1. Create the program
 		GL_WRAP( mProgramId = glCreateProgram() );
 
 		// 2. Attach the shaders to the program
-		for (const Shader* shader : shaders) {
-			GL_WRAP( glAttachShader(mProgramId, shader->getShaderId()) );
+		for (std::size_t i = 0; i < shaderCount; ++i) {
+			GL_WRAP( glAttachShader(mProgramId, shaders[i]->getShaderId()) );
 		}
 
 		GL_WRAP( glLinkProgram(mProgramId) );
@@ -36,8 +36,8 @@ namespace se::graphics {
 		}
 
 		// 4. Remove the shaders from the program
-		for (const Shader* shader: shaders) {
-			GL_WRAP( glDetachShader(mProgramId, shader->getShaderId()) );
+		for (std::size_t i = 0; i < shaderCount; ++i) {
+			GL_WRAP( glDetachShader(mProgramId, shaders[i]->getShaderId()) );
 		}
 
 		SOMBRA_TRACE_LOG << "Created Program " << mProgramId;

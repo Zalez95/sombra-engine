@@ -42,12 +42,12 @@ namespace se::collision {
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
 		HalfEdgeMesh mConvexHullMesh;
 
-		/** Maps each convex hull face with its normal vector */
-		NormalMap mConvexHullNormals;
+		/** The normal vector of each HEFace in the convex hull */
+		ContiguousVector<glm::vec3> mConvexHullNormals;
 
-		/** Maps each convex hull face with its outside vertex indices.
+		/** The outside vertex indices of each HEFace in the convex hull
 		 * @note	the outside vertex indices are sorted ascendently */
-		std::map<int, std::vector<int>> mFaceOutsideVertices;
+		ContiguousVector<std::vector<int>> mFaceOutsideVertices;
 
 		/** Maps the indices of the vertices in the current Mesh with the ones
 		 * in the convex hull */
@@ -63,9 +63,10 @@ namespace se::collision {
 		/** @return	the HalfEdgeMesh of the convex hull */
 		const HalfEdgeMesh& getMesh() const { return mConvexHullMesh; };
 
-		/** @return	the map with the normal vectors of the HEFaces of the
-		 *			convex hull HalfEdgeMesh */
-		const NormalMap& getNormalsMap() const { return mConvexHullNormals; };
+		/** @return	the normal vectors of the HEFaces of the convex hull
+		 *			HalfEdgeMesh */
+		const ContiguousVector<glm::vec3>& getNormals() const
+		{ return mConvexHullNormals; };
 
 		/** Calculates the convex hull of the given Mesh with the QuickHull
 		 * algorithm

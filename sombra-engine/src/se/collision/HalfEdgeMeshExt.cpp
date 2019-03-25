@@ -96,7 +96,7 @@ namespace se::collision {
 
 
 	glm::vec3 calculateVertexNormal(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
 		int iVertex
 	) {
 		glm::vec3 normal(0.0f);
@@ -110,7 +110,7 @@ namespace se::collision {
 					const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
 
 					if (meshData.faces.isActive(currentEdge.face)) {
-						normal += faceNormals.at(currentEdge.face);
+						normal += faceNormals[currentEdge.face];
 					}
 
 					iCurrentEdge = (currentEdge.oppositeEdge < 0)? -1 : meshData.edges[currentEdge.oppositeEdge].nextEdge;
@@ -126,7 +126,7 @@ namespace se::collision {
 						const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
 
 						if (currentEdge.face >= 0) {
-							normal += faceNormals.at(currentEdge.face);
+							normal += faceNormals[currentEdge.face];
 						}
 
 						iCurrentEdge = (currentEdge.previousEdge < 0)? -1 : meshData.edges[currentEdge.previousEdge].oppositeEdge;
@@ -230,7 +230,7 @@ namespace se::collision {
 
 
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
 		const glm::vec3& eyePoint, int iInitialFace
 	) {
 		std::vector<int> horizonEdges, visibleFaces;
@@ -238,7 +238,7 @@ namespace se::collision {
 		// Test the visibility of the initial HEFace
 		const HEFace& initialFace = meshData.faces[iInitialFace];
 		const HEVertex& initialFaceVertex = meshData.vertices[ meshData.edges[initialFace.edge].vertex ];
-		const glm::vec3& initialFaceNormal = faceNormals.at(iInitialFace);
+		const glm::vec3& initialFaceNormal = faceNormals[iInitialFace];
 		if (glm::dot(eyePoint - initialFaceVertex.location, initialFaceNormal) > 0.0f) {
 			visibleFaces.push_back(iInitialFace);
 
@@ -262,7 +262,7 @@ namespace se::collision {
 					// 1.2. Test the visibility of the current HEFace from the
 					// eye point
 					const HEVertex& oppositeFaceVertex = meshData.vertices[oppositeEdge.vertex];
-					const glm::vec3& oppositeFaceNormal = faceNormals.at(oppositeEdge.face);
+					const glm::vec3& oppositeFaceNormal = faceNormals[oppositeEdge.face];
 					if (glm::dot(eyePoint - oppositeFaceVertex.location, oppositeFaceNormal) > 0.0f) {
 						// 1.2.1. Mark the HEFace as visible and continue
 						// searching in the opposite HEFace
@@ -282,7 +282,7 @@ namespace se::collision {
 					// horizon algorithm
 					if (!horizonEdges.empty()) {
 						// Check if the opposite HEEdge is the same than the
-						// parent one 
+						// parent one
 						if (!edgesToEvaluate.empty()
 							&& (oppositeEdge.face == meshData.edges[edgesToEvaluate.top()].face)
 						) {

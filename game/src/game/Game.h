@@ -30,8 +30,8 @@ namespace game {
 	private:	// Attributes
 		se::graphics::Layer2D mLayer2D;
 		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
-		se::audio::Buffer buffer1;
-		se::physics::Constraint* constraint;
+		std::vector<se::audio::Buffer> mBuffers;
+		std::vector<se::physics::Constraint*> mConstraints;
 
 	public:		// Functions
 		/** Creates a new Game */

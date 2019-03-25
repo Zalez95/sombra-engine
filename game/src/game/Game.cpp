@@ -323,9 +323,12 @@ namespace game {
 
 			// Audio
 			if (audioFile.load("res/audio/bounce.wav")) {
-				buffer1.setBufferFloatData(audioFile.samples[0], audioFile.getSampleRate());
+				mBuffers.emplace_back(
+					audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
+					se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
+				);
 				source1 = std::make_unique<se::audio::Source>();
-				source1->bind(buffer1);
+				source1->bind(mBuffers.back());
 				source1->setLooping(true);
 				source1->play();
 			}
@@ -424,8 +427,8 @@ namespace game {
 			mEntities.push_back(std::move(cube));
 		}
 
-		constraint = new se::physics::DistanceConstraint({ rb1, rb2 });
-		mPhysicsEngine->getConstraintManager().addConstraint(constraint);
+		mConstraints.push_back(new se::physics::DistanceConstraint({ rb1, rb2 }));
+		mPhysicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		// HACD Tube
 		hacd.calculate( createTestTube1() );
@@ -493,8 +496,9 @@ namespace game {
 
 	void Game::end()
 	{
-		mPhysicsEngine->getConstraintManager().removeConstraint(constraint);
-		delete constraint;
+		for (se::physics::Constraint* constraint : mConstraints) {
+			mPhysicsEngine->getConstraintManager().removeConstraint(constraint);
+		}
 
 		for (EntityUPtr& entity : mEntities) {
 			mInputManager->removeEntity(entity.get());

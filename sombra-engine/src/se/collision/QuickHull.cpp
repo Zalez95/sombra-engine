@@ -202,7 +202,7 @@ namespace se::collision {
 
 		// Add the convex hull face
 		int iNewFace = addFace(mConvexHullMesh, faceIndices);
-		mConvexHullNormals.emplace(iNewFace, calculateFaceNormal(mConvexHullMesh, iNewFace));
+		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iNewFace) );
 	}
 
 
@@ -251,12 +251,12 @@ namespace se::collision {
 		auto itFace = mFaceOutsideVertices.begin();
 		while ((itFace = std::find_if(
 					mFaceOutsideVertices.begin(), mFaceOutsideVertices.end(),
-					[](const std::pair<int, std::vector<int>>& pair) { return !pair.second.empty(); }
+					[](const std::vector<int>& outsideVertices) { return !outsideVertices.empty(); }
 				)
 			) != mFaceOutsideVertices.end()
 		) {
 			// 2. Get the furthest HEVertex in the direction of the face normal
-			int iEyeVertex = getFurthestVertexInDirection(itFace->second, originalMesh, mConvexHullNormals[itFace->first]);
+			int iEyeVertex = getFurthestVertexInDirection(*itFace, originalMesh, mConvexHullNormals[itFace.getIndex()]);
 			glm::vec3 eyePoint = originalMesh.vertices[iEyeVertex].location;
 
 			// 3. Check if the eyePoint is already inside in the convex hull
@@ -264,27 +264,23 @@ namespace se::collision {
 			if (itVertex == mVertexIndexMap.end()) {
 				// 3.1. Calculate the convex hull's horizon HEEdges and HEFaces
 				// to remove from the current eyePoint perspective
-				auto [horizon, facesToRemove] = calculateHorizon(mConvexHullMesh, mConvexHullNormals, eyePoint, itFace->first);
+				auto [horizon, facesToRemove] = calculateHorizon(mConvexHullMesh, mConvexHullNormals, eyePoint, itFace.getIndex());
 
 				// 3.2. Remove the convex hull's HEFaces seen from the current
 				// eyePoint perspective and collect all their outside HEVertices
 				std::vector<int> allOutsideVertices;
 				for (int iFaceToRemove : facesToRemove) {
+					std::vector<int> joinedOutsideVertices;
+					std::set_union(
+						allOutsideVertices.begin(), allOutsideVertices.end(),
+						mFaceOutsideVertices[iFaceToRemove].begin(), mFaceOutsideVertices[iFaceToRemove].end(),
+						std::back_inserter(joinedOutsideVertices)
+					);
+					allOutsideVertices = joinedOutsideVertices;
+
 					removeFace(mConvexHullMesh, iFaceToRemove);
-					mConvexHullNormals.erase(iFaceToRemove);
-
-					auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToRemove);
-					if (itFOutsideVertices != mFaceOutsideVertices.end()) {
-						std::vector<int> joinedOutsideVertices;
-						std::set_union(
-							allOutsideVertices.begin(), allOutsideVertices.end(),
-							itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
-							std::back_inserter(joinedOutsideVertices)
-						);
-						allOutsideVertices = joinedOutsideVertices;
-
-						mFaceOutsideVertices.erase(itFOutsideVertices);
-					}
+					mConvexHullNormals.erase( mConvexHullNormals.begin().setIndex(iFaceToRemove) );
+					mFaceOutsideVertices.erase( mFaceOutsideVertices.begin().setIndex(iFaceToRemove) );
 				}
 
 				// 3.3. Add the eyePoint to the convex hull
@@ -300,8 +296,8 @@ namespace se::collision {
 					// Create the new HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
 					int iNewFace = addFace(mConvexHullMesh, { iV0, iV1, iEyeVertexConvexHull });
-					mConvexHullNormals.emplace(iNewFace, calculateFaceNormal(mConvexHullMesh, iNewFace));
-					mFaceOutsideVertices.emplace(iNewFace, getVerticesOutside(allOutsideVertices, originalMesh, iNewFace));
+					mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iNewFace) );
+					mFaceOutsideVertices.emplace( getVerticesOutside(allOutsideVertices, originalMesh, iNewFace) );
 
 					// Merge the coplanar faces
 					mergeCoplanarFaces(iNewFace);
@@ -342,10 +338,10 @@ namespace se::collision {
 		}
 
 		// Add the HEFaces normals
-		mConvexHullNormals.emplace(iF0, calculateFaceNormal(mConvexHullMesh, iF0));
-		mConvexHullNormals.emplace(iF1, calculateFaceNormal(mConvexHullMesh, iF1));
-		mConvexHullNormals.emplace(iF2, calculateFaceNormal(mConvexHullMesh, iF2));
-		mConvexHullNormals.emplace(iF3, calculateFaceNormal(mConvexHullMesh, iF3));
+		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF0) );
+		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF1) );
+		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF2) );
+		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF3) );
 
 		// Get all the vertex indices from the original mesh sorted ascendently
 		std::vector<int> meshVertexIndices;
@@ -355,10 +351,10 @@ namespace se::collision {
 		std::sort(meshVertexIndices.begin(), meshVertexIndices.end());
 
 		// Add the HEFaces outside vertices
-		mFaceOutsideVertices.emplace(iF0, getVerticesOutside(meshVertexIndices, originalMesh, iF0));
-		mFaceOutsideVertices.emplace(iF1, getVerticesOutside(meshVertexIndices, originalMesh, iF1));
-		mFaceOutsideVertices.emplace(iF2, getVerticesOutside(meshVertexIndices, originalMesh, iF2));
-		mFaceOutsideVertices.emplace(iF3, getVerticesOutside(meshVertexIndices, originalMesh, iF3));
+		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF0) );
+		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF1) );
+		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF2) );
+		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF3) );
 	}
 
 
@@ -372,7 +368,7 @@ namespace se::collision {
 
 		// Get the face data from the convex hull
 		const HEFace& face = mConvexHullMesh.faces[iFace];
-		const glm::vec3 faceNormal = mConvexHullNormals.at(iFace);
+		const glm::vec3 faceNormal = mConvexHullNormals[iFace];
 		const HEVertex& faceVertex = mConvexHullMesh.vertices[ mConvexHullMesh.edges[face.edge].vertex ];
 
 		std::copy_if(
@@ -433,21 +429,18 @@ namespace se::collision {
 			mergeFaces(mConvexHullMesh, iFace, iFaceToMerge);
 
 			// Remove the opposite HEFace normal
-			mConvexHullNormals.erase(iFaceToMerge);
+			mConvexHullNormals.erase( mConvexHullNormals.begin().setIndex(iFaceToMerge) );
 
 			// Collect and remove all the opposite HEFace outside HEVertices
-			auto itFOutsideVertices = mFaceOutsideVertices.find(iFaceToMerge);
-			if (itFOutsideVertices != mFaceOutsideVertices.end()) {
-				std::vector<int> joinedOutsideVertices;
-				std::set_union(
-					allOutsideVertices.begin(), allOutsideVertices.end(),
-					itFOutsideVertices->second.begin(), itFOutsideVertices->second.end(),
-					std::back_inserter(joinedOutsideVertices)
-				);
-				allOutsideVertices = joinedOutsideVertices;
+			std::vector<int> joinedOutsideVertices;
+			std::set_union(
+				allOutsideVertices.begin(), allOutsideVertices.end(),
+				mFaceOutsideVertices[iFaceToMerge].begin(), mFaceOutsideVertices[iFaceToMerge].end(),
+				std::back_inserter(joinedOutsideVertices)
+			);
+			allOutsideVertices = joinedOutsideVertices;
 
-				mFaceOutsideVertices.erase(itFOutsideVertices);
-			}
+			mFaceOutsideVertices.erase( mFaceOutsideVertices.begin().setIndex(iFaceToMerge) );
 		}
 
 		mFaceOutsideVertices[iFace] = allOutsideVertices;

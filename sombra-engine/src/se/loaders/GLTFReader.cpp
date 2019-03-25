@@ -9,57 +9,86 @@
 
 namespace se::loaders {
 
-	static const std::map<std::string, graphics::MeshAttributes> kAttributeMap = {
-		{ "POSITION",	graphics::MeshAttributes::PositionAttribute },
-		{ "NORMAL",		graphics::MeshAttributes::NormalAttribute },
-		{ "TANGENT",	graphics::MeshAttributes::TangentAttribute },
-		{ "TEXCOORD_0",	graphics::MeshAttributes::TexCoordAttribute0 },
-		{ "TEXCOORD_1",	graphics::MeshAttributes::TexCoordAttribute1 },
-		{ "COLOR_0",	graphics::MeshAttributes::ColorAttribute },
-		{ "JOINTS_0",	graphics::MeshAttributes::JointIndexAttribute },
-		{ "WEIGHTS_0",	graphics::MeshAttributes::JointWeightAttribute }
-	};
+	constexpr bool toTypeId(int code, graphics::TypeId& typeId)
+	{
+		bool ret = true;
+		switch (code) {
+			case 5120:	typeId = graphics::TypeId::Byte;			break;
+			case 5121:	typeId = graphics::TypeId::UnsignedByte;	break;
+			case 5122:	typeId = graphics::TypeId::Short;			break;
+			case 5123:	typeId = graphics::TypeId::UnsignedShort;	break;
+			case 5125:	typeId = graphics::TypeId::UnsignedInt;		break;
+			case 5126:	typeId = graphics::TypeId::Float;			break;
+			default:	ret = false;
+		}
+		return ret;
+	}
 
-	static const std::map<int, graphics::TypeId> kTypeIdMap = {
-		{ 5120, graphics::TypeId::Byte },
-		{ 5121, graphics::TypeId::UnsignedByte },
-		{ 5122, graphics::TypeId::Short },
-		{ 5123, graphics::TypeId::UnsignedShort },
-		{ 5125, graphics::TypeId::UnsignedInt },
-		{ 5126, graphics::TypeId::Float }
-	};
+	constexpr bool toTextureFilter(int code, graphics::TextureFilter& textureFilter)
+	{
+		bool ret = true;
+		switch (code) {
+			case 9728:	textureFilter = graphics::TextureFilter::Nearest;				break;
+			case 9729:	textureFilter = graphics::TextureFilter::Linear;				break;
+			case 9984:	textureFilter = graphics::TextureFilter::NearestMipMapNearest;	break;
+			case 9985:	textureFilter = graphics::TextureFilter::LinearMipMapNearest;	break;
+			case 9986:	textureFilter = graphics::TextureFilter::NearestMipMapLinear;	break;
+			case 9987:	textureFilter = graphics::TextureFilter::LinearMipMapLinear;	break;
+			default:	ret = false;
+		}
+		return ret;
+	}
 
-	static const std::map<std::string, int> kComponentSizeMap = {
-		{ "SCALAR", 1 },
-		{ "VEC2", 2 },
-		{ "VEC3", 3 },
-		{ "VEC4", 4 },
-		{ "MAT2", 4 },
-		{ "MAT3", 9 },
-		{ "MAT4", 16 }
-	};
+	constexpr bool toTextureWrap(int code, graphics::TextureWrap& textureWrap)
+	{
+		bool ret = true;
+		switch (code) {
+			case 10497:	textureWrap = graphics::TextureWrap::Repeat;			break;
+			case 33648:	textureWrap = graphics::TextureWrap::MirroredRepeat;	break;
+			case 33071:	textureWrap = graphics::TextureWrap::ClampToEdge;		break;
+			default:	ret = false;
+		}
+		return ret;
+	}
 
-	static const std::map<int, graphics::TextureFilter> kTextureFilterMap = {
-		{ 9728, graphics::TextureFilter::Nearest },
-		{ 9729, graphics::TextureFilter::Linear },
-		{ 9984, graphics::TextureFilter::NearestMipMapNearest },
-		{ 9985, graphics::TextureFilter::LinearMipMapNearest },
-		{ 9986, graphics::TextureFilter::NearestMipMapLinear },
-		{ 9987, graphics::TextureFilter::LinearMipMapLinear }
-	};
+	static bool toMeshAttribute(const std::string& text, graphics::MeshAttributes& meshAttribute)
+	{
+		bool ret = true;
+		if (text == "POSITION")			{ meshAttribute = graphics::MeshAttributes::PositionAttribute; }
+		else if (text == "NORMAL")		{ meshAttribute = graphics::MeshAttributes::NormalAttribute; }
+		else if (text == "TANGENT")		{ meshAttribute = graphics::MeshAttributes::TangentAttribute; }
+		else if (text == "TEXCOORD_0")	{ meshAttribute = graphics::MeshAttributes::TexCoordAttribute0; }
+		else if (text == "TEXCOORD_1")	{ meshAttribute = graphics::MeshAttributes::TexCoordAttribute1; }
+		else if (text == "COLOR_0")		{ meshAttribute = graphics::MeshAttributes::ColorAttribute; }
+		else if (text == "JOINTS_0")	{ meshAttribute = graphics::MeshAttributes::JointIndexAttribute; }
+		else if (text == "WEIGHTS_0")	{ meshAttribute = graphics::MeshAttributes::JointWeightAttribute; }
+		else { ret = false; }
+		return ret;
+	}
 
-	static const std::map<int, graphics::TextureWrap> kTextureWrapMap = {
-		{ 10497, graphics::TextureWrap::Repeat },
-		{ 33648, graphics::TextureWrap::MirroredRepeat },
-		{ 33071, graphics::TextureWrap::ClampToEdge }
-	};
+	static bool toComponentSize(const std::string& text, int& componentSize)
+	{
+		bool ret = true;
+		if (text == "SCALAR")		{ componentSize = 1; }
+		else if (text == "VEC2")	{ componentSize = 2; }
+		else if (text == "VEC3")	{ componentSize = 3; }
+		else if (text == "VEC4")	{ componentSize = 4; }
+		else if (text == "MAT2")	{ componentSize = 4; }
+		else if (text == "MAT3")	{ componentSize = 9; }
+		else if (text == "MAT4")	{ componentSize = 16; }
+		else { ret = false; }
+		return ret;
+	}
 
-
-	static const std::map<std::string, graphics::AlphaMode> kAlphaModeMap = {
-		{ "OPAQUE", graphics::AlphaMode::Opaque },
-		{ "MASK", graphics::AlphaMode::Mask },
-		{ "BLEND", graphics::AlphaMode::Blend }
-	};
+	static bool toAlphaMode(const std::string& text, graphics::AlphaMode& alphaMode)
+	{
+		bool ret = true;
+		if (text == "OPAQUE")		{ alphaMode = graphics::AlphaMode::Opaque; }
+		else if (text == "MASK")	{ alphaMode = graphics::AlphaMode::Mask; }
+		else if (text == "BLEND")	{ alphaMode = graphics::AlphaMode::Blend; }
+		else { ret = false; }
+		return ret;
+	}
 
 
 	DataHolder GLTFReader::load(const std::string& path)
@@ -319,20 +348,12 @@ namespace se::loaders {
 			std::size_t count			= *itCount;
 
 			graphics::TypeId typeId;
-			auto itTypeIdPair = kTypeIdMap.find(*itComponentType);
-			if (itTypeIdPair != kTypeIdMap.end()) {
-				typeId = itTypeIdPair->second;
-			}
-			else {
+			if (!toTypeId(*itComponentType, typeId)) {
 				throw std::runtime_error("Invalid component type");
 			}
 
 			int componentSize = 0;
-			auto itComponentSizePair = kComponentSizeMap.find(*itType);
-			if (itComponentSizePair != kComponentSizeMap.end()) {
-				componentSize = itComponentSizePair->second;
-			}
-			else {
+			if (!toComponentSize(*itType, componentSize)) {
 				throw std::runtime_error("Invalid component size");
 			}
 
@@ -355,11 +376,7 @@ namespace se::loaders {
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
-			auto itFiltering = kTextureFilterMap.find(filter);
-			if (itFiltering != kTextureFilterMap.end()) {
-				sampler.filters[idx] = itFiltering->second;
-			}
-			else {
+			if (!toTextureFilter(filter, sampler.filters[idx])) {
 				throw std::runtime_error("Invalid filter " + std::to_string(filter));
 			}
 		};
@@ -373,11 +390,7 @@ namespace se::loaders {
 
 		// Wraps
 		auto doWrap = [&](int wrap, int idx) {
-			auto itWrap = kTextureWrapMap.find(wrap);
-			if (itWrap != kTextureWrapMap.end()) {
-				sampler.wraps[idx] = itWrap->second;
-			}
-			else {
+			if (!toTextureWrap(wrap, sampler.wraps[idx])) {
 				throw std::runtime_error("Invalid wrap mode " + std::to_string(wrap));
 			}
 		};
@@ -581,11 +594,7 @@ namespace se::loaders {
 		material->alphaMode = graphics::AlphaMode::Opaque;
 		auto itAlphaMode = jsonMaterial.find("alphaMode");
 		if (itAlphaMode != jsonMaterial.end()) {
-			auto itAlphaModePair = kAlphaModeMap.find(*itAlphaMode);
-			if (itAlphaModePair != kAlphaModeMap.end()) {
-				material->alphaMode = itAlphaModePair->second;
-			}
-			else {
+			if (!toAlphaMode(*itAlphaMode, material->alphaMode)) {
 				throw std::runtime_error("Invalid AlphaMode " + itAlphaMode->get<std::string>());
 			}
 		}
@@ -618,7 +627,8 @@ namespace se::loaders {
 		auto itAttributes = jsonPrimitive.find("attributes");
 		if (itAttributes != jsonPrimitive.end()) {
 			for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
-				if (auto itAttributePair = kAttributeMap.find(itAttribute.key()); itAttributePair != kAttributeMap.end()) {
+				graphics::MeshAttributes meshAttribute;
+				if (toMeshAttribute(itAttribute.key(), meshAttribute)) {
 					std::size_t accessorId = *itAttribute;
 					if (accessorId < mGLTFData.accessors.size()) {
 						const Accessor& a = mGLTFData.accessors[accessorId];
@@ -630,7 +640,7 @@ namespace se::loaders {
 						vao.bind();
 						vbo.bind();
 						vao.setVertexAttribute(
-							static_cast<unsigned int>(itAttributePair->second),
+							static_cast<unsigned int>(meshAttribute),
 							a.componentTypeId, a.normalized, a.componentSize, bv.stride
 						);
 						vao.unbind();

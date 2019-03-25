@@ -13,6 +13,15 @@ namespace se::collision {
 
 
 	template <typename T>
+	void ContiguousVector<T>::clear()
+	{
+		mElements.clear();
+		mNumElements = 0;
+		mFreeIndices.clear();
+	}
+
+
+	template <typename T>
 	template <typename... Args>
 	typename ContiguousVector<T>::iterator ContiguousVector<T>::emplace(Args&&... args)
 	{
@@ -25,6 +34,8 @@ namespace se::collision {
 			auto it = mFreeIndices.begin();
 			index = *it;
 			mFreeIndices.erase(it);
+
+			mElements[index] = std::move( T(std::forward<Args>(args)...) );
 		}
 		mNumElements++;
 
@@ -48,6 +59,16 @@ namespace se::collision {
 	bool ContiguousVector<T>::isActive(size_type i) const
 	{
 		return (i < mElements.size()) && (mFreeIndices.find(i) == mFreeIndices.end());
+	}
+
+
+	template <typename T>
+	template <typename U>
+	void ContiguousVector<T>::replicate(const ContiguousVector<U>& other)
+	{
+		mElements = std::vector<T>(other.mElements.size());
+		mNumElements = other.mNumElements;
+		mFreeIndices = other.mFreeIndices;
 	}
 
 

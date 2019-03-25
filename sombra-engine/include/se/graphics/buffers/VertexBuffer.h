@@ -26,7 +26,7 @@ namespace se::graphics {
 		/** Creates a new VertexBuffer
 		 *
 		 * @param	data a pointer to the data of the buffer
-		 * @param	count the number of components in the data array */
+		 * @param	count the number of elements in the data array */
 		template <typename T>
 		VertexBuffer(const T* data, std::size_t count);
 

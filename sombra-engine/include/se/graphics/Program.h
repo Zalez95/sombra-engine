@@ -1,7 +1,6 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <vector>
 #include <glm/glm.hpp>
 #include "PrimitiveTypes.h"
 
@@ -21,12 +20,12 @@ namespace se::graphics {
 		unsigned int mProgramId;
 
 	public:		// Functions
-		/** Creates and compiles a OpenGL program from the specified shaders
+		/** Creates and links a OpenGL Program from the specified shaders
 		 *
-		 * @param	shaders a vector with the shaders that compose the GLSL
-		 *			Program
+		 * @param	shaders the shaders that creates the GLSL Program
+		 * @param	shaderCount the number of shaders
 		 * @throw	runtime_error if the Program couldn't be created */
-		Program(const std::vector<const Shader*>& shaders);
+		Program(const Shader* shaders[], std::size_t shaderCount);
 		Program(const Program& other) = delete;
 		Program(Program&& other);
 

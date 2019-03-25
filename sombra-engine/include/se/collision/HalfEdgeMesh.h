@@ -7,9 +7,6 @@
 
 namespace se::collision {
 
-	using NormalMap = std::map<int, glm::vec3>;
-
-
 	/**
 	 * Struct HEVertex
 	 */
@@ -93,7 +90,9 @@ namespace se::collision {
 	 *
 	 * @param	meshData the HalfEdgeMesh to add the HEVertex
 	 * @param	point the 3D coordintes of the new HEVertex
-	 * @return	the index of the new HEVertex */
+	 * @return	the index of the new HEVertex in the HalfEdgeMesh vertices
+	 *			ContiguousVector (the HEVertex is added with the emplace
+	 *			function) */
 	int addVertex(HalfEdgeMesh& meshData, const glm::vec3& point);
 
 
@@ -132,8 +131,9 @@ namespace se::collision {
 	 *
 	 * @param	meshData the HalfEdgeMesh to add the HEFace
 	 * @param	vertexIndices the indices of the HEVertex of the new HEFace
-	 * @return	the index of the new HEFace, -1 if the number of HEVertices is
-	 *			less than 3 */
+	 * @return	the index of the new HEFace in the HalfEdgeMesh faces
+	 *			ContiguousVector (the HEFace is added with the emplace
+	 *			function), -1 if the number of HEVertices is less than 3 */
 	int addFace(HalfEdgeMesh& meshData, const std::vector<int>& vertexIndices);
 
 

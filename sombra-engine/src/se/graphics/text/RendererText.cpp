@@ -34,8 +34,8 @@ namespace se::graphics {
 		Shader vertexShader(vertexShaderText.c_str(), GL_VERTEX_SHADER);
 		Shader fragmentShader(fragmentShaderText.c_str(), GL_FRAGMENT_SHADER);
 
-		std::vector<const Shader*> shaders = { &vertexShader, &fragmentShader };
-		mProgram = new Program(shaders);
+		const Shader* shaders[] = { &vertexShader, &fragmentShader };
+		mProgram = new Program(shaders, 2);
 
 		// 3. Get the uniform locations
 //		mUniformLocations.u_ModelMatrix = mProgram->getUniformLocation("u_ModelMatrix");

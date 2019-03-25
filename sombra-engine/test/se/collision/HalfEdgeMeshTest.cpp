@@ -86,7 +86,7 @@ TEST(HalfEdgeMesh, calculateVertexNormal1)
 TEST(HalfEdgeMesh, calculateVertexNormal2)
 {
 	HalfEdgeMesh meshData;
-	NormalMap normals;
+	ContiguousVector<glm::vec3> normals;
 
 	std::vector<int> vertexIndices;
 	int iFace;
@@ -96,11 +96,11 @@ TEST(HalfEdgeMesh, calculateVertexNormal2)
 	vertexIndices.push_back( addVertex(meshData, glm::vec3(-6.365145683f, 3.229807853f, 2.352669477f)) );
 	vertexIndices.push_back( addVertex(meshData, glm::vec3(-5.062996387f, 3.463579893f, 3.451099872f)) );
 	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[3], vertexIndices[1] });
-	normals.emplace(iFace, calculateFaceNormal(meshData, iFace));
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[4], vertexIndices[3] });
-	normals.emplace(iFace, calculateFaceNormal(meshData, iFace));
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[2], vertexIndices[4] });
-	normals.emplace(iFace, calculateFaceNormal(meshData, iFace));
+	normals.emplace( calculateFaceNormal(meshData, iFace) );
 
 	const glm::vec3 expectedNormal(-0.280267089f, -0.815811336f, 0.505867838f);
 	glm::vec3 normal = calculateVertexNormal(meshData, normals, 0);

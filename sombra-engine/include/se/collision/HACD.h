@@ -60,7 +60,7 @@ namespace se::collision {
 
 		/** The normal vectors of the HEFaces of the Mesh to apply the HACD
 		 * algorithm */
-		NormalMap mFaceNormals;
+		ContiguousVector<glm::vec3> mFaceNormals;
 
 		/** The Dual Graph asociated with mesh to decompose. Each vertex in
 		 * this graph is a triangle in the mesh, and each vertex in the Graph
@@ -176,29 +176,30 @@ namespace se::collision {
 		 * @param	iFaces the indices of the HEFaces of the meshData
 		 *			we want to create the new HEMesh
 		 * @param	meshData the HalfEdgeMesh that holds the HEFaces
-		 * @param	faceNormals a map with the normal vectors of the meshData
-		 *			HEFaces
+		 * @param	faceNormals the normal vectors of each HEFace in the
+		 *			meshData
 		 * @return	a pair with new HEMesh and its face normals */
-		static std::pair<HalfEdgeMesh, NormalMap> getMeshFromIndices(
+		static
+		std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> getMeshFromIndices(
 			const std::vector<int>& iFaces,
-			const HalfEdgeMesh& meshData, const NormalMap& faceNormals
+			const HalfEdgeMesh& meshData,
+			const ContiguousVector<glm::vec3>& faceNormals
 		);
 
 		/** Calculates the concavity of the given HalfEdgeMesh
 		 *
 		 * @param	 originalMesh the HalfEdgeMesh to calculate its concavity
-		 * @param	faceNormals a map with the normal vectors of the
-		 *			originalMesh HEFaces
+		 * @param	faceNormals the normal vectors of the originalMesh HEFaces
 		 * @param	convexHullMesh the convex hull HalfEdgeMesh of the
 		 *			originalMesh
-		 * @param	convexHullNormals a map with the normal vector of the
-		 *			convexHullMesh HEFaces
+		 * @param	convexHullNormals the normal vectors of the convexHullMesh
+		 *			HEFaces
 		 * @return	the concavity of the surface */
 		float calculateConcavity(
 			const HalfEdgeMesh& originalMesh,
-			const NormalMap& originalMeshNormals,
+			const ContiguousVector<glm::vec3>& originalMeshNormals,
 			const HalfEdgeMesh& convexHullMesh,
-			const NormalMap& convexHullNormals
+			const ContiguousVector<glm::vec3>& convexHullNormals
 		) const;
 
 		/** Calculates the maximum concavity of the given 2D HalfEdgeMesh as the
@@ -218,18 +219,18 @@ namespace se::collision {
 		 * maximum distance from a point on its surface to its convex hull.
 		 *
 		 * @param	originalMesh the HalfEdgeMesh to calculate its concavity
-		 * @param	originalMeshNormals a map with the normal vectors of the
-		 *			originalMesh HEFaces
+		 * @param	originalMeshNormals the normal vectors of the originalMesh
+		 *			HEFaces
 		 * @param	convexHullMesh the convex hull HalfEdgeMesh of the
 		 *			originalMesh
-		 * @param	convexHullNormals a map with the normal vector of the
-		 *			convexHullMesh HEFaces
+		 * @param	convexHullNormals the normal vectors of the convexHullMesh
+		 *			HEFaces
 		 * @return	the concavity of the surface */
 		float calculateConcavity3D(
 			const HalfEdgeMesh& originalMesh,
-			const NormalMap& originalMeshNormals,
+			const ContiguousVector<glm::vec3>& originalMeshNormals,
 			const HalfEdgeMesh& convexHullMesh,
-			const NormalMap& convexHullNormals
+			const ContiguousVector<glm::vec3>& convexHullNormals
 		) const;
 
 		/** Calculate the aspect ratio of the given HEMesh
@@ -251,14 +252,15 @@ namespace se::collision {
 		 * from it
 		 *
 		 * @param	meshData the convex HalfEdgeMesh
-		 * @param	faceNormals the normal vector of the mesh HEFaces
+		 * @param	faceNormals the normal vectors of the mesh HEFaces
 		 * @param	origin the coordinates of the internal point
 		 * @param	direction the direction towards we want to calculate the
 		 *			intersection
 		 * @return	a pair with a bool that indicates if the intersection could
 		 *			be calculated and the coordinates of the intersection */
 		std::pair<bool, glm::vec3> getInternalIntersection(
-			const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+			const HalfEdgeMesh& meshData,
+			const ContiguousVector<glm::vec3>& faceNormals,
 			const glm::vec3& origin, const glm::vec3& direction
 		) const;
 

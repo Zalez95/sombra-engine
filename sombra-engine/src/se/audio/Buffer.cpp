@@ -5,9 +5,31 @@
 
 namespace se::audio {
 
-	Buffer::Buffer()
+	constexpr ALenum toALFormat(FormatId format)
+	{
+		switch (format) {
+			case FormatId::Mono8:			return AL_FORMAT_MONO8;
+			case FormatId::Mono16:			return AL_FORMAT_MONO16;
+			case FormatId::MonoFloat:		return AL_FORMAT_MONO_FLOAT32;
+			case FormatId::MonoDouble:		return AL_FORMAT_MONO_DOUBLE_EXT;
+			case FormatId::Stereo8:			return AL_FORMAT_STEREO8;
+			case FormatId::Stereo16:		return AL_FORMAT_STEREO16;
+			case FormatId::StereoFloat:		return AL_FORMAT_STEREO_FLOAT32;
+			case FormatId::StereoDouble:	return AL_FORMAT_STEREO_DOUBLE_EXT;
+			default:						return AL_NONE;
+		}
+	}
+
+
+	Buffer::Buffer(const void* data, std::size_t size, FormatId format, int sampleRate)
 	{
 		AL_WRAP( alGenBuffers(1, &mBufferId) );
+		AL_WRAP( alBufferData(
+			mBufferId,
+			toALFormat(format), data, size,
+			sampleRate
+		) );
+
 		SOMBRA_TRACE_LOG << "Created Buffer " << mBufferId;
 	}
 
@@ -38,16 +60,6 @@ namespace se::audio {
 		other.mBufferId = 0;
 
 		return *this;
-	}
-
-
-	void Buffer::setBufferFloatData(const std::vector<float>& data, int sampleRate)
-	{
-		AL_WRAP( alBufferData(
-			mBufferId,
-			AL_FORMAT_MONO_FLOAT32, data.data(), static_cast<ALsizei>(data.size() * sizeof(float)),
-			sampleRate
-		) );
 	}
 
 }

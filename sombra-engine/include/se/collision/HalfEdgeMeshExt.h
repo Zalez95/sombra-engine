@@ -35,12 +35,13 @@ namespace se::collision {
 	 * @note	the normal vector is calculated from the normals of the faces
 	 *			that share the vertex without any kind of normalization
 	 * @param	meshData the mesh that holds the HEVertex
-	 * @param	faceNormals a map with the normals of each HEFace of the mesh
+	 * @param	faceNormals the normal vectors of each HEFace of the mesh
 	 * @param	iVertex the index of the HEVertex where we want to calculate
 	 *			the normal vector
 	 * @return	the normal vector */
 	glm::vec3 calculateVertexNormal(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const HalfEdgeMesh& meshData,
+		const ContiguousVector<glm::vec3>& faceNormals,
 		int iVertex
 	);
 
@@ -78,7 +79,7 @@ namespace se::collision {
 	 * eye point
 	 *
 	 * @param	meshData the HalfEdgeMesh that holds the HEVertices and HEFaces
-	 * @param	faceNormals the normals of each HEFace
+	 * @param	faceNormals the normal vectors of each HEFace
 	 * @param	eyePoint the 3D coordinates of the eye point
 	 * @param	iInitialFace the index of the initial HEFace from which we will
 	 *			start searching
@@ -88,7 +89,8 @@ namespace se::collision {
 	 * @note	the initial HEFace must be visible from the eyePoint
 	 *			perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const HalfEdgeMesh& meshData, const NormalMap& faceNormals,
+		const HalfEdgeMesh& meshData,
+		const ContiguousVector<glm::vec3>& faceNormals,
 		const glm::vec3& eyePoint, int iInitialFace
 	);
 

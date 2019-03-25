@@ -1,8 +1,6 @@
 #ifndef PHYSICS_SYSTEM_H
 #define PHYSICS_SYSTEM_H
 
-#include <set>
-#include <map>
 #include "ForceManager.h"
 #include "ConstraintManager.h"
 
@@ -28,7 +26,7 @@ namespace se::physics {
 		ConstraintManager mConstraintManager;
 
 		/** All the RigidBodies that must be updated */
-		std::set<RigidBody*> mRigidBodies;
+		std::vector<RigidBody*> mRigidBodies;
 
 	public:		// Functions
 		/** @return	the ForceManager of the PhysicsEngine */

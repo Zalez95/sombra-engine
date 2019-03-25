@@ -49,14 +49,14 @@ namespace se::collision {
 		/** The Half-Edge Mesh with the convex hull of the current Mesh */
 		HalfEdgeMesh mMesh;
 
-		/** Maps each HalfEdgeMesh HEFace with its normal vector */
-		NormalMap mFaceNormals;
+		/** The normal vectors of each HEFace */
+		ContiguousVector<glm::vec3> mFaceNormals;
 
-		/** Maps each HalfEdgeMesh HEFace with its distance data */
-		std::map<int, FaceDistanceData> mFaceDistances;
+		/** The distance data of eahc HEFace */
+		ContiguousVector<FaceDistanceData> mFaceDistances;
 
-		/** Maps each HalfEdgeMesh HEVertex with its SupportPoint */
-		std::map<int, SupportPoint> mVertexSupportPoints;
+		/** The SupportPoint of each HEVertex */
+		ContiguousVector<SupportPoint> mVertexSupportPoints;
 
 	public:		//Functions
 		/** Creates a new Polytope from the given simplex points by expanding it
@@ -70,30 +70,31 @@ namespace se::collision {
 		/** @return	the HalfEdgeMesh of the Polytope */
 		const HalfEdgeMesh& getMesh() const { return mMesh; };
 
-		/** @return	the map with the normal vectors of the HEFaces of the
-		 *			Polytope's HalfEdgeMesh */
-		const NormalMap& getNormalsMap() const { return mFaceNormals; };
+		/** @return	the normal vectors of the HEFaces of the Polytope's
+		 *			HalfEdgeMesh */
+		const ContiguousVector<glm::vec3>& getNormals() const
+		{ return mFaceNormals; };
 
 		/** Returns the SupportPoint of the given Polytope HEVertex
 		 *
 		 * @param	iVertex the index of the HEVertex in the Polytope
 		 * @return	the SupportPoint of the HEVertex */
 		const SupportPoint& getSupportPoint(int iVertex) const
-		{ return mVertexSupportPoints.at(iVertex); };
+		{ return mVertexSupportPoints[iVertex]; };
 
 		/** Returns the normal vector of the given Polytope HEFace
 		 *
 		 * @param	iFace the index of the HEFace in the Polytope
 		 * @return	the normal vector of the HEFace */
 		const glm::vec3& getNormal(int iFace) const
-		{ return mFaceNormals.at(iFace); };
+		{ return mFaceNormals[iFace]; };
 
 		/** Returns the FaceDistanceData of the given Polytope HEFace
 		 *
 		 * @param	iFace the index of the HEFace in the Polytope
 		 * @return	the FaceDistanceData of the HEFace */
 		const FaceDistanceData& getDistanceData(int iFace) const
-		{ return mFaceDistances.at(iFace); };
+		{ return mFaceDistances[iFace]; };
 
 		/** Creates a new HEVertex from the given SupportPoint and adds it to
 		 * the Polytope Mesh

@@ -140,8 +140,8 @@ namespace se::graphics {
 		Shader fragmentShader(fragmentShaderText.c_str(), GL_FRAGMENT_SHADER);
 
 		// 2. Create the Program
-		std::vector<const Shader*> shaders = { &vertexShader, &fragmentShader };
-		mProgram = new Program(shaders);
+		const Shader* shaders[] = { &vertexShader, &fragmentShader };
+		mProgram = new Program(shaders, 2);
 	}
 
 
