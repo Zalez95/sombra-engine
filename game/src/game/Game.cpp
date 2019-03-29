@@ -228,57 +228,81 @@ namespace game {
 			// Meshes
 			se::loaders::RawMesh rawMesh1("Cube");
 			rawMesh1.positions = {
-				{-0.5f,	-0.5f,	-0.5f},
-				{-0.5f,	-0.5f,	 0.5f},
-				{-0.5f,	 0.5f,	-0.5f},
-				{-0.5f,	 0.5f,	 0.5f},
-				{ 0.5f,	-0.5f,	-0.5f},
-				{ 0.5f,	-0.5f,	 0.5f},
-				{ 0.5f,	 0.5f,	-0.5f},
-				{ 0.5f,	 0.5f,	 0.5f}
+				{ 0.5f, 0.5f,-0.5f},
+				{ 0.5f,-0.5f,-0.5f},
+				{-0.5f,-0.5f,-0.5f},
+				{-0.5f, 0.5f,-0.5f},
+				{ 0.5f, 0.5f, 0.5f},
+				{ 0.5f,-0.5f, 0.5f},
+				{-0.5f,-0.5f, 0.5f},
+				{-0.5f, 0.5f, 0.5f},
+				{ 0.5f, 0.5f,-0.5f},
+				{ 0.5f,-0.5f,-0.5f},
+				{ 0.5f, 0.5f, 0.5f},
+				{ 0.5f,-0.5f, 0.5f},
+				{ 0.5f, 0.5f, 0.5f},
+				{ 0.5f,-0.5f, 0.5f},
+				{-0.5f,-0.5f, 0.5f},
+				{-0.5f, 0.5f, 0.5f},
+				{ 0.5f, 0.5f,-0.5f},
+				{ 0.5f,-0.5f,-0.5f},
+				{-0.5f, 0.5f,-0.5f},
+				{-0.5f, 0.5f,-0.5f},
+				{-0.5f,-0.5f,-0.5f},
+				{-0.5f,-0.5f,-0.5f},
+				{-0.5f,-0.5f, 0.5f},
+				{-0.5f, 0.5f, 0.5f}
+			};
+			rawMesh1.texCoords = {
+				{0.666467010f, 0.666466951f},
+				{0.999800264f, 0.000199760f},
+				{0.333533257f, 0.333133578f},
+				{0.333533287f, 0.666466951f},
+				{0.666467010f, 0.333533167f},
+				{0.999800145f, 0.333133548f},
+				{0.333533197f, 0.000199760f},
+				{0.333533197f, 0.333533257f},
+				{0.333133667f, 0.333533167f},
+				{0.000199899f, 0.333533197f},
+				{0.333133548f, 0.666466951f},
+				{0.000199760f, 0.666466951f},
+				{0.333133697f, 0.333133548f},
+				{0.333133488f, 0.000199760f},
+				{0.000199760f, 0.000199909f},
+				{0.000199869f, 0.333133667f},
+				{0.333133548f, 0.999800264f},
+				{0.000199760f, 0.999800264f},
+				{0.333133548f, 0.666866540f},
+				{0.666467010f, 0.333133488f},
+				{0.000199770f, 0.666866540f},
+				{0.666866540f, 0.000199799f},
+				{0.666866540f, 0.333133578f},
+				{0.666466891f, 0.000199760f}
 			};
 			rawMesh1.faceIndices = {
-				0, 1, 2,
-				1, 3, 2,
-				0, 2, 4,
-				2, 6, 4,
-				4, 6, 5,
-				5, 6, 7,
-				1, 5, 3,
-				3, 5, 7,
-				0, 4, 1,
-				1, 4, 5,
-				2, 3, 6,
-				3, 7, 6
+				16, 20, 18,
+				5, 21, 1,
+				2, 23, 19,
+				0, 7, 4,
+				10, 9, 8,
+				15, 13, 12,
+				16, 17, 20,
+				5, 22, 21,
+				2, 6, 23,
+				0, 3, 7,
+				10, 11, 9,
+				15, 14, 13
 			};
-			rawMesh1.texCoords = std::vector<glm::vec2>(8);
 			rawMesh1.normals = se::loaders::MeshLoader::calculateNormals(rawMesh1.positions, rawMesh1.faceIndices);
 			rawMesh1.tangents = se::loaders::MeshLoader::calculateTangents(rawMesh1.positions, rawMesh1.texCoords, rawMesh1.faceIndices);
 			mesh1 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh1));
 
 			se::loaders::RawMesh rawMesh2("Plane");
-			rawMesh2.positions = {
-				{-0.5f,	-0.5f,	0.0f},
-				{ 0.5f,	-0.5f,	0.0f},
-				{-0.5f,	0.5f,	0.0f},
-				{ 0.5f,	0.5f,	0.0f}
-			};
-			rawMesh2.normals = {
-				{0.0f,	0.0f,	1.0f},
-				{0.0f,	0.0f,	1.0f},
-				{0.0f,	0.0f,	1.0f},
-				{0.0f,	0.0f,	1.0f}
-			};
-			rawMesh2.texCoords = {
-				{0.0f,	0.0f},
-				{1.0f,	0.0f},
-				{0.0f,	1.0f},
-				{1.0f,	1.0f}
-			};
-			rawMesh2.faceIndices = {
-				0, 1, 2,
-				1, 3, 2,
-			};
+			rawMesh2.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
+			rawMesh2.texCoords = { {0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f} };
+			rawMesh2.faceIndices = { 0, 1, 2, 1, 3, 2, };
+			rawMesh2.normals = se::loaders::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.faceIndices);
+			rawMesh2.tangents = se::loaders::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 			mesh2 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh2));
 
 			// GLTF scenes

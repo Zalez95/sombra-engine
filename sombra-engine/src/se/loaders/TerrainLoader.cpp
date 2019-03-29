@@ -6,6 +6,7 @@
 #include "se/app/Entity.h"
 #include "se/utils/Image.h"
 #include "se/graphics/3D/Mesh.h"
+#include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Renderable3D.h"
 #include "se/physics/RigidBody.h"
 #include "se/collision/TerrainCollider.h"
@@ -25,7 +26,12 @@ namespace se::loaders {
 
 		// Graphics data
 		auto graphicsMesh = std::make_shared<graphics::Mesh>( MeshLoader::createGraphicsMesh(*rawMesh) );
-		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, nullptr);
+		auto graphicsMaterial = std::make_shared<graphics::Material>(graphics::Material{
+			"default",
+			{ glm::vec4(0.5f, 0.5f, 0.5f, 1.0f), nullptr, 1.0f, 1.0f, nullptr },
+			nullptr, nullptr, nullptr, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.0f, false
+		});
+		auto renderable3D = std::make_unique<graphics::Renderable3D>(graphicsMesh, graphicsMaterial);
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D));
 
 		// Physics data
@@ -54,9 +60,10 @@ namespace se::loaders {
 
 		// The mesh data of the Terrain
 		auto rawMesh = std::make_unique<RawMesh>(name);
-		rawMesh->positions.reserve(3 * count);
-		rawMesh->normals.reserve(3 * count);
-		rawMesh->texCoords.reserve(2 * count);
+		rawMesh->positions.reserve(count);
+		rawMesh->normals.reserve(count);
+		rawMesh->tangents.reserve(count);
+		rawMesh->texCoords.reserve(count);
 		rawMesh->faceIndices.reserve(6 * (xSize - 1) * (zSize - 1));
 
 		for (std::size_t z = 0; z < zSize; ++z) {
@@ -88,20 +95,28 @@ namespace se::loaders {
 					glm::vec3 n2 = glm::cross(tr - bl, tr - br);
 					glm::vec3 normal = n1 + n2;
 
-					// Set the normal vector of the current vertex
-					rawMesh->normals.insert(rawMesh->normals.end(), { normal.x, normal.y, normal.z });
+					// Calculate the tangents of the faces
+					glm::vec3 t1 = tr - tl;
+					glm::vec3 t2 = br - bl;
+					glm::vec3 tangent = t1 + t2;
 
-					// update the normals of the other vertices
+					// Set the normal and tangent vectors of the vertices
+					rawMesh->normals.emplace_back(normal.x, normal.y, normal.z);
 					rawMesh->normals[topLeft]		+= n1;
 					rawMesh->normals[bottomLeft]	+= normal;
 					rawMesh->normals[bottomRight]	+= n2;
+					rawMesh->tangents.emplace_back(tangent.x, tangent.y, tangent.z);
+					rawMesh->tangents[topLeft]		+= t1;
+					rawMesh->tangents[bottomLeft]	+= tangent;
+					rawMesh->tangents[bottomRight]	+= t2;
 
-					// Normalize the normal of the bottom left vertex
+					// Normalize the vectors of the bottom left vertex
 					int norm = 6;
 					if (x == 1) { norm -= 3; }
 					if (z == 1) { norm -= 3; }
 					if (norm > 0) {
 						rawMesh->normals[bottomLeft] /= norm;
+						rawMesh->tangents[bottomLeft] /= norm;
 					}
 
 					// Set the indices of the faces
@@ -109,6 +124,7 @@ namespace se::loaders {
 				}
 				else {
 					rawMesh->normals.emplace_back(0.0f);
+					rawMesh->tangents.emplace_back(0.0f);
 				}
 			}
 		}

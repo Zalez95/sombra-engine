@@ -94,7 +94,13 @@ namespace se::loaders {
 	DataHolder GLTFReader::load(const std::string& path)
 	{
 		DataHolder output;
+		mGLTFData = GLTFData();
 		mBasePath = path.substr(0, path.find_last_of("/\\") + 1);
+		mDefaultMaterial = std::make_shared<graphics::Material>(graphics::Material{
+			"default",
+			{ glm::vec4(0.5f, 0.5f, 0.5f, 1.0f), nullptr, 1.0f, 1.0f, nullptr },
+			nullptr, nullptr, nullptr, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.0f, false
+		});
 
 		try {
 			std::ifstream inputstream(path);
@@ -620,7 +626,7 @@ namespace se::loaders {
 	) const
 	{
 		std::shared_ptr<graphics::Mesh> mesh = nullptr;
-		std::shared_ptr<graphics::Material> material = nullptr;
+		std::shared_ptr<graphics::Material> material = mDefaultMaterial;
 
 		graphics::VertexArray vao;
 		std::vector<graphics::VertexBuffer> vbos;

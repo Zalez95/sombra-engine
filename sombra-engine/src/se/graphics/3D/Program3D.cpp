@@ -81,7 +81,9 @@ namespace se::graphics {
 			material.normalTexture->bind(TextureUnits::kNormal);
 		}
 
-		if (material.occlusionTexture) {
+		bool useOcclusionTexture = (material.occlusionTexture != nullptr);
+		mProgram->setUniform(mUniformLocations.material.useOcclusionTexture, useOcclusionTexture);
+		if (useOcclusionTexture) {
 			mProgram->setUniform(mUniformLocations.material.occlusionTexture, TextureUnits::kOcclusion);
 			material.occlusionTexture->bind(TextureUnits::kOcclusion);
 		}
@@ -151,20 +153,21 @@ namespace se::graphics {
 		mUniformLocations.viewMatrix				= mProgram->getUniformLocation("uViewMatrix");
 		mUniformLocations.projectionMatrix			= mProgram->getUniformLocation("uProjectionMatrix");
 
-		mUniformLocations.material.pbrMetallicRoughness.baseColorFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorFactor");
-		mUniformLocations.material.pbrMetallicRoughness.useBaseColorTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useBaseColorTexture");
-		mUniformLocations.material.pbrMetallicRoughness.baseColorTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorTexture");
-		mUniformLocations.material.pbrMetallicRoughness.metallicFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicFactor");
-		mUniformLocations.material.pbrMetallicRoughness.roughnessFactor = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.roughnessFactor");
-		mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture");
-		mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture = mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
-		mUniformLocations.material.useNormalTexture	= mProgram->getUniformLocation("uMaterial.useNormalTexture");
-		mUniformLocations.material.normalTexture	= mProgram->getUniformLocation("uMaterial.normalTexture");
-		mUniformLocations.material.occlusionTexture	= mProgram->getUniformLocation("uMaterial.occlusionTexture");
-		mUniformLocations.material.emissiveTexture	= mProgram->getUniformLocation("uMaterial.emissiveTexture");
-		mUniformLocations.material.emissiveFactor	= mProgram->getUniformLocation("uMaterial.emissiveFactor");
-		mUniformLocations.material.checkAlphaCutoff	= mProgram->getUniformLocation("uMaterial.checkAlphaCutoff");
-		mUniformLocations.material.alphaCutoff		= mProgram->getUniformLocation("uMaterial.alphaCutoff");
+		mUniformLocations.material.pbrMetallicRoughness.baseColorFactor				= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorFactor");
+		mUniformLocations.material.pbrMetallicRoughness.useBaseColorTexture			= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useBaseColorTexture");
+		mUniformLocations.material.pbrMetallicRoughness.baseColorTexture			= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.baseColorTexture");
+		mUniformLocations.material.pbrMetallicRoughness.metallicFactor				= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicFactor");
+		mUniformLocations.material.pbrMetallicRoughness.roughnessFactor				= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.roughnessFactor");
+		mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture	= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture");
+		mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture	= mProgram->getUniformLocation("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
+		mUniformLocations.material.useNormalTexture		= mProgram->getUniformLocation("uMaterial.useNormalTexture");
+		mUniformLocations.material.normalTexture		= mProgram->getUniformLocation("uMaterial.normalTexture");
+		mUniformLocations.material.useOcclusionTexture	= mProgram->getUniformLocation("uMaterial.useOcclusionTexture");
+		mUniformLocations.material.occlusionTexture		= mProgram->getUniformLocation("uMaterial.occlusionTexture");
+		mUniformLocations.material.emissiveTexture		= mProgram->getUniformLocation("uMaterial.emissiveTexture");
+		mUniformLocations.material.emissiveFactor		= mProgram->getUniformLocation("uMaterial.emissiveFactor");
+		mUniformLocations.material.checkAlphaCutoff		= mProgram->getUniformLocation("uMaterial.checkAlphaCutoff");
+		mUniformLocations.material.alphaCutoff			= mProgram->getUniformLocation("uMaterial.alphaCutoff");
 
 		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
 		for (std::size_t i = 0; i < kMaxPointLights; ++i) {

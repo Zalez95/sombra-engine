@@ -70,6 +70,9 @@ namespace se::loaders {
 		/** The base path of the file to parse */
 		std::string mBasePath;
 
+		/** The default GLTF material */
+		std::shared_ptr<graphics::Material> mDefaultMaterial;
+
 	public:		// Functions
 		/** Parses the GLTF Scene located at the given file
 		 *

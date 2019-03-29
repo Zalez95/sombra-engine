@@ -24,6 +24,7 @@ struct Material
 	PBRMetallicRoughness pbrMetallicRoughness;
 	bool useNormalTexture;
 	sampler2D normalTexture;
+	bool useOcclusionTexture;
 	sampler2D occlusionTexture;
 	sampler2D emissiveTexture;
 	vec3 emissiveFactor;
@@ -75,11 +76,11 @@ out vec4 glFragColor;
 float normalDistributionGGX(vec3 surfaceNormal, vec3 halfwayVector, float roughness)
 {
 	float roughness2 = roughness * roughness;
-	float normalDotLight2 = max(dot(surfaceNormal, halfwayVector), 0.0);
-	normalDotLight2 *= normalDotLight2;
+	float normalDotHalfway2 = max(dot(surfaceNormal, halfwayVector), 0.0);
+	normalDotHalfway2 *= normalDotHalfway2;
 
 	float numerator = roughness2;
-	float denominator = normalDotLight2 * (roughness2 - 1.0) + 1.0;
+	float denominator = normalDotHalfway2 * (roughness2 - 1.0) + 1.0;
 	denominator = PI * denominator * denominator;
 
 	return numerator / denominator;
@@ -91,7 +92,7 @@ float geometrySub(vec3 surfaceNormal, vec3 direction, float k)
 	float normalDotDirection = max(dot(surfaceNormal, direction), 0.0);
 
 	float numerator = normalDotDirection;
-	float denominator = normalDotDirection * (1.0 - k) * k;
+	float denominator = normalDotDirection * (1.0 - k) + k;
 	return numerator / denominator;
 }
 
@@ -109,9 +110,8 @@ float geometrySchlickGGX(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirec
 
 /* Returns the ratio of light that gets reflected over the light that gets
  * refracted*/
-vec3 fresnelSchlick(vec3 halfwayVector, vec3 viewDirection, vec3 reflectivity)
+vec3 fresnelSchlick(float cosTheta, vec3 reflectivity)
 {
-	float cosTheta = max(dot(halfwayVector, viewDirection), 0.0);
 	return reflectivity + (vec3(1.0) - reflectivity) * pow(1.0 - cosTheta, 5.0);
 }
 
@@ -153,10 +153,11 @@ vec3 calculateDirectLight(vec3 surfaceColor, float metallic, float roughness, ve
 		vec3 diffuseColor = surfaceColor / PI;
 
 		// Calculate the Cook-Torrance brdf specular color
-		vec3 halfwayVector = normalize(lightDirection + viewDirection);
+		vec3 halfwayDirection = normalize(lightDirection + viewDirection);
+		float halfwayDotView = max(dot(halfwayDirection, viewDirection), 0.0);
 
-		float n	= normalDistributionGGX(surfaceNormal, halfwayVector, roughness);
-		vec3 f	= fresnelSchlick(halfwayVector, viewDirection, reflectivity);
+		float n	= normalDistributionGGX(surfaceNormal, halfwayDirection, roughness);
+		vec3 f	= fresnelSchlick(halfwayDotView, reflectivity);
 		float g	= geometrySchlickGGX(surfaceNormal, viewDirection, lightDirection, roughness);
 
 		float normalDotLight = max(dot(surfaceNormal, lightDirection), 0.0);
@@ -177,7 +178,8 @@ void main()
 	// Get the texture data for the current fragment
 	vec4 surfaceColor = uMaterial.pbrMetallicRoughness.baseColorFactor;
 	if (uMaterial.pbrMetallicRoughness.useBaseColorTexture) {
-		surfaceColor *= texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+		vec4 textureColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+		surfaceColor *= pow(textureColor, vec4(2.2));
 	}
 
 	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
@@ -194,7 +196,10 @@ void main()
 		surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
 	}
 
-	float surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
+	float surfaceAO = 0.0;
+	if (uMaterial.useOcclusionTexture) {
+		surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
+	}
 
 	// Check alpha cutoff
 	if (uMaterial.checkAlphaCutoff && (surfaceColor.a < uMaterial.alphaCutoff)) {

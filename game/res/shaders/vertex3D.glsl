@@ -33,13 +33,20 @@ out vec3 vsPointLightsPositions[MAX_POINT_LIGHTS];
 // Functions
 void main()
 {
+	// Calculate the Model-View matrix
 	mat4 modelViewMatrix = uViewMatrix * uModelMatrix;
 
-	// Calculate the TBN Matrix
-	vec3 bitTangent = cross(aVertexNormal, aVertexTangent);
+	// Calculate the tangent and normal vectors in view space
 	vec3 T = normalize(vec3(modelViewMatrix * vec4(aVertexTangent, 0.0)));
-	vec3 B = normalize(vec3(modelViewMatrix * vec4(bitTangent, 0.0)));
 	vec3 N = normalize(vec3(modelViewMatrix * vec4(aVertexNormal, 0.0)));
+
+	// Fix normalization issues so T and N are orthogonal
+	T = normalize(T - dot(T, N) * N);
+
+	// Calculate the bit-tangent vector in view space
+	vec3 B = cross(N, T);
+
+	// Calculate the TBN matrix
 	mat3 vsTBNMatrix = transpose(mat3(T, B, N));
 
 	// Calculate gl_Position

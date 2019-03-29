@@ -57,6 +57,7 @@ namespace se::graphics {
 
 				int useNormalTexture;
 				int normalTexture;
+				int useOcclusionTexture;
 				int occlusionTexture;
 				int emissiveTexture;
 				int emissiveFactor;

@@ -111,8 +111,8 @@ namespace se::loaders {
 	) {
 		std::vector<glm::vec3> normals(positions.size(), glm::vec3(0.0f));
 
-		// Sum to the normal of every vertex, the normal of the faces
-		// which it belongs
+		// The normal vector of every vertex is calculated as the sum of the
+		// normal vectors of the faces it belongs to
 		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
 			// Get the normal of triangle
 			const glm::vec3& v1 = positions[faceIndices[i+1]] - positions[faceIndices[i]];
@@ -140,17 +140,27 @@ namespace se::loaders {
 	) {
 		std::vector<glm::vec3> tangents(positions.size(), glm::vec3(0.0f));
 
+		// The tangent vector of every vertex is calculated as the sum of the
+		// tangent vectors of the faces it belongs to
 		for (std::size_t i = 0; i < faceIndices.size(); i+=3) {
 			const glm::vec3& e1		= positions[faceIndices[i+1]] - positions[faceIndices[i]];
 			const glm::vec3& e2		= positions[faceIndices[i+2]] - positions[faceIndices[i]];
 			const glm::vec2& dUV1	= texCoords[faceIndices[i+1]] - texCoords[faceIndices[i]];
 			const glm::vec2& dUV2	= texCoords[faceIndices[i+2]] - texCoords[faceIndices[i]];
 
+			glm::vec3 tangent(0.0f);
 			float invertedDeterminant = 1.0f / (dUV1.x * dUV2.y - dUV2.x * dUV1.y);
-			tangents[faceIndices[i]].x = invertedDeterminant * (dUV2.y * e1.x - dUV1.y * e2.x);
-			tangents[faceIndices[i]].y = invertedDeterminant * (dUV2.y * e1.y - dUV1.y * e2.y);
-			tangents[faceIndices[i]].z = invertedDeterminant * (dUV2.y * e1.z - dUV1.y * e2.z);
-			tangents[faceIndices[i]] = glm::normalize(tangents[faceIndices[i]]);
+			tangent.x = invertedDeterminant * (dUV2.y * e1.x - dUV1.y * e2.x);
+			tangent.y = invertedDeterminant * (dUV2.y * e1.y - dUV1.y * e2.y);
+			tangent.z = invertedDeterminant * (dUV2.y * e1.z - dUV1.y * e2.z);
+			tangents[faceIndices[i]]	+= tangent;
+			tangents[faceIndices[i+1]]	+= tangent;
+			tangents[faceIndices[i+2]]	+= tangent;
+		}
+
+		// Normalize the tangent vector of every vertex
+		for (glm::vec3& tangent : tangents) {
+			tangent = glm::normalize(tangent);
 		}
 
 		return tangents;
