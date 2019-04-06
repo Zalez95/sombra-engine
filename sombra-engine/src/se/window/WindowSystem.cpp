@@ -1,4 +1,6 @@
 #include <stdexcept>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include "se/window/WindowSystem.h"
 
 namespace se::window {

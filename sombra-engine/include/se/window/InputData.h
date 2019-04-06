@@ -2,6 +2,8 @@
 #define INPUT_DATA_H
 
 #include <array>
+#include "KeyCodes.h"
+#include "MouseButtonCodes.h"
 
 namespace se::window {
 

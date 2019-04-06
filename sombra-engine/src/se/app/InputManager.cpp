@@ -85,10 +85,10 @@ namespace se::app {
 
 		// Get the direction from the input in the XZ plane
 		glm::vec3 direction(0.0f);
-		if (inputData.keys[GLFW_KEY_W]) { direction += forward; }
-		if (inputData.keys[GLFW_KEY_S]) { direction -= forward; }
-		if (inputData.keys[GLFW_KEY_D]) { direction += right; }
-		if (inputData.keys[GLFW_KEY_A]) { direction -= right; }
+		if (inputData.keys[SE_KEY_W]) { direction += forward; }
+		if (inputData.keys[SE_KEY_S]) { direction -= forward; }
+		if (inputData.keys[SE_KEY_D]) { direction += right; }
+		if (inputData.keys[SE_KEY_A]) { direction -= right; }
 
 		// Normalize the direction
 		float length = glm::length(direction);
@@ -101,8 +101,8 @@ namespace se::app {
 		}
 
 		// Add the jump velocity
-		if (inputData.keys[GLFW_KEY_SPACE]) { entity->velocity += kJumpSpeed * up; }
-		if (inputData.keys[GLFW_KEY_LEFT_CONTROL]) { entity->velocity -= kJumpSpeed * up; }
+		if (inputData.keys[SE_KEY_SPACE]) { entity->velocity += kJumpSpeed * up; }
+		if (inputData.keys[SE_KEY_LEFT_CONTROL]) { entity->velocity -= kJumpSpeed * up; }
 	}
 
 

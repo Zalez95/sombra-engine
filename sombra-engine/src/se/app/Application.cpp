@@ -104,7 +104,7 @@ namespace se::app {
 				// Update the Systems
 				SOMBRA_INFO_LOG << "Update phase";
 				mWindowSystem->update();
-				if (mWindowSystem->getInputData()->keys[GLFW_KEY_ESCAPE]) {
+				if (mWindowSystem->getInputData()->keys[SE_KEY_ESCAPE]) {
 					mState = AppState::Stopped;
 				}
 				mInputManager->update();

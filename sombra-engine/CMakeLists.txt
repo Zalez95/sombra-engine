@@ -33,7 +33,7 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 # Link the dependencies
-target_link_libraries(SombraEngine PUBLIC glm glfw glew AudioFile PRIVATE OpenAL Soil OpenGL NlohmannJSON)
+target_link_libraries(SombraEngine PUBLIC glm AudioFile PRIVATE OpenAL Soil glfw glew OpenGL NlohmannJSON)
 
 # Install the target
 install(TARGETS SombraEngine

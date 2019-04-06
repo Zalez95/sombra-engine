@@ -26,7 +26,8 @@ namespace se::audio {
 		AL_WRAP( alGenBuffers(1, &mBufferId) );
 		AL_WRAP( alBufferData(
 			mBufferId,
-			toALFormat(format), data, size,
+			toALFormat(format),
+			data, static_cast<ALsizei>(size),
 			sampleRate
 		) );
 

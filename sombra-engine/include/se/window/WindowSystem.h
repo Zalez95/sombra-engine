@@ -2,9 +2,10 @@
 #define WINDOW_SYSTEM_H
 
 #include <string>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include "InputData.h"
+
+struct GLFWwindow;
+
 
 namespace se::window {
 

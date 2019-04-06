@@ -38,6 +38,12 @@ namespace se::app {
 		AudioManager(audio::AudioEngine& audioEngine) :
 			mAudioEngine(audioEngine) {};
 
+		/** Sets the given Entity as the Listener of all the audio Sources of
+		 * the AudioManager
+		 *
+		 * @param	entity a pointer to the Entity to set as the Listener */
+		void setListener(Entity* entity);
+
 		/** Adds the given Entity as an audio Source to the AudioManager
 		 *
 		 * @param	entity a pointer to the Entity to add to the
@@ -45,12 +51,6 @@ namespace se::app {
 		 * @param	source a pointer to the Source to add to the
 		 *			AudioManager */
 		void addSource(Entity* entity, SourceUPtr source);
-
-		/** Sets the given Entity as the Listener of all the audio Sources of
-		 * the AudioManager
-		 *
-		 * @param	entity a pointer to the Entity to set as the Listener */
-		void setListener(Entity* entity);
 
 		/** Removes the given Entity from the AudioManager so it won't
 		 * longer be played
