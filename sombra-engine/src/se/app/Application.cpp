@@ -24,8 +24,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Creating the Application";
 		try {
 			// Window
-			mWindowSystem = new window::WindowSystem({ title, width, height, false, false });
-			SOMBRA_INFO_LOG << mWindowSystem->getGLInfo();
+			mWindowSystem = new window::WindowSystem({ title, width, height, false, false, false });
 
 			// Input
 			mInputManager = new InputManager(*mWindowSystem);
@@ -33,6 +32,7 @@ namespace se::app {
 			// Graphics
 			mGraphicsSystem = new graphics::GraphicsSystem();
 			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+			mGraphicsSystem->setViewport(width, height);
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine();
@@ -91,20 +91,21 @@ namespace se::app {
 		 * MAIN LOOP
 		 *********************************************************************/
 		mState = AppState::Running;
-		float lastTime = mWindowSystem->getTime();
+		auto lastTP = std::chrono::high_resolution_clock::now();
 		while (mState == AppState::Running) {
 			// Calculate the elapsed time since the last update
-			float curTime	= mWindowSystem->getTime();
-			float deltaTime	= curTime - lastTime;
+			auto currentTP = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
 
+			float deltaTime = durationInSeconds.count();
 			if (deltaTime >= mUpdateTime) {
-				lastTime = curTime;
+				lastTP = currentTP;
 				std::cout << deltaTime << "ms\r";
 
 				// Update the Systems
 				SOMBRA_INFO_LOG << "Update phase";
 				mWindowSystem->update();
-				if (mWindowSystem->getInputData()->keys[SE_KEY_ESCAPE]) {
+				if (mWindowSystem->getInputData().keys[SE_KEY_ESCAPE]) {
 					mState = AppState::Stopped;
 				}
 				mInputManager->update();

@@ -201,6 +201,8 @@ namespace game {
 
 	void Game::init()
 	{
+		mWindowSystem->setCursorVisibility(false);
+		SOMBRA_INFO_LOG << mGraphicsSystem->getGLInfo();
 		mGraphicsSystem->addLayer(&mLayer2D);
 
 		/*********************************************************************

@@ -5,50 +5,8 @@
 
 namespace se::window {
 
-// Callback functions
-	void error_callback(int error, const char* description)
-	{
-		throw std::runtime_error("Window System: Error " + std::to_string(error) + ": " + description);
-	}
-
-
-	void key_callback(GLFWwindow* window, int button, int /*scancode*/, int action, int /*mods*/)
-	{
-		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-
-		if (action != GLFW_RELEASE) {
-			userWindow->mInputData.keys[button] = true;
-		}
-		else {
-			userWindow->mInputData.keys[button] = false;
-		}
-	}
-
-
-	void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
-	{
-		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-
-		if (action != GLFW_RELEASE) {
-			userWindow->mInputData.mouseButtons[button] = true;
-		}
-		else {
-			userWindow->mInputData.mouseButtons[button] = false;
-		}
-	}
-
-
-	void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
-	{
-		auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-
-		userWindow->mInputData.mouseX = float(xpos);
-		userWindow->mInputData.mouseY = float(ypos);
-	}
-
-// Public functions
 	WindowSystem::WindowSystem(const WindowData& windowData) :
-		mWindowData(windowData), mWindow(nullptr), mInputData()
+		mWindowData(windowData), mWindow(nullptr)
 	{
 		// 1. Init GLFW
 		if (!glfwInit()) {
@@ -61,7 +19,6 @@ namespace se::window {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_RESIZABLE, mWindowData.resizable);
 
 		mWindow = glfwCreateWindow(mWindowData.width, mWindowData.height, mWindowData.title.c_str(), nullptr, nullptr);
 		if (!mWindow) {
@@ -71,25 +28,41 @@ namespace se::window {
 
 		glfwMakeContextCurrent(mWindow);
 		glfwSetWindowUserPointer(mWindow, this);
-		glfwSwapInterval(0);
-		glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-		// 3. Set Input event callbacks
-		glfwSetErrorCallback(error_callback);
-		glfwSetKeyCallback(mWindow, key_callback);
-		glfwSetMouseButtonCallback(mWindow, mouse_button_callback);
-		glfwSetCursorPosCallback(mWindow, cursor_position_callback);
+		// 3. Config the window
+		glfwSwapInterval(mWindowData.vsync? 1 : 0);
+		glfwWindowHint(GLFW_RESIZABLE, mWindowData.resizable);
 
-		// 4. Init GLEW
-		glewExperimental = true;
-		if (glewInit() != GLEW_OK) {
-			glfwDestroyWindow(mWindow);
-			glfwTerminate();
-			throw std::runtime_error("Failed to initialize GLEW");
-		}
-
-		// 5. Set the viewport
-		setViewport();
+		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height)
+		{
+			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			userWindow->mWindowData.width = width;
+			userWindow->mWindowData.height = height;
+		});
+		glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int button, int /*scancode*/, int action, int /*mods*/)
+		{
+			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			// note that GLFW key codes and SE key codes are the same
+			userWindow->mInputData.keys[button] = (action != GLFW_RELEASE);
+		});
+		glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int /*mods*/)
+		{
+			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			// note that GLFW mouse button codes and SE mouse button codes are the same
+			userWindow->mInputData.mouseButtons[button] = (action != GLFW_RELEASE);
+		});
+		glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xpos, double ypos)
+		{
+			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			userWindow->mInputData.mouseX = xpos;
+			userWindow->mInputData.mouseY = ypos;
+		});
+		glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset)
+		{
+			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			userWindow->mInputData.scrollX = xoffset;
+			userWindow->mInputData.scrollY = yoffset;
+		});
 	}
 
 
@@ -97,6 +70,12 @@ namespace se::window {
 	{
 		glfwDestroyWindow(mWindow);
 		glfwTerminate();
+	}
+
+
+	bool WindowSystem::isClosed() const
+	{
+		return (glfwWindowShouldClose(mWindow) == 1);
 	}
 
 
@@ -114,7 +93,13 @@ namespace se::window {
 	}
 
 
-	void WindowSystem::setMousePosition(float x, float y)
+	void WindowSystem::swapBuffers()
+	{
+		glfwSwapBuffers(mWindow);
+	}
+
+
+	void WindowSystem::setMousePosition(double x, double y)
 	{
 		mInputData.mouseX = x;
 		mInputData.mouseY = y;
@@ -122,37 +107,9 @@ namespace se::window {
 	}
 
 
-	bool WindowSystem::isClosed() const
+	void WindowSystem::setCursorVisibility(bool visible)
 	{
-		return (glfwWindowShouldClose(mWindow) == 1);
-	}
-
-
-	float WindowSystem::getTime() const
-	{
-		return float(glfwGetTime());
-	}
-
-
-	void WindowSystem::swapBuffers()
-	{
-		glfwSwapBuffers(mWindow);
-	}
-
-
-	std::string WindowSystem::getGLInfo() const
-	{
-		return	"OpenGL Renderer: " + std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER))) +
-				"\nOpenGL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))) +
-				"\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-	}
-
-// Private functions
-	void WindowSystem::setViewport()
-	{
-		int width, height;
-		glfwGetFramebufferSize(mWindow, &width, &height);
-		glViewport(0, 0, width, height);
+		glfwSetInputMode(mWindow, GLFW_CURSOR, visible? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 	}
 
 }

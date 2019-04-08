@@ -2,6 +2,7 @@
 #define GRAPHICS_SYSTEM_H
 
 #include <vector>
+#include <string>
 #include "ILayer.h"
 
 namespace se::graphics {
@@ -17,8 +18,18 @@ namespace se::graphics {
 		std::vector<ILayer*> mLayers;
 
 	public:		// Functions
-		/** Creates a new Graphics System */
+		/** Creates a new Graphics System
+		 * @throw	runtime_error if failed to initialize GLEW */
 		GraphicsSystem();
+
+		/** @return	the OpenGL version info */
+		std::string getGLInfo() const;
+
+		/** Sets the viewport resolution
+		 *
+		 * @param	width the width of the viewport
+		 * @param	height the height of the viewport */
+		void setViewport(int width, int height);
 
 		/** Adds the given ILayer to the GraphicsSystem so it will
 		 * be rendered in each render call

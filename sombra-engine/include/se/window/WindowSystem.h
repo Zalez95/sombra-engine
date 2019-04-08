@@ -29,6 +29,9 @@ namespace se::window {
 
 		/** If the window is resizable or not */
 		bool resizable;
+
+		/** If the window has v-sync enabled or not */
+		bool vsync;
 	};
 
 
@@ -59,55 +62,37 @@ namespace se::window {
 		/** Class destructor, destroys the window and stops GLFW */
 		~WindowSystem();
 
-		/** Retrieves the window events and Sets the pressed keys by the
-		 * user to the Entity that the System must update */
-		void update();
+		/** @return	the current window data of the WindowSystem */
+		const WindowData& getWindowData() const { return mWindowData; };
 
 		/** @return	the current data of the input inserted by the player,
 		 *			like the pressed mouse buttons, keyboard keys and the
 		 *			position of the mouse (Key polling) */
-		inline const InputData* getInputData() const { return &mInputData; };
+		const InputData& getInputData() const { return mInputData; };
+
+		/** @return	true if the window is closed */
+		bool isClosed() const;
+
+		/** Retrieves the window events and Sets the pressed keys by the
+		 * user to the Entity that the System must update */
+		void update();
+
+		/** Swaps the front and back buffers of the window.
+		 * @note	The front buffer of the window is the one currently being
+		 *			displayed and the back buffer contains the new rendered
+		 *			frame */
+		void swapBuffers();
 
 		/** Sets the mouse position in the window
 		 *
 		 * @param	x the position of the mouse in the X axis
 		 * @param	y the position of the mouse in the Y axis */
-		void setMousePosition(float x, float y);
+		void setMousePosition(double x, double y);
 
-		/** @return	the width of the window */
-		inline int getWidth() const { return mWindowData.width; };
-
-		/** @return	the height of the window */
-		inline int getHeight() const { return mWindowData.height; };
-
-		/** @return	true if the window is closed */
-		bool isClosed() const;
-
-		/** @return	the elapsed time since we started the window in seconds */
-		float getTime() const;
-
-		/** Swaps the front and back buffers of the window.
-		 * <br>The front buffer of the window is the one currently being
-		 * displayed and the back buffer contains the new rendered frame */
-		void swapBuffers();
-
-		/** @return	the OpenGL version info */
-		std::string getGLInfo() const;
-	private:
-		/** Creates a viewport with the same size of the window */
-		void setViewport();
-
-		// GLFW Callbacks
-		friend void error_callback(int error, const char* description);
-		friend void key_callback(
-			GLFWwindow* window, int key, int scancode, int action, int mods
-		);
-		friend void mouse_button_callback(
-			GLFWwindow* window, int button, int action, int mods
-		);
-		friend void cursor_position_callback(
-			GLFWwindow* window, double xpos, double ypos
-		);
+		/** Sets the cursor visibility
+		 *
+		 * @param	visible if the cursor is going to be visible or not */
+		void setCursorVisibility(bool visible);
 	};
 
 }

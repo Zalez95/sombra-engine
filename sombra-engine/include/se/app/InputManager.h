@@ -20,7 +20,8 @@ namespace se::app {
 		static constexpr float kJumpSpeed	= 10.0f;
 		static constexpr float kMouseSpeed	= 5.0f;
 
-		/** The Window System used for checking the player's input data */
+		/** A reference to the WindowSystem used for checking the player's
+		 * input data */
 		window::WindowSystem& mWindowSystem;
 
 		/** The Entities to update */
@@ -31,9 +32,7 @@ namespace se::app {
 		 *
 		 * @param	windowSystem the WindowSystem used for Checking the
 		 *			input of the player */
-
-		InputManager(window::WindowSystem& windowSystem) :
-			mWindowSystem(windowSystem) { resetMousePosition(); };
+		InputManager(window::WindowSystem& windowSystem);
 
 		/** Adds the given Entity to the InputManager
 		 *

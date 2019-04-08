@@ -5,6 +5,13 @@
 
 namespace se::app {
 
+	InputManager::InputManager(window::WindowSystem& windowSystem) :
+		mWindowSystem(windowSystem)
+	{
+		resetMousePosition();
+	}
+
+
 	void InputManager::addEntity(Entity* entity)
 	{
 		if (!entity) {
@@ -34,20 +41,14 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Updating the InputManager";
 
-		// Get the player's input data
-		const window::InputData* inputData = mWindowSystem.getInputData();
-		if (inputData) {
-			// Update the entities
-			for (Entity* entity : mEntities) {
-				doMouseInput(entity, *inputData);
-				doKeyboardInput(entity, *inputData);
-			}
+		// Update the entities
+		const window::InputData& inputData = mWindowSystem.getInputData();
+		for (Entity* entity : mEntities) {
+			doMouseInput(entity, inputData);
+			doKeyboardInput(entity, inputData);
+		}
 
-			resetMousePosition();
-		}
-		else {
-			SOMBRA_ERROR_LOG << "The InputData couldn't be retrieved";
-		}
+		resetMousePosition();
 
 		SOMBRA_INFO_LOG << "InputManager updated";
 	}
@@ -55,13 +56,12 @@ namespace se::app {
 // Private functions definition
 	void InputManager::doMouseInput(Entity* entity, const window::InputData& inputData) const
 	{
-		float width			= static_cast<float>(mWindowSystem.getWidth());
-		float height		= static_cast<float>(mWindowSystem.getHeight());
+		const window::WindowData& data = mWindowSystem.getWindowData();
 
 		// Get the mouse movement from the center of the screen in the range [-1, 1]
 		glm::vec2 mouseDelta(
-			2 * inputData.mouseX / width - 1.0f,
-			2 * inputData.mouseY / height - 1.0f		// note that the Y position is upsidedown
+			2 * inputData.mouseX / data.width - 1.0f,
+			2 * inputData.mouseY / data.height - 1.0f		// note that the Y position is upsidedown
 		);
 
 		// Calculate the rotation around the Entity's y-axis
@@ -108,9 +108,8 @@ namespace se::app {
 
 	void InputManager::resetMousePosition() const
 	{
-		float width		= static_cast<float>(mWindowSystem.getWidth());
-		float height	= static_cast<float>(mWindowSystem.getHeight());
-		mWindowSystem.setMousePosition(width / 2.0f, height / 2.0f);
+		const window::WindowData& data = mWindowSystem.getWindowData();
+		mWindowSystem.setMousePosition(data.width / 2.0, data.height / 2.0);
 	}
 
 }
