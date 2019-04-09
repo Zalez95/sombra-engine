@@ -63,7 +63,7 @@ namespace se::collision {
 		 *			the second Collider if the flag is true, or relative to the
 		 *			first one of the flag is false */
 		inline glm::vec3 getLocalPosition(bool second) const
-		{ return (second)? mLocalPosition[1] : mLocalPosition[0]; };
+		{ return mLocalPosition[second]; };
 
 		/** Returns the coordinates in world space of the SupportPoint relative
 		 * to the Collider located at the given index
@@ -74,7 +74,7 @@ namespace se::collision {
 		 *			the second Collider if the flag is true, or relative to the
 		 *			first one of the flag is false */
 		inline glm::vec3 getWorldPosition(bool second) const
-		{ return (second)? mWorldPosition[1] : mWorldPosition[0]; };
+		{ return mWorldPosition[second]; };
 	};
 
 }

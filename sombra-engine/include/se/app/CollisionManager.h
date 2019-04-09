@@ -4,9 +4,8 @@
 #include <map>
 #include <memory>
 #include "../collision/Collider.h"
-#include "../collision/CollisionDetector.h"
-#include "../physics/PhysicsEngine.h"
-#include "../physics/constraints/NormalConstraint.h"
+#include "../collision/CollisionWorld.h"
+#include "EventManager.h"
 
 namespace se::app {
 
@@ -23,37 +22,31 @@ namespace se::app {
 		using ColliderUPtr = std::unique_ptr<collision::Collider>;
 
 	private:	// Attributes
-		/** The velocity of the constraint resolution process */
-		static constexpr float kCollisionConstraintBeta = 5.0f;
-
-		/** Maps the Entries added to the CollisionManager and its Collider
-		 * data */
-		std::map<Entity*, ColliderUPtr> mEntityMap;
-
-		/** The CollisionDetector used for detecting the collisions the data of
+		/** The CollisionWorld used for detecting the collisions the data of
 		 * the Colliders */
-		collision::CollisionDetector& mCollisionDetector;
+		collision::CollisionWorld& mCollisionWorld;
 
-		/** The PhysicsEngine used for solving the collisions between the
-		 * entities */
-		physics::PhysicsEngine& mPhysicsEngine;
+		/** The EventManager used for notifing events */
+		EventManager& mEventManager;
 
-		/** Maps each Collider with its RigidBody */
-		std::map<const collision::Collider*, physics::RigidBody*>
-			mColliderRigidBodyMap;
+		/** Maps the Entities added to the CollisionManager and its Colliders */
+		std::map<Entity*, ColliderUPtr> mEntityColliderMap;
 
-		/** The NormalConstraints generated as a consecuence of the
-		 * PhysicsEntities collisions */
-		std::map<collision::Contact*, physics::NormalConstraint>
-			mContactConstraints;
+		/** Maps the Colliders added to the CollisionManager and its Entities */
+		std::map<const collision::Collider*, Entity*> mColliderEntityMap;
 
 	public:		// Functions
-		/** Creates a new CollisionManager */
+		/** Creates a new CollisionManager
+		 *
+		 * @param	collisionWorld a reference to the CollisionWorld used
+		 *			by the CollisionManager
+		 * @param	eventManager a reference to the EventManager that the
+		 *			CollisionManager will use to notify the detected
+		 *			collisions */
 		CollisionManager(
-			collision::CollisionDetector& collisionDetector,
-			physics::PhysicsEngine& physicsEngine
-		) : mCollisionDetector(collisionDetector),
-			mPhysicsEngine(physicsEngine) {};
+			collision::CollisionWorld& collisionWorld,
+			EventManager& eventManager
+		);
 
 		/** Adds the given Entity to the CollisionManager and its collider data
 		 * to the manager
@@ -62,18 +55,6 @@ namespace se::app {
 		 *			CollisionManager
 		 * @param	collider the collider data of the Entity */
 		void addEntity(Entity* entity, ColliderUPtr collider);
-
-		/** Adds the given Entity to the CollisionManager and its collider data
-		 * to the manager
-		 *
-		 * @param	entity a pointer to the Entity to add to the
-		 *			CollisionManager
-		 * @param	collider the collider data of the Entity
-		 * @param	rigidBody the physics data of the Entity */
-		void addEntity(
-			Entity* entity,
-			ColliderUPtr collider, physics::RigidBody* rigidBody
-		);
 
 		/** Removes the given Entity from the CollisionManager so it won't
 		 * longer be updated

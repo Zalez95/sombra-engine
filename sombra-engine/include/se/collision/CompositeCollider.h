@@ -7,7 +7,9 @@ namespace se::collision {
 
 	/**
 	 * Class CompositeCollider, it's a Collider with a concave shape stored as
-	 * a hierarchy of child Colliders following the Composite pattern
+	 * a hierarchy of child Colliders following the Composite pattern.
+	 * The child colliders doesn't interact between each other, only with the
+	 * other ones.
 	 */
 	class CompositeCollider : public ConcaveCollider
 	{

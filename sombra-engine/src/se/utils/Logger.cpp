@@ -37,6 +37,7 @@ namespace se::utils {
 			case LogLevel::Info:	label = "INFO";		break;
 			case LogLevel::Warning:	label = "WARNING";	break;
 			case LogLevel::Error:	label = "ERROR";	break;
+			case LogLevel::Fatal:	label = "FATAL";	break;
 		}
 
 		// Write to the log file
@@ -45,7 +46,7 @@ namespace se::utils {
 			<< getTimeString()
 			<< " [" << label << "]"
 			<< std::hex << " 0x" << std::this_thread::get_id()
-			<< "\t" << text << std::endl;
+			<< " " << text << std::endl;
 	}
 
 // Private functions

@@ -19,9 +19,10 @@ namespace se::app {
 			return;
 		}
 
-		mLayer3D.setCamera(camera.get());
+		graphics::Camera* cPtr = camera.get();
+		mLayer3D.setCamera(cPtr);
 		mCameraEntities.emplace(entity, std::move(camera));
-		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully as Camera";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << cPtr << " added successfully";
 	}
 
 
@@ -32,9 +33,10 @@ namespace se::app {
 			return;
 		}
 
-		mLayer3D.addRenderable3D(renderable3D.get());
+		graphics::Renderable3D* rPtr = renderable3D.get();
+		mLayer3D.addRenderable3D(rPtr);
 		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
-		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully as Renderable3D";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " added successfully";
 	}
 
 
@@ -45,9 +47,10 @@ namespace se::app {
 			return;
 		}
 
-		mLayer3D.addPointLight(pointLight.get());
+		graphics::PointLight* pPtr = pointLight.get();
+		mLayer3D.addPointLight(pPtr);
 		mPointLightEntities.emplace(entity, std::move(pointLight));
-		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully as PointLight";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with PointLight " << pPtr << " added successfully";
 	}
 
 
@@ -57,21 +60,21 @@ namespace se::app {
 		if (itCamera != mCameraEntities.end()) {
 			mLayer3D.setCamera(nullptr);
 			mCameraEntities.erase(itCamera);
-			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully as Camera";
+			SOMBRA_INFO_LOG << "Camera Entity " << entity << " removed successfully";
 		}
 
 		auto itRenderable3D = mRenderable3DEntities.find(entity);
 		if (itRenderable3D != mRenderable3DEntities.end()) {
 			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
 			mRenderable3DEntities.erase(itRenderable3D);
-			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully as Renderable3D";
+			SOMBRA_INFO_LOG << "Renderable3D Entity " << entity << " removed successfully";
 		}
 
 		auto itPointLight = mPointLightEntities.find(entity);
 		if (itPointLight != mPointLightEntities.end()) {
 			mLayer3D.removePointLight(itPointLight->second.get());
 			mPointLightEntities.erase(itPointLight);
-			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully as PointLight";
+			SOMBRA_INFO_LOG << "PointLight Entity " << entity << " removed successfully";
 		}
 	}
 

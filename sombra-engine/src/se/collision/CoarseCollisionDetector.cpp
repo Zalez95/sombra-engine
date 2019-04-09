@@ -10,14 +10,14 @@ namespace se::collision {
 	}
 
 
-	std::set<CoarseCollisionDetector::ColliderPair> CoarseCollisionDetector::getIntersectingColliders()
+	std::vector<CoarseCollisionDetector::ColliderPair> CoarseCollisionDetector::getIntersectingColliders()
 	{
-		std::set<ColliderPair> ret;
+		std::vector<ColliderPair> ret;
 
 		while (!mAABBs.empty()) {
 			for (std::size_t i = 1; i < mAABBs.size(); ++i) {
 				if ( overlaps(mAABBs.front(), mAABBs[i]) ) {
-					ret.insert(std::make_pair(mColliders.front(), mColliders[i]));
+					ret.push_back(std::make_pair(mColliders.front(), mColliders[i]));
 				}
 			}
 

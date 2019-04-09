@@ -1,48 +1,45 @@
 #ifndef MANIFOLD_H
 #define MANIFOLD_H
 
-#include <vector>
 #include "Contact.h"
+#include "../utils/FixedVector.h"
 
 namespace se::collision {
 
 	class Collider;
 
+	/** The different states in which a Manifold can be */
+	enum class ManifoldState
+	{
+		Disjoint,
+		Intersecting
+	};
+
 
 	/**
-	 * Class Manifold, a contact manifold holds all the Contacs between two
-	 * Colliders. A Manifold can store up to 4 contacts.
+	 * Struct Manifold, a contact manifold that holds all the Contacs between
+	 * two Colliders. A Manifold can store up to 4 contacts.
 	 */
-	class Manifold
+	struct Manifold
 	{
-	private:	// Attributes
-		friend class FineCollisionDetector;
+		/** The maximum number of Contacts in the Manifold */
+		static constexpr std::size_t kMaxContacts = 4;
 
-		/** All the Contacs the the Contact Manifold can hold */
-		std::vector<Contact> mContacts;
+		/** The current state of the Manifold */
+		ManifoldState state;
 
 		/** The colliders of the Manifold */
-		const Collider* mColliders[2];
+		const Collider* colliders[2];
 
-	public:		// Functions
+		/** All the Contacs the the Contact Manifold can hold */
+		utils::FixedVector<Contact, kMaxContacts> contacts;
+
 		/** Creates a new Manifold
 		 *
 		 * @param	c1 a pointer to the first Collider of the Manifold
 		 * @param	c2 a pointer to the second Collider of the Manifold */
 		Manifold(const Collider* c1, const Collider* c2) :
-			mColliders{ c1, c2 } {};
-
-		/** @return	all the Contacs that the Manifold holds */
-		inline std::vector<Contact> getContacts() const
-		{ return mContacts; };
-
-		/** Returns a pointer to the requested collider
-		 *
-		 * @param	second the flag used to select the collider to return
-		 * @return	a pointer to the second Collider if the second flag is
-		 *			true, the first one otherwise */
-		inline const Collider* getCollider(bool second) const
-		{ return (second)? mColliders[1] : mColliders[0]; };
+			state(ManifoldState::Disjoint), colliders{ c1, c2 } {};
 	};
 
 }

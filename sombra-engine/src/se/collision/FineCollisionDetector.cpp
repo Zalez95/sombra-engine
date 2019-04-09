@@ -11,8 +11,8 @@ namespace se::collision {
 
 	bool FineCollisionDetector::collide(Manifold& manifold) const
 	{
-		const Collider* collider1 = manifold.mColliders[0];
-		const Collider* collider2 = manifold.mColliders[1];
+		const Collider* collider1 = manifold.colliders[0];
+		const Collider* collider2 = manifold.colliders[1];
 		if (!collider1 || !collider2) { return false; }
 
 		if (auto convexCollider1 = dynamic_cast<const ConvexCollider*>(collider1)) {
@@ -45,27 +45,26 @@ namespace se::collision {
 		// GJK algorithm
 		auto [collides, simplex] = mGJKCollisionDetector.calculate(collider1, collider2);
 		if (!collides) {
+			manifold.state = ManifoldState::Disjoint;
+			manifold.contacts.clear();
 			return false;
 		}
 
 		// EPA Algorithm
-		Contact newContact;
-		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, newContact)) {
+		Contact contact;
+		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, contact)) {
+			manifold.state = ManifoldState::Disjoint;
+			manifold.contacts.clear();
 			return false;
 		}
 
 		// Remove the contacts that are no longer valid from the manifold
 		removeInvalidContacts(manifold);
 
-		// Check if the new Contact is far enough to the older contacts
-		if (!isClose(newContact, manifold.mContacts)) {
-			// Add the new contact to the manifold
-			manifold.mContacts.push_back(newContact);
+		// Add the new contact to the manifold
+		addContact(contact, manifold);
 
-			// Limit the number of points in the manifold to 4
-			limitManifoldContacts(manifold);
-		}
-
+		manifold.state = ManifoldState::Intersecting;
 		return true;
 	}
 
@@ -89,35 +88,33 @@ namespace se::collision {
 			}
 
 			// EPA Algorithm
-			Contact newContact;
+			Contact contact;
 			bool contactFilled = (convexFirst)?
-				mEPACollisionDetector.calculate(convexCollider, *part, simplex, newContact) :
-				mEPACollisionDetector.calculate(*part, convexCollider, simplex, newContact);
+				mEPACollisionDetector.calculate(convexCollider, *part, simplex, contact) :
+				mEPACollisionDetector.calculate(*part, convexCollider, simplex, contact);
 			if (!contactFilled) {
 				continue;
 			}
 
-			if (nNewContacts == 0) {
+			nNewContacts++;
+			if (nNewContacts == 1) {
 				// Remove the old contacts that are no longer valid from the
 				// manifold
 				removeInvalidContacts(manifold);
 			}
 
-			// Check if the new Contact is far enough to the older contacts
-			if (!isClose(newContact, manifold.mContacts)) {
-				// Add the new contact to the manifold
-				manifold.mContacts.push_back(newContact);
-				nNewContacts++;
-			}
+			// Add the new contact to the manifold
+			addContact(contact, manifold);
 		}
 
-		if (nNewContacts > 0) {
-			// Limit the number of points in the manifold to 4
-			limitManifoldContacts(manifold);
-			return true;
+		if (nNewContacts == 0) {
+			manifold.state = ManifoldState::Disjoint;
+			manifold.contacts.clear();
+			return false;
 		}
 
-		return false;
+		manifold.state = ManifoldState::Intersecting;
+		return true;
 	}
 
 
@@ -138,56 +135,76 @@ namespace se::collision {
 				}
 
 				// EPA Algorithm
-				Contact newContact;
-				if (!mEPACollisionDetector.calculate(*part1, *part2, simplex, newContact)) {
+				Contact contact;
+				if (!mEPACollisionDetector.calculate(*part1, *part2, simplex, contact)) {
 					continue;
 				}
 
-				if (nNewContacts == 0) {
+				nNewContacts++;
+				if (nNewContacts == 1) {
 					// Remove the old contacts that are no longer valid from the
 					// manifold
 					removeInvalidContacts(manifold);
 				}
 
-				// Check if the new Contact is far enough to the older contacts
-				if (!isClose(newContact, manifold.mContacts)) {
-					// Add the new contact to the manifold
-					manifold.mContacts.push_back(newContact);
-					nNewContacts++;
-				}
+				// Add the new contact to the manifold
+				addContact(contact, manifold);
 			}
 		}
 
-		if (nNewContacts > 0) {
-			// Limit the number of points in the manifold to 4
-			limitManifoldContacts(manifold);
-
-			return true;
+		if (nNewContacts == 0) {
+			manifold.state = ManifoldState::Disjoint;
+			manifold.contacts.clear();
+			return false;
 		}
 
-		return false;
+		manifold.state = ManifoldState::Intersecting;
+		return true;
+	}
+
+
+	void FineCollisionDetector::addContact(Contact& contact, Manifold& manifold) const
+	{
+		// Check if the Contact is far enough from the Manifold contacts
+		if (!isClose(contact, manifold.contacts.data(), manifold.contacts.size())) {
+			if (!manifold.contacts.full()) {
+				// Add the new contact to the manifold
+				manifold.contacts.push_back(contact);
+			}
+			else {
+				// Limit the number of Contacts to 4
+				auto limitedContacts = limitManifoldContacts({
+					&manifold.contacts[0], &manifold.contacts[1],
+					&manifold.contacts[2], &manifold.contacts[3],
+					&contact
+				});
+
+				for (std::size_t i = 0; i < manifold.contacts.size(); ++i) {
+					manifold.contacts[i] = *limitedContacts[i];
+				}
+			}
+		}
 	}
 
 
 	void FineCollisionDetector::removeInvalidContacts(Manifold& manifold) const
 	{
-		const glm::mat4 transforms1 = manifold.mColliders[0]->getTransforms();
-		const glm::mat4 transforms2 = manifold.mColliders[1]->getTransforms();
+		const glm::mat4 transforms1 = manifold.colliders[0]->getTransforms();
+		const glm::mat4 transforms2 = manifold.colliders[1]->getTransforms();
 
-		for (auto it = manifold.mContacts.begin(); it != manifold.mContacts.end();) {
-			glm::vec3 changedWorldPos0 = transforms1 * glm::vec4(it->getLocalPosition(0), 1.0f);
-			glm::vec3 changedWorldPos1 = transforms2 * glm::vec4(it->getLocalPosition(1), 1.0f);
+		for (std::size_t i = 0; i < manifold.contacts.size();) {
+			glm::vec3 changedWorldPos0 = transforms1 * glm::vec4(manifold.contacts[i].localPosition[0], 1.0f);
+			glm::vec3 changedWorldPos1 = transforms2 * glm::vec4(manifold.contacts[i].localPosition[1], 1.0f);
 
-			glm::vec3 v0 = it->getWorldPosition(0) - changedWorldPos0;
-			glm::vec3 v1 = it->getWorldPosition(1) - changedWorldPos1;
+			glm::vec3 v0 = manifold.contacts[i].worldPosition[0] - changedWorldPos0;
+			glm::vec3 v1 = manifold.contacts[i].worldPosition[1] - changedWorldPos1;
 
-			if ((glm::length(v0) >= mContactSeparation)
-				|| (glm::length(v1) >= mContactSeparation)
-			) {
-				it = manifold.mContacts.erase(it);
+			if ((glm::length(v0) >= mContactSeparation) || (glm::length(v1) >= mContactSeparation)) {
+				std::swap(manifold.contacts[i], manifold.contacts.back());
+				manifold.contacts.pop_back();
 			}
 			else {
-				++it;
+				i++;
 			}
 		}
 	}
@@ -195,75 +212,71 @@ namespace se::collision {
 
 	bool FineCollisionDetector::isClose(
 		const Contact& newContact,
-		const std::vector<Contact>& contacts
+		const Contact* contacts, std::size_t numContacts
 	) const
 	{
-		for (const Contact& contact : contacts) {
-			glm::vec3 v0 = newContact.getWorldPosition(0) - contact.getWorldPosition(0);
-			glm::vec3 v1 = newContact.getWorldPosition(1) - contact.getWorldPosition(1);
-
-			if ((glm::length(v0) < mContactSeparation) &&
-				(glm::length(v1) < mContactSeparation)
-			) {
-				return true;
-			}
-		}
-
-		return false;
+		return (numContacts > 0)
+			&& std::any_of(
+				&contacts[0], &contacts[numContacts-1],
+				[&](const Contact& contact) {
+					glm::vec3 v0 = newContact.worldPosition[0] - contact.worldPosition[0];
+					glm::vec3 v1 = newContact.worldPosition[1] - contact.worldPosition[1];
+					return ((glm::length(v0) < mContactSeparation) && (glm::length(v1) < mContactSeparation));
+				}
+			);
 	}
 
 
-	void FineCollisionDetector::limitManifoldContacts(Manifold& manifold) const
-	{
-		if (manifold.mContacts.size() < 4) { return; }
-
-		auto contact1 = std::max_element(
-			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[](const Contact& c1, const Contact& c2) {
-				return c1.getPenetration() < c2.getPenetration();
+	std::array<Contact*, 4> FineCollisionDetector::limitManifoldContacts(
+		const std::array<Contact*, 5>& contacts
+	) {
+		Contact* contact1 = *std::max_element(
+			contacts.begin(), contacts.end(),
+			[](const Contact* c1, const Contact* c2) {
+				return c1->penetration < c2->penetration;
 			}
 		);
 
-		auto contact2 = std::max_element(
-			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&](const Contact& c1, const Contact& c2) {
-				float d1 = glm::length(c1.getWorldPosition(0) - contact1->getWorldPosition(0));
-				float d2 = glm::length(c2.getWorldPosition(0) - contact1->getWorldPosition(0));
+		Contact* contact2 = *std::max_element(
+			contacts.begin(), contacts.end(),
+			[&](const Contact* c1, const Contact* c2) {
+				float d1 = glm::length(c1->worldPosition[0] - contact1->worldPosition[0]);
+				float d2 = glm::length(c2->worldPosition[0] - contact1->worldPosition[0]);
 				return d1 < d2;
 			}
 		);
 
-		auto contact3 = std::max_element(
-			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&](const Contact& c1, const Contact& c2) {
+		Contact* contact3 = *std::max_element(
+			contacts.begin(), contacts.end(),
+			[&](const Contact* c1, const Contact* c2) {
 				float d1 = distancePointEdge(
-					c1.getWorldPosition(0),
-					contact1->getWorldPosition(0), contact2->getWorldPosition(0)
+					c1->worldPosition[0],
+					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
 				float d2 = distancePointEdge(
-					c2.getWorldPosition(0),
-					contact1->getWorldPosition(0), contact2->getWorldPosition(0)
+					c2->worldPosition[0],
+					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
 				return d1 < d2;
 			}
 		);
 
-		auto contact4 = std::max_element(
-			manifold.mContacts.begin(), manifold.mContacts.end(),
-			[&](const Contact& c1, const Contact& c2) {
+		Contact* contact4 = *std::max_element(
+			contacts.begin(), contacts.end(),
+			[&](const Contact* c1, const Contact* c2) {
 				glm::vec3 p1 = getClosestPointInPlane(
-					c1.getWorldPosition(0),
-					{ contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0) }
+					c1->worldPosition[0],
+					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
 				glm::vec3 p2 = getClosestPointInPlane(
-					c2.getWorldPosition(0),
-					{ contact1->getWorldPosition(0), contact2->getWorldPosition(0), contact3->getWorldPosition(0) }
+					c2->worldPosition[0],
+					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
 				return glm::length(p1) < glm::length(p2);
 			}
 		);
 
-		manifold.mContacts = { *contact1, *contact2, *contact3, *contact4 };
+		return { contact1, contact2, contact3, contact4 };
 	}
 
 }

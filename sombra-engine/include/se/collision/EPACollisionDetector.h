@@ -5,11 +5,9 @@
 
 namespace se::collision {
 
-	class Contact;
+	struct Contact;
 	class ConvexCollider;
 	class Polytope;
-	struct Edge;
-	struct PolytopeFace;
 
 
 	/**

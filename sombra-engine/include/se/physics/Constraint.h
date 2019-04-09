@@ -42,6 +42,10 @@ namespace se::physics {
 		std::array<RigidBody*, 2> mRigidBodies;
 
 	public:		// Functions
+		/** Creates a new Constraint */
+		Constraint() :
+			mConstraintBounds(nullptr), mRigidBodies{ nullptr, nullptr } {};
+
 		/** Creates a new Constraint
 		 *
 		 * @param	constraintBounds a pointer to the data of the Constraint

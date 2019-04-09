@@ -20,7 +20,8 @@ namespace se::utils {
 		Debug,
 		Info,
 		Warning,
-		Error
+		Error,
+		Fatal
 	};
 
 

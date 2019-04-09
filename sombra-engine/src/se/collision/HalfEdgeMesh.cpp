@@ -202,86 +202,88 @@ namespace se::collision {
 
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2)
 	{
-		int iFace = -1;
+		struct Section { int iInitialEdge, iFinalEdge, length; };
+
+		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)) {
+			return -1;
+		}
 
 		if (iFace1 == iFace2) {
-			iFace = iFace1;
-		}
-		else if (meshData.faces.isActive(iFace1) && meshData.faces.isActive(iFace2)) {
-			// Find the HEEdge loop sections shared between both HEFaces
-			struct Section { int iInitialEdge, iFinalEdge, length; };
-			std::vector<Section> sections;
-
-			int iInitialEdge = meshData.faces[iFace1].edge;
-			int iCurrentEdge = iInitialEdge;
-			do {
-				const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
-				if (meshData.edges[currentEdge.oppositeEdge].face == iFace2) {
-					if (sections.empty() || (sections.back().iFinalEdge != currentEdge.previousEdge)) {
-						sections.push_back({ iCurrentEdge, iCurrentEdge, 1 });
-					}
-					else {
-						Section& currentSection = sections.back();
-						currentSection.iFinalEdge = iCurrentEdge;
-						currentSection.length++;
-					}
-				}
-
-				iCurrentEdge = currentEdge.nextEdge;
-			}
-			while (iCurrentEdge != iInitialEdge);
-
-			// Merge the faces by their longest shared HEEdge loop section
-			auto itSection = std::max_element(
-				sections.begin(), sections.end(),
-				[](const Section& s1, const Section& s2) { return s1.length > s2.length; }
-			);
-			if (itSection != sections.end()) {
-				// Close the new HEEdge loop of the first HEFace
-				const HEEdge& initialEdge = meshData.edges[itSection->iInitialEdge];
-				const HEEdge& oppositeInitialEdge = meshData.edges[initialEdge.oppositeEdge];
-				meshData.edges[initialEdge.previousEdge].nextEdge = oppositeInitialEdge.nextEdge;
-				meshData.edges[oppositeInitialEdge.nextEdge].previousEdge = initialEdge.previousEdge;
-
-				const HEEdge& finalEdge = meshData.edges[itSection->iFinalEdge];
-				const HEEdge& oppositeFinalEdge = meshData.edges[finalEdge.oppositeEdge];
-				meshData.edges[finalEdge.nextEdge].previousEdge = oppositeFinalEdge.previousEdge;
-				meshData.edges[oppositeFinalEdge.previousEdge].nextEdge = finalEdge.nextEdge;
-
-				// Update HEEdge of the first HEFace
-				meshData.faces[iFace1].edge = initialEdge.previousEdge;
-
-				// Set the HEEdges' HEFace as the first one
-				iInitialEdge = meshData.faces[iFace1].edge;
-				iCurrentEdge = iInitialEdge;
-				do {
-					HEEdge& currentEdge = meshData.edges[iCurrentEdge];
-					currentEdge.face = iFace1;
-					iCurrentEdge = currentEdge.nextEdge;
-				}
-				while (iCurrentEdge != iInitialEdge);
-
-				// Remove the shared HEEdge section
-				iCurrentEdge = itSection->iInitialEdge;
-				int iFinalEdge = finalEdge.nextEdge;
-				while (iCurrentEdge != iFinalEdge) {
-					const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
-					int iNextEdge = currentEdge.nextEdge;
-
-					removeEdge(meshData, currentEdge.oppositeEdge);
-					removeEdge(meshData, iCurrentEdge);
-
-					iCurrentEdge = iNextEdge;
-				}
-
-				// erase the second HEFace
-				meshData.faces.erase( meshData.faces.begin().setIndex(iFace2) );
-
-				iFace = iFace1;
-			}
+			return iFace1;
 		}
 
-		return iFace;
+		// Find the HEEdge loop sections shared between both HEFaces
+		std::vector<Section> sections;
+
+		int iInitialEdge = meshData.faces[iFace1].edge;
+		int iCurrentEdge = iInitialEdge;
+		do {
+			const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
+			if (meshData.edges[currentEdge.oppositeEdge].face == iFace2) {
+				if (sections.empty() || (sections.back().iFinalEdge != currentEdge.previousEdge)) {
+					sections.push_back({ iCurrentEdge, iCurrentEdge, 1 });
+				}
+				else {
+					Section& currentSection = sections.back();
+					currentSection.iFinalEdge = iCurrentEdge;
+					currentSection.length++;
+				}
+			}
+
+			iCurrentEdge = currentEdge.nextEdge;
+		}
+		while (iCurrentEdge != iInitialEdge);
+
+		if (sections.empty()) {
+			return -1;
+		}
+
+		// Find the longest shared HEEdge loop section between the HEFaces
+		const Section& section = *std::max_element(sections.begin(), sections.end(), [](const Section& s1, const Section& s2) {
+			return s1.length > s2.length;
+		});
+
+		// Close the new HEEdge loop of the first HEFace
+		const HEEdge& initialEdge = meshData.edges[section.iInitialEdge];
+		const HEEdge& oppositeInitialEdge = meshData.edges[initialEdge.oppositeEdge];
+		meshData.edges[initialEdge.previousEdge].nextEdge = oppositeInitialEdge.nextEdge;
+		meshData.edges[oppositeInitialEdge.nextEdge].previousEdge = initialEdge.previousEdge;
+
+		const HEEdge& finalEdge = meshData.edges[section.iFinalEdge];
+		const HEEdge& oppositeFinalEdge = meshData.edges[finalEdge.oppositeEdge];
+		meshData.edges[finalEdge.nextEdge].previousEdge = oppositeFinalEdge.previousEdge;
+		meshData.edges[oppositeFinalEdge.previousEdge].nextEdge = finalEdge.nextEdge;
+
+		// Update HEEdge of the first HEFace
+		meshData.faces[iFace1].edge = initialEdge.previousEdge;
+
+		// Set the HEEdges' HEFace to the first one
+		iInitialEdge = meshData.faces[iFace1].edge;
+		iCurrentEdge = iInitialEdge;
+		do {
+			HEEdge& currentEdge = meshData.edges[iCurrentEdge];
+			currentEdge.face = iFace1;
+			iCurrentEdge = currentEdge.nextEdge;
+		}
+		while (iCurrentEdge != iInitialEdge);
+
+		// Remove the shared HEEdge section
+		iCurrentEdge = section.iInitialEdge;
+		int iFinalEdge = finalEdge.nextEdge;
+		while (iCurrentEdge != iFinalEdge) {
+			const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
+			int iNextEdge = currentEdge.nextEdge;
+
+			removeEdge(meshData, currentEdge.oppositeEdge);
+			removeEdge(meshData, iCurrentEdge);
+
+			iCurrentEdge = iNextEdge;
+		}
+
+		// Erase the second HEFace
+		meshData.faces.erase( meshData.faces.begin().setIndex(iFace2) );
+
+		return iFace1;
 	}
 
 

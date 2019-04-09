@@ -384,7 +384,7 @@ namespace game {
 			2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.01f
 		);
 		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
-		mCollisionManager->addEntity(player.get(), std::move(collider1), rigidBody1.get());
+		mCollisionManager->addEntity(player.get(), std::move(collider1));
 		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
 
 		mGraphicsManager->addEntity(player.get(), std::move(camera1));
@@ -438,7 +438,7 @@ namespace game {
 				cube->velocity += glm::vec3(-1, 0, 0);
 			}
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
-			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
+			mCollisionManager->addEntity(cube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
@@ -490,7 +490,7 @@ namespace game {
 				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.9f
 			);
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
-			mCollisionManager->addEntity(cube.get(), std::move(collider2), rigidBody2.get());
+			mCollisionManager->addEntity(cube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, nullptr);

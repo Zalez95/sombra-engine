@@ -1,8 +1,8 @@
 #ifndef COARSE_COLLISION_DETECTOR_H
 #define COARSE_COLLISION_DETECTOR_H
 
-#include <set>
 #include <deque>
+#include <vector>
 #include "AABB.h"
 
 namespace se::collision {
@@ -39,7 +39,7 @@ namespace se::collision {
 		 * @return	all the pairs of Colliders whose AABBs are intersecting
 		 * @note	after calling this function all the Colliders will be
 		 * 			cleared from the CoarseCollisionDetector */
-		std::set<ColliderPair> getIntersectingColliders();
+		std::vector<ColliderPair> getIntersectingColliders();
 	};
 
 }

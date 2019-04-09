@@ -70,16 +70,16 @@ TEST(FineCollisionDetector, SphereSphere2)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	std::vector<Contact> contacts = manifold.getContacts();
-	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
+	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
-	Contact& res = contacts.front();
-	EXPECT_NEAR(res.getPenetration(), expectedPenetration, kTolerance);
+	const Contact& res = manifold.contacts.front();
+	EXPECT_NEAR(res.penetration, expectedPenetration, kTolerance);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], kTolerance);
+		EXPECT_NEAR(res.normal[i], expectedNormal[i], kTolerance);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], kTolerance);
-			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], kTolerance);
+			EXPECT_NEAR(res.worldPosition[j][i], expectedWorldPos[j][i], kTolerance);
+			EXPECT_NEAR(res.localPosition[j][i], expectedLocalPos[j][i], kTolerance);
 		}
 	}
 }
@@ -140,16 +140,16 @@ TEST(FineCollisionDetector, CPolyCPoly2)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	std::vector<Contact> contacts = manifold.getContacts();
-	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
+	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
-	Contact& res = contacts.front();
-	EXPECT_NEAR(res.getPenetration(), expectedPenetration, kTolerance);
+	const Contact& res = manifold.contacts.front();
+	EXPECT_NEAR(res.penetration, expectedPenetration, kTolerance);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], kTolerance);
+		EXPECT_NEAR(res.normal[i], expectedNormal[i], kTolerance);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], kTolerance);
-			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], kTolerance);
+			EXPECT_NEAR(res.worldPosition[j][i], expectedWorldPos[j][i], kTolerance);
+			EXPECT_NEAR(res.localPosition[j][i], expectedLocalPos[j][i], kTolerance);
 		}
 	}
 }
@@ -186,16 +186,16 @@ TEST(FineCollisionDetector, CPolyCPoly3)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	std::vector<Contact> contacts = manifold.getContacts();
-	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
+	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
-	Contact& res = contacts.front();
-	EXPECT_NEAR(res.getPenetration(), expectedPenetration, kTolerance);
+	const Contact& res = manifold.contacts.front();
+	EXPECT_NEAR(res.penetration, expectedPenetration, kTolerance);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], kTolerance);
+		EXPECT_NEAR(res.normal[i], expectedNormal[i], kTolerance);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], kTolerance);
-			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], kTolerance);
+			EXPECT_NEAR(res.worldPosition[j][i], expectedWorldPos[j][i], kTolerance);
+			EXPECT_NEAR(res.localPosition[j][i], expectedLocalPos[j][i], kTolerance);
 		}
 	}
 }
@@ -234,16 +234,16 @@ TEST(FineCollisionDetector, SphereCPoly1)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	std::vector<Contact> contacts = manifold.getContacts();
-	EXPECT_EQ(static_cast<int>(contacts.size()), 1);
+	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
+	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
-	Contact& res = contacts.front();
-	EXPECT_NEAR(res.getPenetration(), expectedPenetration, kTolerance);
+	const Contact& res = manifold.contacts.front();
+	EXPECT_NEAR(res.penetration, expectedPenetration, kTolerance);
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(res.getNormal()[i], expectedNormal[i], kTolerance);
+		EXPECT_NEAR(res.normal[i], expectedNormal[i], kTolerance);
 		for (int j = 0; j < 2; ++j) {
-			EXPECT_NEAR(res.getWorldPosition(j)[i], expectedWorldPos[j][i], kTolerance);
-			EXPECT_NEAR(res.getLocalPosition(j)[i], expectedLocalPos[j][i], kTolerance);
+			EXPECT_NEAR(res.worldPosition[j][i], expectedWorldPos[j][i], kTolerance);
+			EXPECT_NEAR(res.localPosition[j][i], expectedLocalPos[j][i], kTolerance);
 		}
 	}
 }

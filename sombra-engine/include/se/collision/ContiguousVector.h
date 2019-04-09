@@ -167,7 +167,7 @@ namespace se::collision {
 		 * @return	true if both ContiguousVector are equal, false otherwise */
 		template <typename U>
 		friend bool operator==(
-			const ContiguousVector& cv1, const ContiguousVector& cv2
+			const ContiguousVector<U>& cv1, const ContiguousVector<U>& cv2
 		);
 
 		/** Compares the given ContiguousVectors
@@ -178,7 +178,7 @@ namespace se::collision {
 		 *			otherwise */
 		template <typename U>
 		friend bool operator!=(
-			const ContiguousVector& cv1, const ContiguousVector& cv2
+			const ContiguousVector<U>& cv1, const ContiguousVector<U>& cv2
 		);
 
 		/** @return	the initial iterator of the ContiguousVector */

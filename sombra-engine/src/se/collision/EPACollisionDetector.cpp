@@ -29,11 +29,11 @@ namespace se::collision {
 
 		if (simplex.size() == 1) {
 			// The simplex's only point is the origin
-			ret.mPenetration = 0.0f;
-			ret.mNormal = glm::vec3(0.0f);
+			ret.penetration = 0.0f;
+			ret.normal = glm::vec3(0.0f);
 			for (int i = 0; i < 2; ++i) {
-				ret.mWorldPosition[i] = simplex[0].getWorldPosition(i);
-				ret.mLocalPosition[i] = simplex[0].getLocalPosition(i);
+				ret.worldPosition[i] = simplex[0].getWorldPosition(i);
+				ret.localPosition[i] = simplex[0].getLocalPosition(i);
 			}
 			contactUpdated = true;
 		}
@@ -208,6 +208,7 @@ namespace se::collision {
 					if (iClosestFace == iFaceToRemove) {
 						closestFaceIndices = getFaceIndices(polytope.getMesh(), iClosestFace);
 						iClosestFace = -1;
+						overlappingFaces.clear();
 					}
 
 					polytope.removeFace(iFaceToRemove);
@@ -219,7 +220,6 @@ namespace se::collision {
 
 				// 3.4. Add new HEFaces to the Polytope by connecting the
 				// HEEdges of the horizon to the new SupportPoint
-				if (iClosestFace < 0) { overlappingFaces.clear(); }
 				for (int iHorizonEdge : horizon) {
 					const HEEdge& currentEdge = meshData.edges[iHorizonEdge];
 					const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
@@ -279,14 +279,14 @@ namespace se::collision {
 		const SupportPoint& sp1	= polytope.getSupportPoint(edge3.vertex);
 
 		const glm::vec3& originBarycentricCoords = faceDistance.closestPointBarycentricCoords;
-		ret.mPenetration = faceDistance.distance;
-		ret.mNormal = faceNormal;
+		ret.penetration = faceDistance.distance;
+		ret.normal = faceNormal;
 		for (int i = 0; i < 2; ++i) {
 			for (int j = 0; j < 3; ++j) {
-				ret.mWorldPosition[i][j] = originBarycentricCoords.x * sp1.getWorldPosition(i)[j]
+				ret.worldPosition[i][j] = originBarycentricCoords.x * sp1.getWorldPosition(i)[j]
 					+ originBarycentricCoords.y * sp2.getWorldPosition(i)[j]
 					+ originBarycentricCoords.z * sp3.getWorldPosition(i)[j];
-				ret.mLocalPosition[i][j] = originBarycentricCoords.x * sp1.getLocalPosition(i)[j]
+				ret.localPosition[i][j] = originBarycentricCoords.x * sp1.getLocalPosition(i)[j]
 					+ originBarycentricCoords.y * sp2.getLocalPosition(i)[j]
 					+ originBarycentricCoords.z * sp3.getLocalPosition(i)[j];
 			}

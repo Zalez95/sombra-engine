@@ -43,5 +43,7 @@ namespace se::utils {
 	se::utils::Log::getInstance()(se::utils::LogLevel::Warning)	<< LOCATION
 #define SOMBRA_ERROR_LOG	\
 	se::utils::Log::getInstance()(se::utils::LogLevel::Error)	<< LOCATION
+#define SOMBRA_FATAL_LOG	\
+	se::utils::Log::getInstance()(se::utils::LogLevel::Fatal)	<< LOCATION
 
 #endif		// LOG_H

@@ -36,7 +36,7 @@ namespace se::app {
 		 * @param	audioEngine a reference to the AudioEngine used by
 		 * 			the AudioManager to play the sound sources */
 		AudioManager(audio::AudioEngine& audioEngine) :
-			mAudioEngine(audioEngine) {};
+			mAudioEngine(audioEngine), mListener(nullptr) {};
 
 		/** Sets the given Entity as the Listener of all the audio Sources of
 		 * the AudioManager

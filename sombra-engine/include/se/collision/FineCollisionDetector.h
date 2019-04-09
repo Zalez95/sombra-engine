@@ -8,8 +8,8 @@
 
 namespace se::collision {
 
-	class Contact;
-	class Manifold;
+	struct Contact;
+	struct Manifold;
 	class Collider;
 	class ConvexCollider;
 	class ConcaveCollider;
@@ -63,21 +63,20 @@ namespace se::collision {
 		bool collide(Manifold& manifold) const;
 	private:
 		/** Calculates the contact data of the collision that happened between
-		 * the given ConcaveColliders
+		 * the given ConvexColliders
 		 *
-		 * @param	collider1 the first of the ConcaveColliders that are
-		 *			intersecting
-		 * @param	collider2 the second of the ConcaveColliders that are
-		 *			intersecting
+		 * @param	collider1 the first ConvexCollider with which we will
+		 *			calculate the collision data
+		 * @param	collider2 the second ConvexCollider with which we will
+		 *			calculate the collision data
 		 * @param	manifold a contact manifold where the FineCollisionDetector
 		 *			will store the collision data
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise
 		 * @note	the colliders must be given in the same order than the ones
 		 *			in the manifold */
-		bool collideConcave(
-			const ConcaveCollider& collider1,
-			const ConcaveCollider& collider2,
+		bool collideConvex(
+			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Manifold& manifold
 		) const;
 
@@ -101,49 +100,55 @@ namespace se::collision {
 		) const;
 
 		/** Calculates the contact data of the collision that happened between
-		 * the given ConvexColliders
+		 * the given ConcaveColliders
 		 *
-		 * @param	collider1 the first ConvexCollider with which we will
-		 *			calculate the collision data
-		 * @param	collider2 the second ConvexCollider with which we will
-		 *			calculate the collision data
+		 * @param	collider1 the first of the ConcaveColliders that are
+		 *			intersecting
+		 * @param	collider2 the second of the ConcaveColliders that are
+		 *			intersecting
 		 * @param	manifold a contact manifold where the FineCollisionDetector
 		 *			will store the collision data
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise
 		 * @note	the colliders must be given in the same order than the ones
 		 *			in the manifold */
-		bool collideConvex(
-			const ConvexCollider& collider1, const ConvexCollider& collider2,
+		bool collideConcave(
+			const ConcaveCollider& collider1, const ConcaveCollider& collider2,
 			Manifold& manifold
 		) const;
 
+		/** Tries to add the given Contact to the Manifold
+		 *
+		 * @param	contact the Contact to add
+		 * @param	manifold the Manifold where we want to store the Contact */
+		void addContact(Contact& contact, Manifold& manifold) const;
+
 		/** Removes the Contacts that are no longer valid from the given
-		 * manifold
+		 * Manifold
 		 *
 		 * @param	manifold a reference to the Manifold whose contact we want
 		 *			to remove */
 		void removeInvalidContacts(Manifold& manifold) const;
 
-		/** Checks if the given Contact is close to any of the older Contacts
+		/** Checks if the given Contact is close to any of the other Contacts
 		 *
 		 * @param	newContact the Contact to compare
-		 * @param	others the older contacts to compare
-		 * @return	true if the newContact is close to any of the older Contacts,
-		 *			false otherwise */
+		 * @param	contacts a pointer to the other contacts to compare
+		 * @param	numContacts the number of contacts to compare with
+		 * @return	true if the newContact is close to any of the other
+		 *			Contacts, false otherwise */
 		bool isClose(
 			const Contact& newContact,
-			const std::vector<Contact>& others
+			const Contact* contacts, std::size_t numContacts
 		) const;
 
-		/** Limts the number of contacts in the given manifold to 4, leaving
-		 * inside the one with the deepest penetration and the 3 most separated
-		 * between them
+		/** Limits the given contacts to 4, leaving inside the one with the
+		 * deepest penetration and the other 3 most separated between them
 		 *
-		 * @param	manifold a reference to the manifold
-		 * @return	true if the number of contacs was cut down, false
-		 *			otherwise */
-		void limitManifoldContacts(Manifold& manifold) const;
+		 * @param	contacts the Contacts to limit */
+		static std::array<Contact*, 4> limitManifoldContacts(
+			const std::array<Contact*, 5>& contacts
+		);
 	};
 
 }

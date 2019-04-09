@@ -28,7 +28,7 @@ namespace se::physics {
 		glm::vec3 mNormal;
 
 		/** The velocity at which is going to be solved constraint */
-		const float mBeta;
+		float mBeta;
 
 		/** The elapsed time since the last update */
 		float mDeltaTime;
@@ -37,6 +37,11 @@ namespace se::physics {
 		float mK;
 
 	public:		// Functions
+		/** Creates a new NormalConstraint */
+		NormalConstraint() :
+			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mNormal(0.0f), mBeta(0.0f), mDeltaTime(0.0f), mK(0.0f) {};
+
 		/** Creates a new NormalConstraint
 		 *
 		 * @param	rigidBodies the two rigidBodies affected by the
@@ -50,6 +55,9 @@ namespace se::physics {
 		) : Constraint(&kConstraintBounds, rigidBodies),
 			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mNormal(0.0f), mBeta(beta), mDeltaTime(0.0f), mK(0.0f) {};
+
+		/** Class destructor */
+		virtual ~NormalConstraint() = default;
 
 		/** @return the value of the Bias of the constraint */
 		float getBias() const override;

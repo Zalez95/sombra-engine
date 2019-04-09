@@ -292,9 +292,7 @@ namespace se::collision {
 						}
 						else  {
 							// 1.3.2. Continue searching in the current HEFace
-							if (std::find(visibleFaces.begin(), visibleFaces.end(), oppositeEdge.face)
-								== visibleFaces.end()
-							) {
+							if (std::find(visibleFaces.begin(), visibleFaces.end(), oppositeEdge.face) == visibleFaces.end()) {
 								// Mark the current HEEdge as an horizon one
 								horizonEdges.push_back(iCurrentEdge);
 							}

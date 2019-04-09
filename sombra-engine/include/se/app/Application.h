@@ -8,13 +8,14 @@
 namespace se::window { class WindowSystem; }
 namespace se::graphics { class GraphicsSystem; }
 namespace se::physics { class PhysicsEngine; }
-namespace se::collision { class CollisionDetector; }
+namespace se::collision { class CollisionWorld; }
 namespace se::animation { class AnimationSystem; }
 namespace se::audio { class AudioEngine; }
 
 namespace se::app {
 
 	struct Entity;
+	class EventManager;
 	class InputManager;
 	class GraphicsManager;
 	class PhysicsManager;
@@ -49,7 +50,7 @@ namespace se::app {
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
 		physics::PhysicsEngine* mPhysicsEngine;
-		collision::CollisionDetector* mCollisionDetector;
+		collision::CollisionWorld* mCollisionWorld;
 		animation::AnimationSystem* mAnimationSystem;
 		audio::AudioEngine* mAudioEngine;
 
@@ -57,6 +58,7 @@ namespace se::app {
 		std::vector<EntityUPtr> mEntities;
 
 		/** The managers that hold the data of the entities */
+		EventManager* mEventManager;
 		InputManager* mInputManager;
 		GraphicsManager* mGraphicsManager;
 		PhysicsManager* mPhysicsManager;

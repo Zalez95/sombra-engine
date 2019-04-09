@@ -9,6 +9,7 @@
 #include "se/audio/AudioEngine.h"
 #include "se/app/Entity.h"
 #include "se/app/Application.h"
+#include "se/app/EventManager.h"
 #include "se/app/InputManager.h"
 #include "se/app/GraphicsManager.h"
 #include "se/app/PhysicsManager.h"
@@ -23,6 +24,9 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 		try {
+			// Events
+			mEventManager = new EventManager();
+
 			// Window
 			mWindowSystem = new window::WindowSystem({ title, width, height, false, false, false });
 
@@ -36,11 +40,11 @@ namespace se::app {
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine();
-			mPhysicsManager = new PhysicsManager(*mPhysicsEngine);
+			mPhysicsManager = new PhysicsManager(*mPhysicsEngine, *mEventManager);
 
 			// Collision
-			mCollisionDetector = new collision::CollisionDetector();
-			mCollisionManager = new CollisionManager(*mCollisionDetector, *mPhysicsEngine);
+			mCollisionWorld = new collision::CollisionWorld();
+			mCollisionManager = new CollisionManager(*mCollisionWorld, *mEventManager);
 
 			// Animation
 			mAnimationSystem = new animation::AnimationSystem();
@@ -66,13 +70,14 @@ namespace se::app {
 		delete mAnimationManager;
 		delete mAnimationSystem;
 		delete mCollisionManager;
-		delete mCollisionDetector;
+		delete mCollisionWorld;
 		delete mPhysicsManager;
 		delete mPhysicsEngine;
 		delete mGraphicsManager;
 		delete mGraphicsSystem;
 		delete mInputManager;
 		delete mWindowSystem;
+		delete mEventManager;
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 

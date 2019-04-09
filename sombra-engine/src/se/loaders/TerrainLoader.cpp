@@ -36,14 +36,13 @@ namespace se::loaders {
 
 		// Physics data
 		auto rb = std::make_unique<physics::RigidBody>();
-		physics::RigidBody* rbPtr = rb.get();
 		mPhysicsManager.addEntity(entity.get(), std::move(rb));
 
 		// Collider data
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), scaleVector);
 		auto terrainCollider = createTerrainCollider(heightMap);
 		terrainCollider->setTransforms(scale);
-		mCollisionManager.addEntity(entity.get(), std::move(terrainCollider), rbPtr);
+		mCollisionManager.addEntity(entity.get(), std::move(terrainCollider));
 
 		return entity;
 	}

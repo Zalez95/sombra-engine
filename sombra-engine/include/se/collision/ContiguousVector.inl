@@ -13,6 +13,13 @@ namespace se::collision {
 
 
 	template <typename T>
+	bool operator!=(const ContiguousVector<T>& cv1, const ContiguousVector<T>& cv2)
+	{
+		return !(cv1 == cv2);
+	}
+
+
+	template <typename T>
 	void ContiguousVector<T>::clear()
 	{
 		mElements.clear();
