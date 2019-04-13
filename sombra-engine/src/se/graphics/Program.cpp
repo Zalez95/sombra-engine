@@ -66,6 +66,7 @@ namespace se::graphics {
 	{
 		if (mProgramId != 0) {
 			GL_WRAP( glDeleteProgram(mProgramId) );
+			SOMBRA_TRACE_LOG << "Deleted Program " << mProgramId;
 		}
 
 		mProgramId = other.mProgramId;

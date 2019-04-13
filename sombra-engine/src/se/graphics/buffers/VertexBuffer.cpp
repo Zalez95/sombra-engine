@@ -29,6 +29,7 @@ namespace se::graphics {
 	{
 		if (mBufferId != 0) {
 			GL_WRAP( glDeleteBuffers(1, &mBufferId) );
+			SOMBRA_TRACE_LOG << "Deleted VBO " << mBufferId;
 		}
 
 		mBufferId = other.mBufferId;

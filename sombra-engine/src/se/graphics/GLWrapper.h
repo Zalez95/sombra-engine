@@ -20,20 +20,20 @@ namespace se::graphics {
 	{
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
-			std::string errorName = "";
+			std::string errorTag = "";
 			switch (error) {
-				case GL_INVALID_ENUM:					errorName = "INVALID_ENUM";						break;
-				case GL_INVALID_VALUE:					errorName = "INVALID_VALUE";					break;
-				case GL_INVALID_OPERATION:				errorName = "INVALID_OPERATION";				break;
-				case GL_STACK_OVERFLOW:					errorName = "STACK_OVERFLOW";					break;
-				case GL_STACK_UNDERFLOW:				errorName = "STACK_UNDERFLOW";					break;
-				case GL_OUT_OF_MEMORY:					errorName = "OUT_OF_MEMORY";					break;
-				case GL_INVALID_FRAMEBUFFER_OPERATION:	errorName = "INVALID_FRAMEBUFFER_OPERATION";	break;
+				case GL_INVALID_ENUM:					errorTag = "INVALID_ENUM";					break;
+				case GL_INVALID_VALUE:					errorTag = "INVALID_VALUE";					break;
+				case GL_INVALID_OPERATION:				errorTag = "INVALID_OPERATION";				break;
+				case GL_STACK_OVERFLOW:					errorTag = "STACK_OVERFLOW";				break;
+				case GL_STACK_UNDERFLOW:				errorTag = "STACK_UNDERFLOW";				break;
+				case GL_OUT_OF_MEMORY:					errorTag = "OUT_OF_MEMORY";					break;
+				case GL_INVALID_FRAMEBUFFER_OPERATION:	errorTag = "INVALID_FRAMEBUFFER_OPERATION";	break;
 			}
 
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "OpenGL function \"" << glFunction << "\" returned error code " << error
-				<< " (" << errorName << "): \"" << glGetString(error) << "\"";
+				<< " (" << errorTag << "): \"" << glGetString(error) << "\"";
 		}
 	}
 

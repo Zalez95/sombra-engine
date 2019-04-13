@@ -31,6 +31,7 @@ namespace se::graphics {
 	{
 		if (mArrayId != 0) {
 			GL_WRAP( glDeleteVertexArrays(1, &mArrayId) );
+			SOMBRA_TRACE_LOG << "Deleted VAO " << mArrayId;
 		}
 
 		mArrayId = other.mArrayId;

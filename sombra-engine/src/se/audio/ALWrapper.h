@@ -20,9 +20,19 @@ namespace se::audio {
 	{
 		ALenum error;
 		while ((error = alGetError()) != AL_NO_ERROR) {
+			std::string errorTag = "";
+			switch (error) {
+				case AL_NO_ERROR:			errorTag = "AL_NO_ERROR";			break;
+				case AL_INVALID_NAME:		errorTag = "AL_INVALID_NAME";		break;
+				case AL_INVALID_ENUM:		errorTag = "AL_INVALID_ENUM";		break;
+				case AL_INVALID_VALUE:		errorTag = "AL_INVALID_VALUE";		break;
+				case AL_INVALID_OPERATION:	errorTag = "AL_INVALID_OPERATION";	break;
+				case AL_OUT_OF_MEMORY:		errorTag = "AL_OUT_OF_MEMORY";		break;
+			}
+
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "OpenAL function \"" << alFunction << "\" returned error code " << error
-				<< ": \"" << alGetString(error) << "\"";
+				<< " (" << errorTag << "): \"" << alGetString(error) << "\"";
 		}
 	}
 

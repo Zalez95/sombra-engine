@@ -44,6 +44,7 @@ namespace se::graphics {
 	{
 		if (mBufferId != 0) {
 			GL_WRAP( glDeleteFramebuffers(1, &mBufferId) );
+			SOMBRA_TRACE_LOG << "Deleted FBO " << mBufferId;
 		}
 
 		mBufferId = other.mBufferId;

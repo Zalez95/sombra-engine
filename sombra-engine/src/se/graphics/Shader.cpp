@@ -54,6 +54,7 @@ namespace se::graphics {
 	{
 		if (mShaderId != 0) {
 			GL_WRAP( glDeleteShader(mShaderId) );
+			SOMBRA_TRACE_LOG << "Deleted Shader " << mShaderId;
 		}
 
 		mShaderId = other.mShaderId;

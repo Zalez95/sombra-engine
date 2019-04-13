@@ -55,6 +55,7 @@ namespace se::audio {
 	{
 		if (mBufferId != 0) {
 			AL_WRAP( alDeleteBuffers(1, &mBufferId) );
+			SOMBRA_TRACE_LOG << "Deleted Buffer " << mBufferId;
 		}
 
 		mBufferId = other.mBufferId;

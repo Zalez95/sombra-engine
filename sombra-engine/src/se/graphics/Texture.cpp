@@ -30,6 +30,7 @@ namespace se::graphics {
 	{
 		if (mTextureId != 0) {
 			GL_WRAP( glDeleteTextures(1, &mTextureId) );
+			SOMBRA_TRACE_LOG << "Deleted Texture " << mTextureId;
 		}
 
 		mTextureId = other.mTextureId;

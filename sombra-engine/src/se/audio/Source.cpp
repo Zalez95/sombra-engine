@@ -14,23 +14,31 @@ namespace se::audio {
 
 	Source::Source(Source&& other)
 	{
-		// FIXME: handle the other id
 		mSourceId = other.mSourceId;
+		other.mSourceId = 0;
 	}
 
 
 	Source::~Source()
 	{
-		stop();
-		AL_WRAP( alDeleteSources(1, &mSourceId) );
-		SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
+		if (mSourceId != 0) {
+			stop();
+			AL_WRAP( alDeleteSources(1, &mSourceId) );
+			SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
+		}
 	}
 
 
 	Source& Source::operator=(Source&& other)
 	{
-		// FIXME: handle the other id
+		if (mSourceId != 0) {
+			stop();
+			AL_WRAP( alDeleteSources(1, &mSourceId) );
+			SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
+		}
+
 		mSourceId = other.mSourceId;
+		other.mSourceId = 0;
 
 		return *this;
 	}
