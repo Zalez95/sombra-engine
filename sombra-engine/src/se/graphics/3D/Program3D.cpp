@@ -88,7 +88,9 @@ namespace se::graphics {
 			material.occlusionTexture->bind(TextureUnits::kOcclusion);
 		}
 
-		if (material.emissiveTexture) {
+		bool useEmissiveTexture = (material.emissiveTexture != nullptr);
+		mProgram->setUniform(mUniformLocations.material.useEmissiveTexture, useEmissiveTexture);
+		if (useEmissiveTexture) {
 			mProgram->setUniform(mUniformLocations.material.emissiveTexture, TextureUnits::kEmissive);
 			material.emissiveTexture->bind(TextureUnits::kEmissive);
 		}
@@ -138,8 +140,8 @@ namespace se::graphics {
 		fragmentShaderText = fragmentShaderStream.str();
 		reader.close();
 
-		Shader vertexShader(vertexShaderText.c_str(), GL_VERTEX_SHADER);
-		Shader fragmentShader(fragmentShaderText.c_str(), GL_FRAGMENT_SHADER);
+		Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
+		Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
 
 		// 2. Create the Program
 		const Shader* shaders[] = { &vertexShader, &fragmentShader };
@@ -164,6 +166,7 @@ namespace se::graphics {
 		mUniformLocations.material.normalTexture		= mProgram->getUniformLocation("uMaterial.normalTexture");
 		mUniformLocations.material.useOcclusionTexture	= mProgram->getUniformLocation("uMaterial.useOcclusionTexture");
 		mUniformLocations.material.occlusionTexture		= mProgram->getUniformLocation("uMaterial.occlusionTexture");
+		mUniformLocations.material.useEmissiveTexture	= mProgram->getUniformLocation("uMaterial.useEmissiveTexture");
 		mUniformLocations.material.emissiveTexture		= mProgram->getUniformLocation("uMaterial.emissiveTexture");
 		mUniformLocations.material.emissiveFactor		= mProgram->getUniformLocation("uMaterial.emissiveFactor");
 		mUniformLocations.material.checkAlphaCutoff		= mProgram->getUniformLocation("uMaterial.checkAlphaCutoff");

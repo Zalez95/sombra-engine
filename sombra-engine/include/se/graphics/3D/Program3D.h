@@ -59,6 +59,7 @@ namespace se::graphics {
 				int normalTexture;
 				int useOcclusionTexture;
 				int occlusionTexture;
+				int useEmissiveTexture;
 				int emissiveTexture;
 				int emissiveFactor;
 				int checkAlphaCutoff;

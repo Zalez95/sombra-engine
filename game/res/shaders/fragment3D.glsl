@@ -26,6 +26,7 @@ struct Material
 	sampler2D normalTexture;
 	bool useOcclusionTexture;
 	sampler2D occlusionTexture;
+	bool useEmissiveTexture;
 	sampler2D emissiveTexture;
 	vec3 emissiveFactor;
 	bool checkAlphaCutoff;
@@ -132,29 +133,29 @@ vec3 calculateRadiance(PointLight pointLight, float lightDistance)
 
 /* Calculates the color of the current fragment point with all the PointLights
  * of the scene */
-vec3 calculateDirectLight(vec3 surfaceColor, float metallic, float roughness, vec3 surfaceNormal)
+vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 surfaceNormal)
 {
 	vec3 totalLightColor = vec3(0.0);
 
 	vec3 viewDirection		= normalize(-vsVertex.position);
-	vec3 reflectivity		= mix(BASE_REFLECTIVITY, surfaceColor, metallic);
+	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(surfaceNormal, viewDirection), 0.0);
 
 	for (int i = 0; i < vsNumPointLights; ++i) {
 		// Calculate the light direction and distance from the current point
 		vec3 lightDirection	= vsPointLightsPositions[i] - vsVertex.position;
 		float lightDistance	= length(lightDirection);
-		lightDirection		= normalize(lightDirection);
+		lightDirection /= lightDistance;
 
 		// Calculate the light radiance
 		vec3 radiance = calculateRadiance(uPointLights[i], lightDistance);
 
 		// Calculate the Lambertian diffuse color
-		vec3 diffuseColor = surfaceColor / PI;
+		vec3 diffuseColor = albedo / PI;
 
 		// Calculate the Cook-Torrance brdf specular color
 		vec3 halfwayDirection = normalize(lightDirection + viewDirection);
-		float halfwayDotView = max(dot(halfwayDirection, viewDirection), 0.0);
+		float halfwayDotView = clamp(dot(halfwayDirection, viewDirection), 0.0, 1.0);
 
 		float n	= normalDistributionGGX(surfaceNormal, halfwayDirection, roughness);
 		vec3 f	= fresnelSchlick(halfwayDotView, reflectivity);
@@ -201,21 +202,30 @@ void main()
 		surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
 	}
 
+	vec3 emissiveColor = vec3(0.0);
+	if (uMaterial.useEmissiveTexture) {
+		emissiveColor = texture(uMaterial.emissiveTexture, vsVertex.texCoord0).rgb;
+		emissiveColor *= uMaterial.emissiveFactor;
+	}
+
 	// Check alpha cutoff
 	if (uMaterial.checkAlphaCutoff && (surfaceColor.a < uMaterial.alphaCutoff)) {
 		discard;
 	}
 	else {
-		// Calculate direct light
-		vec3 lightColor = calculateDirectLight(surfaceColor.rgb, metallic, roughness, surfaceNormal);
+		// Calculate direct lighting
+		vec3 color = calculateDirectLighting(surfaceColor.rgb, metallic, roughness, surfaceNormal);
 
 		// Add ambient color
-		lightColor += vec3(0.03) * surfaceAO * surfaceColor.rgb;
+		color += vec3(0.03) * surfaceAO * surfaceColor.rgb;
+
+		// Add emissive color
+		color += emissiveColor;
 
 		// Gamma correction
-		lightColor = lightColor / (lightColor + vec3(1.0));
-		lightColor = pow(lightColor, vec3(1.0 / SCREEN_GAMMA));
+		color = color / (color + vec3(1.0));
+		color = pow(color, vec3(1.0 / SCREEN_GAMMA));
 
-		glFragColor = vec4(lightColor, surfaceColor.a);
+		glFragColor = vec4(color, surfaceColor.a);
 	}
 }

@@ -65,8 +65,8 @@ namespace se::graphics {
 		fragmentShaderText = fragmentShaderStream.str();
 		reader.close();
 
-		Shader vertexShader(vertexShaderText.c_str(), GL_VERTEX_SHADER);
-		Shader fragmentShader(fragmentShaderText.c_str(), GL_FRAGMENT_SHADER);
+		Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
+		Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
 
 		// 2. Create the Program
 		const Shader* shaders[] = { &vertexShader, &fragmentShader };

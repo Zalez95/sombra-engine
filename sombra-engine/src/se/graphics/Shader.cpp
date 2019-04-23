@@ -5,10 +5,10 @@
 
 namespace se::graphics {
 
-	Shader::Shader(const char* source, unsigned int shaderType)
+	Shader::Shader(const char* source, ShaderType shaderType)
 	{
 		// 1. Create the Shader
-		GL_WRAP( mShaderId = glCreateShader(shaderType) );
+		GL_WRAP( mShaderId = glCreateShader( toGLShader(shaderType) ) );
 		GL_WRAP( glShaderSource(mShaderId, 1, &source, NULL) );
 
 		// 2. Compile the shader
@@ -24,7 +24,7 @@ namespace se::graphics {
 			char* infoLog = new char[infoLogLength + 1];
 			GL_WRAP( glGetShaderInfoLog(mShaderId, infoLogLength, NULL, infoLog) );
 
-			std::string strInfoLog = "Failed to create the shader \"" + std::to_string(shaderType) + "\"\n" + std::string(infoLog);
+			std::string strInfoLog = "Failed to create the shader \"" + std::to_string(toGLShader(shaderType)) + "\"\n" + std::string(infoLog);
 			delete[] infoLog;
 
 			throw std::runtime_error(strInfoLog);

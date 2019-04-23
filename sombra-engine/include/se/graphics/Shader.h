@@ -1,6 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#include "Constants.h"
+
 namespace se::graphics {
 
 	/**
@@ -19,9 +21,8 @@ namespace se::graphics {
 		 * @param	source the GLSL source code of the shader that we want to
 		 *			create
 		 * @param	shaderType the type of the shader that we want to create
-		 *			(Usually GL_VERTEX_SHADER or GL_FRAGMENT_SHADER)
 		 * @throw	runtime_error if the Shader couldn't be created */
-		Shader(const char* source, unsigned int shaderType);
+		Shader(const char* source, ShaderType shaderType);
 		Shader(const Shader& other) = delete;
 		Shader(Shader&& other);
 

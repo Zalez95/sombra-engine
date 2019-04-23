@@ -403,8 +403,8 @@ namespace game {
 
 		std::shared_ptr<se::graphics::Material> planeMaterial(new se::graphics::Material{
 			"plane_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), texture2, 0.2f, 0.5f, nullptr },
-			nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), nullptr, 0.2f, 0.5f, nullptr },
+			nullptr, nullptr, texture2, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 		});
 
 		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, planeMaterial);

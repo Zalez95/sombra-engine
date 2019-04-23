@@ -54,10 +54,20 @@ namespace se::graphics {
 	}
 
 
-	void FrameBuffer::attach(const Texture& texture) const
+	void FrameBuffer::attach(
+		const Texture& texture,
+		FrameBufferAttachment attachment, unsigned int colorIndex
+	) const
 	{
+		GLenum glAttachment = GL_COLOR_ATTACHMENT0;
+		switch (attachment) {
+			case FrameBufferAttachment::Stencil:	glAttachment = GL_STENCIL_ATTACHMENT;				break;
+			case FrameBufferAttachment::Depth:		glAttachment = GL_DEPTH_ATTACHMENT;					break;
+			case FrameBufferAttachment::Color:		glAttachment = GL_COLOR_ATTACHMENT0 + colorIndex;	break;
+		}
+
 		GL_WRAP( glFramebufferTexture2D(
-			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_FRAMEBUFFER, glAttachment,
 			GL_TEXTURE_2D, texture.getTextureId(), 0
 		) );
 	}

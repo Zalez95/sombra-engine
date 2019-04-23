@@ -1,20 +1,11 @@
 #ifndef FRAME_BUFFER_H
 #define FRAME_BUFFER_H
 
+#include "../Constants.h"
+
 namespace se::graphics {
 
 	class Texture;
-
-
-	/** Enum FrameBufferTarget, it represents the different operations that a
-	 * FrameBuffer can be bound to, so the next operation will affect the bound
-	 * FrameBuffer */
-	enum FrameBufferTarget
-	{
-		Read,
-		Write,
-		Both
-	};
 
 
 	/**
@@ -43,8 +34,16 @@ namespace se::graphics {
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
 		 *
-		 * @param	texture the Texture to Attach to the FrameBuffer */
-		void attach(const Texture& texture) const;
+		 * @param	texture the Texture to Attach to the FrameBuffer
+		 * @param	attachment the attachment id of the texture (stencil,
+		 *			depth, color...)
+		 * @param	colorIndex when the attachment is of Color type, it
+		 *			specifies the color attachment index where the texture will
+		 *			be attached */
+		void attach(
+			const Texture& texture,
+			FrameBufferAttachment attachment, unsigned int colorIndex = 0
+		) const;
 
 		/** Binds the Frame Buffer Object
 		 *

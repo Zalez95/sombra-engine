@@ -55,6 +55,16 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLShader(ShaderType type)
+	{
+		switch (type) {
+			case ShaderType::Vertex:	return GL_VERTEX_SHADER;
+			case ShaderType::Fragment:	return GL_FRAGMENT_SHADER;
+			default:					return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLColor(ColorFormat format)
 	{
 		switch (format) {

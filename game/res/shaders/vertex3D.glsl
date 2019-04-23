@@ -47,19 +47,19 @@ void main()
 	vec3 B = cross(N, T);
 
 	// Calculate the TBN matrix
-	mat3 vsTBNMatrix = transpose(mat3(T, B, N));
+	mat3 tbnMatrix = transpose(mat3(T, B, N));
 
 	// Calculate gl_Position
 	vec4 vertexView	= modelViewMatrix * vec4(aVertexPosition, 1.0);
 	gl_Position		= uProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in tangent space
-	vsVertex.position	= vsTBNMatrix * vec3(vertexView);
+	vsVertex.position	= tbnMatrix * vec3(vertexView);
 	vsVertex.texCoord0	= aVertexTexCoord0;
 
 	// Calculate the PointLights coordinates in tangent space
 	vsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
 	for (int i = 0; i < vsNumPointLights; ++i) {
-		vsPointLightsPositions[i] = vsTBNMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
+		vsPointLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
 	}
 }

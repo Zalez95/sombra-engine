@@ -31,8 +31,8 @@ namespace se::graphics {
 		reader.close();
 
 		// 2. Create the Program
-		Shader vertexShader(vertexShaderText.c_str(), GL_VERTEX_SHADER);
-		Shader fragmentShader(fragmentShaderText.c_str(), GL_FRAGMENT_SHADER);
+		Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
+		Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
 
 		const Shader* shaders[] = { &vertexShader, &fragmentShader };
 		mProgram = new Program(shaders, 2);
