@@ -1,8 +1,9 @@
 #ifndef GJK_COLLISION_DETECTOR_H
 #define GJK_COLLISION_DETECTOR_H
 
-#include <vector>
+#include <utility>
 #include <glm/glm.hpp>
+#include "../utils/FixedVector.h"
 #include "SupportPoint.h"
 
 namespace se::collision {
@@ -24,7 +25,7 @@ namespace se::collision {
 	class GJKCollisionDetector
 	{
 	private:	// Nested types
-		using SupportPointVector = std::vector<SupportPoint>;
+		using SupportPointVector = utils::FixedVector<SupportPoint, 4>;
 
 	private:	// Attributes
 		/** The precision of the comparisons in the GJK algorithm */

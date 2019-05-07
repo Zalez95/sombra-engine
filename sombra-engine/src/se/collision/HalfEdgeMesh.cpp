@@ -128,58 +128,6 @@ namespace se::collision {
 	}
 
 
-	int addFace(HalfEdgeMesh& meshData, const std::vector<int>& vertexIndices)
-	{
-		if (vertexIndices.size() < 3) { return -1; }
-
-		// Create a new HEFace
-		int iFace = meshData.faces.emplace().getIndex();
-
-		// Set the HEFace and HEVertices data and recover all the HEEdges
-		int iFailingEdge = -1;
-		std::vector<int> faceEdgeIndices;
-		for (std::size_t i = 0; (i < vertexIndices.size()) && (iFailingEdge < 0); ++i) {
-			int iVertex1 = vertexIndices[i],
-				iVertex2 = vertexIndices[(i + 1) % vertexIndices.size()];
-
-			// Get the HEEdge of the current vertices
-			auto edgeIt = meshData.vertexEdgeMap.find(std::make_pair(iVertex1, iVertex2));
-			int iEdge = (edgeIt != meshData.vertexEdgeMap.end())? edgeIt->second : addEdge(meshData, iVertex1, iVertex2);
-			if (iEdge < 0) {
-				iFailingEdge = i;
-			}
-			faceEdgeIndices.push_back(iEdge);
-
-			// Set the HEEdge of the HEFace
-			if (meshData.faces[iFace].edge < 0) {
-				meshData.faces[iFace].edge = iEdge;
-			}
-		}
-
-		// Set the previous and next HEEdges of the HEFace's HEEdges
-		for (std::size_t i = 0; (i < faceEdgeIndices.size()) && (iFailingEdge < 0); ++i) {
-			HEEdge& currentEdge = meshData.edges[ faceEdgeIndices[i] ];
-			if (currentEdge.face < 0) {
-				currentEdge.face			= iFace;
-				currentEdge.previousEdge	= faceEdgeIndices[(i == 0)? faceEdgeIndices.size() - 1 : i - 1];
-				currentEdge.nextEdge		= faceEdgeIndices[(i + 1) % faceEdgeIndices.size()];
-			}
-			else {
-				iFailingEdge = i;
-			}
-		}
-
-		// Clean the HEFace data if an HEEdge was already in use in another one
-		if (iFailingEdge >= 0) {
-			for (int i = 0; i < iFailingEdge; ++i) { removeEdge(meshData, faceEdgeIndices[i]); }
-			meshData.faces.erase( meshData.faces.begin().setIndex(iFace) );
-			iFace = -1;
-		}
-
-		return iFace;
-	}
-
-
 	void removeFace(HalfEdgeMesh& meshData, int iFace)
 	{
 		if (!meshData.faces.isActive(iFace)) { return; }
@@ -204,13 +152,8 @@ namespace se::collision {
 	{
 		struct Section { int iInitialEdge, iFinalEdge, length; };
 
-		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)) {
-			return -1;
-		}
-
-		if (iFace1 == iFace2) {
-			return iFace1;
-		}
+		if (!meshData.faces.isActive(iFace1) || !meshData.faces.isActive(iFace2)) { return -1; }
+		if (iFace1 == iFace2) { return iFace1; }
 
 		// Find the HEEdge loop sections shared between both HEFaces
 		std::vector<Section> sections;
@@ -234,14 +177,13 @@ namespace se::collision {
 		}
 		while (iCurrentEdge != iInitialEdge);
 
-		if (sections.empty()) {
-			return -1;
-		}
+		if (sections.empty()) { return -1; }
 
 		// Find the longest shared HEEdge loop section between the HEFaces
-		const Section& section = *std::max_element(sections.begin(), sections.end(), [](const Section& s1, const Section& s2) {
-			return s1.length > s2.length;
-		});
+		const Section& section = *std::max_element(
+			sections.begin(), sections.end(),
+			[](const Section& s1, const Section& s2) { return s1.length > s2.length; }
+		);
 
 		// Close the new HEEdge loop of the first HEFace
 		const HEEdge& initialEdge = meshData.edges[section.iInitialEdge];
@@ -284,26 +226,6 @@ namespace se::collision {
 		meshData.faces.erase( meshData.faces.begin().setIndex(iFace2) );
 
 		return iFace1;
-	}
-
-
-	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace)
-	{
-		std::vector<int> indices;
-
-		if (meshData.faces.isActive(iFace)) {
-			int iInitialEdge = meshData.faces[iFace].edge;
-			int iCurrentEdge = iInitialEdge;
-			do {
-				const HEEdge& currentEdge	= meshData.edges[iCurrentEdge];
-				const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
-				indices.push_back(oppositeEdge.vertex);
-				iCurrentEdge = currentEdge.nextEdge;
-			}
-			while ((iCurrentEdge != iInitialEdge) && meshData.edges.isActive(iCurrentEdge));
-		}
-
-		return indices;
 	}
 
 }

@@ -87,7 +87,9 @@ namespace game {
 		}
 
 		for (auto itFace = heMeshTriangles.faces.begin(); itFace != heMeshTriangles.faces.end(); ++itFace) {
-			for (int iVertex : se::collision::getFaceIndices(heMeshTriangles, itFace.getIndex())) {
+			se::utils::FixedVector<int, 3> faceIndices;
+			se::collision::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
+			for (int iVertex : faceIndices) {
 				rawMesh.faceIndices.push_back(vertexMap[iVertex]);
 			}
 		}
@@ -99,102 +101,111 @@ namespace game {
 	se::collision::HalfEdgeMesh createTestTube1()
 	{
 		se::collision::HalfEdgeMesh meshData;
-		se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f });
-		se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f });
-		se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f });
-		se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f });
-		se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f });
-		se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f });
-		se::collision::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f });
-		se::collision::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f });
-		se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f });
-		se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f });
-		se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f });
-		se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f });
-		se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f });
-		se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f });
-		se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f });
-		se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f });
-		se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f });
-		se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f });
-		se::collision::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f });
-		se::collision::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f });
-		se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f });
-		se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f });
-		se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f });
-		se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f });
-		se::collision::addVertex(meshData, { 0.0f, 1.0f, -1.0f });
-		se::collision::addVertex(meshData, { 0.0f, 1.0f, 1.0f });
-		se::collision::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f });
-		se::collision::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f });
-		se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f });
-		se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f });
-		se::collision::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f });
-		se::collision::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f });
-		se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f });
-		se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f });
-		se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f });
-		se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f });
-		se::collision::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f });
-		se::collision::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f });
-		se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f });
-		se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f });
-		se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f });
-		se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f });
-		se::collision::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f });
-		se::collision::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f });
-		se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f });
-		se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f });
-		se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f });
-		se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f });
-		se::collision::addFace(meshData, { 0, 2, 3, 1 });
-		se::collision::addFace(meshData, { 2, 4, 5, 3 });
-		se::collision::addFace(meshData, { 4, 6, 7, 5 });
-		se::collision::addFace(meshData, { 6, 8, 9, 7 });
-		se::collision::addFace(meshData, { 8, 10, 11, 9 });
-		se::collision::addFace(meshData, { 10, 12, 13, 11 });
-		se::collision::addFace(meshData, { 12, 14, 15, 13 });
-		se::collision::addFace(meshData, { 14, 16, 17, 15 });
-		se::collision::addFace(meshData, { 16, 18, 19, 17 });
-		se::collision::addFace(meshData, { 18, 20, 21, 19 });
-		se::collision::addFace(meshData, { 20, 22, 23, 21 });
-		se::collision::addFace(meshData, { 22, 0, 1, 23 });
-		se::collision::addFace(meshData, { 24, 25, 27, 26 });
-		se::collision::addFace(meshData, { 26, 27, 29, 28 });
-		se::collision::addFace(meshData, { 28, 29, 31, 30 });
-		se::collision::addFace(meshData, { 30, 31, 33, 32 });
-		se::collision::addFace(meshData, { 32, 33, 35, 34 });
-		se::collision::addFace(meshData, { 34, 35, 37, 36 });
-		se::collision::addFace(meshData, { 36, 37, 39, 38 });
-		se::collision::addFace(meshData, { 38, 39, 41, 40 });
-		se::collision::addFace(meshData, { 40, 41, 43, 42 });
-		se::collision::addFace(meshData, { 42, 43, 45, 44 });
-		se::collision::addFace(meshData, { 44, 45, 47, 46 });
-		se::collision::addFace(meshData, { 46, 47, 25, 24 });
-		se::collision::addFace(meshData, { 13, 15, 39, 37 });
-		se::collision::addFace(meshData, { 37, 35, 11, 13 });
-		se::collision::addFace(meshData, { 35, 33, 9, 11 });
-		se::collision::addFace(meshData, { 33, 31, 7, 9 });
-		se::collision::addFace(meshData, { 31, 29, 5, 7 });
-		se::collision::addFace(meshData, { 29, 27, 3, 5 });
-		se::collision::addFace(meshData, { 27, 25, 1, 3 });
-		se::collision::addFace(meshData, { 25, 47, 23, 1 });
-		se::collision::addFace(meshData, { 47, 45, 21, 23 });
-		se::collision::addFace(meshData, { 45, 43, 19, 21 });
-		se::collision::addFace(meshData, { 43, 41, 17, 19 });
-		se::collision::addFace(meshData, { 41, 39, 15, 17 });
-		se::collision::addFace(meshData, { 20, 18, 42, 44 });
-		se::collision::addFace(meshData, { 16, 40, 42, 18 });
-		se::collision::addFace(meshData, { 14, 38, 40, 16 });
-		se::collision::addFace(meshData, { 12, 36, 38, 14 });
-		se::collision::addFace(meshData, { 10, 34, 36, 12 });
-		se::collision::addFace(meshData, { 8, 32, 34, 10 });
-		se::collision::addFace(meshData, { 6, 30, 32, 8 });
-		se::collision::addFace(meshData, { 4, 28, 30, 6 });
-		se::collision::addFace(meshData, { 2, 26, 28, 4 });
-		se::collision::addFace(meshData, { 0, 24, 26, 2 });
-		se::collision::addFace(meshData, { 22, 46, 24, 0 });
-		se::collision::addFace(meshData, { 20, 44, 46, 22 });
+		std::array<int, 48> vertexIndices = {
+			se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.0f, 1.0f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.0f, 1.0f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f }),
+			se::collision::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f }),
+			se::collision::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f }),
+			se::collision::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f }),
+			se::collision::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f }),
+			se::collision::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f }),
+			se::collision::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f }),
+			se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f }),
+			se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f })
+		};
+		std::array<std::array<int, 4>, 48> faceIndices = {{
+			{{ vertexIndices[0], vertexIndices[2], vertexIndices[3], vertexIndices[1] }},
+			{{ vertexIndices[2], vertexIndices[4], vertexIndices[5], vertexIndices[3] }},
+			{{ vertexIndices[4], vertexIndices[6], vertexIndices[7], vertexIndices[5] }},
+			{{ vertexIndices[6], vertexIndices[8], vertexIndices[9], vertexIndices[7] }},
+			{{ vertexIndices[8], vertexIndices[10], vertexIndices[11], vertexIndices[9] }},
+			{{ vertexIndices[10], vertexIndices[12], vertexIndices[13], vertexIndices[11] }},
+			{{ vertexIndices[12], vertexIndices[14], vertexIndices[15], vertexIndices[13] }},
+			{{ vertexIndices[14], vertexIndices[16], vertexIndices[17], vertexIndices[15] }},
+			{{ vertexIndices[16], vertexIndices[18], vertexIndices[19], vertexIndices[17] }},
+			{{ vertexIndices[18], vertexIndices[20], vertexIndices[21], vertexIndices[19] }},
+			{{ vertexIndices[20], vertexIndices[22], vertexIndices[23], vertexIndices[21] }},
+			{{ vertexIndices[22], vertexIndices[0], vertexIndices[1], vertexIndices[23] }},
+			{{ vertexIndices[24], vertexIndices[25], vertexIndices[27], vertexIndices[26] }},
+			{{ vertexIndices[26], vertexIndices[27], vertexIndices[29], vertexIndices[28] }},
+			{{ vertexIndices[28], vertexIndices[29], vertexIndices[31], vertexIndices[30] }},
+			{{ vertexIndices[30], vertexIndices[31], vertexIndices[33], vertexIndices[32] }},
+			{{ vertexIndices[32], vertexIndices[33], vertexIndices[35], vertexIndices[34] }},
+			{{ vertexIndices[34], vertexIndices[35], vertexIndices[37], vertexIndices[36] }},
+			{{ vertexIndices[36], vertexIndices[37], vertexIndices[39], vertexIndices[38] }},
+			{{ vertexIndices[38], vertexIndices[39], vertexIndices[41], vertexIndices[40] }},
+			{{ vertexIndices[40], vertexIndices[41], vertexIndices[43], vertexIndices[42] }},
+			{{ vertexIndices[42], vertexIndices[43], vertexIndices[45], vertexIndices[44] }},
+			{{ vertexIndices[44], vertexIndices[45], vertexIndices[47], vertexIndices[46] }},
+			{{ vertexIndices[46], vertexIndices[47], vertexIndices[25], vertexIndices[24] }},
+			{{ vertexIndices[13], vertexIndices[15], vertexIndices[39], vertexIndices[37] }},
+			{{ vertexIndices[37], vertexIndices[35], vertexIndices[11], vertexIndices[13] }},
+			{{ vertexIndices[35], vertexIndices[33], vertexIndices[9], vertexIndices[11] }},
+			{{ vertexIndices[33], vertexIndices[31], vertexIndices[7], vertexIndices[9] }},
+			{{ vertexIndices[31], vertexIndices[29], vertexIndices[5], vertexIndices[7] }},
+			{{ vertexIndices[29], vertexIndices[27], vertexIndices[3], vertexIndices[5] }},
+			{{ vertexIndices[27], vertexIndices[25], vertexIndices[1], vertexIndices[3] }},
+			{{ vertexIndices[25], vertexIndices[47], vertexIndices[23], vertexIndices[1] }},
+			{{ vertexIndices[47], vertexIndices[45], vertexIndices[21], vertexIndices[23] }},
+			{{ vertexIndices[45], vertexIndices[43], vertexIndices[19], vertexIndices[21] }},
+			{{ vertexIndices[43], vertexIndices[41], vertexIndices[17], vertexIndices[19] }},
+			{{ vertexIndices[41], vertexIndices[39], vertexIndices[15], vertexIndices[17] }},
+			{{ vertexIndices[20], vertexIndices[18], vertexIndices[42], vertexIndices[44] }},
+			{{ vertexIndices[16], vertexIndices[40], vertexIndices[42], vertexIndices[18] }},
+			{{ vertexIndices[14], vertexIndices[38], vertexIndices[40], vertexIndices[16] }},
+			{{ vertexIndices[12], vertexIndices[36], vertexIndices[38], vertexIndices[14] }},
+			{{ vertexIndices[10], vertexIndices[34], vertexIndices[36], vertexIndices[12] }},
+			{{ vertexIndices[8], vertexIndices[32], vertexIndices[34], vertexIndices[10] }},
+			{{ vertexIndices[6], vertexIndices[30], vertexIndices[32], vertexIndices[8] }},
+			{{ vertexIndices[4], vertexIndices[28], vertexIndices[30], vertexIndices[6] }},
+			{{ vertexIndices[2], vertexIndices[26], vertexIndices[28], vertexIndices[4] }},
+			{{ vertexIndices[0], vertexIndices[24], vertexIndices[26], vertexIndices[2] }},
+			{{ vertexIndices[22], vertexIndices[46], vertexIndices[24], vertexIndices[0] }},
+			{{ vertexIndices[20], vertexIndices[44], vertexIndices[46], vertexIndices[22] }}
+		}};
+
+		for (const auto& face : faceIndices) {
+			addFace(meshData, face.begin(), face.end());
+		}
+
 		return meshData;
 	}
 

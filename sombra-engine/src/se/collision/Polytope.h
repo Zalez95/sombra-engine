@@ -1,7 +1,7 @@
 #ifndef POLYTOPE_H
 #define POLYTOPE_H
 
-#include <array>
+#include "se/utils/FixedVector.h"
 #include "se/collision/SupportPoint.h"
 #include "se/collision/HalfEdgeMesh.h"
 
@@ -65,7 +65,10 @@ namespace se::collision {
 		 * @param	simplex the 4 initial simplex points
 		 * @param	precision the precision of the projected points of the
 		 *			polytope */
-		Polytope(const std::array<SupportPoint, 4>& simplex, float precision);
+		Polytope(
+			const utils::FixedVector<SupportPoint, 4>& simplex,
+			float precision
+		);
 
 		/** @return	the HalfEdgeMesh of the Polytope */
 		const HalfEdgeMesh& getMesh() const { return mMesh; };
@@ -107,7 +110,7 @@ namespace se::collision {
 		 * otherwise
 		 *
 		 * @param	faceIndices the indices of the new face's vertices */
-		int addFace(const std::array<int, 3>& faceIndices);
+		int addFace(const utils::FixedVector<int, 3>& faceIndices);
 
 		/** Removes the given HEFace and its data from the Polytope
 		 *

@@ -130,11 +130,17 @@ namespace se::collision {
 	 * to the HalfEdgeMesh
 	 *
 	 * @param	meshData the HalfEdgeMesh to add the HEFace
-	 * @param	vertexIndices the indices of the HEVertex of the new HEFace
+	 * @param	begin an iterator to the first HEVertex index of the new HEFace
+	 * @param	end an iterator to the past-the-end HEVertex index of the new
+	 *			HEFace
 	 * @return	the index of the new HEFace in the HalfEdgeMesh faces
 	 *			ContiguousVector (the HEFace is added with the emplace
 	 *			function), -1 if the number of HEVertices is less than 3 */
-	int addFace(HalfEdgeMesh& meshData, const std::vector<int>& vertexIndices);
+	template <class InputIterator>
+	int addFace(
+		HalfEdgeMesh& meshData,
+		const InputIterator& begin, const InputIterator& end
+	);
 
 
 	/** Removes the given HEFace and the HEEdges that references it from the
@@ -162,9 +168,16 @@ namespace se::collision {
 	 *
 	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
 	 * @param	iFace the index of the HEFace
-	 * @return	a vector with the indices of the HEFace's HEVertices */
-	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
+	 * @param	result the output iterator where the indices of the HEFace's
+	 *			HEVertices will be stored */
+	template <class OutputIterator>
+	void getFaceIndices(
+		const HalfEdgeMesh& meshData, int iFace,
+		OutputIterator result
+	);
 
 }
+
+#include "HalfEdgeMesh.inl"
 
 #endif		// HALF_EDGE_MESH_H

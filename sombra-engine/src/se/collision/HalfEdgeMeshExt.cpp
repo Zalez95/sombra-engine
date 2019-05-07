@@ -1,3 +1,4 @@
+#include <array>
 #include <stack>
 #include <limits>
 #include <algorithm>
@@ -85,7 +86,10 @@ namespace se::collision {
 			do {
 				const HEEdge& currentEdge	= originalMesh.edges[iCurrentEdge];
 				const HEEdge& oppositeEdge	= originalMesh.edges[currentEdge.oppositeEdge];
-				addFace(triangulatedMesh, { iInitialVertex, oppositeEdge.vertex, currentEdge.vertex });
+
+				std::array<int, 3> vertexIndices = { iInitialVertex, oppositeEdge.vertex, currentEdge.vertex };
+				addFace(triangulatedMesh, vertexIndices.begin(), vertexIndices.end());
+
 				iCurrentEdge = currentEdge.nextEdge;
 			}
 			while (iCurrentEdge != iLastEdge);

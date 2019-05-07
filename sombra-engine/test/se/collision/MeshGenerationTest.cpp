@@ -10,8 +10,9 @@ bool compareFaces(
 	const HEFace& f1, const HalfEdgeMesh& mesh1,
 	const HEFace& f2, const HalfEdgeMesh& mesh2
 ) {
-	auto f1Indices = getFaceIndices(mesh1, mesh1.edges[f1.edge].face);
-	auto f2Indices = getFaceIndices(mesh2, mesh2.edges[f2.edge].face);
+	std::vector<int> f1Indices, f2Indices;
+	getFaceIndices(mesh1, mesh1.edges[f1.edge].face, std::back_inserter(f1Indices));
+	getFaceIndices(mesh2, mesh2.edges[f2.edge].face, std::back_inserter(f2Indices));
 	if (f1Indices.size() != f2Indices.size()) {
 		return false;
 	}

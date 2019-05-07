@@ -1,3 +1,4 @@
+#include <array>
 #include <glm/gtc/type_ptr.hpp>
 #include "se/loaders/MeshLoader.h"
 #include "se/loaders/RawMesh.h"
@@ -86,16 +87,12 @@ namespace se::loaders {
 		// Add the HEFaces
 		bool allFacesLoaded = true;
 		for (std::size_t i = 0; i < rawMesh.faceIndices.size(); i += 3) {
-			int iFace = collision::addFace(
-				heMesh,
-				{
-					heVertexIndices[ rawMesh.faceIndices[i] ],
-					heVertexIndices[ rawMesh.faceIndices[i+1] ],
-					heVertexIndices[ rawMesh.faceIndices[i+2] ]
-				}
-			);
-
-			if (iFace < 0) {
+			std::array<int, 3> vertexIndices = {
+				heVertexIndices[ rawMesh.faceIndices[i] ],
+				heVertexIndices[ rawMesh.faceIndices[i+1] ],
+				heVertexIndices[ rawMesh.faceIndices[i+2] ]
+			};
+			if (collision::addFace(heMesh, vertexIndices.begin(), vertexIndices.end()) < 0) {
 				allFacesLoaded = false;
 			}
 		}

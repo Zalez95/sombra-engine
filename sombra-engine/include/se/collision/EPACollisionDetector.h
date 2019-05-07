@@ -1,7 +1,7 @@
 #ifndef EPA_COLLISION_DETECTOR_H
 #define EPA_COLLISION_DETECTOR_H
 
-#include <vector>
+#include "../utils/FixedVector.h"
 
 namespace se::collision {
 
@@ -17,6 +17,9 @@ namespace se::collision {
 	 */
 	class EPACollisionDetector
 	{
+	private:	// Nested types
+		using InitialSimplex = utils::FixedVector<SupportPoint, 4>;
+
 	private:	// Attributes
 		/** The minimum difference between the distances to the origin of
 		 * a HEFace and the next SupportPoint during the Polytope expansion step
@@ -46,7 +49,7 @@ namespace se::collision {
 		 *			otherwise */
 		bool calculate(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			std::vector<SupportPoint>& simplex, Contact& ret
+			InitialSimplex& simplex, Contact& ret
 		) const;
 	private:
 		/** Creates an initial polytope from the given simplex
@@ -61,7 +64,7 @@ namespace se::collision {
 		 *			expanded to a tetrahedron */
 		Polytope createInitialPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			std::vector<SupportPoint>& simplex
+			InitialSimplex& simplex
 		) const;
 
 		/** Expands the given edge simplex to a tetrahedron
@@ -74,7 +77,7 @@ namespace se::collision {
 		 *			case the simplex must be an edge (size == 2) */
 		void tetrahedronFromEdge(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			std::vector<SupportPoint>& simplex
+			InitialSimplex& simplex
 		) const;
 
 		/** Expands the given triangle simplex to a tetrahedron
@@ -87,7 +90,7 @@ namespace se::collision {
 		 *			case the simplex must be a triangle (size == 3) */
 		void tetrahedronFromTriangle(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			std::vector<SupportPoint>& simplex
+			InitialSimplex& simplex
 		) const;
 
 		/** Expands the given polytope iteratively until it finds the closest

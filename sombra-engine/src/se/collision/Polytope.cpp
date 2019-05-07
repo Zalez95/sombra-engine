@@ -6,11 +6,11 @@
 
 namespace se::collision {
 
-	Polytope::Polytope(const std::array<SupportPoint, 4>& simplex, float precision) :
+	Polytope::Polytope(const utils::FixedVector<SupportPoint, 4>& simplex, float precision) :
 		mPrecision(precision)
 	{
 		// Add the HEVertices
-		std::array<int, 4> vertexIndices = {
+		utils::FixedVector<int, 4> vertexIndices = {
 			addVertex(simplex[0]), addVertex(simplex[1]),
 			addVertex(simplex[2]), addVertex(simplex[3])
 		};
@@ -46,9 +46,9 @@ namespace se::collision {
 	}
 
 
-	int Polytope::addFace(const std::array<int, 3>& faceIndices)
+	int Polytope::addFace(const utils::FixedVector<int, 3>& faceIndices)
 	{
-		int iFace = se::collision::addFace(mMesh, { faceIndices[0], faceIndices[1], faceIndices[2] });
+		int iFace = se::collision::addFace(mMesh, faceIndices.begin(), faceIndices.end());
 
 		// Add the normal of the HEFace to mFaceNormals
 		mFaceNormals.emplace( calculateFaceNormal(mMesh, iFace) );

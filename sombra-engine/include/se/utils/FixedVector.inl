@@ -4,6 +4,20 @@
 namespace se::utils {
 
 	template <typename T, std::size_t N>
+	FixedVector<T, N>::FixedVector(std::initializer_list<T> list) :
+		mNumElements( (N < list.size())? N : list.size() )
+	{
+		size_type i = 0;
+		for (const T& member : list) {
+			if (i < mNumElements) {
+				mElements[i] = member;
+			}
+			++i;
+		}
+	}
+
+
+	template <typename T, std::size_t N>
 	bool operator==(const FixedVector<T, N>& fv1, const FixedVector<T, N>& fv2)
 	{
 		bool equal = true;
@@ -53,7 +67,7 @@ namespace se::utils {
 		mElements[mNumElements] = element;
 		mNumElements++;
 
-		return iterator(this, mNumElements-1);
+		return &mElements[mNumElements - 1];
 	}
 
 
@@ -64,7 +78,7 @@ namespace se::utils {
 		mElements[mNumElements] = T(std::forward<Args>(args)...);
 		mNumElements++;
 
-		return iterator(this, mNumElements-1);
+		return &mElements[mNumElements - 1];
 	}
 
 
@@ -78,70 +92,14 @@ namespace se::utils {
 	template <typename T, std::size_t N>
 	typename FixedVector<T, N>::iterator FixedVector<T, N>::erase(const_iterator it)
 	{
-		for (size_type i = it.mIndex + 1; i < mNumElements; ++i) {
-			mElements[i - 1] = mElements[i];
-		}
-		mNumElements--;
-	}
-
-
-	template <typename T, std::size_t N>
-	template <bool isConst>
-	FixedVector<T, N>::FVIterator<isConst>::operator
-		FixedVector<T, N>::FVIterator<!isConst>() const
-	{
-		FVIterator<!isConst> ret(nullptr, mIndex);
-
-		if constexpr (isConst) {
-			ret.mVector = const_cast<FixedVector*>(mVector);
-		}
-		else {
-			ret.mVector = mVector;
+		if (it != end()) {
+			for (iterator it2 = it + 1; it2 != end(); ++it2) {
+				*(it2 - 1) = *it2;
+			}
+			mNumElements--;
 		}
 
-		return ret;
-	}
-
-
-	template <typename T, std::size_t N>
-	template <bool isConst>
-	FixedVector<T, N>::FVIterator<isConst>&
-		FixedVector<T, N>::FVIterator<isConst>::operator++()
-	{
-		mIndex++;
-		return *this;
-	}
-
-
-	template <typename T, std::size_t N>
-	template <bool isConst>
-	FixedVector<T, N>::FVIterator<isConst>
-		FixedVector<T, N>::FVIterator<isConst>::operator++(int)
-	{
-		FVIterator ret(*this);
-		operator++();
-		return ret;
-	}
-
-
-	template <typename T, std::size_t N>
-	template <bool isConst>
-	FixedVector<T, N>::FVIterator<isConst>&
-		FixedVector<T, N>::FVIterator<isConst>::operator--()
-	{
-		mIndex--;
-		return *this;
-	}
-
-
-	template <typename T, std::size_t N>
-	template <bool isConst>
-	FixedVector<T, N>::FVIterator<isConst>
-		FixedVector<T, N>::FVIterator<isConst>::operator--(int)
-	{
-		FVIterator ret(*this);
-		operator--();
-		return ret;
+		return it;
 	}
 
 }

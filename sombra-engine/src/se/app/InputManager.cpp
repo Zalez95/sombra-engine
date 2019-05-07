@@ -73,7 +73,7 @@ namespace se::app {
 		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 
 		// Apply the change in orientation
-		entity->orientation = glm::normalize((qPitch * qYaw) * entity->orientation);
+		entity->orientation = glm::normalize(qPitch * qYaw * entity->orientation);
 	}
 
 

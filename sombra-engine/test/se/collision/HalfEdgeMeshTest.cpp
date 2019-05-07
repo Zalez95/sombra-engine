@@ -1,3 +1,4 @@
+#include <array>
 #include <tuple>
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
@@ -41,7 +42,8 @@ TEST(HalfEdgeMesh, getFaceIndices1)
 
 	auto meshData = std::get<0>( createTestMesh4() );
 
-	std::vector<int> faceIndices = getFaceIndices(meshData, iFace);
+	std::vector<int> faceIndices;
+	getFaceIndices(meshData, iFace, std::back_inserter(faceIndices));
 	EXPECT_EQ(faceIndices, expectedFaceIndices);
 }
 
@@ -51,19 +53,21 @@ TEST(HalfEdgeMesh, triangulateFaces1)
 	const std::vector<std::vector<int>> expectedFaceIndices = { { 0, 1, 2 }, { 0, 2, 3 }, { 0, 3, 4 }, { 0, 4, 5 } };
 
 	HalfEdgeMesh meshData;
-	std::vector<int> vertexIndices;
-	vertexIndices.push_back( addVertex(meshData, glm::vec3( 0.0f,  1.0f,  0.0f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-0.7f,  0.7f,  0.0f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-0.7f, -0.7f,  0.0f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3( 0.0f, -1.0f,  0.0f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3( 0.7f, -0.7f,  0.0f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3( 0.7f,  0.7f,  0.0f)) );
-	addFace(meshData, vertexIndices);
+	std::array<int, 6> vertexIndices = {
+		addVertex(meshData, glm::vec3( 0.0f,  1.0f,  0.0f)),
+		addVertex(meshData, glm::vec3(-0.7f,  0.7f,  0.0f)),
+		addVertex(meshData, glm::vec3(-0.7f, -0.7f,  0.0f)),
+		addVertex(meshData, glm::vec3( 0.0f, -1.0f,  0.0f)),
+		addVertex(meshData, glm::vec3( 0.7f, -0.7f,  0.0f)),
+		addVertex(meshData, glm::vec3( 0.7f,  0.7f,  0.0f))
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
 	meshData = triangulateFaces(meshData);
 
 	ASSERT_EQ(static_cast<int>(meshData.faces.size()), 4);
 	for (int iFace = 0; iFace < 4; ++iFace) {
-		std::vector<int> currentFaceIndices = getFaceIndices(meshData, iFace);
+		std::vector<int> currentFaceIndices;
+		getFaceIndices(meshData, iFace, std::back_inserter(currentFaceIndices));
 		for (int i = 0; i < 3; ++i) {
 			EXPECT_EQ(currentFaceIndices[i], expectedFaceIndices[iFace][i]);
 		}
@@ -88,19 +92,22 @@ TEST(HalfEdgeMesh, calculateVertexNormal2)
 	HalfEdgeMesh meshData;
 	ContiguousVector<glm::vec3> normals;
 
-	std::vector<int> vertexIndices;
-	int iFace;
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-5.035281181f, 2.496228456f, 2.278198242f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-5.734357833f, 2.502610445f, 0.927823066f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-3.627435207f, 2.880870103f, 2.705149173f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-6.365145683f, 3.229807853f, 2.352669477f)) );
-	vertexIndices.push_back( addVertex(meshData, glm::vec3(-5.062996387f, 3.463579893f, 3.451099872f)) );
-	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[3], vertexIndices[1] });
-	normals.emplace( calculateFaceNormal(meshData, iFace) );
-	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[4], vertexIndices[3] });
-	normals.emplace( calculateFaceNormal(meshData, iFace) );
-	iFace = addFace(meshData, { vertexIndices[0], vertexIndices[2], vertexIndices[4] });
-	normals.emplace( calculateFaceNormal(meshData, iFace) );
+	std::array<int, 5> vertexIndices = {
+		addVertex(meshData, glm::vec3(-5.035281181f, 2.496228456f, 2.278198242f)),
+		addVertex(meshData, glm::vec3(-5.734357833f, 2.502610445f, 0.927823066f)),
+		addVertex(meshData, glm::vec3(-3.627435207f, 2.880870103f, 2.705149173f)),
+		addVertex(meshData, glm::vec3(-6.365145683f, 3.229807853f, 2.352669477f)),
+		addVertex(meshData, glm::vec3(-5.062996387f, 3.463579893f, 3.451099872f))
+	};
+	std::array<std::array<int, 3>, 3> faceIndices = {{
+		{{ vertexIndices[0], vertexIndices[3], vertexIndices[1] }},
+		{{ vertexIndices[0], vertexIndices[4], vertexIndices[3] }},
+		{{ vertexIndices[0], vertexIndices[2], vertexIndices[4] }}
+	}};
+	for (const auto& face : faceIndices) {
+		int iFace = addFace(meshData, face.begin(), face.end());
+		normals.emplace( calculateFaceNormal(meshData, iFace) );
+	}
 
 	const glm::vec3 expectedNormal(-0.280267089f, -0.815811336f, 0.505867838f);
 	glm::vec3 normal = calculateVertexNormal(meshData, normals, 0);
@@ -114,10 +121,12 @@ TEST(HalfEdgeMesh, calculateFaceNormal1)
 {
 	HalfEdgeMesh meshData;
 
-	addVertex(meshData, { 1.25f,  1.0f, -2.75f });
-	addVertex(meshData, { 1.25f, -1.0f, -2.75f });
-	addVertex(meshData, { -0.25f, -1.0f, -2.75f });
-	addFace(meshData, { 0, 1, 2 });
+	std::array<int, 3> vertexIndices = {
+		addVertex(meshData, { 1.25f,  1.0f, -2.75f }),
+		addVertex(meshData, { 1.25f, -1.0f, -2.75f }),
+		addVertex(meshData, { -0.25f, -1.0f, -2.75f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
 
 	const glm::vec3 expectedNormal(0.0f, 0.0f, -1.0f);
 	glm::vec3 normal = calculateFaceNormal(meshData, 0);
@@ -130,11 +139,13 @@ TEST(HalfEdgeMesh, calculateFaceNormal1)
 TEST(HalfEdgeMesh, calculateFaceNormal2)
 {
 	HalfEdgeMesh meshData;
-	addVertex(meshData, { 0.117263972f,  0.704151272f, -3.100874185f });
-	addVertex(meshData, { 0.965986073f, -0.263351202f, -0.244983732f });
-	addVertex(meshData, { 0.965986073f, -2.136411190f,  1.768507480f });
-	addVertex(meshData, { 0.117263972f, -3.041968584f,  0.926108181f });
-	addFace(meshData, { 0, 1, 2, 3 });
+	std::array<int, 4> vertexIndices = {
+		addVertex(meshData, { 0.117263972f,  0.704151272f, -3.100874185f }),
+		addVertex(meshData, { 0.965986073f, -0.263351202f, -0.244983732f }),
+		addVertex(meshData, { 0.965986073f, -2.136411190f,  1.768507480f }),
+		addVertex(meshData, { 0.117263972f, -3.041968584f,  0.926108181f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
 
 	const glm::vec3 expectedNormal(0.824532389f, -0.414277464f, -0.385383605f);
 	glm::vec3 normal = calculateFaceNormal(meshData, 0);
@@ -147,10 +158,12 @@ TEST(HalfEdgeMesh, calculateFaceNormal2)
 TEST(HalfEdgeMesh, calculateFaceNormal3)
 {
 	HalfEdgeMesh meshData;
-	addVertex(meshData, { -2.0f, -1.0f, 7.0f });
-	addVertex(meshData, { -2.0f, -1.0f, 2.3f });
-	addVertex(meshData, { -2.0f, -1.0f, 5.0f });
-	addFace(meshData, { 0, 1, 2 });
+	std::array<int, 3> vertexIndices = {
+		addVertex(meshData, { -2.0f, -1.0f, 7.0f }),
+		addVertex(meshData, { -2.0f, -1.0f, 2.3f }),
+		addVertex(meshData, { -2.0f, -1.0f, 5.0f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
 
 	const glm::vec3 expectedNormal(0.0f);
 	glm::vec3 normal = calculateFaceNormal(meshData, 0);

@@ -6,6 +6,7 @@
 #include "se/collision/ConvexCollider.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "se/collision/FineCollisionDetector.h"
+#include "se/utils/FixedVector.h"
 #include "Polytope.h"
 
 namespace se::collision {
@@ -22,7 +23,7 @@ namespace se::collision {
 
 	bool EPACollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		std::vector<SupportPoint>& simplex, Contact& ret
+		InitialSimplex& simplex, Contact& ret
 	) const
 	{
 		bool contactUpdated = false;
@@ -56,7 +57,7 @@ namespace se::collision {
 // Private functions
 	Polytope EPACollisionDetector::createInitialPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		std::vector<SupportPoint>& simplex
+		InitialSimplex& simplex
 	) const
 	{
 		if (simplex.size() == 2) {
@@ -66,16 +67,16 @@ namespace se::collision {
 			tetrahedronFromTriangle(collider1, collider2, simplex);
 		}
 
-		return Polytope({ simplex[0], simplex[1], simplex[2], simplex[3] }, mProjectionPrecision);
+		return Polytope(simplex, mProjectionPrecision);
 	}
 
 
 	void EPACollisionDetector::tetrahedronFromEdge(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		std::vector<SupportPoint>& simplex
+		InitialSimplex& simplex
 	) const
 	{
-		std::vector<SupportPoint> vertices;
+		InitialSimplex vertices;
 		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
 
 		// 1. Find the closest coordinate axis to being orthonormal to the
@@ -118,7 +119,7 @@ namespace se::collision {
 
 	void EPACollisionDetector::tetrahedronFromTriangle(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		std::vector<SupportPoint>& simplex
+		InitialSimplex& simplex
 	) const
 	{
 		// Search a support point along the simplex's triangle normal
@@ -175,7 +176,8 @@ namespace se::collision {
 		// Expand the polytope until the closest HEFace is found
 		int iClosestFace = -1;
 		float closestSeparation = std::numeric_limits<float>::max();
-		std::vector<int> closestFaceIndices, overlappingFaces;
+		utils::FixedVector<int, 3> closestFaceIndices;
+		std::vector<int> overlappingFaces;
 		do {
 			// 1. Search a new SupportPoint along the HEFace's closest point direction
 			SupportPoint sp(collider1, collider2, faceDistance.closestPoint);
@@ -206,7 +208,8 @@ namespace se::collision {
 					// If we are going to remove the closest HEFace then we
 					// store its indices for recoving it later if necessary
 					if (iClosestFace == iFaceToRemove) {
-						closestFaceIndices = getFaceIndices(polytope.getMesh(), iClosestFace);
+						closestFaceIndices.clear();
+						getFaceIndices(polytope.getMesh(), iClosestFace, std::back_inserter(closestFaceIndices));
 						iClosestFace = -1;
 						overlappingFaces.clear();
 					}

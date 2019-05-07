@@ -5,6 +5,7 @@
 #include "se/collision/HACD.h"
 #include "se/collision/QuickHull.h"
 #include "se/collision/HalfEdgeMeshExt.h"
+#include "se/utils/FixedVector.h"
 #include "Geometry.h"
 
 namespace se::collision {
@@ -179,8 +180,9 @@ namespace se::collision {
 			for (int iFace : iFaces) {
 				// Add the HEVertices to the surface if they aren't already in
 				// it
-				std::vector<int> surfaceFaceIndices;
-				for (int iMeshVertex : getFaceIndices(mMesh, iFace)) {
+				std::vector<int> faceIndices, surfaceFaceIndices;
+				getFaceIndices(mMesh, iFace, std::back_inserter(faceIndices));
+				for (int iMeshVertex : faceIndices) {
 					int iSurfaceVertex = -1;
 
 					auto itVertexIndex = vertexIndexMap.find(iMeshVertex);
@@ -197,7 +199,7 @@ namespace se::collision {
 				}
 
 				// Add the HEFace to the surface
-				addFace(surface, surfaceFaceIndices);
+				addFace(surface, surfaceFaceIndices.begin(), surfaceFaceIndices.end());
 			}
 
 			// Push the convex hull of the surface to the convex surfaces vector
@@ -288,8 +290,9 @@ namespace se::collision {
 
 		std::map<int, int> vertexMap;
 		for (int iFace1 : iFaces) {
-			std::vector<int> iFace1Vertices = getFaceIndices(meshData, iFace1);
-			std::vector<int> iFace2Vertices;
+			std::vector<int> iFace1Vertices, iFace2Vertices;
+
+			getFaceIndices(meshData, iFace1, std::back_inserter(iFace1Vertices));
 			for (int iVertex1 : iFace1Vertices) {
 				auto itVertex1 = vertexMap.find(iVertex1);
 				if (itVertex1 != vertexMap.end()) {
@@ -302,7 +305,7 @@ namespace se::collision {
 				}
 			}
 
-			addFace(newMesh, iFace2Vertices);
+			addFace(newMesh, iFace2Vertices.begin(), iFace2Vertices.end());
 			newMeshNormals.emplace(faceNormals[iFace1]);
 		}
 
@@ -338,7 +341,8 @@ namespace se::collision {
 	{
 		float originalMeshArea = 0.0f;
 		for (auto itFace = originalMesh.faces.begin(); itFace != originalMesh.faces.end(); ++itFace) {
-			auto faceIndices = getFaceIndices(originalMesh, itFace.getIndex());
+			utils::FixedVector<int, 3> faceIndices;
+			getFaceIndices(originalMesh, itFace.getIndex(), std::back_inserter(faceIndices));
 			originalMeshArea += calculateTriangleArea({
 				originalMesh.vertices[faceIndices[0]].location,
 				originalMesh.vertices[faceIndices[1]].location,
@@ -348,7 +352,8 @@ namespace se::collision {
 
 		float convexHullArea = 0.0f;
 		for (auto itFace = convexHullMesh.faces.begin(); itFace != convexHullMesh.faces.end(); ++itFace) {
-			auto faceIndices = getFaceIndices(convexHullMesh, itFace.getIndex());
+			utils::FixedVector<int, 3> faceIndices;
+			getFaceIndices(convexHullMesh, itFace.getIndex(), std::back_inserter(faceIndices));
 			convexHullArea += calculateTriangleArea({
 				convexHullMesh.vertices[faceIndices[0]].location,
 				convexHullMesh.vertices[faceIndices[1]].location,
@@ -406,7 +411,8 @@ namespace se::collision {
 		// triangles
 		float area = 0.0f;
 		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
-			auto faceIndices = getFaceIndices(meshData, itFace.getIndex());
+			utils::FixedVector<int, 3> faceIndices;
+			getFaceIndices(meshData, itFace.getIndex(), std::back_inserter(faceIndices));
 			area += calculateTriangleArea({
 				meshData.vertices[faceIndices[0]].location,
 				meshData.vertices[faceIndices[1]].location,

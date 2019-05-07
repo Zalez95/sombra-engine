@@ -27,6 +27,12 @@ namespace se::collision {
 		glm::vec3 mLocalPosition[2];
 
 	public:		// Functions
+		/** Creates a new SupportPoint */
+		SupportPoint() :
+			mCSOPosition(0.0f),
+			mWorldPosition{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mLocalPosition{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
+
 		/** Creates a new SupportPoint as the furthest point in the given
 		 * direction inside the Minkowski Difference (or the Configuration
 		 * Space Object) of the given colliders

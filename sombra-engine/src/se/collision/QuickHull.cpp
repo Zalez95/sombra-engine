@@ -1,7 +1,9 @@
+#include <array>
 #include <stack>
 #include <limits>
 #include <algorithm>
 #include <glm/gtc/epsilon.hpp>
+#include "se/utils/FixedVector.h"
 #include "se/collision/AABB.h"
 #include "se/collision/QuickHull.h"
 #include "se/collision/HalfEdgeMeshExt.h"
@@ -200,7 +202,7 @@ namespace se::collision {
 		}
 
 		// Add the convex hull face
-		int iNewFace = addFace(mConvexHullMesh, faceIndices);
+		int iNewFace = addFace(mConvexHullMesh, faceIndices.begin(), faceIndices.end());
 		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iNewFace) );
 	}
 
@@ -293,8 +295,8 @@ namespace se::collision {
 					const HEEdge& oppositeEdge	= mConvexHullMesh.edges[currentEdge.oppositeEdge];
 
 					// Create the new HEFace
-					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
-					int iNewFace = addFace(mConvexHullMesh, { iV0, iV1, iEyeVertexConvexHull });
+					std::array<int, 3> vertexIndices = { oppositeEdge.vertex, currentEdge.vertex, iEyeVertexConvexHull };
+					int iNewFace = addFace(mConvexHullMesh, vertexIndices.begin(), vertexIndices.end());
 					mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iNewFace) );
 					mFaceOutsideVertices.emplace( getVerticesOutside(allOutsideVertices, originalMesh, iNewFace) );
 
@@ -308,40 +310,6 @@ namespace se::collision {
 
 	void QuickHull::createInitial3DConvexHull(const HalfEdgeMesh& originalMesh, const std::vector<int>& iSimplexVertices)
 	{
-		// Add the vertices to the convex hull
-		std::vector<int> chVertexIndices;
-		for (int iMeshVertex : iSimplexVertices) {
-			int iConvexHullVertex = addVertex(mConvexHullMesh, originalMesh.vertices[iMeshVertex].location);
-			mVertexIndexMap.emplace(iMeshVertex, iConvexHullVertex);
-			chVertexIndices.push_back(iConvexHullVertex);
-		}
-
-		// Add the faces to the convex hull
-		const glm::vec3 p0 = mConvexHullMesh.vertices[chVertexIndices[0]].location,
-						p1 = mConvexHullMesh.vertices[chVertexIndices[1]].location,
-						p2 = mConvexHullMesh.vertices[chVertexIndices[2]].location,
-						p3 = mConvexHullMesh.vertices[chVertexIndices[3]].location;
-		int iF0, iF1, iF2, iF3;
-		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
-		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
-			iF0 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] });
-			iF1 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] });
-			iF2 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] });
-			iF3 = addFace(mConvexHullMesh, { chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] });
-		}
-		else {
-			iF0 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] });
-			iF1 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] });
-			iF2 = addFace(mConvexHullMesh, { chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] });
-			iF3 = addFace(mConvexHullMesh, { chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] });
-		}
-
-		// Add the HEFaces normals
-		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF0) );
-		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF1) );
-		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF2) );
-		mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iF3) );
-
 		// Get all the vertex indices from the original mesh sorted ascendently
 		std::vector<int> meshVertexIndices;
 		for (auto it = originalMesh.vertices.begin(); it != originalMesh.vertices.end(); ++it) {
@@ -349,11 +317,44 @@ namespace se::collision {
 		}
 		std::sort(meshVertexIndices.begin(), meshVertexIndices.end());
 
-		// Add the HEFaces outside vertices
-		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF0) );
-		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF1) );
-		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF2) );
-		mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iF3) );
+		// Add the vertices to the convex hull
+		utils::FixedVector<int, 4> chVertexIndices;
+		for (int iMeshVertex : iSimplexVertices) {
+			int iConvexHullVertex = addVertex(mConvexHullMesh, originalMesh.vertices[iMeshVertex].location);
+			mVertexIndexMap.emplace(iMeshVertex, iConvexHullVertex);
+			chVertexIndices.push_back(iConvexHullVertex);
+		}
+
+		// Add the HEFaces to the convex hull
+		const glm::vec3 p0 = mConvexHullMesh.vertices[chVertexIndices[0]].location,
+						p1 = mConvexHullMesh.vertices[chVertexIndices[1]].location,
+						p2 = mConvexHullMesh.vertices[chVertexIndices[2]].location,
+						p3 = mConvexHullMesh.vertices[chVertexIndices[3]].location;
+		const glm::vec3 tNormal = glm::cross(p1 - p0, p2 - p0);
+
+		std::array<std::array<int , 3>, 4> faceIndices;
+		if (glm::dot(p3 - p0, tNormal) <= 0.0f) {
+			faceIndices = {{
+				{{ chVertexIndices[0], chVertexIndices[1], chVertexIndices[2] }},
+				{{ chVertexIndices[0], chVertexIndices[3], chVertexIndices[1] }},
+				{{ chVertexIndices[0], chVertexIndices[2], chVertexIndices[3] }},
+				{{ chVertexIndices[1], chVertexIndices[3], chVertexIndices[2] }}
+			}};
+		}
+		else {
+			faceIndices = {{
+				{{ chVertexIndices[0], chVertexIndices[2], chVertexIndices[1] }},
+				{{ chVertexIndices[0], chVertexIndices[1], chVertexIndices[3] }},
+				{{ chVertexIndices[0], chVertexIndices[3], chVertexIndices[2] }},
+				{{ chVertexIndices[1], chVertexIndices[2], chVertexIndices[3] }}
+			}};
+		}
+
+		for (const auto& face : faceIndices) {
+			int iFace = addFace(mConvexHullMesh, face.begin(), face.end());
+			mConvexHullNormals.emplace( calculateFaceNormal(mConvexHullMesh, iFace) );
+			mFaceOutsideVertices.emplace( getVerticesOutside(meshVertexIndices, originalMesh, iFace) );
+		}
 	}
 
 
