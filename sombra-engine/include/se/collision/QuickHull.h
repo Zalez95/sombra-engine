@@ -58,7 +58,8 @@ namespace se::collision {
 		 *
 		 * @param	epsilon the epsilon value of the comparisons during the
 		 *			QuickHull algorithm computation */
-		QuickHull(float epsilon) : mEpsilon(epsilon) {};
+		QuickHull(float epsilon) :
+			mEpsilon(epsilon), mScaledEpsilon(epsilon) {};
 
 		/** @return	the HalfEdgeMesh of the convex hull */
 		const HalfEdgeMesh& getMesh() const { return mConvexHullMesh; };

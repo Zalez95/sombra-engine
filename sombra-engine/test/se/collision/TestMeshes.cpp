@@ -127,9 +127,11 @@ std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh1()
 }
 
 
-HalfEdgeMesh createTestMesh2()
+std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh2()
 {
 	HalfEdgeMesh meshData;
+	ContiguousVector<glm::vec3> normals;
+
 	std::array<int, 8> vertexIndices = {
 		addVertex(meshData, { 1.25f,  1.0f, -2.75f }),
 		addVertex(meshData, { 1.25f, -1.0f, -2.75f }),
@@ -151,10 +153,11 @@ HalfEdgeMesh createTestMesh2()
 		{{ vertexIndices[0], vertexIndices[3], vertexIndices[7], vertexIndices[4] }}
 	}};
 	for (const auto& face : faceIndices) {
-		addFace(meshData, face.begin(), face.end());
+		int iFace = addFace(meshData, face.begin(), face.end());
+		normals.emplace(calculateFaceNormal(meshData, iFace));
 	}
 
-	return meshData;
+	return std::make_pair(meshData, normals);
 }
 
 
@@ -314,6 +317,41 @@ std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh4()
 		{{ vertexIndices[6], vertexIndices[8], vertexIndices[1] }},
 		{{ vertexIndices[6], vertexIndices[7], vertexIndices[8] }},
 		{{ vertexIndices[7], vertexIndices[0], vertexIndices[8] }}
+	}};
+	for (const auto& face : faceIndices) {
+		int iFace = addFace(meshData, face.begin(), face.end());
+		normals.emplace( calculateFaceNormal(meshData, iFace) );
+	}
+
+	return std::make_pair(meshData, normals);
+}
+
+
+std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh5()
+{
+	HalfEdgeMesh meshData;
+	ContiguousVector<glm::vec3> normals;
+
+	std::array<int, 8> vertexIndices = {
+		addVertex(meshData, { 0.0f, 1.0f, 0.0f }),
+		addVertex(meshData, { 0.866025328f, -0.5f, 0.0f }),
+		addVertex(meshData, { -0.866025447f, -0.5f, 0.0f }),
+		addVertex(meshData, { 0.0f, 0.0f, 2.0f }),
+		addVertex(meshData, { 0.0f, 0.5f, 0.0f }),
+		addVertex(meshData, { 0.433012664f, -0.25f, 0.0f }),
+		addVertex(meshData, { -0.433012723f, -0.25f, 0.0f }),
+		addVertex(meshData, { 0.0f, 0.0f, 1.0f })
+	};
+	std::array<std::vector<int>, 9> faceIndices = {{
+		{ vertexIndices[0], vertexIndices[3], vertexIndices[1] },
+		{ vertexIndices[1], vertexIndices[3], vertexIndices[2] },
+		{ vertexIndices[2], vertexIndices[3], vertexIndices[0] },
+		{ vertexIndices[0], vertexIndices[4], vertexIndices[6], vertexIndices[2] },
+		{ vertexIndices[4], vertexIndices[5], vertexIndices[7] },
+		{ vertexIndices[5], vertexIndices[6], vertexIndices[7] },
+		{ vertexIndices[6], vertexIndices[4], vertexIndices[7] },
+		{ vertexIndices[1], vertexIndices[5], vertexIndices[4], vertexIndices[0] },
+		{ vertexIndices[2], vertexIndices[6], vertexIndices[5], vertexIndices[1] }
 	}};
 	for (const auto& face : faceIndices) {
 		int iFace = addFace(meshData, face.begin(), face.end());

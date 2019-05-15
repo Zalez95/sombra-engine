@@ -32,6 +32,9 @@ namespace se::collision {
 			 * ancestors */
 			float concavity;
 
+			/** Tells if the QHACDData should be removed or not */
+			bool remove;
+
 			/** Compares the given QHACDData
 			 *
 			 * @param	d1 the first QHACDData to compare
@@ -86,7 +89,9 @@ namespace se::collision {
 		 * @param	epsilon the epsilon value for the comparisons during
 		 *			the HACD algorithm computation */
 		HACD(float maximumConcavity, float epsilon) :
-			mMaximumConcavity(maximumConcavity), mEpsilon(epsilon) {};
+			mMaximumConcavity(maximumConcavity),
+			mEpsilon(epsilon), mScaledEpsilon(epsilon),
+			mNormalizationFactor(0.0f), mAspectRatioFactor(0.0f) {};
 
 		/** @return	the HalfEdgeMeshes of the HACD */
 		const std::vector<HalfEdgeMesh>& getMeshes() const
@@ -157,9 +162,13 @@ namespace se::collision {
 
 		/** Calculates the contribution of the Aspect Ratio to the cost function
 		 *
+		 * @param	maximumConcavity the maximum concavity of the dual graph
+		 *			edges
 		 * @param	normalizationFactor the normalization factor
 		 * @return	the aspect ratio factor */
-		float calculateAspectRatioFactor(float normalizationFactor) const;
+		static float calculateAspectRatioFactor(
+			float maximumConcavity, float normalizationFactor
+		);
 
 		/** Calculates the HEFace indices of the surface created from the given
 		 * Graph vertices and their ancestors
@@ -202,18 +211,18 @@ namespace se::collision {
 			const ContiguousVector<glm::vec3>& convexHullNormals
 		) const;
 
-		/** Calculates the maximum concavity of the given 2D HalfEdgeMesh as the
-		 * square root of the difference between the areas of the convex hull
-		 * and the original HalfEdgeMesh
+		/** Calculates the concavity of the original HalfEdgeMesh as the square
+		 * root of the difference between the areas of the convex hull and the
+		 * original HalfEdgeMesh
 		 *
-		 * @param	originalMesh the HalfEdgeMesh to calculate its concavity
-		 * @param	convexHullMesh the convex hull HalfEdgeMesh of the
+		 * @param	originalArea the area of the HalfEdgeMesh to calculate
+		 *			its concavity
+		 * @param	convexHullArea the area of the convex hull of the
 		 *			originalMesh
-		 * @return	the concavity of the surface
-		 * @note	both HalfEdgeMeshes must have triangular HEFaces */
-		float calculateConcavity2D(
-			const HalfEdgeMesh& originalMesh, const HalfEdgeMesh& convexHullMesh
-		) const;
+		 * @return	the concavity of the surface in 2D */
+		static float calculateConcavity2D(
+			float originalArea, float convexHullArea
+		);
 
 		/** Calculates the maximum concavity of the given 3D HalfEdgeMesh as the
 		 * maximum distance from a point on its surface to its convex hull.
@@ -247,17 +256,16 @@ namespace se::collision {
 		 * @return	the cost value of the edge */
 		float calculateDecimationCost(float concavity, float aspectRatio) const;
 
-		/** Calculates the intersection of the given internal point in the given
-		 * direction with the convex HalfEdgeMesh with the furthest distance
-		 * from it
+		/** Calculates the intersection of the given ray with the given convex
+		 * HalfEdgeMesh
 		 *
 		 * @param	meshData the convex HalfEdgeMesh
 		 * @param	faceNormals the normal vectors of the mesh HEFaces
-		 * @param	origin the coordinates of the internal point
-		 * @param	direction the direction towards we want to calculate the
-		 *			intersection
+		 * @param	origin the coordinates of the origin of the ray
+		 * @param	direction the direction of the ray
 		 * @return	a pair with a bool that indicates if the intersection could
-		 *			be calculated and the coordinates of the intersection */
+		 *			be calculated and the coordinates of the intersection
+		 * @note	the origin must be inside the mesh */
 		std::pair<bool, glm::vec3> getInternalIntersection(
 			const HalfEdgeMesh& meshData,
 			const ContiguousVector<glm::vec3>& faceNormals,

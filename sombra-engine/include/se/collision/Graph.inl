@@ -21,6 +21,17 @@ namespace se::collision {
 			std::back_inserter(neighbourDifference)
 		);
 
+		// Remove the vertex 2 from its neighbours' neighbours vector
+		for (int iVertex2Neighbour : itVertex2->neighbours) {
+			auto itVertex2Neighbour = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iVertex2Neighbour);
+			if (itVertex2Neighbour != dualGraph.vertices.end()) {
+				auto itVertex2NN = std::lower_bound(itVertex2Neighbour->neighbours.begin(), itVertex2Neighbour->neighbours.end(), iVertex2);
+				if (itVertex2NN != itVertex2Neighbour->neighbours.end()) {
+					itVertex2Neighbour->neighbours.erase(itVertex2NN);
+				}
+			}
+		}
+
 		// Add new edges between the neighbourDifference vertices and the
 		// vertex 1
 		for (int iVertex : neighbourDifference) {
@@ -36,17 +47,6 @@ namespace se::collision {
 						std::lower_bound(itVertex->neighbours.begin(), itVertex->neighbours.end(), iVertex1),
 						iVertex1
 					);
-				}
-			}
-		}
-
-		// Remove the vertex 2 from its neighbours' neighbours vector
-		for (int iVertex2Neighbour : itVertex2->neighbours) {
-			auto itVertex2Neighbour = std::lower_bound(dualGraph.vertices.begin(), dualGraph.vertices.end(), iVertex2Neighbour);
-			if (itVertex2Neighbour != dualGraph.vertices.end()) {
-				auto itVertex2NN = std::lower_bound(itVertex2Neighbour->neighbours.begin(), itVertex2Neighbour->neighbours.end(), iVertex2);
-				if (itVertex2NN != itVertex2Neighbour->neighbours.end()) {
-					itVertex2Neighbour->neighbours.erase(itVertex2NN);
 				}
 			}
 		}

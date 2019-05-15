@@ -36,30 +36,33 @@ namespace se::collision {
 	}
 
 
-	std::pair<bool, glm::vec3> projectPointInDirection(
+	std::pair<bool, glm::vec3> rayPlaneIntersection(
 		const glm::vec3& point, const glm::vec3& direction,
-		const glm::vec3& planePoint, const glm::vec3& planeNormal
+		const glm::vec3& planePoint, const glm::vec3& planeNormal,
+		float intersectionPrecision
 	) {
-		bool intersects = true;
-		glm::vec3 intersection;
+		bool intersects = false;
+		glm::vec3 intersection, pointToPlanePoint = planePoint - point;
 
-		float distancePointFace = glm::dot(point - planePoint, planeNormal);
-		if (distancePointFace == 0.0f) {
-			// The origin is on the HEFace
-			intersection = point;
+		float dotPPN = glm::dot(pointToPlanePoint, planeNormal);
+		if (dotPPN > intersectionPrecision) {
+			float dotDN = glm::dot(direction, planeNormal);
+			if (dotDN > intersectionPrecision) {
+				intersection = point + direction * (dotPPN / dotDN);
+				intersects = true;
+			}
+		}
+		else if (dotPPN < -intersectionPrecision) {
+			float dotDN = glm::dot(direction, planeNormal);
+			if (dotDN < -intersectionPrecision) {
+				intersection = point + direction * (dotPPN / dotDN);
+				intersects = true;
+			}
 		}
 		else {
-			float dotDN = glm::dot(direction, planeNormal);
-			// Check if the point can be projected on the HEFace in the
-			// given direction
-			if ((dotDN > 0.0f) && (distancePointFace < 0.0f)) {
-				glm::vec3 projection = point + distancePointFace * planeNormal;
-				float distanceInDirection = glm::dot(projection - point, planeNormal) / dotDN;
-				intersection = point + direction * distanceInDirection;
-			}
-			else {
-				intersects = false;
-			}
+			// The origin is on the HEFace
+			intersection = point;
+			intersects = true;
 		}
 
 		return std::make_pair(intersects, intersection);

@@ -54,11 +54,40 @@ namespace se::collision {
 	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace);
 
 
+	/** Calculates the area of the given HEFace
+	 *
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
+	 * @return	the area of the HEFace
+	 * @note	all the HEFace vertices must lie on the same plane */
+	float calculateFaceArea(const HalfEdgeMesh& meshData, int iFace);
+
+
 	/** Calculates the Axis Aligned Bounding Box of the given HalfEdgeMesh
 	 *
 	 * @param	meshData the HalfEdgeMesh to calculate its AABB
 	 * @return	the AABB of the HalfEdgeMesh */
 	AABB calculateAABB(const HalfEdgeMesh& meshData);
+
+
+	/** Calculates the area of the given HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh
+	 * @return	the area of the HEFace
+	 * @see		calculateFaceArea */
+	float calculateArea(const HalfEdgeMesh& meshData);
+
+
+	/** Calculates the volume of the given HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh
+	 * @param	faceNormals the normal vectors of each HEFace
+	 * @return	the volume of the mesh
+	 * @note	the meshData must be convex */
+	float calculateVolume(
+		const HalfEdgeMesh& meshData,
+		const ContiguousVector<glm::vec3>& faceNormals
+	);
 
 
 	/** Calculates the furthest point of the HalfEdgeMesh in the given direction
@@ -86,8 +115,8 @@ namespace se::collision {
 	 * @return	a pair with the list of HEEdge indices that represents the
 	 *			boundary of the mesh horizon and the list of HEFace indices
 	 *			with the visible HEFaces
-	 * @note	the initial HEFace must be visible from the eyePoint
-	 *			perspective */
+	 * @note	the meshData must be convex and the initial HEFace must be
+	 *			visible from the eyePoint perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const HalfEdgeMesh& meshData,
 		const ContiguousVector<glm::vec3>& faceNormals,

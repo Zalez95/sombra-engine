@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <se/collision/AABB.h>
 #include <se/collision/HalfEdgeMesh.h>
 #include <se/collision/HalfEdgeMeshExt.h>
 #include "TestMeshes.h"
@@ -124,7 +125,7 @@ TEST(HalfEdgeMesh, calculateFaceNormal1)
 	std::array<int, 3> vertexIndices = {
 		addVertex(meshData, { 1.25f,  1.0f, -2.75f }),
 		addVertex(meshData, { 1.25f, -1.0f, -2.75f }),
-		addVertex(meshData, { -0.25f, -1.0f, -2.75f })
+		addVertex(meshData, {-0.25f, -1.0f, -2.75f })
 	};
 	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
 
@@ -170,6 +171,88 @@ TEST(HalfEdgeMesh, calculateFaceNormal3)
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(normal[i], expectedNormal[i], kTolerance);
 	}
+}
+
+
+TEST(HalfEdgeMesh, calculateFaceArea1)
+{
+	HalfEdgeMesh meshData;
+	std::array<int, 3> vertexIndices = {
+		addVertex(meshData, { 1.25f,  1.0f, -2.75f }),
+		addVertex(meshData, { 1.25f, -1.0f, -2.75f }),
+		addVertex(meshData, {-0.25f, -1.0f, -2.75f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
+
+	const float expectedArea = 1.5f;
+	float area = calculateFaceArea(meshData, 0);
+	EXPECT_NEAR(area, expectedArea, kTolerance);
+}
+
+
+TEST(HalfEdgeMesh, calculateFaceArea2)
+{
+	HalfEdgeMesh meshData;
+	std::array<int, 4> vertexIndices = {
+		addVertex(meshData, { 0.117263972f,  0.704151272f, -3.100874185f }),
+		addVertex(meshData, { 0.965986073f, -0.263351202f, -0.244983732f }),
+		addVertex(meshData, { 0.965986073f, -2.136411190f,  1.768507480f }),
+		addVertex(meshData, { 0.117263972f, -3.041968584f,  0.926108181f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
+
+	const float expectedArea = 6.187500476f;
+	float area = calculateFaceArea(meshData, 0);
+	EXPECT_NEAR(area, expectedArea, kTolerance);
+}
+
+
+TEST(HalfEdgeMesh, calculateFaceArea3)
+{
+	HalfEdgeMesh meshData;
+	std::array<int, 3> vertexIndices = {
+		addVertex(meshData, { -2.0f, -1.0f, 7.0f }),
+		addVertex(meshData, { -2.0f, -1.0f, 2.3f }),
+		addVertex(meshData, { -2.0f, -1.0f, 5.0f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
+
+	const float expectedArea = 0.0f;
+	float area = calculateFaceArea(meshData, 0);
+	EXPECT_NEAR(area, expectedArea, kTolerance);
+}
+
+
+TEST(HalfEdgeMesh, calculateAABB1)
+{
+	HalfEdgeMesh meshData = createTestMesh2().first;
+
+	const AABB expectedAABB = { glm::vec3(-0.25f, -1.0f, -2.75f), glm::vec3(1.25f, 1.0f, 2.75f) };
+	AABB aabb = calculateAABB(meshData);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb.minimum[i], expectedAABB.minimum[i], kTolerance);
+		EXPECT_NEAR(aabb.maximum[i], expectedAABB.maximum[i], kTolerance);
+	}
+}
+
+
+TEST(HalfEdgeMesh, calculateArea1)
+{
+	HalfEdgeMesh meshData = createTestMesh2().first;
+
+	const float expectedArea = 39.37604141f;
+	float area = calculateArea(meshData);
+	EXPECT_NEAR(area, expectedArea, kTolerance);
+}
+
+
+TEST(HalfEdgeMesh, calculateVolume1)
+{
+	auto [meshData, normals] = createTestMesh2();
+
+	const float expectedVolume = 13.75000095f;
+	float volume = calculateVolume(meshData, normals);
+	EXPECT_NEAR(volume, expectedVolume, kTolerance);
 }
 
 

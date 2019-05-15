@@ -12,7 +12,7 @@ TEST(CompositeCollider, getAABB1)
 {
 	const glm::vec3 expectedMinimum(-0.25f, -1.0f, -2.75f);
 	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
-	const HalfEdgeMesh meshData = createTestMesh2();
+	const HalfEdgeMesh meshData = createTestMesh2().first;
 
 	std::vector<std::unique_ptr<Collider>> colliders;
 	colliders.push_back( std::make_unique<ConvexPolyhedron>(meshData) );
@@ -30,7 +30,7 @@ TEST(CompositeCollider, getAABBTransforms1)
 {
 	const glm::vec3 expectedMinimum(3.026389360f, -3.532424926f, -12.166131973f);
 	const glm::vec3 expectedMaximum(7.695832729f, 1.698557257f, -7.145406246f);
-	const HalfEdgeMesh meshData = createTestMesh2();
+	const HalfEdgeMesh meshData = createTestMesh2().first;
 
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
@@ -60,7 +60,7 @@ TEST(CompositeCollider, getOverlapingPartsQH1)
 		glm::vec3(3.47687816f, -3.09886074f, -10.11952781f),
 		glm::vec3(5.47687816f, -1.09886074f, -8.11952781f)
 	};
-	const HalfEdgeMesh meshData = createTestMesh2();
+	const HalfEdgeMesh meshData = createTestMesh2().first;
 
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);

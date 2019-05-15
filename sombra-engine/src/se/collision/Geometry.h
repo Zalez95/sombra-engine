@@ -30,21 +30,24 @@ namespace se::collision {
 	);
 
 
-	/** Projects the given point on the given plane along th egiven direction
+	/** Calculates the intersection between the given ray and the given plane
 	 *
-	 * @param	point the point to project
-	 * @param	direction the direction along we want to project the point
+	 * @param	origin the origin of the ray
+	 * @param	direction the direction of the ray
 	 * @param	planePoint a point in the plane
 	 * @param	planeNormal the normal vector of the plane
+	 * @param	intersectionPrecision the precision of the intersection between
+	 *			the ray and the plane
 	 * @return	a pair with a flag that tells if the point could be projected
 	 *			and the 3D coordinates of the projected point */
-	std::pair<bool, glm::vec3> projectPointInDirection(
-		const glm::vec3& point, const glm::vec3& direction,
-		const glm::vec3& planePoint, const glm::vec3& planeNormal
+	std::pair<bool, glm::vec3> rayPlaneIntersection(
+		const glm::vec3& origin, const glm::vec3& direction,
+		const glm::vec3& planePoint, const glm::vec3& planeNormal,
+		float intersectionPrecision
 	);
 
 
-	/** Projects the given point onto the the given 3D triangle 
+	/** Projects the given point onto the the given 3D triangle
 	 *
 	 * @param	point the 3D coordinates of the point in world space
 	 * @param	triangle an array with the 3 points of the triangle in

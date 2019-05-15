@@ -1,9 +1,12 @@
 #include <array>
 #include <stack>
 #include <limits>
+#include <numeric>
 #include <algorithm>
+#include <glm/gtc/constants.hpp>
 #include "se/collision/AABB.h"
 #include "se/collision/HalfEdgeMeshExt.h"
+#include "Geometry.h"
 
 #define NORMALIZATION_ZERO 0.0001f
 
@@ -82,7 +85,7 @@ namespace se::collision {
 			const HEEdge& initialEdge = originalMesh.edges[face.edge];
 			int iLastEdge		= initialEdge.previousEdge;
 			int iCurrentEdge	= initialEdge.nextEdge;
-			int iInitialVertex	= originalMesh.edges[ initialEdge.oppositeEdge ].vertex;
+			int iInitialVertex	= originalMesh.edges[initialEdge.oppositeEdge].vertex;
 			do {
 				const HEEdge& currentEdge	= originalMesh.edges[iCurrentEdge];
 				const HEEdge& oppositeEdge	= originalMesh.edges[currentEdge.oppositeEdge];
@@ -172,6 +175,34 @@ namespace se::collision {
 	}
 
 
+	float calculateFaceArea(const HalfEdgeMesh& meshData, int iFace)
+	{
+		float area = 0.0f;
+
+		if (meshData.faces.isActive(iFace)) {
+			const HEEdge& initialEdge = meshData.edges[ meshData.faces[iFace].edge ];
+			int iLastEdge		= initialEdge.previousEdge;
+			int iCurrentEdge	= initialEdge.nextEdge;
+			int iInitialVertex	= meshData.edges[initialEdge.oppositeEdge].vertex;
+			do {
+				const HEEdge& currentEdge	= meshData.edges[iCurrentEdge];
+				const HEEdge& oppositeEdge	= meshData.edges[currentEdge.oppositeEdge];
+
+				const glm::vec3& p1 = meshData.vertices[iInitialVertex].location;
+				const glm::vec3& p2 = meshData.vertices[oppositeEdge.vertex].location;
+				const glm::vec3& p3 = meshData.vertices[currentEdge.vertex].location;
+
+				area += calculateTriangleArea({ p1, p2, p3 });
+
+				iCurrentEdge = currentEdge.nextEdge;
+			}
+			while (iCurrentEdge != iLastEdge);
+		}
+
+		return area;
+	}
+
+
 	AABB calculateAABB(const HalfEdgeMesh& meshData)
 	{
 		AABB meshAABB = {
@@ -185,6 +216,53 @@ namespace se::collision {
 		}
 
 		return meshAABB;
+	}
+
+
+	float calculateArea(const HalfEdgeMesh& meshData)
+	{
+		float area = 0.0f;
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
+			area += calculateFaceArea(meshData, itFace.getIndex());
+		}
+		return area;
+	}
+
+
+	float calculateVolume(
+		const HalfEdgeMesh& meshData,
+		const ContiguousVector<glm::vec3>& faceNormals
+	) {
+		// Get the centroid of the mesh
+		glm::vec3 centroid = std::accumulate(
+			meshData.vertices.begin(), meshData.vertices.end(), glm::vec3(0.0f),
+			[](const HEVertex& v1, const HEVertex& v2) { return v1.location + v2.location; }
+		);
+		centroid /= meshData.vertices.size();
+
+		// Calculate the sum of the volumes of the pyramids created with the
+		// HEFaces of the mesh and the centroid
+		float volume = 0.0f;
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
+			// Calculate the pyramid height
+			const glm::vec3& facePoint = meshData.vertices[ meshData.edges[itFace->edge].vertex ].location;
+			const glm::vec3& faceNormal = faceNormals[itFace.getIndex()];
+			glm::vec3 centroidToFacePoint = facePoint - centroid;
+			float distance = glm::length(centroidToFacePoint);
+			if (distance > 0.0f) {
+				centroidToFacePoint /= distance;
+			}
+
+			float dotCPN = glm::dot(centroidToFacePoint, faceNormal);
+			float height = (dotCPN > 0.0f)? dotCPN * distance : 0.0f;
+
+			// Calculate the pyramid base area
+			float baseArea = calculateFaceArea(meshData, itFace.getIndex());
+
+			volume += glm::third<float>() * baseArea * height;
+		}
+
+		return volume;
 	}
 
 

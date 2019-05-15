@@ -21,17 +21,13 @@ namespace se::collision {
 			for (int iVertex2 : vertex1.neighbours) {
 				// Filter bad vertices
 				auto itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), iVertex2);
-				if (itVertex2 == mDualGraph.vertices.end()) continue;
+				if (itVertex2 == mDualGraph.vertices.end()) { continue; }
 
 				// Filter the neighbour vertices already evaluated
 				const DualGraphVertex& vertex2 = *itVertex2;
-				if (vertex2.id <= vertex1.id) continue;
+				if (vertex2.id <= vertex1.id) { continue; }
 
-				// Filter the Graph Edges with a concavity measure larger than
-				// the concavity threshold
-				QHACDData curData = createQHACDData(vertex1, *itVertex2);
-				if (curData.concavity > mMaximumConcavity * mNormalizationFactor) continue;
-
+				QHACDData curData = createQHACDData(vertex1, vertex2);
 				vertexPairsByCost.insert(
 					std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
 					curData
@@ -40,15 +36,19 @@ namespace se::collision {
 		}
 
 		// Collapse the Graph Edge with the lowest cost until there's no more
-		while(!vertexPairsByCost.empty()) {
+		while (!vertexPairsByCost.empty()) {
 			QHACDData curData = vertexPairsByCost.back();
 			vertexPairsByCost.pop_back();
 
-			auto itVertex1 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex1);
-			auto itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex2);
+			// Filter the Graph Edges marked as removed or with a concavity
+			// measure larger than the maximum concavity
+			if (curData.remove) { continue; }
+			if (curData.concavity >= mMaximumConcavity * mNormalizationFactor) { continue; }
 
 			// 1. Update the ancestors of the first vertex with the second one's
 			// ancestors
+			auto itVertex1 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex1);
+			auto itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex2);
 			updateAncestors(*itVertex1, *itVertex2);
 
 			// 2. Merge both nodes into the first one
@@ -56,28 +56,24 @@ namespace se::collision {
 
 			// 3. Remove all the elements of the Queue that holds the Vertex 1
 			// or 2
-			vertexPairsByCost.erase(
-				std::remove_if(
-					vertexPairsByCost.begin(), vertexPairsByCost.end(),
-					[&](const QHACDData& other) { return compareVertexIds(curData, other); }
-				),
-				vertexPairsByCost.end()
-			);
+			for (QHACDData& otherData : vertexPairsByCost) {
+				if (!otherData.remove) {
+					otherData.remove = compareVertexIds(curData, otherData);
+				}
+			}
 
-			// 4. Add new elements to the Queue with the updated vertex 1 data
+			// 4. Add new Graph Edges to collapse to the Queue with the updated
+			// vertex 1 data
 			itVertex1 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), curData.iVertex1);
 			for (int iVertex2 : itVertex1->neighbours) {
 				itVertex2 = std::lower_bound(mDualGraph.vertices.begin(), mDualGraph.vertices.end(), iVertex2);
-
-				// Filter the Graph Edges with a concavity measure larger than
-				// the concavity threshold
-				curData = createQHACDData(*itVertex1, *itVertex2);
-				if (curData.concavity > mMaximumConcavity * mNormalizationFactor) continue;
-
-				vertexPairsByCost.insert(
-					std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
-					curData
-				);
+				if (itVertex2 != mDualGraph.vertices.end()) {
+					curData = createQHACDData(*itVertex1, *itVertex2);
+					vertexPairsByCost.insert(
+						std::lower_bound(vertexPairsByCost.begin(), vertexPairsByCost.end(), curData, std::greater<QHACDData>()),
+						curData
+					);
+				}
 			}
 		}
 
@@ -116,7 +112,7 @@ namespace se::collision {
 		mScaledEpsilon = mNormalizationFactor * mEpsilon;
 
 		// 7. Calculate the aspect ratio factor of the triangulated mesh
-		mAspectRatioFactor = calculateAspectRatioFactor(mNormalizationFactor);
+		mAspectRatioFactor = calculateAspectRatioFactor(mMaximumConcavity, mNormalizationFactor);
 	}
 
 
@@ -136,7 +132,7 @@ namespace se::collision {
 		float aspectRatio = calculateAspectRatio(surface);
 		float cost = calculateDecimationCost(concavity, aspectRatio);
 
-		return { vertex1.id, vertex2.id, cost, concavity };
+		return { vertex1.id, vertex2.id, cost, concavity, false };
 	}
 
 
@@ -170,37 +166,11 @@ namespace se::collision {
 		QuickHull qh(mEpsilon);
 
 		mConvexMeshes.reserve(mDualGraph.vertices.size());
-		for (auto graphVertex : mDualGraph.vertices) {
+		for (const auto& graphVertex : mDualGraph.vertices) {
+			// Create a surface from the current vertex and its ancestors
 			std::vector<int> iFaces = { graphVertex.id };
 			iFaces.insert(iFaces.end(), graphVertex.data.begin(), graphVertex.data.end());
-
-			// Create a surface from the current vertex and its ancestors
-			HalfEdgeMesh surface;
-			std::map<int, int> vertexIndexMap;
-			for (int iFace : iFaces) {
-				// Add the HEVertices to the surface if they aren't already in
-				// it
-				std::vector<int> faceIndices, surfaceFaceIndices;
-				getFaceIndices(mMesh, iFace, std::back_inserter(faceIndices));
-				for (int iMeshVertex : faceIndices) {
-					int iSurfaceVertex = -1;
-
-					auto itVertexIndex = vertexIndexMap.find(iMeshVertex);
-					if (itVertexIndex != vertexIndexMap.end()) {
-						iSurfaceVertex = itVertexIndex->second;
-					}
-					else {
-						glm::vec3 vertexLocation = mMesh.vertices[iMeshVertex].location;
-						iSurfaceVertex = addVertex(surface, vertexLocation);
-						vertexIndexMap.emplace(iMeshVertex, iSurfaceVertex);
-					}
-
-					surfaceFaceIndices.push_back(iSurfaceVertex);
-				}
-
-				// Add the HEFace to the surface
-				addFace(surface, surfaceFaceIndices.begin(), surfaceFaceIndices.end());
-			}
+			HalfEdgeMesh surface = getMeshFromIndices(iFaces, mMesh, mFaceNormals).first;
 
 			// Push the convex hull of the surface to the convex surfaces vector
 			qh.resetData();
@@ -264,9 +234,9 @@ namespace se::collision {
 	}
 
 
-	float HACD::calculateAspectRatioFactor(float normalizationFactor) const
+	float HACD::calculateAspectRatioFactor(float maximumConcavity, float normalizationFactor)
 	{
-		return mMaximumConcavity / (10.0f * normalizationFactor);
+		return maximumConcavity / (10.0f * normalizationFactor);
 	}
 
 
@@ -320,48 +290,31 @@ namespace se::collision {
 	{
 		float concavity = 0.0f;
 
+		// Check if the convex hull is flat
 		glm::vec3 polygonNormal = (convexHullNormals.empty())? glm::vec3(0.0f) : *convexHullNormals.begin();
 		if (std::all_of(
 				convexHullNormals.begin(), convexHullNormals.end(),
 				[&](const glm::vec3& normal) { return glm::all(glm::epsilonEqual(normal, polygonNormal, mScaledEpsilon)); }
 			)
 		) {
-			HalfEdgeMesh triangulatedConvexHullMesh = triangulateFaces(convexHullMesh);
-			concavity = calculateConcavity2D(originalMesh, triangulatedConvexHullMesh);
+			// Add the 3D concavity
+			concavity += calculateConcavity3D(originalMesh, faceNormals, convexHullMesh, convexHullNormals);
 		}
-		else {
-			concavity = calculateConcavity3D(originalMesh, faceNormals, convexHullMesh, convexHullNormals);
-		}
+
+		// Add the 2D concavity
+		float originalArea = calculateArea(originalMesh);
+		float convexHullArea = calculateArea(convexHullMesh);
+		float convexHullVolume = calculateVolume(convexHullMesh, convexHullNormals);
+		float weight2D = std::max(0.0f, 1.0f - std::pow(convexHullVolume / convexHullArea, 2.0f));
+		concavity += weight2D * calculateConcavity2D(originalArea, convexHullArea);
 
 		return concavity;
 	}
 
 
-	float HACD::calculateConcavity2D(const HalfEdgeMesh& originalMesh, const HalfEdgeMesh& convexHullMesh) const
+	float HACD::calculateConcavity2D(float originalArea, float convexHullArea)
 	{
-		float originalMeshArea = 0.0f;
-		for (auto itFace = originalMesh.faces.begin(); itFace != originalMesh.faces.end(); ++itFace) {
-			utils::FixedVector<int, 3> faceIndices;
-			getFaceIndices(originalMesh, itFace.getIndex(), std::back_inserter(faceIndices));
-			originalMeshArea += calculateTriangleArea({
-				originalMesh.vertices[faceIndices[0]].location,
-				originalMesh.vertices[faceIndices[1]].location,
-				originalMesh.vertices[faceIndices[2]].location
-			});
-		}
-
-		float convexHullArea = 0.0f;
-		for (auto itFace = convexHullMesh.faces.begin(); itFace != convexHullMesh.faces.end(); ++itFace) {
-			utils::FixedVector<int, 3> faceIndices;
-			getFaceIndices(convexHullMesh, itFace.getIndex(), std::back_inserter(faceIndices));
-			convexHullArea += calculateTriangleArea({
-				convexHullMesh.vertices[faceIndices[0]].location,
-				convexHullMesh.vertices[faceIndices[1]].location,
-				convexHullMesh.vertices[faceIndices[2]].location
-			});
-		}
-
-		float areaDifference = convexHullArea - originalMeshArea;
+		float areaDifference = convexHullArea - originalArea;
 		return (areaDifference < 0.0f)? 0.0f : std::sqrt(areaDifference);
 	}
 
@@ -409,16 +362,7 @@ namespace se::collision {
 
 		// 2. Calculate the area of the surface as the sum of the areas of the
 		// triangles
-		float area = 0.0f;
-		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
-			utils::FixedVector<int, 3> faceIndices;
-			getFaceIndices(meshData, itFace.getIndex(), std::back_inserter(faceIndices));
-			area += calculateTriangleArea({
-				meshData.vertices[faceIndices[0]].location,
-				meshData.vertices[faceIndices[1]].location,
-				meshData.vertices[faceIndices[2]].location
-			});
-		}
+		float area = calculateArea(meshData);
 
 		return std::pow(perimeter, 2) / (4 * glm::pi<float>() * area);
 	}
@@ -435,49 +379,21 @@ namespace se::collision {
 		const glm::vec3& origin, const glm::vec3& direction
 	) const
 	{
-		bool intersects1 = false, intersects2 = false;
-		glm::vec3 intersection1, intersection2, face1Point, face2Point, face1Normal, face2Normal;
-		auto itFace1 = meshData.faces.begin(), itFace2 = itFace1;
+		// Search the first intersected HEFace
+		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
+			glm::vec3 facePoint = meshData.vertices[ meshData.edges[itFace->edge].vertex ].location;
+			glm::vec3 faceNormal = faceNormals[itFace.getIndex()];
 
-		// Search one intersected HEFaces
-		for (; (itFace1 != meshData.faces.end()) && !intersects1; ++itFace1) {
-			face1Point = meshData.vertices[ meshData.edges[itFace1->edge].vertex ].location;
-			face1Normal = faceNormals[itFace1.getIndex()];
+			// Discard faces with normals pointing in the opposite direction
+			if (glm::dot(faceNormal, direction) < -mScaledEpsilon) { continue; }
 
-			std::tie(intersects1, intersection1) = projectPointInDirection(origin, direction, face1Point, face1Normal);
-			if (intersects1) {
-				intersects1 = isPointBetweenHEEdges(meshData, itFace1->edge, face1Normal, intersection1);
+			auto [intersects, intersection] = rayPlaneIntersection(origin, direction, facePoint, faceNormal, mScaledEpsilon);
+			if (intersects && isPointBetweenHEEdges(meshData, itFace->edge, faceNormal, intersection)) {
+				return std::make_pair(intersects, intersection);
 			}
 		}
 
-		// Check if the origin is on the same plane than the first HEFace
-		if (intersects1
-			&& (itFace1 != meshData.faces.end())
-			&& (glm::dot(origin - face1Point, face1Normal) < mScaledEpsilon)
-		) {
-			// Search another intersection point (a convex mesh has at most
-			// two intersections)
-			for (itFace2 = ++itFace1; (itFace2 != meshData.faces.end()) && !intersects2; ++itFace2) {
-				face2Point = meshData.vertices[ meshData.edges[itFace2->edge].vertex ].location;
-				face2Normal = faceNormals[itFace2.getIndex()];
-
-				std::tie(intersects2, intersection2) = projectPointInDirection(origin, direction, face2Point, face2Normal);
-				if (intersects2) {
-					intersects2 = isPointBetweenHEEdges(meshData, itFace2->edge, face2Normal, intersection2);
-
-					// Check if the intersection point is the same than the
-					// first one
-					if ( glm::all(glm::epsilonEqual(intersection1, intersection2, mScaledEpsilon)) ) {
-						intersects2 = false;
-					}
-				}
-			}
-		}
-
-		// Return the furthest intersection point from the origin
-		float length1 = (intersects1)? glm::length(intersection1 - origin) : -std::numeric_limits<float>::max();
-		float length2 = (intersects2)? glm::length(intersection2 - origin) : -std::numeric_limits<float>::max();
-		return std::make_pair(intersects1, (length1 > length2)? intersection1 : intersection2);
+		return std::make_pair(false, glm::vec3(0.0f));
 	}
 
 

@@ -68,7 +68,7 @@ bool compareMeshes(const HalfEdgeMesh& mesh1, const HalfEdgeMesh& mesh2)
 TEST(MeshGeneration, calculateQuickHull1)
 {
 	HalfEdgeMesh originalMesh = createTestMesh1().first;
-	HalfEdgeMesh expectedMesh = createTestMesh2();
+	HalfEdgeMesh expectedMesh = createTestMesh2().first;
 
 	QuickHull qh(0.0001f);
 	qh.calculate(originalMesh);
@@ -95,22 +95,32 @@ TEST(MeshGeneration, calculateHACD1)
 	auto resultMeshes = hacd.getMeshes();
 	auto expectedMeshes = createTestMesh3();
 
-	EXPECT_TRUE(
-		(resultMeshes.size() == expectedMeshes.size())
-		&& std::all_of(
-			resultMeshes.begin(), resultMeshes.end(),
-			[&](const HalfEdgeMesh& mesh1) {
-				return std::any_of(
-					expectedMeshes.begin(), expectedMeshes.end(),
-					[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
-				);
-			}
-		)
-	);
+	ASSERT_EQ(resultMeshes.size(), expectedMeshes.size());
+	EXPECT_TRUE(std::all_of(
+		resultMeshes.begin(), resultMeshes.end(),
+		[&](const HalfEdgeMesh& mesh1) {
+			return std::any_of(
+				expectedMeshes.begin(), expectedMeshes.end(),
+				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
+			);
+		}
+	));
 }
 
 
 TEST(MeshGeneration, calculateHACD2)
+{
+	HACD hacd(0.03f, 0.0001f);
+	hacd.calculate( createTestMesh5().first );
+
+	auto resultMeshes = hacd.getMeshes();
+	auto expectedMeshes = createTestMesh3();
+
+	ASSERT_EQ(resultMeshes.size(), static_cast<std::size_t>(2));
+}
+
+
+TEST(MeshGeneration, calculateHACD3)
 {
 	HACD hacd(0.03f, 0.0001f);
 	hacd.calculate( createTestTube1() );
@@ -118,16 +128,14 @@ TEST(MeshGeneration, calculateHACD2)
 	auto resultMeshes = hacd.getMeshes();
 	auto expectedMeshes = createTestTube2();
 
-	EXPECT_TRUE(
-		(resultMeshes.size() == expectedMeshes.size())
-		&& std::all_of(
-			resultMeshes.begin(), resultMeshes.end(),
-			[&](const HalfEdgeMesh& mesh1) {
-				return std::any_of(
-					expectedMeshes.begin(), expectedMeshes.end(),
-					[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
-				);
-			}
-		)
-	);
+	ASSERT_EQ(resultMeshes.size(), expectedMeshes.size());
+	EXPECT_TRUE(std::all_of(
+		resultMeshes.begin(), resultMeshes.end(),
+		[&](const HalfEdgeMesh& mesh1) {
+			return std::any_of(
+				expectedMeshes.begin(), expectedMeshes.end(),
+				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
+			);
+		}
+	));
 }
