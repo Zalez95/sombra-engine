@@ -174,6 +174,24 @@ TEST(HalfEdgeMesh, calculateFaceNormal3)
 }
 
 
+TEST(HalfEdgeMesh, calculateFaceCentroid1)
+{
+	HalfEdgeMesh meshData;
+	std::array<int, 3> vertexIndices = {
+		addVertex(meshData, { -2.0f, -1.0f, 7.0f }),
+		addVertex(meshData, { -2.0f, -1.0f, 2.3f }),
+		addVertex(meshData, { -2.0f, -1.0f, 5.0f })
+	};
+	addFace(meshData, vertexIndices.begin(), vertexIndices.end());
+
+	const glm::vec3 expectedCentroid(0-2.0f, -1.0f, 4.766666666f);
+	glm::vec3 centroid = calculateFaceCentroid(meshData, 0);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(centroid[i], expectedCentroid[i], kTolerance);
+	}
+}
+
+
 TEST(HalfEdgeMesh, calculateFaceArea1)
 {
 	HalfEdgeMesh meshData;
@@ -232,6 +250,30 @@ TEST(HalfEdgeMesh, calculateAABB1)
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb.minimum[i], expectedAABB.minimum[i], kTolerance);
 		EXPECT_NEAR(aabb.maximum[i], expectedAABB.maximum[i], kTolerance);
+	}
+}
+
+
+TEST(HalfEdgeMesh, calculateCentroid1)
+{
+	HalfEdgeMesh meshData = createTestMesh2().first;
+
+	const glm::vec3 expectedCentroid(0.5f, 0.0f, 0.0f);
+	glm::vec3 centroid = calculateCentroid(meshData);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(centroid[i], expectedCentroid[i], kTolerance);
+	}
+}
+
+
+TEST(HalfEdgeMesh, calculateCentroid2)
+{
+	HalfEdgeMesh meshData;
+
+	const glm::vec3 expectedCentroid(0.0f);
+	glm::vec3 centroid = calculateCentroid(meshData);
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(centroid[i], expectedCentroid[i], kTolerance);
 	}
 }
 

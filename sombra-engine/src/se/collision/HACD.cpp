@@ -43,7 +43,7 @@ namespace se::collision {
 			// Filter the Graph Edges marked as removed or with a concavity
 			// measure larger than the maximum concavity
 			if (curData.remove) { continue; }
-			if (curData.concavity >= mMaximumConcavity * mNormalizationFactor) { continue; }
+			if (curData.concavity >= mMaximumConcavity * mAABBSize) { continue; }
 
 			// 1. Update the ancestors of the first vertex with the second one's
 			// ancestors
@@ -102,17 +102,15 @@ namespace se::collision {
 		// 3. Calculate the initial dual graph of the triangulated mesh
 		mDualGraph = createDualGraph(mMesh);
 
-		// 4. Calculate the AABB of the mesh
+		// 4. Calculate the AABB size of the mesh
 		AABB meshAABB = calculateAABB(mMesh);
-
-		// 5. Calculate the normalization factor of the triangulated mesh
-		mNormalizationFactor = calculateNormalizationFactor(meshAABB);
+		mAABBSize = glm::length(meshAABB.maximum - meshAABB.minimum);
 
 		// 6. Calculate the scaled epsilon value
-		mScaledEpsilon = mNormalizationFactor * mEpsilon;
+		mScaledEpsilon = mAABBSize * mEpsilon;
 
 		// 7. Calculate the aspect ratio factor of the triangulated mesh
-		mAspectRatioFactor = calculateAspectRatioFactor(mMaximumConcavity, mNormalizationFactor);
+		mAlpha = calculateAspectRatioFactor(mMaximumConcavity, mAABBSize);
 	}
 
 
@@ -120,17 +118,48 @@ namespace se::collision {
 		const DualGraphVertex& vertex1, const DualGraphVertex& vertex2
 	) const
 	{
-		// Calculate the surface created from the current vertices and
+		// 1. Calculate the surface created from the current vertices and
 		// their ancestors
 		auto surfaceFaceIndices = calculateSurfaceFaceIndices(vertex1, vertex2);
 		auto [surface, surfaceNormals] = getMeshFromIndices(surfaceFaceIndices, mMesh, mFaceNormals);
 
-		// Calculate the cost of the surface
+		// 2. Calculate the Concavity of the surface
+		float concavity = 0.0f;
+
+		// Calculate the convex hull of the surface
 		QuickHull qh(mEpsilon);
 		qh.calculate(surface);
-		float concavity = calculateConcavity(surface, surfaceNormals, qh.getMesh(), qh.getNormals());
+		const HalfEdgeMesh& convexHullMesh = qh.getMesh();
+		const FaceNormals& convexHullNormals = qh.getNormals();
+
+		// Add the 2D concavity
+		float surfaceArea = calculateArea(surface);
+		float convexHullArea = calculateArea(convexHullMesh) / 2.0f;
+		float convexHullVolume = calculateVolume(convexHullMesh, convexHullNormals);
+		float convexHullVolumeAreaRatio = convexHullVolume / convexHullArea;
+
+		float weight2D = std::max(0.0f, 1.0f - std::pow(convexHullVolumeAreaRatio / (0.01f * mAABBSize), 2.0f));
+		concavity += weight2D * calculateConcavity2D(surfaceArea, convexHullArea);
+
+		// Check if the convex hull is flat
+		glm::vec3 polygonNormal = (convexHullNormals.empty())? glm::vec3(0.0f) : *convexHullNormals.begin();
+		if (!std::all_of(
+				convexHullNormals.begin(), convexHullNormals.end(),
+				[&](const glm::vec3& normal) { return glm::all(glm::epsilonEqual(normal, polygonNormal, mScaledEpsilon)); }
+			)
+		) {
+			// Add the 3D concavity
+			concavity += calculateConcavity3D(surface, surfaceNormals, convexHullMesh, convexHullNormals);
+		}
+
+		// 3. Calculate the aspect ratio of the surface
 		float aspectRatio = calculateAspectRatio(surface);
-		float cost = calculateDecimationCost(concavity, aspectRatio);
+
+		// 4. Calculate the cost of the surface
+		float cost = concavity / mAABBSize
+			+ mAlpha * (1.0f - weight2D) * aspectRatio
+			+ mBeta * convexHullVolume / std::pow(mAABBSize, 3.0f)
+			+ mGamma * static_cast<float>(surface.vertices.size()) / mMesh.vertices.size();
 
 		return { vertex1.id, vertex2.id, cost, concavity, false };
 	}
@@ -175,7 +204,7 @@ namespace se::collision {
 			// Push the convex hull of the surface to the convex surfaces vector
 			qh.resetData();
 			qh.calculate(surface);
-			mConvexMeshes.push_back(qh.getMesh());
+			mConvexMeshes.emplace_back(qh.getMesh(), qh.getNormals());
 		}
 	}
 
@@ -228,12 +257,6 @@ namespace se::collision {
 	}
 
 
-	float HACD::calculateNormalizationFactor(const AABB& aabb)
-	{
-		return glm::length(aabb.maximum - aabb.minimum);
-	}
-
-
 	float HACD::calculateAspectRatioFactor(float maximumConcavity, float normalizationFactor)
 	{
 		return maximumConcavity / (10.0f * normalizationFactor);
@@ -251,12 +274,12 @@ namespace se::collision {
 	}
 
 
-	std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> HACD::getMeshFromIndices(
+	std::pair<HalfEdgeMesh, HACD::FaceNormals> HACD::getMeshFromIndices(
 		const std::vector<int>& iFaces,
-		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals
+		const HalfEdgeMesh& meshData, const FaceNormals& faceNormals
 	) {
 		HalfEdgeMesh newMesh;
-		ContiguousVector<glm::vec3> newMeshNormals;
+		FaceNormals newMeshNormals;
 
 		std::map<int, int> vertexMap;
 		for (int iFace1 : iFaces) {
@@ -283,55 +306,39 @@ namespace se::collision {
 	}
 
 
-	float HACD::calculateConcavity(
-		const HalfEdgeMesh& originalMesh, const ContiguousVector<glm::vec3>& faceNormals,
-		const HalfEdgeMesh& convexHullMesh, const ContiguousVector<glm::vec3>& convexHullNormals
-	) const
-	{
-		float concavity = 0.0f;
-
-		// Check if the convex hull is flat
-		glm::vec3 polygonNormal = (convexHullNormals.empty())? glm::vec3(0.0f) : *convexHullNormals.begin();
-		if (std::all_of(
-				convexHullNormals.begin(), convexHullNormals.end(),
-				[&](const glm::vec3& normal) { return glm::all(glm::epsilonEqual(normal, polygonNormal, mScaledEpsilon)); }
-			)
-		) {
-			// Add the 3D concavity
-			concavity += calculateConcavity3D(originalMesh, faceNormals, convexHullMesh, convexHullNormals);
-		}
-
-		// Add the 2D concavity
-		float originalArea = calculateArea(originalMesh);
-		float convexHullArea = calculateArea(convexHullMesh);
-		float convexHullVolume = calculateVolume(convexHullMesh, convexHullNormals);
-		float weight2D = std::max(0.0f, 1.0f - std::pow(convexHullVolume / convexHullArea, 2.0f));
-		concavity += weight2D * calculateConcavity2D(originalArea, convexHullArea);
-
-		return concavity;
-	}
-
-
 	float HACD::calculateConcavity2D(float originalArea, float convexHullArea)
 	{
-		float areaDifference = convexHullArea - originalArea;
-		return (areaDifference < 0.0f)? 0.0f : std::sqrt(areaDifference);
+		return std::sqrt( std::abs(convexHullArea - originalArea) );
 	}
 
 
 	float HACD::calculateConcavity3D(
-		const HalfEdgeMesh& originalMesh, const ContiguousVector<glm::vec3>& faceNormals,
-		const HalfEdgeMesh& convexHullMesh, const ContiguousVector<glm::vec3>& convexHullNormals
+		const HalfEdgeMesh& originalMesh, const FaceNormals& faceNormals,
+		const HalfEdgeMesh& convexHullMesh, const FaceNormals& convexHullNormals
 	) const
 	{
 		float maxConcavity = -std::numeric_limits<float>::max();
+
+		// Calculate the concavity with each HEVertex
 		for (auto itVertex = originalMesh.vertices.begin(); itVertex != originalMesh.vertices.end(); ++itVertex) {
-			glm::vec3 vertexLocation = itVertex->location;
-			glm::vec3 vertexNormal = calculateVertexNormal(originalMesh, faceNormals, itVertex.getIndex());
+			const glm::vec3& vertexLocation = itVertex->location;
+			const glm::vec3& vertexNormal = calculateVertexNormal(originalMesh, faceNormals, itVertex.getIndex());
 
 			auto [intersects, intersection] = getInternalIntersection(convexHullMesh, convexHullNormals, vertexLocation, vertexNormal);
 			if (intersects) {
 				float currentConcavity = glm::length(intersection - vertexLocation);
+				maxConcavity = std::max(maxConcavity, currentConcavity);
+			}
+		}
+
+		// Calculate the concavity with each HEFace centroid
+		for (auto itFace = originalMesh.faces.begin(); itFace != originalMesh.faces.end(); ++itFace) {
+			const glm::vec3& centroidLocation = calculateFaceCentroid(originalMesh, itFace.getIndex());
+			const glm::vec3& faceNormal = faceNormals[itFace.getIndex()];
+
+			auto [intersects, intersection] = getInternalIntersection(convexHullMesh, convexHullNormals, centroidLocation, faceNormal);
+			if (intersects) {
+				float currentConcavity = glm::length(intersection - centroidLocation);
 				maxConcavity = std::max(maxConcavity, currentConcavity);
 			}
 		}
@@ -364,18 +371,12 @@ namespace se::collision {
 		// triangles
 		float area = calculateArea(meshData);
 
-		return std::pow(perimeter, 2) / (4 * glm::pi<float>() * area);
-	}
-
-
-	float HACD::calculateDecimationCost(float concavity, float aspectRatio) const
-	{
-		return concavity / mNormalizationFactor + mAspectRatioFactor * aspectRatio;
+		return perimeter * perimeter / (4 * glm::pi<float>() * area);
 	}
 
 
 	std::pair<bool, glm::vec3> HACD::getInternalIntersection(
-		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
+		const HalfEdgeMesh& meshData, const FaceNormals& faceNormals,
 		const glm::vec3& origin, const glm::vec3& direction
 	) const
 	{

@@ -70,19 +70,30 @@ namespace game {
 	Game::~Game() {}
 
 
-	se::loaders::RawMesh createRawMesh(const se::collision::HalfEdgeMesh& heMesh)
-	{
+	se::loaders::RawMesh createRawMesh(
+		const se::collision::HalfEdgeMesh& heMesh,
+		const se::collision::ContiguousVector<glm::vec3>& normals
+	) {
 		se::loaders::RawMesh rawMesh("heMeshTriangles");
 
 		// The faces must be triangles
 		se::collision::HalfEdgeMesh heMeshTriangles = se::collision::triangulateFaces(heMesh);
 
 		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
+		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
 		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
 
 		std::map<int, int> vertexMap;
 		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
+			glm::vec3 normal = se::collision::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
+
+			glm::vec3 c1 = glm::cross(normal, glm::vec3(0.0f, 0.0f, 1.0f));
+			glm::vec3 c2 = glm::cross(normal, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::vec3 tangent = (glm::length(c1) > glm::length(c2))? c1 : c2;
+
 			rawMesh.positions.push_back(itVertex->location);
+			rawMesh.normals.push_back(normal);
+			rawMesh.tangents.push_back(tangent);
 			vertexMap.emplace(itVertex.getIndex(), rawMesh.positions.size() - 1);
 		}
 
@@ -468,22 +479,31 @@ namespace game {
 		mPhysicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		// HACD Tube
-		hacd.calculate( createTestTube1() );
-		for (const se::collision::HalfEdgeMesh& heMesh : hacd.getMeshes()) {
+		se::collision::HalfEdgeMesh tube = createTestTube1();
+		glm::vec3 tubeCentroid = se::collision::calculateCentroid(tube);
+		hacd.calculate(tube);
+		for (const auto& [heMesh, normals] : hacd.getMeshes()) {
+			glm::vec3 sliceCentroid = se::collision::calculateCentroid(heMesh);
+			glm::vec3 displacement = sliceCentroid - tubeCentroid;
+			if (glm::length(displacement) > 0.0f) {
+				displacement = glm::normalize(displacement);
+			}
+			displacement *= 0.1f;
+
 			auto tubeSlice = std::make_unique<se::app::Entity>("tube");
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
-			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f);
+			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
 				"tmp_material",
 				se::graphics::PBRMetallicRoughness{
-					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f)),
-					nullptr, 0.75f, 0.5f, nullptr
+					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
+					nullptr, 0.2f, 0.5f, nullptr
 				},
 				nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
-			auto tmpRawMesh = createRawMesh(heMesh);
+			auto tmpRawMesh = createRawMesh(heMesh, normals);
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(tmpRawMesh));
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial);
 			mGraphicsManager->addEntity(tubeSlice.get(), std::move(renderable3D2));

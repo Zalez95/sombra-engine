@@ -164,7 +164,7 @@ namespace se::collision {
 	int mergeFaces(HalfEdgeMesh& meshData, int iFace1, int iFace2);
 
 
-	/** Returns the HEVertex indices of the given HEFace
+	/** Calculates the HEVertex indices of the given HEFace
 	 *
 	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
 	 * @param	iFace the index of the HEFace
@@ -175,6 +175,16 @@ namespace se::collision {
 		const HalfEdgeMesh& meshData, int iFace,
 		OutputIterator result
 	);
+
+#ifndef NDEBUG
+	/** Calculates the HEVertex indices of the given HEFace
+	 *
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
+	 * @return	a vector with the indices of the HEFace's HEVertices
+	 * @note	this function is only for debugging purposes */
+	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace);
+#endif		// NDEBUG
 
 }
 

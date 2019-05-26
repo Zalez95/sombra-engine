@@ -54,6 +54,14 @@ namespace se::collision {
 	glm::vec3 calculateFaceNormal(const HalfEdgeMesh& meshData, int iFace);
 
 
+	/** Calculates the centroid of the given HEFace
+	 *
+	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
+	 * @param	iFace the index of the HEFace
+	 * @return	the centroid of the HEFace */
+	glm::vec3 calculateFaceCentroid(const HalfEdgeMesh& meshData, int iFace);
+
+
 	/** Calculates the area of the given HEFace
 	 *
 	 * @param	meshData the HalfEdgeMesh where the HEFace is located in
@@ -68,6 +76,13 @@ namespace se::collision {
 	 * @param	meshData the HalfEdgeMesh to calculate its AABB
 	 * @return	the AABB of the HalfEdgeMesh */
 	AABB calculateAABB(const HalfEdgeMesh& meshData);
+
+
+	/** Calculates the centroid of the given HalfEdgeMesh
+	 *
+	 * @param	meshData the HalfEdgeMesh
+	 * @return	the centroid of the HEFace */
+	glm::vec3 calculateCentroid(const HalfEdgeMesh& meshData);
 
 
 	/** Calculates the area of the given HalfEdgeMesh

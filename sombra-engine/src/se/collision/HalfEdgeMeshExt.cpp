@@ -175,6 +175,32 @@ namespace se::collision {
 	}
 
 
+	glm::vec3 calculateFaceCentroid(const HalfEdgeMesh& meshData, int iFace)
+	{
+		glm::vec3 centroid(0.0f);
+
+		if (meshData.faces.isActive(iFace)) {
+			float vertexCount = 0.0f;
+
+			int iInitialEdge = meshData.faces[iFace].edge;
+			int iCurrentEdge = iInitialEdge;
+			do {
+				const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
+
+				centroid += meshData.vertices[currentEdge.vertex].location;
+				vertexCount++;
+
+				iCurrentEdge = currentEdge.nextEdge;
+			}
+			while (iCurrentEdge != iInitialEdge);
+
+			centroid /= vertexCount;
+		}
+
+		return centroid;
+	}
+
+
 	float calculateFaceArea(const HalfEdgeMesh& meshData, int iFace)
 	{
 		float area = 0.0f;
@@ -219,6 +245,21 @@ namespace se::collision {
 	}
 
 
+	glm::vec3 calculateCentroid(const HalfEdgeMesh& meshData)
+	{
+		glm::vec3 centroid = std::accumulate(
+			meshData.vertices.begin(), meshData.vertices.end(), glm::vec3(0.0f),
+			[](const HEVertex& v1, const HEVertex& v2) { return v1.location + v2.location; }
+		);
+
+		if (!meshData.vertices.empty()) {
+			centroid /= static_cast<float>(meshData.vertices.size());
+		}
+
+		return centroid;
+	}
+
+
 	float calculateArea(const HalfEdgeMesh& meshData)
 	{
 		float area = 0.0f;
@@ -234,11 +275,7 @@ namespace se::collision {
 		const ContiguousVector<glm::vec3>& faceNormals
 	) {
 		// Get the centroid of the mesh
-		glm::vec3 centroid = std::accumulate(
-			meshData.vertices.begin(), meshData.vertices.end(), glm::vec3(0.0f),
-			[](const HEVertex& v1, const HEVertex& v2) { return v1.location + v2.location; }
-		);
-		centroid /= meshData.vertices.size();
+		glm::vec3 centroid = calculateCentroid(meshData);
 
 		// Calculate the sum of the volumes of the pyramids created with the
 		// HEFaces of the mesh and the centroid

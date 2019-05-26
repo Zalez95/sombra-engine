@@ -92,16 +92,16 @@ TEST(MeshGeneration, calculateHACD1)
 	HACD hacd(0.03f, 0.0001f);
 	hacd.calculate( createTestMesh1().first );
 
-	auto resultMeshes = hacd.getMeshes();
+	auto result = hacd.getMeshes();
 	auto expectedMeshes = createTestMesh3();
 
-	ASSERT_EQ(resultMeshes.size(), expectedMeshes.size());
+	ASSERT_EQ(result.size(), expectedMeshes.size());
 	EXPECT_TRUE(std::all_of(
-		resultMeshes.begin(), resultMeshes.end(),
-		[&](const HalfEdgeMesh& mesh1) {
+		result.begin(), result.end(),
+		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
 			return std::any_of(
 				expectedMeshes.begin(), expectedMeshes.end(),
-				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
+				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }
 			);
 		}
 	));
@@ -113,10 +113,10 @@ TEST(MeshGeneration, calculateHACD2)
 	HACD hacd(0.03f, 0.0001f);
 	hacd.calculate( createTestMesh5().first );
 
-	auto resultMeshes = hacd.getMeshes();
+	auto result = hacd.getMeshes();
 	auto expectedMeshes = createTestMesh3();
 
-	ASSERT_EQ(resultMeshes.size(), static_cast<std::size_t>(2));
+	ASSERT_EQ(result.size(), static_cast<std::size_t>(2));
 }
 
 
@@ -125,16 +125,16 @@ TEST(MeshGeneration, calculateHACD3)
 	HACD hacd(0.03f, 0.0001f);
 	hacd.calculate( createTestTube1() );
 
-	auto resultMeshes = hacd.getMeshes();
+	auto result = hacd.getMeshes();
 	auto expectedMeshes = createTestTube2();
 
-	ASSERT_EQ(resultMeshes.size(), expectedMeshes.size());
+	ASSERT_EQ(result.size(), expectedMeshes.size());
 	EXPECT_TRUE(std::all_of(
-		resultMeshes.begin(), resultMeshes.end(),
-		[&](const HalfEdgeMesh& mesh1) {
+		result.begin(), result.end(),
+		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
 			return std::any_of(
 				expectedMeshes.begin(), expectedMeshes.end(),
-				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(mesh1, mesh2); }
+				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }
 			);
 		}
 	));

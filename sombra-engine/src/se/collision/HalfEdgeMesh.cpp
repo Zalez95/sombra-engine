@@ -228,4 +228,13 @@ namespace se::collision {
 		return iFace1;
 	}
 
+#ifndef NDEBUG
+	std::vector<int> getFaceIndices(const HalfEdgeMesh& meshData, int iFace)
+	{
+		std::vector<int> result;
+		getFaceIndices(meshData, iFace, std::back_inserter(result));
+		return result;
+	}
+#endif
+
 }
