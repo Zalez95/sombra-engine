@@ -10,6 +10,22 @@
 
 namespace se::collision {
 
+	/** Struct QH2DStackContent, its the data structure used in the QuickHull 2D
+	 * algorithm for storing its state in a stack instead of using a
+	 * recursive algorithm */
+	struct QH2DStackContent
+	{
+		/** The state of the current iteration */
+		enum { Search, Add, End } state;
+
+		/** The indices of the vertices of the current edge */
+		int iVertex1, iVertex2;
+
+		/** The indices of the outside vertices of the current interation */
+		std::vector<int> outsideVertices;
+	};
+
+
 	void QuickHull::calculate(const HalfEdgeMesh& originalMesh)
 	{
 		// Calculate the scaled epsilon value
@@ -153,7 +169,7 @@ namespace se::collision {
 		glm::vec3 dirP0P1 = p1 - p0, dirP0P2 = p2 - p1, planeNormal = glm::cross(dirP0P1, dirP0P2);
 
 		// Calculate the convex hull vertices with the iterative quickhull 2D algorithm
-		std::stack<QH2DData> quickHull2DStack;
+		std::stack<QH2DStackContent> stack;
 
 		std::vector<int> allVertexIndices, faceIndices;
 		for (auto itVertex = originalMesh.vertices.begin(); itVertex != originalMesh.vertices.end(); ++itVertex) {
@@ -161,43 +177,43 @@ namespace se::collision {
 		}
 
 		auto halfVertexIndices2 = filterOutsideVertices(originalMesh.vertices, allVertexIndices, planeNormal, iSimplexVertices[1], iSimplexVertices[0]);
-		quickHull2DStack.push({ QH2DData::Add, iSimplexVertices[1], iSimplexVertices[0], halfVertexIndices2 });
+		stack.push({ QH2DStackContent::Add, iSimplexVertices[1], iSimplexVertices[0], halfVertexIndices2 });
 
 		auto halfVertexIndices1 = filterOutsideVertices(originalMesh.vertices, allVertexIndices, planeNormal, iSimplexVertices[0], iSimplexVertices[1]);
-		quickHull2DStack.push({ QH2DData::Add, iSimplexVertices[0], iSimplexVertices[1], halfVertexIndices1 });
+		stack.push({ QH2DStackContent::Add, iSimplexVertices[0], iSimplexVertices[1], halfVertexIndices1 });
 
-		while (!quickHull2DStack.empty()) {
-			QH2DData& currentQH2DData = quickHull2DStack.top();
-			switch (currentQH2DData.state) {
-			case QH2DData::Search: {
-				if (!currentQH2DData.outsideVertices.empty()) {
-					// 1. Get the furthest vertex from the edge between the vertex 1 and 2
-					int iFurthestVertex = getFurthestVertexFromEdge(
-						originalMesh.vertices, currentQH2DData.outsideVertices,
-						currentQH2DData.iVertex1, currentQH2DData.iVertex2
-					);
+		while (!stack.empty()) {
+			auto& [state, iVertex1, iVertex2, outsideVertices] = stack.top();
+			switch (state) {
+				case QH2DStackContent::Search:
+					if (!outsideVertices.empty()) {
+						// 1. Get the furthest vertex from the edge between the
+						// vertex 1 and 2
+						int iFurthestVertex = getFurthestVertexFromEdge(
+							originalMesh.vertices, outsideVertices,
+							iVertex1, iVertex2
+						);
 
-					// 4. Search the next convex hull vertex in the set of vertices
-					// outside the edge furthest-vertex2
-					auto outsideVertices2 = filterOutsideVertices(originalMesh.vertices, currentQH2DData.outsideVertices, planeNormal, iFurthestVertex, currentQH2DData.iVertex2);
-					quickHull2DStack.push({ QH2DData::Add, iFurthestVertex, currentQH2DData.iVertex2, outsideVertices2 });
+						// 4. Search the next convex hull vertex in the set of
+						// vertices outside the edge furthest-vertex2
+						auto outsideVertices2 = filterOutsideVertices(originalMesh.vertices, outsideVertices, planeNormal, iFurthestVertex, iVertex2);
+						stack.push({ QH2DStackContent::Add, iFurthestVertex, iVertex2, outsideVertices2 });
 
-					// 2. Search the next convex hull vertex in the set of vertices
-					// outside the edge vertex1-furthest
-					auto outsideVertices1 = filterOutsideVertices(originalMesh.vertices, currentQH2DData.outsideVertices, planeNormal, currentQH2DData.iVertex1, iFurthestVertex);
-					quickHull2DStack.push({ QH2DData::Search, currentQH2DData.iVertex1, iFurthestVertex, outsideVertices1 });
-				}
-				currentQH2DData.state = QH2DData::End;
-				break;
-			}
-			case QH2DData::Add:
-				// 3. Add the furthest vertex (iV1) to the convex hull
-				faceIndices.push_back( addVertex(mConvexHullMesh, originalMesh.vertices[currentQH2DData.iVertex1].location) );
-				currentQH2DData.state = QH2DData::Search;	// Continue searching
-				break;
-			case QH2DData::End:
-				quickHull2DStack.pop();
-				break;
+						// 2. Search the next convex hull vertex in the set of
+						// vertices outside the edge vertex1-furthest
+						auto outsideVertices1 = filterOutsideVertices(originalMesh.vertices, outsideVertices, planeNormal, iVertex1, iFurthestVertex);
+						stack.push({ QH2DStackContent::Search, iVertex1, iFurthestVertex, outsideVertices1 });
+					}
+					state = QH2DStackContent::End;
+					break;
+				case QH2DStackContent::Add:
+					// 3. Add the furthest vertex (iV1) to the convex hull
+					faceIndices.push_back( addVertex(mConvexHullMesh, originalMesh.vertices[iVertex1].location) );
+					state = QH2DStackContent::Search;	// Continue searching
+					break;
+				case QH2DStackContent::End:
+					stack.pop();
+					break;
 			}
 		}
 

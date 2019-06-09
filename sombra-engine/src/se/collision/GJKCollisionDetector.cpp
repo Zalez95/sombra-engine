@@ -45,20 +45,20 @@ namespace se::collision {
 
 		bool ret;
 		switch (simplex.size() - 1) {
-		case 0:
-			ret = doSimplex0D(simplex, searchDir);
-			break;
-		case 1:
-			ret = doSimplex1D(simplex, searchDir);
-			break;
-		case 2:
-			ret = doSimplex2D(simplex, searchDir);
-			break;
-		case 3:
-			ret = doSimplex3D(simplex, searchDir);
-			break;
-		default:
-			ret = false;
+			case 0:
+				ret = doSimplex0D(simplex, searchDir);
+				break;
+			case 1:
+				ret = doSimplex1D(simplex, searchDir);
+				break;
+			case 2:
+				ret = doSimplex2D(simplex, searchDir);
+				break;
+			case 3:
+				ret = doSimplex3D(simplex, searchDir);
+				break;
+			default:
+				ret = false;
 		}
 
 		return ret;

@@ -4,6 +4,19 @@
 
 namespace se::collision {
 
+	AABB expand(const AABB& aabb1, const AABB& aabb2)
+	{
+		AABB ret;
+
+		for (int i = 0; i < 3; ++i) {
+			ret.minimum[i] = std::min(aabb1.minimum[i], aabb2.minimum[i]);
+			ret.maximum[i] = std::max(aabb1.maximum[i], aabb2.maximum[i]);
+		}
+
+		return ret;
+	}
+
+
 	bool overlaps(const AABB& aabb1, const AABB& aabb2)
 	{
 		const AABB *b1 = &aabb1, *b2 = &aabb2;
@@ -17,6 +30,35 @@ namespace se::collision {
 		bool intersecZ = (b1->maximum.z >= b2->minimum.z) && (b1->minimum.z <= b2->maximum.z);
 
 		return (intersecX && intersecY && intersecZ);
+	}
+
+
+	bool intersects(
+		const AABB& aabb,
+		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+		float epsilon
+	) {
+		float distXMin = (aabb.minimum.x - rayOrigin.x) / rayDirection.x;
+		float distXMax = (aabb.maximum.x - rayOrigin.x) / rayDirection.x;
+		if (distXMax < distXMin) { std::swap(distXMin, distXMax); }
+
+		float distYMin = (aabb.minimum.y - rayOrigin.y) / rayDirection.y;
+		float distYMax = (aabb.maximum.y - rayOrigin.y) / rayDirection.y;
+		if (distYMax < distYMin) { std::swap(distYMin, distYMax); }
+
+		if ((distYMin > distXMax + epsilon) || (distXMin > distYMax + epsilon)) {
+			return false;
+		}
+
+		float distZMin = (aabb.minimum.z - rayOrigin.z) / rayDirection.z;
+		float distZMax = (aabb.maximum.z - rayOrigin.z) / rayDirection.z;
+		if (distZMax < distZMin) { std::swap(distZMin, distZMax); }
+
+		if ((distZMin > distXMax + epsilon) || (distXMin > distZMax + epsilon)) {
+			return false;
+		}
+
+		return true;
 	}
 
 

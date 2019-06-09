@@ -13,22 +13,6 @@ namespace se::collision {
 	 */
 	class QuickHull
 	{
-	private:	// Nested types
-		/** Struct QH2DData, its the data structure used in the QuickHull 2D
-		 * algorithm for storing its state in a stack instead of using a
-		 * recursive algorithm */
-		struct QH2DData
-		{
-			/** The state of the current iteration */
-			enum { Search, Add, End } state;
-
-			/** The indices of the vertices of the current edge */
-			int iVertex1, iVertex2;
-
-			/** The indices of the outside vertices of the current interation */
-			std::vector<int> outsideVertices;
-		};
-
 	private:	// Attributes
 		/** The precision with which we will compare the HEVertices to the
 		 * HEFaces of the Meshes when checking if they're over or inside

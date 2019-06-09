@@ -436,8 +436,7 @@ namespace se::loaders {
 				const utils::Image& image = mGLTFData.images[sourceId];
 
 				graphics::ColorFormat format = graphics::ColorFormat::RGB;
-				switch (image.channels)
-				{
+				switch (image.channels) {
 					case 1:	format = graphics::ColorFormat::Red;	break;
 					case 2:	format = graphics::ColorFormat::Alpha;	break;
 					case 3:	format = graphics::ColorFormat::RGB;	break;
