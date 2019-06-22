@@ -11,7 +11,8 @@ TEST(MeshRaycast, closestHitFalse)
 	auto [mesh, normals] = createTestMesh1();
 	const glm::vec3 origin(1.238742113f, 3.651285171f, 3.549336910f), direction(-0.617665886f, -0.526446342f, -0.584245741f);
 
-	HalfEdgeMeshRaycast raycast(mesh, normals, kTolerance, 16);
+	HalfEdgeMeshRaycast raycast(kTolerance, 16);
+	raycast.buildKDTree(&mesh, &normals);
 	auto result = raycast.closestHit(origin, direction);
 
 	EXPECT_FALSE(result.intersects);
@@ -26,7 +27,8 @@ TEST(MeshRaycast, closestHitVertex)
 	const glm::vec3 expectedIntersection(-0.25f, 1.0f, 2.75f);
 	const float expectedDistance = 5.676666652f;
 
-	HalfEdgeMeshRaycast raycast(mesh, normals, kTolerance, 16);
+	HalfEdgeMeshRaycast raycast(kTolerance, 16);
+	raycast.buildKDTree(&mesh, &normals);
 	auto result = raycast.closestHit(origin, direction);
 
 	EXPECT_TRUE(result.intersects);
@@ -46,7 +48,8 @@ TEST(MeshRaycast, closestHitEdge)
 	const glm::vec3 expectedIntersection(-0.25f, -1.0f, -0.842693328f);
 	const float expectedDistance = 4.111034913f;
 
-	HalfEdgeMeshRaycast raycast(mesh, normals, kTolerance, 16);
+	HalfEdgeMeshRaycast raycast(kTolerance, 16);
+	raycast.buildKDTree(&mesh, &normals);
 	auto result = raycast.closestHit(origin, direction);
 
 	EXPECT_TRUE(result.intersects);
@@ -66,7 +69,8 @@ TEST(MeshRaycast, closestHitFace)
 	const glm::vec3 expectedIntersection(0.833188056f, -0.069930315f, 1.603766441f);
 	const float expectedDistance = 1.438982527f;
 
-	HalfEdgeMeshRaycast raycast(mesh, normals, kTolerance, 16);
+	HalfEdgeMeshRaycast raycast(kTolerance, 16);
+	raycast.buildKDTree(&mesh, &normals);
 	auto result = raycast.closestHit(origin, direction);
 
 	EXPECT_TRUE(result.intersects);
@@ -86,7 +90,8 @@ TEST(MeshRaycast, closestHitInside)
 	const glm::vec3 expectedIntersection(0.289327859f, -0.189212322f, 2.103601455f);
 	const float expectedDistance = 1.934026232f;
 
-	HalfEdgeMeshRaycast raycast(mesh, normals, kTolerance, 16);
+	HalfEdgeMeshRaycast raycast(kTolerance, 16);
+	raycast.buildKDTree(&mesh, &normals);
 	auto result = raycast.closestHit(origin, direction);
 
 	EXPECT_TRUE(result.intersects);

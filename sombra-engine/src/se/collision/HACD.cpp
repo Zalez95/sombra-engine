@@ -99,10 +99,13 @@ namespace se::collision {
 			mFaceNormals[it.getIndex()] = calculateFaceNormal(mMesh, it.getIndex());
 		}
 
-		// 3. Calculate the initial dual graph of the triangulated mesh
+		// 3. Calculate the Raycast kd-tree object
+		mMeshRaycast.buildKDTree(&mMesh, &mFaceNormals);
+
+		// 4. Calculate the initial dual graph of the triangulated mesh
 		mDualGraph = createDualGraph(mMesh);
 
-		// 4. Calculate the AABB size of the mesh
+		// 5. Calculate the AABB size of the mesh
 		AABB meshAABB = calculateAABB(mMesh);
 		mAABBSize = glm::length(meshAABB.maximum - meshAABB.minimum);
 
@@ -319,27 +322,46 @@ namespace se::collision {
 	{
 		float maxConcavity = -std::numeric_limits<float>::max();
 
-		// Calculate the concavity with each HEVertex
+		HalfEdgeMeshRaycast convexHullRaycast(mEpsilon, mMaxKDTreeDepth);
+		convexHullRaycast.buildKDTree(&convexHullMesh, &convexHullNormals);
+
 		for (auto itVertex = originalMesh.vertices.begin(); itVertex != originalMesh.vertices.end(); ++itVertex) {
+			// Calculate the concavity with the HEVertex in the direction of
+			// its normal
 			const glm::vec3& vertexLocation = itVertex->location;
 			const glm::vec3& vertexNormal = calculateVertexNormal(originalMesh, faceNormals, itVertex.getIndex());
 
-			auto [intersects, intersection] = getInternalIntersection(convexHullMesh, convexHullNormals, vertexLocation, vertexNormal);
-			if (intersects) {
-				float currentConcavity = glm::length(intersection - vertexLocation);
-				maxConcavity = std::max(maxConcavity, currentConcavity);
+			RayHit rayHit = convexHullRaycast.closestHit(vertexLocation, vertexNormal);
+			if (rayHit.intersects) {
+				maxConcavity = std::max(maxConcavity, rayHit.distance);
 			}
 		}
 
-		// Calculate the concavity with each HEFace centroid
 		for (auto itFace = originalMesh.faces.begin(); itFace != originalMesh.faces.end(); ++itFace) {
+			// Calculate the concavity with the centroid of the HEFace in the
+			// direction of the HEFace normal
 			const glm::vec3& centroidLocation = calculateFaceCentroid(originalMesh, itFace.getIndex());
 			const glm::vec3& faceNormal = faceNormals[itFace.getIndex()];
 
-			auto [intersects, intersection] = getInternalIntersection(convexHullMesh, convexHullNormals, centroidLocation, faceNormal);
-			if (intersects) {
-				float currentConcavity = glm::length(intersection - centroidLocation);
-				maxConcavity = std::max(maxConcavity, currentConcavity);
+			glm::vec3 rayDirection = faceNormal;
+			glm::vec3 rayOrigin = centroidLocation + 2 * mEpsilon * rayDirection;
+			RayHit chRayHit = convexHullRaycast.closestHit(rayOrigin, rayDirection);
+			if (chRayHit.intersects) {
+				maxConcavity = std::max(maxConcavity, chRayHit.distance + 2 * mEpsilon);
+			}
+
+			// Calculate the concavity with a point behind the current HEFace
+			// in the direction of its HEFace normal
+			rayDirection = -faceNormal;
+			rayOrigin = centroidLocation + 2 * mEpsilon * rayDirection;
+			RayHit meshRayHit = mMeshRaycast.closestHit(rayOrigin, rayDirection);
+			if (meshRayHit.intersects) {
+				rayDirection = mFaceNormals[meshRayHit.iFace];
+				rayOrigin = meshRayHit.intersection;
+				chRayHit = convexHullRaycast.closestHit(rayOrigin, rayDirection);
+				if (chRayHit.intersects) {
+					maxConcavity = std::max(maxConcavity, chRayHit.distance + 2 * mEpsilon);
+				}
 			}
 		}
 
@@ -372,55 +394,6 @@ namespace se::collision {
 		float area = calculateArea(meshData);
 
 		return perimeter * perimeter / (4 * glm::pi<float>() * area);
-	}
-
-
-	std::pair<bool, glm::vec3> HACD::getInternalIntersection(
-		const HalfEdgeMesh& meshData, const FaceNormals& faceNormals,
-		const glm::vec3& origin, const glm::vec3& direction
-	) const
-	{
-		// Search the first intersected HEFace
-		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
-			glm::vec3 facePoint = meshData.vertices[ meshData.edges[itFace->edge].vertex ].location;
-			glm::vec3 faceNormal = faceNormals[itFace.getIndex()];
-
-			// Discard faces with normals pointing in the opposite direction
-			if (glm::dot(faceNormal, direction) < -mScaledEpsilon) { continue; }
-
-			auto [intersects, intersection] = rayPlaneIntersection(origin, direction, facePoint, faceNormal, mScaledEpsilon);
-			if (intersects && isPointBetweenHEEdges(meshData, itFace->edge, faceNormal, intersection)) {
-				return std::make_pair(intersects, intersection);
-			}
-		}
-
-		return std::make_pair(false, glm::vec3(0.0f));
-	}
-
-
-	bool HACD::isPointBetweenHEEdges(
-		const HalfEdgeMesh& meshData, int iInitialEdge,
-		const glm::vec3& loopNormal, const glm::vec3& point
-	) const
-	{
-		bool inside = true;
-
-		int iCurrentEdge = iInitialEdge;
-		do {
-			const HEEdge& currentEdge = meshData.edges[iCurrentEdge];
-			const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
-
-			glm::vec3 p1 = meshData.vertices[oppositeEdge.vertex].location;
-			glm::vec3 p2 = meshData.vertices[currentEdge.vertex].location;
-			if (glm::dot(glm::cross(p2 - p1, loopNormal), point - p1) > mScaledEpsilon) {
-				inside = false;
-			}
-
-			iCurrentEdge = currentEdge.nextEdge;
-		}
-		while ((iCurrentEdge != iInitialEdge) && inside);
-
-		return inside;
 	}
 
 }

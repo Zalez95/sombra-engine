@@ -7,7 +7,8 @@ std::pair<se::collision::HalfEdgeMesh, se::collision::ContiguousVector<glm::vec3
 std::pair<se::collision::HalfEdgeMesh, se::collision::ContiguousVector<glm::vec3>> createTestMesh2();
 std::vector<se::collision::HalfEdgeMesh> createTestMesh3();
 std::pair<se::collision::HalfEdgeMesh, se::collision::ContiguousVector<glm::vec3>> createTestMesh4();
-std::pair<se::collision::HalfEdgeMesh, se::collision::ContiguousVector<glm::vec3>> createTestMesh5();
+se::collision::HalfEdgeMesh createTestMesh5();
+std::vector<se::collision::HalfEdgeMesh> createTestMesh6();
 se::collision::HalfEdgeMesh createTestPlane1();
 se::collision::HalfEdgeMesh createTestPlane2();
 se::collision::HalfEdgeMesh createTestTube1();

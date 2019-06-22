@@ -327,10 +327,9 @@ std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh4()
 }
 
 
-std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh5()
+HalfEdgeMesh createTestMesh5()
 {
 	HalfEdgeMesh meshData;
-	ContiguousVector<glm::vec3> normals;
 
 	std::array<int, 8> vertexIndices = {
 		addVertex(meshData, { 0.0f, 1.0f, 0.0f }),
@@ -354,11 +353,76 @@ std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh5()
 		{ vertexIndices[2], vertexIndices[6], vertexIndices[5], vertexIndices[1] }
 	}};
 	for (const auto& face : faceIndices) {
-		int iFace = addFace(meshData, face.begin(), face.end());
-		normals.emplace( calculateFaceNormal(meshData, iFace) );
+		addFace(meshData, face.begin(), face.end());
 	}
 
-	return std::make_pair(meshData, normals);
+	return meshData;
+}
+
+
+std::vector<HalfEdgeMesh> createTestMesh6()
+{
+	HalfEdgeMesh m0;
+	std::array<int, 6> vertexIndices0 = {
+		addVertex(m0, { 0.0f, 1.0f, 0.0f }),
+		addVertex(m0, { 0.866025328f, -0.5f, 0.0f }),
+		addVertex(m0, { 0.0f, 0.0f, 2.0f }),
+		addVertex(m0, { 0.0f, 0.5f, 0.0f }),
+		addVertex(m0, { 0.433012664f, -0.25f, 0.0f }),
+		addVertex(m0, { 0.0f, 0.0f, 1.0f })
+	};
+	std::array<std::vector<int>, 5> faceIndices0 = {{
+		{{ vertexIndices0[0], vertexIndices0[2], vertexIndices0[1] }},
+		{{ vertexIndices0[3], vertexIndices0[4], vertexIndices0[5] }},
+		{{ vertexIndices0[5], vertexIndices0[4], vertexIndices0[1], vertexIndices0[2] }},
+		{{ vertexIndices0[0], vertexIndices0[3], vertexIndices0[5], vertexIndices0[2] }},
+		{{ vertexIndices0[1], vertexIndices0[4], vertexIndices0[3], vertexIndices0[0] }}
+	}};
+	for (const auto& face : faceIndices0) {
+		addFace(m0, face.begin(), face.end());
+	}
+
+	HalfEdgeMesh m1;
+	std::array<int, 6> vertexIndices1 = {
+		addVertex(m1, { 0.0f, 1.0f, 0.0f }),
+		addVertex(m1, { -0.866025447f, -0.5f, 0.0f }),
+		addVertex(m1, { 0.0f, 0.0f, 2.0f }),
+		addVertex(m1, { 0.0f, 0.5f, 0.0f }),
+		addVertex(m1, { -0.433012723f, -0.25f, 0.0f }),
+		addVertex(m1, { 0.0f, 0.0f, 1.0f })
+	};
+	std::array<std::vector<int>, 5> faceIndices1 = {{
+		{{ vertexIndices1[1], vertexIndices1[2], vertexIndices1[0] }},
+		{{ vertexIndices1[0], vertexIndices1[3], vertexIndices1[4], vertexIndices1[1] }},
+		{{ vertexIndices1[0], vertexIndices1[2], vertexIndices1[5], vertexIndices1[3] }},
+		{{ vertexIndices1[1], vertexIndices1[4], vertexIndices1[5], vertexIndices1[2] }},
+		{{ vertexIndices1[4], vertexIndices1[3], vertexIndices1[5] }}
+	}};
+	for (const auto& face : faceIndices1) {
+		addFace(m1, face.begin(), face.end());
+	}
+
+	HalfEdgeMesh m2;
+	std::array<int, 6> vertexIndices2 = {
+		addVertex(m2, { 0.866025328f, -0.5f, 0.0 }),
+		addVertex(m2, { -0.866025447f, -0.5f, 0.0 }),
+		addVertex(m2, { 0.0f, 0.0f, 2.0 }),
+		addVertex(m2, { 0.433012664f, -0.25f, 0.0 }),
+		addVertex(m2, { -0.433012723f, -0.25f, 0.0 }),
+		addVertex(m2, { 0.0f, 0.0f, 1.0 })
+	};
+	std::array<std::vector<int>, 5> faceIndices2 = {{
+		{{ vertexIndices2[0], vertexIndices2[2], vertexIndices2[1] }},
+		{{ vertexIndices2[4], vertexIndices2[1], vertexIndices2[2], vertexIndices2[5] }},
+		{{ vertexIndices2[3], vertexIndices2[4], vertexIndices2[5] }},
+		{{ vertexIndices2[5], vertexIndices2[2], vertexIndices2[0], vertexIndices2[3] }},
+		{{ vertexIndices2[1], vertexIndices2[4], vertexIndices2[3], vertexIndices2[0] }}
+	}};
+	for (const auto& face : faceIndices2) {
+		addFace(m2, face.begin(), face.end());
+	}
+
+	return { m0, m1, m2 };
 }
 
 

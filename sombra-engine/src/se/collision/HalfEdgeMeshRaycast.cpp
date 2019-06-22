@@ -1,7 +1,6 @@
 #include <stack>
 #include <limits>
 #include <algorithm>
-#include <glm/gtc/type_ptr.hpp>
 #include "se/collision/HalfEdgeMeshRaycast.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "Geometry.h"
@@ -52,85 +51,23 @@ namespace se::collision {
 	};
 
 
-	HalfEdgeMeshRaycast::HalfEdgeMeshRaycast(
-		const HalfEdgeMesh& mesh,
-		const ContiguousVector<glm::vec3>& faceNormals,
-		float epsilon, int maxDepth
-	) : mMesh(mesh), mFaceNormals(faceNormals), mEpsilon(epsilon), mMaxDepth(maxDepth), mIRootNode(-1)
-	{
-		buildKDTree();
-	}
+	void HalfEdgeMeshRaycast::buildKDTree(
+		const HalfEdgeMesh* mesh,
+		const ContiguousVector<glm::vec3>* faceNormals
+	) {
+		mMesh = mesh;
+		mFaceNormals = faceNormals;
+		mKDTree.clear();
+		mIRootNode = -1;
 
-
-	RayHit HalfEdgeMeshRaycast::closestHit(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection
-	) const
-	{
-		RayHit ret = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
-
-		// Push the root node to the stack
-		std::stack<KDHitStackContent> stack;
-		stack.push({ KDHitStackContent::Check, ret, mIRootNode, RayHit(), RayHit() });
-
-		while (!stack.empty()) {
-			auto& [state, returnValue, iCurrentNode, leftRayHit, rightRayHit] = stack.top();
-			switch (state) {
-				case KDHitStackContent::Check:
-					returnValue = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
-					if (intersects(mKDTree[iCurrentNode].aabb, rayOrigin, rayDirection, mEpsilon)) {
-						if ((mKDTree[iCurrentNode].iLeftChild < 0) || (mKDTree[iCurrentNode].iRightChild < 0)) {
-							// Search the closest intersection to the rayOrigin
-							// with the current HEFaces
-							for (int iFace : mKDTree[iCurrentNode].iFaces) {
-								glm::vec3 facePoint = mMesh.vertices[ mMesh.edges[ mMesh.faces[iFace].edge ].vertex ].location;
-								glm::vec3 faceNormal = mFaceNormals[iFace];
-
-								auto [intersects, intersection] = rayPlaneIntersection(rayOrigin, rayDirection, facePoint, faceNormal, mEpsilon);
-								if (intersects && isPointBetweenHEEdges(mMesh, mMesh.faces[iFace].edge, faceNormal, intersection)) {
-									float distance = glm::length(intersection - rayOrigin);
-									if (distance < returnValue.distance) {
-										returnValue = { true, iFace, intersection, distance };
-									}
-								}
-							}
-							state = KDHitStackContent::End;
-						}
-						else {
-							// Check if there is an intersection with the
-							// child nodes
-							stack.push({ KDHitStackContent::Check, rightRayHit, mKDTree[iCurrentNode].iRightChild, RayHit(), RayHit() });
-							stack.push({ KDHitStackContent::Check, leftRayHit, mKDTree[iCurrentNode].iLeftChild, RayHit(), RayHit() });
-							state = KDHitStackContent::Children;
-						}
-					}
-					else {
-						state = KDHitStackContent::End;
-					}
-					break;
-				case KDHitStackContent::Children:
-					returnValue = (leftRayHit.distance < rightRayHit.distance)? leftRayHit : rightRayHit;
-					state = KDHitStackContent::End;
-					break;
-				case KDHitStackContent::End:
-					stack.pop();
-					break;
-			}
-		}
-
-		return ret;
-	}
-
-// Private functions
-	void HalfEdgeMeshRaycast::buildKDTree()
-	{
 		std::stack<KDBuildStackContent> stack;
 
 		// Push the root node to the stack
 		std::vector<int> allFaceIndices;
-		for (auto itFace = mMesh.faces.begin(); itFace != mMesh.faces.end(); ++itFace) {
+		for (auto itFace = mMesh->faces.begin(); itFace != mMesh->faces.end(); ++itFace) {
 			allFaceIndices.push_back(itFace.getIndex());
 		}
-		AABB meshAABB = calculateAABB(mMesh);
+		AABB meshAABB = calculateAABB(*mMesh);
 		stack.push({ KDBuildStackContent::Build, mIRootNode, allFaceIndices, meshAABB, 0, -1, -1 });
 
 		while (!stack.empty()) {
@@ -140,10 +77,7 @@ namespace se::collision {
 					if ((faces.size() > 1) && (depth < mMaxDepth)) {
 						// Calculate the split axis
 						glm::vec3 minToMax = aabb.maximum - aabb.minimum;
-						int iSplitAxis = std::distance(
-							glm::value_ptr(minToMax),
-							std::max_element(glm::value_ptr(minToMax), glm::value_ptr(minToMax) + 3)
-						);
+						int iSplitAxis = std::distance(&minToMax.x, std::max_element(&minToMax.x, &minToMax.x + 3));
 
 						// Split the HEFaces by the split axis at its middle point
 						std::vector<int> leftFaces, rightFaces;
@@ -151,12 +85,12 @@ namespace se::collision {
 						for (int iFace : faces) {
 							bool anyVerticesLeft = false;
 
-							int iInitialEdge = mMesh.faces[iFace].edge;
+							int iInitialEdge = mMesh->faces[iFace].edge;
 							int iCurrentEdge = iInitialEdge;
 							do {
-								const HEEdge& currentEdge = mMesh.edges[iCurrentEdge];
+								const HEEdge& currentEdge = mMesh->edges[iCurrentEdge];
 
-								const glm::vec3& location = mMesh.vertices[currentEdge.vertex].location;
+								const glm::vec3& location = mMesh->vertices[currentEdge.vertex].location;
 								if (location[iSplitAxis] > middle) {
 									anyVerticesLeft = true;
 									break;
@@ -204,6 +138,66 @@ namespace se::collision {
 	}
 
 
+	RayHit HalfEdgeMeshRaycast::closestHit(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDirection
+	) const
+	{
+		RayHit ret = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
+
+		std::stack<KDHitStackContent> stack;
+
+		// Push the root node to the stack
+		stack.push({ KDHitStackContent::Check, ret, mIRootNode, RayHit(), RayHit() });
+
+		while (!stack.empty()) {
+			auto& [state, returnValue, iCurrentNode, leftRayHit, rightRayHit] = stack.top();
+			switch (state) {
+				case KDHitStackContent::Check:
+					returnValue = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
+					if (intersects(mKDTree[iCurrentNode].aabb, rayOrigin, rayDirection, mEpsilon)) {
+						if ((mKDTree[iCurrentNode].iLeftChild < 0) || (mKDTree[iCurrentNode].iRightChild < 0)) {
+							// Search the closest intersection to the rayOrigin
+							// with the current HEFaces
+							for (int iFace : mKDTree[iCurrentNode].iFaces) {
+								glm::vec3 facePoint = mMesh->vertices[ mMesh->edges[ mMesh->faces[iFace].edge ].vertex ].location;
+								glm::vec3 faceNormal = (*mFaceNormals)[iFace];
+
+								auto [intersects, intersection] = rayPlaneIntersection(rayOrigin, rayDirection, facePoint, faceNormal, mEpsilon);
+								if (intersects && isPointBetweenHEEdges(*mMesh, mMesh->faces[iFace].edge, faceNormal, intersection)) {
+									float distance = glm::length(intersection - rayOrigin);
+									if (distance < returnValue.distance) {
+										returnValue = { true, iFace, intersection, distance };
+									}
+								}
+							}
+							state = KDHitStackContent::End;
+						}
+						else {
+							// Check if there is an intersection with the
+							// child nodes
+							stack.push({ KDHitStackContent::Check, rightRayHit, mKDTree[iCurrentNode].iRightChild, RayHit(), RayHit() });
+							stack.push({ KDHitStackContent::Check, leftRayHit, mKDTree[iCurrentNode].iLeftChild, RayHit(), RayHit() });
+							state = KDHitStackContent::Children;
+						}
+					}
+					else {
+						state = KDHitStackContent::End;
+					}
+					break;
+				case KDHitStackContent::Children:
+					returnValue = (leftRayHit.distance < rightRayHit.distance)? leftRayHit : rightRayHit;
+					state = KDHitStackContent::End;
+					break;
+				case KDHitStackContent::End:
+					stack.pop();
+					break;
+			}
+		}
+
+		return ret;
+	}
+
+// Private functions
 	AABB HalfEdgeMeshRaycast::calculateAABBFromFaces(const std::vector<int>& faceIndices) const
 	{
 		AABB ret = {
@@ -213,11 +207,11 @@ namespace se::collision {
 
 		for (int iFace : faceIndices) {
 
-			int iInitialEdge = mMesh.faces[iFace].edge;
+			int iInitialEdge = mMesh->faces[iFace].edge;
 			int iCurrentEdge = iInitialEdge;
 			do {
-				const HEEdge& currentEdge = mMesh.edges[iCurrentEdge];
-				const HEVertex& vertex = mMesh.vertices[currentEdge.vertex];
+				const HEEdge& currentEdge = mMesh->edges[iCurrentEdge];
+				const HEVertex& vertex = mMesh->vertices[currentEdge.vertex];
 
 				ret.minimum = glm::min(ret.minimum, vertex.location);
 				ret.maximum = glm::max(ret.maximum, vertex.location);

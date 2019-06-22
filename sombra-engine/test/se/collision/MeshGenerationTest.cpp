@@ -111,12 +111,21 @@ TEST(MeshGeneration, calculateHACD1)
 TEST(MeshGeneration, calculateHACD2)
 {
 	HACD hacd(0.03f, 0.0001f);
-	hacd.calculate( createTestMesh5().first );
+	hacd.calculate( createTestMesh5() );
 
 	auto result = hacd.getMeshes();
-	auto expectedMeshes = createTestMesh3();
+	auto expectedMeshes = createTestMesh6();
 
-	ASSERT_EQ(result.size(), static_cast<std::size_t>(2));
+	ASSERT_EQ(result.size(), expectedMeshes.size());
+	EXPECT_TRUE(std::all_of(
+		result.begin(), result.end(),
+		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
+			return std::any_of(
+				expectedMeshes.begin(), expectedMeshes.end(),
+				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }
+			);
+		}
+	));
 }
 
 

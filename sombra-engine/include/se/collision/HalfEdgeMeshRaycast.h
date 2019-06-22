@@ -53,17 +53,17 @@ namespace se::collision {
 		using Tree = std::vector<TreeNode>;
 
 	private:	// Attributes
-		/** The HalfEdgeMesh to calculate the ray intersections with */
-		const HalfEdgeMesh& mMesh;
-
-		/** The normal vectors of the HalfEdgeMesh HEFaces */
-		const ContiguousVector<glm::vec3>& mFaceNormals;
-
 		/** The epsilon value needed for the comparisons with the half rays */
 		const float mEpsilon;
 
 		/** The maximum depth of the generated binary-tree */
 		const int mMaxDepth;
+
+		/** The HalfEdgeMesh to calculate the ray intersections with */
+		const HalfEdgeMesh* mMesh;
+
+		/** The normal vectors of the HalfEdgeMesh HEFaces */
+		const ContiguousVector<glm::vec3>* mFaceNormals;
 
 		/** The binary tree that will be used for splitting the mesh HEFaces
 		 * and store their respective bounding spheres */
@@ -75,16 +75,22 @@ namespace se::collision {
 	public:		// Functions
 		/** Creates a new HalfEdgeMeshRaycast object
 		 *
-		 * @param	mesh the Half-Edge data structure with the 3D Mesh
-		 *			to calculate the Raycasts
-		 * @param	faceNormals the normal vectors of the mesh HEFaces
 		 * @param	epsilon the epsilon value needed for the comparisons with
 		 *			the half rays
 		 * @param	maxDepth the maximum depth of the generated kd-tree */
-		HalfEdgeMeshRaycast(
-			const HalfEdgeMesh& mesh,
-			const ContiguousVector<glm::vec3>& faceNormals,
-			float epsilon, int maxDepth
+		HalfEdgeMeshRaycast(float epsilon, int maxDepth) :
+			mEpsilon(epsilon), mMaxDepth(maxDepth),
+			mMesh(nullptr), mFaceNormals(nullptr), mIRootNode(-1) {};
+
+		/** Builds the kd-tree iteratively for the given mesh
+		 *
+		 * @param	mesh a pointer to the Half-Edge data structure with the 3D
+		 *			Mesh to calculate the Raycasts
+		 * @param	faceNormals a pointer to the normal vectors of the mesh
+		 *			HEFaces */
+		void buildKDTree(
+			const HalfEdgeMesh* mesh,
+			const ContiguousVector<glm::vec3>* faceNormals
 		);
 
 		/** Calculates the closest ray-mesh intersection iteratively
@@ -96,9 +102,6 @@ namespace se::collision {
 			const glm::vec3& rayOrigin, const glm::vec3& rayDirection
 		) const;
 	private:
-		/** Builds the kd-tree iteratively */
-		void buildKDTree();
-
 		/** Calculates the AABB of the given HEFaces of the current HEMesh
 		 *
 		 * @param	faceIndices the indices of the HEFaces in the HEMesh
