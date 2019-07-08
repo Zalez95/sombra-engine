@@ -387,6 +387,10 @@ namespace game {
 			return;
 		}
 
+		// Forces
+		mForces.push_back(new se::physics::Gravity({ 0.0f, -9.8f, 0.0f }));
+		se::physics::Force* gravity = mForces.back();
+
 		// RenderableTexts
 		se::graphics::RenderableText renderableText1("First try rendering text", arial, 10, glm::vec2());
 
@@ -403,7 +407,8 @@ namespace game {
 
 		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(
 			40.0f, 0.01f,
-			2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.01f
+			2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
+			0.01f, 2.5f
 		);
 		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
 		mCollisionManager->addEntity(player.get(), std::move(collider1));
@@ -444,7 +449,8 @@ namespace game {
 
 			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(
 				20.0f, 0.95f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.95f
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
+				0.95f, 0.5f
 			);
 			if (i == 1) {
 				rb1 = rigidBody2.get();
@@ -477,6 +483,48 @@ namespace game {
 
 		mConstraints.push_back(new se::physics::DistanceConstraint({ rb1, rb2 }));
 		mPhysicsEngine->getConstraintManager().addConstraint(mConstraints.back());
+
+		{
+			std::shared_ptr<se::graphics::Material> redMaterial(new se::graphics::Material{
+				"tmp_material",
+				se::graphics::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr },
+				nullptr, nullptr, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+			});
+
+			auto nonMovableCube = std::make_unique<se::app::Entity>("non-movable-cube");
+			nonMovableCube->position = glm::vec3(0.0f, 0.0f, -40.0f);
+			nonMovableCube->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>();
+			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
+			mCollisionManager->addEntity(nonMovableCube.get(), std::move(collider2));
+			mPhysicsManager->addEntity(nonMovableCube.get(), std::move(rigidBody2));
+
+			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(mesh1, redMaterial);
+			mGraphicsManager->addEntity(nonMovableCube.get(), std::move(renderable3D2));
+
+			mEntities.push_back(std::move(nonMovableCube));
+
+			auto gravityCube = std::make_unique<se::app::Entity>("gravity-cube");
+			gravityCube->position = glm::vec3(0.0f, 2.0f, -40.0f);
+
+			auto rigidBody3 = std::make_unique<se::physics::RigidBody>(
+				20.0f, 0.95f,
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
+				0.95f, 0.65f
+			);
+			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
+
+			mPhysicsEngine->getForceManager().addRBForce(rigidBody3.get(), gravity);
+
+			mCollisionManager->addEntity(gravityCube.get(), std::move(collider3));
+			mPhysicsManager->addEntity(gravityCube.get(), std::move(rigidBody3));
+
+			auto renderable3D3 = std::make_unique<se::graphics::Renderable3D>(mesh1, redMaterial);
+			mGraphicsManager->addEntity(gravityCube.get(), std::move(renderable3D3));
+
+			mEntities.push_back(std::move(gravityCube));
+		}
 
 		// HACD Tube
 		se::collision::HalfEdgeMesh tube = createTestTube1();
@@ -518,7 +566,8 @@ namespace game {
 
 			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(
 				10.0f, 0.9f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.9f
+				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
+				0.9f, 0.5f
 			);
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
 			mCollisionManager->addEntity(cube.get(), std::move(collider2));
@@ -553,6 +602,10 @@ namespace game {
 
 	void Game::end()
 	{
+		for (se::physics::Force* force : mForces) {
+			mPhysicsEngine->getForceManager().removeForce(force);
+		}
+
 		for (se::physics::Constraint* constraint : mConstraints) {
 			mPhysicsEngine->getConstraintManager().removeConstraint(constraint);
 		}

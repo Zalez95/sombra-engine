@@ -12,13 +12,14 @@ namespace se::physics {
 
 
 	/**
-	 * Class ConstraintManager, it's the class used to solve the physic
+	 * Class ConstraintManager, it's the class used to solve the physics
 	 * constraints between the rigid bodies of the Physics System.
 	 */
 	class ConstraintManager
 	{
 	private:	// Nested types
 		using vec12 = std::array<float, 12>;
+		using IndexPair = std::array<std::size_t, 2>;
 
 	private:	// Attributes
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
@@ -35,7 +36,7 @@ namespace se::physics {
 
 		/** The vector that stores the relations between the RigidBodies and
 		 * its Constraints */
-		std::vector<std::array<int, 2>> mConstraintRBMap;
+		std::vector<IndexPair> mConstraintRBMap;
 
 		/** The variable that will be solved by the Constraint resolver.
 		 * It's a column matrix with the size of (number of Constraints). */

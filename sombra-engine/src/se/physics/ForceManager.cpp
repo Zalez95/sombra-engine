@@ -1,23 +1,46 @@
+#include <algorithm>
 #include "se/physics/ForceManager.h"
 #include "se/physics/Force.h"
 #include "se/physics/RigidBody.h"
 
 namespace se::physics {
 
-	void ForceManager::addRigidBody(RigidBody* rigidBody, Force* force)
+	void ForceManager::addRBForce(RigidBody* rigidBody, Force* force)
 	{
 		mRBForces.emplace_back(rigidBody, force);
 	}
 
 
-	void ForceManager::removeRigidBody(RigidBody* rigidBody, Force* force)
+	void ForceManager::removeRBForce(RigidBody* rigidBody, Force* force)
 	{
-		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
-			if ((it->rigidBody == rigidBody) && (it->force == force)) {
-				mRBForces.erase(it);
-				break;
-			}
-		}
+		mRBForces.erase(
+			std::remove_if(mRBForces.begin(), mRBForces.end(), [&](const RBForce& rbForce) {
+				return (rbForce.rigidBody == rigidBody) && (rbForce.force == force);
+			}),
+			mRBForces.end()
+		);
+	}
+
+
+	void ForceManager::removeRigidBody(RigidBody* rigidBody)
+	{
+		mRBForces.erase(
+			std::remove_if(mRBForces.begin(), mRBForces.end(), [&](const RBForce& rbForce) {
+				return (rbForce.rigidBody == rigidBody);
+			}),
+			mRBForces.end()
+		);
+	}
+
+
+	void ForceManager::removeForce(Force* force)
+	{
+		mRBForces.erase(
+			std::remove_if(mRBForces.begin(), mRBForces.end(), [&](const RBForce& rbForce) {
+				return (rbForce.force == force);
+			}),
+			mRBForces.end()
+		);
 	}
 
 
@@ -25,8 +48,8 @@ namespace se::physics {
 	{
 		// Clean the older forces
 		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
-			it->rigidBody->forceSum	= glm::vec3(0.0f);
-			it->rigidBody->torqueSum	= glm::vec3(0.0f);
+			it->rigidBody->forceSum = glm::vec3(0.0f);
+			it->rigidBody->torqueSum = glm::vec3(0.0f);
 		}
 
 		// Apply the current forces

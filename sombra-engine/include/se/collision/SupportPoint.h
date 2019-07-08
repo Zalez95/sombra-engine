@@ -59,7 +59,7 @@ namespace se::collision {
 
 		/** @return	the SupportPoint's coordinates in the Configuration Space
 		 *			Object */
-		inline glm::vec3 getCSOPosition() const { return mCSOPosition; };
+		glm::vec3 getCSOPosition() const { return mCSOPosition; };
 
 		/** Returns the coordinates in local space of the SupportPoint relative
 		 * to the Collider located at the given index
@@ -68,7 +68,7 @@ namespace se::collision {
 		 * @return	the position in local space of the SupportPoint relative to
 		 *			the second Collider if the flag is true, or relative to the
 		 *			first one of the flag is false */
-		inline glm::vec3 getLocalPosition(bool second) const
+		glm::vec3 getLocalPosition(bool second) const
 		{ return mLocalPosition[second]; };
 
 		/** Returns the coordinates in world space of the SupportPoint relative
@@ -79,7 +79,7 @@ namespace se::collision {
 		 * @return	the position in world space of the SupportPoint relative to
 		 *			the second Collider if the flag is true, or relative to the
 		 *			first one of the flag is false */
-		inline glm::vec3 getWorldPosition(bool second) const
+		glm::vec3 getWorldPosition(bool second) const
 		{ return mWorldPosition[second]; };
 	};
 

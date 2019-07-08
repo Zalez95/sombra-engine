@@ -30,10 +30,10 @@ namespace se::physics {
 
 	public:		// Functions
 		/** @return	the ForceManager of the PhysicsEngine */
-		inline ForceManager& getForceManager() { return mForceManager; };
+		ForceManager& getForceManager() { return mForceManager; };
 
 		/** @return	the ConstraintManager of the PhysicsEngine */
-		inline ConstraintManager& getConstraintManager()
+		ConstraintManager& getConstraintManager()
 		{ return mConstraintManager; };
 
 		/** Adds the given RigidBody to the PhysicsEngine so it will

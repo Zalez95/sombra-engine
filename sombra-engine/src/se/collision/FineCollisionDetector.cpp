@@ -249,14 +249,16 @@ namespace se::collision {
 		Contact* contact3 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				float d1 = distancePointEdge(
+				glm::vec3 p1 = getClosestPointInEdge(
 					c1->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
-				float d2 = distancePointEdge(
+				float d1 = glm::length(c1->worldPosition[0] - p1);
+				glm::vec3 p2 = getClosestPointInEdge(
 					c2->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
+				float d2 = glm::length(c2->worldPosition[0] - p2);
 				return d1 < d2;
 			}
 		);
@@ -268,11 +270,13 @@ namespace se::collision {
 					c1->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
+				float d1 = glm::length(c1->worldPosition[0] - p1);
 				glm::vec3 p2 = getClosestPointInPlane(
 					c2->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
-				return glm::length(p1) < glm::length(p2);
+				float d2 = glm::length(c2->worldPosition[0] - p2);
+				return d1 < d2;
 			}
 		);
 

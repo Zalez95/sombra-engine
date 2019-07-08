@@ -66,7 +66,7 @@ namespace se::utils {
 
 		/** Changes the maximum log level to show in the log file
 		 * @param	level the new maximum level */
-		inline void setLogLevel(LogLevel level) { mMaxLogLevel = level; };
+		void setLogLevel(LogLevel level) { mMaxLogLevel = level; };
 
 		/** Writes the given text in the log file with other metadata like the
 		 * date, time, log level and thread id

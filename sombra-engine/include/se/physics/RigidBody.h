@@ -40,6 +40,10 @@ namespace se::physics {
 		 * RigidBody doesn't move forever */
 		float angularSlowDown;
 
+		/** The friction coefficient for the friction constraints (we use the
+		 * same coefficient for both static and dynamic friction) */
+		float frictionCoefficient;
+
 		/** The linear position of the origin (center of mass) of the
 		 * RigidBody in world space */
 		glm::vec3 position;
@@ -86,10 +90,13 @@ namespace se::physics {
 		 * @param	inertiaTensor a 3x3 matrix that stores all the moments of
 		 *			inertia of the RigidBody
 		 * @param	angularSlowDown the factor by we are going to slow down the
-		 *			angular velocity */
+		 *			angular velocity
+		 * @param	frictionCoefficient the friction coefficient of the
+		 *			RigidBody */
 		RigidBody(
 			float mass, float linearSlowDown,
-			const glm::mat3& inertiaTensor, float angularSlowDown
+			const glm::mat3& inertiaTensor, float angularSlowDown,
+			float frictionCoefficient
 		);
 	};
 

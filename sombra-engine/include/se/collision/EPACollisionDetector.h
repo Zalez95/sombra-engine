@@ -93,6 +93,15 @@ namespace se::collision {
 			InitialSimplex& simplex
 		) const;
 
+		/** Checks if the given tetrahedron has the origin of coordinates inside
+		 *
+		 * @param	vertices the 4 vertices of the tetrahedron
+		 * @return	true if the origin of coordinates is inside the tetrahedron,
+		 *			false otherwise */
+		bool isOriginInsideTetrahedron(
+			const utils::FixedVector<glm::vec3, 4>& vertices
+		) const;
+
 		/** Expands the given polytope iteratively until it finds the closest
 		 * face to the origin with the EPA Algorithm (in other words, when a
 		 * face that it's closer to the origin than the old closest face with

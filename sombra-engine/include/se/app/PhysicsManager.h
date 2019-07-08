@@ -6,6 +6,7 @@
 #include "../physics/RigidBody.h"
 #include "../physics/PhysicsEngine.h"
 #include "../physics/constraints/NormalConstraint.h"
+#include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
 #include "../utils/FixedVector.h"
 #include "EventManager.h"
@@ -23,14 +24,34 @@ namespace se::app {
 	class PhysicsManager : public IEventListener
 	{
 	private:	// Nested types
-		using RigidBodyUPtr = std::unique_ptr<physics::RigidBody>;
-		using ContactConstraints = utils::FixedVector<
-			physics::NormalConstraint, collision::Manifold::kMaxContacts
+		/** Holds all the Constraints per Contact */
+		struct ContactConstraints
+		{
+			physics::NormalConstraint normalConstraint;
+			physics::FrictionConstraint frictionConstraints[2];
+		};
+
+		using ManifoldConstraints = utils::FixedVector<
+			ContactConstraints, collision::Manifold::kMaxContacts
 		>;
+		using RigidBodyUPtr = std::unique_ptr<physics::RigidBody>;
 
 	private:	// Attributes
-		/** The velocity of the constraint resolution process */
-		static constexpr float kCollisionConstraintBeta = 5.0f;
+		/** The velocity of the constraint resolution process of the
+		 * NormalConstraints */
+		static constexpr float kCollisionBeta = 0.2f;
+
+		/** The restitution factor of all the NormalConstraints */
+		static constexpr float kCollisionRestitutionFactor = 0.5f;
+
+		/** The slop penetration value of all the NormalConstraints */
+		static constexpr float kCollisionSlopPenetration = 0.005f;
+
+		/** The slop restitution value of all the NormalConstraints */
+		static constexpr float kCollisionSlopRestitution = 0.5f;
+
+		/** The gravity acceleration value of all the FrictionConstraints */
+		static constexpr float kFrictionGravityAcceleration = 9.8f;
 
 		/** The Engine used for updating the data of the PhysicsEntities */
 		physics::PhysicsEngine& mPhysicsEngine;
@@ -43,8 +64,8 @@ namespace se::app {
 
 		/** The NormalConstraints generated as a consecuence of the
 		 * PhysicsEntities collisions */
-		std::map<const collision::Manifold*, ContactConstraints>
-			mManifoldConstraints;
+		std::map<const collision::Manifold*, ManifoldConstraints>
+			mManifoldConstraintsMap;
 
 	public:		// Functions
 		/** Creates a new PhysicsManager
@@ -112,13 +133,8 @@ namespace se::app {
 
 		/** Removes all the Manifold contact constraints from the PhysicsManager
 		 *
-		 * @param	rb1 a pointer to the first RigidBody of the Constraints
-		 * @param	rb1 a pointer to the second RigidBody of the Constraints
 		 * @param	manifold a pointer to the contact Manifold */
-		void handleDisjointManifold(
-			physics::RigidBody* rb1, physics::RigidBody* rb2,
-			const collision::Manifold* manifold
-		);
+		void handleDisjointManifold(const collision::Manifold* manifold);
 	};
 
 }

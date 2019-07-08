@@ -14,8 +14,8 @@ namespace se::collision {
 		/** The penetration depth of the Contact */
 		float penetration;
 
-		/** The normal direction along we should separate the intersecting bodies in
-		 * world space */
+		/** The normal direction along we should separate the intersecting
+		 * bodies in world space */
 		glm::vec3 normal;
 
 		/** The coordinates of the Contact point relative to each of the

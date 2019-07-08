@@ -27,7 +27,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 # Add the compiler definitions
-target_compile_definitions(SombraEngine PUBLIC GLM_FORCE_SILENT_WARNINGS GLEW_NO_GLU)
+target_compile_definitions(SombraEngine PUBLIC GLM_FORCE_SILENT_WARNINGS GLM_ENABLE_EXPERIMENTAL GLEW_NO_GLU)
 if(NOT BUILD_SHARED_LIBS)
 	target_compile_definitions(SombraEngine PUBLIC AL_LIBTYPE_STATIC GLEW_STATIC)
 endif()

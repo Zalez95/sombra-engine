@@ -10,9 +10,17 @@ namespace se::physics {
 	{
 		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintPoints[0];
 		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintPoints[1];
-		float positionConstraint = glm::dot((p2 - p1), mNormal);
+		float penetration = glm::dot(p2 - p1, mNormal);
+		float biasError = -mBeta * std::max(penetration - mSlopPenetration, 0.0f) / mDeltaTime;
 
-		return glm::pow(1 - mDeltaTime * mBeta, mK) * positionConstraint;
+		glm::vec3 v1 = mRigidBodies[0]->linearVelocity
+			+ glm::cross(mRigidBodies[0]->angularVelocity, mConstraintPoints[0]);
+		glm::vec3 v2 = mRigidBodies[1]->linearVelocity
+			+ glm::cross(mRigidBodies[1]->angularVelocity, mConstraintPoints[1]);
+		float closingVelocity = glm::dot(v2 - v1, mNormal);
+		float biasRestitution = mRestitutionFactor * std::max(closingVelocity - mSlopRestitution, 0.0f);
+
+		return biasError + biasRestitution;
 	}
 
 

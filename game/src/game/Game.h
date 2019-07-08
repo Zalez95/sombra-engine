@@ -8,6 +8,7 @@
 #include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/Renderable2D.h>
 #include <se/audio/Buffer.h>
+#include <se/physics/Force.h>
 #include <se/physics/Constraint.h>
 
 namespace game {
@@ -31,6 +32,7 @@ namespace game {
 		se::graphics::Layer2D mLayer2D;
 		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
 		std::vector<se::audio::Buffer> mBuffers;
+		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;
 
 	public:		// Functions

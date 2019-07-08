@@ -38,23 +38,38 @@ namespace se::physics {
 		std::vector<RBForce> mRBForces;
 
 	public:		// Forces
-		/** Registers the given RigidBody with the given Force, so the
+		/** Subscribes the given RigidBody to the given Force, so the
 		 * RigidBody will be affected by the Force
 		 *
 		 * @param	rigidBody a pointer to the RigidBody that we want to be
 		 *			affected by the Force
-		 * @param	force a pointer to the Force that we want to register */
-		void addRigidBody(RigidBody* rigidBody, Force* force);
+		 * @param	force a pointer to the Force that will affect the
+		 *			RigidBody */
+		void addRBForce(RigidBody* rigidBody, Force* force);
 
-		/** Unregisters the given RigidBody and given Force so it won't longer
+		/** Unsubscribes the given RigidBody from given Force so it won't longer
 		 * be affected by the Force
 		 *
 		 * @param	rigidBody a pointer to the RigidBody that we want to
-		 *			unregister
-		 * @param	force a pointer to the Force that we want to unregister */
-		void removeRigidBody(RigidBody* rigidBody, Force* force);
+		 *			unsubscribe
+		 * @param	force a pointer to the Force that we want to unsubscribe */
+		void removeRBForce(RigidBody* rigidBody, Force* force);
 
-		/** Applies the forces stored in the ForceManager */
+		/** Unsubscribes the given RigidBody from all its Forces so it won't
+		 * longer be affected by them
+		 *
+		 * @param	rigidBody a pointer to the RigidBody that we want to
+		 *			unsubscribe */
+		void removeRigidBody(RigidBody* rigidBody);
+
+		/** Removes the given Force from the ForceManager so it will no longer
+		 * affect its subscribers
+		 *
+		 * @param	force a pointer to the Force that we want to unsubscribe */
+		void removeForce(Force* force);
+
+		/** Applies the Forces stored in the ForceManager to their RigidBody
+		 * subscribers */
 		void applyForces();
 	};
 

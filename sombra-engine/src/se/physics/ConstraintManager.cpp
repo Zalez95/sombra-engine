@@ -13,8 +13,8 @@ namespace se::physics {
 
 		// Get the indices of the RigidBodies of the constraint or add them if
 		// they aren't yet
-		std::array<int, 2> constraintRB;
-		for (int i = 0; i < 2; ++i) {
+		IndexPair constraintRB;
+		for (std::size_t i = 0; i < 2; ++i) {
 			RigidBody* rb = constraint->getRigidBody(i);
 
 			auto it = std::find(mRigidBodies.begin(), mRigidBodies.end(), rb);
@@ -42,19 +42,19 @@ namespace se::physics {
 
 	void ConstraintManager::removeConstraint(Constraint* constraint)
 	{
-		auto itConstraint	= std::find(mConstraints.begin(), mConstraints.end(), constraint);
-		int iConstraint		= std::distance(mConstraints.begin(), itConstraint);
+		auto itConstraint = std::find(mConstraints.begin(), mConstraints.end(), constraint);
+		std::size_t iConstraint = std::distance(mConstraints.begin(), itConstraint);
 		if (itConstraint == mConstraints.end()) { return; }
 
 		// Remove the RigidBodies if the constraint to remove is the only one
 		// that uses them
-		for (int i = 0; i < 2; ++i) {
-			int iRB = mConstraintRBMap[iConstraint][i];
+		for (std::size_t i = 0; i < 2; ++i) {
+			std::size_t iRB = mConstraintRBMap[iConstraint][i];
 
-			int count = 0;
+			std::size_t count = 0;
 			bool shouldRemove = std::none_of(
 				mConstraintRBMap.begin(), mConstraintRBMap.end(),
-				[&count, iRB](const std::array<int, 2>& item) {
+				[&count, iRB](const IndexPair& item) {
 					return (item[0] == iRB || item[1] == iRB) && (count++ > 0);
 				}
 			);
@@ -68,7 +68,7 @@ namespace se::physics {
 				);
 
 				// Shift the map indices left
-				for (std::array<int, 2>& pair : mConstraintRBMap) {
+				for (IndexPair& pair : mConstraintRBMap) {
 					if (pair[0] > iRB) { --pair[0]; }
 					if (pair[1] > iRB) { --pair[1]; }
 				}
@@ -164,7 +164,7 @@ namespace se::physics {
 		// We use a fixed number of iterations for the Gauss-Seidel algorithm
 		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
 			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
-				int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
+				std::size_t iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
 				// Calculate the current change to lambda
 				float curJInvMJLambda = std::inner_product(
@@ -186,7 +186,7 @@ namespace se::physics {
 
 				// Update the invMJLambdaMatrix with the current change
 				deltaLambda = mLambdaMatrix[i] - oldLambda;
-				for (int j = 0; j < 6; ++j) {
+				for (std::size_t j = 0; j < 6; ++j) {
 					invMJLambdaMatrix[6*iRB1 + j] += deltaLambda * invMassJacobianMatrix[i][j];
 					invMJLambdaMatrix[6*iRB2 + j] += deltaLambda * invMassJacobianMatrix[i][6 + j];
 				}
@@ -200,10 +200,10 @@ namespace se::physics {
 		std::vector<vec12> invMassJacobianMatrix(mConstraints.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
-			for (int j = 0; j < 2; ++j) {
-				int iRB = mConstraintRBMap[i][j];
+			for (std::size_t j = 0; j < 2; ++j) {
+				std::size_t iRB = mConstraintRBMap[i][j];
 
-				for (int k = 0; k < 2; ++k) {
+				for (std::size_t k = 0; k < 2; ++k) {
 					const glm::mat3& inverseMass = mInverseMassMatrix[2*iRB + k];
 					const glm::vec3 jacobian = glm::vec3(
 						mJacobianMatrix[i][6*j + 3*k],
@@ -232,10 +232,10 @@ namespace se::physics {
 			float bias = mBiasMatrix[i];
 
 			vec12 extAccelerations;
-			for (int j = 0; j < 2; ++j) {
-				int iRB = mConstraintRBMap[i][j];
+			for (std::size_t j = 0; j < 2; ++j) {
+				std::size_t iRB = mConstraintRBMap[i][j];
 
-				for (int k = 0; k < 2; ++k) {
+				for (std::size_t k = 0; k < 2; ++k) {
 					const glm::vec3& velocity		= mVelocityMatrix[2*iRB + k];
 					const glm::mat3& inverseMass	= mInverseMassMatrix[2*iRB + k];
 					const glm::vec3& forceExt		= mForceExtMatrix[2*iRB + k];
@@ -268,9 +268,9 @@ namespace se::physics {
 		std::vector<float> invMJLambdaMatrix(6 * mRigidBodies.size());
 
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
-			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
+			std::size_t iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-			for (int j = 0; j < 6; ++j) {
+			for (std::size_t j = 0; j < 6; ++j) {
 				invMJLambdaMatrix[6*iRB1 + j] += invMassJacobianMatrix[i][j] * lambdaMatrix[i];
 				invMJLambdaMatrix[6*iRB2 + j] += invMassJacobianMatrix[i][6 + j] * lambdaMatrix[i];
 			}
@@ -304,16 +304,16 @@ namespace se::physics {
 	{
 		std::vector<float> jLambdaMatrix(6 * mRigidBodies.size());
 		for (std::size_t i = 0; i < mConstraints.size(); ++i) {
-			int iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
+			std::size_t iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
-			for (int j = 0; j < 6; ++j) {
+			for (std::size_t j = 0; j < 6; ++j) {
 				jLambdaMatrix[6*iRB1 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][j];
 				jLambdaMatrix[6*iRB2 + j] += mLambdaMatrix[i] * mJacobianMatrix[i][6 + j];
 			}
 		}
 
 		for (std::size_t i = 0; i < mRigidBodies.size(); ++i) {
-			for (int j = 0; j < 2; ++j) {
+			for (std::size_t j = 0; j < 2; ++j) {
 				const glm::vec3& v1				= mVelocityMatrix[2*i + j];
 				const glm::vec3& forceExt		= mForceExtMatrix[2*i + j];
 				const glm::mat3& inverseMass	= mInverseMassMatrix[2*i + j];

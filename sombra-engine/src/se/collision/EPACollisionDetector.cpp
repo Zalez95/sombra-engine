@@ -106,7 +106,7 @@ namespace se::collision {
 		if ((glm::dot(a, tNormal) > 0.0f) && (glm::dot(simplex[0].getCSOPosition(), tNormal) > 0.0f)) {
 			vertices.push_back(simplex[1]);
 		}
-		if ((glm::dot(a, tNormal) < 0.0f) && (glm::dot(simplex[0].getCSOPosition(), tNormal) < 0.0f)) {
+		else if ((glm::dot(a, tNormal) < 0.0f) && (glm::dot(simplex[0].getCSOPosition(), tNormal) < 0.0f)) {
 			vertices.push_back(simplex[1]);
 		}
 		else {
@@ -122,18 +122,54 @@ namespace se::collision {
 		InitialSimplex& simplex
 	) const
 	{
-		// Search a support point along the simplex's triangle normal
+		// Search two support points with the simplex's triangle normal
 		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
 		glm::vec3 v02 = simplex[2].getCSOPosition() - simplex[0].getCSOPosition();
 		glm::vec3 tNormal = glm::cross(v01, v02);
 
-		SupportPoint sp(collider1, collider2, tNormal);
-		if (glm::dot(sp.getCSOPosition() - simplex[0].getCSOPosition(), tNormal) < 0.0f) {
-			// Try the opposite direction
-			sp = SupportPoint(collider1, collider2, -tNormal);
+		SupportPoint sp1(collider1, collider2, tNormal);
+		SupportPoint sp2(collider1, collider2,-tNormal);
+
+		if (isOriginInsideTetrahedron({
+				simplex[0].getCSOPosition(), simplex[1].getCSOPosition(),
+				sp1.getCSOPosition(), sp2.getCSOPosition()
+			})
+		) {
+			simplex = { simplex[0], simplex[1], sp1, sp2 };
+		}
+		else if (isOriginInsideTetrahedron({
+				simplex[1].getCSOPosition(), simplex[2].getCSOPosition(),
+				sp1.getCSOPosition(), sp2.getCSOPosition()
+			})
+		) {
+			simplex = { simplex[1], simplex[2], sp1, sp2 };
+		}
+		else {
+			simplex = { simplex[2], simplex[0], sp1, sp2 };
+		}
+	}
+
+
+	bool EPACollisionDetector::isOriginInsideTetrahedron(
+		const utils::FixedVector<glm::vec3, 4>& vertices
+	) const
+	{
+		if (vertices.size() < 4) { return false; }
+
+		for (int i = 0; i < 4; ++i) {
+			int iV1 = i % 3, iV2 = (i + 1) % 3, iV3 = (i + 2) % 3, iV4 = (i + 3) % 3;
+
+			glm::vec3 v1v2 = vertices[iV2] - vertices[iV1];
+			glm::vec3 v1v3 = vertices[iV3] - vertices[iV1];
+			glm::vec3 tNormal = glm::normalize(glm::cross(v1v2, v1v3));
+			if ((glm::dot(tNormal, vertices[iV1]) > -mProjectionPrecision)
+				== (glm::dot(tNormal, vertices[iV4]) > -mProjectionPrecision)
+			) {
+				return false;
+			}
 		}
 
-		simplex.push_back(sp);
+		return true;
 	}
 
 
@@ -257,7 +293,7 @@ namespace se::collision {
 		// If we removed the closestFace then we have to recover it
 		if (iClosestFace < 0) {
 			for (int iFace : overlappingFaces) { polytope.removeFace(iFace); }
-			iClosestFace = polytope.addFace({ closestFaceIndices[0], closestFaceIndices[1], closestFaceIndices[2] });
+			iClosestFace = polytope.addFace(closestFaceIndices);
 		}
 
 		return iClosestFace;

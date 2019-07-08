@@ -61,14 +61,14 @@ namespace se::physics {
 		virtual ~Constraint() = default;
 
 		/** @return the a pointer to the ConstraintBounds of the Constraint */
-		inline const ConstraintBounds* getConstraintBounds() const
+		const ConstraintBounds* getConstraintBounds() const
 		{ return mConstraintBounds; };
 
 		/** Returns the specified RigidBody
 		 *
 		 * @param	rb the index of the RigidBody (0 or 1)
 		 * @return	a pointer the the RigidBody */
-		inline RigidBody* getRigidBody(int rb) const
+		RigidBody* getRigidBody(std::size_t rb) const
 		{ return mRigidBodies[rb]; };
 
 		/** @return the value of the Bias of the constraint */

@@ -1,4 +1,5 @@
 #include "se/app/EventManager.h"
+#include "se/utils/Log.h"
 
 namespace se::app
 {
@@ -8,6 +9,9 @@ namespace se::app
 		if (eventListener) {
 			int iTopic = static_cast<int>(topic);
 			mListenersPerTopic[iTopic].push_back(eventListener);
+
+			SOMBRA_INFO_LOG << "Subscribed IEventListener " << eventListener << " to " << topic
+				<< " at index " << mListenersPerTopic[iTopic].size() - 1;
 		}
 	}
 
@@ -20,6 +24,9 @@ namespace se::app
 				std::remove(mListenersPerTopic[iTopic].begin(), mListenersPerTopic[iTopic].end(), eventListener),
 				mListenersPerTopic[iTopic].end()
 			);
+
+			SOMBRA_INFO_LOG << "Unsubscribed IEventListener " << eventListener << " from " << topic
+				<< " at index " << mListenersPerTopic[iTopic].size();
 		}
 	}
 

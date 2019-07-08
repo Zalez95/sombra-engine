@@ -7,13 +7,13 @@
 
 namespace se::collision {
 
-	/** Calculates the minimum distance from a point to the given edge
+	/** Calculates the closest point to p in the given edge
 	 *
-	 * @param	p the point whose distance to the edge we want to know
+	 * @param	p the point
 	 * @param	e1 the first point of the edge
 	 * @param	e2 the second point of the edge
-	 * @return	the minimum distance of p to the edge between e1 and e2 */
-	float distancePointEdge(
+	 * @return	the closest point in the plane to the given point p */
+	glm::vec3 getClosestPointInEdge(
 		const glm::vec3& p,
 		const glm::vec3& e1, const glm::vec3& e2
 	);
@@ -23,7 +23,7 @@ namespace se::collision {
 	 *
 	 * @param	p the point
 	 * @param	planePoints three of the points of the plane
-	 * @return	the closest points in the plane to the given point p */
+	 * @return	the closest point in the plane to the given point p */
 	glm::vec3 getClosestPointInPlane(
 		const glm::vec3& p,
 		const std::array<glm::vec3, 3>& planePoints

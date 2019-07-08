@@ -17,7 +17,7 @@ namespace se::app
 	{
 	public:		// Functions
 		/** Class destructor */
-		virtual ~IEventListener() {};
+		virtual ~IEventListener() = default;
 
 		/** Notifies the IEventListener of the given event
 		 *

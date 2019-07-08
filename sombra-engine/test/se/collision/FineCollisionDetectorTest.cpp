@@ -84,12 +84,11 @@ TEST(FineCollisionDetector, SphereSphere2)
 	}
 }
 
-/** Non colliding */
-TEST(FineCollisionDetector, CPolyCPoly1)
+TEST(FineCollisionDetector, CPolyCPolyNonColliding)
 {
 	const glm::vec3 v1(-5.65946f, -2.8255f, -1.52118f), v2(-4.58841f, -2.39753f, -0.164247f);
 	const glm::quat o1(0.890843f, 0.349613f, 0.061734f, 0.283475f), o2(0.962876f, -0.158823f, 0.216784f, -0.025477f);
-	BoundingBox bb1(glm::vec3(2.0f, 1.0f, 2.0f)), bb2(glm::vec3(1.0f, 1.0f, 0.5f));
+	BoundingBox bb1({ 2.0f, 1.0f, 2.0f }), bb2({ 1.0f, 1.0f, 0.5f });
 
 	glm::mat4 r1 = glm::mat4_cast(o1);
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
@@ -108,8 +107,7 @@ TEST(FineCollisionDetector, CPolyCPoly1)
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
 
-/** Colliding - vertex face */
-TEST(FineCollisionDetector, CPolyCPoly2)
+TEST(FineCollisionDetector, CPolyCPolyVertexFace)
 {
 	const glm::vec3 expectedWorldPos[] = {
 		{ -3.471183140f, 4.671001170f, -2.168255635f },
@@ -123,7 +121,7 @@ TEST(FineCollisionDetector, CPolyCPoly2)
 	const float expectedPenetration = 0.000005355f;
 	const glm::vec3 v1(-2.787537574f, 5.180943965f, -3.084435224f), v2(-3.950720071f, 4.450982570f, -1.945194125f);
 	const glm::quat o1(0.770950198f, 0.507247209f, -0.107715316f, 0.369774848f), o2(0.550417125f, -0.692481637f, -0.259043514f, 0.387822926f);
-	BoundingBox bb1(glm::vec3(1.0f, 2.0f, 2.0f)), bb2(glm::vec3(1.0f, 0.25f, 0.5f));
+	BoundingBox bb1({ 1.0f, 2.0f, 2.0f }), bb2({ 1.0f, 0.25f, 0.5f });
 
 	glm::mat4 r1 = glm::mat4_cast(o1);
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
@@ -154,8 +152,8 @@ TEST(FineCollisionDetector, CPolyCPoly2)
 	}
 }
 
-/** Colliding vertex - vertex */
-TEST(FineCollisionDetector, CPolyCPoly3)
+
+TEST(FineCollisionDetector, CPolyCPolyVertexVertex)
 {
 	const glm::vec3 expectedWorldPos[] = {
 		{ 2.647833347f, 1.175995111f, 0.072492107f },
@@ -169,7 +167,7 @@ TEST(FineCollisionDetector, CPolyCPoly3)
 	const float expectedPenetration = 0.0f;
 	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0f), v2(3.065070390f, 0.126421570f, 0.363925665f);
 	const glm::quat o1(0.900554239f, -0.349306106f, -0.093596287f, -0.241302788f), o2(0.637856543f, -0.079467326f, -0.094705462f, -0.760167777f);
-	BoundingBox bb1(glm::vec3(1.0f, 2.2f, 2.0f)), bb2(glm::vec3(2.0f, 1.2f, 0.05f));
+	BoundingBox bb1({ 1.0f, 2.2f, 2.0f }), bb2({ 2.0f, 1.2f, 0.05f });
 
 	glm::mat4 r1 = glm::mat4_cast(o1);
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), v1);
@@ -256,10 +254,10 @@ TEST(FineCollisionDetector, TriangleCPoly1)
 		glm::vec3( 0.072549045f, 0.111764729f, -0.154901952f ),
 		glm::vec3( 0.068627476f, 0.088235318f, -0.154901952f )
 	});
-	glm::mat4 transforms2 = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f, 10.0f, 100.0f));
+	glm::mat4 transforms2 = glm::scale(glm::mat4(1.0f), { 100.0f, 10.0f, 100.0f });
 	tr1.setTransforms(transforms2);
 
-	BoundingBox bb1(glm::vec3(1.0f, 1.0f, 1.0f));
+	BoundingBox bb1({ 1.0f, 1.0f, 1.0f });
 	glm::mat4 transforms1{
 		{0.165384650f, -0.909461260f, 0.381481737f, 0.0f},
 		{0.909961343f, -0.008435368f, -0.414607644f, 0.0f},
