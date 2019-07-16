@@ -1,11 +1,21 @@
-#ifndef TRIANGLE_H
-#define TRIANGLE_H
+#ifndef MATH_UTILS_H
+#define MATH_UTILS_H
 
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
 
-namespace se::collision {
+namespace se::utils {
+
+	/** Calculates the pow with the given numbers
+	 *
+	 * @param	base the base of the pow function
+	 * @param	exponent the exponent of the pow function
+	 * @return	the value of the base raised to the exponent power */
+	template <typename T>
+	constexpr T ipow(T base, unsigned int exponent)
+	{ return (exponent == 0)? 1 : base * ipow(base, exponent - 1); }
+
 
 	/** Calculates the closest point to p in the given edge
 	 *
@@ -73,4 +83,4 @@ namespace se::collision {
 
 }
 
-#endif		// TRIANGLE_H
+#endif		// MATH_UTILS_H

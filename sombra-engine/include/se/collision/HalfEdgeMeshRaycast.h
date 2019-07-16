@@ -3,6 +3,8 @@
 
 #include "AABB.h"
 #include "HalfEdgeMesh.h"
+#include "../utils/MathUtils.h"
+#include "../utils/FixedVector.h"
 
 namespace se::collision {
 
@@ -28,36 +30,33 @@ namespace se::collision {
 	/**
 	 * Class HalfEdgeMeshRaycast, it's used to Ray-Mesh intersections with
 	 * the HalfEdgeMesh objects
+	 *
+	 * @tparam	maxHeight the maximum height of the generated kd-tree
 	 */
+	template <unsigned int maxHeight>
 	class HalfEdgeMeshRaycast
 	{
 	private:	// Nested types
-		/** Holds the data of each node in the kd-tree */
-		struct TreeNode
-		{
-			/** The indices of the HEFaces of the current node */
-			std::vector<int> iFaces;
+		static_assert(maxHeight > 1, "The kd-tree must have at least one node");
 
-			/** The bounding box that contains all of the current HEFaces */
-			AABB aabb;
+		struct TreeNode;
+		struct KDBuildStackContent;
+		struct KDHitStackContent;
 
-			/** The index of our left child node in the kd-tree */
-			int iLeftChild;
+		/** The maximum number of nodes in the kd-tree */
+		constexpr static unsigned int kMaxNumNodes =
+			utils::ipow(2, maxHeight) - 1;
 
-			/** The index of our right child node in the kd-tree */
-			int iRightChild;
-		};
+		/** The maximum node depth allowed in the kd-tree */
+		constexpr static unsigned int kMaxDepth = maxHeight - 1;
 
 		/** A kd-tree used for splitting the HEFaces, the tree structure is
 		 * stored inside a vector */
-		using Tree = std::vector<TreeNode>;
+		using Tree = utils::FixedVector<TreeNode, kMaxNumNodes>;
 
 	private:	// Attributes
 		/** The epsilon value needed for the comparisons with the half rays */
 		const float mEpsilon;
-
-		/** The maximum depth of the generated binary-tree */
-		const int mMaxDepth;
 
 		/** The HalfEdgeMesh to calculate the ray intersections with */
 		const HalfEdgeMesh* mMesh;
@@ -76,10 +75,9 @@ namespace se::collision {
 		/** Creates a new HalfEdgeMeshRaycast object
 		 *
 		 * @param	epsilon the epsilon value needed for the comparisons with
-		 *			the half rays
-		 * @param	maxDepth the maximum depth of the generated kd-tree */
-		HalfEdgeMeshRaycast(float epsilon, int maxDepth) :
-			mEpsilon(epsilon), mMaxDepth(maxDepth),
+		 *			the half rays */
+		HalfEdgeMeshRaycast(float epsilon) :
+			mEpsilon(epsilon),
 			mMesh(nullptr), mFaceNormals(nullptr), mIRootNode(-1) {};
 
 		/** Builds the kd-tree iteratively for the given mesh
@@ -122,5 +120,7 @@ namespace se::collision {
 	};
 
 }
+
+#include "se/collision/HalfEdgeMeshRaycast.inl"
 
 #endif		// HALF_EDGE_MESH_RAYCAST_H

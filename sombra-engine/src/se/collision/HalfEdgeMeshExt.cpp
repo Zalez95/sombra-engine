@@ -6,7 +6,7 @@
 #include <glm/gtc/constants.hpp>
 #include "se/collision/AABB.h"
 #include "se/collision/HalfEdgeMeshExt.h"
-#include "Geometry.h"
+#include "se/utils/MathUtils.h"
 
 #define NORMALIZATION_ZERO 0.0001f
 
@@ -218,7 +218,7 @@ namespace se::collision {
 				const glm::vec3& p2 = meshData.vertices[oppositeEdge.vertex].location;
 				const glm::vec3& p3 = meshData.vertices[currentEdge.vertex].location;
 
-				area += calculateTriangleArea({ p1, p2, p3 });
+				area += utils::calculateTriangleArea({ p1, p2, p3 });
 
 				iCurrentEdge = currentEdge.nextEdge;
 			}

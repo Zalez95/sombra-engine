@@ -1,11 +1,11 @@
 #include <algorithm>
+#include "se/utils/MathUtils.h"
 #include "se/collision/Contact.h"
 #include "se/collision/Manifold.h"
 #include "se/collision/Collider.h"
 #include "se/collision/ConvexCollider.h"
 #include "se/collision/ConcaveCollider.h"
 #include "se/collision/FineCollisionDetector.h"
-#include "Geometry.h"
 
 namespace se::collision {
 
@@ -249,12 +249,12 @@ namespace se::collision {
 		Contact* contact3 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 p1 = getClosestPointInEdge(
+				glm::vec3 p1 = utils::getClosestPointInEdge(
 					c1->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
 				float d1 = glm::length(c1->worldPosition[0] - p1);
-				glm::vec3 p2 = getClosestPointInEdge(
+				glm::vec3 p2 = utils::getClosestPointInEdge(
 					c2->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
@@ -266,12 +266,12 @@ namespace se::collision {
 		Contact* contact4 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 p1 = getClosestPointInPlane(
+				glm::vec3 p1 = utils::getClosestPointInPlane(
 					c1->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
 				float d1 = glm::length(c1->worldPosition[0] - p1);
-				glm::vec3 p2 = getClosestPointInPlane(
+				glm::vec3 p2 = utils::getClosestPointInPlane(
 					c2->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);

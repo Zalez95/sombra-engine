@@ -1,6 +1,6 @@
-#include "Geometry.h"
+#include "se/utils/MathUtils.h"
 
-namespace se::collision {
+namespace se::utils {
 
 	glm::vec3 getClosestPointInEdge(
 		const glm::vec3& p,
@@ -96,11 +96,7 @@ namespace se::collision {
 	{
 		glm::vec3 v12 = triangle[1] - triangle[0];
 		glm::vec3 v13 = triangle[2] - triangle[0];
-		return 0.5f * std::sqrt(
-			std::pow(v12.y * v13.z - v12.z * v13.y, 2)
-			+ std::pow(v12.z * v13.x - v12.x * v13.z, 2)
-			+ std::pow(v12.x * v13.y - v12.y * v13.x, 2)
-		);
+		return 0.5f * glm::length(glm::cross(v12, v13));
 	}
 
 }

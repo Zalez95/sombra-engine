@@ -12,6 +12,9 @@ namespace se::utils {
 	 * Internally the vector stores the elements contiguously so they could be
 	 * accessed with pointers and offsets. The FixedVector won't do any
 	 * allocation at runtime.
+	 *
+	 * @tparam	N the maximum number of elements that can be stored in the
+	 *			container
 	 */
 	template <typename T, std::size_t N>
 	class FixedVector

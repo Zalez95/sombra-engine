@@ -48,8 +48,8 @@ namespace se::collision {
 		};
 
 	private:	// Attributes
-		/** The maximum kd-tree depth for the generated raycasts */
-		const int mMaxKDTreeDepth;
+		/** The maximum kd-tree height for the generated raycasts */
+		constexpr static unsigned int kMaxKDTreeHeight = 8;
 
 		/** The maximum concavity of the dual graph edges needed for HACD
 		 * algorithm. It's value is a proportion of the HalfEdgeMesh size */
@@ -67,7 +67,7 @@ namespace se::collision {
 		FaceNormals mFaceNormals;
 
 		/** The object used for calculating ray hits with the current HEMesh */
-		HalfEdgeMeshRaycast mMeshRaycast;
+		HalfEdgeMeshRaycast<kMaxKDTreeHeight> mMeshRaycast;
 
 		/** The Dual Graph asociated with mesh to decompose. Each vertex in
 		 * this graph is a triangle in the mesh, and each vertex in the Graph
@@ -98,9 +98,8 @@ namespace se::collision {
 		 * @param	epsilon the epsilon value for the comparisons during
 		 *			the HACD algorithm computation */
 		HACD(float maximumConcavity, float epsilon) :
-			mMaxKDTreeDepth(16),
 			mMaximumConcavity(maximumConcavity), mEpsilon(epsilon),
-			mMeshRaycast(mEpsilon, mMaxKDTreeDepth),
+			mMeshRaycast(mEpsilon),
 			mAABBSize(0.0f), mScaledEpsilon(epsilon),
 			mAlpha(0.0f), mBeta(0.0f), mGamma(0.01f) {};
 

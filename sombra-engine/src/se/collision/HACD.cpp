@@ -6,7 +6,7 @@
 #include "se/collision/QuickHull.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "se/utils/FixedVector.h"
-#include "Geometry.h"
+#include "se/utils/MathUtils.h"
 
 namespace se::collision {
 
@@ -322,7 +322,7 @@ namespace se::collision {
 	{
 		float maxConcavity = -std::numeric_limits<float>::max();
 
-		HalfEdgeMeshRaycast convexHullRaycast(mEpsilon, mMaxKDTreeDepth);
+		HalfEdgeMeshRaycast<kMaxKDTreeHeight> convexHullRaycast(mEpsilon);
 		convexHullRaycast.buildKDTree(&convexHullMesh, &convexHullNormals);
 
 		for (auto itVertex = originalMesh.vertices.begin(); itVertex != originalMesh.vertices.end(); ++itVertex) {
