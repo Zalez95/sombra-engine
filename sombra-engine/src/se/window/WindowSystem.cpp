@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "se/window/WindowSystem.h"
+#include "se/utils/Log.h"
 
 namespace se::window {
 
@@ -33,6 +34,10 @@ namespace se::window {
 		glfwSwapInterval(mWindowData.vsync? 1 : 0);
 		glfwWindowHint(GLFW_RESIZABLE, mWindowData.resizable);
 
+		glfwSetErrorCallback([](int error, const char* description)
+		{
+			SOMBRA_ERROR_LOG << "Error code: " << error << ", " << description;
+		});
 		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height)
 		{
 			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));

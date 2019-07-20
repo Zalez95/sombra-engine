@@ -79,13 +79,18 @@ namespace se::graphics {
 	int Program::getUniformLocation(const char* name) const
 	{
 		GL_WRAP( int uniformLocation = glGetUniformLocation(mProgramId, name) );
+
+		if (uniformLocation == -1) {
+			SOMBRA_WARN_LOG << "Uniform variable \"" << name << "\" wasn't found";
+		}
+
 		return uniformLocation;
 	}
 
 
 	void Program::setUniform(const char* name, int value) const
 	{
-		GL_WRAP( glUniform1i(glGetUniformLocation(mProgramId, name), value) );
+		GL_WRAP( glUniform1i(getUniformLocation(name), value) );
 	}
 
 
@@ -97,7 +102,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, unsigned int value) const
 	{
-		GL_WRAP( glUniform1ui(glGetUniformLocation(mProgramId, name), value) );
+		GL_WRAP( glUniform1ui(getUniformLocation(name), value) );
 	}
 
 
@@ -109,7 +114,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, float value) const
 	{
-		GL_WRAP( glUniform1f(glGetUniformLocation(mProgramId, name), value) );
+		GL_WRAP( glUniform1f(getUniformLocation(name), value) );
 	}
 
 
@@ -121,7 +126,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec2& vector) const
 	{
-		GL_WRAP( glUniform2f(glGetUniformLocation(mProgramId, name), vector.x, vector.y) );
+		GL_WRAP( glUniform2f(getUniformLocation(name), vector.x, vector.y) );
 	}
 
 
@@ -133,7 +138,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec3& vector) const
 	{
-		GL_WRAP( glUniform3f(glGetUniformLocation(mProgramId, name), vector.x, vector.y, vector.z) );
+		GL_WRAP( glUniform3f(getUniformLocation(name), vector.x, vector.y, vector.z) );
 	}
 
 
@@ -145,7 +150,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::vec4& vector) const
 	{
-		GL_WRAP( glUniform4f(glGetUniformLocation(mProgramId, name), vector.x, vector.y, vector.z, vector.w) );
+		GL_WRAP( glUniform4f(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w) );
 	}
 
 
@@ -157,7 +162,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat3& matrix) const
 	{
-		GL_WRAP( glUniformMatrix3fv(glGetUniformLocation(mProgramId, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 
@@ -169,7 +174,7 @@ namespace se::graphics {
 
 	void Program::setUniform(const char* name, const glm::mat4& matrix) const
 	{
-		GL_WRAP( glUniformMatrix4fv(glGetUniformLocation(mProgramId, name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 	}
 
 

@@ -31,9 +31,25 @@ namespace se::graphics {
 
 	std::string GraphicsSystem::getGLInfo() const
 	{
-		return	"OpenGL Renderer: " + std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER))) +
-				"\nOpenGL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))) +
-				"\nGLSL version supported " + std::string(reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+		GL_WRAP( const char* glRenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER)) );
+		GL_WRAP( const char* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION)) );
+		GL_WRAP( const char* glslVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)) );
+
+		int maxVertexUniforms = -1;
+		GL_WRAP( glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVertexUniforms) );
+
+		int maxGeometryUniforms = -1;
+		GL_WRAP( glGetIntegerv(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, &maxGeometryUniforms) );
+
+		int maxFragmentUniforms = -1;
+		GL_WRAP( glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniforms) );
+
+		return	std::string("OpenGL Renderer: ") + glRenderer + "\n"
+				+ "OpenGL version supported: " + glVersion + "\n"
+				+ "GLSL version supported: " + glslVersion + "\n"
+				+ "Max vertex uniforms: " + std::to_string(maxVertexUniforms) + "\n"
+				+ "Max geometry uniforms: " + std::to_string(maxGeometryUniforms) + "\n"
+				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n";
 	}
 
 

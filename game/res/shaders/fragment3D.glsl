@@ -177,36 +177,31 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 void main()
 {
 	// Get the texture data for the current fragment
-	vec4 surfaceColor = uMaterial.pbrMetallicRoughness.baseColorFactor;
-	if (uMaterial.pbrMetallicRoughness.useBaseColorTexture) {
-		vec4 textureColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
-		surfaceColor *= pow(textureColor, vec4(2.2));
-	}
+	vec4 surfaceColor = (uMaterial.pbrMetallicRoughness.useBaseColorTexture)?
+		pow(texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0), vec4(2.2)) :
+		uMaterial.pbrMetallicRoughness.baseColorFactor;
 
-	float metallic	= uMaterial.pbrMetallicRoughness.metallicFactor;
-	float roughness	= uMaterial.pbrMetallicRoughness.roughnessFactor;
-	if (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture) {
-		vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
-		metallic	*= metallicRoughnessColor.b;
-		roughness	*= metallicRoughnessColor.g;
-	}
+	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
 
-	vec3 surfaceNormal = vec3(0.0, 0.0, 1.0);
-	if (uMaterial.useNormalTexture) {
-		surfaceNormal = texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb;
-		surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
-	}
+	float metallic = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
+		uMaterial.pbrMetallicRoughness.metallicFactor * metallicRoughnessColor.b :
+		uMaterial.pbrMetallicRoughness.metallicFactor;
 
-	float surfaceAO = 0.0;
-	if (uMaterial.useOcclusionTexture) {
-		surfaceAO = texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r;
-	}
+	float roughness = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
+		uMaterial.pbrMetallicRoughness.roughnessFactor * metallicRoughnessColor.g :
+		uMaterial.pbrMetallicRoughness.roughnessFactor;
 
-	vec3 emissiveColor = vec3(0.0);
-	if (uMaterial.useEmissiveTexture) {
-		emissiveColor = texture(uMaterial.emissiveTexture, vsVertex.texCoord0).rgb;
-		emissiveColor *= uMaterial.emissiveFactor;
-	}
+	vec3 surfaceNormal = (uMaterial.useNormalTexture)?
+		normalize(2.0 * texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb - 1.0) :
+		vec3(0.0, 0.0, 1.0);
+
+	float surfaceAO = (uMaterial.useOcclusionTexture)?
+		texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r :
+		0.0;
+
+	vec3 emissiveColor = (uMaterial.useEmissiveTexture)?
+		uMaterial.emissiveFactor * texture(uMaterial.emissiveTexture, vsVertex.texCoord0).rgb :
+		vec3(0.0);
 
 	// Check alpha cutoff
 	if (uMaterial.checkAlphaCutoff && (surfaceColor.a < uMaterial.alphaCutoff)) {

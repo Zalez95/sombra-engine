@@ -60,8 +60,8 @@ namespace game {
 	const float Game::kUpdateTime		= 0.016f;
 	const unsigned int Game::kNumCubes	= 50;
 	const float Game::kFOV				= glm::radians(60.0f);
-	const float Game::kZNear			= 0.5f;
-	const float Game::kZFar				= 250.0f;
+	const float Game::kZNear			= 0.1f;
+	const float Game::kZFar				= 2000.0f;
 
 // Public functions
 	Game::Game() : se::app::Application(kTitle, kWidth, kHeight, kUpdateTime) {}
@@ -431,7 +431,7 @@ namespace game {
 		std::shared_ptr<se::graphics::Material> planeMaterial(new se::graphics::Material{
 			"plane_material",
 			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), nullptr, 0.2f, 0.5f, nullptr },
-			nullptr, nullptr, texture2, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+			nullptr, nullptr, texture2, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
 		});
 
 		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(mesh2, planeMaterial);

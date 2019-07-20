@@ -46,7 +46,7 @@ namespace se::window {
 		WindowData mWindowData;
 
 		/** A pointer to the GLFW Window */
-		GLFWwindow*	mWindow;
+		GLFWwindow* mWindow;
 
 		/** The input data that we will update each frame */
 		InputData mInputData;

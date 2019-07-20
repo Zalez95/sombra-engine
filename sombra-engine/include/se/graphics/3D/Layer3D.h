@@ -36,6 +36,9 @@ namespace se::graphics {
 		std::vector<const PointLight*> mPointLights;
 
 	public:		// Functions
+		/** Creates a new Layer3D */
+		Layer3D() : mCamera(nullptr) {};
+
 		/** Adds the given Renderable to the Layer so it will be rendered
 		 *
 		 * @param	renderable3D renderable3D a pointer to the Renderable3D to
