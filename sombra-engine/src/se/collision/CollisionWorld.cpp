@@ -27,14 +27,20 @@ namespace se::collision {
 	void CollisionWorld::update()
 	{
 		// Clean old non intersecting Manifolds
+		std::vector<Manifold*> manifolds;
 		for (Manifold* manifold : mManifolds) {
-			if (manifold->state == ManifoldState::Disjoint) {
+			if (manifold->state != ManifoldState::Disjoint) {
+				manifold->state = ManifoldState::Disjoint;
+				manifolds.push_back(manifold);
+			}
+			else {
 				auto itPair = mMapCollidersManifolds.find(std::make_pair(manifold->colliders[0], manifold->colliders[1]));
 				if (itPair != mMapCollidersManifolds.end()) {
 					mMapCollidersManifolds.erase(itPair);
 				}
 			}
 		}
+		std::swap(manifolds, mManifolds);
 
 		// Broad collision phase
 		for (const Collider* collider : mColliders) {
@@ -43,7 +49,6 @@ namespace se::collision {
 		auto intersectingColliders = mCoarseCollisionDetector.getIntersectingColliders();
 
 		// Narrow collision phase
-		mManifolds.clear();
 		for (ColliderPair& pair : intersectingColliders) {
 			// Find a Manifold between the given colliders
 			auto itPairManifold = mMapCollidersManifolds.find(std::make_pair(pair.first, pair.second));
@@ -53,12 +58,13 @@ namespace se::collision {
 
 			if (itPairManifold != mMapCollidersManifolds.end()) {
 				// Update the Manifold data
-				mFineCollisionDetector.collide(itPairManifold->second);
-				mManifolds.push_back(&itPairManifold->second);
+				if (mFineCollisionDetector.collide(itPairManifold->second)) {
+					itPairManifold->second.state = ManifoldState::Intersecting;
+				}
 			}
 			else {
 				// Create a new Manifold
-				Manifold manifold(pair.first, pair.second);
+				Manifold manifold(pair.first, pair.second, ManifoldState::Intersecting);
 				if (mFineCollisionDetector.collide(manifold)) {
 					itPairManifold = mMapCollidersManifolds.emplace(
 						std::piecewise_construct,

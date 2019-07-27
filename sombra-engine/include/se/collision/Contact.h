@@ -15,7 +15,8 @@ namespace se::collision {
 		float penetration;
 
 		/** The normal direction along we should separate the intersecting
-		 * bodies in world space */
+		 * Colliders in world space. It's a vector with an origin in the second
+		 * contact point pointing outside the first Collider */
 		glm::vec3 normal;
 
 		/** The coordinates of the Contact point relative to each of the

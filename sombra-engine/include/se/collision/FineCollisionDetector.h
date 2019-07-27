@@ -16,8 +16,8 @@ namespace se::collision {
 
 
 	/**
-	 * Class FineCollisionDetector, is the class that calculates the data
-	 * generated from the intersection (collision) of volumes (Colliders)
+	 * Class FineCollisionDetector, is the class that calculates the contact
+	 * data generated from the intersection (collision) of volumes (Colliders)
 	 */
 	class FineCollisionDetector
 	{
@@ -52,14 +52,16 @@ namespace se::collision {
 			mContactSeparation(contactSeparation) {};
 
 		/** Checks if the Colliders of the given manifold are intersecting,
-		 * and if that is the case, calculates the contact data of the
+		 * and if that is the case, updates the manifold contact data of the
 		 * collision that happened between those Colliders.
 		 *
 		 * @param	manifold a contact manifold with the Colliders to check if
 		 *			they are colliding. If they are colliding, the manifold
 		 *			contact data will be updated.
 		 * @return	true if the given Colliders are intersecting, false
-		 *			otherwise */
+		 *			otherwise
+		 * @note	the state of the manifold won't be changed, only the contact
+		 *			data */
 		bool collide(Manifold& manifold) const;
 	private:
 		/** Calculates the contact data of the collision that happened between

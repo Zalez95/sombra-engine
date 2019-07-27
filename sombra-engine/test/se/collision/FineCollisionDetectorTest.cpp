@@ -48,7 +48,7 @@ TEST(FineCollisionDetector, SphereSphere2)
 		{ -1.154848634f, 0.771644742f, -2.078674167f },
 		{ 4.095410456f, -3.183182967f, -0.384987776f }
 	};
-	const glm::vec3 expectedNormal(-0.463621795f, 0.311643868f, -0.829417228f);
+	const glm::vec3 expectedNormal(-0.459900856f, 0.313255608f, -0.830880344f);
 	const float expectedPenetration = 0.000000159f;
 	const glm::vec3 v1(13.5f, -5.25f, 7.1f), v2(9.943065643f, -2.873334407f, 0.697683811f);
 	const glm::quat o1(1.0f, glm::vec3(0.0f)), o2(0.795f, -0.002f, -0.575f, 0.192f);
@@ -70,7 +70,6 @@ TEST(FineCollisionDetector, SphereSphere2)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
 	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
 	const Contact& res = manifold.contacts.front();
@@ -138,7 +137,6 @@ TEST(FineCollisionDetector, CPolyCPolyVertexFace)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
 	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
 	const Contact& res = manifold.contacts.front();
@@ -163,7 +161,7 @@ TEST(FineCollisionDetector, CPolyCPolyVertexVertex)
 		{ 0.5f, -1.1f, -1.0f },
 		{ -1.0f, -0.6f, -0.025f }
 	};
-	const glm::vec3 expectedNormal(0.907657742f, -0.345736473f, -0.237957358f);
+	const glm::vec3 expectedNormal(0.866025448f, -0.369224906f, 0.337154180f);
 	const float expectedPenetration = 0.0f;
 	const glm::vec3 v1(2.764820814f, 2.738384008f, 0.0f), v2(3.065070390f, 0.126421570f, 0.363925665f);
 	const glm::quat o1(0.900554239f, -0.349306106f, -0.093596287f, -0.241302788f), o2(0.637856543f, -0.079467326f, -0.094705462f, -0.760167777f);
@@ -184,7 +182,6 @@ TEST(FineCollisionDetector, CPolyCPolyVertexVertex)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
 	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
 	const Contact& res = manifold.contacts.front();
@@ -232,7 +229,6 @@ TEST(FineCollisionDetector, SphereCPoly1)
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
-	ASSERT_EQ(manifold.state, ManifoldState::Intersecting);
 	ASSERT_EQ(static_cast<int>(manifold.contacts.size()), 1);
 
 	const Contact& res = manifold.contacts.front();

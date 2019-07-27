@@ -80,7 +80,7 @@ TEST(RigidBody, frictionConstraint)
 
 	se::physics::FrictionConstraint frictionConstraint({ &rb1, &rb2 }, 9.8f, mu);
 	frictionConstraint.calculateConstraintBounds(averageMass);
-	frictionConstraint.setConstraintPoints({ glm::vec3(0.5f, 1.0f, 0.02f ), glm::vec3(-1.0f, 1.0f, -3.25f) });
+	frictionConstraint.setConstraintVectors({ glm::vec3(0.5f, 1.0f, 0.02f ), glm::vec3(-1.0f, 1.0f, -3.25f) });
 	frictionConstraint.setTangent({ 0.666666686f, 0.666666686f, -0.333333343f });
 
 	se::physics::ConstraintManager constraintManager;

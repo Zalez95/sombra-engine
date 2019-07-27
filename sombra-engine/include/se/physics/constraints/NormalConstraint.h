@@ -35,12 +35,13 @@ namespace se::physics {
 		 * applying the NormalConstraint. It's used to reduce jitters */
 		float mSlopRestitution;
 
-		/** The positions of the RigidBodies that will be affected by the
-		 * constraint in local space */
-		std::array<glm::vec3, 2> mConstraintPoints;
+		/** The vectors in world space that points from the RigidBodies center
+		 * of masses to their respective contact points */
+		std::array<glm::vec3, 2> mConstraintVectors;
 
 		/** The normal vector from the first RigidBody to the second one in
-		 * local space */
+		 * world space. It's an unit-length vector with an origin in the second
+		 * constraint point pointing outside the first RigidBody */
 		glm::vec3 mNormal;
 
 		/** The elapsed time since the last update */
@@ -51,7 +52,7 @@ namespace se::physics {
 		NormalConstraint() :
 			mBeta(0.0f), mRestitutionFactor(0.0f),
 			mSlopPenetration(0.0f), mSlopRestitution(0.0f),
-			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mNormal(0.0f), mDeltaTime(0.0f) {};
 
 		/** Creates a new NormalConstraint
@@ -74,7 +75,7 @@ namespace se::physics {
 			mBeta(beta), mRestitutionFactor(restitutionFactor),
 			mSlopPenetration(slopPenetration),
 			mSlopRestitution(slopRestitution),
-			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mNormal(0.0f), mDeltaTime(0.0f) {};
 
 		/** Class destructor */
@@ -86,18 +87,18 @@ namespace se::physics {
 		/** @return the Jacobian matrix of the constraint */
 		std::array<float, 12> getJacobianMatrix() const override;
 
-		/** Sets the constraint points of the NormalConstraint
+		/** Sets the constraint vectors of the NormalConstraint
 		 *
-		 * @param	constraintPoints the positions of the RigidBodies that
-		 *			will be affected by the constraint in local space */
-		void setConstraintPoints(
-			const std::array<glm::vec3, 2>& constraintPoints
-		) { mConstraintPoints = constraintPoints; };
+		 * @param	constraintVectors the vectors in world space that points
+		 *			from the RigidBodies center of masses to their respective
+		 *			contact points */
+		void setConstraintVectors(
+			const std::array<glm::vec3, 2>& constraintVectors
+		) { mConstraintVectors = constraintVectors; };
 
 		/** Sets the normal vector of the NormalConstraint
 		 *
-		 * @param	normal the normal unit-length vector at the first constraint
-		 *			point pointing outside the first RigidBody */
+		 * @param	normal the new normal vector */
 		void setNormal(const glm::vec3& normal) { mNormal = normal; };
 
 		/** Sets the elapsed time since the last update of the NormalConstraint

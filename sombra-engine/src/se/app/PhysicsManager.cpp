@@ -229,6 +229,11 @@ namespace se::app {
 		for (std::size_t i = 0; i < manifold->contacts.size(); ++i) {
 			const collision::Contact& contact = manifold->contacts[i];
 
+			// Calculate the vectors that points from the RigidBodies center of
+			// mass to their contact points
+			glm::vec3 r1 = contact.worldPosition[0] - rb1->position;
+			glm::vec3 r2 = contact.worldPosition[1] - rb2->position;
+
 			// Calculate two tangent vectors to the Contact normal
 			glm::vec3 vAxis(0.0f);
 			auto absCompare = [](float f1, float f2) { return std::abs(f1) < std::abs(f2); };
@@ -239,15 +244,14 @@ namespace se::app {
 			glm::vec3 tangent2 = glm::cross(contact.normal, tangent1);
 
 			manifoldConstraints[i].normalConstraint.setNormal(contact.normal);
-			manifoldConstraints[i].normalConstraint.setConstraintPoints({ contact.localPosition[0], contact.localPosition[1] });
+			manifoldConstraints[i].normalConstraint.setConstraintVectors({ r1, r2 });
 			manifoldConstraints[i].frictionConstraints[0].setTangent(tangent1);
-			manifoldConstraints[i].frictionConstraints[0].setConstraintPoints({ contact.localPosition[0], contact.localPosition[1] });
+			manifoldConstraints[i].frictionConstraints[0].setConstraintVectors({ r1, r2 });
 			manifoldConstraints[i].frictionConstraints[1].setTangent(tangent2);
-			manifoldConstraints[i].frictionConstraints[1].setConstraintPoints({ contact.localPosition[0], contact.localPosition[1] });
+			manifoldConstraints[i].frictionConstraints[1].setConstraintVectors({ r1, r2 });
 
 			SOMBRA_DEBUG_LOG << "Updated ContactConstraints[" << i << "]: "
-				<< "localPosition[0]=" << glm::to_string(contact.localPosition[0]) << ", "
-				<< "localPosition[1]=" << glm::to_string(contact.localPosition[1]) << ", "
+				<< "r1=" << glm::to_string(r1) << ", " << "r2=" << glm::to_string(r2) << ", "
 				<< "normal=" << glm::to_string(contact.normal) << ", "
 				<< "tangent1=" << glm::to_string(tangent1) << " and tangent2=" << glm::to_string(tangent2);
 		}

@@ -23,9 +23,9 @@ namespace se::physics {
 		 * same) */
 		float mFrictionCoefficient;
 
-		/** The positions of the RigidBodies that will be affected by the
-		 * constraint in local space */
-		std::array<glm::vec3, 2> mConstraintPoints;
+		/** The vectors in world space that points from the RigidBodies center
+		 * of masses to their respective contact points */
+		std::array<glm::vec3, 2> mConstraintVectors;
 
 		/** One of the tangent vector to the contact normal */
 		glm::vec3 mTangent;
@@ -35,7 +35,7 @@ namespace se::physics {
 		FrictionConstraint() :
 			mConstraintBounds{ 0.0f, 0.0f },
 			mGravityAcceleration(0.0f), mFrictionCoefficient(0.0f),
-			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mTangent(0.0f) {};
 
 		/** Creates a new FrictionConstraint
@@ -54,7 +54,7 @@ namespace se::physics {
 			mConstraintBounds{ 0.0f, 0.0f },
 			mGravityAcceleration(gravityAcceleration),
 			mFrictionCoefficient(frictionCoefficient),
-			mConstraintPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mTangent(0.0f) {};
 
 		/** Class destructor */
@@ -66,13 +66,14 @@ namespace se::physics {
 		/** @return the Jacobian matrix of the constraint */
 		std::array<float, 12> getJacobianMatrix() const override;
 
-		/** Sets the constraint points of the FrictionConstraint
+		/** Sets the constraint vectors of the NormalConstraint
 		 *
-		 * @param	constraintPoints the positions of the RigidBodies that
-		 *			will be affected by the constraint in local space */
-		void setConstraintPoints(
-			const std::array<glm::vec3, 2>& constraintPoints
-		) { mConstraintPoints = constraintPoints; };
+		 * @param	constraintVectors the vectors in world space that points
+		 *			from the RigidBodies center of masses to their respective
+		 *			contact points */
+		void setConstraintVectors(
+			const std::array<glm::vec3, 2>& constraintVectors
+		) { mConstraintVectors = constraintVectors; };
 
 		/** Sets the tangent vector of the FrictionConstraint
 		 *

@@ -11,8 +11,8 @@ namespace se::physics {
 
 	std::array<float, 12> FrictionConstraint::getJacobianMatrix() const
 	{
-		glm::vec3 r1xn = glm::cross(mConstraintPoints[0], mTangent);
-		glm::vec3 r2xn = glm::cross(mConstraintPoints[1], mTangent);
+		glm::vec3 r1xn = glm::cross(mConstraintVectors[0], mTangent);
+		glm::vec3 r2xn = glm::cross(mConstraintVectors[1], mTangent);
 
 		return {
 			-mTangent.x, -mTangent.y, -mTangent.z,

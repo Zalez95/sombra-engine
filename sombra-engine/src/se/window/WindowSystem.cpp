@@ -48,13 +48,17 @@ namespace se::window {
 		{
 			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 			// note that GLFW key codes and SE key codes are the same
-			userWindow->mInputData.keys[button] = (action != GLFW_RELEASE);
+			if ((button >= 0) && (button < InputData::kMaxKeys)) {
+				userWindow->mInputData.keys[button] = (action != GLFW_RELEASE);
+			}
 		});
 		glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int /*mods*/)
 		{
 			auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
 			// note that GLFW mouse button codes and SE mouse button codes are the same
-			userWindow->mInputData.mouseButtons[button] = (action != GLFW_RELEASE);
+			if ((button >= 0) && (button < InputData::kMaxMouseButtons)) {
+				userWindow->mInputData.mouseButtons[button] = (action != GLFW_RELEASE);
+			}
 		});
 		glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xpos, double ypos)
 		{

@@ -45,7 +45,7 @@ namespace se::app {
 		static constexpr float kCollisionRestitutionFactor = 0.5f;
 
 		/** The slop penetration value of all the NormalConstraints */
-		static constexpr float kCollisionSlopPenetration = 0.005f;
+		static constexpr float kCollisionSlopPenetration = 0.0005f;
 
 		/** The slop restitution value of all the NormalConstraints */
 		static constexpr float kCollisionSlopRestitution = 0.5f;

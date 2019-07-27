@@ -45,7 +45,6 @@ namespace se::collision {
 		// GJK algorithm
 		auto [collides, simplex] = mGJKCollisionDetector.calculate(collider1, collider2);
 		if (!collides) {
-			manifold.state = ManifoldState::Disjoint;
 			manifold.contacts.clear();
 			return false;
 		}
@@ -53,7 +52,6 @@ namespace se::collision {
 		// EPA Algorithm
 		Contact contact;
 		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, contact)) {
-			manifold.state = ManifoldState::Disjoint;
 			manifold.contacts.clear();
 			return false;
 		}
@@ -64,7 +62,6 @@ namespace se::collision {
 		// Add the new contact to the manifold
 		addContact(contact, manifold);
 
-		manifold.state = ManifoldState::Intersecting;
 		return true;
 	}
 
@@ -108,12 +105,10 @@ namespace se::collision {
 		}
 
 		if (nNewContacts == 0) {
-			manifold.state = ManifoldState::Disjoint;
 			manifold.contacts.clear();
 			return false;
 		}
 
-		manifold.state = ManifoldState::Intersecting;
 		return true;
 	}
 
@@ -153,12 +148,10 @@ namespace se::collision {
 		}
 
 		if (nNewContacts == 0) {
-			manifold.state = ManifoldState::Disjoint;
 			manifold.contacts.clear();
 			return false;
 		}
 
-		manifold.state = ManifoldState::Intersecting;
 		return true;
 	}
 

@@ -73,18 +73,19 @@ namespace se::utils {
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision, glm::vec3& projectedPoint
 	) {
-		glm::vec3 v0 = triangle[1] - triangle[0], v1 = triangle[2] - triangle[0], v2 = point - triangle[0];
-		float den = 1.0f / (v0.x * v1.y - v1.x * v0.y);
+		glm::vec3 u = triangle[1] - triangle[0], v = triangle[2] - triangle[0], w = point - triangle[0];
+		glm::vec3 n = glm::cross(u, v);
 
-		float v = (v2.x * v1.y - v1.x * v2.y) * den;
-		float w = (v0.x * v2.y - v2.x * v0.y) * den;
-		float u = 1.0f - v - w;
+		float nLengthSq = glm::dot(n, n);
+		float gamma	= glm::dot(glm::cross(u, w), n) / nLengthSq;
+		float beta	= glm::dot(glm::cross(w, v), n) / nLengthSq;
+		float alpha	= 1.0f - gamma - beta;
 
-		if ((0.0f - projectionPrecision <= u) && (u <= 1.0f + projectionPrecision)
-			&& (0.0f - projectionPrecision <= v) && (v <= 1.0f + projectionPrecision)
-			&& (0.0f - projectionPrecision <= w) && (w <= 1.0f + projectionPrecision)
+		if ((-projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
+			&& (-projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision)
+			&& (-projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision)
 		) {
-			projectedPoint = glm::vec3(u, v, w);
+			projectedPoint = glm::vec3(alpha, beta, gamma);
 			return true;
 		}
 

@@ -8,17 +8,23 @@ namespace se::physics {
 
 	float NormalConstraint::getBias() const
 	{
-		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintPoints[0];
-		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintPoints[1];
+		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintVectors[0];
+		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintVectors[1];
 		float penetration = glm::dot(p2 - p1, mNormal);
-		float biasError = -mBeta * std::max(penetration - mSlopPenetration, 0.0f) / mDeltaTime;
+		float biasError = 0.0f;
+		if (std::abs(penetration) > mSlopPenetration) {
+			biasError = -mBeta * penetration / mDeltaTime;
+		}
 
 		glm::vec3 v1 = mRigidBodies[0]->linearVelocity
-			+ glm::cross(mRigidBodies[0]->angularVelocity, mConstraintPoints[0]);
+			+ glm::cross(mRigidBodies[0]->angularVelocity, mConstraintVectors[0]);
 		glm::vec3 v2 = mRigidBodies[1]->linearVelocity
-			+ glm::cross(mRigidBodies[1]->angularVelocity, mConstraintPoints[1]);
+			+ glm::cross(mRigidBodies[1]->angularVelocity, mConstraintVectors[1]);
 		float closingVelocity = glm::dot(v2 - v1, mNormal);
-		float biasRestitution = mRestitutionFactor * std::max(closingVelocity - mSlopRestitution, 0.0f);
+		float biasRestitution = 0.0f;
+		if (std::abs(closingVelocity) > mSlopRestitution) {
+			biasRestitution = mRestitutionFactor * closingVelocity;
+		}
 
 		return biasError + biasRestitution;
 	}
@@ -26,8 +32,8 @@ namespace se::physics {
 
 	std::array<float, 12> NormalConstraint::getJacobianMatrix() const
 	{
-		glm::vec3 r1xn = glm::cross(mConstraintPoints[0], mNormal);
-		glm::vec3 r2xn = glm::cross(mConstraintPoints[1], mNormal);
+		glm::vec3 r1xn = glm::cross(mConstraintVectors[0], mNormal);
+		glm::vec3 r2xn = glm::cross(mConstraintVectors[1], mNormal);
 
 		return {
 			-mNormal.x, -mNormal.y, -mNormal.z,

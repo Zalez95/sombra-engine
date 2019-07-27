@@ -178,7 +178,6 @@ namespace se::collision {
 		Polytope& polytope
 	) const
 	{
-		const HalfEdgeMesh& meshData = polytope.getMesh();
 		auto compareDistances = [&](int iF1, int iF2) {
 			return (polytope.getDistanceData(iF1).distance > polytope.getDistanceData(iF2).distance);
 		};
@@ -186,6 +185,7 @@ namespace se::collision {
 		// Store the HEFace indices in a vector ordered by their distance to
 		// the origin
 		std::vector<int> facesByDistance;
+		const HalfEdgeMesh& meshData = polytope.getMesh();
 		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
 			if (polytope.getDistanceData(itFace.getIndex()).inside) {
 				facesByDistance.insert(
@@ -203,9 +203,10 @@ namespace se::collision {
 
 		// Check if the closest HEFace to the origin is already touching it
 		int iCurrentFace = facesByDistance.back();
+		glm::vec3 currentFaceNormal = polytope.getNormal(iCurrentFace);
+		FaceDistanceData currentFaceDistance = polytope.getDistanceData(iCurrentFace);
 		facesByDistance.pop_back();
-		FaceDistanceData faceDistance = polytope.getDistanceData(iCurrentFace);
-		if (faceDistance.distance == 0.0f) {
+		if (currentFaceDistance.distance == 0.0f) {
 			return iCurrentFace;
 		}
 
@@ -215,19 +216,20 @@ namespace se::collision {
 		utils::FixedVector<int, 3> closestFaceIndices;
 		std::vector<int> overlappingFaces;
 		do {
-			// 1. Search a new SupportPoint along the HEFace's closest point direction
-			SupportPoint sp(collider1, collider2, faceDistance.closestPoint);
+			// 1. Search a new SupportPoint along the HEFace's closest point
+			// direction
+			SupportPoint sp(collider1, collider2, currentFaceNormal);
 
-			// 2. Update the closest separation and HEFace
-			float currentSeparation = glm::dot(sp.getCSOPosition(), glm::normalize(faceDistance.closestPoint));
+			// 2. Update the closest HEFace
+			float currentSeparation = glm::dot(sp.getCSOPosition(), currentFaceNormal);
 			if (currentSeparation < closestSeparation) {
-				closestSeparation = currentSeparation;
 				iClosestFace = iCurrentFace;
+				closestSeparation = currentSeparation;
 			}
 
 			// 3. If the current HEFace is closer to the origin than the closest
 			// one then we expand the polytope
-			if (closestSeparation - faceDistance.distance > mMinFThreshold) {
+			if (closestSeparation - currentFaceDistance.distance > mMinFThreshold) {
 				// 3.1 Add the SupportPoint to the Polytope
 				int iSp = polytope.addVertex(sp);
 
@@ -263,9 +265,14 @@ namespace se::collision {
 					const HEEdge& currentEdge = meshData.edges[iHorizonEdge];
 					const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
 
-					// Create the new HEFace
+					// Add the HEFace
 					int iV0 = oppositeEdge.vertex, iV1 = currentEdge.vertex;
 					int iNewFace = polytope.addFace({ iV0, iV1, iSp });
+
+					// Store the HEFace index if we removed the closest HEFace
+					if (iClosestFace < 0) {
+						overlappingFaces.push_back(iNewFace);
+					}
 
 					// Add the HEFace to the facesByDistance vector if its
 					// closest point is an internal point
@@ -275,24 +282,25 @@ namespace se::collision {
 							iNewFace
 						);
 					}
-
-					// Store the HEFace index if we deleted the closest HEFace
-					if (iClosestFace < 0) { overlappingFaces.push_back(iNewFace); }
 				}
 			}
 
-			// 4. Get the next closest HEFace to the origin
+			// Check if there are more HEFaces to evaluate
 			if (!facesByDistance.empty()) {
+				// Get the next HEFace
 				iCurrentFace = facesByDistance.back();
+				currentFaceNormal = polytope.getNormal(iCurrentFace);
+				currentFaceDistance = polytope.getDistanceData(iCurrentFace);
 				facesByDistance.pop_back();
-				faceDistance = polytope.getDistanceData(iCurrentFace);
 			}
 		}
-		while (!facesByDistance.empty() && (closestSeparation - faceDistance.distance > mMinFThreshold));
+		while (!facesByDistance.empty() && (closestSeparation - currentFaceDistance.distance > mMinFThreshold));
 
-		// If we removed the closestFace then we have to recover it
+		// If we removed the closest HEFace then we have to recover it
 		if (iClosestFace < 0) {
-			for (int iFace : overlappingFaces) { polytope.removeFace(iFace); }
+			for (int iFace : overlappingFaces) {
+				polytope.removeFace(iFace);
+			}
 			iClosestFace = polytope.addFace(closestFaceIndices);
 		}
 
@@ -305,8 +313,8 @@ namespace se::collision {
 	) const
 	{
 		const HalfEdgeMesh& meshData = polytope.getMesh();
-		FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
 		glm::vec3 faceNormal = polytope.getNormal(iClosestFace);
+		FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
 
 		const HEEdge& edge1		= meshData.edges[meshData.faces[iClosestFace].edge];
 		const SupportPoint& sp2	= polytope.getSupportPoint(edge1.vertex);

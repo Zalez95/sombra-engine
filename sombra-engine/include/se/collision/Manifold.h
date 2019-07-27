@@ -37,9 +37,12 @@ namespace se::collision {
 		/** Creates a new Manifold
 		 *
 		 * @param	c1 a pointer to the first Collider of the Manifold
-		 * @param	c2 a pointer to the second Collider of the Manifold */
-		Manifold(const Collider* c1, const Collider* c2) :
-			state(ManifoldState::Disjoint), colliders{ c1, c2 } {};
+		 * @param	c2 a pointer to the second Collider of the Manifold
+		 * @param	state the initial state of the Manifold */
+		Manifold(
+			const Collider* c1, const Collider* c2,
+			ManifoldState state = ManifoldState::Disjoint
+		) : state(state), colliders{ c1, c2 } {};
 	};
 
 }
