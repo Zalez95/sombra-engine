@@ -33,13 +33,13 @@ namespace se::app {
 			return;
 		}
 
-		// The rigid body initial data is overrided by the entity one
-		rigidBody->position			= entity->position;
-		rigidBody->linearVelocity	= entity->velocity;
-		rigidBody->orientation		= entity->orientation;
-		physics::updateRigidBodyData(*rigidBody);
-
+		// The RigidBody initial data is overridden by the entity one
 		physics::RigidBody* rbPtr = rigidBody.get();
+		rbPtr->position			= entity->position;
+		rbPtr->linearVelocity	= entity->velocity;
+		rbPtr->orientation		= entity->orientation;
+
+		// Add the RigidBody
 		mPhysicsEngine.addRigidBody(rbPtr);
 		mEntityRBMap.emplace(entity, std::move(rigidBody));
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rbPtr << " added successfully";
@@ -69,10 +69,12 @@ namespace se::app {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			rigidBody->position			= entity->position;
-			rigidBody->linearVelocity	= entity->velocity;
-			rigidBody->orientation		= entity->orientation;
-			physics::updateRigidBodyData(*rigidBody);
+			if (entity->updated) {
+				rigidBody->position			= entity->position;
+				rigidBody->linearVelocity	= entity->velocity;
+				rigidBody->orientation		= entity->orientation;
+				mPhysicsEngine.updateRigidBody(rigidBody);
+			}
 		}
 
 		mPhysicsEngine.integrate(delta);
@@ -82,9 +84,12 @@ namespace se::app {
 			Entity* entity					= pair.first;
 			physics::RigidBody* rigidBody	= pair.second.get();
 
-			entity->position	= rigidBody->position;
-			entity->velocity	= rigidBody->linearVelocity;
-			entity->orientation	= rigidBody->orientation;
+			if (rigidBody->state[physics::RigidBody::State::Updated]) {
+				entity->position	= rigidBody->position;
+				entity->velocity	= rigidBody->linearVelocity;
+				entity->orientation	= rigidBody->orientation;
+				entity->updated		= true;
+			}
 		}
 
 		SOMBRA_INFO_LOG << "End";
@@ -100,10 +105,12 @@ namespace se::app {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			rigidBody->position			= entity->position;
-			rigidBody->linearVelocity	= entity->velocity;
-			rigidBody->orientation		= entity->orientation;
-			physics::updateRigidBodyData(*rigidBody);
+			if (entity->updated) {
+				rigidBody->position			= entity->position;
+				rigidBody->linearVelocity	= entity->velocity;
+				rigidBody->orientation		= entity->orientation;
+				mPhysicsEngine.updateRigidBody(rigidBody);
+			}
 		}
 
 		// Update the NormalConstraints time
@@ -120,9 +127,12 @@ namespace se::app {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			entity->position	= rigidBody->position;
-			entity->velocity	= rigidBody->linearVelocity;
-			entity->orientation	= rigidBody->orientation;
+			if (rigidBody->state[physics::RigidBody::State::Updated]) {
+				entity->position	= rigidBody->position;
+				entity->velocity	= rigidBody->linearVelocity;
+				entity->orientation	= rigidBody->orientation;
+				entity->updated		= true;
+			}
 		}
 
 		SOMBRA_INFO_LOG << "End";
@@ -146,13 +156,11 @@ namespace se::app {
 
 				SOMBRA_DEBUG_LOG << "Handling CollisionEvent between " << rb1 << " and " << rb2;
 
-				switch (manifold->state) {
-					case collision::ManifoldState::Intersecting:
-						handleIntersectingManifold(rb1, rb2, manifold);
-						break;
-					case collision::ManifoldState::Disjoint:
-						handleDisjointManifold(manifold);
-						break;
+				if (manifold->state[collision::Manifold::State::Intersecting]) {
+					handleIntersectingManifold(rb1, rb2, manifold);
+				}
+				else {
+					handleDisjointManifold(manifold);
 				}
 			}
 			else {

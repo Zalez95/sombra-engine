@@ -42,7 +42,7 @@ namespace se::app {
 		static constexpr float kCollisionBeta = 0.2f;
 
 		/** The restitution factor of all the NormalConstraints */
-		static constexpr float kCollisionRestitutionFactor = 0.5f;
+		static constexpr float kCollisionRestitutionFactor = 0.2f;
 
 		/** The slop penetration value of all the NormalConstraints */
 		static constexpr float kCollisionSlopPenetration = 0.0005f;
@@ -94,7 +94,8 @@ namespace se::app {
 		 * @param	rigidBody a pointer to the RigidBody to add to the
 		 *			PhysicsManager
 		 * @param	rigidBody the physics data of the Entity
-		 * @note	The RigidBody initial data is overrided by the Entity one */
+		 * @note	The RigidBody initial data is overridden by the Entity
+		 *			one */
 		void addEntity(Entity* entity, RigidBodyUPtr rigidBody);
 
 		/** Removes the given Entity from the PhysicsManager so it won't

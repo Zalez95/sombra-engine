@@ -1,7 +1,7 @@
 #include <algorithm>
-#include "se/physics/ForceManager.h"
-#include "se/physics/Force.h"
 #include "se/physics/RigidBody.h"
+#include "se/physics/forces/ForceManager.h"
+#include "se/physics/forces/Force.h"
 
 namespace se::physics {
 

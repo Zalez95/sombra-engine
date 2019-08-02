@@ -49,7 +49,8 @@ namespace se::app {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			AudioManager
 		 * @param	source a pointer to the Source to add to the
-		 *			AudioManager */
+		 *			AudioManager
+		 * @note	The Source initial data is overridden by the Entity one */
 		void addSource(Entity* entity, SourceUPtr source);
 
 		/** Removes the given Entity from the AudioManager so it won't

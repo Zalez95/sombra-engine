@@ -27,10 +27,6 @@ namespace se::collision {
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
 
 	private:	// Attributes
-		static constexpr float kMinFDifference		= 0.00001f;
-		static constexpr float kContactPrecision	= 0.0000001f;
-		static constexpr float kContactSeparation	= 0.00001f;
-
 		/** The CoarseCollisionDetector of the CollisionWorld. We will use
 		 * it to check what Colliders are intersecting in the broad phase of
 		 * the collision detection step */
@@ -51,8 +47,19 @@ namespace se::collision {
 		std::vector<const Manifold*> mManifolds;
 
 	public:		// Functions
-		/** Creates a new CollisionWorld */
-		CollisionWorld();
+		/** Creates a new CollisionWorld
+		 *
+		 * @param	minFDifference the minimum difference between the distances
+		 *			to the origin of two faces needed for the EPA algorithm
+		 * @param	contactPrecision the precision of the calculated Contact
+		 *			points
+		 * @param	contactSeparation the minimum distance between the
+		 *			coordinates of two Contact used to determine if a contact
+		 *			is the same than another one */
+		CollisionWorld(
+			float minFDifference, float contactPrecision,
+			float contactSeparation
+		);
 
 		/** @return	all the contact Manifolds of the detected collisions */
 		const std::vector<const Manifold*>& getCollisionManifolds() const

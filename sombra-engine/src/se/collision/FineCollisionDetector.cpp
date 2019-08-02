@@ -19,7 +19,7 @@ namespace se::collision {
 
 		// Skip non updated Colliders
 		if (!collider1->updated() && !collider2->updated()) {
-			return manifold.state == ManifoldState::Intersecting;
+			return manifold.state[Manifold::State::Intersecting];
 		}
 
 		if (auto convexCollider1 = dynamic_cast<const ConvexCollider*>(collider1)) {
@@ -53,8 +53,8 @@ namespace se::collision {
 		auto [collides, simplex] = mGJKCollisionDetector.calculate(collider1, collider2);
 		if (!collides) {
 			manifold.contacts.clear();
-			manifold.state = ManifoldState::Disjoint;
-			manifold.updated = true;
+			manifold.state.reset(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 			return false;
 		}
 
@@ -62,8 +62,8 @@ namespace se::collision {
 		Contact contact;
 		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, contact)) {
 			manifold.contacts.clear();
-			manifold.state = ManifoldState::Disjoint;
-			manifold.updated = true;
+			manifold.state.reset(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 			return false;
 		}
 
@@ -73,9 +73,9 @@ namespace se::collision {
 		// Add the new contact to the manifold
 		addContact(contact, manifold);
 
-		if (manifold.state != ManifoldState::Intersecting) {
-			manifold.state = ManifoldState::Intersecting;
-			manifold.updated = true;
+		if (!manifold.state[Manifold::State::Intersecting]) {
+			manifold.state.set(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 		}
 
 		return true;
@@ -122,14 +122,14 @@ namespace se::collision {
 
 		if (nNewContacts == 0) {
 			manifold.contacts.clear();
-			manifold.state = ManifoldState::Disjoint;
-			manifold.updated = true;
+			manifold.state.reset(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 			return false;
 		}
 
-		if (manifold.state != ManifoldState::Intersecting) {
-			manifold.state = ManifoldState::Intersecting;
-			manifold.updated = true;
+		if (!manifold.state[Manifold::State::Intersecting]) {
+			manifold.state.set(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 		}
 
 		return true;
@@ -172,14 +172,14 @@ namespace se::collision {
 
 		if (nNewContacts == 0) {
 			manifold.contacts.clear();
-			manifold.state = ManifoldState::Disjoint;
-			manifold.updated = true;
+			manifold.state.reset(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 			return false;
 		}
 
-		if (manifold.state != ManifoldState::Intersecting) {
-			manifold.state = ManifoldState::Intersecting;
-			manifold.updated = true;
+		if (!manifold.state[Manifold::State::Intersecting]) {
+			manifold.state.set(Manifold::State::Intersecting);
+			manifold.state.set(Manifold::State::Updated);
 		}
 
 		return true;
@@ -207,7 +207,7 @@ namespace se::collision {
 				}
 			}
 
-			manifold.updated = true;
+			manifold.state.set(Manifold::State::Updated);
 		}
 	}
 
@@ -229,7 +229,7 @@ namespace se::collision {
 					std::swap(manifold.contacts[i], manifold.contacts.back());
 				}
 				manifold.contacts.pop_back();
-				manifold.updated = true;
+				manifold.state.set(Manifold::State::Updated);
 			}
 			else {
 				++i;

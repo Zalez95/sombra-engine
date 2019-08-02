@@ -10,10 +10,7 @@ namespace se::physics {
 		position(0.0f), orientation(1.0f, glm::vec3(0.0f)),
 		linearVelocity(0.0), angularVelocity(0.0),
 		linearAcceleration(0.0f), angularAcceleration(0.0f),
-		forceSum(0.0f), torqueSum(0.0f)
-	{
-		updateRigidBodyData(*this);
-	}
+		forceSum(0.0f), torqueSum(0.0f), transformsMatrix(1.0f), motion(0.0f) {}
 
 
 	RigidBody::RigidBody(
@@ -23,7 +20,7 @@ namespace se::physics {
 	) : position(0.0f), orientation(1.0f, glm::vec3(0.0f)),
 		linearVelocity(0.0), angularVelocity(0.0),
 		linearAcceleration(0.0f), angularAcceleration(0.0f),
-		forceSum(0.0f), torqueSum(0.0f)
+		forceSum(0.0f), torqueSum(0.0f), transformsMatrix(1.0f), motion(0.0f)
 	{
 		assert(mass > 0.0f && "The mass must be larger than zero");
 		assert(linearSlowDown >= 0.0f && linearSlowDown <= 1.0f
@@ -37,23 +34,6 @@ namespace se::physics {
 		invertedInertiaTensor		= glm::inverse(inertiaTensor);
 		this->angularSlowDown		= angularSlowDown;
 		this->frictionCoefficient	= frictionCoefficient;
-
-		updateRigidBodyData(*this);
-	}
-
-
-	void updateRigidBodyData(RigidBody& rigidBody)
-	{
-		// Update the transforms matrix of the RigidBody
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), rigidBody.position);
-		glm::mat4 rotation		= glm::mat4_cast(rigidBody.orientation);
-		rigidBody.transformsMatrix = translation * rotation;
-
-		// Update the inertia tensor of the RigidBody
-		glm::mat3 inverseTransformsMat3 = glm::inverse(rigidBody.transformsMatrix);
-		rigidBody.invertedInertiaTensorWorld = glm::transpose(inverseTransformsMat3)
-			* rigidBody.invertedInertiaTensor
-			* inverseTransformsMat3;
 	}
 
 }

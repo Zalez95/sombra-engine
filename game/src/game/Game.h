@@ -8,8 +8,8 @@
 #include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/Renderable2D.h>
 #include <se/audio/Buffer.h>
-#include <se/physics/Force.h>
-#include <se/physics/Constraint.h>
+#include <se/physics/forces/Force.h>
+#include <se/physics/constraints/Constraint.h>
 
 namespace game {
 

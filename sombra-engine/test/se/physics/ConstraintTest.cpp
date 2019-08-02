@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <se/physics/RigidBody.h>
-#include <se/physics/ConstraintManager.h>
+#include <se/physics/constraints/ConstraintManager.h>
 #include <se/physics/constraints/DistanceConstraint.h>
 #include <se/physics/constraints/FrictionConstraint.h>
 
 using namespace se::physics;
 static constexpr float kTolerance = 0.000001f;
 
-TEST(RigidBody, distanceConstraint)
+TEST(Constraint, distanceConstraint)
 {
 	const glm::vec3 expectedPosition1(0.089215789f, 1.022568421f, 0.0f);
 	const glm::vec3 expectedLinearVelocity1(0.892157894f, 0.225684210f, 0.0f);
@@ -53,7 +53,7 @@ TEST(RigidBody, distanceConstraint)
 }
 
 
-TEST(RigidBody, frictionConstraint)
+TEST(Constraint, frictionConstraint)
 {
 	const glm::vec3 expectedPosition1(-0.020233308f, 1.030766725f, 0.010116654f);
 	const glm::vec3 expectedLinearVelocity1(-0.202333083f, 0.307666916f, 0.101166541f);

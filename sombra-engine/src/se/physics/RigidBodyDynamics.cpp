@@ -14,8 +14,6 @@ namespace se::physics {
 		applyTorques(rigidBody);
 		integrateAngularAcceleration(rigidBody, deltaTime);
 		integrateAngularVelocity(rigidBody, deltaTime);
-
-		updateRigidBodyData(rigidBody);
 	}
 
 
@@ -56,6 +54,29 @@ namespace se::physics {
 		const glm::quat angularVelocityQuat(0.0f, rigidBody.angularVelocity);
 		rigidBody.orientation += (0.5f * deltaTime * angularVelocityQuat) * rigidBody.orientation;
 		rigidBody.orientation = glm::normalize(rigidBody.orientation);
+	}
+
+
+	void updateTransforms(RigidBody& rigidBody)
+	{
+		// Update the transforms matrix of the RigidBody
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), rigidBody.position);
+		glm::mat4 rotation		= glm::mat4_cast(rigidBody.orientation);
+		rigidBody.transformsMatrix = translation * rotation;
+
+		// Update the inertia tensor of the RigidBody
+		glm::mat3 inverseTransformsMat3 = glm::inverse(rigidBody.transformsMatrix);
+		rigidBody.invertedInertiaTensorWorld = glm::transpose(inverseTransformsMat3)
+			* rigidBody.invertedInertiaTensor
+			* inverseTransformsMat3;
+	}
+
+
+	void updateMotion(RigidBody& rigidBody, float bias)
+	{
+		float motion = glm::dot(rigidBody.linearVelocity, rigidBody.linearVelocity)
+			+ glm::dot(rigidBody.angularVelocity, rigidBody.angularVelocity);
+		rigidBody.motion = bias * rigidBody.motion + (1.0f - bias) * motion;
 	}
 
 }

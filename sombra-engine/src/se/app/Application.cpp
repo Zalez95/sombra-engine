@@ -39,11 +39,11 @@ namespace se::app {
 			mGraphicsSystem->setViewport(width, height);
 
 			// Physics
-			mPhysicsEngine = new physics::PhysicsEngine();
+			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias, kSleepEpsilon);
 			mPhysicsManager = new PhysicsManager(*mPhysicsEngine, *mEventManager);
 
 			// Collision
-			mCollisionWorld = new collision::CollisionWorld();
+			mCollisionWorld = new collision::CollisionWorld(kMinFDifference, kContactPrecision, kContactSeparation);
 			mCollisionManager = new CollisionManager(*mCollisionWorld, *mEventManager);
 
 			// Animation
@@ -106,6 +106,11 @@ namespace se::app {
 			if (deltaTime >= mUpdateTime) {
 				lastTP = currentTP;
 				std::cout << deltaTime << "ms\r";
+
+				// Reset the update flag of all the entities in the Application
+				for (auto& entity : mEntities) {
+					entity->updated = false;
+				}
 
 				// Update the Systems
 				SOMBRA_INFO_LOG << "Update phase";

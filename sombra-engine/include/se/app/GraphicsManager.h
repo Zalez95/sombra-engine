@@ -47,7 +47,8 @@ namespace se::app {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			GraphicsManager
 		 * @param	camera a pointer to the camera to add to the
-		 *			GraphicsManager */
+		 *			GraphicsManager
+		 * @note	The Camera initial data is overridden by the Entity one */
 		void addEntity(Entity* entity, CameraUPtr camera);
 
 		/** Adds the given Entity and its Renderable3D data to the
@@ -56,7 +57,9 @@ namespace se::app {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			GraphicsManager
 		 * @param	renderable3D a pointer to the Renderable3D to add to the
-		 *			GraphicsManager */
+		 *			GraphicsManager
+		 * @note	The Renderable3D initial data is overridden by the Entity
+		 *			one */
 		void addEntity(Entity* entity, Renderable3DUPtr renderable3D);
 
 		/** Adds the given Entity and its PointLight data to the
@@ -65,7 +68,9 @@ namespace se::app {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			GraphicsManager
 		 * @param	pointLight a pointer to the PointLight to add to the
-		 *			GraphicsManager */
+		 *			GraphicsManager
+		 * @note	The PointLight initial data is overridden by the Entity
+		 *			one */
 		void addEntity(Entity* entity, PointLightUPtr pointLight);
 
 		/** Removes the given Entity from the GraphicsManager so it won't

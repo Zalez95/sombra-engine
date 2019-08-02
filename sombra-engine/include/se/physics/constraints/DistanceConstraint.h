@@ -2,7 +2,7 @@
 #define DISTANCE_CONSTRAINT_H
 
 #include <glm/glm.hpp>
-#include "../Constraint.h"
+#include "Constraint.h"
 
 namespace se::physics {
 

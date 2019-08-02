@@ -53,7 +53,8 @@ namespace se::app {
 		 *
 		 * @param	entity a pointer to the Entity to add to the
 		 *			CollisionManager
-		 * @param	collider the collider data of the Entity */
+		 * @param	collider the collider data of the Entity
+		 * @note	The Collider initial data is overridden by the Entity one */
 		void addEntity(Entity* entity, ColliderUPtr collider);
 
 		/** Removes the given Entity from the CollisionManager so it won't

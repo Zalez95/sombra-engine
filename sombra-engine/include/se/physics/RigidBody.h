@@ -1,6 +1,7 @@
 #ifndef RIGID_BODY_H
 #define RIGID_BODY_H
 
+#include <bitset>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -12,6 +13,17 @@ namespace se::physics {
 	 */
 	struct RigidBody
 	{
+		/** The different states in which a RigidBody can be */
+		enum State : int
+		{
+			Sleeping,	//< The RigidBody simulation is stopped
+			Updated,	//< The RigidBody has been updated by the PhysicsSystem
+			Count		//< The number of States
+		};
+
+		/** The current state of the RigidBody */
+		std::bitset<State::Count> state;
+
 		/** The inverse of the mass
 		 * @note	We store the mass inverted because it's more useful for
 		 *			storing object with infinite mass */
@@ -78,6 +90,10 @@ namespace se::physics {
 		 * recalculating the position and orientation */
 		glm::mat4 transformsMatrix;
 
+		/** The value used for determining if the RigidBody should be put to a
+		 * Sleeping state */
+		float motion;
+
 		/** Creates a new RigidBody with infinite mass located at the origin
 		 * of coordinates */
 		RigidBody();
@@ -99,13 +115,6 @@ namespace se::physics {
 			float frictionCoefficient
 		);
 	};
-
-
-	/** Updates the given RigidBody's transform matrix and inertia tensor in
-	 * world coordinates with the changes made to its position and orientation
-	 *
-	 * @param	rigidBody the RigidBody to update */
-	void updateRigidBodyData(RigidBody& rigidBody);
 
 }
 

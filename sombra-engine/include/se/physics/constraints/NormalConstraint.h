@@ -2,7 +2,7 @@
 #define NORMAL_CONSTRAINT_H
 
 #include <glm/glm.hpp>
-#include "../Constraint.h"
+#include "Constraint.h"
 
 namespace se::physics {
 
@@ -22,9 +22,10 @@ namespace se::physics {
 		/** Controls how fast the constraint will be solved */
 		float mBeta;
 
-		/** The restitution factor of the NormalConstraint, it tells how much
-		 * the RigidBodies will bounce after the constraint resolution. It must
-		 * be a value between 0 and 1 */
+		/** The proportion of the closing velocity with which the RigidBodies
+		 * will bounce. With a value of 0 the closing velocity will be
+		 * cancelled, with a value of 1 the objects will bounce with the same
+		 * velocity as they collide */
 		float mRestitutionFactor;
 
 		/** The minimum penetration value that the solver will allow before
@@ -59,8 +60,8 @@ namespace se::physics {
 		 *
 		 * @param	rigidBodies the two rigidBodies affected by the Constraint
 		 * @param	beta controls how fast the constraint will be solved
-		 * @param	restitutionFactor controls how much the rigidBodies will
-		 *			bounce
+		 * @param	restitutionFactor the proportion of the closing velocity
+		 *			with which the RigidBodies will bounce
 		 * @param	slopPenetration the minimum penetration value allowed before
 		 *			applying the NormalConstraint
 		 * @param	slopRestitution the minimum closing velocity value allowed

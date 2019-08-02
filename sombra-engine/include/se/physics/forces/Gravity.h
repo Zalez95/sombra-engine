@@ -2,7 +2,7 @@
 #define GRAVITY_H
 
 #include <glm/glm.hpp>
-#include "../Force.h"
+#include "Force.h"
 
 namespace se::physics {
 

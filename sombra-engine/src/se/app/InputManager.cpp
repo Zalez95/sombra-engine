@@ -74,6 +74,7 @@ namespace se::app {
 
 		// Apply the change in orientation
 		entity->orientation = glm::normalize(qPitch * qYaw * entity->orientation);
+		entity->updated = true;
 	}
 
 
@@ -98,11 +99,18 @@ namespace se::app {
 		float velocityDiff = kRunSpeed - glm::length(entity->velocity);
 		if (velocityDiff > 0.0f) {
 			entity->velocity += velocityDiff * direction;
+			entity->updated = true;
 		}
 
 		// Add the jump velocity
-		if (inputData.keys[SE_KEY_SPACE]) { entity->velocity += kJumpSpeed * up; }
-		if (inputData.keys[SE_KEY_LEFT_CONTROL]) { entity->velocity -= kJumpSpeed * up; }
+		if (inputData.keys[SE_KEY_SPACE]) {
+			entity->velocity += kJumpSpeed * up;
+			entity->updated = true;
+		}
+		if (inputData.keys[SE_KEY_LEFT_CONTROL]) {
+			entity->velocity -= kJumpSpeed * up;
+			entity->updated = true;
+		}
 	}
 
 

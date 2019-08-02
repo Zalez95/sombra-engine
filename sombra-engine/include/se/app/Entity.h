@@ -28,13 +28,16 @@ namespace se::app {
 		/** The Entity scale in world space */
 		glm::vec3 scale;
 
+		/** If the state of the entity has changed or not */
+		bool updated;
+
 		/** Creates a new Entity
 		 *
 		 * @param	name the name of the Entity */
 		Entity(const std::string& name) :
 			name(name),
 			position(0.0f), velocity(0.0f),
-			orientation(1.0f, glm::vec3(0.0f)), scale(1.0f) {};
+			orientation(1.0f, glm::vec3(0.0f)), scale(1.0f), updated(true) {};
 	};
 
 }

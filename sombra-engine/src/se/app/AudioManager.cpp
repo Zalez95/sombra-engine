@@ -11,6 +11,15 @@ namespace se::app {
 			return;
 		}
 
+		// The Listener initial data is overridden by the entity one
+		mAudioEngine.setListenerPosition(entity->position);
+		mAudioEngine.setListenerOrientation(
+			glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+			glm::vec3(0.0f, 1.0f, 0.0)
+		);
+		mAudioEngine.setListenerVelocity(entity->velocity);
+
+		// Add the Listener
 		mListener = entity;
 		SOMBRA_INFO_LOG << "Entity " << entity << " was setted as Listener";
 	}
@@ -23,8 +32,18 @@ namespace se::app {
 			return;
 		}
 
+		// The Source initial data is overridden by the entity one
+		audio::Source* sPtr = source.get();
+		sPtr->setPosition(entity->position);
+		sPtr->setOrientation(
+			glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+			glm::vec3(0.0f, 1.0f, 0.0)
+		);
+		sPtr->setVelocity(entity->velocity);
+
+		// Add the source
 		mSourceEntities.emplace(entity, std::move(source));
-		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << sPtr << " added successfully";
 	}
 
 
@@ -45,24 +64,29 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Updating the AudioManager";
 
-		// Update the listener
-		if (mListener) {
-			glm::vec3 forwardVector = glm::vec3(0, 0,-1) * mListener->orientation;
-			glm::vec3 upVector		= glm::vec3(0, 1, 0);
-
+		// Update the Listener
+		if (mListener && mListener->updated) {
 			mAudioEngine.setListenerPosition(mListener->position);
-			mAudioEngine.setListenerOrientation(forwardVector, upVector);
+			mAudioEngine.setListenerOrientation(
+				glm::vec3(0.0f, 0.0f, -1.0f) * mListener->orientation,
+				glm::vec3(0.0f, 1.0f, 0.0)
+			);
 			mAudioEngine.setListenerVelocity(mListener->velocity);
 		}
 
-		// Update the update the sources
-		for (auto& se : mSourceEntities) {
-			glm::vec3 forwardVector = glm::vec3(0, 0,-1) * se.first->orientation;
-			glm::vec3 upVector		= glm::vec3(0, 1, 0);
+		// Update the Sources
+		for (auto& pair : mSourceEntities) {
+			Entity* entity = pair.first;
+			audio::Source* source = pair.second.get();
 
-			se.second->setPosition(se.first->position);
-			se.second->setOrientation(forwardVector, upVector);
-			se.second->setVelocity(se.first->velocity);
+			if (entity->updated) {
+				source->setPosition(entity->position);
+				source->setOrientation(
+					glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+					glm::vec3(0.0f, 1.0f, 0.0)
+				);
+				source->setVelocity(entity->velocity);
+			}
 		}
 
 		SOMBRA_INFO_LOG << "AudioManager updated";

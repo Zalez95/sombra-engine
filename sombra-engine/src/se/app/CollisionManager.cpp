@@ -17,7 +17,14 @@ namespace se::app {
 			return;
 		}
 
+		// The Collider initial data is overridden by the entity one
 		collision::Collider* cPtr = collider.get();
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
+		cPtr->setTransforms(translation * rotation * scale);
+
+		// Add the Collider
 		mCollisionWorld.addCollider(cPtr);
 		mColliderEntityMap.emplace(cPtr, entity);
 		mEntityColliderMap.emplace(entity, std::move(collider));
@@ -46,10 +53,15 @@ namespace se::app {
 
 		// Update the Colliders with the changes made to the Entities
 		for (auto& pair : mEntityColliderMap) {
-			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), pair.first->position);
-			glm::mat4 rotation		= glm::mat4_cast(pair.first->orientation);
-			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), pair.first->scale);
-			pair.second->setTransforms(translation * rotation * scale);
+			Entity* entity = pair.first;
+			collision::Collider* collider = pair.second.get();
+
+			if (entity->updated) {
+				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
+				collider->setTransforms(translation * rotation * scale);
+			}
 		}
 
 		// Detect the collisions between the colliders
@@ -59,7 +71,9 @@ namespace se::app {
 		for (const collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
 			auto itPair1 = mColliderEntityMap.find(manifold->colliders[0]);
 			auto itPair2 = mColliderEntityMap.find(manifold->colliders[1]);
-			if ((itPair1 != mColliderEntityMap.end()) && (itPair2 != mColliderEntityMap.end()) && manifold->updated) {
+			if ((itPair1 != mColliderEntityMap.end()) && (itPair2 != mColliderEntityMap.end())
+				&& manifold->state[collision::Manifold::State::Updated]
+			) {
 				auto event = new CollisionEvent(itPair1->second, itPair2->second, manifold);
 				mEventManager.publish(event);
 			}

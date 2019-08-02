@@ -4,8 +4,8 @@
 
 namespace se::collision {
 
-	CollisionWorld::CollisionWorld() :
-		mFineCollisionDetector(kMinFDifference, kContactPrecision, kContactSeparation) {}
+	CollisionWorld::CollisionWorld(float minFDifference, float contactPrecision, float contactSeparation) :
+		mFineCollisionDetector(minFDifference, contactPrecision, contactSeparation) {}
 
 
 	void CollisionWorld::addCollider(Collider* collider)
@@ -31,7 +31,7 @@ namespace se::collision {
 		for (std::size_t i = 0; i < mManifolds.size();) {
 			Manifold* pManifold = const_cast<Manifold*>(mManifolds[i]);
 
-			if (pManifold->state == ManifoldState::Disjoint) {
+			if (!pManifold->state[Manifold::State::Intersecting]) {
 				auto itPair = mMapCollidersManifolds.find(std::make_pair(pManifold->colliders[0], pManifold->colliders[1]));
 				if (itPair != mMapCollidersManifolds.end()) {
 					mMapCollidersManifolds.erase(itPair);
@@ -43,9 +43,9 @@ namespace se::collision {
 				mManifolds.pop_back();
 			}
 			else {
-				// Set the remaining Manifolds' state to Disjoint
-				pManifold->state = ManifoldState::Disjoint;
-				pManifold->updated = true;
+				// Set the remaining Manifolds' state to not intersecting
+				pManifold->state.reset(Manifold::State::Intersecting);
+				pManifold->state.set(Manifold::State::Updated);
 				++i;
 			}
 		}
@@ -67,15 +67,15 @@ namespace se::collision {
 			if (itPairManifold != mMapCollidersManifolds.end()) {
 				// Set the Manifold back to its old state (if we are at this
 				// stage it was Intersecting)
-				itPairManifold->second.state = ManifoldState::Intersecting;
-				itPairManifold->second.updated = false;
+				itPairManifold->second.state.set(Manifold::State::Intersecting);
+				itPairManifold->second.state.reset(Manifold::State::Updated);
 
 				// Update the Manifold data
 				mFineCollisionDetector.collide(itPairManifold->second);
 			}
 			else {
 				// Create a new Manifold
-				Manifold manifold(pair.first, pair.second, ManifoldState::Disjoint);
+				Manifold manifold(pair.first, pair.second);
 				if (mFineCollisionDetector.collide(manifold)) {
 					itPairManifold = mMapCollidersManifolds.emplace(
 						std::piecewise_construct,

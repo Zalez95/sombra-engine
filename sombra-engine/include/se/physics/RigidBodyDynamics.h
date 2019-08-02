@@ -64,6 +64,22 @@ namespace se::physics {
 	 *			angular velocity of the RigidBody in seconds */
 	void integrateAngularVelocity(RigidBody& rigidBody, float deltaTime);
 
+
+	/** Updates the given RigidBody's transform matrix and inertia tensor in
+	 * world coordinates with the changes made to the RigidBody's position
+	 * and orientation
+	 *
+	 * @param	rigidBody the RigidBody to update */
+	void updateTransforms(RigidBody& rigidBody);
+
+
+	/** Updates the motion value of the given RigidBody
+	 *
+	 * @param	rigidBody the RigidBody to update
+	 * @param	bias the proportion of the new motion value due to its old
+	 *			value */
+	void updateMotion(RigidBody& rigidBody, float bias);
+
 }
 
 #endif		// RIGID_BODY_DYNAMICS_H

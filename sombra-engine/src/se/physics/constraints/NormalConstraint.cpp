@@ -11,6 +11,8 @@ namespace se::physics {
 		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintVectors[0];
 		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintVectors[1];
 		float penetration = glm::dot(p2 - p1, mNormal);
+
+		// If the penetration is large enough we try to separate the RigidBodies
 		float biasError = 0.0f;
 		if (std::abs(penetration) > mSlopPenetration) {
 			biasError = -mBeta * penetration / mDeltaTime;
@@ -21,9 +23,17 @@ namespace se::physics {
 		glm::vec3 v2 = mRigidBodies[1]->linearVelocity
 			+ glm::cross(mRigidBodies[1]->angularVelocity, mConstraintVectors[1]);
 		float closingVelocity = glm::dot(v2 - v1, mNormal);
+
+		// If the closing velocity is large enough we try to remove it
 		float biasRestitution = 0.0f;
 		if (std::abs(closingVelocity) > mSlopRestitution) {
-			biasRestitution = mRestitutionFactor * closingVelocity;
+			// Remove the velocity built up from the acceleration in the
+			// previous frame
+			glm::vec3 vFromAcceleration1 = mRigidBodies[0]->linearAcceleration * mDeltaTime;
+			glm::vec3 vFromAcceleration2 = mRigidBodies[1]->linearAcceleration * mDeltaTime;
+			float vFromAcceleration = glm::dot(vFromAcceleration2 - vFromAcceleration1, mNormal);
+
+			biasRestitution = vFromAcceleration + mRestitutionFactor * (closingVelocity - vFromAcceleration);
 		}
 
 		return biasError + biasRestitution;

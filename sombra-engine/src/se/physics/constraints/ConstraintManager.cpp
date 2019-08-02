@@ -1,9 +1,9 @@
 #include <numeric>
 #include <algorithm>
-#include "se/physics/ConstraintManager.h"
 #include "se/physics/RigidBody.h"
-#include "se/physics/Constraint.h"
 #include "se/physics/RigidBodyDynamics.h"
+#include "se/physics/constraints/Constraint.h"
+#include "se/physics/constraints/ConstraintManager.h"
 
 namespace se::physics {
 
@@ -330,7 +330,7 @@ namespace se::physics {
 				}
 			}
 
-			updateRigidBodyData(*mRigidBodies[i]);
+			updateTransforms(*mRigidBodies[i]);
 		}
 	}
 

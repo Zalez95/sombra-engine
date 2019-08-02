@@ -1,6 +1,5 @@
 #include <algorithm>
 #include "se/physics/PhysicsEngine.h"
-#include "se/physics/RigidBody.h"
 #include "se/physics/RigidBodyDynamics.h"
 
 namespace se::physics {
@@ -9,6 +8,7 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
+		updateRigidBody(rigidBody);
 		mRigidBodies.push_back(rigidBody);
 	}
 
@@ -23,15 +23,32 @@ namespace se::physics {
 		);
 	}
 
-// Private functions
+
+	void PhysicsEngine::updateRigidBody(RigidBody* rigidBody)
+	{
+		physics::updateTransforms(*rigidBody);
+		setRigidBodySleepState(*rigidBody, false);
+		rigidBody->state.set(RigidBody::State::Updated);
+	}
+
+
 	void PhysicsEngine::integrate(float delta)
 	{
+		float bias = std::pow(mBaseBias, delta);
+
 		mForceManager.applyForces();
 		for (RigidBody* rigidBody : mRigidBodies) {
-			// TODO: Non movable rigid bodies (like buildings)
-
 			// Update the RigidBody data
-			se::physics::integrate(*rigidBody, delta);
+			if (!rigidBody->state[RigidBody::State::Sleeping]) {
+				se::physics::integrate(*rigidBody, delta);
+				se::physics::updateMotion(*rigidBody, bias);
+				se::physics::updateTransforms(*rigidBody);
+				rigidBody->state.set(RigidBody::State::Updated);
+
+				if (rigidBody->motion < mSleepEpsilon) {
+					setRigidBodySleepState(*rigidBody, true);
+				}
+			}
 		}
 	}
 
@@ -39,6 +56,21 @@ namespace se::physics {
 	void PhysicsEngine::solveConstraints(float delta)
 	{
 		mConstraintManager.update(delta);
+	}
+
+// Private functions
+	void PhysicsEngine::setRigidBodySleepState(RigidBody& rigidBody, bool value) const
+	{
+		if (value) {
+			// Set the motion of the RigidBody to a larger value than
+			// mSleepEpsilon to prevent it from falling sleep instantly
+			rigidBody.motion = 2.0f * mSleepEpsilon;
+			rigidBody.state.set(RigidBody::State::Sleeping);
+		}
+		else {
+			rigidBody.motion = 0.0f;
+			rigidBody.state.reset(RigidBody::State::Sleeping);
+		}
 	}
 
 }
