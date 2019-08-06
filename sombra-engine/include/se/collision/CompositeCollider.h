@@ -51,6 +51,13 @@ namespace se::collision {
 		 *			CompositeCollider */
 		AABB getAABB() const override { return mAABB; };
 
+		/** @return	true if the CompositeCollider has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		bool updated() const override;
+
+		/** Resets the updated state of the CompositeCollider */
+		void resetUpdatedState() override;
+
 		/** Calculates the posible overlaping parts of the Collider with the
 		 * given AABB
 		 *

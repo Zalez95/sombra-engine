@@ -56,10 +56,10 @@ namespace se::app {
 		mCollisionWorld.update();
 
 		// Notify the contact manifolds
-		for (collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
+		for (const collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
 			auto itPair1 = mColliderEntityMap.find(manifold->colliders[0]);
 			auto itPair2 = mColliderEntityMap.find(manifold->colliders[1]);
-			if ((itPair1 != mColliderEntityMap.end()) && (itPair2 != mColliderEntityMap.end())) {
+			if ((itPair1 != mColliderEntityMap.end()) && (itPair2 != mColliderEntityMap.end()) && manifold->updated) {
 				auto event = new CollisionEvent(itPair1->second, itPair2->second, manifold);
 				mEventManager.publish(event);
 			}

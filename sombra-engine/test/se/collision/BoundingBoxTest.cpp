@@ -42,6 +42,20 @@ TEST(BoundingBox, getAABBTransforms)
 }
 
 
+TEST(BoundingBox, updated)
+{
+	const glm::vec3 lengths(0.5f, 2.0f, 5.5f);
+	BoundingBox bb1(lengths);
+	EXPECT_TRUE(bb1.updated());
+	bb1.resetUpdatedState();
+	EXPECT_FALSE(bb1.updated());
+	bb1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(bb1.updated());
+	bb1.resetUpdatedState();
+	EXPECT_FALSE(bb1.updated());
+}
+
+
 TEST(BoundingBox, getFurthestPointInDirection)
 {
 	const glm::vec3 lengths(0.5f, 2.0f, 5.5f);

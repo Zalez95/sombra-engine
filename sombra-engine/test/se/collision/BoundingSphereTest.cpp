@@ -74,6 +74,20 @@ TEST(BoundingSphere, getCenter)
 }
 
 
+TEST(BoundingSphere, updated)
+{
+	const float radius = 2.0f;
+	BoundingSphere bs1(radius);
+	EXPECT_TRUE(bs1.updated());
+	bs1.resetUpdatedState();
+	EXPECT_FALSE(bs1.updated());
+	bs1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(bs1.updated());
+	bs1.resetUpdatedState();
+	EXPECT_FALSE(bs1.updated());
+}
+
+
 TEST(BoundingSphere, getFurthestPointInDirection)
 {
 	const float radius = 2.0f;

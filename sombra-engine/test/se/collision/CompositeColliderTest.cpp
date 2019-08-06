@@ -2,6 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <se/collision/CompositeCollider.h>
+#include <se/collision/BoundingSphere.h>
 #include <se/collision/ConvexPolyhedron.h>
 #include "TestMeshes.h"
 
@@ -16,9 +17,9 @@ TEST(CompositeCollider, getAABB1)
 
 	std::vector<std::unique_ptr<Collider>> colliders;
 	colliders.push_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider mc1(colliders);
+	CompositeCollider cc1(colliders);
 
-	AABB aabb1 = mc1.getAABB();
+	AABB aabb1 = cc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], kTolerance);
 		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], kTolerance);
@@ -41,14 +42,41 @@ TEST(CompositeCollider, getAABBTransforms1)
 
 	std::vector<std::unique_ptr<Collider>> colliders;
 	colliders.push_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider mc1(colliders);
-	mc1.setTransforms(transforms);
+	CompositeCollider cc1(colliders);
+	cc1.setTransforms(transforms);
 
-	AABB aabb1 = mc1.getAABB();
+	AABB aabb1 = cc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], kTolerance);
 		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], kTolerance);
 	}
+}
+
+
+TEST(CompositeCollider, updated)
+{
+	const float radius = 2.0f;
+	const HalfEdgeMesh meshData = createTestMesh2().first;
+
+	auto bs1 = std::make_unique<BoundingSphere>(radius);
+	BoundingSphere* bs1Ptr = bs1.get();
+
+	std::vector<std::unique_ptr<Collider>> colliders;
+	colliders.push_back( std::move(bs1) );
+	colliders.push_back( std::make_unique<ConvexPolyhedron>(meshData) );
+	CompositeCollider cc1(colliders);
+
+	EXPECT_TRUE(cc1.updated());
+	cc1.resetUpdatedState();
+	EXPECT_FALSE(cc1.updated());
+	cc1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(cc1.updated());
+	cc1.resetUpdatedState();
+	EXPECT_FALSE(cc1.updated());
+	bs1Ptr->setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(cc1.updated());
+	cc1.resetUpdatedState();
+	EXPECT_FALSE(cc1.updated());
 }
 
 
@@ -68,13 +96,13 @@ TEST(CompositeCollider, getOverlapingPartsQH1)
 
 	std::vector<std::unique_ptr<Collider>> colliders;
 	colliders.push_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider mc1(colliders);
-	mc1.setTransforms(transforms);
+	CompositeCollider cc1(colliders);
+	cc1.setTransforms(transforms);
 
 	auto expectedRes = std::make_unique<ConvexPolyhedron>(meshData);
 	expectedRes->setTransforms(transforms);
 
-	auto result = mc1.getOverlapingParts(aabb1);
+	auto result = cc1.getOverlapingParts(aabb1);
 	ASSERT_EQ(static_cast<int>(result.size()), 1);
 
 	const std::vector<glm::vec3> testDirections = {

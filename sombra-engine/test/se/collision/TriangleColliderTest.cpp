@@ -48,6 +48,23 @@ TEST(TriangleCollider, getAABBTransforms)
 }
 
 
+TEST(TriangleCollider, updated)
+{
+	TriangleCollider tc1({
+		glm::vec3(-1.493818879f, 0.787958443f,-0.043464872f),
+		glm::vec3(-1.212138772f, 0.538054049f, 0.669097125f),
+		glm::vec3(-1.017795681f,-0.331133425f, 1.551305651f)
+	});
+	EXPECT_TRUE(tc1.updated());
+	tc1.resetUpdatedState();
+	EXPECT_FALSE(tc1.updated());
+	tc1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(tc1.updated());
+	tc1.resetUpdatedState();
+	EXPECT_FALSE(tc1.updated());
+}
+
+
 TEST(TriangleCollider, getFurthestPointInDirection)
 {
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);

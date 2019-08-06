@@ -22,6 +22,9 @@ namespace se::collision {
 		/** The transformation matrix of the TriangleCollider */
 		glm::mat4 mTransformsMatrix;
 
+		/** If the TriangleCollider has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new TriangleCollider located at the origin of coordinates
 		 *
@@ -29,7 +32,7 @@ namespace se::collision {
 		 *			coordinates */
 		TriangleCollider(const std::array<glm::vec3, 3>& vertices) :
 			mLocalVertices(vertices), mWorldVertices(vertices),
-			mTransformsMatrix(1.0f) {};
+			mTransformsMatrix(1.0f), mUpdated(true) {};
 
 		/** Updates the scale, translation and orientation of the
 		 * TriangleCollider with the given transformations matrix
@@ -46,6 +49,13 @@ namespace se::collision {
 		/** @return	the Axis Aligned Bounding Box that contains the
 		 *			TriangleCollider */
 		AABB getAABB() const override;
+
+		/** @return	true if the TriangleCollider has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		bool updated() const override { return mUpdated; };
+
+		/** Resets the updated state of the TriangleCollider */
+		void resetUpdatedState() override { mUpdated = false; };
 
 		/** Calculates the coordinates of the TriangleCollider's furthest point
 		 * in the given direction

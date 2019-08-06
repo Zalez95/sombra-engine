@@ -21,6 +21,9 @@ namespace se::collision {
 		/** The inverse of transformation matrix of the BoundingSphere */
 		glm::mat4 mInverseTransformsMatrix;
 
+		/** If the BoundingSphere has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new BoundingSphere located at the origin of coordinates
 		 *
@@ -45,8 +48,15 @@ namespace se::collision {
 		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
-		 *			BoundingBox */
+		 *			BoundingSphere */
 		AABB getAABB() const override;
+
+		/** @return	true if the BoundingSphere has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		bool updated() const override { return mUpdated; };
+
+		/** Resets the updated state of the BoundingSphere */
+		void resetUpdatedState() override { mUpdated = false; };
 
 		/** Calculates the coordinates of the BoundingSphere's furthest point
 		 * in the given direction

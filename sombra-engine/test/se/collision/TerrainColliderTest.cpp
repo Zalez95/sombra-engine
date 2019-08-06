@@ -101,6 +101,30 @@ TEST(TerrainCollider, getOverlapingParts1)
 }
 
 
+TEST(TerrainCollider, updated)
+{
+	const std::vector<float> heights = {
+		-0.224407124f,-0.182230042f,-0.063670491f,-0.063680544f,-0.274178390f,-0.002076677f,
+		 0.240925990f,-0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
+		-0.225947124f,-0.101790362f,-0.419971141f,-0.278538079f, 0.044960733f,-0.266057232f,
+		 0.251054237f, 0.476726697f,-0.422780143f, 0.063881184f,-0.266370011f,-0.139245431f,
+		-0.279247346f,-0.234977409f,-0.294798492f,-0.247099806f, 0.002694404f, 0.378445211f,
+		 0.112437157f, 0.392135236f, 0.466178188f,-0.306503992f,-0.381612994f,-0.219027959f,
+		 0.112001758f,-0.283234569f, 0.367756026f,-0.288402094f,-0.006938715f,-0.109673572f,
+		-0.283075078f, 0.129306909f, 0.134741993f,-0.250951479f, 0.104189257f,-0.422417659f
+	};
+	const int xSize = 6, zSize = 8;
+	TerrainCollider tc1(heights, xSize, zSize);
+	EXPECT_TRUE(tc1.updated());
+	tc1.resetUpdatedState();
+	EXPECT_FALSE(tc1.updated());
+	tc1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(tc1.updated());
+	tc1.resetUpdatedState();
+	EXPECT_FALSE(tc1.updated());
+}
+
+
 TEST(TerrainCollider, getOverlapingParts2)
 {
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);

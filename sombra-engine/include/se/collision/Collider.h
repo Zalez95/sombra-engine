@@ -30,6 +30,13 @@ namespace se::collision {
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			Collider */
 		virtual AABB getAABB() const = 0;
+
+		/** @return	true if the Collider has been updated since the last call
+		 *			to the resetUpdatedState function, false otherwise */
+		virtual bool updated() const = 0;
+
+		/** Resets the updated state of the Collider */
+		virtual void resetUpdatedState() = 0;
 	};
 
 }

@@ -4,8 +4,7 @@
 namespace se::collision {
 
 	BoundingSphere::BoundingSphere(float radius) :
-		mRadius(radius),
-		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
+		mRadius(radius), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
 	{
 		assert(radius >= 0.0f && "The radius of the sphere can't be smaller than zero.");
 	}
@@ -15,6 +14,7 @@ namespace se::collision {
 	{
 		mTransformsMatrix = transforms;
 		mInverseTransformsMatrix = glm::inverse(transforms);
+		mUpdated = true;
 	}
 
 

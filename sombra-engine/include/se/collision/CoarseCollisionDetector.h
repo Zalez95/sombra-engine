@@ -19,12 +19,16 @@ namespace se::collision {
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
 
-	private:	// Attributes
-		/** The Colliders to check if they collide between each others */
-		std::deque<const Collider*> mColliders;
+		/** Holds cached data of a Collider */
+		struct ColliderData
+		{
+			const Collider* collider;
+			AABB aabb;
+		};
 
-		/** The current Axis Aligned Bounding Boxes of the Colliders */
-		std::deque<AABB> mAABBs;
+	private:	// Attributes
+		/** The Colliders to check if they collide between each other */
+		std::deque<ColliderData> mColliders;
 
 	public:		// Functions
 		/** Adds the given Collider to the Detector so it will check if the

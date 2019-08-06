@@ -22,6 +22,9 @@ namespace se::collision {
 		/** The transformation matrix of the ConvexPolyhedron */
 		glm::mat4 mTransformsMatrix;
 
+		/** If the ConvexPolyhedron has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new ConvexPolyhedron located at the origin of coordinates
 		 *
@@ -45,6 +48,13 @@ namespace se::collision {
 		/** @return	the Axis Aligned Bounding Box that contains the
 		 *			ConvexPolyhedron */
 		AABB getAABB() const override;
+
+		/** @return	true if the ConvexPolyhedron has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		bool updated() const override { return mUpdated; };
+
+		/** Resets the updated state of the ConvexPolyhedron */
+		void resetUpdatedState() override { mUpdated = false; };
 
 		/** Calculates the coordinates of the ConvexPolyhedron's furthest point
 		 * in the given direction

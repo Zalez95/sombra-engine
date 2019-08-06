@@ -37,6 +37,9 @@ namespace se::collision {
 		/** The AABB of the TerrainCollider */
 		AABB mAABB;
 
+		/** If the TerrainCollider has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new TerrainCollider located at the origin of
 		 * coordinates
@@ -64,6 +67,13 @@ namespace se::collision {
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			TerrainCollider */
 		AABB getAABB() const override { return mAABB; };
+
+		/** @return	true if the TerrainCollider has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		bool updated() const override { return mUpdated; };
+
+		/** Resets the updated state of the TerrainCollider */
+		void resetUpdatedState() override { mUpdated = false; };
 
 		/** Calculates the posible overlaping parts of the Collider with the
 		 * given AABB

@@ -41,35 +41,35 @@ namespace se::collision {
 		FineCollisionDetector mFineCollisionDetector;
 
 		/** All the Colliders to check */
-		std::vector<const Collider*> mColliders;
+		std::vector<Collider*> mColliders;
 
 		/** Maps a pair of Colliders with the the Manifold of it's collision */
 		std::map<ColliderPair, Manifold> mMapCollidersManifolds;
 
 		/** The cached pointers to all the current contact Manifolds of all
 		 * the detected collisions */
-		std::vector<Manifold*> mManifolds;
+		std::vector<const Manifold*> mManifolds;
 
 	public:		// Functions
 		/** Creates a new CollisionWorld */
 		CollisionWorld();
 
-		/** @return all the contact Manifolds of the detected collisions */
-		std::vector<Manifold*> getCollisionManifolds() const
+		/** @return	all the contact Manifolds of the detected collisions */
+		const std::vector<const Manifold*>& getCollisionManifolds() const
 		{ return mManifolds; };
 
 		/** Adds the given Collider to the CollisionWorld so it will
 		 * check if it collides with the other Colliders
 		 *
 		 * @param	collider a pointer to the Collider that we want to add */
-		void addCollider(const Collider* collider);
+		void addCollider(Collider* collider);
 
 		/** Removes the given Collider from the CollisionWorld so it wont't
 		 * check if it collides with the other Colliders
 		 *
 		 * @param	collider a pointer to the Collider that we want to
 		 * 			remove */
-		void removeCollider(const Collider* collider);
+		void removeCollider(Collider* collider);
 
 		/** Calculates all the collisions that are currently happening between
 		 * the Colliders added to the CollisionWorld

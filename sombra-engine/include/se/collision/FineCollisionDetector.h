@@ -59,9 +59,7 @@ namespace se::collision {
 		 *			they are colliding. If they are colliding, the manifold
 		 *			contact data will be updated.
 		 * @return	true if the given Colliders are intersecting, false
-		 *			otherwise
-		 * @note	the state of the manifold won't be changed, only the contact
-		 *			data */
+		 *			otherwise */
 		bool collide(Manifold& manifold) const;
 	private:
 		/** Calculates the contact data of the collision that happened between

@@ -10,6 +10,8 @@ namespace se::collision {
 		for (std::size_t i = 0; i < mLocalVertices.size(); ++i) {
 			mWorldVertices[i] = mTransformsMatrix * glm::vec4(mLocalVertices[i], 1.0f);
 		}
+
+		mUpdated = true;
 	}
 
 

@@ -31,8 +31,11 @@ namespace se::collision {
 		/** The colliders of the Manifold */
 		const Collider* colliders[2];
 
-		/** All the Contacs the the Contact Manifold can hold */
+		/** All the Contacs the Contact Manifold can hold */
 		utils::FixedVector<Contact, kMaxContacts> contacts;
+
+		/** If the Manifold has been updated by the CollisionWorld or not */
+		bool updated;
 
 		/** Creates a new Manifold
 		 *
@@ -42,7 +45,7 @@ namespace se::collision {
 		Manifold(
 			const Collider* c1, const Collider* c2,
 			ManifoldState state = ManifoldState::Disjoint
-		) : state(state), colliders{ c1, c2 } {};
+		) : state(state), colliders{ c1, c2 }, updated(true) {};
 	};
 
 }

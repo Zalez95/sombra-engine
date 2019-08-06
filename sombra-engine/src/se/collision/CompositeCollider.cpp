@@ -27,6 +27,28 @@ namespace se::collision {
 	}
 
 
+	bool CompositeCollider::updated() const
+	{
+		bool ret = false;
+
+		for (const ColliderSPtr& part : mParts) {
+			if (part->updated()) {
+				ret = true;
+			}
+		}
+
+		return ret;
+	}
+
+
+	void CompositeCollider::resetUpdatedState()
+	{
+		for (ColliderSPtr& part : mParts) {
+			part->resetUpdatedState();
+		}
+	}
+
+
 	std::vector<CompositeCollider::ConvexColliderSPtr> CompositeCollider::getOverlapingParts(
 		const AABB& aabb
 	) const

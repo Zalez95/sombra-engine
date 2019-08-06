@@ -37,6 +37,13 @@ namespace se::collision {
 		 *			ConcaveCollider */
 		AABB getAABB() const override = 0;
 
+		/** @return	true if the ConcaveCollider has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		virtual bool updated() const override = 0;
+
+		/** Resets the updated state of the ConcaveCollider */
+		virtual void resetUpdatedState() override = 0;
+
 		/** Calculates the posible overlaping parts of the Collider with the
 		 * given AABB
 		 *

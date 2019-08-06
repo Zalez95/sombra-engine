@@ -6,7 +6,7 @@
 namespace se::collision {
 
 	ConvexPolyhedron::ConvexPolyhedron(const HalfEdgeMesh& meshData) :
-		mMesh(meshData), mLocalVertices(meshData.vertices), mTransformsMatrix(1.0f)
+		mMesh(meshData), mLocalVertices(meshData.vertices), mTransformsMatrix(1.0f), mUpdated(true)
 	{
 		assert(meshData.vertices.size() >= 4 && "The mesh must have at least a 4 vertices");
 	}
@@ -20,6 +20,8 @@ namespace se::collision {
 		for (HEVertex& vertex : mMesh.vertices) {
 			vertex.location = mTransformsMatrix * glm::vec4(vertex.location, 1.0);
 		}
+
+		mUpdated = true;
 	}
 
 

@@ -29,6 +29,13 @@ namespace se::collision {
 		 *			ConvexCollider */
 		AABB getAABB() const override = 0;
 
+		/** @return	true if the ConvexCollider has been updated since the last
+		 *			call to the resetUpdatedState function, false otherwise */
+		virtual bool updated() const override = 0;
+
+		/** Resets the updated state of the ConvexCollider */
+		virtual void resetUpdatedState() override = 0;
+
 		/** Calculates the coordinates of the ConvexCollider's furthest point
 		 * in the given direction
 		 *

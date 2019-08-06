@@ -22,7 +22,7 @@ namespace se::app {
 		Entity* mEntities[2];
 
 		/** A pointer to the collision Manifold with the collision data */
-		collision::Manifold* mManifold;
+		const collision::Manifold* mManifold;
 
 	public:		// Functions
 		/** Creates a new CollisionEvent
@@ -32,7 +32,7 @@ namespace se::app {
 		 * @param	manifold a pointer to the collision Manifold */
 		CollisionEvent(
 			Entity* entity1, Entity* entity2,
-			collision::Manifold* manifold
+			const collision::Manifold* manifold
 		) : mEntities{ entity1, entity2 }, mManifold(manifold) {};
 
 		/** Class destructor */

@@ -43,6 +43,20 @@ TEST(ConvexPolyhedron, getAABBTransforms)
 }
 
 
+TEST(ConvexPolyhedron, updated)
+{
+	const HalfEdgeMesh meshData = createTestPolyhedron2();
+	ConvexPolyhedron cp1(meshData);
+	EXPECT_TRUE(cp1.updated());
+	cp1.resetUpdatedState();
+	EXPECT_FALSE(cp1.updated());
+	cp1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(cp1.updated());
+	cp1.resetUpdatedState();
+	EXPECT_FALSE(cp1.updated());
+}
+
+
 TEST(ConvexPolyhedron, getFurthestPointInDirection)
 {
 	const glm::vec3 translation(5.0f, -1.0f, -10.0f);
