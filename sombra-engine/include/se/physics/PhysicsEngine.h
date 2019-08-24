@@ -18,10 +18,6 @@ namespace se::physics {
 		 * value */
 		const float mBaseBias;
 
-		/** The maximum motion value that a RigidBody can have to be put in a
-		 * Sleep state */
-		const float mSleepEpsilon;
-
 		/** The ForceManager of the PhysicsEngine. It's used to store the
 		 * relationships between the RigidBodies and the Forces and
 		 * applying them */
@@ -38,11 +34,8 @@ namespace se::physics {
 		/** Creates a new PhysicsEngine
 		 *
 		 * @param	baseBias the bias value used for updating the RigidBodies'
-		 *			motion value
-		 * @param	sleepEpsilon the maximum motion value that a RigidBody can
-		 *			have to be put in a Sleep state */
-		PhysicsEngine(float baseBias, float sleepEpsilon) :
-			mBaseBias(baseBias), mSleepEpsilon(sleepEpsilon) {};
+		 *			motion value */
+		PhysicsEngine(float baseBias) : mBaseBias(baseBias) {};
 
 		/** @return	the ForceManager of the PhysicsEngine */
 		ForceManager& getForceManager() { return mForceManager; };
@@ -67,14 +60,6 @@ namespace se::physics {
 		 *			RigidBody */
 		void removeRigidBody(RigidBody* rigidBody);
 
-		/** Updates the state of the given RigidBody with the changes made to
-		 * its properties
-		 *
-		 * @param	rigidBody a pointer to RigidBody to update
-		 * @note	this function must be called each time the RigidBody's
-		 *			properties are changed externally */
-		void updateRigidBody(RigidBody* rigidBody);
-
 		/** Updates the positions of the RigidBodies added to the System
 		 *
 		 * @param	delta the elapsed time since the last update of the
@@ -87,12 +72,6 @@ namespace se::physics {
 		 * @param	delta the elapsed time since the last update of the
 		 *			PhysicsEngine in seconds */
 		void solveConstraints(float delta);
-	private:
-		/** Sets the RigidBody's sleep state to the given one
-		 *
-		 * @param	rigidBody the RigidBody to update
-		 * @param	value the new value of the sleep state */
-		void setRigidBodySleepState(RigidBody& rigidBody, bool value) const;
 	};
 
 }

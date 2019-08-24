@@ -8,8 +8,8 @@ namespace se::physics {
 
 	float NormalConstraint::getBias() const
 	{
-		glm::vec3 p1 = mRigidBodies[0]->position + mConstraintVectors[0];
-		glm::vec3 p2 = mRigidBodies[1]->position + mConstraintVectors[1];
+		glm::vec3 p1 = mRigidBodies[0]->getData().position + mConstraintVectors[0];
+		glm::vec3 p2 = mRigidBodies[1]->getData().position + mConstraintVectors[1];
 		float penetration = glm::dot(p2 - p1, mNormal);
 
 		// If the penetration is large enough we try to separate the RigidBodies
@@ -18,10 +18,10 @@ namespace se::physics {
 			biasError = -mBeta * penetration / mDeltaTime;
 		}
 
-		glm::vec3 v1 = mRigidBodies[0]->linearVelocity
-			+ glm::cross(mRigidBodies[0]->angularVelocity, mConstraintVectors[0]);
-		glm::vec3 v2 = mRigidBodies[1]->linearVelocity
-			+ glm::cross(mRigidBodies[1]->angularVelocity, mConstraintVectors[1]);
+		glm::vec3 v1 = mRigidBodies[0]->getData().linearVelocity
+			+ glm::cross(mRigidBodies[0]->getData().angularVelocity, mConstraintVectors[0]);
+		glm::vec3 v2 = mRigidBodies[1]->getData().linearVelocity
+			+ glm::cross(mRigidBodies[1]->getData().angularVelocity, mConstraintVectors[1]);
 		float closingVelocity = glm::dot(v2 - v1, mNormal);
 
 		// If the closing velocity is large enough we try to remove it
@@ -29,8 +29,8 @@ namespace se::physics {
 		if (std::abs(closingVelocity) > mSlopRestitution) {
 			// Remove the velocity built up from the acceleration in the
 			// previous frame
-			glm::vec3 vFromAcceleration1 = mRigidBodies[0]->linearAcceleration * mDeltaTime;
-			glm::vec3 vFromAcceleration2 = mRigidBodies[1]->linearAcceleration * mDeltaTime;
+			glm::vec3 vFromAcceleration1 = mRigidBodies[0]->getData().linearAcceleration * mDeltaTime;
+			glm::vec3 vFromAcceleration2 = mRigidBodies[1]->getData().linearAcceleration * mDeltaTime;
 			float vFromAcceleration = glm::dot(vFromAcceleration2 - vFromAcceleration1, mNormal);
 
 			biasRestitution = vFromAcceleration + mRestitutionFactor * (closingVelocity - vFromAcceleration);

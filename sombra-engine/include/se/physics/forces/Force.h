@@ -3,7 +3,7 @@
 
 namespace se::physics {
 
-	struct RigidBody;
+	class RigidBody;
 
 
 	/**

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "se/physics/RigidBody.h"
+#include "se/physics/RigidBodyDynamics.h"
 #include "se/physics/forces/ForceManager.h"
 #include "se/physics/forces/Force.h"
 
@@ -48,13 +49,16 @@ namespace se::physics {
 	{
 		// Clean the older forces
 		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
-			it->rigidBody->forceSum = glm::vec3(0.0f);
-			it->rigidBody->torqueSum = glm::vec3(0.0f);
+			it->rigidBody->getData().forceSum = glm::vec3(0.0f);
+			it->rigidBody->getData().torqueSum = glm::vec3(0.0f);
 		}
 
 		// Apply the current forces
 		for (auto it = mRBForces.begin(); it != mRBForces.end(); ++it) {
-			it->force->apply(it->rigidBody);
+			if (!it->rigidBody->checkState(RigidBodyState::Sleeping)) {
+				it->force->apply(it->rigidBody);
+				RigidBodyDynamics::setState(*it->rigidBody, RigidBodyState::Integrated, true);
+			}
 		}
 	}
 

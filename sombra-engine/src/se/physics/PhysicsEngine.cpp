@@ -1,6 +1,6 @@
 #include <algorithm>
 #include "se/physics/PhysicsEngine.h"
-#include "se/physics/RigidBodyDynamics.h"
+#include "RigidBodyDynamics.h"
 
 namespace se::physics {
 
@@ -8,7 +8,6 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		updateRigidBody(rigidBody);
 		mRigidBodies.push_back(rigidBody);
 	}
 
@@ -24,29 +23,28 @@ namespace se::physics {
 	}
 
 
-	void PhysicsEngine::updateRigidBody(RigidBody* rigidBody)
-	{
-		physics::updateTransforms(*rigidBody);
-		setRigidBodySleepState(*rigidBody, false);
-		rigidBody->state.set(RigidBody::State::Updated);
-	}
-
-
 	void PhysicsEngine::integrate(float delta)
 	{
-		float bias = std::pow(mBaseBias, delta);
-
-		mForceManager.applyForces();
+		// Reset the RigidBodies Updated state
 		for (RigidBody* rigidBody : mRigidBodies) {
-			// Update the RigidBody data
-			if (!rigidBody->state[RigidBody::State::Sleeping]) {
-				se::physics::integrate(*rigidBody, delta);
-				se::physics::updateMotion(*rigidBody, bias);
-				se::physics::updateTransforms(*rigidBody);
-				rigidBody->state.set(RigidBody::State::Updated);
+			RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Integrated, false);
+		}
 
-				if (rigidBody->motion < mSleepEpsilon) {
-					setRigidBodySleepState(*rigidBody, true);
+		// Apply all the forces
+		mForceManager.applyForces();
+
+		float bias = std::pow(mBaseBias, delta);
+		for (RigidBody* rigidBody : mRigidBodies) {
+			if (!rigidBody->checkState(RigidBodyState::Sleeping)) {
+				// Simulate the RigidBody motion
+				RigidBodyDynamics::integrate(*rigidBody, delta);
+				RigidBodyDynamics::updateTransformsMatrix(*rigidBody);
+				RigidBodyDynamics::updateMotion(*rigidBody, bias);
+				RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Integrated, true);
+
+				if (rigidBody->getMotion() < rigidBody->getConfig().sleepMotion) {
+					// Put the RigidBody to Sleeping state
+					RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Sleeping, true);
 				}
 			}
 		}
@@ -55,22 +53,12 @@ namespace se::physics {
 
 	void PhysicsEngine::solveConstraints(float delta)
 	{
-		mConstraintManager.update(delta);
-	}
+		// Reset the RigidBodies Updated state
+		for (RigidBody* rigidBody : mRigidBodies) {
+			RigidBodyDynamics::setState(*rigidBody, RigidBodyState::ConstraintsSolved, false);
+		}
 
-// Private functions
-	void PhysicsEngine::setRigidBodySleepState(RigidBody& rigidBody, bool value) const
-	{
-		if (value) {
-			// Set the motion of the RigidBody to a larger value than
-			// mSleepEpsilon to prevent it from falling sleep instantly
-			rigidBody.motion = 2.0f * mSleepEpsilon;
-			rigidBody.state.set(RigidBody::State::Sleeping);
-		}
-		else {
-			rigidBody.motion = 0.0f;
-			rigidBody.state.reset(RigidBody::State::Sleeping);
-		}
+		mConstraintManager.update(delta);
 	}
 
 }

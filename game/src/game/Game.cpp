@@ -405,11 +405,11 @@ namespace game {
 		auto player	= std::make_unique<se::app::Entity>("player");
 		player->position = glm::vec3(0, 1, 10);
 
-		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(
-			40.0f, 0.01f,
-			2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
-			0.01f, 2.5f
-		);
+		se::physics::RigidBodyConfig config1(40.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+		config1.linearDrag = 0.01f;
+		config1.angularDrag = 0.01f;
+		config1.frictionCoefficient = 2.5f;
+		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(config1, se::physics::RigidBodyData());
 		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
 		mCollisionManager->addEntity(player.get(), std::move(collider1));
 		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
@@ -447,11 +447,11 @@ namespace game {
 			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
 			cube->position = cubePositions[i];
 
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(
-				20.0f, 0.95f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
-				0.95f, 0.5f
-			);
+			se::physics::RigidBodyConfig config2(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			config2.linearDrag = 0.95f;
+			config2.angularDrag = 0.95f;
+			config2.frictionCoefficient = 0.5f;
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
 			if (i == 1) {
 				rb1 = rigidBody2.get();
 			}
@@ -459,7 +459,7 @@ namespace game {
 				mAudioManager->addSource(cube.get(), std::move(source1));
 			}
 			if (i == 3) {
-				rigidBody2->angularVelocity = glm::vec3(0, 10, 0);
+				rigidBody2->getData().angularVelocity = glm::vec3(0, 10, 0);
 				rb2 = rigidBody2.get();
 			}
 			if (i == 4) {
@@ -495,7 +495,7 @@ namespace game {
 			nonMovableCube->position = glm::vec3(0.0f, 0.0f, -40.0f);
 			nonMovableCube->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>();
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(se::physics::RigidBodyConfig(0.2f), se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mCollisionManager->addEntity(nonMovableCube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(nonMovableCube.get(), std::move(rigidBody2));
@@ -508,11 +508,11 @@ namespace game {
 			auto gravityCube = std::make_unique<se::app::Entity>("gravity-cube");
 			gravityCube->position = glm::vec3(0.0f, 2.0f, -40.0f);
 
-			auto rigidBody3 = std::make_unique<se::physics::RigidBody>(
-				20.0f, 0.95f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
-				0.95f, 0.65f
-			);
+			se::physics::RigidBodyConfig config3(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			config3.linearDrag = 0.95f;
+			config3.angularDrag = 0.95f;
+			config3.frictionCoefficient = 0.65f;
+			auto rigidBody3 = std::make_unique<se::physics::RigidBody>(config3, se::physics::RigidBodyData());
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 
 			mPhysicsEngine->getForceManager().addRBForce(rigidBody3.get(), gravity);
@@ -564,11 +564,11 @@ namespace game {
 			auto cube = std::make_unique<se::app::Entity>("random-cube");
 			cube->position = glm::ballRand(50.0f);
 
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(
-				10.0f, 0.9f,
-				2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f),
-				0.9f, 0.5f
-			);
+			se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			config2.linearDrag = 0.9f;
+			config2.angularDrag = 0.9f;
+			config2.frictionCoefficient = 0.5f;
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
 			mCollisionManager->addEntity(cube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));

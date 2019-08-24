@@ -39,7 +39,7 @@ namespace se::app {
 			mGraphicsSystem->setViewport(width, height);
 
 			// Physics
-			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias, kSleepEpsilon);
+			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);
 			mPhysicsManager = new PhysicsManager(*mPhysicsEngine, *mEventManager);
 
 			// Collision

@@ -13,26 +13,23 @@ namespace se::physics {
 
 		// Get the indices of the RigidBodies of the constraint or add them if
 		// they aren't yet
-		IndexPair constraintRB;
+		IndexPair rbIndices;
 		for (std::size_t i = 0; i < 2; ++i) {
 			RigidBody* rb = constraint->getRigidBody(i);
 
 			auto it = std::find(mRigidBodies.begin(), mRigidBodies.end(), rb);
 			if (it != mRigidBodies.end()) {
-				constraintRB[i] = std::distance(mRigidBodies.begin(), it);
+				rbIndices[i] = std::distance(mRigidBodies.begin(), it);
 			}
 			else {
 				mRigidBodies.push_back(rb);
-				mInverseMassMatrix.emplace_back(rb->invertedMass);
-				mInverseMassMatrix.push_back(rb->invertedInertiaTensor);
-
-				constraintRB[i] = mRigidBodies.size() - 1;
+				rbIndices[i] = mRigidBodies.size() - 1;
 			}
 		}
 
 		// Add the constraint and its data
 		mConstraints.push_back(constraint);
-		mConstraintRBMap.push_back(constraintRB);
+		mConstraintRBMap.push_back(rbIndices);
 		mLambdaMatrix.push_back(0.0f);
 		const ConstraintBounds* cb = constraint->getConstraintBounds();
 		mLambdaMinMatrix.push_back(cb->alphaMin);
@@ -60,14 +57,10 @@ namespace se::physics {
 			);
 
 			if (shouldRemove) {
-				// Remove the RigidBody and its cached data
+				// Remove the RigidBody
 				mRigidBodies.erase(mRigidBodies.begin() + iRB);
-				mInverseMassMatrix.erase(
-					mInverseMassMatrix.begin() + 2*iRB,
-					mInverseMassMatrix.begin() + 2*(iRB+1)
-				);
 
-				// Shift the map indices left
+				// Shift the mConstraintRBMap RigidBody indices left
 				for (IndexPair& pair : mConstraintRBMap) {
 					if (pair[0] > iRB) { --pair[0]; }
 					if (pair[1] > iRB) { --pair[1]; }
@@ -88,6 +81,7 @@ namespace se::physics {
 	{
 		// 1. Update the matrices
 		updateBiasMatrix();
+		updateInverseMassMatrix();
 		updateVelocityMatrix();
 		updateForceExtMatrix();
 		updateJacobianMatrix();
@@ -114,14 +108,26 @@ namespace se::physics {
 	}
 
 
+	void ConstraintManager::updateInverseMassMatrix()
+	{
+		mInverseMassMatrix = std::vector<glm::mat3>();
+		mInverseMassMatrix.reserve(2 * mRigidBodies.size());
+
+		for (const RigidBody* rb : mRigidBodies) {
+			mInverseMassMatrix.emplace_back(rb->getConfig().invertedMass);
+			mInverseMassMatrix.push_back(rb->getInvertedInertiaTensorWorld());
+		}
+	}
+
+
 	void ConstraintManager::updateVelocityMatrix()
 	{
 		mVelocityMatrix = std::vector<glm::vec3>();
 		mVelocityMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
-			mVelocityMatrix.push_back(rb->linearVelocity);
-			mVelocityMatrix.push_back(rb->angularVelocity);
+			mVelocityMatrix.push_back(rb->getData().linearVelocity);
+			mVelocityMatrix.push_back(rb->getData().angularVelocity);
 		}
 	}
 
@@ -132,8 +138,8 @@ namespace se::physics {
 		mForceExtMatrix.reserve(2 * mRigidBodies.size());
 
 		for (const RigidBody* rb : mRigidBodies) {
-			mForceExtMatrix.push_back(rb->forceSum);
-			mForceExtMatrix.push_back(rb->torqueSum);
+			mForceExtMatrix.push_back(rb->getData().forceSum);
+			mForceExtMatrix.push_back(rb->getData().torqueSum);
 		}
 	}
 
@@ -321,16 +327,18 @@ namespace se::physics {
 
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {
-					mRigidBodies[i]->linearVelocity = v2;
-					integrateLinearVelocity(*mRigidBodies[i], deltaTime);
+					mRigidBodies[i]->getData().linearVelocity = v2;
+					RigidBodyDynamics::integrateLinearVelocity(*mRigidBodies[i], deltaTime);
 				}
 				else {
-					mRigidBodies[i]->angularVelocity = v2;
-					integrateAngularVelocity(*mRigidBodies[i], deltaTime);
+					mRigidBodies[i]->getData().angularVelocity = v2;
+					RigidBodyDynamics::integrateAngularVelocity(*mRigidBodies[i], deltaTime);
 				}
 			}
 
-			updateTransforms(*mRigidBodies[i]);
+			RigidBodyDynamics::updateTransformsMatrix(*mRigidBodies[i]);
+			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::Sleeping, false);
+			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::ConstraintsSolved, true);
 		}
 	}
 

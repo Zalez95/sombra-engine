@@ -7,8 +7,8 @@
 
 namespace se::physics {
 
+	class RigidBody;
 	class Constraint;
-	struct RigidBody;
 
 
 	/**
@@ -55,9 +55,9 @@ namespace se::physics {
 		std::vector<float> mBiasMatrix;
 
 		/** The diagonal of the inverse matrix with all the masses
-		 * (E3 * mass and the inertia tensor) of all the RigidBodies.
-		 * It's a square matrix with a size of 2*(number of RigidBodies)
-		 * mat3s. */
+		 * (E3 * mass and the inertia tensor in world space) of all the
+		 * RigidBodies. It's a square matrix with a size of
+		 * 2*(number of RigidBodies) mat3s. */
 		std::vector<glm::mat3> mInverseMassMatrix;
 
 		/** A matrix with the velocities (linear and angular) of all the
@@ -100,6 +100,9 @@ namespace se::physics {
 	private:
 		/** Updates the bias matrix value */
 		void updateBiasMatrix();
+
+		/** Updates the inverse mass matrix value */
+		void updateInverseMassMatrix();
 
 		/** Updates the velocity matrix value */
 		void updateVelocityMatrix();

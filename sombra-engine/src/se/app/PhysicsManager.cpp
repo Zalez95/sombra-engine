@@ -35,9 +35,10 @@ namespace se::app {
 
 		// The RigidBody initial data is overridden by the entity one
 		physics::RigidBody* rbPtr = rigidBody.get();
-		rbPtr->position			= entity->position;
-		rbPtr->linearVelocity	= entity->velocity;
-		rbPtr->orientation		= entity->orientation;
+		rbPtr->getData().position		= entity->position;
+		rbPtr->getData().linearVelocity	= entity->velocity;
+		rbPtr->getData().orientation	= entity->orientation;
+		rbPtr->synchWithData();
 
 		// Add the RigidBody
 		mPhysicsEngine.addRigidBody(rbPtr);
@@ -70,10 +71,10 @@ namespace se::app {
 			physics::RigidBody* rigidBody = pair.second.get();
 
 			if (entity->updated) {
-				rigidBody->position			= entity->position;
-				rigidBody->linearVelocity	= entity->velocity;
-				rigidBody->orientation		= entity->orientation;
-				mPhysicsEngine.updateRigidBody(rigidBody);
+				rigidBody->getData().position		= entity->position;
+				rigidBody->getData().linearVelocity	= entity->velocity;
+				rigidBody->getData().orientation	= entity->orientation;
+				rigidBody->synchWithData();
 			}
 		}
 
@@ -84,10 +85,10 @@ namespace se::app {
 			Entity* entity					= pair.first;
 			physics::RigidBody* rigidBody	= pair.second.get();
 
-			if (rigidBody->state[physics::RigidBody::State::Updated]) {
-				entity->position	= rigidBody->position;
-				entity->velocity	= rigidBody->linearVelocity;
-				entity->orientation	= rigidBody->orientation;
+			if (rigidBody->checkState(physics::RigidBodyState::Integrated)) {
+				entity->position	= rigidBody->getData().position;
+				entity->velocity	= rigidBody->getData().linearVelocity;
+				entity->orientation	= rigidBody->getData().orientation;
 				entity->updated		= true;
 			}
 		}
@@ -106,10 +107,10 @@ namespace se::app {
 			physics::RigidBody* rigidBody = pair.second.get();
 
 			if (entity->updated) {
-				rigidBody->position			= entity->position;
-				rigidBody->linearVelocity	= entity->velocity;
-				rigidBody->orientation		= entity->orientation;
-				mPhysicsEngine.updateRigidBody(rigidBody);
+				rigidBody->getData().position		= entity->position;
+				rigidBody->getData().linearVelocity	= entity->velocity;
+				rigidBody->getData().orientation	= entity->orientation;
+				rigidBody->synchWithData();
 			}
 		}
 
@@ -127,10 +128,10 @@ namespace se::app {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			if (rigidBody->state[physics::RigidBody::State::Updated]) {
-				entity->position	= rigidBody->position;
-				entity->velocity	= rigidBody->linearVelocity;
-				entity->orientation	= rigidBody->orientation;
+			if (rigidBody->checkState(physics::RigidBodyState::ConstraintsSolved)) {
+				entity->position	= rigidBody->getData().position;
+				entity->velocity	= rigidBody->getData().linearVelocity;
+				entity->orientation	= rigidBody->getData().orientation;
 				entity->updated		= true;
 			}
 		}
@@ -181,7 +182,8 @@ namespace se::app {
 
 		bool updateFrictionMasses = true;
 		if (manifold->contacts.size() > manifoldConstraints.size()) {
-			float mu1 = rb1->frictionCoefficient, mu2 = rb2->frictionCoefficient, mu = std::sqrt(mu1 * mu1 + mu2 * mu2);
+			float mu1 = rb1->getConfig().frictionCoefficient, mu2 = rb2->getConfig().frictionCoefficient;
+			float mu = std::sqrt(mu1 * mu1 + mu2 * mu2);
 			SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
 
 			// Increase the number of constraints up to the number of contacts
@@ -222,7 +224,7 @@ namespace se::app {
 
 		if (updateFrictionMasses) {
 			// Update the friction constraint masses
-			float averageMass = 2.0f / (rb1->invertedMass + rb2->invertedMass);
+			float averageMass = 2.0f / (rb1->getConfig().invertedMass + rb2->getConfig().invertedMass);
 			float perContactMass = averageMass / manifoldConstraints.size();
 
 			for (ContactConstraints& contactConstraints : manifoldConstraints) {
@@ -239,13 +241,13 @@ namespace se::app {
 
 			// Calculate the vectors that points from the RigidBodies center of
 			// mass to their contact points
-			glm::vec3 r1 = contact.worldPosition[0] - rb1->position;
-			glm::vec3 r2 = contact.worldPosition[1] - rb2->position;
+			glm::vec3 r1 = contact.worldPosition[0] - rb1->getData().position;
+			glm::vec3 r2 = contact.worldPosition[1] - rb2->getData().position;
 
 			// Calculate two tangent vectors to the Contact normal
 			glm::vec3 vAxis(0.0f);
 			auto absCompare = [](float f1, float f2) { return std::abs(f1) < std::abs(f2); };
-			int iAxis = std::distance(&contact.normal.x, std::min_element(&contact.normal.x, &contact.normal.x + 3, absCompare));
+			std::size_t iAxis = std::distance(&contact.normal.x, std::min_element(&contact.normal.x, &contact.normal.x + 3, absCompare));
 			vAxis[iAxis] = 1.0f;
 
 			glm::vec3 tangent1 = glm::cross(contact.normal, vAxis);

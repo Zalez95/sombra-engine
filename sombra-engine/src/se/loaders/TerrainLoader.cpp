@@ -35,7 +35,7 @@ namespace se::loaders {
 		mGraphicsManager.addEntity(entity.get(), std::move(renderable3D));
 
 		// Physics data
-		auto rb = std::make_unique<physics::RigidBody>();
+		auto rb = std::make_unique<physics::RigidBody>(physics::RigidBodyConfig(0.2f), physics::RigidBodyData());
 		mPhysicsManager.addEntity(entity.get(), std::move(rb));
 
 		// Collider data
