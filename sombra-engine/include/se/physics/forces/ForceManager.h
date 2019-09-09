@@ -69,7 +69,9 @@ namespace se::physics {
 		void removeForce(Force* force);
 
 		/** Applies the Forces stored in the ForceManager to their RigidBody
-		 * subscribers */
+		 * subscribers
+		 * @note	the Forces will be applied only to non Sleeping
+		 *			RigidBodies */
 		void applyForces();
 	};
 

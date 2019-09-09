@@ -54,6 +54,11 @@ namespace se::physics {
 		 * the size of (number of Constraints). */
 		std::vector<float> mBiasMatrix;
 
+		/** A matrix that tells which RigidBody Constraints needs to be solved
+		 * or has been solved. It's a row matrix with the size of
+		 * (number of RigidBodies). */
+		std::vector<bool> mShouldSolveMatrix;
+
 		/** The diagonal of the inverse matrix with all the masses
 		 * (E3 * mass and the inertia tensor in world space) of all the
 		 * RigidBodies. It's a square matrix with a size of
@@ -103,6 +108,9 @@ namespace se::physics {
 
 		/** Updates the inverse mass matrix value */
 		void updateInverseMassMatrix();
+
+		/** Updates the should solve matrix value */
+		void updateShouldSolveMatrix();
 
 		/** Updates the velocity matrix value */
 		void updateVelocityMatrix();

@@ -64,8 +64,8 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Updating the AudioManager";
 
-		// Update the Listener
-		if (mListener && mListener->updated) {
+		SOMBRA_DEBUG_LOG << "Updating the Listener";
+		if (mListener && mListener->updated.any()) {
 			mAudioEngine.setListenerPosition(mListener->position);
 			mAudioEngine.setListenerOrientation(
 				glm::vec3(0.0f, 0.0f, -1.0f) * mListener->orientation,
@@ -74,12 +74,12 @@ namespace se::app {
 			mAudioEngine.setListenerVelocity(mListener->velocity);
 		}
 
-		// Update the Sources
+		SOMBRA_DEBUG_LOG << "Updating the Sources";
 		for (auto& pair : mSourceEntities) {
 			Entity* entity = pair.first;
 			audio::Source* source = pair.second.get();
 
-			if (entity->updated) {
+			if (entity->updated.any()) {
 				source->setPosition(entity->position);
 				source->setOrientation(
 					glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,

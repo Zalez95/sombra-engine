@@ -65,12 +65,17 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Start (" << delta << ")";
 
-		// Update the RigidBodies with the changes made to the Entities
+		mPhysicsEngine.resetRigidBodiesState();
+
+		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		for (auto& pair : mEntityRBMap) {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			if (entity->updated) {
+			// Reset the Entity physics change
+			entity->updated.reset( static_cast<int>(EntityUpdate::Physics) );
+
+			if (entity->updated.any()) {
 				rigidBody->getData().position		= entity->position;
 				rigidBody->getData().linearVelocity	= entity->velocity;
 				rigidBody->getData().orientation	= entity->orientation;
@@ -78,9 +83,10 @@ namespace se::app {
 			}
 		}
 
+		SOMBRA_DEBUG_LOG << "Integrating the RigidBodies";
 		mPhysicsEngine.integrate(delta);
 
-		// Update the Entities with the changes made to the RigidBodies
+		SOMBRA_DEBUG_LOG << "Updating the Entities";
 		for (auto& pair : mEntityRBMap) {
 			Entity* entity					= pair.first;
 			physics::RigidBody* rigidBody	= pair.second.get();
@@ -89,7 +95,7 @@ namespace se::app {
 				entity->position	= rigidBody->getData().position;
 				entity->velocity	= rigidBody->getData().linearVelocity;
 				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated		= true;
+				entity->updated.set( static_cast<int>(EntityUpdate::Physics) );
 			}
 		}
 
@@ -101,12 +107,18 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Start (" << delta << ")";
 
-		// Update the RigidBodies with the changes made to the Entities
+		mPhysicsEngine.resetRigidBodiesState();
+
+		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		for (auto& pair : mEntityRBMap) {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			if (entity->updated) {
+			// Skip the Entity physics change in the doDynamics step
+			auto updatedWithoutPhysics = entity->updated;
+			updatedWithoutPhysics.reset( static_cast<int>(EntityUpdate::Physics) );
+
+			if (updatedWithoutPhysics.any()) {
 				rigidBody->getData().position		= entity->position;
 				rigidBody->getData().linearVelocity	= entity->velocity;
 				rigidBody->getData().orientation	= entity->orientation;
@@ -114,16 +126,17 @@ namespace se::app {
 			}
 		}
 
-		// Update the NormalConstraints time
+		SOMBRA_DEBUG_LOG << "Updating the NormalConstraints time";
 		for (auto& pair : mManifoldConstraintsMap) {
 			for (ContactConstraints& contactConstraints : pair.second) {
 				contactConstraints.normalConstraint.setDeltaTime(delta);
 			}
 		}
 
+		SOMBRA_DEBUG_LOG << "Solving the Constraints";
 		mPhysicsEngine.solveConstraints(delta);
 
-		// Update the Entities with the changes made to the RigidBodies
+		SOMBRA_DEBUG_LOG << "Updating the Entities";
 		for (auto& pair : mEntityRBMap) {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
@@ -132,9 +145,12 @@ namespace se::app {
 				entity->position	= rigidBody->getData().position;
 				entity->velocity	= rigidBody->getData().linearVelocity;
 				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated		= true;
+				entity->updated.set( static_cast<int>(EntityUpdate::Physics) );
 			}
 		}
+
+		SOMBRA_DEBUG_LOG << "Putting the RigidBodies to sleep";
+		mPhysicsEngine.checkSleepyRigidBodies(delta);
 
 		SOMBRA_INFO_LOG << "End";
 	}
@@ -207,7 +223,7 @@ namespace se::app {
 			}
 		}
 		else if (manifold->contacts.size() < manifoldConstraints.size()) {
-			// Reduce the number of constraints down to the number of contacts
+			// Decrease the number of constraints down to the number of contacts
 			for (std::size_t i = manifoldConstraints.size(); i > manifold->contacts.size(); --i) {
 				ContactConstraints& lastConstraints = manifoldConstraints.back();
 				mPhysicsEngine.getConstraintManager().removeConstraint(&lastConstraints.normalConstraint);

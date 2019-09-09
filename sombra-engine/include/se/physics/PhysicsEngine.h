@@ -60,18 +60,34 @@ namespace se::physics {
 		 *			RigidBody */
 		void removeRigidBody(RigidBody* rigidBody);
 
+		/** Resets the Integrated and ConstraintsSolved state of all the
+		 * RigidBodies.
+		 *
+		 * @note	the state should be reset before integrating or solving the
+		 *			constraints of the RigidBodies */
+		void resetRigidBodiesState();
+
 		/** Updates the positions of the RigidBodies added to the System
 		 *
-		 * @param	delta the elapsed time since the last update of the
-		 *			PhysicsEngine in seconds */
-		void integrate(float delta);
+		 * @param	deltaTime the elapsed time since the last integration of
+		 *			the RigidBodies in seconds */
+		void integrate(float deltaTime);
 
 		/** Updates the ConstraintManager to solve the Constraints between
 		 * the RigidBodies
 		 *
-		 * @param	delta the elapsed time since the last update of the
+		 * @param	deltaTime the elapsed time since the last constraints
+		 *			resolution in seconds
+		 * @note	the constraints should be solved after integrating the
+		 *			position of the RigidBodies */
+		void solveConstraints(float deltaTime);
+
+		/** Checks if any of the RigidBodies are stopped, and if it's the case,
+		 * it sets them to a Sleeping state
+		 *
+		 * @param	deltaTime the elapsed time since the last update of the
 		 *			PhysicsEngine in seconds */
-		void solveConstraints(float delta);
+		void checkSleepyRigidBodies(float deltaTime);
 	};
 
 }

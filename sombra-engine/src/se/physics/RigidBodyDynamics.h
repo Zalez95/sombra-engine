@@ -84,8 +84,12 @@ namespace se::physics {
 		 *
 		 * @param	rigidBody the RigidBody to update
 		 * @param	bias the proportion of the new motion value due to its old
-		 *			value */
-		static void updateMotion(RigidBody& rigidBody, float bias);
+		 *			value
+		 * @param	maxMotion the maximum motion value */
+		static void updateMotion(
+			RigidBody& rigidBody,
+			float bias, float maxMotion
+		);
 
 		/** Sets the RigidBody's state to the given value
 		 *

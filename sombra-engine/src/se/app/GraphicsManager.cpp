@@ -100,24 +100,24 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Update start";
 
-		SOMBRA_INFO_LOG << "Updating Cameras";
+		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 		for (auto& pair : mCameraEntities) {
 			Entity* entity = pair.first;
 			graphics::Camera* camera = pair.second.get();
 
-			if (entity->updated) {
+			if (entity->updated.any()) {
 				camera->setPosition(entity->position);
 				camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation);
 				camera->setUp({ 0.0f, 1.0f, 0.0f });
 			}
 		}
 
-		SOMBRA_INFO_LOG << "Updating Renderable3Ds";
+		SOMBRA_DEBUG_LOG << "Updating the Renderable3Ds";
 		for (auto& pair : mRenderable3DEntities) {
 			Entity* entity = pair.first;
 			graphics::Renderable3D* renderable3D = pair.second.get();
 
-			if (entity->updated) {
+			if (entity->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
 				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
@@ -125,12 +125,12 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_INFO_LOG << "Updating PointLights";
+		SOMBRA_DEBUG_LOG << "Updating the PointLights";
 		for (auto& pair : mPointLightEntities) {
 			Entity* entity = pair.first;
 			graphics::PointLight* pointLight = pair.second.get();
 
-			if (entity->updated) {
+			if (entity->updated.any()) {
 				pointLight->position = entity->position;
 			}
 		}

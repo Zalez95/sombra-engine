@@ -2,10 +2,20 @@
 #define ENTITY_H
 
 #include <string>
+#include <bitset>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace se::app {
+
+	/** The indices of the managers in the Entity's updated bitset */
+	enum class EntityUpdate : int
+	{
+		Input,		//< The Entity has changed due to the InputManager
+		Physics,	//< The Entity has changed due to the PhysicsManager
+		Count		//< The number of indices
+	};
+
 
 	/**
 	 * Struct Entity, a Entity is a game object that holds all the
@@ -28,8 +38,8 @@ namespace se::app {
 		/** The Entity scale in world space */
 		glm::vec3 scale;
 
-		/** If the state of the entity has changed or not */
-		bool updated;
+		/** If the Entity has been updated by any manager */
+		std::bitset< static_cast<int>(EntityUpdate::Count) > updated;
 
 		/** Creates a new Entity
 		 *
@@ -37,7 +47,7 @@ namespace se::app {
 		Entity(const std::string& name) :
 			name(name),
 			position(0.0f), velocity(0.0f),
-			orientation(1.0f, glm::vec3(0.0f)), scale(1.0f), updated(true) {};
+			orientation(1.0f, glm::vec3(0.0f)), scale(1.0f) {};
 	};
 
 }

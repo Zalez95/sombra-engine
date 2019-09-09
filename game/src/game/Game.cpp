@@ -405,7 +405,7 @@ namespace game {
 		auto player	= std::make_unique<se::app::Entity>("player");
 		player->position = glm::vec3(0, 1, 10);
 
-		se::physics::RigidBodyConfig config1(40.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+		se::physics::RigidBodyConfig config1(40.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 		config1.linearDrag = 0.01f;
 		config1.angularDrag = 0.01f;
 		config1.frictionCoefficient = 2.5f;
@@ -447,7 +447,7 @@ namespace game {
 			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
 			cube->position = cubePositions[i];
 
-			se::physics::RigidBodyConfig config2(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			se::physics::RigidBodyConfig config2(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 			config2.linearDrag = 0.95f;
 			config2.angularDrag = 0.95f;
 			config2.frictionCoefficient = 0.5f;
@@ -495,7 +495,7 @@ namespace game {
 			nonMovableCube->position = glm::vec3(0.0f, 0.0f, -40.0f);
 			nonMovableCube->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(se::physics::RigidBodyConfig(0.2f), se::physics::RigidBodyData());
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(se::physics::RigidBodyConfig(0.001f), se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mCollisionManager->addEntity(nonMovableCube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(nonMovableCube.get(), std::move(rigidBody2));
@@ -508,7 +508,7 @@ namespace game {
 			auto gravityCube = std::make_unique<se::app::Entity>("gravity-cube");
 			gravityCube->position = glm::vec3(0.0f, 2.0f, -40.0f);
 
-			se::physics::RigidBodyConfig config3(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			se::physics::RigidBodyConfig config3(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 			config3.linearDrag = 0.95f;
 			config3.angularDrag = 0.95f;
 			config3.frictionCoefficient = 0.65f;
@@ -564,7 +564,7 @@ namespace game {
 			auto cube = std::make_unique<se::app::Entity>("random-cube");
 			cube->position = glm::ballRand(50.0f);
 
-			se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.2f);
+			se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 			config2.linearDrag = 0.9f;
 			config2.angularDrag = 0.9f;
 			config2.frictionCoefficient = 0.5f;

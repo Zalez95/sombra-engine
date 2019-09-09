@@ -23,24 +23,44 @@ namespace se::physics {
 	}
 
 
-	void PhysicsEngine::integrate(float delta)
+	void PhysicsEngine::resetRigidBodiesState()
 	{
-		// Reset the RigidBodies Updated state
 		for (RigidBody* rigidBody : mRigidBodies) {
 			RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Integrated, false);
+			RigidBodyDynamics::setState(*rigidBody, RigidBodyState::ConstraintsSolved, false);
 		}
+	}
 
+
+	void PhysicsEngine::integrate(float deltaTime)
+	{
 		// Apply all the forces
 		mForceManager.applyForces();
 
-		float bias = std::pow(mBaseBias, delta);
+		// Simulate the RigidBody motion
 		for (RigidBody* rigidBody : mRigidBodies) {
 			if (!rigidBody->checkState(RigidBodyState::Sleeping)) {
-				// Simulate the RigidBody motion
-				RigidBodyDynamics::integrate(*rigidBody, delta);
+				RigidBodyDynamics::integrate(*rigidBody, deltaTime);
 				RigidBodyDynamics::updateTransformsMatrix(*rigidBody);
-				RigidBodyDynamics::updateMotion(*rigidBody, bias);
 				RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Integrated, true);
+			}
+		}
+	}
+
+
+	void PhysicsEngine::solveConstraints(float deltaTime)
+	{
+		mConstraintManager.update(deltaTime);
+	}
+
+
+	void PhysicsEngine::checkSleepyRigidBodies(float deltaTime)
+	{
+		float bias = std::pow(mBaseBias, deltaTime);
+
+		for (RigidBody* rigidBody : mRigidBodies) {
+			if (!rigidBody->checkState(RigidBodyState::Sleeping)) {
+				RigidBodyDynamics::updateMotion(*rigidBody, bias, 10.0f * rigidBody->getConfig().sleepMotion);
 
 				if (rigidBody->getMotion() < rigidBody->getConfig().sleepMotion) {
 					// Put the RigidBody to Sleeping state
@@ -48,17 +68,6 @@ namespace se::physics {
 				}
 			}
 		}
-	}
-
-
-	void PhysicsEngine::solveConstraints(float delta)
-	{
-		// Reset the RigidBodies Updated state
-		for (RigidBody* rigidBody : mRigidBodies) {
-			RigidBodyDynamics::setState(*rigidBody, RigidBodyState::ConstraintsSolved, false);
-		}
-
-		mConstraintManager.update(delta);
 	}
 
 }

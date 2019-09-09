@@ -44,6 +44,8 @@ namespace se::app {
 		// Update the entities
 		const window::InputData& inputData = mWindowSystem.getInputData();
 		for (Entity* entity : mEntities) {
+			entity->updated.reset( static_cast<int>(EntityUpdate::Input) );
+
 			doMouseInput(entity, inputData);
 			doKeyboardInput(entity, inputData);
 		}
@@ -56,30 +58,34 @@ namespace se::app {
 // Private functions definition
 	void InputManager::doMouseInput(Entity* entity, const window::InputData& inputData) const
 	{
+		SOMBRA_DEBUG_LOG << "Calculating the new entity " << entity << " orientation";
+
 		const window::WindowData& data = mWindowSystem.getWindowData();
 
 		// Get the mouse movement from the center of the screen in the range [-1, 1]
-		glm::vec2 mouseDelta(
-			2 * inputData.mouseX / data.width - 1.0f,
-			2 * inputData.mouseY / data.height - 1.0f		// note that the Y position is upsidedown
-		);
+		double mouseDeltaX = 2.0 * inputData.mouseX / data.width - 1.0;
+		double mouseDeltaY = 2.0 * inputData.mouseY / data.height - 1.0;		// note that the Y position is upsidedown
 
-		// Calculate the rotation around the Entity's y-axis
-		float yaw			= kMouseSpeed * mouseDelta.x;
-		glm::quat qYaw		= glm::angleAxis(yaw, glm::vec3(0, 1, 0));
+		if ((mouseDeltaX != 0.0) && (mouseDeltaY != 0.0)) {
+			// Calculate the rotation around the Entity's y-axis
+			float yaw			= kMouseSpeed * static_cast<float>(mouseDeltaX);
+			glm::quat qYaw		= glm::angleAxis(yaw, glm::vec3(0, 1, 0));
 
-		// Calculate the rotation around the Entity's x-axis
-		float pitch			= kMouseSpeed * mouseDelta.y;
-		glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
+			// Calculate the rotation around the Entity's x-axis
+			float pitch			= kMouseSpeed * static_cast<float>(mouseDeltaY);
+			glm::quat qPitch	= glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 
-		// Apply the change in orientation
-		entity->orientation = glm::normalize(qPitch * qYaw * entity->orientation);
-		entity->updated = true;
+			// Apply the change in orientation
+			entity->orientation = glm::normalize(qPitch * qYaw * entity->orientation);
+			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
+		}
 	}
 
 
 	void InputManager::doKeyboardInput(Entity* entity, const window::InputData& inputData) const
 	{
+		SOMBRA_DEBUG_LOG << "Calculating the new entity " << entity << " velocity";
+
 		glm::vec3 forward	= glm::vec3(0, 0,-1) * entity->orientation;
 		glm::vec3 up		= glm::vec3(0, 1, 0);
 		glm::vec3 right		= glm::cross(forward, up);
@@ -91,31 +97,29 @@ namespace se::app {
 		if (inputData.keys[SE_KEY_D]) { direction += right; }
 		if (inputData.keys[SE_KEY_A]) { direction -= right; }
 
-		// Normalize the direction
+		// Add the movement velocity
 		float length = glm::length(direction);
-		if (length > 0.0f) { direction /= length; }
-
-		// Transform the direction to velocity
-		float velocityDiff = kRunSpeed - glm::length(entity->velocity);
-		if (velocityDiff > 0.0f) {
-			entity->velocity += velocityDiff * direction;
-			entity->updated = true;
+		if (length > 0.0f) {
+			entity->velocity += kRunSpeed * direction / length;
+			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
 		}
 
 		// Add the jump velocity
 		if (inputData.keys[SE_KEY_SPACE]) {
 			entity->velocity += kJumpSpeed * up;
-			entity->updated = true;
+			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
 		}
 		if (inputData.keys[SE_KEY_LEFT_CONTROL]) {
 			entity->velocity -= kJumpSpeed * up;
-			entity->updated = true;
+			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
 		}
 	}
 
 
 	void InputManager::resetMousePosition() const
 	{
+		SOMBRA_DEBUG_LOG << "Changing the mouse position to the center of the window";
+
 		const window::WindowData& data = mWindowSystem.getWindowData();
 		mWindowSystem.setMousePosition(data.width / 2.0, data.height / 2.0);
 	}

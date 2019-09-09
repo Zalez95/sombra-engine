@@ -11,12 +11,12 @@ namespace se::physics {
 	{
 		if (!constraint) { return; }
 
-		// Get the indices of the RigidBodies of the constraint or add them if
-		// they aren't yet
 		IndexPair rbIndices;
 		for (std::size_t i = 0; i < 2; ++i) {
 			RigidBody* rb = constraint->getRigidBody(i);
 
+			// Get the index of the RigidBody in the mRigidBodies vector or add
+			// it if it isn't yet
 			auto it = std::find(mRigidBodies.begin(), mRigidBodies.end(), rb);
 			if (it != mRigidBodies.end()) {
 				rbIndices[i] = std::distance(mRigidBodies.begin(), it);
@@ -25,6 +25,10 @@ namespace se::physics {
 				mRigidBodies.push_back(rb);
 				rbIndices[i] = mRigidBodies.size() - 1;
 			}
+
+			// Change the Sleeping state to force to solve all its Constraints
+			// in the next update
+			RigidBodyDynamics::setState(*rb, RigidBodyState::Sleeping, false);
 		}
 
 		// Add the constraint and its data
@@ -66,6 +70,11 @@ namespace se::physics {
 					if (pair[1] > iRB) { --pair[1]; }
 				}
 			}
+			else {
+				// Change the Sleeping state to force to solve the rest of the
+				// Constraints in the next update
+				RigidBodyDynamics::setState(*mRigidBodies[iRB], RigidBodyState::Sleeping, false);
+			}
 		}
 
 		// Remove the constraint and its cached data
@@ -81,6 +90,7 @@ namespace se::physics {
 	{
 		// 1. Update the matrices
 		updateBiasMatrix();
+		updateShouldSolveMatrix();
 		updateInverseMassMatrix();
 		updateVelocityMatrix();
 		updateForceExtMatrix();
@@ -104,6 +114,20 @@ namespace se::physics {
 
 		for (const Constraint* c : mConstraints) {
 			mBiasMatrix.push_back(c->getBias());
+		}
+	}
+
+
+	void ConstraintManager::updateShouldSolveMatrix()
+	{
+		mShouldSolveMatrix = std::vector<bool>();
+		mShouldSolveMatrix.reserve(mRigidBodies.size());
+
+		for (const RigidBody* rb : mRigidBodies) {
+			mShouldSolveMatrix.push_back(
+				!rb->checkState(RigidBodyState::Sleeping)
+				|| rb->checkState(RigidBodyState::Integrated)
+			);
 		}
 	}
 
@@ -171,6 +195,11 @@ namespace se::physics {
 		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
 			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 				std::size_t iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
+
+				// Check if the constraint needs to be solved
+				if (!mShouldSolveMatrix[iRB1] && !mShouldSolveMatrix[iRB2]) { continue; }
+				mShouldSolveMatrix[iRB1] = true;
+				mShouldSolveMatrix[iRB2] = true;
 
 				// Calculate the current change to lambda
 				float curJInvMJLambda = std::inner_product(
@@ -319,6 +348,10 @@ namespace se::physics {
 		}
 
 		for (std::size_t i = 0; i < mRigidBodies.size(); ++i) {
+			// Check if the RigidBody constraints has been solved
+			if (!mShouldSolveMatrix[i]) { continue; }
+
+			// Update the RigidBody motion data
 			for (std::size_t j = 0; j < 2; ++j) {
 				const glm::vec3& v1				= mVelocityMatrix[2*i + j];
 				const glm::vec3& forceExt		= mForceExtMatrix[2*i + j];
@@ -336,9 +369,10 @@ namespace se::physics {
 				}
 			}
 
+			// Update the RigidBody internal state
 			RigidBodyDynamics::updateTransformsMatrix(*mRigidBodies[i]);
-			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::Sleeping, false);
 			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::ConstraintsSolved, true);
+			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::Sleeping, false);
 		}
 	}
 

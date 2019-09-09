@@ -107,11 +107,6 @@ namespace se::app {
 				lastTP = currentTP;
 				std::cout << deltaTime << "ms\r";
 
-				// Reset the update flag of all the entities in the Application
-				for (auto& entity : mEntities) {
-					entity->updated = false;
-				}
-
 				// Update the Systems
 				SOMBRA_INFO_LOG << "Update phase";
 				mWindowSystem->update();

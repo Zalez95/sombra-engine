@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "se/physics/RigidBody.h"
 #include "RigidBodyDynamics.h"
 
@@ -72,11 +73,12 @@ namespace se::physics {
 	}
 
 
-	void RigidBodyDynamics::updateMotion(RigidBody& rigidBody, float bias)
+	void RigidBodyDynamics::updateMotion(RigidBody& rigidBody, float bias, float maxMotion)
 	{
 		float motion = glm::dot(rigidBody.mData.linearVelocity, rigidBody.mData.linearVelocity)
 			+ glm::dot(rigidBody.mData.angularVelocity, rigidBody.mData.angularVelocity);
-		rigidBody.mMotion = bias * rigidBody.mMotion + (1.0f - bias) * motion;
+		motion = bias * rigidBody.mMotion + (1.0f - bias) * motion;
+		rigidBody.mMotion = std::min(motion, maxMotion);
 	}
 
 

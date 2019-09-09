@@ -51,12 +51,12 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Updating the CollisionManager (" << delta << ")";
 
-		// Update the Colliders with the changes made to the Entities
+		SOMBRA_DEBUG_LOG << "Updating Colliders";
 		for (auto& pair : mEntityColliderMap) {
 			Entity* entity = pair.first;
 			collision::Collider* collider = pair.second.get();
 
-			if (entity->updated) {
+			if (entity->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
 				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
@@ -64,10 +64,10 @@ namespace se::app {
 			}
 		}
 
-		// Detect the collisions between the colliders
+		SOMBRA_DEBUG_LOG << "Detecting collisions between the colliders";
 		mCollisionWorld.update();
 
-		// Notify the contact manifolds
+		SOMBRA_DEBUG_LOG << "Notifing contact manifolds";
 		for (const collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
 			auto itPair1 = mColliderEntityMap.find(manifold->colliders[0]);
 			auto itPair2 = mColliderEntityMap.find(manifold->colliders[1]);
