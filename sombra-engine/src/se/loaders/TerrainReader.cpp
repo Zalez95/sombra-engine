@@ -49,7 +49,12 @@ namespace se::loaders {
 			}
 		}
 
-		utils::Image heightMap = ImageReader::read(heightMapPath, 1);
+		utils::Image heightMap;
+		loaders::Result result = ImageReader::read(heightMapPath, heightMap, 1);
+		if (!result) {
+			throw std::runtime_error("Error while reading the heighMap \"" + heightMapPath + "\": " + result.description());
+		}
+
 		return mTerrainLoader.createTerrain(name, size, heightMap, maxHeight);
 	}
 

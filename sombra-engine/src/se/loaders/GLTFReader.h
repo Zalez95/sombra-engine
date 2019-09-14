@@ -16,14 +16,24 @@ namespace se::loaders {
 	class GLTFReader : public SceneReader
 	{
 	private:	// Nested types
+		using MaterialSPtr = std::shared_ptr<graphics::Material>;
+		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		using Buffer = std::vector<std::byte>;
-		using PrimitiveIndices = std::vector<std::size_t>;
 
 		/** Struct FileFormat, holds the version of a valid GLTF file format */
 		struct FileFormat
 		{
 			static constexpr int sVersion = 2;
 			static constexpr int sRevision = 0;
+		};
+
+		/** Struct Accessor, holds the data of a GLTF accessor */
+		struct Accessor
+		{
+			std::size_t bufferViewId, byteOffset, count;
+			int componentSize;
+			graphics::TypeId componentTypeId;
+			bool normalized;
 		};
 
 		/** Struct BufferView, holds the data of a GLTF bufferView */
@@ -34,13 +44,13 @@ namespace se::loaders {
 			enum class Target { Array, ElementArray, Undefined } target;
 		};
 
-		/** Struct Accessor, holds the data of a GLTF accessor */
-		struct Accessor
+		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
+		struct Node
 		{
-			std::size_t bufferViewId, byteOffset, count;
-			int componentSize;
-			graphics::TypeId componentTypeId;
-			bool normalized;
+			int camera, skin, mesh;
+			bool hasCamera, hasSkin, hasMesh;
+			std::vector<int> children;
+			app::NodeData nodeData;
 		};
 
 		/** Struct Sampler, holds the data of a GLTF sampler */
@@ -53,34 +63,51 @@ namespace se::loaders {
 		/** Struct GLTFData, it holds validated GLTF data */
 		struct GLTFData
 		{
+			std::vector<Accessor> accessors;
 			std::vector<Buffer> buffers;
 			std::vector<BufferView> bufferViews;
-			std::vector<Accessor> accessors;
+			std::vector<Node> nodes;
 			std::vector<Sampler> samplers;
 			std::vector<utils::Image> images;
-			std::vector<std::shared_ptr<graphics::Texture>> textures;
-			std::vector<std::shared_ptr<graphics::Material>> materials;
-			std::vector<PrimitiveIndices> meshPrimitivesIndices;
+			std::vector<MaterialSPtr> materials;
+			std::vector<TextureSPtr> textures;
 		};
 
 	private:	// Attributes
-		/** All the temporally generated GLTF data */
-		GLTFData mGLTFData;
-
 		/** The base path of the file to parse */
 		std::string mBasePath;
 
 		/** The default GLTF material */
-		std::shared_ptr<graphics::Material> mDefaultMaterial;
+		MaterialSPtr mDefaultMaterial;
+
+		/** The temporarily read GLTF data */
+		GLTFData mGLTFData;
 
 	public:		// Functions
+		/** Creates a new GLTFReader */
+		GLTFReader();
+
 		/** Parses the GLTF Scene located at the given file
 		 *
-		 * @param	path the path to the file to parse
-		 * @return	a DataHolder with the Scene data
-		 * @throw	runtime_error in case of any error while parsing */
-		DataHolder load(const std::string& path) override;
+		 * @param	path the path to the GLTF file to parse
+		 * @param	output the DataHolder where the Scene data will be stored
+		 * @return	a Result object with the result of the load operation */
+		Result load(const std::string& path, DataHolder& output) override;
 	private:
+		/** Reads the JSON file located at the given path
+		 *
+		 * @param	path the path where the file to read is located
+		 * @param	output the JSON object where the data will be stored
+		 * @return	a Result object with the result of the read operation */
+		static Result readJSON(const std::string& path, nlohmann::json& output);
+
+		/** Parses the given JSON object to the given output object
+		 *
+		 * @param	jsonGLTF the JSON object where the source data is stored
+		 * @param	output the DataHolder where the Scene data will be stored
+		 * @return	a Result object with the result of the parse operation */
+		Result parseGLTF(const nlohmann::json& jsonGLTF, DataHolder& output);
+
 		/** Checks the version of the given GLTF JSON asset
 		 *
 		 * @param	jsonAsset the GLTF JSON asset to check
@@ -96,56 +123,51 @@ namespace se::loaders {
 		 * mGLTFData
 		 *
 		 * @param	jsonBuffer the json object with the buffer data to load
-		 * @return	true if the Buffer was created successfully, false otherwise
+		 * @return	a Result object with the result of the parse operation
 		 * @note	it only supports buffers in GLB files */
-		void parseBuffer(const nlohmann::json& jsonBuffer);
+		Result parseBuffer(const nlohmann::json& jsonBuffer);
 
 		/** Reads the given GLTF JSON BufferView and appends it to mGLTFData
 		 *
-		 * @param	jsonBufferView the json object with the Buffer View data to
+		 * @param	jsonBufferView the json object with the BufferView data to
 		 *			load
-		 * @return	true if the BufferView was loaded successfully, false
-		 *			otherwise */
-		void parseBufferView(const nlohmann::json& jsonBufferView);
+		 * @return	a Result object with the result of the parse operation */
+		Result parseBufferView(const nlohmann::json& jsonBufferView);
 
 		/** Loads the Array/Index Buffer from the given GLTF JSON Accessor and
 		 * appends it to mGLTFData
 		 *
 		 * @param	jsonAccessor the json object with the Accessor data to load
-		 * @return	true if the Accessor was loaded successfully, false
-		 *			otherwise */
-		void parseAccessor(const nlohmann::json& jsonAccessor);
+		 * @return	a Result object with the result of the parse operation */
+		Result parseAccessor(const nlohmann::json& jsonAccessor);
 
 		/** Loads the texture Sampler from the given GLTF JSON Sampler and
 		 * appends it to mGLTFData
 		 *
 		 * @param	jsonSampler the json object with the Sampler data to load
-		 * @return	true if the Sampler was loaded successfully, false
-		 *			otherwise */
-		void parseSampler(const nlohmann::json& jsonSampler);
+		 * @return	a Result object with the result of the parse operation */
+		Result parseSampler(const nlohmann::json& jsonSampler);
 
 		/** Loads the given GLTF JSON image and appends it to mGLTFData
 		 *
 		 * @param	jsonImage the json object with the Image data to load
-		 * @throw	runtime_error in case of any error while parsing the Image
+		 * @return	a Result object with the result of the parse operation
 		 * @note	bufferView images aren't supported yet */
-		void parseImage(const nlohmann::json& jsonImage);
+		Result parseImage(const nlohmann::json& jsonImage);
 
 		/** Loads the texture from the given GLTF JSON Texture and appends it
 		 * to mGLTFData
 		 *
 		 * @param	jsonTexture the json object with the Texture data to load
-		 * @throw	runtime_error in case of any error while parsing the
-		 *			Texture */
-		void parseTexture(const nlohmann::json& jsonTexture);
+		 * @return	a Result object with the result of the parse operation */
+		Result parseTexture(const nlohmann::json& jsonTexture);
 
 		/** Creates a new Material from the given GLTF JSON Material and appends
 		 * it to mGLTFData
 		 *
 		 * @param	jsonMaterial the JSON object with the Material to parse
-		 * @throw	runtime_error in case of any error while parsing the
-		 *			Material */
-		void parseMaterial(const nlohmann::json& jsonMaterial);
+		 * @return	a Result object with the result of the parse operation */
+		Result parseMaterial(const nlohmann::json& jsonMaterial);
 
 		/** Creates a new Renderable3D from the given GLTF JSON primitive and
 		 * appends it to mGLTFData
@@ -153,9 +175,8 @@ namespace se::loaders {
 		 * @param	jsonPrimitive the JSON object with the Primitive to parse
 		 * @param	output the DataHolder where the loaded Renderable3D will be
 		 *			stored
-		 * @throw	runtime_error in case of any error while parsing the
-		 *			Primitive */
-		void parsePrimitive(
+		 * @return	a Result object with the result of the parse operation */
+		Result parsePrimitive(
 			const nlohmann::json& jsonMesh, DataHolder& output
 		) const;
 
@@ -165,18 +186,17 @@ namespace se::loaders {
 		 *
 		 * @param	jsonMesh the JSON object with the Mesh to parse
 		 * @param	output the DataHolder where the loaded Mesh will be stored
-		 * @throw	runtime_error in case of any error while parsing the Mesh
+		 * @return	a Result object with the result of the parse operation
 		 * @note	Morph targets arent supported yet */
-		void parseMesh(const nlohmann::json& jsonMesh, DataHolder& output);
+		Result parseMesh(const nlohmann::json& jsonMesh, DataHolder& output);
 
 		/** Creates a new Camera from the given GLTF JSON Camera and appends
 		 * it to the DataHolder
 		 *
 		 * @param	jsonCamera the JSON object with the Camera to parse
 		 * @param	output the DataHolder where the loaded Camera will be stored
-		 * @throw	runtime_error in case of any error while parsing the
-		 *			Camera */
-		void parseCamera(
+		 * @return	a Result object with the result of the parse operation */
+		Result parseCamera(
 			const nlohmann::json& jsonCamera, DataHolder& output
 		) const;
 
@@ -184,18 +204,37 @@ namespace se::loaders {
 		 * the DataHolder
 		 *
 		 * @param	jsonNode the JSON object with the Node to parse
-		 * @param	output the DataHolder where the loaded Node will be stored
-		 * @throw	runtime_error in case of any error while parsing the Node */
-		void parseNode(
-			const nlohmann::json& jsonNode, DataHolder& output
-		) const;
+		 * @return	a Result object with the result of the parse operation */
+		Result parseNode(const nlohmann::json& jsonNode);
 
-		// void loadTextureInfo(const nlohmann::json& jsonObject) {};
-		// void loadAnimation(const nlohmann::json& jsonObject) {};
-		// void loadExtension(const nlohmann::json& jsonObject) {};
-		// void loadExtras(const nlohmann::json& jsonObject) {};
-		// void loadScene(const nlohmann::json& jsonObject) {};
-		// void loadSkin(const nlohmann::json& jsonObject) {};
+		/** Creates a new Animation from the given GLTF JSON Node and appends
+		 * it to the DataHolder
+		 *
+		 * @param	jsonNode the JSON object with the Node to parse
+		 * @param	output the DataHolder where the loaded Animation will be
+		 *			stored
+		 * @return	a Result object with the result of the parse operation *
+		Result parseSkin(
+			const nlohmann::json& jsonNode, DataHolder& output
+		) const;*/
+
+		/** Creates a new Animation from the given GLTF JSON Node and appends
+		 * it to the DataHolder
+		 *
+		 * @param	jsonNode the JSON object with the Node to parse
+		 * @param	output the DataHolder where the loaded Animation will be
+		 *			stored
+		 * @return	a Result object with the result of the parse operation *
+		Result parseAnimation(
+			const nlohmann::json& jsonNode, DataHolder& output
+		) const;*/
+
+		// Result loadTextureInfo(const nlohmann::json& jsonObject) {};
+		// Result loadAnimation(const nlohmann::json& jsonObject) {};
+		// Result loadExtension(const nlohmann::json& jsonObject) {};
+		// Result loadExtras(const nlohmann::json& jsonObject) {};
+		// Result loadScene(const nlohmann::json& jsonObject) {};
+		// Result loadSkin(const nlohmann::json& jsonObject) {};
 	};
 
 }

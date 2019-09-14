@@ -1,10 +1,9 @@
-#include <stdexcept>
 #include <SOIL/SOIL.h>
 #include "se/loaders/ImageReader.h"
 
 namespace se::loaders {
 
-	utils::Image ImageReader::read(const std::string& path, int forceNumChannels)
+	Result ImageReader::read(const std::string& path, utils::Image& output, int forceNumChannels)
 	{
 		int soilForceChannels = forceNumChannels;
 		if (forceNumChannels <= 0) {
@@ -13,19 +12,16 @@ namespace se::loaders {
 
 		int width, height, channels;
 		unsigned char* pixels = SOIL_load_image(path.c_str(), &width, &height, &channels, soilForceChannels);
-
 		if (!pixels) {
-			throw std::runtime_error(
-				"Error loading the image located in \"" + path + "\": " +
-				SOIL_last_result()
-			);
+			return Result(false, "Error loading the image located in \"" + path + "\": " + SOIL_last_result());
 		}
 
-		return utils::Image{
+		output = utils::Image{
 			std::unique_ptr<std::byte>(reinterpret_cast<std::byte*>(pixels)),
 			static_cast<std::size_t>(width), static_cast<std::size_t>(height),
 			channels
 		};
+		return Result();
 	}
 
 }

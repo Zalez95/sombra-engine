@@ -59,9 +59,9 @@ namespace se::collision {
 	void QuickHull::resetData()
 	{
 		mConvexHullMesh = HalfEdgeMesh();
-		mConvexHullNormals.clear();
-		mFaceOutsideVertices.clear();
-		mVertexIndexMap.clear();
+		mConvexHullNormals = ContiguousVector<glm::vec3>();
+		mFaceOutsideVertices = ContiguousVector<std::vector<int>>();
+		mVertexIndexMap = std::map<int, int>();
 	}
 
 // Private functions

@@ -2,6 +2,7 @@
 #define IMAGE_READER_H
 
 #include <string>
+#include "Result.h"
 #include "../utils/Image.h"
 
 namespace se::loaders {
@@ -15,13 +16,13 @@ namespace se::loaders {
 		/** Reads the image located at the given position
 		 *
 		 * @param	path the location of the image
+		 * @param	output where the new Image will be stored
 		 * @param	forceNumChannels the number of channels of the image to
 		 *			load (automatically detected by default)
-		 * @return	the new Image
-		 * @throw	runtime_error if there were any errors while reading the
-		 *			image */
-		static utils::Image read(
-			const std::string& path, int forceNumChannels = 0
+		 * @return	a Result object with the result of the operation */
+		static Result read(
+			const std::string& path, utils::Image& output,
+			int forceNumChannels = 0
 		);
 	};
 

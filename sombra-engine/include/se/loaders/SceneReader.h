@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <memory>
+#include "Result.h"
+#include "../app/Scene.h"
 #include "../app/Entity.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Renderable3D.h"
@@ -17,6 +19,7 @@ namespace se::loaders {
 		using EntityIndex = std::size_t;
 		using Renderable3DIndices = std::vector<std::size_t>;
 
+		std::unique_ptr<app::Scene> scene;
 		std::vector<std::unique_ptr<app::Entity>> entities;
 		std::vector<std::unique_ptr<graphics::Camera>> cameras;
 		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;
@@ -53,9 +56,9 @@ namespace se::loaders {
 		/** Parses the Scene located at the given file
 		 *
 		 * @param	path the path to the file to parse
-		 * @return	a DataHolder with the Scene data
-		 * @throw	runtime_error in case of any error while parsing */
-		virtual DataHolder load(const std::string& path) = 0;
+		 * @param	output the DataHolder where the Scene data will be stored
+		 * @return	a Result object with the result of the load operation */
+		virtual Result load(const std::string& path, DataHolder& output) = 0;
 	};
 
 }

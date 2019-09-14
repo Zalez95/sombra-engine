@@ -330,11 +330,23 @@ namespace game {
 			mesh2 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh2));
 
 			// GLTF scenes
-			dataHolder1 = sceneReader->load("res/meshes/test.gltf");
+			se::loaders::Result result = sceneReader->load("res/meshes/test.gltf", dataHolder1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
 
 			// Images
-			se::utils::Image image1 = se::loaders::ImageReader::read("res/images/test.png");
-			heightMap1 = std::make_unique<se::utils::Image>( se::loaders::ImageReader::read("res/images/terrain.png", 1) );
+			se::utils::Image image1;
+			result = se::loaders::ImageReader::read("res/images/test.png", image1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
+
+			heightMap1 = std::make_shared<se::utils::Image>();
+			result = se::loaders::ImageReader::read("res/images/terrain.png", *heightMap1, 1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
 
 			// Textures
 			texture1 = std::make_shared<se::graphics::Texture>();
@@ -370,16 +382,18 @@ namespace game {
 			arial = std::move(fontReader.read(fileReader3));
 
 			// Audio
-			if (audioFile.load("res/audio/bounce.wav")) {
-				mBuffers.emplace_back(
-					audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
-					se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
-				);
-				source1 = std::make_unique<se::audio::Source>();
-				source1->bind(mBuffers.back());
-				source1->setLooping(true);
-				source1->play();
+			if (!audioFile.load("res/audio/bounce.wav")) {
+				throw std::runtime_error("Error reading the audio file");
 			}
+
+			mBuffers.emplace_back(
+				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
+				se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
+			);
+			source1 = std::make_unique<se::audio::Source>();
+			source1->bind(mBuffers.back());
+			source1->setLooping(true);
+			source1->play();
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();

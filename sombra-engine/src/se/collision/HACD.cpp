@@ -83,8 +83,8 @@ namespace se::collision {
 
 	void HACD::resetData()
 	{
-		mFaceNormals.clear();
-		mConvexMeshes.clear();
+		mFaceNormals = FaceNormals();
+		mConvexMeshes = std::vector<HEMeshWithNormals>();
 	}
 
 // Private functions
@@ -277,7 +277,7 @@ namespace se::collision {
 	}
 
 
-	std::pair<HalfEdgeMesh, HACD::FaceNormals> HACD::getMeshFromIndices(
+	HACD::HEMeshWithNormals HACD::getMeshFromIndices(
 		const std::vector<int>& iFaces,
 		const HalfEdgeMesh& meshData, const FaceNormals& faceNormals
 	) {
