@@ -241,6 +241,6 @@ namespace se::collision {
 
 }
 
-#include "ContiguousVector.inl"
+#include "ContiguousVector.hpp"
 
 #endif		// CONTIGUOUS_VECTOR_H

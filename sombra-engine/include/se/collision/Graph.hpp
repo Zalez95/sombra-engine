@@ -1,9 +1,30 @@
-#ifndef GRAPH_INL
-#define GRAPH_INL
+#ifndef GRAPH_HPP
+#define GRAPH_HPP
 
 #include <algorithm>
 
 namespace se::collision {
+
+	template <typename T>
+	bool operator==(const GraphVertex<T>& gv1, const GraphVertex<T>& gv2)
+	{
+		return gv1.id == gv2.id;
+	}
+
+
+	template <typename T>
+	bool operator<(const GraphVertex<T>& gv1, const GraphVertex<T>& gv2)
+	{
+		return gv1.id < gv2.id;
+	}
+
+
+	template <typename T>
+	bool operator<(const GraphVertex<T>& gv, int id)
+	{
+		return gv.id < id;
+	}
+
 
 	template <typename T>
 	void halfEdgeCollapse(int iVertex1, int iVertex2, Graph<T>& dualGraph)
@@ -57,4 +78,4 @@ namespace se::collision {
 
 }
 
-#endif		// GRAPH_INL
+#endif		// GRAPH_HPP

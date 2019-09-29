@@ -1,5 +1,5 @@
-#ifndef FIXED_VECTOR_INL
-#define FIXED_VECTOR_INL
+#ifndef FIXED_VECTOR_HPP
+#define FIXED_VECTOR_HPP
 
 namespace se::utils {
 
@@ -104,4 +104,4 @@ namespace se::utils {
 
 }
 
-#endif		// FIXED_VECTOR_INL
+#endif		// FIXED_VECTOR_HPP

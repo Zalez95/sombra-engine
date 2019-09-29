@@ -1,5 +1,5 @@
-#ifndef HALF_EDGE_MESH_INL
-#define HALF_EDGE_MESH_INL
+#ifndef HALF_EDGE_MESH_HPP
+#define HALF_EDGE_MESH_HPP
 
 namespace se::collision {
 
@@ -76,4 +76,4 @@ namespace se::collision {
 
 }
 
-#endif		// HALF_EDGE_MESH_INL
+#endif		// HALF_EDGE_MESH_HPP

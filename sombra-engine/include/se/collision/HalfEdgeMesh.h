@@ -188,6 +188,6 @@ namespace se::collision {
 
 }
 
-#include "HalfEdgeMesh.inl"
+#include "HalfEdgeMesh.hpp"
 
 #endif		// HALF_EDGE_MESH_H

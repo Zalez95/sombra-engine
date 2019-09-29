@@ -189,6 +189,6 @@ namespace se::utils {
 
 }
 
-#include "FixedVector.inl"
+#include "FixedVector.hpp"
 
 #endif		// FIXED_VECTOR_H

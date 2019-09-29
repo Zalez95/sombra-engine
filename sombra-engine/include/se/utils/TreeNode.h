@@ -23,91 +23,9 @@ namespace se::utils {
 	class TreeNode
 	{
 	public:		// Nested types
-		/** Class TNIterator, the class used to iterate through the
-		 * descendant TreeNodes of a TreeNode */
-		template <bool isConst, Traversal t>
-		class TNIterator
-		{
-		public:		// Nested types
-			template <bool isConst2, Traversal t2>
-			friend class TNIterator;
-
-			using TreeNodeType = std::conditional_t<isConst,
-				const TreeNode, TreeNode
-			>;
-
-			using difference_type	= long;
-			using value_type		= TreeNodeType;
-			using pointer			= value_type*;
-			using reference			= value_type&;
-			using iterator_category = std::forward_iterator_tag;
-
-		private:	// Attributes
-			/** A pointer to the current TreeNode of the iterator */
-			TreeNodeType* mTreeNode;
-
-			/** The deque needed for traversing the TreeNodes */
-			std::deque<TreeNodeType*> mTreeNodeDeque;
-
-		public:		// Functions
-			/** Creates a new TNIterator located at the given TreeNode
-			 *
-			 * @param	treeNode a pointer to the TreeNode of the iterator */
-			TNIterator(TreeNodeType* treeNode) : mTreeNode(treeNode) {};
-
-			/** Implicit conversion operator between const TNIterator and non
-			 * const TNIterator
-			 *
-			 * @return	the new TNIterator with a different template const
-			 *			type */
-			operator TNIterator<!isConst, t>() const;
-
-			/** @return	a reference to the current TreeNode that the iterator is
-			 *			pointing at */
-			TreeNodeType& operator*() const { return *mTreeNode; };
-
-			/** @return	a pointer to the current TreeNode that the iterator is
-			 *			pointing at */
-			TreeNodeType* operator->() const { return mTreeNode; };
-
-			/** Compares the given TNIterators
-			 *
-			 * @param	it1 the first TNIterator to compare
-			 * @param	it2 the second TNIterator to compare
-			 * @return	true if both iterators are equal, false otherwise */
-			friend bool operator==(const TNIterator& it1, const TNIterator& it2)
-			{ return it1.mTreeNode == it2.mTreeNode; };
-
-			/** Compares the given TNIterators
-			 *
-			 * @param	it1 the first TNIterator to compare
-			 * @param	it2 the second TNIterator to compare
-			 * @return	true if both iterators are different, false otherwise */
-			friend bool operator!=(const TNIterator& it1, const TNIterator& it2)
-			{ return !(it1 == it2); };
-
-			/** Preincrement operator
-			 *
-			 * @return	a reference to the current iterator after its
-			 *			incrementation */
-			TNIterator& operator++();
-
-			/** Postincrement operator
-			 *
-			 * @return	a copy of the current iterator with the previous value
-			 *			to the incrementation */
-			TNIterator operator++(int);
-		private:
-			/** Calculates the next TreeNode to point using the BFS algorithm */
-			void nextBFS();
-
-			/** Calculates the next TreeNode to point using the DFS pre-order
-			 * algorithm */
-			void nextDFSPreOrder();
-		};
-
 		using value_type = T;
 		using size_type = std::size_t;
+		template <bool isConst, Traversal t> class TNIterator;
 		template <Traversal t> using iterator = TNIterator<false, t>;
 		template <Traversal t> using const_iterator = TNIterator<true, t>;
 
@@ -155,16 +73,16 @@ namespace se::utils {
 		 * @param	tn1 the first TreeNode to compare
 		 * @param	tn2 the second TreeNode to compare
 		 * @return	true if both TreeNodes are equal, false otherwise */
-		friend bool operator==(const TreeNode& tn1, const TreeNode& tn2)
-		{ return tn1.mData == tn2.mData; };
+		template <typename U>
+		friend bool operator==(const TreeNode<U>& tn1, const TreeNode<U>& tn2);
 
 		/** Compares the given TreeNodes
 		 *
 		 * @param	tn1 the first TreeNode to compare
 		 * @param	tn2 the second TreeNode to compare
 		 * @return	true if both TreeNodes are different, false otherwise */
-		friend bool operator!=(const TreeNode& tn1, const TreeNode& tn2)
-		{ return !(tn1 == tn2); };
+		template <typename U>
+		friend bool operator!=(const TreeNode<U>& tn1, const TreeNode<U>& tn2);
 
 		/** @return	the initial iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
@@ -182,10 +100,8 @@ namespace se::utils {
 		template <Traversal t = Traversal::BFS>
 		const_iterator<t> end() const { return const_iterator<t>(nullptr); }
 
-		/** @return	the number of TreeNodes in the current tree
-		 *			(current node + descendants) */
-		template <Traversal t = Traversal::BFS>
-		size_type size() const;
+		/** @return	true if the current TreeNode is a leaf, false otherwise */
+		bool isLeaf() const { return mChild == nullptr; };
 
 		/** @return	a pointer to the parent TreeNode of the current one */
 		TreeNode* getParent() { return mParent; };
@@ -198,6 +114,11 @@ namespace se::utils {
 
 		/** @return	the data of the TreeNode */
 		const T& getData() const { return mData; };
+
+		/** @return	the number of TreeNodes in the current tree
+		 *			(current node + descendants) */
+		template <Traversal t = Traversal::BFS>
+		size_type size() const;
 
 		/** Searchs a descendant TreeNode with the same data than the given one
 		 *
@@ -247,8 +168,113 @@ namespace se::utils {
 		iterator<t> erase(iterator<t> it);
 	};
 
+
+	template <typename T, bool isConst, Traversal t>
+	bool operator==(
+		const typename TreeNode<T>::template TNIterator<isConst, t>&,
+		const typename TreeNode<T>::template TNIterator<isConst, t>&
+	);
+
+
+	template <typename T, bool isConst, Traversal t>
+	bool operator!=(
+		const typename TreeNode<T>::template TNIterator<isConst, t>&,
+		const typename TreeNode<T>::template TNIterator<isConst, t>&
+	);
+
+
+	/**
+	 * Class TNIterator, the class used to iterate through the
+	 * descendant TreeNodes of a TreeNode
+	 */
+	template <typename T>
+	template <bool isConst, Traversal t>
+	class TreeNode<T>::TNIterator
+	{
+	public:		// Nested types
+		template <bool isConst2, Traversal t2>
+		friend class TNIterator;
+
+		using TreeNodeType = std::conditional_t<isConst,
+			const TreeNode, TreeNode
+		>;
+
+		using difference_type	= long;
+		using value_type		= TreeNodeType;
+		using pointer			= value_type*;
+		using reference			= value_type&;
+		using iterator_category = std::forward_iterator_tag;
+
+	private:	// Attributes
+		/** A pointer to the current TreeNode of the iterator */
+		TreeNodeType* mTreeNode;
+
+		/** The deque needed for traversing the TreeNodes */
+		std::deque<TreeNodeType*> mTreeNodeDeque;
+
+	public:		// Functions
+		/** Creates a new TNIterator located at the given TreeNode
+		 *
+		 * @param	treeNode a pointer to the TreeNode of the iterator */
+		TNIterator(TreeNodeType* treeNode) : mTreeNode(treeNode) {};
+
+		/** Implicit conversion operator between const TNIterator and non
+		 * const TNIterator
+		 *
+		 * @return	the new TNIterator with a different template const
+		 *			type */
+		operator TNIterator<!isConst, t>() const;
+
+		/** @return	a reference to the current TreeNode that the iterator is
+		 *			pointing at */
+		TreeNodeType& operator*() const { return *mTreeNode; };
+
+		/** @return	a pointer to the current TreeNode that the iterator is
+		 *			pointing at */
+		TreeNodeType* operator->() const { return mTreeNode; };
+
+		/** Compares the given TNIterators
+		 *
+		 * @param	it1 the first TNIterator to compare
+		 * @param	it2 the second TNIterator to compare
+		 * @return	true if both iterators are equal, false otherwise */
+		friend bool operator==<T>(
+			const TNIterator<isConst, t>& it1,
+			const TNIterator<isConst, t>& it2
+		);
+
+		/** Compares the given TNIterators
+		 *
+		 * @param	it1 the first TNIterator to compare
+		 * @param	it2 the second TNIterator to compare
+		 * @return	true if both iterators are different, false otherwise */
+		friend bool operator!=<T>(
+			const TNIterator<isConst, t>& it1,
+			const TNIterator<isConst, t>& it2
+		);
+
+		/** Preincrement operator
+		 *
+		 * @return	a reference to the current iterator after its
+		 *			incrementation */
+		TNIterator& operator++();
+
+		/** Postincrement operator
+		 *
+		 * @return	a copy of the current iterator with the previous value
+		 *			to the incrementation */
+		TNIterator operator++(int);
+	private:
+		/** Calculates the next TreeNode to point using the BFS algorithm */
+		void nextBFS();
+
+		/** Calculates the next TreeNode to point using the DFS pre-order
+		 * algorithm */
+		void nextDFSPreOrder();
+	};
+
 }
 
-#include "TreeNode.inl"
+#include "TreeNode.hpp"
 
 #endif		// TREE_NODE_H

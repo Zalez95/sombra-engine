@@ -1,5 +1,5 @@
-#ifndef CONTIGUOUS_VECTOR_INL
-#define CONTIGUOUS_VECTOR_INL
+#ifndef CONTIGUOUS_VECTOR_HPP
+#define CONTIGUOUS_VECTOR_HPP
 
 namespace se::collision {
 
@@ -172,4 +172,4 @@ namespace se::collision {
 
 }
 
-#endif		// CONTIGUOUS_VECTOR_INL
+#endif		// CONTIGUOUS_VECTOR_HPP

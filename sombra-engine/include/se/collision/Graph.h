@@ -32,8 +32,11 @@ namespace se::collision {
 		 * @param	gv1 the first GraphVertex to compare
 		 * @param	gv2 the second GraphVertex to compare
 		 * @return	true if both GraphVertex are the same, false otherwise */
-		friend bool operator==(const GraphVertex& gv1, const GraphVertex& gv2)
-		{ return gv1.id == gv2.id; };
+		template <typename U>
+		friend bool operator==(
+			const GraphVertex<U>& gv1,
+			const GraphVertex<U>& gv2
+		);
 
 		/** Compares the given GraphVertex
 		 *
@@ -41,8 +44,11 @@ namespace se::collision {
 		 * @param	gv2 the second GraphVertex to compare
 		 * @return	true if the first GraphVertex has a smaller id than the
 		 *			second one, false otherwise */
-		friend bool operator<(const GraphVertex& gv1, const GraphVertex& gv2)
-		{ return gv1.id < gv2.id; };
+		template <typename U>
+		friend bool operator<(
+			const GraphVertex<U>& gv1,
+			const GraphVertex<U>& gv2
+		);
 
 		/** Compares the given GraphVertex with the given index
 		 *
@@ -50,8 +56,8 @@ namespace se::collision {
 		 * @param	id the id to compare
 		 * @return	true if the GraphVertex has a smaller id than the given one,
 		 *			false otherwise */
-		friend bool operator<(const GraphVertex& gv, int id)
-		{ return gv.id < id; };
+		template <typename U>
+		friend bool operator<(const GraphVertex<U>& gv, int id);
 	};
 
 
@@ -78,6 +84,6 @@ namespace se::collision {
 
 }
 
-#include "Graph.inl"
+#include "Graph.hpp"
 
 #endif		// GRAPH_H

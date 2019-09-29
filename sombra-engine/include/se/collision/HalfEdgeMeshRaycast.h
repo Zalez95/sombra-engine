@@ -121,6 +121,6 @@ namespace se::collision {
 
 }
 
-#include "se/collision/HalfEdgeMeshRaycast.inl"
+#include "se/collision/HalfEdgeMeshRaycast.hpp"
 
 #endif		// HALF_EDGE_MESH_RAYCAST_H

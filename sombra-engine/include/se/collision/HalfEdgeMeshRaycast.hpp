@@ -1,5 +1,5 @@
-#ifndef HALF_EDGE_MESH_RAYCAST_INL
-#define HALF_EDGE_MESH_RAYCAST_INL
+#ifndef HALF_EDGE_MESH_RAYCAST_HPP
+#define HALF_EDGE_MESH_RAYCAST_HPP
 
 #include <limits>
 #include <algorithm>
@@ -276,4 +276,4 @@ namespace se::collision {
 
 }
 
-#endif		// HALF_EDGE_MESH_RAYCAST_INL
+#endif		// HALF_EDGE_MESH_RAYCAST_HPP

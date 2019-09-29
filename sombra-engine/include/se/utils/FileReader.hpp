@@ -1,5 +1,5 @@
-#ifndef FILE_READER_INL
-#define FILE_READER_INL
+#ifndef FILE_READER_HPP
+#define FILE_READER_HPP
 
 namespace se::utils {
 
@@ -77,4 +77,4 @@ namespace se::utils {
 
 }
 
-#endif		// FILE_READER_INL
+#endif		// FILE_READER_HPP

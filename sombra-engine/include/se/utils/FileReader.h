@@ -109,6 +109,6 @@ namespace se::utils {
 
 }
 
-#include "FileReader.inl"
+#include "FileReader.hpp"
 
 #endif		// FILE_READER_H

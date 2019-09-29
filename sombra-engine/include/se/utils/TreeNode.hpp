@@ -1,5 +1,5 @@
-#ifndef TREE_NODE_INL
-#define TREE_NODE_INL
+#ifndef TREE_NODE_HPP
+#define TREE_NODE_HPP
 
 namespace se::utils {
 
@@ -48,6 +48,23 @@ namespace se::utils {
 
 
 	template <typename T>
+	bool operator==(const TreeNode<T>& tn1, const TreeNode<T>& tn2)
+	{
+		return (tn1.mParent == tn2.mParent)
+			&& (tn1.mChild == tn2.mChild)
+			&& (tn1.mSibling == tn2.mSibling)
+			&& (tn1.mData == tn2.mData);
+	}
+
+
+	template <typename T>
+	bool operator!=(const TreeNode<T>& tn1, const TreeNode<T>& tn2)
+	{
+		return !(tn1 == tn2);
+	}
+
+
+	template <typename T>
 	template <Traversal t>
 	typename TreeNode<T>::size_type TreeNode<T>::size() const
 	{
@@ -92,19 +109,7 @@ namespace se::utils {
 	TreeNode<T>::iterator<t> TreeNode<T>::insert(
 		iterator<t> parentIt, const T& data
 	) {
-		auto ret = end<t>();
-
-		if (parentIt != end<t>()) {
-			auto currentChild = std::move(parentIt->mChild);
-
-			parentIt->mChild = std::make_unique<TreeNode>(data);
-			parentIt->mChild->mParent = &(*parentIt);
-			parentIt->mChild->mSibling = std::move(currentChild);
-
-			ret = ++parentIt;
-		}
-
-		return ret;
+		return insert(parentIt, std::move(data));
 	}
 
 
@@ -117,12 +122,11 @@ namespace se::utils {
 
 		if (parentIt != end<t>()) {
 			auto currentChild = std::move(parentIt->mChild);
-
 			parentIt->mChild = std::make_unique<TreeNode>(std::move(data));
 			parentIt->mChild->mParent = &(*parentIt);
 			parentIt->mChild->mSibling = std::move(currentChild);
 
-			ret = ++parentIt;
+			for (ret = parentIt; &(*ret) != parentIt->mChild; ++ret);
 		}
 
 		return ret;
@@ -133,10 +137,13 @@ namespace se::utils {
 	template <Traversal t>
 	TreeNode<T>::iterator<t> TreeNode<T>::erase(iterator<t> it)
 	{
-		auto ret = end<t>();	// FIXME: needs decrement
+		auto ret = end<t>();
 
 		if (it != end<t>()) {
-			if (it->mParent->mChild.get() == &(*it)) {
+			ret = it++;
+			std::swap(it, ret);
+
+			if (it->mParent->mChild == &(*it)) {
 				// Update parent child with sibling
 				it->mParent->mChild = std::move(it->mSibling);
 			}
@@ -144,7 +151,7 @@ namespace se::utils {
 				// Update left sibling
 				TreeNode* child = it->mParent->mChild.get();
 				while (child) {
-					if (child->mSibling.get() == &(*it)) {
+					if (child->mSibling == &(*it)) {
 						child->mSibling = std::move(it->mSibling);
 						child = nullptr;
 					}
@@ -156,6 +163,25 @@ namespace se::utils {
 		}
 
 		return ret;
+	}
+
+
+	template <typename T, bool isConst, Traversal t>
+	bool operator==(
+		const typename TreeNode<T>::template TNIterator<isConst, t>& it1,
+		const typename TreeNode<T>::template TNIterator<isConst, t>& it2
+	) {
+		return (it1.mTreeNode == it2.mTreeNode)
+			&& (it1.mTreeNodeQueue == it2.mTreeNodeQueue);
+	}
+
+
+	template <typename T, bool isConst, Traversal t>
+	bool operator!=(
+		const typename TreeNode<T>::template TNIterator<isConst, t>& it1,
+		const typename TreeNode<T>::template TNIterator<isConst, t>& it2
+	) {
+		return !(it1 == it2);
 	}
 
 
@@ -215,18 +241,21 @@ namespace se::utils {
 	void TreeNode<T>::TNIterator<isConst, t>::nextBFS()
 	{
 		if (mTreeNode) {
-			TreeNodeType* child = mTreeNode->mChild.get();
-			while (child) {
-				mTreeNodeDeque.push_back(child);
-				child = child->mSibling.get();
-			}
-
-			if (!mTreeNodeDeque.empty()) {
-				mTreeNode = mTreeNodeDeque.front();
-				mTreeNodeDeque.pop_front();
+			if (mTreeNode->mSibling) {
+				mTreeNodeDeque.push_back(mTreeNode);
+				mTreeNode = mTreeNode->mSibling.get();
 			}
 			else {
 				mTreeNode = nullptr;
+				while (!mTreeNodeDeque.empty()) {
+					mTreeNode = mTreeNodeDeque.front();
+					mTreeNodeDeque.pop_front();
+					if (mTreeNode->mChild) {
+						mTreeNodeDeque.push_back(mTreeNode);
+						mTreeNode = mTreeNode->mChild.get();
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -260,4 +289,4 @@ namespace se::utils {
 
 }
 
-#endif		// TREE_NODE_INL
+#endif		// TREE_NODE_HPP
