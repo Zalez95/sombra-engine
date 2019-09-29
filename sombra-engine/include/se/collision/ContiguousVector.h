@@ -84,7 +84,7 @@ namespace se::collision {
 
 			/** @return	a pointer to the current Element that the iterator is
 			 *			pointing to */
-			pointer operator->() { return &(*mVector)[mIndex]; };
+			pointer operator->() const { return &(*mVector)[mIndex]; };
 
 			/** Compares the given CVIterators
 			 *

@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include "Result.h"
-#include "../app/Scene.h"
+#include "../animation/Scene.h"
 #include "../app/Entity.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Renderable3D.h"
@@ -19,7 +19,7 @@ namespace se::loaders {
 		using EntityIndex = std::size_t;
 		using Renderable3DIndices = std::vector<std::size_t>;
 
-		std::unique_ptr<app::Scene> scene;
+		std::vector<std::unique_ptr<animation::Scene>> scenes;
 		std::vector<std::unique_ptr<app::Entity>> entities;
 		std::vector<std::unique_ptr<graphics::Camera>> cameras;
 		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;

@@ -90,7 +90,7 @@ namespace se::utils {
 
 		/** @return	the initial iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
-		const_iterator<t> begin() const { return const_iterator<t>(this); }
+		const_iterator<t> cbegin() const { return const_iterator<t>(this); }
 
 		/** @return	the final iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
@@ -98,7 +98,7 @@ namespace se::utils {
 
 		/** @return	the final iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
-		const_iterator<t> end() const { return const_iterator<t>(nullptr); }
+		const_iterator<t> cend() const { return const_iterator<t>(nullptr); }
 
 		/** @return	true if the current TreeNode is a leaf, false otherwise */
 		bool isLeaf() const { return mChild == nullptr; };
@@ -141,24 +141,28 @@ namespace se::utils {
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
 		 *			add
-		 * @param	data the data of the TreeNode to add
+		 * @param	descendant a pointer to the TreeNode to insert
 		 * @return	an iterator to the new TreeNode, end if the TreeNode
 		 *			couldn't be added
 		 * @note	if the parentIt isn't valid the TreeNode won't be added */
 		template <Traversal t = Traversal::BFS>
-		iterator<t> insert(iterator<t> parentIt, const T& data);
+		iterator<t> insert(
+			const_iterator<t> parentIt,
+			std::unique_ptr<TreeNode> descendant
+		);
 
 		/** Adds a descendant TreeNode as a child of the TreeNode pointed by
 		 * the given iterator
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
 		 *			add
-		 * @param	data the data to move to the new TreeNode
+		 * @param	args the arguments needed for calling the constructor of
+		 *			the new Element
 		 * @return	an iterator to the new TreeNode, end if the TreeNode
 		 *			couldn't be added
 		 * @note	if the parentIt isn't valid the TreeNode won't be added */
-		template <Traversal t = Traversal::BFS>
-		iterator<t> insert(iterator<t> parentIt, T&& data);
+		template <Traversal t = Traversal::BFS, typename... Args>
+		iterator<t> emplace(const_iterator<t> parentIt, Args&&... args);
 
 		/** Removes the TreeNode pointed by the given iterator
 		 *
@@ -227,31 +231,28 @@ namespace se::utils {
 
 		/** @return	a reference to the current TreeNode that the iterator is
 		 *			pointing at */
-		TreeNodeType& operator*() const { return *mTreeNode; };
+		reference operator*() const { return *mTreeNode; };
 
 		/** @return	a pointer to the current TreeNode that the iterator is
 		 *			pointing at */
-		TreeNodeType* operator->() const { return mTreeNode; };
+		pointer operator->() const { return mTreeNode; };
 
 		/** Compares the given TNIterators
 		 *
 		 * @param	it1 the first TNIterator to compare
 		 * @param	it2 the second TNIterator to compare
 		 * @return	true if both iterators are equal, false otherwise */
-		friend bool operator==<T>(
-			const TNIterator<isConst, t>& it1,
-			const TNIterator<isConst, t>& it2
-		);
+		friend bool operator==(const TNIterator& it1, const TNIterator& it2)
+		{	return (it1.mTreeNode == it2.mTreeNode)
+				&& (it1.mTreeNodeDeque == it2.mTreeNodeDeque); };
 
 		/** Compares the given TNIterators
 		 *
 		 * @param	it1 the first TNIterator to compare
 		 * @param	it2 the second TNIterator to compare
 		 * @return	true if both iterators are different, false otherwise */
-		friend bool operator!=<T>(
-			const TNIterator<isConst, t>& it1,
-			const TNIterator<isConst, t>& it2
-		);
+		friend bool operator!=(const TNIterator& it1, const TNIterator& it2)
+		{ return !(it1 == it2); };
 
 		/** Preincrement operator
 		 *

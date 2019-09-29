@@ -36,23 +36,26 @@ namespace se::animation {
 			animation.mAccumulatedTime + delta;
 		animation.mAccumulatedTime += delta;
 
-		// Calculate the interpolated KeyFrame between the previous and the current one
-		auto [keyFrame1, keyFrame2] = getPreviousAndNextKeyFrames(animation.mKeyFrames, timeSinceStart);
-		float keyFrameLength = keyFrame2.timePoint - keyFrame1.timePoint;
-		float timeSinceFirstKeyFrame = timeSinceStart - keyFrame1.timePoint;
+		// Update the nodes
+		for (auto& [node, keyFrames] : animation.mNodeKeyFrames) {
+			// Calculate the interpolated KeyFrame between the previous and the current one
+			auto [keyFrame1, keyFrame2] = getPreviousAndNextKeyFrames(keyFrames, timeSinceStart);
+			float keyFrameLength = keyFrame2.timePoint - keyFrame1.timePoint;
+			float timeSinceFirstKeyFrame = timeSinceStart - keyFrame1.timePoint;
 
-		KeyFrame keyFrameToApply = keyFrame1;
-		if (keyFrameLength > 0.0f) {
-			keyFrameToApply = keyFrameLinearInterpolation(
-				keyFrame1, keyFrame2,
-				timeSinceFirstKeyFrame / keyFrameLength
-			);
+			KeyFrame keyFrameToApply = keyFrame1;
+			if (keyFrameLength > 0.0f) {
+				keyFrameToApply = keyFrameLinearInterpolation(
+					keyFrame1, keyFrame2,
+					timeSinceFirstKeyFrame / keyFrameLength
+				);
+			}
+
+			// Apply the KeyFrame to the bone
+			node->getData().scale *= keyFrameToApply.scale;
+			node->getData().orientation *= keyFrameToApply.rotation;
+			node->getData().position += keyFrameToApply.translation;
 		}
-
-		// Apply the KeyFrame to the bone
-		animation.mCurrentBone.scale = animation.mInitialBone.scale * keyFrameToApply.scale;
-		animation.mCurrentBone.orientation = animation.mInitialBone.orientation * keyFrameToApply.rotation;
-		animation.mCurrentBone.position = animation.mInitialBone.position + keyFrameToApply.translation;
 	}
 
 

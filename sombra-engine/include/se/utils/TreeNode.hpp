@@ -107,29 +107,32 @@ namespace se::utils {
 	template <typename T>
 	template <Traversal t>
 	TreeNode<T>::iterator<t> TreeNode<T>::insert(
-		iterator<t> parentIt, const T& data
+		const_iterator<t> parentIt, std::unique_ptr<TreeNode> descendant
 	) {
-		return insert(parentIt, std::move(data));
+		auto ret = end<t>();
+
+		if (parentIt != cend<t>()) {
+			auto parentNode = const_cast<TreeNode*>( &(*parentIt) );
+
+			descendant->mParent = parentNode;
+			auto currentChild = std::move(parentNode->mChild);
+			parentNode->mChild = std::move(descendant);
+			parentNode->mChild->mSibling = std::move(currentChild);
+
+			for (ret = parentIt; &(*ret) != parentIt->mChild.get(); ++ret);
+		}
+
+		return ret;
 	}
 
 
 	template <typename T>
-	template <Traversal t>
-	TreeNode<T>::iterator<t> TreeNode<T>::insert(
-		iterator<t> parentIt, T&& data
+	template <Traversal t, typename... Args>
+	TreeNode<T>::iterator<t> TreeNode<T>::emplace(
+		const_iterator<t> parentIt, Args&&... args
 	) {
-		auto ret = end<t>();
-
-		if (parentIt != end<t>()) {
-			auto currentChild = std::move(parentIt->mChild);
-			parentIt->mChild = std::make_unique<TreeNode>(std::move(data));
-			parentIt->mChild->mParent = &(*parentIt);
-			parentIt->mChild->mSibling = std::move(currentChild);
-
-			for (ret = parentIt; &(*ret) != parentIt->mChild; ++ret);
-		}
-
-		return ret;
+		auto descendant = std::make_unique<TreeNode>(std::forward<Args>(args)...);
+		return insert(parentIt, std::move(descendant));
 	}
 
 
@@ -166,25 +169,6 @@ namespace se::utils {
 	}
 
 
-	template <typename T, bool isConst, Traversal t>
-	bool operator==(
-		const typename TreeNode<T>::template TNIterator<isConst, t>& it1,
-		const typename TreeNode<T>::template TNIterator<isConst, t>& it2
-	) {
-		return (it1.mTreeNode == it2.mTreeNode)
-			&& (it1.mTreeNodeQueue == it2.mTreeNodeQueue);
-	}
-
-
-	template <typename T, bool isConst, Traversal t>
-	bool operator!=(
-		const typename TreeNode<T>::template TNIterator<isConst, t>& it1,
-		const typename TreeNode<T>::template TNIterator<isConst, t>& it2
-	) {
-		return !(it1 == it2);
-	}
-
-
 	template <typename T>
 	template <bool isConst, Traversal t>
 	TreeNode<T>::TNIterator<isConst, t>::operator
@@ -200,7 +184,7 @@ namespace se::utils {
 		}
 		else {
 			ret.mTreeNode = mTreeNode;
-			for (auto& node : mTreeNodeDeque) {
+			for (TreeNode* node : mTreeNodeDeque) {
 				ret.mTreeNodeDeque.push_back(node);
 			}
 		}

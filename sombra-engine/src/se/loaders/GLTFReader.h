@@ -44,20 +44,29 @@ namespace se::loaders {
 			enum class Target { Array, ElementArray, Undefined } target;
 		};
 
-		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
-		struct Node
-		{
-			int camera, skin, mesh;
-			bool hasCamera, hasSkin, hasMesh;
-			std::vector<int> children;
-			app::NodeData nodeData;
-		};
-
 		/** Struct Sampler, holds the data of a GLTF sampler */
 		struct Sampler
 		{
 			graphics::TextureFilter filters[2];
 			graphics::TextureWrap wraps[2];
+		};
+
+		/** Struct Skin, holds the data of a GLTF Skin */
+		struct Skin
+		{
+			std::string name;
+			int inverseBindMatrices, skeleton;
+			bool hasInverseBindMatrices, hasSkeleton;
+			std::vector<int> joints;
+		};
+
+		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
+		struct Node
+		{
+			int camera, mesh, skin;
+			bool hasCamera, hasMesh, hasSkin;
+			std::vector<int> children;
+			animation::NodeData nodeData;
 		};
 
 		/** Struct GLTFData, it holds validated GLTF data */
@@ -66,11 +75,12 @@ namespace se::loaders {
 			std::vector<Accessor> accessors;
 			std::vector<Buffer> buffers;
 			std::vector<BufferView> bufferViews;
-			std::vector<Node> nodes;
 			std::vector<Sampler> samplers;
 			std::vector<utils::Image> images;
-			std::vector<MaterialSPtr> materials;
 			std::vector<TextureSPtr> textures;
+			std::vector<MaterialSPtr> materials;
+			std::vector<Skin> skins;
+			std::vector<Node> nodes;
 		};
 
 	private:	// Attributes
@@ -177,7 +187,7 @@ namespace se::loaders {
 		 *			stored
 		 * @return	a Result object with the result of the parse operation */
 		Result parsePrimitive(
-			const nlohmann::json& jsonMesh, DataHolder& output
+			const nlohmann::json& jsonPrimitive, DataHolder& output
 		) const;
 
 		/** Creates Renderable3Ds from the given GLTF JSON Mesh and appends
@@ -189,6 +199,13 @@ namespace se::loaders {
 		 * @return	a Result object with the result of the parse operation
 		 * @note	Morph targets arent supported yet */
 		Result parseMesh(const nlohmann::json& jsonMesh, DataHolder& output);
+
+		/** Creates a new Skin from the given GLTF JSON Node and appends
+		 * it to the mGLTFData
+		 *
+		 * @param	jsonSkin the JSON object with the Skin to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseSkin(const nlohmann::json& jsonSkin);
 
 		/** Creates a new Camera from the given GLTF JSON Camera and appends
 		 * it to the DataHolder
@@ -207,16 +224,15 @@ namespace se::loaders {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseNode(const nlohmann::json& jsonNode);
 
-		/** Creates a new Animation from the given GLTF JSON Node and appends
-		 * it to the DataHolder
+		/** Creates a new Scene from the given GLTF JSON Scene and appends it
+		 * to the DataHolder
 		 *
-		 * @param	jsonNode the JSON object with the Node to parse
-		 * @param	output the DataHolder where the loaded Animation will be
-		 *			stored
-		 * @return	a Result object with the result of the parse operation *
-		Result parseSkin(
+		 * @param	jsonNode the JSON object with the Scene to parse
+		 * @param	output the DataHolder where the loaded Scene will be stored
+		 * @return	a Result object with the result of the parse operation */
+		Result parseScene(
 			const nlohmann::json& jsonNode, DataHolder& output
-		) const;*/
+		) const;
 
 		/** Creates a new Animation from the given GLTF JSON Node and appends
 		 * it to the DataHolder

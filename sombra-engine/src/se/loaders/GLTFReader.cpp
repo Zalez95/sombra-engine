@@ -225,6 +225,16 @@ namespace se::loaders {
 			}
 		}
 
+		if (auto itSkins = jsonGLTF.find("samplers"); itSkins != jsonGLTF.end()) {
+			mGLTFData.skins.reserve(itSkins->size());
+			for (std::size_t skinId = 0; skinId < itSkins->size(); ++skinId) {
+				Result result = parseSampler( (*itSkins)[skinId] );
+				if (!result) {
+					return Result(false, "Failed to read the skins property at skin " + std::to_string(skinId) + ": " + result.description());
+				}
+			}
+		}
+
 		if (auto itCameras = jsonGLTF.find("cameras"); itCameras != jsonGLTF.end()) {
 			output.cameras.reserve(itCameras->size());
 			for (std::size_t cameraId = 0; cameraId < itCameras->size(); ++cameraId) {
@@ -241,6 +251,16 @@ namespace se::loaders {
 				Result result = parseNode( (*itNodes)[nodeId] );
 				if (!result) {
 					return Result(false, "Failed to read the nodes property at node " + std::to_string(nodeId) + ": " + result.description());
+				}
+			}
+		}
+
+		if (auto itScenes = jsonGLTF.find("scenes"); itScenes != jsonGLTF.end()) {
+			output.scenes.reserve(itScenes->size());
+			for (std::size_t sceneId = 0; sceneId < itScenes->size(); ++sceneId) {
+				Result result = parseScene((*itScenes)[sceneId], output);
+				if (!result) {
+					return Result(false, "Failed to read the scenes property at scene " + std::to_string(sceneId) + ": " + result.description());
 				}
 			}
 		}
@@ -330,13 +350,12 @@ namespace se::loaders {
 				}
 			}
 
-			if (bufferId < mGLTFData.buffers.size()) {
-				mGLTFData.bufferViews.push_back({ bufferId, byteLength, byteOffset, byteStride, target });
-				return Result();
-			}
-			else {
+			if (bufferId >= mGLTFData.buffers.size()) {
 				return Result(false, "Buffer index " + std::to_string(bufferId) + " out of range");
 			}
+
+			mGLTFData.bufferViews.push_back({ bufferId, byteLength, byteOffset, byteStride, target });
+			return Result();
 		}
 		else {
 			return Result(false, "Missing BufferView properties");
@@ -370,13 +389,12 @@ namespace se::loaders {
 				return Result(false, "Invalid component size" + itComponentType->get<std::string>());
 			}
 
-			if (bufferViewId < mGLTFData.bufferViews.size()) {
-				mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, typeId, normalized });
-				return Result();
-			}
-			else {
+			if (bufferViewId >= mGLTFData.bufferViews.size()) {
 				return Result(false, "BufferView index " + std::to_string(bufferViewId) + " out of range");
 			}
+
+			mGLTFData.accessors.push_back({ bufferViewId, byteOffset, count, componentSize, typeId, normalized });
+			return Result();
 		}
 		else {
 			return Result(false, "Missing accessor properties");
@@ -458,47 +476,45 @@ namespace se::loaders {
 		auto itSource = jsonTexture.find("source");
 		if (itSource != jsonTexture.end()) {
 			std::size_t sourceId = *itSource;
-			if (sourceId < mGLTFData.images.size()) {
-				const utils::Image& image = mGLTFData.images[sourceId];
-
-				graphics::ColorFormat format = graphics::ColorFormat::RGB;
-				switch (image.channels) {
-					case 1:	format = graphics::ColorFormat::Red;	break;
-					case 2:	format = graphics::ColorFormat::Alpha;	break;
-					case 3:	format = graphics::ColorFormat::RGB;	break;
-					case 4:	format = graphics::ColorFormat::RGBA;	break;
-				}
-
-				texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, image.width, image.height);
-			}
-			else {
+			if (sourceId >= mGLTFData.images.size()) {
 				return Result(false, "Source index " + std::to_string(sourceId) + " out of range");
 			}
+
+			const utils::Image& image = mGLTFData.images[sourceId];
+
+			graphics::ColorFormat format = graphics::ColorFormat::RGB;
+			switch (image.channels) {
+				case 1:	format = graphics::ColorFormat::Red;	break;
+				case 2:	format = graphics::ColorFormat::Alpha;	break;
+				case 3:	format = graphics::ColorFormat::RGB;	break;
+				case 4:	format = graphics::ColorFormat::RGBA;	break;
+			}
+
+			texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, image.width, image.height);
 		}
 
 		auto itSampler = jsonTexture.find("sampler");
 		if (itSampler != jsonTexture.end()) {
 			std::size_t samplerId = *itSampler;
-			if (samplerId < mGLTFData.samplers.size()) {
-				const Sampler& sampler = mGLTFData.samplers[samplerId];
-				if ((sampler.filters[0] == graphics::TextureFilter::NearestMipMapNearest)
-					|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapNearest)
-					|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapNearest)
-					|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapNearest)
-					|| (sampler.filters[0] == graphics::TextureFilter::NearestMipMapLinear)
-					|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapLinear)
-					|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapLinear)
-					|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapLinear)
-				) {
-					texture->generateMipMap();
-				}
-
-				texture->setFiltering(sampler.filters[0], sampler.filters[1]);
-				texture->setWrapping(sampler.wraps[0], sampler.wraps[1]);
-			}
-			else {
+			if (samplerId >= mGLTFData.samplers.size()) {
 				return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
 			}
+
+			const Sampler& sampler = mGLTFData.samplers[samplerId];
+			if ((sampler.filters[0] == graphics::TextureFilter::NearestMipMapNearest)
+				|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapNearest)
+				|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapNearest)
+				|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapNearest)
+				|| (sampler.filters[0] == graphics::TextureFilter::NearestMipMapLinear)
+				|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapLinear)
+				|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapLinear)
+				|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapLinear)
+			) {
+				texture->generateMipMap();
+			}
+
+			texture->setFiltering(sampler.filters[0], sampler.filters[1]);
+			texture->setWrapping(sampler.wraps[0], sampler.wraps[1]);
 		}
 
 		mGLTFData.textures.emplace_back(std::move(texture));
@@ -663,24 +679,23 @@ namespace se::loaders {
 				graphics::MeshAttributes meshAttribute;
 				if (toMeshAttribute(itAttribute.key(), meshAttribute)) {
 					std::size_t accessorId = *itAttribute;
-					if (accessorId < mGLTFData.accessors.size()) {
-						const Accessor& a = mGLTFData.accessors[accessorId];
-						const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
-						const Buffer& b = mGLTFData.buffers[bv.bufferId];
-						auto& vbo = vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
-
-						// Add the VBO to the VAO
-						vao.bind();
-						vbo.bind();
-						vao.setVertexAttribute(
-							static_cast<unsigned int>(meshAttribute),
-							a.componentTypeId, a.normalized, a.componentSize, bv.stride
-						);
-						vao.unbind();
-					}
-					else {
+					if (accessorId >= mGLTFData.accessors.size()) {
 						return Result(false, "Attribute index " + std::to_string(accessorId) + " out of range");
 					}
+
+					const Accessor& a = mGLTFData.accessors[accessorId];
+					const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+					const Buffer& b = mGLTFData.buffers[bv.bufferId];
+					auto& vbo = vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
+
+					// Add the VBO to the VAO
+					vao.bind();
+					vbo.bind();
+					vao.setVertexAttribute(
+						static_cast<unsigned int>(meshAttribute),
+						a.componentTypeId, a.normalized, a.componentSize, bv.stride
+					);
+					vao.unbind();
 				}
 				else {
 					return Result(false, "Invalid attribute \"" + itAttribute.key() + "\"");
@@ -694,52 +709,50 @@ namespace se::loaders {
 		auto itIndices = jsonPrimitive.find("indices");
 		if (itIndices != jsonPrimitive.end()) {
 			std::size_t accessorId = *itIndices;
-			if (accessorId < mGLTFData.accessors.size()) {
-				const Accessor& a = mGLTFData.accessors[accessorId];
-				const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
-				const Buffer& b = mGLTFData.buffers[bv.bufferId];
-
-				if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
-					&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
-					&& (a.componentTypeId != graphics::TypeId::UnsignedInt)
-				) {
-					return Result(false, "Accessor " + std::to_string(accessorId) + " must be UByte or UShort or UInt");
-				}
-				if (a.componentSize != 1) {
-					return Result(false, "Accessor " + std::to_string(accessorId) + " component size must be 1");
-				}
-				if ((bv.target != BufferView::Target::Undefined)
-					&& (bv.target != BufferView::Target::ElementArray)
-				) {
-					return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
-				}
-
-				graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
-
-				// Bind the IBO to the VAO
-				vao.bind();
-				ibo.bind();
-				vao.unbind();
-
-				mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-			}
-			else {
+			if (accessorId >= mGLTFData.accessors.size()) {
 				return Result(false, "Accessor index " + std::to_string(accessorId) + " out of range");
 			}
+
+			const Accessor& a = mGLTFData.accessors[accessorId];
+			const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+			const Buffer& b = mGLTFData.buffers[bv.bufferId];
+
+			if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
+				&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
+				&& (a.componentTypeId != graphics::TypeId::UnsignedInt)
+			) {
+				return Result(false, "Accessor " + std::to_string(accessorId) + " must be UByte or UShort or UInt");
+			}
+			if (a.componentSize != 1) {
+				return Result(false, "Accessor " + std::to_string(accessorId) + " component size must be 1");
+			}
+			if ((bv.target != BufferView::Target::Undefined)
+				&& (bv.target != BufferView::Target::ElementArray)
+			) {
+				return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
+			}
+
+			graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
+
+			// Bind the IBO to the VAO
+			vao.bind();
+			ibo.bind();
+			vao.unbind();
+
+			mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
 		}
 
 		auto itMaterial = jsonPrimitive.find("material");
 		if (itMaterial != jsonPrimitive.end()) {
 			std::size_t materialId = *itMaterial;
-			if (materialId < mGLTFData.materials.size()) {
-				material = mGLTFData.materials[materialId];
-			}
-			else {
+			if (materialId >= mGLTFData.materials.size()) {
 				return Result(false, "Material index " + std::to_string(materialId) + " out of range");
 			}
+
+			material = mGLTFData.materials[materialId];
 		}
 
-		output.renderable3Ds.emplace_back(std::make_unique<graphics::Renderable3D>(mesh, material));
+		output.renderable3Ds.push_back(std::make_unique<graphics::Renderable3D>(mesh, material));
 		return Result();
 	}
 
@@ -759,6 +772,40 @@ namespace se::loaders {
 		//	parsePrimitive(jsonPrimitive, output);
 		//	primitiveIndices.push_back(output.renderable3Ds.size() - 1);
 		//}
+		return Result();
+	}
+
+
+	Result GLTFReader::parseSkin(const nlohmann::json& jsonSkin)
+	{
+		Skin skin{ "", -1, -1, false, false, {}, };
+
+		auto itName = jsonSkin.find("name");
+		if (itName != jsonSkin.end()) {
+			skin.name = *itName;
+		}
+
+		auto itInverseBindMatrices = jsonSkin.find("inverseBindMatrices");
+		if (itInverseBindMatrices != jsonSkin.end()) {
+			skin.inverseBindMatrices = *itInverseBindMatrices;
+			skin.hasInverseBindMatrices = true;
+		}
+
+		auto itJoints = jsonSkin.find("joints");
+		if (itJoints != jsonSkin.end()) {
+			skin.joints = itJoints->get<std::vector<int>>();
+		}
+		else {
+			return Result(false, "A skin must have a joints property");
+		}
+
+		auto itSkeleton = jsonSkin.find("skeleton");
+		if (itSkeleton != jsonSkin.end()) {
+			skin.skeleton = *itSkeleton;
+			skin.hasSkeleton = true;
+		}
+
+		mGLTFData.skins.push_back(skin);
 		return Result();
 	}
 
@@ -820,24 +867,24 @@ namespace se::loaders {
 		bool hasCamera = false;
 		auto itCamera = jsonNode.find("camera");
 		if (itCamera != jsonNode.end()) {
-			camera = *itCamera;	// TODO: validate
+			camera = *itCamera;	// TODO: validate index
 			hasCamera = true;
-		}
-
-		int skin = -1;
-		bool hasSkin = false;
-		auto itSkin = jsonNode.find("skin");
-		if (itSkin != jsonNode.end()) {
-			skin = *itSkin;	// TODO: validate
-			hasSkin = true;
 		}
 
 		int mesh = -1;
 		bool hasMesh = false;
 		auto itMesh = jsonNode.find("mesh");
 		if (itMesh != jsonNode.end()) {
-			mesh = *itMesh;	// TODO: validate
+			mesh = *itMesh;
 			hasMesh = true;
+		}
+
+		int skin = -1;
+		bool hasSkin = false;
+		auto itSkin = jsonNode.find("skin");
+		if (itSkin != jsonNode.end()) {
+			skin = *itSkin;	// TODO: validate index, mesh must have JOINTS_0 and WEIGHTS_0
+			hasSkin = true;
 		}
 
 		std::vector<int> children;
@@ -846,7 +893,7 @@ namespace se::loaders {
 			children = itChildren->get<std::vector<int>>();	// TODO: validate
 		}
 
-		app::NodeData nodeData;
+		animation::NodeData nodeData;
 		auto itName = jsonNode.find("name");
 		if (itName != jsonNode.end()) {
 			nodeData.name = *itName;
@@ -888,21 +935,41 @@ namespace se::loaders {
 			}
 		}
 
-		mGLTFData.nodes.push_back({ camera, skin, mesh, hasCamera, hasSkin, hasMesh, children, nodeData });
+		mGLTFData.nodes.push_back({ camera, mesh, skin, hasCamera, hasMesh, hasSkin, children, nodeData });
 		return Result();
 	}
 
 
-	/*Result GLTFReader::parseSkin(const nlohmann::json& jsonNode, DataHolder& output) const
+	Result GLTFReader::parseScene(const nlohmann::json& jsonNode, DataHolder& output) const
 	{
+		auto scene = std::make_unique<animation::Scene>();
+
 		auto itName = jsonNode.find("name");
-            "inverseBindMatrices": 0,
-            "joints": [ 1, 2 ],
-            "skeleton": 1
+		if (itName != jsonNode.end()) {
+			scene->name = *itName;
+		}
+
+		std::vector<animation::SceneNode> rootNodes;
+		auto itNodes = jsonNode.find("nodes");
+		if (itNodes != jsonNode.end()) {
+			rootNodes.reserve(itNodes->size());
+			for (std::size_t nodeId : itNodes->get< std::vector<std::size_t> >()) {
+				if (nodeId < mGLTFData.nodes.size()) {
+					// TODO: Build the tree
+					//mGLTFData.nodes[nodeId];
+				}
+				else {
+					return Result(false, "Node index " + std::to_string(nodeId) + " out of range");
+				}
+			}
+		}
+
+		output.scenes.push_back(std::move(scene));
+		return Result();
 	}
 
 
-	Result GLTFReader::parseAnimation(const nlohmann::json& jsonNode, DataHolder& output) const
+	/*Result GLTFReader::parseAnimation(const nlohmann::json& jsonNode, DataHolder& output) const
 	{
 		auto itName = jsonNode.find("name");
 		auto itChannels = jsonNode.find("channels");
