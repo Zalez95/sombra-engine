@@ -229,7 +229,7 @@ namespace se::collision {
 		bool isActive(size_type i) const;
 
 		/** Replicates the size and released elements of the given
-		 * ContiguousVector in the current one, so they will have the same
+		 * ContiguousVector into the current one, so they will have the same
 		 * active indices
 		 *
 		 * @param	other the ContiguousVector to replicate

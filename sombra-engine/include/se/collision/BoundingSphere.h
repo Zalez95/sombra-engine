@@ -12,7 +12,7 @@ namespace se::collision {
 	class BoundingSphere : public ConvexCollider
 	{
 	private:	// Attributes
-		/** The Radius if the BoundingSphere */
+		/** The Radius of the BoundingSphere */
 		float mRadius;
 
 		/** The transformation matrix of the BoundingSphere */
@@ -47,7 +47,7 @@ namespace se::collision {
 		 *			BoundingSphere */
 		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
-		/** @return the Axis Aligned Bounding Box that contains the
+		/** @return	the Axis Aligned Bounding Box that contains the
 		 *			BoundingSphere */
 		AABB getAABB() const override;
 
