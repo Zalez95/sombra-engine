@@ -605,11 +605,12 @@ namespace game {
 		mEntities.push_back(std::move(eL3));
 
 		// GLTF meshes
-		for (auto& pair : dataHolder1.entityR3DMap) {
-			for (std::size_t iRenderable3D : pair.second) {
-				mGraphicsManager->addEntity(dataHolder1.entities[pair.first].get(), std::move(dataHolder1.renderable3Ds[iRenderable3D]));
+		for (auto& e : dataHolder1.entities) {
+			auto sceneEntity = std::make_unique<se::app::Entity>("sceneEntity");
+			for (std::size_t iRenderable3D : e.renderable3DIndices) {
+				mGraphicsManager->addEntity(sceneEntity.get(), std::move(dataHolder1.renderable3Ds[iRenderable3D]));
 			}
-			mEntities.push_back( std::move(dataHolder1.entities[pair.first]) );
+			mEntities.push_back( std::move(sceneEntity) );
 		}
 	}
 

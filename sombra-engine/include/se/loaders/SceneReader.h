@@ -5,7 +5,6 @@
 #include <memory>
 #include "Result.h"
 #include "../animation/Scene.h"
-#include "../app/Entity.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Renderable3D.h"
 
@@ -16,14 +15,18 @@ namespace se::loaders {
 	 */
 	struct DataHolder
 	{
-		using EntityIndex = std::size_t;
-		using Renderable3DIndices = std::vector<std::size_t>;
+		struct EntityData
+		{
+			animation::SceneNode* sceneNode;
+			bool hasCamera;
+			std::size_t cameraIndex;
+			std::vector<std::size_t> renderable3DIndices;
+		};
 
 		std::vector<std::unique_ptr<animation::Scene>> scenes;
-		std::vector<std::unique_ptr<app::Entity>> entities;
 		std::vector<std::unique_ptr<graphics::Camera>> cameras;
 		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;
-		std::vector<std::pair<EntityIndex, Renderable3DIndices>> entityR3DMap;
+		std::vector<EntityData> entities;
 	};
 
 

@@ -67,7 +67,7 @@ namespace se::loaders {
 		return ret;
 	}
 
-	static bool toComponentSize(const std::string& text, int& componentSize)
+	static bool toComponentSize(const std::string& text, std::size_t& componentSize)
 	{
 		bool ret = true;
 		if (text == "SCALAR")		{ componentSize = 1; }
@@ -134,7 +134,7 @@ namespace se::loaders {
 	}
 
 
-	Result GLTFReader::parseGLTF(const nlohmann::json& jsonGLTF, DataHolder& output)
+	Result GLTFReader::parseGLTF(const nlohmann::json& jsonGLTF, DataHolder& /*output*/)
 	{
 		auto itAsset = jsonGLTF.find("asset");
 		if (itAsset == jsonGLTF.end()) {
@@ -216,29 +216,18 @@ namespace se::loaders {
 		}
 
 		if (auto itMeshes = jsonGLTF.find("meshes"); itMeshes != jsonGLTF.end()) {
-			output.renderable3Ds.reserve(itMeshes->size());
 			for (std::size_t meshId = 0; meshId < itMeshes->size(); ++meshId) {
-				Result result = parseMesh((*itMeshes)[meshId], output);
+				Result result = parseMesh((*itMeshes)[meshId]);
 				if (!result) {
 					return Result(false, "Failed to read the meshes property at mesh " + std::to_string(meshId) + ": " + result.description());
 				}
 			}
 		}
 
-		if (auto itSkins = jsonGLTF.find("samplers"); itSkins != jsonGLTF.end()) {
-			mGLTFData.skins.reserve(itSkins->size());
-			for (std::size_t skinId = 0; skinId < itSkins->size(); ++skinId) {
-				Result result = parseSampler( (*itSkins)[skinId] );
-				if (!result) {
-					return Result(false, "Failed to read the skins property at skin " + std::to_string(skinId) + ": " + result.description());
-				}
-			}
-		}
-
 		if (auto itCameras = jsonGLTF.find("cameras"); itCameras != jsonGLTF.end()) {
-			output.cameras.reserve(itCameras->size());
+			mGLTFData.cameras.reserve(itCameras->size());
 			for (std::size_t cameraId = 0; cameraId < itCameras->size(); ++cameraId) {
-				Result result = parseCamera((*itCameras)[cameraId], output);
+				Result result = parseCamera((*itCameras)[cameraId]);
 				if (!result) {
 					return Result(false, "Failed to read the cameras property at camera " + std::to_string(cameraId) + ": " + result.description());
 				}
@@ -246,19 +235,20 @@ namespace se::loaders {
 		}
 
 		if (auto itNodes = jsonGLTF.find("nodes"); itNodes != jsonGLTF.end()) {
-			output.entities.reserve(itNodes->size());
+			mGLTFData.nodes.reserve(itNodes->size());
 			for (std::size_t nodeId = 0; nodeId < itNodes->size(); ++nodeId) {
-				Result result = parseNode( (*itNodes)[nodeId] );
+				Result result = parseNode((*itNodes)[nodeId]);
 				if (!result) {
 					return Result(false, "Failed to read the nodes property at node " + std::to_string(nodeId) + ": " + result.description());
 				}
 			}
+			mGLTFData.sceneNodes.resize(mGLTFData.nodes.size());
 		}
 
 		if (auto itScenes = jsonGLTF.find("scenes"); itScenes != jsonGLTF.end()) {
-			output.scenes.reserve(itScenes->size());
+			mGLTFData.scenes.reserve(itScenes->size());
 			for (std::size_t sceneId = 0; sceneId < itScenes->size(); ++sceneId) {
-				Result result = parseScene((*itScenes)[sceneId], output);
+				Result result = parseScene((*itScenes)[sceneId]);
 				if (!result) {
 					return Result(false, "Failed to read the scenes property at scene " + std::to_string(sceneId) + ": " + result.description());
 				}
@@ -334,7 +324,7 @@ namespace se::loaders {
 			std::size_t bufferId = *itBuffer;
 			std::size_t byteLength = *itByteLength;
 			std::size_t byteOffset = (itByteOffset != jsonBufferView.end())? itByteOffset->get<std::size_t>() : 0;
-			int byteStride = (itByteStride != jsonBufferView.end())? itByteStride->get<int>() : 0;
+			std::size_t byteStride = (itByteStride != jsonBufferView.end())? itByteStride->get<std::size_t>() : 0;
 
 			BufferView::Target target = BufferView::Target::Undefined;
 			if (itTarget != jsonBufferView.end()) {
@@ -384,7 +374,7 @@ namespace se::loaders {
 				return Result(false, "Invalid component type" + itComponentType->get<std::string>());
 			}
 
-			int componentSize = 0;
+			std::size_t componentSize = 0;
 			if (!toComponentSize(*itType, componentSize)) {
 				return Result(false, "Invalid component size" + itComponentType->get<std::string>());
 			}
@@ -664,9 +654,7 @@ namespace se::loaders {
 	}
 
 
-	Result GLTFReader::parsePrimitive(
-		const nlohmann::json& jsonPrimitive, DataHolder& output
-	) const
+	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive)
 	{
 		std::shared_ptr<graphics::Mesh> mesh = nullptr;
 		std::shared_ptr<graphics::Material> material = mDefaultMaterial;
@@ -752,12 +740,12 @@ namespace se::loaders {
 			material = mGLTFData.materials[materialId];
 		}
 
-		output.renderable3Ds.push_back(std::make_unique<graphics::Renderable3D>(mesh, material));
+		mGLTFData.renderable3Ds.emplace_back( std::make_unique<graphics::Renderable3D>(mesh, material) );
 		return Result();
 	}
 
 
-	Result GLTFReader::parseMesh(const nlohmann::json& jsonMesh, DataHolder& /*output*/)
+	Result GLTFReader::parseMesh(const nlohmann::json& jsonMesh)
 	{
 		auto itPrimitives = jsonMesh.find("primitives");
 		if (itPrimitives == jsonMesh.end()) {
@@ -767,50 +755,22 @@ namespace se::loaders {
 			return Result(false, "A mesh must containt at least one primitive");
 		}
 
-		//PrimitiveIndices& primitiveIndices = mGLTFData.meshPrimitivesIndices.emplace_back();
-		//for (auto jsonPrimitive : *itPrimitives) {
-		//	parsePrimitive(jsonPrimitive, output);
-		//	primitiveIndices.push_back(output.renderable3Ds.size() - 1);
-		//}
+		std::vector<int>& primitiveIndices = mGLTFData.meshPrimitives.emplace_back();
+		for (std::size_t primitiveId = 0; primitiveId < itPrimitives->size(); ++primitiveId) {
+			Result result = parsePrimitive((*itPrimitives)[primitiveId]);
+			if (result) {
+				primitiveIndices.push_back(mGLTFData.renderable3Ds.size() - 1);
+			}
+			else {
+				return Result(false, "Failed to read the primitives property at primitive " + std::to_string(primitiveId) + ": " + result.description());
+			}
+		}
+
 		return Result();
 	}
 
 
-	Result GLTFReader::parseSkin(const nlohmann::json& jsonSkin)
-	{
-		Skin skin{ "", -1, -1, false, false, {}, };
-
-		auto itName = jsonSkin.find("name");
-		if (itName != jsonSkin.end()) {
-			skin.name = *itName;
-		}
-
-		auto itInverseBindMatrices = jsonSkin.find("inverseBindMatrices");
-		if (itInverseBindMatrices != jsonSkin.end()) {
-			skin.inverseBindMatrices = *itInverseBindMatrices;
-			skin.hasInverseBindMatrices = true;
-		}
-
-		auto itJoints = jsonSkin.find("joints");
-		if (itJoints != jsonSkin.end()) {
-			skin.joints = itJoints->get<std::vector<int>>();
-		}
-		else {
-			return Result(false, "A skin must have a joints property");
-		}
-
-		auto itSkeleton = jsonSkin.find("skeleton");
-		if (itSkeleton != jsonSkin.end()) {
-			skin.skeleton = *itSkeleton;
-			skin.hasSkeleton = true;
-		}
-
-		mGLTFData.skins.push_back(skin);
-		return Result();
-	}
-
-
-	Result GLTFReader::parseCamera(const nlohmann::json& jsonCamera, DataHolder& output) const
+	Result GLTFReader::parseCamera(const nlohmann::json& jsonCamera)
 	{
 		auto itType = jsonCamera.find("name");
 		auto itPerspective = jsonCamera.find("perspective");
@@ -824,10 +784,10 @@ namespace se::loaders {
 				auto itZNear = itPerspective->find("znear");
 				if ((itAspectRatio != jsonCamera.end()) && (itYFov != jsonCamera.end())
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
-					) {
+				) {
 					auto camera = std::make_unique<graphics::Camera>();
 					camera->setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
-					output.cameras.emplace_back(std::move(camera));
+					mGLTFData.cameras.emplace_back(std::move(camera));
 					return Result();
 				}
 				else {
@@ -841,10 +801,10 @@ namespace se::loaders {
 				auto itZNear = itOrthographic->find("znear");
 				if ((itXMag != jsonCamera.end()) && (itYMag != jsonCamera.end())
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
-					) {
+				) {
 					auto camera = std::make_unique<graphics::Camera>();
 					camera->setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
-					output.cameras.emplace_back(std::move(camera));
+					mGLTFData.cameras.emplace_back(std::move(camera));
 					return Result();
 				}
 				else {
@@ -863,34 +823,32 @@ namespace se::loaders {
 
 	Result GLTFReader::parseNode(const nlohmann::json& jsonNode)
 	{
-		int camera = -1;
+		std::size_t cameraId = 0;
 		bool hasCamera = false;
 		auto itCamera = jsonNode.find("camera");
 		if (itCamera != jsonNode.end()) {
-			camera = *itCamera;	// TODO: validate index
+			cameraId = *itCamera;
 			hasCamera = true;
+			if (cameraId >= mGLTFData.cameras.size()) {
+				return Result(false, "Camera index out of bounds");
+			}
 		}
 
-		int mesh = -1;
+		std::size_t meshId = 0;
 		bool hasMesh = false;
 		auto itMesh = jsonNode.find("mesh");
 		if (itMesh != jsonNode.end()) {
-			mesh = *itMesh;
+			meshId = *itMesh;
 			hasMesh = true;
+			if (meshId >= mGLTFData.meshPrimitives.size()) {
+				return Result(false, "Mesh index out of bounds");
+			}
 		}
 
-		int skin = -1;
-		bool hasSkin = false;
-		auto itSkin = jsonNode.find("skin");
-		if (itSkin != jsonNode.end()) {
-			skin = *itSkin;	// TODO: validate index, mesh must have JOINTS_0 and WEIGHTS_0
-			hasSkin = true;
-		}
-
-		std::vector<int> children;
+		std::vector<std::size_t> children;
 		auto itChildren = jsonNode.find("children");
 		if (itChildren != jsonNode.end()) {
-			children = itChildren->get<std::vector<int>>();	// TODO: validate
+			children = itChildren->get< std::vector<std::size_t> >();
 		}
 
 		animation::NodeData nodeData;
@@ -935,12 +893,12 @@ namespace se::loaders {
 			}
 		}
 
-		mGLTFData.nodes.push_back({ camera, mesh, skin, hasCamera, hasMesh, hasSkin, children, nodeData });
+		mGLTFData.nodes.push_back({ cameraId, meshId, hasCamera, hasMesh, children, nodeData });
 		return Result();
 	}
 
 
-	Result GLTFReader::parseScene(const nlohmann::json& jsonNode, DataHolder& output) const
+	Result GLTFReader::parseScene(const nlohmann::json& jsonNode)
 	{
 		auto scene = std::make_unique<animation::Scene>();
 
@@ -949,14 +907,42 @@ namespace se::loaders {
 			scene->name = *itName;
 		}
 
+		// Create the root nodes of the scene
 		std::vector<animation::SceneNode> rootNodes;
 		auto itNodes = jsonNode.find("nodes");
 		if (itNodes != jsonNode.end()) {
 			rootNodes.reserve(itNodes->size());
 			for (std::size_t nodeId : itNodes->get< std::vector<std::size_t> >()) {
 				if (nodeId < mGLTFData.nodes.size()) {
-					// TODO: Build the tree
-					//mGLTFData.nodes[nodeId];
+					// Create the root node
+					auto& node = scene->mRootNodes.emplace_back(mGLTFData.nodes[nodeId].nodeData);
+					mGLTFData.sceneNodes[nodeId] = &node;
+
+					// Build the tree
+					std::vector<std::pair<int, int>> stack = { { -1, nodeId } };
+					while (!stack.empty()) {
+						auto& [parentId, currentId] = stack.back();
+						stack.pop_back();
+
+						if (currentId < static_cast<int>(mGLTFData.nodes.size())) {
+							if (parentId >= 0) {
+								animation::SceneNode* parentNode = mGLTFData.sceneNodes[parentId];
+								mGLTFData.sceneNodes[currentId] = static_cast<animation::SceneNode*>(
+									&(*parentNode->emplace(
+										parentNode->cbegin(),
+										mGLTFData.nodes[currentId].nodeData)
+									)
+								);
+							}
+
+							for (int childId : mGLTFData.nodes[currentId].children) {
+								stack.emplace_back(currentId, childId);
+							}
+						}
+						else {
+							return Result(false, "Node index " + std::to_string(currentId) + " out of range");
+						}
+					}
 				}
 				else {
 					return Result(false, "Node index " + std::to_string(nodeId) + " out of range");
@@ -964,24 +950,85 @@ namespace se::loaders {
 			}
 		}
 
-		output.scenes.push_back(std::move(scene));
+		mGLTFData.scenes.emplace_back(std::move(scene));
 		return Result();
 	}
 
 
-	/*Result GLTFReader::parseAnimation(const nlohmann::json& jsonNode, DataHolder& output) const
+	/*Result GLTFReader::parseAnimationSampler(const nlohmann::json& jsonNode, Animation::Sampler& sampler)
 	{
-		auto itName = jsonNode.find("name");
-		auto itChannels = jsonNode.find("channels");
-			sampler//indice to samplers
-			target
-				node//nodo a animar
-				path//"translation", "rotation", "scale", and "weights".
+		auto itInterpolation = jsonNode.find("interpolation");
+		if ((itInterpolation != jsonNode.end()) && (*itInterpolation != "LINEAR")) {
+			return Result(false, "Only linear interpolation available");
+		}
+
+		auto itInput = jsonNode.find("input");
+		if (itInput == jsonNode.end()) {
+			return Result(false, "Missing input property");
+		}
+		sampler.input = *itInput;
+		if (sampler.input >= mGLTFData.accessors.size()) {
+			return Result(false, "Input property out of bounds");
+		}
+		if (mGLTFData.accessors[sampler.input].componentType != graphics::TypeId::Float) {
+			return Result(false, "Input componentType must be FLOAT");
+		}
+
+		auto itOutput = jsonNode.find("output");
+		if (itOutput == jsonNode.end()) {
+			return Result(false, "Missing output property");
+		}
+		sampler.output = *itOutput;
+		if (sampler.output >= mGLTFData.accessors.size()) {
+			return Result(false, "Output property out of bounds");
+		}
+		if (mGLTFData.accessors[sampler.output].componentType != graphics::TypeId::Float) {
+			return Result(false, "Output componentType must be FLOAT");
+		}
+
+		if (mGLTFData.accessors[sampler.input].count == mGLTFData.accessors[sampler.output].count) {
+			return Result(false, "Input number of elements doesn't match the output one");
+		}
+	}
+
+
+	Result GLTFReader::parseAnimation(const nlohmann::json& jsonNode)
+	{
+		*auto itName = jsonNode.find("name"); TODO: animation needs name?
+		if (itName != jsonNode.end()) {
+
+		}*
+		animation::Animation()
+
+		std::vector<animation::KeyFrame> samplers;
 
 		auto itSamplers = jsonNode.find("samplers");
-			input
-			interpolation//LINEAR, STEP, and CUBICSPLINE
-			output
+		if (itSamplers != jsonNode.end()) {
+			samplers.reserve(itSamplers->size());
+			for (std::size_t samplerId = 0; samplerId < itSamplers->size(); ++samplerId) {
+				auto sampler = (*itSamplers)[samplerId];
+
+			}
+		}
+		else {
+			return Result(false, "An animation object must have a \"samplers\" property");
+		}
+
+		auto itChannels = jsonNode.find("channels");
+		if (itChannels != jsonNode.end()) {
+			channels.reserve(itSamplers->size());
+			for (std::size_t channelId = 0; channelId < itChannels->size(); ++channelId) {
+				sampler//indice to samplers property
+				target
+					node// indice nodo a animar
+					path//"translation", "rotation", "scale", and "weights".
+			}
+		}
+		else {
+			return Result(false, "An animation object must have a \"channels\" property");
+		}
+
+		return Result();
 	}*/
 
 }

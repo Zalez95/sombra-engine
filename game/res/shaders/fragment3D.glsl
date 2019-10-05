@@ -181,7 +181,7 @@ void main()
 		pow(texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0), vec4(2.2)) :
 		uMaterial.pbrMetallicRoughness.baseColorFactor;
 
-	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0);
+	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.metallicRoughnessTexture, vsVertex.texCoord0);
 
 	float metallic = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
 		uMaterial.pbrMetallicRoughness.metallicFactor * metallicRoughnessColor.b :
