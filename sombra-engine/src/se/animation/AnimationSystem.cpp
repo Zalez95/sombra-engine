@@ -3,85 +3,28 @@
 
 namespace se::animation {
 
-	void AnimationSystem::addAnimation(Animation* animation)
+	void AnimationSystem::addAnimator(IAnimator* animator)
 	{
-		if (animation) {
-			mAnimations.push_back(animation);
+		if (animator) {
+			mAnimators.push_back(animator);
 		}
 	}
 
 
-	void AnimationSystem::removeAnimation(Animation* animation)
+	void AnimationSystem::removeAnimator(IAnimator* animator)
 	{
-		mAnimations.erase(
-			std::remove(mAnimations.begin(), mAnimations.end(), animation),
-			mAnimations.end()
+		mAnimators.erase(
+			std::remove(mAnimators.begin(), mAnimators.end(), animator),
+			mAnimators.end()
 		);
 	}
 
 
-	void AnimationSystem::update(float delta)
+	void AnimationSystem::update(float deltaTime)
 	{
-		for (Animation* animation : mAnimations) {
-			updateAnimation(*animation, delta);
+		for (IAnimator* animator : mAnimators) {
+			animator->animate(deltaTime);
 		}
-	}
-
-// Private functions
-	void AnimationSystem::updateAnimation(Animation& animation, float delta)
-	{
-		// Calculate the time since the start of the animation cycle
-		float timeSinceStart = (animation.mLength <= 0.0f)? 0.0f :
-			(animation.mLoopAnimation)? std::fmod(animation.mAccumulatedTime + delta, animation.mLength) :
-			animation.mAccumulatedTime + delta;
-		animation.mAccumulatedTime += delta;
-
-		// Update the nodes
-		for (auto& [node, keyFrames] : animation.mNodeKeyFrames) {
-			// Calculate the interpolated KeyFrame between the previous and the current one
-			auto [keyFrame1, keyFrame2] = getPreviousAndNextKeyFrames(keyFrames, timeSinceStart);
-			float keyFrameLength = keyFrame2.timePoint - keyFrame1.timePoint;
-			float timeSinceFirstKeyFrame = timeSinceStart - keyFrame1.timePoint;
-
-			KeyFrame keyFrameToApply = keyFrame1;
-			if (keyFrameLength > 0.0f) {
-				keyFrameToApply = keyFrameLinearInterpolation(
-					keyFrame1, keyFrame2,
-					timeSinceFirstKeyFrame / keyFrameLength
-				);
-			}
-
-			// Apply the KeyFrame to the bone
-			node->getData().scale *= keyFrameToApply.scale;
-			node->getData().orientation *= keyFrameToApply.rotation;
-			node->getData().position += keyFrameToApply.translation;
-		}
-	}
-
-
-	std::pair<KeyFrame, KeyFrame> AnimationSystem::getPreviousAndNextKeyFrames(
-		const std::vector<KeyFrame>& keyFrames, float timePoint
-	) {
-		std::pair<KeyFrame, KeyFrame> ret;
-
-		if (!keyFrames.empty()) {
-			auto itKeyFrame = std::upper_bound(
-				keyFrames.begin(), keyFrames.end(), timePoint,
-				[](float timePoint, const KeyFrame& keyFrame) { return keyFrame.timePoint > timePoint; }
-			);
-			if (itKeyFrame != keyFrames.end()) {
-				ret.second = *itKeyFrame;
-				if (itKeyFrame != keyFrames.begin()) {
-					--itKeyFrame;
-					ret.first = *itKeyFrame;
-				}
-			}
-			else {
-				ret.first = ret.second = keyFrames.back();
-			}
-		}
-
-		return ret;
 	}
 
 }

@@ -17,7 +17,7 @@ namespace se::app {
 	class AnimationManager
 	{
 	private:	// Nested types
-		using AnimationUPtr = std::unique_ptr<animation::Animation>;
+		//using AnimationUPtr = std::unique_ptr<animation::Animation>;
 
 	private:	// Attributes
 		/** The AnimationSystem used for updating the animation of the
@@ -25,7 +25,7 @@ namespace se::app {
 		animation::AnimationSystem& mAnimationSystem;
 
 		/** All the Animation Entities added to the AnimationManager */
-		std::map<Entity*, AnimationUPtr> mAnimationEntities;
+		//std::map<Entity*, AnimationUPtr> mAnimationEntities;
 
 	public:		// Functions
 		/** Creates a new AnimationManager
@@ -41,7 +41,7 @@ namespace se::app {
 		 *			AnimationManager
 		 * @param	animation a pointer to the Animation to add to the
 		 *			AnimationManager */
-		void addEntity(Entity* entity, AnimationUPtr animation);
+		//void addEntity(Entity* entity, AnimationUPtr animation);
 
 		/** Removes the given Entity from the AnimationManager
 		 *
