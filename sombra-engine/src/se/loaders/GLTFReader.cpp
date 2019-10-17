@@ -7,6 +7,8 @@
 #include "se/graphics/Texture.h"
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Mesh.h"
+#include "se/animation/LinearAnimations.h"
+#include "se/animation/Animators.h"
 
 namespace se::loaders {
 
@@ -87,6 +89,16 @@ namespace se::loaders {
 		if (text == "OPAQUE")		{ alphaMode = graphics::AlphaMode::Opaque; }
 		else if (text == "MASK")	{ alphaMode = graphics::AlphaMode::Mask; }
 		else if (text == "BLEND")	{ alphaMode = graphics::AlphaMode::Blend; }
+		else { ret = false; }
+		return ret;
+	}
+
+	static bool toTransformationType(const std::string& text, animation::IAnimator::TransformationType& transformationType)
+	{
+		bool ret = true;
+		if (text == "translation")		{ transformationType = animation::IAnimator::TransformationType::Translation; }
+		else if (text == "rotation")	{ transformationType = animation::IAnimator::TransformationType::Rotation; }
+		else if (text == "scale")		{ transformationType = animation::IAnimator::TransformationType::Scale; }
 		else { ret = false; }
 		return ret;
 	}
@@ -255,6 +267,16 @@ namespace se::loaders {
 			}
 		}
 
+		if (auto itAnimations = jsonGLTF.find("animations"); itAnimations != jsonGLTF.end()) {
+			mGLTFData.animators.reserve(itAnimations->size());
+			for (std::size_t animationId = 0; animationId < itAnimations->size(); ++animationId) {
+				Result result = parseAnimation((*itAnimations)[animationId]);
+				if (!result) {
+					return Result(false, "Failed to read the animations property at animation " + std::to_string(animationId) + ": " + result.description());
+				}
+			}
+		}
+
 		return Result();
 	}
 
@@ -398,11 +420,10 @@ namespace se::loaders {
 
 		// Filters
 		auto doFilter = [&](int filter, int idx) {
-			Result result;
 			if (!toTextureFilter(filter, sampler.filters[idx])) {
-				result = Result(false, "Invalid filter " + std::to_string(filter));
+				return Result(false, "Invalid filter " + std::to_string(filter));
 			}
-			return result;
+			return Result();
 		};
 
 		auto itMinFilter = jsonSampler.find("minFilter");
@@ -414,11 +435,10 @@ namespace se::loaders {
 
 		// Wraps
 		auto doWrap = [&](int wrap, int idx) {
-			Result result;
 			if (!toTextureWrap(wrap, sampler.wraps[idx])) {
-				result = Result(false, "Invalid wrap mode " + std::to_string(wrap));
+				return Result(false, "Invalid wrap mode " + std::to_string(wrap));
 			}
-			return result;
+			return Result();
 		};
 
 		auto itWrapS = jsonSampler.find("wrapS");
@@ -898,19 +918,19 @@ namespace se::loaders {
 	}
 
 
-	Result GLTFReader::parseScene(const nlohmann::json& jsonNode)
+	Result GLTFReader::parseScene(const nlohmann::json& jsonScene)
 	{
 		auto scene = std::make_unique<animation::Scene>();
 
-		auto itName = jsonNode.find("name");
-		if (itName != jsonNode.end()) {
+		auto itName = jsonScene.find("name");
+		if (itName != jsonScene.end()) {
 			scene->name = *itName;
 		}
 
 		// Create the root nodes of the scene
 		std::vector<animation::SceneNode> rootNodes;
-		auto itNodes = jsonNode.find("nodes");
-		if (itNodes != jsonNode.end()) {
+		auto itNodes = jsonScene.find("nodes");
+		if (itNodes != jsonScene.end()) {
 			rootNodes.reserve(itNodes->size());
 			for (std::size_t nodeId : itNodes->get< std::vector<std::size_t> >()) {
 				if (nodeId < mGLTFData.nodes.size()) {
@@ -955,80 +975,180 @@ namespace se::loaders {
 	}
 
 
-	/*Result GLTFReader::parseAnimationSampler(const nlohmann::json& jsonNode, Animation::Sampler& sampler)
+	Result GLTFReader::parseAnimationSampler(
+		const nlohmann::json& jsonSampler,
+		std::unique_ptr<Vec3Animation>& out1, std::unique_ptr<QuatAnimation>& out2
+	) const
 	{
-		auto itInterpolation = jsonNode.find("interpolation");
-		if ((itInterpolation != jsonNode.end()) && (*itInterpolation != "LINEAR")) {
+		auto itInterpolation = jsonSampler.find("interpolation");
+		if ((itInterpolation != jsonSampler.end()) && (*itInterpolation != "LINEAR")) {
 			return Result(false, "Only linear interpolation available");
 		}
 
-		auto itInput = jsonNode.find("input");
-		if (itInput == jsonNode.end()) {
+		auto itInput = jsonSampler.find("input");
+		if (itInput == jsonSampler.end()) {
 			return Result(false, "Missing input property");
 		}
-		sampler.input = *itInput;
-		if (sampler.input >= mGLTFData.accessors.size()) {
+
+		std::size_t inputId = *itInput;
+		if (inputId >= mGLTFData.accessors.size()) {
 			return Result(false, "Input property out of bounds");
 		}
-		if (mGLTFData.accessors[sampler.input].componentType != graphics::TypeId::Float) {
+
+		auto itOutput = jsonSampler.find("output");
+		if (itOutput == jsonSampler.end()) {
+			return Result(false, "Missing output property");
+		}
+
+		std::size_t outputId = *itOutput;
+		if (outputId >= mGLTFData.accessors.size()) {
+			return Result(false, "Output property out of bounds");
+		}
+
+		const Accessor& aInput = mGLTFData.accessors[inputId];
+		const BufferView& bvInput = mGLTFData.bufferViews[aInput.bufferViewId];
+		const Buffer& bInput = mGLTFData.buffers[bvInput.bufferId];
+		const Accessor& aOutput = mGLTFData.accessors[outputId];
+		const BufferView& bvOutput = mGLTFData.bufferViews[aInput.bufferViewId];
+		const Buffer& bOutput = mGLTFData.buffers[bvInput.bufferId];
+
+		if (aInput.componentTypeId != graphics::TypeId::Float) {
 			return Result(false, "Input componentType must be FLOAT");
 		}
 
-		auto itOutput = jsonNode.find("output");
-		if (itOutput == jsonNode.end()) {
-			return Result(false, "Missing output property");
-		}
-		sampler.output = *itOutput;
-		if (sampler.output >= mGLTFData.accessors.size()) {
-			return Result(false, "Output property out of bounds");
-		}
-		if (mGLTFData.accessors[sampler.output].componentType != graphics::TypeId::Float) {
+		if (aOutput.componentTypeId != graphics::TypeId::Float) {
 			return Result(false, "Output componentType must be FLOAT");
 		}
 
-		if (mGLTFData.accessors[sampler.input].count == mGLTFData.accessors[sampler.output].count) {
+		if (aInput.count == aOutput.count) {
 			return Result(false, "Input number of elements doesn't match the output one");
+		}
+
+		std::size_t numElements = aOutput.count;
+		const float* inputPtr = reinterpret_cast<const float*>(bInput.data() + bvInput.offset + aInput.byteOffset);
+		const float* outputPtr = reinterpret_cast<const float*>(bOutput.data() + bvOutput.offset + aOutput.byteOffset);
+
+		if ((aInput.componentSize == 3) && (aOutput.componentSize == 1)) {
+			auto animVec3 = std::make_unique<animation::AnimationVec3Linear>();
+			for (std::size_t i = 0; i < numElements; ++i) {
+				animVec3->addKeyFrame({
+					*reinterpret_cast<const glm::vec3*>(inputPtr + i * aInput.componentSize),
+					outputPtr[i]
+				});
+			}
+
+			out1 = std::move(animVec3);
+			return Result();
+		}
+		else if ((aInput.componentSize == 4) && (aOutput.componentSize == 1)) {
+			auto animQuat = std::make_unique<animation::AnimationQuatLinear>();
+			for (std::size_t i = 0; i < numElements; ++i) {
+				animQuat->addKeyFrame({
+					*reinterpret_cast<const glm::quat*>(inputPtr + i * aInput.componentSize),
+					outputPtr[i]
+				});
+			}
+
+			out2 = std::move(animQuat);
+			return Result();
+		}
+		else {
+			return Result(false, "Invalid accessor component sizes");
 		}
 	}
 
 
-	Result GLTFReader::parseAnimation(const nlohmann::json& jsonNode)
+	Result GLTFReader::parseAnimationChannel(
+		const nlohmann::json& jsonChannel,
+		const std::map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
+		const std::map<std::size_t, QuatAnimationSPtr>& quatAnimations,
+		IAnimatorUPtr& out
+	) const
 	{
-		*auto itName = jsonNode.find("name"); TODO: animation needs name?
-		if (itName != jsonNode.end()) {
+		auto itSampler = jsonChannel.find("sampler");
+		auto itTarget = jsonChannel.find("target");
+		if ((itSampler != jsonChannel.end()) && (itTarget != jsonChannel.end())) {
+			auto itNode = itTarget->find("node");
+			auto itPath = itTarget->find("path");
+			if ((itNode != itTarget->end()) && (itPath != itTarget->end())) {
+				auto transformationType = animation::IAnimator::TransformationType::Translation;
+				if (!toTransformationType(*itPath, transformationType)) {
+					return Result(false, "Invalid path " + itPath->get<std::string>());
+				}
 
-		}*
-		animation::Animation()
+				std::size_t nodeId = *itNode;
+				if (nodeId >= mGLTFData.sceneNodes.size()) {
+					return Result(false, "Node index " + std::to_string(nodeId) + " out of range");
+				}
 
-		std::vector<animation::KeyFrame> samplers;
+				std::size_t samplerId = *itSampler;
+				auto itVec3Animation = vec3Animations.find(samplerId);
+				auto itQuatAnimation = quatAnimations.find(samplerId);
+				if (itVec3Animation != vec3Animations.end()) {
+					out = std::make_unique<animation::Vec3Animator>(itVec3Animation->second);
+				}
+				else if (itQuatAnimation != quatAnimations.end()) {
+					out = std::make_unique<animation::QuatAnimator>(itQuatAnimation->second);
+				}
+				else {
+					return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
+				}
 
-		auto itSamplers = jsonNode.find("samplers");
-		if (itSamplers != jsonNode.end()) {
-			samplers.reserve(itSamplers->size());
-			for (std::size_t samplerId = 0; samplerId < itSamplers->size(); ++samplerId) {
-				auto sampler = (*itSamplers)[samplerId];
-
+				out->addNode(transformationType, mGLTFData.sceneNodes[nodeId]);
+				return Result();
+			}
+			else {
+				return Result(false, "Missing target properties");
 			}
 		}
 		else {
-			return Result(false, "An animation object must have a \"samplers\" property");
+			return Result(false, "Missing channel properties");
+		}
+	}
+
+
+	Result GLTFReader::parseAnimation(const nlohmann::json& jsonAnimation)
+	{
+		auto itSamplers = jsonAnimation.find("samplers");
+		if (itSamplers == jsonAnimation.end()) {
+			return Result(false, "Missing \"samplers\" property");
 		}
 
-		auto itChannels = jsonNode.find("channels");
-		if (itChannels != jsonNode.end()) {
-			channels.reserve(itSamplers->size());
-			for (std::size_t channelId = 0; channelId < itChannels->size(); ++channelId) {
-				sampler//indice to samplers property
-				target
-					node// indice nodo a animar
-					path//"translation", "rotation", "scale", and "weights".
+		auto itChannels = jsonAnimation.find("channels");
+		if (itChannels == jsonAnimation.end()) {
+			return Result(false, "Missing \"channels\" property");
+		}
+
+		std::map<std::size_t, Vec3AnimationSPtr> vec3Animations;
+		std::map<std::size_t, QuatAnimationSPtr> quatAnimations;
+		for (std::size_t samplerId = 0; samplerId < itSamplers->size(); ++samplerId) {
+			std::unique_ptr<Vec3Animation> out1;
+			std::unique_ptr<QuatAnimation> out2;
+			Result result = parseAnimationSampler((*itSamplers)[samplerId], out1, out2);
+			if (!result) {
+				return Result(false, "Failed to read the samplers property at sampler " + std::to_string(samplerId) + ": " + result.description());
+			}
+
+			if (out1) {
+				vec3Animations.emplace(samplerId, std::move(out1));
+			}
+			if (out2) {
+				quatAnimations.emplace(samplerId, std::move(out2));
 			}
 		}
-		else {
-			return Result(false, "An animation object must have a \"channels\" property");
+
+		mGLTFData.animators.reserve(itSamplers->size());
+		for (std::size_t channelId = 0; channelId < itChannels->size(); ++channelId) {
+			IAnimatorUPtr out;
+			Result result = parseAnimationChannel((*itChannels)[channelId], vec3Animations, quatAnimations, out);
+			if (!result) {
+				return Result(false, "Failed to read the samplers property at channel " + std::to_string(channelId) + ": " + result.description());
+			}
+
+			mGLTFData.animators.emplace_back(std::move(out));
 		}
 
 		return Result();
-	}*/
+	}
 
 }

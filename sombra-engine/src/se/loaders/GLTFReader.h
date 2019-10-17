@@ -7,6 +7,8 @@
 #include "se/loaders/SceneReader.h"
 #include "se/utils/Image.h"
 #include "se/graphics/Texture.h"
+#include "se/animation/IAnimator.h"
+#include "se/animation/IAnimation.h"
 
 namespace se::loaders {
 
@@ -21,6 +23,11 @@ namespace se::loaders {
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
 		using SceneUPtr = std::unique_ptr<animation::Scene>;
+		using Vec3Animation = animation::IAnimation<glm::vec3>;
+		using QuatAnimation = animation::IAnimation<glm::quat>;
+		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
+		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
+		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
 		using MeshPrimitives = std::vector<int>;
 		using Buffer = std::vector<std::byte>;
 
@@ -97,6 +104,7 @@ namespace se::loaders {
 			std::vector<Node> nodes;
 			std::vector<animation::SceneNode*> sceneNodes;
 			std::vector<SceneUPtr> scenes;
+			std::vector<IAnimatorUPtr> animators;
 		};
 
 	private:	// Attributes
@@ -218,33 +226,59 @@ namespace se::loaders {
 		Result parseCamera(const nlohmann::json& jsonCamera);
 
 		/** Creates a new Node from the given GLTF JSON Node and appends it to
-		 * the DataHolder
+		 * mGLTFData
 		 *
 		 * @param	jsonNode the JSON object with the Node to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseNode(const nlohmann::json& jsonNode);
 
-		/** Creates a new Scene from the given GLTF JSON Node and appends it to
-		 * the DataHolder
+		/** Creates a new Scene from the given GLTF JSON Scene and appends it to
+		 * mGLTFData
 		 *
-		 * @param	jsonNode the JSON object with the Scene to parse
+		 * @param	jsonScene the JSON object with the Scene to parse
 		 * @return	a Result object with the result of the parse operation */
-		Result parseScene(const nlohmann::json& jsonNode);
+		Result parseScene(const nlohmann::json& jsonScene);
 
-		/** Creates a new Animation from the given GLTF JSON Node and appends
-		 * it to the DataHolder
+		/** Creates a new IAnimation from the given GLTF JSON Animation Sampler
+		 * and returns it in one of the given output parameters
 		 *
-		 * @param	jsonNode the JSON object with the Node to parse
-		 * @param	output the DataHolder where the loaded Animation will be
-		 *			stored
-		 * @return	a Result object with the result of the parse operation *
-		Result parseAnimation(const nlohmann::json& jsonNode);*/
+		 * @param	jsonSampler the JSON object with the Animation sampler to
+		 *			parse
+		 * @param	out1 the pointer used for returning Vec3 IAnimations
+		 * @param	out2 the pointer used for returning Quat IAnimations
+		 * @return	a Result object with the result of the parse operation */
+		Result parseAnimationSampler(
+			const nlohmann::json& jsonSampler,
+			std::unique_ptr<Vec3Animation>& out1,
+			std::unique_ptr<QuatAnimation>& out2
+		) const;
+
+		/** Creates a new IAnimation from the given GLTF JSON Animation Channel
+		 * and returns it inthe given output parameters
+		 *
+		 * @param	jsonChannel the JSON object with the Animation Channel to
+		 *			parse
+		 * @param	vec3Animations a map with the Vec3 IAnimations
+		 * @param	quatAnimations a map with the Quat IAnimations
+		 * @param	out the pointer used for returning the IAnimator
+		 * @return	a Result object with the result of the parse operation */
+		Result parseAnimationChannel(
+			const nlohmann::json& jsonChannel,
+			const std::map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
+			const std::map<std::size_t, QuatAnimationSPtr>& quatAnimations,
+			IAnimatorUPtr& out
+		) const;
+
+		/** Creates a new Animation from the given GLTF JSON Animation and
+		 * appends it to mGLTFData
+		 *
+		 * @param	jsonAnimation the JSON object with the Animation to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseAnimation(const nlohmann::json& jsonAnimation);
 
 		// Result loadTextureInfo(const nlohmann::json& jsonObject) {};
-		// Result loadAnimation(const nlohmann::json& jsonObject) {};
 		// Result loadExtension(const nlohmann::json& jsonObject) {};
 		// Result loadExtras(const nlohmann::json& jsonObject) {};
-		// Result loadScene(const nlohmann::json& jsonObject) {};
 		// Result loadSkin(const nlohmann::json& jsonObject) {};
 	};
 
