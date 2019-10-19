@@ -10,6 +10,7 @@
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Force.h>
 #include <se/physics/constraints/Constraint.h>
+#include <se/loaders/SceneReader.h>
 
 namespace game {
 
@@ -31,6 +32,7 @@ namespace game {
 	private:	// Attributes
 		se::graphics::Layer2D mLayer2D;
 		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
+		std::unique_ptr<se::loaders::Scene> mScene;
 		std::vector<se::audio::Buffer> mBuffers;
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;

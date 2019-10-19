@@ -19,10 +19,10 @@ namespace se::loaders {
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec2> texCoords;
-		std::vector<float> jointWeights;
+		std::vector<glm::u16vec4> jointIndices;
+		std::vector<glm::vec4> jointWeights;
 
 		std::vector<unsigned short> faceIndices;
-		std::vector<unsigned short> jointIndices;
 
 		RawMesh(const std::string& name) : name(name) {};
 	};

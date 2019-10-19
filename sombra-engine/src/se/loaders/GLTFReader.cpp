@@ -114,17 +114,20 @@ namespace se::loaders {
 	}
 
 
-	Result GLTFReader::load(const std::string& path, DataHolder& output)
+	Result GLTFReader::load(const std::string& path, Scenes& output)
 	{
 		Result result;
 
-		mGLTFData = GLTFData();
 		mBasePath = path.substr(0, path.find_last_of("/\\") + 1);
 
 		nlohmann::json jsonGLTF;
 		if (!(result = readJSON(path, jsonGLTF)) || !(result = parseGLTF(jsonGLTF, output))) {
 			result = Result(false, "Error while parsing the GLTF file \"" + path + "\": " + result.description());
 		}
+
+		// Clean the temporary data
+		mGLTFData = GLTFData();
+		mBasePath = "";
 
 		return result;
 	}
@@ -146,7 +149,7 @@ namespace se::loaders {
 	}
 
 
-	Result GLTFReader::parseGLTF(const nlohmann::json& jsonGLTF, DataHolder& /*output*/)
+	Result GLTFReader::parseGLTF(const nlohmann::json& jsonGLTF, Scenes& output)
 	{
 		auto itAsset = jsonGLTF.find("asset");
 		if (itAsset == jsonGLTF.end()) {
@@ -183,6 +186,26 @@ namespace se::loaders {
 				Result result = parseAccessor( (*itAccessors)[accessorId] );
 				if (!result) {
 					return Result(false, "Failed to read the accessors property at accessor " + std::to_string(accessorId) + ": " + result.description());
+				}
+			}
+		}
+
+		if (auto itNodes = jsonGLTF.find("nodes"); itNodes != jsonGLTF.end()) {
+			mGLTFData.nodes.reserve(itNodes->size());
+			for (std::size_t nodeId = 0; nodeId < itNodes->size(); ++nodeId) {
+				Result result = parseNode((*itNodes)[nodeId]);
+				if (!result) {
+					return Result(false, "Failed to read the nodes property at node " + std::to_string(nodeId) + ": " + result.description());
+				}
+			}
+		}
+
+		if (auto itScenes = jsonGLTF.find("scenes"); itScenes != jsonGLTF.end()) {
+			mGLTFData.scenes.reserve(itScenes->size());
+			for (std::size_t sceneId = 0; sceneId < itScenes->size(); ++sceneId) {
+				Result result = parseScene((*itScenes)[sceneId]);
+				if (!result) {
+					return Result(false, "Failed to read the scenes property at scene " + std::to_string(sceneId) + ": " + result.description());
 				}
 			}
 		}
@@ -236,33 +259,22 @@ namespace se::loaders {
 			}
 		}
 
+		if (auto itSkins = jsonGLTF.find("skins"); itSkins != jsonGLTF.end()) {
+			mGLTFData.skins.reserve(itSkins->size());
+			for (std::size_t skinId = 0; skinId < itSkins->size(); ++skinId) {
+				Result result = parseSkin( (*itSkins)[skinId] );
+				if (!result) {
+					return Result(false, "Failed to read the skins property at skin " + std::to_string(skinId) + ": " + result.description());
+				}
+			}
+		}
+
 		if (auto itCameras = jsonGLTF.find("cameras"); itCameras != jsonGLTF.end()) {
 			mGLTFData.cameras.reserve(itCameras->size());
 			for (std::size_t cameraId = 0; cameraId < itCameras->size(); ++cameraId) {
 				Result result = parseCamera((*itCameras)[cameraId]);
 				if (!result) {
 					return Result(false, "Failed to read the cameras property at camera " + std::to_string(cameraId) + ": " + result.description());
-				}
-			}
-		}
-
-		if (auto itNodes = jsonGLTF.find("nodes"); itNodes != jsonGLTF.end()) {
-			mGLTFData.nodes.reserve(itNodes->size());
-			for (std::size_t nodeId = 0; nodeId < itNodes->size(); ++nodeId) {
-				Result result = parseNode((*itNodes)[nodeId]);
-				if (!result) {
-					return Result(false, "Failed to read the nodes property at node " + std::to_string(nodeId) + ": " + result.description());
-				}
-			}
-			mGLTFData.sceneNodes.resize(mGLTFData.nodes.size());
-		}
-
-		if (auto itScenes = jsonGLTF.find("scenes"); itScenes != jsonGLTF.end()) {
-			mGLTFData.scenes.reserve(itScenes->size());
-			for (std::size_t sceneId = 0; sceneId < itScenes->size(); ++sceneId) {
-				Result result = parseScene((*itScenes)[sceneId]);
-				if (!result) {
-					return Result(false, "Failed to read the scenes property at scene " + std::to_string(sceneId) + ": " + result.description());
 				}
 			}
 		}
@@ -276,6 +288,29 @@ namespace se::loaders {
 				}
 			}
 		}
+
+		// Create the scene entities and validate the node indices
+		for (auto& scene : mGLTFData.scenes) {
+			for (std::size_t entityId = 0; entityId < scene->entities.size(); ++entityId) {
+				// Check here the Entity indices
+				if (scene->entities[entityId].hasCamera && (scene->entities[entityId].cameraIndex >= mGLTFData.cameras.size())) {
+					return Result(false, "Entity " + std::to_string(entityId) + " with camera index out of bounds");
+				}
+				if (scene->entities[entityId].hasRenderable3Ds && (scene->entities[entityId].renderable3DsIndex >= mGLTFData.meshPrimitives.size())) {
+					return Result(false, "Entity " + std::to_string(entityId) + " with mesh index out of bounds");
+				}
+				if (scene->entities[entityId].hasSkin && (scene->entities[entityId].skinIndex >= mGLTFData.skins.size())) {
+					return Result(false, "Entity " + std::to_string(entityId) + " with skin index out of bounds");
+				}
+			}
+		}
+
+		// Copy the needed data to output
+		output.scenes = std::move(mGLTFData.scenes);
+		output.cameras = std::move(mGLTFData.cameras);
+		output.renderable3DIndices = std::move(mGLTFData.meshPrimitives);
+		output.renderable3Ds = std::move(mGLTFData.renderable3Ds);
+		output.skins = std::move(mGLTFData.skins);
 
 		return Result();
 	}
@@ -775,7 +810,7 @@ namespace se::loaders {
 			return Result(false, "A mesh must containt at least one primitive");
 		}
 
-		std::vector<int>& primitiveIndices = mGLTFData.meshPrimitives.emplace_back();
+		std::vector<std::size_t>& primitiveIndices = mGLTFData.meshPrimitives.emplace_back();
 		for (std::size_t primitiveId = 0; primitiveId < itPrimitives->size(); ++primitiveId) {
 			Result result = parsePrimitive((*itPrimitives)[primitiveId]);
 			if (result) {
@@ -786,6 +821,58 @@ namespace se::loaders {
 			}
 		}
 
+		return Result();
+	}
+
+
+	Result GLTFReader::parseSkin(const nlohmann::json& jsonSkin)
+	{
+		auto skin = std::make_unique<app::Skin>();
+
+		auto itInverseBindMatrices = jsonSkin.find("inverseBindMatrices");
+		if (itInverseBindMatrices != jsonSkin.end()) {
+			skin->inverseBindMatrices.reserve(itInverseBindMatrices->size());
+			for (std::size_t jointId = 0; jointId < itInverseBindMatrices->size(); ++jointId) {
+				std::size_t accessorId = (*itInverseBindMatrices)[jointId];
+				if (accessorId >= mGLTFData.accessors.size()) {
+					return Result(false, "Accessor index " + std::to_string(accessorId) + " out of range");
+				}
+
+				const Accessor& a = mGLTFData.accessors[accessorId];
+				const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+				const Buffer& b = mGLTFData.buffers[bv.bufferId];
+
+				const float* fPtr = reinterpret_cast<const float*>(b.data() + bv.offset + a.byteOffset);
+				skin->inverseBindMatrices.push_back(*reinterpret_cast<const glm::mat4*>(fPtr));
+			}
+		}
+
+		auto itSkeleton = jsonSkin.find("skeleton");
+		if (itSkeleton != jsonSkin.end()) {
+			std::size_t skeletonId = *itSkeleton;
+			if (skeletonId >= mGLTFData.nodes.size()) {
+				return Result(false, "Skeleton index " + std::to_string(skeletonId) + " out of range");
+			}
+
+			skin->skeletonRoot = mGLTFData.nodes[skeletonId].sceneEntity.animationNode;
+		}
+
+		auto itJoints = jsonSkin.find("joints");
+		if (itJoints != jsonSkin.end()) {
+			for (std::size_t jointId = 0; jointId < itJoints->size(); ++jointId) {
+				std::size_t animationNodeId = (*itJoints)[jointId];
+				if (animationNodeId >= mGLTFData.nodes.size()) {
+					return Result(false, "AnimationNode index " + std::to_string(animationNodeId) + " out of range");
+				}
+
+				skin->jointIndices.emplace(mGLTFData.nodes[animationNodeId].sceneEntity.animationNode, jointId);
+			}
+		}
+		else {
+			return Result(false, "A skin must have a joints property");
+		}
+
+		mGLTFData.skins.emplace_back(std::move(skin));
 		return Result();
 	}
 
@@ -843,26 +930,27 @@ namespace se::loaders {
 
 	Result GLTFReader::parseNode(const nlohmann::json& jsonNode)
 	{
-		std::size_t cameraId = 0;
-		bool hasCamera = false;
+		// This indices won't be validated because the cameras, meshes and
+		// skins properties hasn't been readed yet
+
+		Scene::Entity sceneEntity = {};
+
 		auto itCamera = jsonNode.find("camera");
 		if (itCamera != jsonNode.end()) {
-			cameraId = *itCamera;
-			hasCamera = true;
-			if (cameraId >= mGLTFData.cameras.size()) {
-				return Result(false, "Camera index out of bounds");
-			}
+			sceneEntity.hasCamera = true;
+			sceneEntity.cameraIndex = *itCamera;
 		}
 
-		std::size_t meshId = 0;
-		bool hasMesh = false;
 		auto itMesh = jsonNode.find("mesh");
 		if (itMesh != jsonNode.end()) {
-			meshId = *itMesh;
-			hasMesh = true;
-			if (meshId >= mGLTFData.meshPrimitives.size()) {
-				return Result(false, "Mesh index out of bounds");
-			}
+			sceneEntity.hasRenderable3Ds = true;
+			sceneEntity.renderable3DsIndex = *itMesh;
+		}
+
+		auto itSkin = jsonNode.find("skin");
+		if (itSkin != jsonNode.end()) {
+			sceneEntity.hasSkin = true;
+			sceneEntity.skinIndex = *itSkin;
 		}
 
 		std::vector<std::size_t> children;
@@ -913,14 +1001,14 @@ namespace se::loaders {
 			}
 		}
 
-		mGLTFData.nodes.push_back({ cameraId, meshId, hasCamera, hasMesh, children, nodeData });
+		mGLTFData.nodes.push_back({ sceneEntity, children, nodeData });
 		return Result();
 	}
 
 
 	Result GLTFReader::parseScene(const nlohmann::json& jsonScene)
 	{
-		auto scene = std::make_unique<animation::Scene>();
+		auto scene = std::make_unique<Scene>();
 
 		auto itName = jsonScene.find("name");
 		if (itName != jsonScene.end()) {
@@ -928,15 +1016,14 @@ namespace se::loaders {
 		}
 
 		// Create the root nodes of the scene
-		std::vector<animation::SceneNode> rootNodes;
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {
-			rootNodes.reserve(itNodes->size());
+			scene->rootNodes.reserve(itNodes->size());
 			for (std::size_t nodeId : itNodes->get< std::vector<std::size_t> >()) {
 				if (nodeId < mGLTFData.nodes.size()) {
 					// Create the root node
-					auto& node = scene->mRootNodes.emplace_back(mGLTFData.nodes[nodeId].nodeData);
-					mGLTFData.sceneNodes[nodeId] = &node;
+					auto& node = scene->rootNodes.emplace_back(mGLTFData.nodes[nodeId].nodeData);
+					mGLTFData.nodes[nodeId].sceneEntity.animationNode = &node;
 
 					// Build the tree
 					std::vector<std::pair<int, int>> stack = { { -1, nodeId } };
@@ -946,14 +1033,11 @@ namespace se::loaders {
 
 						if (currentId < static_cast<int>(mGLTFData.nodes.size())) {
 							if (parentId >= 0) {
-								animation::SceneNode* parentNode = mGLTFData.sceneNodes[parentId];
-								mGLTFData.sceneNodes[currentId] = static_cast<animation::SceneNode*>(
-									&(*parentNode->emplace(
-										parentNode->cbegin(),
-										mGLTFData.nodes[currentId].nodeData)
-									)
-								);
+								animation::AnimationNode* parentNode = mGLTFData.nodes[parentId].sceneEntity.animationNode;
+								mGLTFData.nodes[currentId].sceneEntity.animationNode = &(*parentNode->emplace(parentNode->cbegin(), mGLTFData.nodes[currentId].nodeData));
 							}
+
+							scene->entities.push_back(mGLTFData.nodes[currentId].sceneEntity);
 
 							for (int childId : mGLTFData.nodes[currentId].children) {
 								stack.emplace_back(currentId, childId);
@@ -1077,7 +1161,7 @@ namespace se::loaders {
 				}
 
 				std::size_t nodeId = *itNode;
-				if (nodeId >= mGLTFData.sceneNodes.size()) {
+				if (nodeId >= mGLTFData.nodes.size()) {
 					return Result(false, "Node index " + std::to_string(nodeId) + " out of range");
 				}
 
@@ -1094,7 +1178,7 @@ namespace se::loaders {
 					return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
 				}
 
-				out->addNode(transformationType, mGLTFData.sceneNodes[nodeId]);
+				out->addNode(transformationType, mGLTFData.nodes[nodeId].sceneEntity.animationNode);
 				return Result();
 			}
 			else {

@@ -31,6 +31,14 @@ namespace se::graphics {
 		 * Local space to World space */
 		glm::mat4 mModelMatrix;
 
+		/** If the Renderable3D has Skeleton or not */
+		bool mHasSkeleton;
+
+		/** The skeleton joints matrices in local space.
+		 * @note	this matrices must have applied the inverse bind matrices
+		 *			of the joints */
+		std::vector<glm::mat4> mJointMatrices;
+
 	public:		// Functions
 		/** Creates a new Renderable3D
 		 *
@@ -41,22 +49,38 @@ namespace se::graphics {
 		Renderable3D(
 			MeshSPtr mesh, MaterialSPtr material,
 			const glm::mat4& modelMatrix = glm::mat4(1.0f)
-		) : mMesh(mesh), mMaterial(material), mModelMatrix(modelMatrix) {};
+		) : mMesh(mesh), mMaterial(material),
+			mModelMatrix(modelMatrix), mHasSkeleton(false) {};
 
-		/** @return a pointer to the Mesh of the Renderable3D */
-		inline const MeshSPtr getMesh() const { return mMesh; };
+		/** @return	a pointer to the Mesh of the Renderable3D */
+		const MeshSPtr getMesh() const { return mMesh; };
 
-		/** @return a pointer to the Material of the Renderable3D */
-		inline const MaterialSPtr getMaterial() const { return mMaterial; };
+		/** @return	a pointer to the Material of the Renderable3D */
+		const MaterialSPtr getMaterial() const { return mMaterial; };
 
-		/** @return the model matrix of the Renderable3D */
-		inline glm::mat4 getModelMatrix() const { return mModelMatrix; };
+		/** @return	the model matrix of the Renderable3D */
+		glm::mat4 getModelMatrix() const { return mModelMatrix; };
+
+		/** @return	true if the Renderable3D has an skeletal animation, false
+		 *			otherwise */
+		bool hasSkeleton() const { return mHasSkeleton; };
+
+		/** @return	the joint matrices of the Renderable3D */
+		const std::vector<glm::mat4>& getJointMatrices() const
+		{ return mJointMatrices; };
 
 		/** Sets the Model Matrix of the Renderable3D
 		 *
 		 * @param	modelMatrix the new model matrix of the Renderable3D */
-		inline void setModelMatrix(const glm::mat4& modelMatrix)
+		void setModelMatrix(const glm::mat4& modelMatrix)
 		{ mModelMatrix = modelMatrix; };
+
+		/** Sets the joint transforms matrices of the Renderable3D
+		 *
+		 * @param	jointMatrices a vector with the joint matrices of the
+		 *			Renderable3D in local space */
+		void setJointMatrices(const std::vector<glm::mat4>& jointMatrices)
+		{ mJointMatrices = jointMatrices; mHasSkeleton = true; };
 	};
 
 }

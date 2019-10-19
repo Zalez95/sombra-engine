@@ -4,30 +4,28 @@
 
 namespace se::app {
 
-	/*void AnimationManager::addEntity(Entity* entity, AnimationUPtr animation)
+	void AnimationManager::addEntity(Entity* entity, animation::AnimationNode* animationNode)
 	{
-		if (!entity || !animation) {
+		if (!entity || !animationNode) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
 			return;
 		}
 
-		mAnimationSystem.addAnimation(animation.get());
-		mAnimationEntities.emplace(entity, std::move(animation));
-		SOMBRA_INFO_LOG << "Entity " << entity << " added successfully";
-	}*/
+		mEntityNodes.emplace(entity, animationNode);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << animationNode << " added successfully";
+	}
 
 
-	void AnimationManager::removeEntity(Entity* /*entity*/)
+	void AnimationManager::removeEntity(Entity* entity)
 	{
-		/*auto itAnimation = mAnimationEntities.find(entity);
-		if (itAnimation != mAnimationEntities.end()) {
-			mAnimationSystem.removeAnimation(itAnimation->second.get());
-			mAnimationEntities.erase(itAnimation);
+		auto itEntity = mEntityNodes.find(entity);
+		if (itEntity != mEntityNodes.end()) {
+			mEntityNodes.erase(itEntity);
 			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 		}
 		else {
 			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
-		}*/
+		}
 	}
 
 
@@ -35,7 +33,9 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Start (" << delta << ")";
 
+		// TODO: update the AnimationNode with the changes made to the entities
 		mAnimationSystem.update(delta);
+		// TODO: update the entities with the changes made to the AnimationNode
 
 		SOMBRA_INFO_LOG << "End";
 	}

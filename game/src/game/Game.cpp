@@ -38,7 +38,6 @@
 #include <se/audio/Source.h>
 
 #include <se/loaders/MeshLoader.h>
-#include <se/loaders/SceneReader.h>
 #include <se/loaders/ImageReader.h>
 #include <se/loaders/FontReader.h>
 #include <se/loaders/TerrainLoader.h>
@@ -241,7 +240,7 @@ namespace game {
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
-		se::loaders::DataHolder dataHolder1;
+		se::loaders::Scenes loadedScenes;
 
 		try {
 			// Readers
@@ -330,7 +329,7 @@ namespace game {
 			mesh2 = std::make_shared<se::graphics::Mesh>(se::loaders::MeshLoader::createGraphicsMesh(rawMesh2));
 
 			// GLTF scenes
-			se::loaders::Result result = sceneReader->load("res/meshes/test.gltf", dataHolder1);
+			se::loaders::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -605,11 +604,26 @@ namespace game {
 		mEntities.push_back(std::move(eL3));
 
 		// GLTF meshes
-		for (auto& e : dataHolder1.entities) {
+		mScene = std::move(loadedScenes.scenes[0]);
+		for (auto& e : mScene->entities) {
 			auto sceneEntity = std::make_unique<se::app::Entity>("sceneEntity");
-			for (std::size_t iRenderable3D : e.renderable3DIndices) {
-				mGraphicsManager->addEntity(sceneEntity.get(), std::move(dataHolder1.renderable3Ds[iRenderable3D]));
+
+			if (e.animationNode) {
+				mAnimationManager->addEntity(sceneEntity.get(), e.animationNode);
 			}
+
+			if (e.hasSkin) {
+				std::shared_ptr<se::app::Skin> skin = std::move(loadedScenes.skins[e.skinIndex]);
+				for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
+					mGraphicsManager->addEntity(sceneEntity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]), skin);
+				}
+			}
+			else {
+				for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
+					mGraphicsManager->addEntity(sceneEntity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]));
+				}
+			}
+
 			mEntities.push_back( std::move(sceneEntity) );
 		}
 	}

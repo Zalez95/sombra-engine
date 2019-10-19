@@ -48,19 +48,19 @@ namespace se::loaders {
 			vao.unbind();
 		}
 
-		if (!rawMesh.jointWeights.empty()) {
-			auto& vbo = vbos.emplace_back(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
+		if (!rawMesh.jointIndices.empty()) {
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.jointIndices.front()), 4 * rawMesh.jointIndices.size());
 			vao.bind();
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointWeightAttribute), TypeId::Float, false, 4, 0);
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointIndexAttribute), TypeId::UnsignedShort, false, 4, 0);
 			vao.unbind();
 		}
 
-		if (!rawMesh.jointIndices.empty()) {
-			auto& vbo = vbos.emplace_back(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
+		if (!rawMesh.jointWeights.empty()) {
+			auto& vbo = vbos.emplace_back(glm::value_ptr(rawMesh.jointWeights.front()), 4 * rawMesh.jointWeights.size());
 			vao.bind();
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointIndexAttribute), TypeId::Float, false, 4, 0);
+			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointWeightAttribute), TypeId::Float, false, 4, 0);
 			vao.unbind();
 		}
 

@@ -53,6 +53,28 @@ namespace se::app {
 	}
 
 
+	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D, SkinSPtr skin)
+	{
+		if (!entity || !renderable3D) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Renderable3D with skin";
+			return;
+		}
+
+		// The Renderable3D initial data is overridden by the entity one
+		graphics::Renderable3D* rPtr = renderable3D.get();
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
+		rPtr->setModelMatrix(translation * rotation * scale);
+
+		// Add the Renderable3D and the skin
+		mLayer3D.addRenderable3D(rPtr);
+		mRenderable3DSkins.emplace(renderable3D.get(), skin);
+		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " and skin " << skin.get() << " added successfully";
+	}
+
+
 	void GraphicsManager::addEntity(Entity* entity, PointLightUPtr pointLight)
 	{
 		if (!entity || !pointLight) {
@@ -122,6 +144,31 @@ namespace se::app {
 				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
 				renderable3D->setModelMatrix(translation * rotation * scale);
+			}
+
+			// Set the joint matrices of the skeletal animation
+			auto itSkin = mRenderable3DSkins.find(renderable3D);
+			if (itSkin != mRenderable3DSkins.end()) {
+				const Skin& skin = *itSkin->second;
+				std::vector<glm::mat4> jointMatrices(skin.inverseBindMatrices.size());
+
+				std::size_t numJoints = 0;
+				glm::mat4 parentTransforms(1.0f);
+				auto nodeIt = skin.skeletonRoot->begin();
+				while (numJoints < jointMatrices.size()) {
+					auto jointIndexIt = skin.jointIndices.find(&(*nodeIt));
+					if (jointIndexIt != skin.jointIndices.end()) {
+						glm::mat4 currentTransforms = parentTransforms * animation::getLocalMatrix(nodeIt->getData());
+						jointMatrices[jointIndexIt->second] = currentTransforms * skin.inverseBindMatrices[jointIndexIt->second];
+						parentTransforms = currentTransforms;
+
+						++numJoints;
+					}
+
+					nodeIt++;
+				}
+
+				renderable3D->setJointMatrices(jointMatrices);
 			}
 		}
 

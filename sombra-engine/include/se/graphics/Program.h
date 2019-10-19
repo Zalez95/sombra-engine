@@ -1,9 +1,6 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <glm/glm.hpp>
-#include "PrimitiveTypes.h"
-
 namespace se::graphics {
 
 	class Shader;
@@ -49,112 +46,38 @@ namespace se::graphics {
 		 * @param	name the name of the uniform variable that we want to set
 		 * @param	value the new value of the variable
 		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, int value) const;
+		template <typename T>
+		void setUniform(const char* name, const T& value) const;
 
 		/** Sets the value of the given uniform variable
 		 *
 		 * @param	location the uniform variable location
 		 * @param	value the new value of the variable
 		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, int value) const;
+		template <typename T>
+		void setUniform(int location, const T& value) const;
 
-		/** Sets the value of the given uniform variable
+		/** Sets the values of the given array of values uniform variable
 		 *
 		 * @param	name the name of the uniform variable that we want to set
-		 * @param	value the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, unsigned int value) const;
+		 * @param	count the number of elements to set
+		 * @param	valuePtr a pointer to the vector of values
+		 * @note	if the location is -1, the data will be ignored */
+		template <typename T>
+		void setUniformV(
+			const char* name, std::size_t count, const T* valuePtr
+		) const;
 
-		/** Sets the value of the given uniform variable
+		/** Sets the values of the given array of values uniform variable
 		 *
 		 * @param	location the uniform variable location
-		 * @param	value the new value of the variable
+		 * @param	count the number of elements to set
+		 * @param	valuePtr a pointer to the vector of values
 		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, unsigned int value) const;
-
-		/** Sets the value of the given uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	value the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, float value) const;
-
-		/** Sets the value of the given uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	value the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, float value) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	vector the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, const glm::vec2& vector) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	vector the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, const glm::vec2& vector) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	vector the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, const glm::vec3& vector) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	vector the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, const glm::vec3& vector) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	vector the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, const glm::vec4& vector) const;
-
-		/** Sets the value of the given vector uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	vector the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, const glm::vec4& vector) const;
-
-		/** Sets the value of the given matrix uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	matrix the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, const glm::mat3& matrix) const;
-
-		/** Sets the value of the given matrix uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	matrix the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, const glm::mat3& matrix) const;
-
-		/** Sets the value of the given matrix uniform variable
-		 *
-		 * @param	name the name of the uniform variable that we want to set
-		 * @param	matrix the new value of the variable
-		 * @note	if the name wasn't found, the data will be ignored */
-		void setUniform(const char* name, const glm::mat4& matrix) const;
-
-		/** Sets the value of the given matrix uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	matrix the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		void setUniform(int location, const glm::mat4& matrix) const;
+		template <typename T>
+		void setUniformV(
+			int location, std::size_t count, const T* valuePtr
+		) const;
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
@@ -165,5 +88,7 @@ namespace se::graphics {
 	};
 
 }
+
+#include "Program.hpp"
 
 #endif		// PROGRAM_H

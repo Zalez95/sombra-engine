@@ -7,6 +7,7 @@
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Lights.h"
 #include "../graphics/3D/Renderable3D.h"
+#include "Skin.h"
 
 namespace se::app {
 
@@ -23,6 +24,7 @@ namespace se::app {
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
 		using PointLightUPtr = std::unique_ptr<graphics::PointLight>;
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
+		using SkinSPtr = std::shared_ptr<Skin>;
 
 	private:	// Attributes
 		/** The System used for rendering the data of the Entities */
@@ -34,6 +36,7 @@ namespace se::app {
 		std::map<Entity*, CameraUPtr> mCameraEntities;
 		std::map<Entity*, PointLightUPtr> mPointLightEntities;
 		std::multimap<Entity*, Renderable3DUPtr> mRenderable3DEntities;
+		std::map<graphics::Renderable3D*, SkinSPtr> mRenderable3DSkins;
 
 	public:		// Functions
 		/** Creates a new GraphicsManager
@@ -61,6 +64,22 @@ namespace se::app {
 		 * @note	The Renderable3D initial data is overridden by the Entity
 		 *			one */
 		void addEntity(Entity* entity, Renderable3DUPtr renderable3D);
+
+		/** Adds the given Entity and its Renderable3D and skin data to the
+		 * GraphicsManager
+		 *
+		 * @param	entity a pointer to the Entity to add to the
+		 *			GraphicsManager
+		 * @param	renderable3D a pointer to the Renderable3D to add to the
+		 *			GraphicsManager
+		 * @param	skin a pointer to the Skin needed for the skeletal animation
+		 *			of the renderable3D mesh
+		 * @note	The Renderable3D initial data is overridden by the Entity
+		 *			one */
+		void addEntity(
+			Entity* entity,
+			Renderable3DUPtr renderable3D, SkinSPtr skin
+		);
 
 		/** Adds the given Entity and its PointLight data to the
 		 * GraphicsManager

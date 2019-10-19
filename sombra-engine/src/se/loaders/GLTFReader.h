@@ -21,14 +21,15 @@ namespace se::loaders {
 		using MaterialSPtr = std::shared_ptr<graphics::Material>;
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
+		using SkinUPtr = std::unique_ptr<app::Skin>;
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
-		using SceneUPtr = std::unique_ptr<animation::Scene>;
+		using SceneUPtr = std::unique_ptr<Scene>;
 		using Vec3Animation = animation::IAnimation<glm::vec3>;
 		using QuatAnimation = animation::IAnimation<glm::quat>;
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
-		using MeshPrimitives = std::vector<int>;
+		using MeshPrimitives = std::vector<std::size_t>;
 		using Buffer = std::vector<std::byte>;
 
 		/** Struct FileFormat, holds the version of a valid GLTF file format */
@@ -63,29 +64,9 @@ namespace se::loaders {
 		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
 		struct Node
 		{
-			std::size_t camera, mesh;
-			bool hasCamera, hasMesh;
+			Scene::Entity sceneEntity;
 			std::vector<std::size_t> children;
 			animation::NodeData nodeData;
-		};
-
-		/** Struct Animation, holds the data of a GLTF Animation */
-		struct Animation
-		{
-			struct Sampler
-			{
-				int input, output;
-			};
-
-			struct Channel
-			{
-				int sampler;//sampler id in samplers
-				int target;//node id
-			};
-
-			std::string name;
-			std::vector<Sampler> samplers;
-			std::vector<Channel> channels;
 		};
 
 		/** Struct GLTFData, it holds validated GLTF data */
@@ -100,9 +81,9 @@ namespace se::loaders {
 			std::vector<MaterialSPtr> materials;
 			std::vector<Renderable3DUPtr> renderable3Ds;
 			std::vector<MeshPrimitives> meshPrimitives;
+			std::vector<SkinUPtr> skins;
 			std::vector<CameraUPtr> cameras;
 			std::vector<Node> nodes;
-			std::vector<animation::SceneNode*> sceneNodes;
 			std::vector<SceneUPtr> scenes;
 			std::vector<IAnimatorUPtr> animators;
 		};
@@ -121,12 +102,13 @@ namespace se::loaders {
 		/** Creates a new GLTFReader */
 		GLTFReader();
 
-		/** Parses the GLTF Scene located at the given file
+		/** Parses the given GLTF file and stores the result in the given
+		 * Scenes object
 		 *
 		 * @param	path the path to the GLTF file to parse
-		 * @param	output the DataHolder where the Scene data will be stored
+		 * @param	output the Scenes object where the file data will be stored
 		 * @return	a Result object with the result of the load operation */
-		Result load(const std::string& path, DataHolder& output) override;
+		Result load(const std::string& path, Scenes& output) override;
 	private:
 		/** Reads the JSON file located at the given path
 		 *
@@ -135,12 +117,13 @@ namespace se::loaders {
 		 * @return	a Result object with the result of the read operation */
 		static Result readJSON(const std::string& path, nlohmann::json& output);
 
-		/** Parses the given JSON object to the given output object
+		/** Parses the given JSON object to the given Scenes object
 		 *
 		 * @param	jsonGLTF the JSON object where the source data is stored
-		 * @param	output the DataHolder where the Scene data will be stored
+		 * @param	output the Scenes object where the loaded data will be
+		 *			stored
 		 * @return	a Result object with the result of the parse operation */
-		Result parseGLTF(const nlohmann::json& jsonGLTF, DataHolder& output);
+		Result parseGLTF(const nlohmann::json& jsonGLTF, Scenes& output);
 
 		/** Checks the version of the given GLTF JSON asset
 		 *
@@ -218,6 +201,13 @@ namespace se::loaders {
 		 * @note	Morph targets arent supported yet */
 		Result parseMesh(const nlohmann::json& jsonMesh);
 
+		/** Creates a new Skin from the given GLTF JSON Skin and appends
+		 * it to the mGLTFData
+		 *
+		 * @param	jsonSkin the JSON object with the Skin to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseSkin(const nlohmann::json& jsonSkin);
+
 		/** Creates a new Camera from the given GLTF JSON Camera and appends
 		 * it to mGLTFData
 		 *
@@ -275,11 +265,6 @@ namespace se::loaders {
 		 * @param	jsonAnimation the JSON object with the Animation to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseAnimation(const nlohmann::json& jsonAnimation);
-
-		// Result loadTextureInfo(const nlohmann::json& jsonObject) {};
-		// Result loadExtension(const nlohmann::json& jsonObject) {};
-		// Result loadExtras(const nlohmann::json& jsonObject) {};
-		// Result loadSkin(const nlohmann::json& jsonObject) {};
 	};
 
 }

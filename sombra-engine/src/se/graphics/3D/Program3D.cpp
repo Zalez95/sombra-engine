@@ -1,6 +1,8 @@
+#include <array>
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 #include <GL/glew.h>
 #include "se/graphics/3D/Program3D.h"
 #include "se/graphics/Shader.h"
@@ -10,16 +12,23 @@
 
 namespace se::graphics {
 
-	Program3D::Program3D()
+	bool Program3D::init()
 	{
-		initShaders();
+		if (!initShaders("res/shaders/vertex3D.glsl", "res/shaders/fragment3D.glsl")) {
+			return false;
+		}
+
 		initUniformLocations();
+
+		return true;
 	}
 
 
-	Program3D::~Program3D()
+	void Program3D::end()
 	{
-		delete mProgram;
+		if (mProgram) {
+			delete mProgram;
+		}
 	}
 
 
@@ -57,7 +66,7 @@ namespace se::graphics {
 	{
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
 
-		bool useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
+		int useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.useBaseColorTexture, useBaseColorTexture);
 		if (useBaseColorTexture) {
 			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.baseColorTexture, TextureUnits::kBaseColor);
@@ -67,28 +76,28 @@ namespace se::graphics {
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicFactor, material.pbrMetallicRoughness.metallicFactor);
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.roughnessFactor, material.pbrMetallicRoughness.roughnessFactor);
 
-		bool useMetallicRoughnessTexture = (material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
+		int useMetallicRoughnessTexture = (material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
 		mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.useMetallicRoughnessTexture, useMetallicRoughnessTexture);
 		if (useMetallicRoughnessTexture) {
 			mProgram->setUniform(mUniformLocations.material.pbrMetallicRoughness.metallicRoughnessTexture, TextureUnits::kMetallicRoughness);
 			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
 		}
 
-		bool useNormalTexture = (material.normalTexture != nullptr);
+		int useNormalTexture = (material.normalTexture != nullptr);
 		mProgram->setUniform(mUniformLocations.material.useNormalTexture, useNormalTexture);
 		if (useNormalTexture) {
 			mProgram->setUniform(mUniformLocations.material.normalTexture, TextureUnits::kNormal);
 			material.normalTexture->bind(TextureUnits::kNormal);
 		}
 
-		bool useOcclusionTexture = (material.occlusionTexture != nullptr);
+		int useOcclusionTexture = (material.occlusionTexture != nullptr);
 		mProgram->setUniform(mUniformLocations.material.useOcclusionTexture, useOcclusionTexture);
 		if (useOcclusionTexture) {
 			mProgram->setUniform(mUniformLocations.material.occlusionTexture, TextureUnits::kOcclusion);
 			material.occlusionTexture->bind(TextureUnits::kOcclusion);
 		}
 
-		bool useEmissiveTexture = (material.emissiveTexture != nullptr);
+		int useEmissiveTexture = (material.emissiveTexture != nullptr);
 		mProgram->setUniform(mUniformLocations.material.useEmissiveTexture, useEmissiveTexture);
 		if (useEmissiveTexture) {
 			mProgram->setUniform(mUniformLocations.material.emissiveTexture, TextureUnits::kEmissive);
@@ -97,7 +106,7 @@ namespace se::graphics {
 
 		mProgram->setUniform(mUniformLocations.material.emissiveFactor, material.emissiveFactor);
 
-		bool checkAlphaCutoff = (material.alphaMode == AlphaMode::Mask);
+		int checkAlphaCutoff = (material.alphaMode == AlphaMode::Mask);
 		mProgram->setUniform(mUniformLocations.material.checkAlphaCutoff, checkAlphaCutoff);
 		if (checkAlphaCutoff) {
 			mProgram->setUniform(mUniformLocations.material.alphaCutoff, material.alphaCutoff);
@@ -107,38 +116,54 @@ namespace se::graphics {
 
 	void Program3D::setLights(const std::vector<const PointLight*>& pointLights) const
 	{
-		int numPointLights = (static_cast<int>(pointLights.size()) > kMaxPointLights)? kMaxPointLights : static_cast<int>(pointLights.size());
+		int numPointLights = std::min(static_cast<int>(pointLights.size()), kMaxPointLights);
+
 		mProgram->setUniform(mUniformLocations.numPointLights, numPointLights);
 
+		std::array<glm::vec3, kMaxPointLights> positions;
 		for (int i = 0; i < numPointLights; ++i) {
 			const PointLight& pLight = *pointLights[i];
 			mProgram->setUniform(mUniformLocations.pointLights[i].baseLight.lightColor, pLight.base.lightColor);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.constant, pLight.attenuation.constant);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.linear, pLight.attenuation.linear);
 			mProgram->setUniform(mUniformLocations.pointLights[i].attenuation.exponential, pLight.attenuation.exponential);
-			mProgram->setUniform(mUniformLocations.pointLightsPositions[i], pLight.position);
+			positions[i] = pLight.position;
 		}
+
+		mProgram->setUniformV(mUniformLocations.pointLightsPositions, numPointLights, positions.data());
 	}
 
 // Private functions
-	void Program3D::initShaders()
+	bool Program3D::initShaders(const char* vertexShaderPath, const char* fragmentShaderPath)
 	{
 		// 1. Read the shader text from the shader files
 		std::ifstream reader;
 
 		std::string vertexShaderText;
 		std::stringstream vertexShaderStream;
-		reader.open("res/shaders/vertex3D.glsl");
-		vertexShaderStream << reader.rdbuf();
-		vertexShaderText = vertexShaderStream.str();
-		reader.close();
+		reader.open(vertexShaderPath);
+		if (reader.good()) {
+			vertexShaderStream << reader.rdbuf();
+			vertexShaderText = vertexShaderStream.str();
+			reader.close();
+		}
+		else {
+			reader.close();
+			return false;
+		}
 
 		std::string fragmentShaderText;
 		std::stringstream fragmentShaderStream;
-		reader.open("res/shaders/fragment3D.glsl");
-		fragmentShaderStream << reader.rdbuf();
-		fragmentShaderText = fragmentShaderStream.str();
-		reader.close();
+		reader.open(fragmentShaderPath);
+		if (reader.good()) {
+			fragmentShaderStream << reader.rdbuf();
+			fragmentShaderText = fragmentShaderStream.str();
+			reader.close();
+		}
+		else {
+			reader.close();
+			return false;
+		}
 
 		Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
 		Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
@@ -146,6 +171,8 @@ namespace se::graphics {
 		// 2. Create the Program
 		const Shader* shaders[] = { &vertexShader, &fragmentShader };
 		mProgram = new Program(shaders, 2);
+
+		return true;
 	}
 
 
@@ -172,8 +199,8 @@ namespace se::graphics {
 		mUniformLocations.material.checkAlphaCutoff		= mProgram->getUniformLocation("uMaterial.checkAlphaCutoff");
 		mUniformLocations.material.alphaCutoff			= mProgram->getUniformLocation("uMaterial.alphaCutoff");
 
-		mUniformLocations.numPointLights			= mProgram->getUniformLocation("uNumPointLights");
-		for (std::size_t i = 0; i < kMaxPointLights; ++i) {
+		mUniformLocations.numPointLights = mProgram->getUniformLocation("uNumPointLights");
+		for (int i = 0; i < kMaxPointLights; ++i) {
 			mUniformLocations.pointLights[i].baseLight.lightColor = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].baseLight.lightColor").c_str()
 			);
@@ -186,10 +213,8 @@ namespace se::graphics {
 			mUniformLocations.pointLights[i].attenuation.exponential = mProgram->getUniformLocation(
 				("uPointLights[" + std::to_string(i) + "].attenuation.exponential").c_str()
 			);
-			mUniformLocations.pointLightsPositions[i] = mProgram->getUniformLocation(
-				("uPointLightsPositions[" + std::to_string(i) + "]").c_str()
-			);
 		}
+		mUniformLocations.pointLightsPositions = mProgram->getUniformLocation("uPointLightsPositions");
 	}
 
 }

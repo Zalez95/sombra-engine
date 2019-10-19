@@ -24,8 +24,9 @@ namespace se::app {
 		 * Entities */
 		animation::AnimationSystem& mAnimationSystem;
 
-		/** All the Animation Entities added to the AnimationManager */
-		//std::map<Entity*, AnimationUPtr> mAnimationEntities;
+		/** Maps the Entities added to the AnimationManager with their
+		 * respective AnimationNode */
+		std::map<Entity*, animation::AnimationNode*> mEntityNodes;
 
 	public:		// Functions
 		/** Creates a new AnimationManager
@@ -35,13 +36,15 @@ namespace se::app {
 		AnimationManager(animation::AnimationSystem& animationSystem) :
 			mAnimationSystem(animationSystem) {};
 
-		/** Adds the given Entity to the AnimationManager
+		/** Adds the given Entity to the AnimationManager with the given
+		 * AnimationNode, so when the AnimationNode or any of its parents is
+		 * updated due to an animation the Entity will also be updated
 		 *
 		 * @param	entity a pointer to the Entity to add to the
 		 *			AnimationManager
-		 * @param	animation a pointer to the Animation to add to the
+		 * @param	animationNode a pointer to the AnimationNode to add to the
 		 *			AnimationManager */
-		//void addEntity(Entity* entity, AnimationUPtr animation);
+		void addEntity(Entity* entity, animation::AnimationNode* animationNode);
 
 		/** Removes the given Entity from the AnimationManager
 		 *

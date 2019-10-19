@@ -11,7 +11,7 @@ namespace se::animation {
 
 	/**
 	 * Class Vec3Animator, it's an IAnimator used to apply vec3 transformations
-	 * to its SceneNodes
+	 * to its AnimationNodes
 	 */
 	class Vec3Animator : public IAnimator
 	{
@@ -33,15 +33,15 @@ namespace se::animation {
 		 *
 		 * @param	elapsedTime the time elapsed since the last call to the
 		 *			function
-		 * @note	the animation will be applied only to the SceneNodes added
-		 *			with a Translation or Scale transformation */
+		 * @note	the animation will be applied only to the AnimationNodes
+		 *			added with a Translation or Scale transformation */
 		virtual void animate(float elapsedTime) override;
 	};
 
 
 	/**
 	 * Class QuatAnimator, it's an IAnimator used to apply quat transformations
-	 * to its SceneNodes
+	 * to its AnimationNodes
 	 */
 	class QuatAnimator : public IAnimator
 	{
@@ -63,8 +63,8 @@ namespace se::animation {
 		 *
 		 * @param	elapsedTime the time elapsed since the last call to the
 		 *			function
-		 * @note	the animation will be applied only to the SceneNodes added
-		 *			with a Rotation transformation */
+		 * @note	the animation will be applied only to the AnimationNodes
+		 *			added with a Rotation transformation */
 		virtual void animate(float elapsedTime) override;
 	};
 

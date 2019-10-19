@@ -4,6 +4,7 @@
 #include <queue>
 #include <glm/glm.hpp>
 #include "Program3D.h"
+#include "Program3DSkinning.h"
 
 namespace se::graphics {
 
@@ -22,10 +23,22 @@ namespace se::graphics {
 		/** The Program of the renderer */
 		Program3D mProgram;
 
+		/** The Program with skinning animation of the renderer */
+		Program3DSkinning mSkinningProgram;
+
 		/** The Renderable3Ds that we want to render */
 		std::queue<const Renderable3D*> mRenderable3Ds;
 
+		/** The Renderable3Ds that with skeletal animation we want to render */
+		std::queue<const Renderable3D*> mSkinnedRenderable3Ds;
+
 	public:		// Functions
+		/** Creates a new Renderer3D */
+		Renderer3D();
+
+		/** Class destructor */
+		~Renderer3D();
+
 		/** Submits the given Renderable3D to the queue of Renderable3Ds to
 		 * render
 		 *
@@ -44,6 +57,18 @@ namespace se::graphics {
 			const Camera* camera,
 			const std::vector<const PointLight*>& pointLights
 		);
+	private:
+		/** Sets the uniforms and other properties needed for rendering with the
+		 * given material
+		 *
+		 * @param	material the material to use
+		 * @param	program the program to use */
+		void startMaterial(const Material& material, Program3D& program);
+
+		/** Clears the properties setted for rendering with the given material
+		 *
+		 * @param	material the used material */
+		void endMaterial(const Material& material);
 	};
 
 }

@@ -7,7 +7,8 @@ namespace se::graphics {
 	 * Class ILayer. It's an interface that the GraphicsSystem will use to
 	 * render all the Graphics elements.
 	 */
-	class ILayer {
+	class ILayer
+	{
 	public:		// Functions
 		/** Class destructor */
 		virtual ~ILayer() = default;

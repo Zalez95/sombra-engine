@@ -1,5 +1,6 @@
 #include <string>
 #include <stdexcept>
+#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "se/graphics/Program.h"
 #include "se/graphics/Shader.h"
@@ -88,99 +89,115 @@ namespace se::graphics {
 	}
 
 
-	void Program::setUniform(const char* name, int value) const
-	{
-		GL_WRAP( glUniform1i(getUniformLocation(name), value) );
-	}
-
-
-	void Program::setUniform(int location, int value) const
+	template <>
+	void Program::setUniform<int>(int location, const int& value) const
 	{
 		GL_WRAP( glUniform1i(location, value) );
 	}
 
 
-	void Program::setUniform(const char* name, unsigned int value) const
+	template <>
+	void Program::setUniformV<int>(int location, std::size_t count, const int* valuePtr) const
 	{
-		GL_WRAP( glUniform1ui(getUniformLocation(name), value) );
+		GL_WRAP( glUniform1iv(location, count, valuePtr) );
 	}
 
 
-	void Program::setUniform(int location, unsigned int value) const
+	template <>
+	void Program::setUniform<unsigned int>(int location, const unsigned int& value) const
 	{
 		GL_WRAP( glUniform1ui(location, value) );
 	}
 
 
-	void Program::setUniform(const char* name, float value) const
+	template <>
+	void Program::setUniformV<unsigned int>(int location, std::size_t count, const unsigned int* valuePtr) const
 	{
-		GL_WRAP( glUniform1f(getUniformLocation(name), value) );
+		GL_WRAP( glUniform1uiv(location, count, valuePtr) );
 	}
 
 
-	void Program::setUniform(int location, float value) const
+	template <>
+	void Program::setUniform<float>(int location, const float& value) const
 	{
 		GL_WRAP( glUniform1f(location, value) );
 	}
 
 
-	void Program::setUniform(const char* name, const glm::vec2& vector) const
+	template <>
+	void Program::setUniformV<float>(int location, std::size_t count, const float* valuePtr) const
 	{
-		GL_WRAP( glUniform2f(getUniformLocation(name), vector.x, vector.y) );
+		GL_WRAP( glUniform1fv(location, count, valuePtr) );
 	}
 
 
-	void Program::setUniform(int location, const glm::vec2& vector) const
+	template <>
+	void Program::setUniform<glm::vec2>(int location, const glm::vec2& value) const
 	{
-		GL_WRAP( glUniform2f(location, vector.x, vector.y) );
+		GL_WRAP( glUniform2f(location, value.x, value.y) );
 	}
 
 
-	void Program::setUniform(const char* name, const glm::vec3& vector) const
+	template <>
+	void Program::setUniformV<glm::vec2>(int location, std::size_t count, const glm::vec2* valuePtr) const
 	{
-		GL_WRAP( glUniform3f(getUniformLocation(name), vector.x, vector.y, vector.z) );
+		GL_WRAP( glUniform2fv(location, count, glm::value_ptr(*valuePtr)) );
 	}
 
 
-	void Program::setUniform(int location, const glm::vec3& vector) const
+	template <>
+	void Program::setUniform<glm::vec3>(int location, const glm::vec3& value) const
 	{
-		GL_WRAP( glUniform3f(location, vector.x, vector.y, vector.z) );
+		GL_WRAP( glUniform3f(location, value.x, value.y, value.z) );
 	}
 
 
-	void Program::setUniform(const char* name, const glm::vec4& vector) const
+	template <>
+	void Program::setUniformV<glm::vec3>(int location, std::size_t count, const glm::vec3* valuePtr) const
 	{
-		GL_WRAP( glUniform4f(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w) );
+		GL_WRAP( glUniform3fv(location, count, glm::value_ptr(*valuePtr)) );
 	}
 
 
-	void Program::setUniform(int location, const glm::vec4& vector) const
+	template <>
+	void Program::setUniform<glm::vec4>(int location, const glm::vec4& value) const
 	{
-		GL_WRAP( glUniform4f(location, vector.x, vector.y, vector.z, vector.w) );
+		GL_WRAP( glUniform4f(location, value.x, value.y, value.z, value.w) );
 	}
 
 
-	void Program::setUniform(const char* name, const glm::mat3& matrix) const
+	template <>
+	void Program::setUniformV<glm::vec4>(int location, std::size_t count, const glm::vec4* valuePtr) const
 	{
-		GL_WRAP( glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniform4fv(location, count, glm::value_ptr(*valuePtr)) );
 	}
 
 
-	void Program::setUniform(int location, const glm::mat3& matrix) const
+	template <>
+	void Program::setUniformV<glm::mat3>(int location, std::size_t count, const glm::mat3* valuePtr) const
 	{
-		GL_WRAP( glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix3fv(location, count, GL_FALSE, glm::value_ptr(*valuePtr)) );
 	}
 
 
-	void Program::setUniform(const char* name, const glm::mat4& matrix) const
+	template <>
+	void Program::setUniform<glm::mat3>(int location, const glm::mat3& value) const
 	{
-		GL_WRAP( glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)) );
+		setUniformV(location, 1, &value);
 	}
 
 
-	void Program::setUniform(int location, const glm::mat4& matrix) const
+	template <>
+	void Program::setUniformV<glm::mat4>(int location, std::size_t count, const glm::mat4* valuePtr) const
 	{
-		GL_WRAP( glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix)) );
+		GL_WRAP( glUniformMatrix4fv(location, count, GL_FALSE, glm::value_ptr(*valuePtr)) );
+	}
+
+
+	template <>
+	void Program::setUniform<glm::mat4>(int location, const glm::mat4& value) const
+	{
+		setUniformV(location, 1, &value);
 	}
 
 

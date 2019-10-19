@@ -2,25 +2,23 @@
 #define I_ANIMATOR_H
 
 #include <vector>
+#include "se/animation/AnimationNode.h"
 
 namespace se::animation {
 
-	class SceneNode;
-
-
 	/**
-	 * Class IAnimator, it's used to apply an animation to the nodes of a scene
+	 * Class IAnimator, it's used to apply an animation to the AnimationNodes
 	 */
 	class IAnimator
 	{
 	public:		// Nested types
-		/** The type of transformation to apply to a SceneNode */
+		/** The type of transformation to apply to a AnimationNode */
 		enum class TransformationType
 		{
 			Translation, Rotation, Scale
 		};
 	protected:
-		/** Maps the SceneNodes with the type of transformation to apply to
+		/** Maps the AnimationNodes with the type of transformation to apply to
 		 * them */
 		struct AnimatedNode
 		{
@@ -28,7 +26,7 @@ namespace se::animation {
 			TransformationType type;
 
 			/** The node to apply the transforms */
-			SceneNode* node;
+			AnimationNode* node;
 		};
 
 	protected:	// Attributes
@@ -48,8 +46,9 @@ namespace se::animation {
 		/** Adds a Node to animate
 		 *
 		 * @param	type the type of transformation to apply to the node
-		 * @param	node a pointer to the node to apply the transforms */
-		void addNode(TransformationType type, SceneNode* node)
+		 * @param	node a pointer to the AnimatioNode to apply the
+		 *			transforms */
+		void addNode(TransformationType type, AnimationNode* node)
 		{ mNodes.push_back({ type, node }); };
 
 		/** Restarts the animation to its original state */

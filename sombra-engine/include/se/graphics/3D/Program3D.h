@@ -12,13 +12,12 @@ namespace se::graphics {
 
 
 	/**
-	 * Program3D class, it's a high level Program used by the
-	 * SceneRenderer so it doesn't need to search and set the uniform
-	 * variables
+	 * Program3D class, it's a high level Program used by the SceneRenderer so
+	 * it doesn't need to search and set the uniform variables
 	 */
 	class Program3D
 	{
-	private:	// Nested types
+	protected:	// Nested types
 		struct TextureUnits {
 			static constexpr int kBaseColor			= 0;
 			static constexpr int kMetallicRoughness	= 1;
@@ -27,7 +26,7 @@ namespace se::graphics {
 			static constexpr int kEmissive			= 4;
 		};
 
-	private:	// Attributes
+	protected:	// Attributes
 		/** The maximum number of point lights in the program */
 		static constexpr int kMaxPointLights = 4;
 
@@ -81,15 +80,23 @@ namespace se::graphics {
 					int exponential;
 				} attenuation;
 			} pointLights[kMaxPointLights];
-			int pointLightsPositions[kMaxPointLights];
+			int pointLightsPositions;
 		} mUniformLocations;
 
 	public:		// Functions
 		/** Creates a new Program3D */
-		Program3D();
+		Program3D() : mProgram(nullptr) {};
 
 		/** Class destructor */
-		~Program3D();
+		virtual ~Program3D() {};
+
+		/** Function called for initializing all the needed resources
+		 *
+		 * @return	true on success, false otherwise */
+		virtual bool init();
+
+		/** Function called for cleaning all the needed resources */
+		virtual void end();
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
@@ -131,14 +138,24 @@ namespace se::graphics {
 		 *			there are more lights in the given vector only the first
 		 *			lights of the vector will be submited */
 		void setLights(const std::vector<const PointLight*>& pointLights) const;
-	private:
+	protected:
 		/** Creates the Shaders and the Program that the current class will use
-		 * for setting the uniform variables */
-		void initShaders();
+		 * for setting the uniform variables
+		 *
+		 * @param	vertexShaderPath the path to the vertex shader of the new
+		 *			Program
+		 * @param	fragmentShaderPath the path to the fragment shader of the
+		 *			new Program
+		 * @return	true if the shaders were loaded successfully, false
+		 *			otherwise */
+		virtual bool initShaders(
+			const char* vertexShaderPath,
+			const char* fragmentShaderPath
+		);
 
 		/** Gets the location of all the uniform variables and stores them in
 		 * mUniformLocations */
-		void initUniformLocations();
+		virtual void initUniformLocations();
 	};
 
 }
