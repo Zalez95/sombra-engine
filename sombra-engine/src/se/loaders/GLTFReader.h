@@ -7,7 +7,6 @@
 #include "se/loaders/SceneReader.h"
 #include "se/utils/Image.h"
 #include "se/graphics/Texture.h"
-#include "se/animation/IAnimator.h"
 #include "se/animation/IAnimation.h"
 
 namespace se::loaders {

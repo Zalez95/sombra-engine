@@ -44,7 +44,8 @@ namespace se::app {
 		// Update the entities
 		const window::InputData& inputData = mWindowSystem.getInputData();
 		for (Entity* entity : mEntities) {
-			entity->updated.reset( static_cast<int>(EntityUpdate::Input) );
+			// Reset the Entity input update
+			entity->updated.reset( static_cast<int>(Entity::Update::Input) );
 
 			doMouseInput(entity, inputData);
 			doKeyboardInput(entity, inputData);
@@ -77,7 +78,7 @@ namespace se::app {
 
 			// Apply the change in orientation
 			entity->orientation = glm::normalize(qPitch * qYaw * entity->orientation);
-			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
+			entity->updated.set( static_cast<int>(Entity::Update::Input) );
 		}
 	}
 
@@ -101,17 +102,17 @@ namespace se::app {
 		float length = glm::length(direction);
 		if (length > 0.0f) {
 			entity->velocity += kRunSpeed * direction / length;
-			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
+			entity->updated.set( static_cast<int>(Entity::Update::Input) );
 		}
 
 		// Add the jump velocity
 		if (inputData.keys[SE_KEY_SPACE]) {
 			entity->velocity += kJumpSpeed * up;
-			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
+			entity->updated.set( static_cast<int>(Entity::Update::Input) );
 		}
 		if (inputData.keys[SE_KEY_LEFT_CONTROL]) {
 			entity->velocity -= kJumpSpeed * up;
-			entity->updated.set( static_cast<int>(EntityUpdate::Input) );
+			entity->updated.set( static_cast<int>(Entity::Update::Input) );
 		}
 	}
 

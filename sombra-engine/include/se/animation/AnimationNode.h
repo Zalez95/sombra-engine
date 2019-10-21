@@ -1,13 +1,32 @@
 #ifndef ANIMATION_NODE_H
 #define ANIMATION_NODE_H
 
-#include <vector>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "../utils/TreeNode.h"
 
 namespace se::animation {
+
+	/**
+	 * Struct NodeTransforms, holds all the transforms of a Node
+	 */
+	struct NodeTransforms
+	{
+		/** The position transformation */
+		glm::vec3 position;
+
+		/** The orientation transformation */
+		glm::quat orientation;
+
+		/** The scale transformation */
+		glm::vec3 scale;
+
+		/** Creates a new NodeTransforms */
+		NodeTransforms() :
+			position(0.0f), orientation(1.0f, glm::vec3(0.0f)), scale(1.0f) {};
+	};
+
 
 	/**
 	 * Struct NodeData. It holds the data of an AnimationNode.
@@ -17,42 +36,36 @@ namespace se::animation {
 		/** The name of the Node */
 		std::string name;
 
-		/** The Node position in relation to the parent Node */
-		glm::vec3 position;
+		/** The node transforms in relation to its parent */
+		NodeTransforms localTransforms;
 
-		/** The Node orientation in relation to the parent Node */
-		glm::quat orientation;
+		/** The node transforms in world space */
+		NodeTransforms worldTransforms;
 
-		/** The Node scale in relation to the parent Node */
-		glm::vec3 scale;
+		/** If the node has been updated by the AnimationSystem or not */
+		bool animated;
 
-		/** If the Node data has been updated or not */
-		bool changed;
+		/** If the world transform of the node has been updated by the
+		 * AnimationSystem or not */
+		bool worldTransformsUpdated;
 
-		/** The transformations of the Node in world space */
-		glm::mat4 worldTransforms;
-
-		/** Creates a new NodeData */
-		NodeData();
+		/** Creates a new NodeData
+		 *
+		 * @param	name the name of the NodeData, empty by default */
+		NodeData(const std::string& name = "") :
+			name(name), animated(false), worldTransformsUpdated(false) {};
 	};
 
 
 	using AnimationNode = utils::TreeNode<NodeData>;
 
 
-	/** Calculates the local transformation matrix of the given NodeData
-	 *
-	 * @param	data the node data with the local transformations
-	 * @return	the local transformations matrix */
-	glm::mat4 getLocalMatrix(const NodeData& data);
-
-
-	/** Updates the world matrices of the given AnimationNode and its
+	/** Updates the world transforms of the given AnimationNode and its
 	 * descendants with the changes made to their parents or local transforms
 	 *
 	 * @param	node the root AnimationNode of the hierarchy of Nodes to
 	 *			update */
-	void updateWorldMatrices(AnimationNode& rootNode);
+	void updateWorldTransforms(AnimationNode& rootNode);
 
 }
 

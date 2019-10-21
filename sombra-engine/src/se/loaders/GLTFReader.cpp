@@ -306,11 +306,12 @@ namespace se::loaders {
 		}
 
 		// Copy the needed data to output
-		output.scenes = std::move(mGLTFData.scenes);
-		output.cameras = std::move(mGLTFData.cameras);
-		output.renderable3DIndices = std::move(mGLTFData.meshPrimitives);
-		output.renderable3Ds = std::move(mGLTFData.renderable3Ds);
-		output.skins = std::move(mGLTFData.skins);
+		output.scenes				= std::move(mGLTFData.scenes);
+		output.cameras				= std::move(mGLTFData.cameras);
+		output.renderable3DIndices	= std::move(mGLTFData.meshPrimitives);
+		output.renderable3Ds		= std::move(mGLTFData.renderable3Ds);
+		output.skins				= std::move(mGLTFData.skins);
+		output.animators			= std::move(mGLTFData.animators);
 
 		return Result();
 	}
@@ -611,7 +612,7 @@ namespace se::loaders {
 			material->pbrMetallicRoughness.roughnessFactor = 1.0f;
 			auto itRoughnessFactor = itPBRMetallicRoughness->find("roughnessFactor");
 			if (itRoughnessFactor != itPBRMetallicRoughness->end()) {
-				material->pbrMetallicRoughness.roughnessFactor = *itPBRMetallicRoughness;
+				material->pbrMetallicRoughness.roughnessFactor = *itRoughnessFactor;
 			}
 
 			auto itMetallicRoughnessTexture = itPBRMetallicRoughness->find("metallicRoughnessTexture");
@@ -829,34 +830,6 @@ namespace se::loaders {
 	{
 		auto skin = std::make_unique<app::Skin>();
 
-		auto itInverseBindMatrices = jsonSkin.find("inverseBindMatrices");
-		if (itInverseBindMatrices != jsonSkin.end()) {
-			skin->inverseBindMatrices.reserve(itInverseBindMatrices->size());
-			for (std::size_t jointId = 0; jointId < itInverseBindMatrices->size(); ++jointId) {
-				std::size_t accessorId = (*itInverseBindMatrices)[jointId];
-				if (accessorId >= mGLTFData.accessors.size()) {
-					return Result(false, "Accessor index " + std::to_string(accessorId) + " out of range");
-				}
-
-				const Accessor& a = mGLTFData.accessors[accessorId];
-				const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
-				const Buffer& b = mGLTFData.buffers[bv.bufferId];
-
-				const float* fPtr = reinterpret_cast<const float*>(b.data() + bv.offset + a.byteOffset);
-				skin->inverseBindMatrices.push_back(*reinterpret_cast<const glm::mat4*>(fPtr));
-			}
-		}
-
-		auto itSkeleton = jsonSkin.find("skeleton");
-		if (itSkeleton != jsonSkin.end()) {
-			std::size_t skeletonId = *itSkeleton;
-			if (skeletonId >= mGLTFData.nodes.size()) {
-				return Result(false, "Skeleton index " + std::to_string(skeletonId) + " out of range");
-			}
-
-			skin->skeletonRoot = mGLTFData.nodes[skeletonId].sceneEntity.animationNode;
-		}
-
 		auto itJoints = jsonSkin.find("joints");
 		if (itJoints != jsonSkin.end()) {
 			for (std::size_t jointId = 0; jointId < itJoints->size(); ++jointId) {
@@ -870,6 +843,26 @@ namespace se::loaders {
 		}
 		else {
 			return Result(false, "A skin must have a joints property");
+		}
+
+		auto itInverseBindMatrices = jsonSkin.find("inverseBindMatrices");
+		if (itInverseBindMatrices != jsonSkin.end()) {
+			std::size_t accessorId = *itInverseBindMatrices;
+			if (accessorId >= mGLTFData.accessors.size()) {
+				return Result(false, "Accessor index " + std::to_string(accessorId) + " out of range");
+			}
+
+			const Accessor& a = mGLTFData.accessors[accessorId];
+			const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
+			const Buffer& b = mGLTFData.buffers[bv.bufferId];
+
+			const glm::mat4* mat4Ptr = reinterpret_cast<const glm::mat4*>(b.data() + bv.offset + a.byteOffset);
+			skin->inverseBindMatrices = std::vector<glm::mat4>(mat4Ptr, mat4Ptr + a.count);
+
+			if (itJoints->size() != skin->inverseBindMatrices.size()) {
+				return Result(false, "The size of the inverseBindMatrices " + std::to_string(skin->inverseBindMatrices.size())
+					+ " doesn't match the size of the joints vector " + std::to_string(itJoints->size()));
+			}
 		}
 
 		mGLTFData.skins.emplace_back(std::move(skin));
@@ -930,7 +923,7 @@ namespace se::loaders {
 
 	Result GLTFReader::parseNode(const nlohmann::json& jsonNode)
 	{
-		// This indices won't be validated because the cameras, meshes and
+		// The indices won't be validated because the cameras, meshes and
 		// skins properties hasn't been readed yet
 
 		Scene::Entity sceneEntity = {};
@@ -972,7 +965,7 @@ namespace se::loaders {
 				glm::mat4 transforms = *reinterpret_cast<glm::mat4*>(fVector.data());
 				glm::vec3 skew;
 				glm::vec4 perspective;
-				glm::decompose(transforms, nodeData.scale, nodeData.orientation, nodeData.position, skew, perspective);
+				glm::decompose(transforms, nodeData.localTransforms.scale, nodeData.localTransforms.orientation, nodeData.localTransforms.position, skew, perspective);
 			}
 		}
 		else {
@@ -980,7 +973,7 @@ namespace se::loaders {
 			if (itRotation != jsonNode.end()) {
 				std::vector<float> fVector = *itRotation;
 				if (fVector.size() >= 4) {
-					nodeData.orientation = *reinterpret_cast<glm::quat*>(fVector.data());
+					nodeData.localTransforms.orientation = *reinterpret_cast<glm::quat*>(fVector.data());
 				}
 			}
 
@@ -988,7 +981,7 @@ namespace se::loaders {
 			if (itScale != jsonNode.end()) {
 				std::vector<float> fVector = *itScale;
 				if (fVector.size() >= 3) {
-					nodeData.scale = *reinterpret_cast<glm::vec3*>(fVector.data());
+					nodeData.localTransforms.scale = *reinterpret_cast<glm::vec3*>(fVector.data());
 				}
 			}
 
@@ -996,7 +989,7 @@ namespace se::loaders {
 			if (itTranslation != jsonNode.end()) {
 				std::vector<float> fVector = *itTranslation;
 				if (fVector.size() >= 3) {
-					nodeData.position = *reinterpret_cast<glm::vec3*>(fVector.data());
+					nodeData.localTransforms.position = *reinterpret_cast<glm::vec3*>(fVector.data());
 				}
 			}
 		}
@@ -1015,33 +1008,42 @@ namespace se::loaders {
 			scene->name = *itName;
 		}
 
-		// Create the root nodes of the scene
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {
-			scene->rootNodes.reserve(itNodes->size());
+			// Create the root node of the scene
+			scene->rootNode = std::make_unique<animation::AnimationNode>(animation::NodeData("SceneRoot"));
+
+			// Create the node hierarchy
 			for (std::size_t nodeId : itNodes->get< std::vector<std::size_t> >()) {
 				if (nodeId < mGLTFData.nodes.size()) {
-					// Create the root node
-					auto& node = scene->rootNodes.emplace_back(mGLTFData.nodes[nodeId].nodeData);
-					mGLTFData.nodes[nodeId].sceneEntity.animationNode = &node;
+					// Create the GLTF root node as a child of the scene rootNode
+					auto itNode = scene->rootNode->emplace(scene->rootNode->cbegin(), mGLTFData.nodes[nodeId].nodeData);
+					if (itNode == scene->rootNode->end()) {
+						return Result(false, "Failed to create an AnimationNode for the root node " + std::to_string(nodeId));
+					}
+					mGLTFData.nodes[nodeId].sceneEntity.animationNode = &(*itNode);
 
 					// Build the tree
-					std::vector<std::pair<int, int>> stack = { { -1, nodeId } };
-					while (!stack.empty()) {
-						auto& [parentId, currentId] = stack.back();
-						stack.pop_back();
+					std::vector<size_t> nodesToProcess = { nodeId };
+					while (!nodesToProcess.empty()) {
+						std::size_t currentId = nodesToProcess.back();
+						nodesToProcess.pop_back();
 
-						if (currentId < static_cast<int>(mGLTFData.nodes.size())) {
-							if (parentId >= 0) {
-								animation::AnimationNode* parentNode = mGLTFData.nodes[parentId].sceneEntity.animationNode;
-								mGLTFData.nodes[currentId].sceneEntity.animationNode = &(*parentNode->emplace(parentNode->cbegin(), mGLTFData.nodes[currentId].nodeData));
-							}
-
-							scene->entities.push_back(mGLTFData.nodes[currentId].sceneEntity);
+						if (currentId < mGLTFData.nodes.size()) {
+							animation::AnimationNode* currentNode = mGLTFData.nodes[currentId].sceneEntity.animationNode;
 
 							for (int childId : mGLTFData.nodes[currentId].children) {
-								stack.emplace_back(currentId, childId);
+								auto itChild = currentNode->emplace(currentNode->cbegin(), mGLTFData.nodes[childId].nodeData);
+								if (itChild == currentNode->end()) {
+									return Result(false, "Failed to create an AnimationNode for the node " + std::to_string(childId));
+								}
+								mGLTFData.nodes[childId].sceneEntity.animationNode = &(*itChild);
+
+								nodesToProcess.push_back(childId);
 							}
+
+							// Add the node entity to the Scene
+							scene->entities.push_back(mGLTFData.nodes[currentId].sceneEntity);
 						}
 						else {
 							return Result(false, "Node index " + std::to_string(currentId) + " out of range");
@@ -1052,6 +1054,8 @@ namespace se::loaders {
 					return Result(false, "Node index " + std::to_string(nodeId) + " out of range");
 				}
 			}
+
+			animation::updateWorldTransforms(*scene->rootNode);
 		}
 
 		mGLTFData.scenes.emplace_back(std::move(scene));
@@ -1104,7 +1108,7 @@ namespace se::loaders {
 			return Result(false, "Output componentType must be FLOAT");
 		}
 
-		if (aInput.count == aOutput.count) {
+		if (aInput.count != aOutput.count) {
 			return Result(false, "Input number of elements doesn't match the output one");
 		}
 
@@ -1112,24 +1116,24 @@ namespace se::loaders {
 		const float* inputPtr = reinterpret_cast<const float*>(bInput.data() + bvInput.offset + aInput.byteOffset);
 		const float* outputPtr = reinterpret_cast<const float*>(bOutput.data() + bvOutput.offset + aOutput.byteOffset);
 
-		if ((aInput.componentSize == 3) && (aOutput.componentSize == 1)) {
+		if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
 			auto animVec3 = std::make_unique<animation::AnimationVec3Linear>();
 			for (std::size_t i = 0; i < numElements; ++i) {
 				animVec3->addKeyFrame({
-					*reinterpret_cast<const glm::vec3*>(inputPtr + i * aInput.componentSize),
-					outputPtr[i]
+					*reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize),
+					inputPtr[i]
 				});
 			}
 
 			out1 = std::move(animVec3);
 			return Result();
 		}
-		else if ((aInput.componentSize == 4) && (aOutput.componentSize == 1)) {
+		else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
 			auto animQuat = std::make_unique<animation::AnimationQuatLinear>();
 			for (std::size_t i = 0; i < numElements; ++i) {
 				animQuat->addKeyFrame({
-					*reinterpret_cast<const glm::quat*>(inputPtr + i * aInput.componentSize),
-					outputPtr[i]
+					*reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize),
+					inputPtr[i]
 				});
 			}
 

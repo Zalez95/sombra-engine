@@ -17,24 +17,35 @@ namespace se::app {
 	class AnimationManager
 	{
 	private:	// Nested types
-		//using AnimationUPtr = std::unique_ptr<animation::Animation>;
+		/** Struct NodeEntity, holds a pointer to the Entity and other metadata
+		 * about it */
+		struct NodeEntity
+		{
+			/** Apointer to the entity */
+			Entity* entity;
+
+			/** If the entity ows any AnimationNode or not */
+			bool nodeOwner;
+		};
 
 	private:	// Attributes
 		/** The AnimationSystem used for updating the animation of the
 		 * Entities */
 		animation::AnimationSystem& mAnimationSystem;
 
-		/** Maps the Entities added to the AnimationManager with their
-		 * respective AnimationNode */
-		std::map<Entity*, animation::AnimationNode*> mEntityNodes;
+		/** The root AnimationNode node of the hierarchy of AnimationNodes to
+		 * update */
+		std::unique_ptr<animation::AnimationNode> mRootNode;
+
+		/** Maps the AnimationNode with their respective Entities */
+		std::map<animation::AnimationNode*, NodeEntity> mNodeEntities;
 
 	public:		// Functions
 		/** Creates a new AnimationManager
 		 *
 		 * @param	animationSystem a reference to the AnimationSystem used by
-		 * 			the AnimationManager to update the entities' animations */
-		AnimationManager(animation::AnimationSystem& animationSystem) :
-			mAnimationSystem(animationSystem) {};
+		 *			the AnimationManager to update the entities' animations */
+		AnimationManager(animation::AnimationSystem& animationSystem);
 
 		/** Adds the given Entity to the AnimationManager with the given
 		 * AnimationNode, so when the AnimationNode or any of its parents is
@@ -43,8 +54,26 @@ namespace se::app {
 		 * @param	entity a pointer to the Entity to add to the
 		 *			AnimationManager
 		 * @param	animationNode a pointer to the AnimationNode to add to the
-		 *			AnimationManager */
+		 *			AnimationManager. The animationNode must have been already
+		 *			inserted into the AnimationManager
+		 * @note	The Entity initial data is overridden by the AnimationNode
+		 *			one */
 		void addEntity(Entity* entity, animation::AnimationNode* animationNode);
+
+		/** Adds the given Entity to the AnimationManager with the given
+		 * AnimationNode, so when the AnimationNode or any of its parents is
+		 * updated due to an animation the Entity will also be updated
+		 *
+		 * @param	entity a pointer to the Entity to add to the
+		 *			AnimationManager
+		 * @param	animationNode a pointer to the AnimationNode to add to the
+		 *			AnimationManager
+		 * @note	The Entity initial data is overridden by the AnimationNode
+		 *			one */
+		void addEntity(
+			Entity* entity,
+			std::unique_ptr<animation::AnimationNode> animationNode
+		);
 
 		/** Removes the given Entity from the AnimationManager
 		 *

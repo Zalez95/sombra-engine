@@ -52,8 +52,7 @@ namespace se::utils {
 	{
 		return (tn1.mParent == tn2.mParent)
 			&& (tn1.mChild == tn2.mChild)
-			&& (tn1.mSibling == tn2.mSibling)
-			&& (tn1.mData == tn2.mData);
+			&& (tn1.mSibling == tn2.mSibling);
 	}
 
 
@@ -119,7 +118,11 @@ namespace se::utils {
 			parentNode->mChild = std::move(descendant);
 			parentNode->mChild->mSibling = std::move(currentChild);
 
-			for (ret = parentIt; &(*ret) != parentIt->mChild.get(); ++ret);
+			ret = parentIt;
+			do {
+				++ret;
+			}
+			while (&(*ret) != parentIt->mChild.get());
 		}
 
 		return ret;
@@ -146,7 +149,7 @@ namespace se::utils {
 			ret = it++;
 			std::swap(it, ret);
 
-			if (it->mParent->mChild == &(*it)) {
+			if (it->mParent->mChild.get() == &(*it)) {
 				// Update parent child with sibling
 				it->mParent->mChild = std::move(it->mSibling);
 			}
@@ -154,7 +157,7 @@ namespace se::utils {
 				// Update left sibling
 				TreeNode* child = it->mParent->mChild.get();
 				while (child) {
-					if (child->mSibling == &(*it)) {
+					if (child->mSibling.get() == &(*it)) {
 						child->mSibling = std::move(it->mSibling);
 						child = nullptr;
 					}
@@ -171,19 +174,27 @@ namespace se::utils {
 
 	template <typename T>
 	template <bool isConst, Traversal t>
+	TreeNode<T>::TNIterator<isConst, t>::TNIterator(TreeNodeType* treeNode)
+	{
+		if (treeNode) {
+			mTreeNodeDeque = { treeNode };
+		}
+	}
+
+
+	template <typename T>
+	template <bool isConst, Traversal t>
 	TreeNode<T>::TNIterator<isConst, t>::operator
 		TreeNode<T>::TNIterator<!isConst, t>() const
 	{
 		TNIterator<!isConst, t> ret(nullptr);
 
 		if constexpr (isConst) {
-			ret.mTreeNode = const_cast<TreeNode*>(mTreeNode);
 			for (const TreeNode* node : mTreeNodeDeque) {
 				ret.mTreeNodeDeque.push_back(const_cast<TreeNode*>(node));
 			}
 		}
 		else {
-			ret.mTreeNode = mTreeNode;
 			for (TreeNode* node : mTreeNodeDeque) {
 				ret.mTreeNodeDeque.push_back(node);
 			}
@@ -224,19 +235,17 @@ namespace se::utils {
 	template <bool isConst, Traversal t>
 	void TreeNode<T>::TNIterator<isConst, t>::nextBFS()
 	{
-		if (mTreeNode) {
-			if (mTreeNode->mSibling) {
-				mTreeNodeDeque.push_back(mTreeNode);
-				mTreeNode = mTreeNode->mSibling.get();
+		if (!mTreeNodeDeque.empty()) {
+			TreeNodeType* node = mTreeNodeDeque.back();
+			if (node->mSibling) {
+				mTreeNodeDeque.push_back(node->mSibling.get());
 			}
 			else {
-				mTreeNode = nullptr;
 				while (!mTreeNodeDeque.empty()) {
-					mTreeNode = mTreeNodeDeque.front();
+					node = mTreeNodeDeque.front();
 					mTreeNodeDeque.pop_front();
-					if (mTreeNode->mChild) {
-						mTreeNodeDeque.push_back(mTreeNode);
-						mTreeNode = mTreeNode->mChild.get();
+					if (node->mChild) {
+						mTreeNodeDeque.push_back(node->mChild.get());
 						break;
 					}
 				}
@@ -249,21 +258,17 @@ namespace se::utils {
 	template <bool isConst, Traversal t>
 	void TreeNode<T>::TNIterator<isConst, t>::nextDFSPreOrder()
 	{
-		if (mTreeNode) {
-			if (mTreeNode->mChild) {
-				mTreeNodeDeque.push_back(mTreeNode);
-				mTreeNode = mTreeNode->mChild.get();
-			}
-			else if (mTreeNode->mSibling) {
-				mTreeNode = mTreeNode->mSibling.get();
+		if (!mTreeNodeDeque.empty()) {
+			TreeNodeType* node = mTreeNodeDeque.back();
+			if (node->mChild) {
+				mTreeNodeDeque.push_back(node->mChild.get());
 			}
 			else {
-				mTreeNode = nullptr;
 				while (!mTreeNodeDeque.empty()) {
-					mTreeNode = mTreeNodeDeque.back();
+					node = mTreeNodeDeque.back();
 					mTreeNodeDeque.pop_back();
-					if (mTreeNode->mSibling) {
-						mTreeNode = mTreeNode->mSibling.get();
+					if (node->mSibling) {
+						mTreeNodeDeque.push_back(node->mSibling.get());
 						break;
 					}
 				}

@@ -10,10 +10,14 @@ namespace se::animation {
 		for (auto& animationNode : mNodes) {
 			switch (animationNode.type) {
 				case TransformationType::Translation:
-					animationNode.node->getData().position += transformation;
+					animationNode.node->getData().localTransforms.position += transformation;
+					animationNode.node->getData().animated = true;
+					animationNode.node->getData().worldTransformsUpdated = false;
 					break;
 				case TransformationType::Scale:
-					animationNode.node->getData().scale += transformation;
+					animationNode.node->getData().localTransforms.scale *= transformation;
+					animationNode.node->getData().animated = true;
+					animationNode.node->getData().worldTransformsUpdated = false;
 					break;
 				default:
 					break;
@@ -30,7 +34,9 @@ namespace se::animation {
 		for (auto& animationNode : mNodes) {
 			switch (animationNode.type) {
 				case TransformationType::Rotation:
-					animationNode.node->getData().orientation *= transformation;
+					animationNode.node->getData().localTransforms.orientation *= transformation;
+					animationNode.node->getData().animated = true;
+					animationNode.node->getData().worldTransformsUpdated = false;
 					break;
 				default:
 					break;

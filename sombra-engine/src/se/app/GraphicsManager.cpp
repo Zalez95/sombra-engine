@@ -150,25 +150,7 @@ namespace se::app {
 			auto itSkin = mRenderable3DSkins.find(renderable3D);
 			if (itSkin != mRenderable3DSkins.end()) {
 				const Skin& skin = *itSkin->second;
-				std::vector<glm::mat4> jointMatrices(skin.inverseBindMatrices.size());
-
-				std::size_t numJoints = 0;
-				glm::mat4 parentTransforms(1.0f);
-				auto nodeIt = skin.skeletonRoot->begin();
-				while (numJoints < jointMatrices.size()) {
-					auto jointIndexIt = skin.jointIndices.find(&(*nodeIt));
-					if (jointIndexIt != skin.jointIndices.end()) {
-						glm::mat4 currentTransforms = parentTransforms * animation::getLocalMatrix(nodeIt->getData());
-						jointMatrices[jointIndexIt->second] = currentTransforms * skin.inverseBindMatrices[jointIndexIt->second];
-						parentTransforms = currentTransforms;
-
-						++numJoints;
-					}
-
-					nodeIt++;
-				}
-
-				renderable3D->setJointMatrices(jointMatrices);
+				renderable3D->setJointMatrices( calculateJointMatrices(skin, renderable3D->getModelMatrix()) );
 			}
 		}
 

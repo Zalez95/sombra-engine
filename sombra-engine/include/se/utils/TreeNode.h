@@ -94,11 +94,11 @@ namespace se::utils {
 
 		/** @return	the final iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
-		iterator<t> end() { return iterator<t>(nullptr); }
+		iterator<t> end() { return iterator<t>(); }
 
 		/** @return	the final iterator of the TreeNode */
 		template <Traversal t = Traversal::BFS>
-		const_iterator<t> cend() const { return const_iterator<t>(nullptr); }
+		const_iterator<t> cend() const { return const_iterator<t>(); }
 
 		/** @return	true if the current TreeNode is a leaf, false otherwise */
 		bool isLeaf() const { return mChild == nullptr; };
@@ -210,9 +210,6 @@ namespace se::utils {
 		using iterator_category = std::forward_iterator_tag;
 
 	private:	// Attributes
-		/** A pointer to the current TreeNode of the iterator */
-		TreeNodeType* mTreeNode;
-
 		/** The deque needed for traversing the TreeNodes */
 		std::deque<TreeNodeType*> mTreeNodeDeque;
 
@@ -220,7 +217,7 @@ namespace se::utils {
 		/** Creates a new TNIterator located at the given TreeNode
 		 *
 		 * @param	treeNode a pointer to the TreeNode of the iterator */
-		TNIterator(TreeNodeType* treeNode) : mTreeNode(treeNode) {};
+		TNIterator(TreeNodeType* treeNode = nullptr);
 
 		/** Implicit conversion operator between const TNIterator and non
 		 * const TNIterator
@@ -231,11 +228,11 @@ namespace se::utils {
 
 		/** @return	a reference to the current TreeNode that the iterator is
 		 *			pointing at */
-		reference operator*() const { return *mTreeNode; };
+		reference operator*() const { return *mTreeNodeDeque.back(); };
 
 		/** @return	a pointer to the current TreeNode that the iterator is
 		 *			pointing at */
-		pointer operator->() const { return mTreeNode; };
+		pointer operator->() const { return mTreeNodeDeque.back(); };
 
 		/** Compares the given TNIterators
 		 *
@@ -243,8 +240,7 @@ namespace se::utils {
 		 * @param	it2 the second TNIterator to compare
 		 * @return	true if both iterators are equal, false otherwise */
 		friend bool operator==(const TNIterator& it1, const TNIterator& it2)
-		{	return (it1.mTreeNode == it2.mTreeNode)
-				&& (it1.mTreeNodeDeque == it2.mTreeNodeDeque); };
+		{ return (it1.mTreeNodeDeque == it2.mTreeNodeDeque); };
 
 		/** Compares the given TNIterators
 		 *

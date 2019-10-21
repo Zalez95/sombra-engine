@@ -42,6 +42,7 @@
 #include <se/loaders/FontReader.h>
 #include <se/loaders/TerrainLoader.h>
 #include <se/loaders/RawMesh.h>
+#include <se/loaders/SceneReader.h>
 #include <AudioFile.h>
 
 #include <se/utils/Image.h>
@@ -603,28 +604,38 @@ namespace game {
 		mGraphicsManager->addEntity(eL3.get(), std::move(pointLight3));
 		mEntities.push_back(std::move(eL3));
 
-		// GLTF meshes
-		mScene = std::move(loadedScenes.scenes[0]);
-		for (auto& e : mScene->entities) {
-			auto sceneEntity = std::make_unique<se::app::Entity>("sceneEntity");
+		// GLTF Scene
+		auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
+		mAnimationManager->addEntity(sceneEntity.get(), std::move(loadedScenes.scenes[0]->rootNode));
+		mEntities.push_back( std::move(sceneEntity) );
 
+		std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
+		std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
+		for (auto& e : loadedScenes.scenes[0]->entities) {
 			if (e.animationNode) {
-				mAnimationManager->addEntity(sceneEntity.get(), e.animationNode);
-			}
+				auto entity = std::make_unique<se::app::Entity>(e.animationNode->getData().name);
+				mAnimationManager->addEntity(entity.get(), e.animationNode);
 
-			if (e.hasSkin) {
-				std::shared_ptr<se::app::Skin> skin = std::move(loadedScenes.skins[e.skinIndex]);
-				for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
-					mGraphicsManager->addEntity(sceneEntity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]), skin);
+				if (e.hasRenderable3Ds) {
+					if (e.hasSkin) {
+						for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
+							mGraphicsManager->addEntity(entity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]), sharedSkins[e.skinIndex]);
+						}
+					}
+					else {
+						for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
+							mGraphicsManager->addEntity(entity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]));
+						}
+					}
 				}
-			}
-			else {
-				for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
-					mGraphicsManager->addEntity(sceneEntity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]));
-				}
-			}
 
-			mEntities.push_back( std::move(sceneEntity) );
+				mEntities.push_back( std::move(entity) );
+			}
+		}
+
+		for (auto& animator : loadedScenes.animators) {
+			mAnimationSystem->addAnimator(animator.get());
+			mAnimators.push_back(animator.release());
 		}
 	}
 
@@ -633,10 +644,17 @@ namespace game {
 	{
 		for (se::physics::Force* force : mForces) {
 			mPhysicsEngine->getForceManager().removeForce(force);
+			delete force;
 		}
 
 		for (se::physics::Constraint* constraint : mConstraints) {
 			mPhysicsEngine->getConstraintManager().removeConstraint(constraint);
+			delete constraint;
+		}
+
+		for (se::animation::IAnimator* animator : mAnimators) {
+			mAnimationSystem->removeAnimator(animator);
+			delete animator;
 		}
 
 		for (EntityUPtr& entity : mEntities) {

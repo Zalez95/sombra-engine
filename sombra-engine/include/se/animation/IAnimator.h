@@ -51,15 +51,23 @@ namespace se::animation {
 		void addNode(TransformationType type, AnimationNode* node)
 		{ mNodes.push_back({ type, node }); };
 
-		/** Restarts the animation to its original state */
-		void restartAnimation() { mAccumulatedTime = 0.0f; };
-
 		/** Applies the animation to the nodes of the Animator
 		 *
 		 * @param	elapsedTime the time elapsed since the last call to the
 		 *			function
-		 * @note	the same transformation will ve applied to all the nodes */
+		 * @note	the world space transformation of the nodes won't be
+		 *			updated. */
 		virtual void animate(float elapsedTime) = 0;
+
+		/** Restarts the animation to its original state */
+		void restartAnimation();
+
+		/** Resets the animate state of every added node */
+		void resetNodesAnimatedState();
+
+		/** Updates the added nodes world transforms (and their descendants)
+		 * with the changes made by the animation */
+		void updateNodesWorldTransforms();
 	};
 
 }

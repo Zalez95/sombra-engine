@@ -72,8 +72,8 @@ namespace se::app {
 			Entity* entity = pair.first;
 			physics::RigidBody* rigidBody = pair.second.get();
 
-			// Reset the Entity physics change
-			entity->updated.reset( static_cast<int>(EntityUpdate::Physics) );
+			// Reset the Entity physics update
+			entity->updated.reset( static_cast<int>(Entity::Update::Physics) );
 
 			if (entity->updated.any()) {
 				rigidBody->getData().position		= entity->position;
@@ -95,7 +95,7 @@ namespace se::app {
 				entity->position	= rigidBody->getData().position;
 				entity->velocity	= rigidBody->getData().linearVelocity;
 				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated.set( static_cast<int>(EntityUpdate::Physics) );
+				entity->updated.set( static_cast<int>(Entity::Update::Physics) );
 			}
 		}
 
@@ -116,7 +116,7 @@ namespace se::app {
 
 			// Skip the Entity physics change in the doDynamics step
 			auto updatedWithoutPhysics = entity->updated;
-			updatedWithoutPhysics.reset( static_cast<int>(EntityUpdate::Physics) );
+			updatedWithoutPhysics.reset( static_cast<int>(Entity::Update::Physics) );
 
 			if (updatedWithoutPhysics.any()) {
 				rigidBody->getData().position		= entity->position;
@@ -145,7 +145,7 @@ namespace se::app {
 				entity->position	= rigidBody->getData().position;
 				entity->velocity	= rigidBody->getData().linearVelocity;
 				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated.set( static_cast<int>(EntityUpdate::Physics) );
+				entity->updated.set( static_cast<int>(Entity::Update::Physics) );
 			}
 		}
 
