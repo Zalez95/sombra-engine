@@ -21,6 +21,9 @@ namespace se::animation {
 		 * @param	timePoint the time point used for interpolating the data
 		 * @return	the interpolated transformation */
 		virtual T interpolate(float timePoint) const = 0;
+
+		/** @return	the length in seconds of the animation */
+		virtual float getLength() const = 0;
 	};
 
 
@@ -34,12 +37,10 @@ namespace se::animation {
 		/** A single KeyFrame data */
 		struct KeyFrame
 		{
-			/** The tranformation of the KeyFrame in relation to the initial
-			 * state */
+			/** The tranformation state at the current KeyFrame */
 			T transformation;
 
-			/** The time point in seconds since the start of the Animation of
-			 * the KeyFrame */
+			/** The time point in seconds since the start of the Animation */
 			U timePoint;
 		};
 
@@ -64,6 +65,9 @@ namespace se::animation {
 		 * @param	timePoint the timePoint used for interpolating the data
 		 * @return	the interpolated transformation */
 		virtual T interpolate(float timePoint) const override;
+
+		/** @return	the length in seconds of the animation */
+		virtual float getLength() const override;
 	private:
 		/** The interpolation function used for calculating the transformation
 		 * with the Animations KeyFrames and the given timePoint
@@ -76,6 +80,13 @@ namespace se::animation {
 		virtual T interpolationFunction(
 			const KeyFrame& k1, const KeyFrame& k2, float timePoint
 		) const = 0;
+
+		/** Calculates the time in seconds since the start of the Animation of
+		 * the given KeyFrame
+		 *
+		 * @param	k the KeyFrame to calculate its time point in seconds
+		 * @return	the time point in seconds */
+		virtual float getTimeInSeconds(const KeyFrame& k) const = 0;
 
 		/** Returns the previous and next KeyFrames to the given time point
 		 *

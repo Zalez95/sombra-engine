@@ -1,16 +1,23 @@
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 #include <nlohmann/json.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 #include "GLTFReader.h"
+#include "se/utils/MathUtils.h"
 #include "se/loaders/ImageReader.h"
 #include "se/graphics/Texture.h"
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Mesh.h"
+#include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
-#include "se/animation/Animators.h"
+#include "se/animation/TransformationAnimators.h"
 
 namespace se::loaders {
+
+	enum class InterpolationType
+	{
+		Linear, Step, CubicSpline
+	};
 
 	constexpr bool toTypeId(int code, graphics::TypeId& typeId)
 	{
@@ -93,12 +100,22 @@ namespace se::loaders {
 		return ret;
 	}
 
-	static bool toTransformationType(const std::string& text, animation::IAnimator::TransformationType& transformationType)
+	static bool toInterpolationType(const std::string& text, InterpolationType& interpolationType)
 	{
 		bool ret = true;
-		if (text == "translation")		{ transformationType = animation::IAnimator::TransformationType::Translation; }
-		else if (text == "rotation")	{ transformationType = animation::IAnimator::TransformationType::Rotation; }
-		else if (text == "scale")		{ transformationType = animation::IAnimator::TransformationType::Scale; }
+		if (text == "LINEAR")			{ interpolationType = InterpolationType::Linear; }
+		else if (text == "STEP")		{ interpolationType = InterpolationType::Step; }
+		else if (text == "CUBICSPLINE")	{ interpolationType = InterpolationType::CubicSpline; }
+		else { ret = false; }
+		return ret;
+	}
+
+	static bool toTransformationType(const std::string& text, animation::TransformationAnimator::TransformationType& transformationType)
+	{
+		bool ret = true;
+		if (text == "translation")		{ transformationType = animation::TransformationAnimator::TransformationType::Translation; }
+		else if (text == "rotation")	{ transformationType = animation::TransformationAnimator::TransformationType::Rotation; }
+		else if (text == "scale")		{ transformationType = animation::TransformationAnimator::TransformationType::Scale; }
 		else { ret = false; }
 		return ret;
 	}
@@ -280,7 +297,7 @@ namespace se::loaders {
 		}
 
 		if (auto itAnimations = jsonGLTF.find("animations"); itAnimations != jsonGLTF.end()) {
-			mGLTFData.animators.reserve(itAnimations->size());
+			mGLTFData.compositeAnimators.reserve(itAnimations->size());
 			for (std::size_t animationId = 0; animationId < itAnimations->size(); ++animationId) {
 				Result result = parseAnimation((*itAnimations)[animationId]);
 				if (!result) {
@@ -311,7 +328,7 @@ namespace se::loaders {
 		output.renderable3DIndices	= std::move(mGLTFData.meshPrimitives);
 		output.renderable3Ds		= std::move(mGLTFData.renderable3Ds);
 		output.skins				= std::move(mGLTFData.skins);
-		output.animators			= std::move(mGLTFData.animators);
+		output.animators			= std::move(mGLTFData.compositeAnimators);
 
 		return Result();
 	}
@@ -362,7 +379,7 @@ namespace se::loaders {
 				}
 			}
 			else {
-				return Result(false, "Can't open buffer file");
+				return Result(false, "Can't open buffer file located at \"" + mBasePath + path + "\"");
 			}
 		}
 		else {
@@ -963,9 +980,7 @@ namespace se::loaders {
 			std::vector<float> fVector = *itMatrix;
 			if (fVector.size() >= 16) {
 				glm::mat4 transforms = *reinterpret_cast<glm::mat4*>(fVector.data());
-				glm::vec3 skew;
-				glm::vec4 perspective;
-				glm::decompose(transforms, nodeData.localTransforms.scale, nodeData.localTransforms.orientation, nodeData.localTransforms.position, skew, perspective);
+				utils::decompose(transforms, nodeData.localTransforms.position, nodeData.localTransforms.orientation, nodeData.localTransforms.scale);
 			}
 		}
 		else {
@@ -1068,9 +1083,12 @@ namespace se::loaders {
 		std::unique_ptr<Vec3Animation>& out1, std::unique_ptr<QuatAnimation>& out2
 	) const
 	{
+		InterpolationType interpolation = InterpolationType::Linear;
 		auto itInterpolation = jsonSampler.find("interpolation");
-		if ((itInterpolation != jsonSampler.end()) && (*itInterpolation != "LINEAR")) {
-			return Result(false, "Only linear interpolation available");
+		if (itInterpolation != jsonSampler.end()) {
+			if (!toInterpolationType(*itInterpolation, interpolation)) {
+				return Result(false, "Invalid interpolation " + itInterpolation->get<std::string>());
+			}
 		}
 
 		auto itInput = jsonSampler.find("input");
@@ -1097,8 +1115,8 @@ namespace se::loaders {
 		const BufferView& bvInput = mGLTFData.bufferViews[aInput.bufferViewId];
 		const Buffer& bInput = mGLTFData.buffers[bvInput.bufferId];
 		const Accessor& aOutput = mGLTFData.accessors[outputId];
-		const BufferView& bvOutput = mGLTFData.bufferViews[aInput.bufferViewId];
-		const Buffer& bOutput = mGLTFData.buffers[bvInput.bufferId];
+		const BufferView& bvOutput = mGLTFData.bufferViews[aOutput.bufferViewId];
+		const Buffer& bOutput = mGLTFData.buffers[bvOutput.bufferId];
 
 		if (aInput.componentTypeId != graphics::TypeId::Float) {
 			return Result(false, "Input componentType must be FLOAT");
@@ -1108,40 +1126,59 @@ namespace se::loaders {
 			return Result(false, "Output componentType must be FLOAT");
 		}
 
-		if (aInput.count != aOutput.count) {
-			return Result(false, "Input number of elements doesn't match the output one");
-		}
-
 		std::size_t numElements = aOutput.count;
 		const float* inputPtr = reinterpret_cast<const float*>(bInput.data() + bvInput.offset + aInput.byteOffset);
 		const float* outputPtr = reinterpret_cast<const float*>(bOutput.data() + bvOutput.offset + aOutput.byteOffset);
 
-		if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
-			auto animVec3 = std::make_unique<animation::AnimationVec3Linear>();
-			for (std::size_t i = 0; i < numElements; ++i) {
-				animVec3->addKeyFrame({
-					*reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize),
-					inputPtr[i]
-				});
-			}
-
-			out1 = std::move(animVec3);
-			return Result();
-		}
-		else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
-			auto animQuat = std::make_unique<animation::AnimationQuatLinear>();
-			for (std::size_t i = 0; i < numElements; ++i) {
-				animQuat->addKeyFrame({
-					*reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize),
-					inputPtr[i]
-				});
-			}
-
-			out2 = std::move(animQuat);
-			return Result();
-		}
-		else {
-			return Result(false, "Invalid accessor component sizes");
+		switch (interpolation) {
+			case InterpolationType::Linear:
+				if (aInput.count != aOutput.count) {
+					return Result(false, "Input number of elements doesn't match the output one");
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+					auto animVec3 = std::make_unique<animation::AnimationVec3Linear>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+					}
+					out1 = std::move(animVec3);
+					return Result();
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+					auto animQuat = std::make_unique<animation::AnimationQuatLinear>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+					}
+					out2 = std::move(animQuat);
+					return Result();
+				}
+				else {
+					return Result(false, "Invalid accessor component sizes");
+				}
+			case InterpolationType::Step:
+				if (aInput.count != aOutput.count) {
+					return Result(false, "Input number of elements doesn't match the output one");
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+					auto animVec3 = std::make_unique<animation::AnimationVec3Step>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+					}
+					out1 = std::move(animVec3);
+					return Result();
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+					auto animQuat = std::make_unique<animation::AnimationQuatStep>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+					}
+					out2 = std::move(animQuat);
+					return Result();
+				}
+				else {
+					return Result(false, "Invalid accessor component sizes");
+				}
+			default:
+				return Result(false, "Interpolation isn't available");
 		}
 	}
 
@@ -1159,7 +1196,7 @@ namespace se::loaders {
 			auto itNode = itTarget->find("node");
 			auto itPath = itTarget->find("path");
 			if ((itNode != itTarget->end()) && (itPath != itTarget->end())) {
-				auto transformationType = animation::IAnimator::TransformationType::Translation;
+				auto transformationType = animation::TransformationAnimator::TransformationType::Translation;
 				if (!toTransformationType(*itPath, transformationType)) {
 					return Result(false, "Invalid path " + itPath->get<std::string>());
 				}
@@ -1170,19 +1207,21 @@ namespace se::loaders {
 				}
 
 				std::size_t samplerId = *itSampler;
+				std::unique_ptr<animation::TransformationAnimator> animator = nullptr;
 				auto itVec3Animation = vec3Animations.find(samplerId);
 				auto itQuatAnimation = quatAnimations.find(samplerId);
 				if (itVec3Animation != vec3Animations.end()) {
-					out = std::make_unique<animation::Vec3Animator>(itVec3Animation->second);
+					animator = std::make_unique<animation::Vec3Animator>(itVec3Animation->second);
 				}
 				else if (itQuatAnimation != quatAnimations.end()) {
-					out = std::make_unique<animation::QuatAnimator>(itQuatAnimation->second);
+					animator = std::make_unique<animation::QuatAnimator>(itQuatAnimation->second);
 				}
 				else {
 					return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
 				}
 
-				out->addNode(transformationType, mGLTFData.nodes[nodeId].sceneEntity.animationNode);
+				animator->addNode(transformationType, mGLTFData.nodes[nodeId].sceneEntity.animationNode);
+				out = std::move(animator);
 				return Result();
 			}
 			else {
@@ -1197,6 +1236,12 @@ namespace se::loaders {
 
 	Result GLTFReader::parseAnimation(const nlohmann::json& jsonAnimation)
 	{
+		std::string name;
+		auto itName = jsonAnimation.find("name");
+		if (itName != jsonAnimation.end()) {
+			name = *itName;
+		}
+
 		auto itSamplers = jsonAnimation.find("samplers");
 		if (itSamplers == jsonAnimation.end()) {
 			return Result(false, "Missing \"samplers\" property");
@@ -1225,7 +1270,9 @@ namespace se::loaders {
 			}
 		}
 
-		mGLTFData.animators.reserve(itSamplers->size());
+		auto compositeAnimator = std::make_unique<animation::CompositeAnimator>(name);
+
+		float maxLoopTime = 0.0f;
 		for (std::size_t channelId = 0; channelId < itChannels->size(); ++channelId) {
 			IAnimatorUPtr out;
 			Result result = parseAnimationChannel((*itChannels)[channelId], vec3Animations, quatAnimations, out);
@@ -1233,9 +1280,12 @@ namespace se::loaders {
 				return Result(false, "Failed to read the samplers property at channel " + std::to_string(channelId) + ": " + result.description());
 			}
 
-			mGLTFData.animators.emplace_back(std::move(out));
+			maxLoopTime = std::max(maxLoopTime, out->getLoopTime());
+			compositeAnimator->addAnimator(std::move(out));
 		}
+		compositeAnimator->setLoopTime(maxLoopTime);
 
+		mGLTFData.compositeAnimators.emplace_back(std::move(compositeAnimator));
 		return Result();
 	}
 

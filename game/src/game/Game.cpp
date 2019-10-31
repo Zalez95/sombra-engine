@@ -632,11 +632,6 @@ namespace game {
 				mEntities.push_back( std::move(entity) );
 			}
 		}
-
-		for (auto& animator : loadedScenes.animators) {
-			mAnimationSystem->addAnimator(animator.get());
-			mAnimators.push_back(animator.release());
-		}
 	}
 
 

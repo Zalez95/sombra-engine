@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace se::utils {
 
@@ -80,6 +81,19 @@ namespace se::utils {
 	 * @param	triangle an array with the 3 points of the triangle in 3D
 	 * @return	the area of the triangle */
 	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
+
+
+	/** Decomposes the given transforms matrix into a translation vector, a
+	 * quaternion orientation and a scale vector
+	 *
+	 * @param	transforms the original transformations matrix
+	 * @param	translation the vector where the translation will be stored
+	 * @param	rotation the quaternion where the rotation will be stored
+	 * @param	scale the vector where the scale will be stored */
+	void decompose(
+		const glm::mat4& transforms,
+		glm::vec3& translation, glm::quat& rotation, glm::vec3& scale
+	);
 
 }
 

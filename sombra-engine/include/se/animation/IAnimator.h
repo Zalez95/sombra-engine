@@ -1,57 +1,28 @@
 #ifndef I_ANIMATOR_H
 #define I_ANIMATOR_H
 
-#include <vector>
-#include "se/animation/AnimationNode.h"
-
 namespace se::animation {
 
 	/**
-	 * Class IAnimator, it's used to apply an animation to the AnimationNodes
+	 * Class IAnimator, it's used to apply animations to AnimationNodes
 	 */
 	class IAnimator
 	{
-	public:		// Nested types
-		/** The type of transformation to apply to a AnimationNode */
-		enum class TransformationType
-		{
-			Translation, Rotation, Scale
-		};
-	protected:
-		/** Maps the AnimationNodes with the type of transformation to apply to
-		 * them */
-		struct AnimatedNode
-		{
-			/** The type of transformation to apply to the node */
-			TransformationType type;
-
-			/** The node to apply the transforms */
-			AnimationNode* node;
-		};
-
-	protected:	// Attributes
-		/** The nodes to apply the animation transformations */
-		std::vector<AnimatedNode> mNodes;
-
-		/** The elapsed time in seconds since the start of the Animation */
-		float mAccumulatedTime;
-
 	public:		// Functions
-		/** Creates a new IAnimator */
-		IAnimator() : mAccumulatedTime(0.0f) {};
-
 		/** Class destructor */
 		virtual ~IAnimator() {};
 
-		/** Adds a Node to animate
-		 *
-		 * @param	type the type of transformation to apply to the node
-		 * @param	node a pointer to the AnimatioNode to apply the
-		 *			transforms */
-		void addNode(TransformationType type, AnimationNode* node)
-		{ mNodes.push_back({ type, node }); };
+		/** @return	the elapsed time in seconds since the start of the animation
+		 *			before the animation starts from the begining */
+		virtual float getLoopTime() const = 0;
 
-		/** Applies the animation to the nodes of the Animator
+		/** Sets the loop time of the IAnimator
+		 *
+		 * @param	loopTime the time in seconds since the start of the
+		 *			animation before it starts again */
+		virtual void setLoopTime(float loopTime) = 0;
+
+		/** Applies the animation to the nodes of the IAnimator
 		 *
 		 * @param	elapsedTime the time elapsed since the last call to the
 		 *			function
@@ -59,15 +30,15 @@ namespace se::animation {
 		 *			updated. */
 		virtual void animate(float elapsedTime) = 0;
 
-		/** Restarts the animation to its original state */
-		void restartAnimation();
+		/** Restarts the IAnimator's animations to their original state */
+		virtual void restartAnimation() = 0;
 
-		/** Resets the animate state of every added node */
-		void resetNodesAnimatedState();
+		/** Resets the animate state of every node */
+		virtual void resetNodesAnimatedState() = 0;
 
-		/** Updates the added nodes world transforms (and their descendants)
-		 * with the changes made by the animation */
-		void updateNodesWorldTransforms();
+		/** Updates the IAnimator's nodes world transforms (and their
+		 * descendants) with the changes made by the animations */
+		virtual void updateNodesWorldTransforms() = 0;
 	};
 
 }

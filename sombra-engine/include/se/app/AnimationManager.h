@@ -3,6 +3,7 @@
 
 #include <map>
 #include <memory>
+#include "../animation/AnimationNode.h"
 #include "../animation/AnimationSystem.h"
 
 namespace se::app {

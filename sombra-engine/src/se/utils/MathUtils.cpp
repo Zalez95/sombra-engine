@@ -100,4 +100,14 @@ namespace se::utils {
 		return 0.5f * glm::length(glm::cross(v12, v13));
 	}
 
+
+	void decompose(
+		const glm::mat4& transforms,
+		glm::vec3& translation, glm::quat& rotation, glm::vec3& scale
+	) {
+		translation = transforms[3];
+		scale = glm::vec3(glm::length(transforms[0]), glm::length(transforms[1]), glm::length(transforms[2]));
+		rotation = glm::quat_cast( glm::mat3(transforms[0] / scale.x, transforms[1] / scale.y, transforms[2] / scale.z) );
+	}
+
 }

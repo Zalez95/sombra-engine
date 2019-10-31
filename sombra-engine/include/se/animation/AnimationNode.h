@@ -25,6 +25,11 @@ namespace se::animation {
 		/** Creates a new NodeTransforms */
 		NodeTransforms() :
 			position(0.0f), orientation(1.0f, glm::vec3(0.0f)), scale(1.0f) {};
+		NodeTransforms(
+			const glm::vec3& position,
+			const glm::quat& orientation,
+			const glm::vec3& scale
+		) : position(position), orientation(orientation), scale(scale) {};
 	};
 
 
@@ -42,6 +47,9 @@ namespace se::animation {
 		/** The node transforms in world space */
 		NodeTransforms worldTransforms;
 
+		/** The node transforms matrix in world space */
+		glm::mat4 worldMatrix;
+
 		/** If the node has been updated by the AnimationSystem or not */
 		bool animated;
 
@@ -53,7 +61,8 @@ namespace se::animation {
 		 *
 		 * @param	name the name of the NodeData, empty by default */
 		NodeData(const std::string& name = "") :
-			name(name), animated(false), worldTransformsUpdated(false) {};
+			name(name), worldMatrix(1.0f),
+			animated(false), worldTransformsUpdated(false) {};
 	};
 
 

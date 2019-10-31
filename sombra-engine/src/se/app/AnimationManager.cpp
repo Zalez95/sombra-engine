@@ -99,7 +99,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Start (" << delta << ")";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		for (auto itNode = mRootNode->begin(); itNode != mRootNode->end(); ++itNode) {
+		/*for (auto itNode = mRootNode->begin(); itNode != mRootNode->end(); ++itNode) {
 			auto itNodeEntity = mNodeEntities.find( &(*itNode) );
 			if (itNodeEntity != mNodeEntities.end()) {
 				Entity* entity = itNodeEntity->second.entity;
@@ -124,7 +124,7 @@ namespace se::app {
 					animation::updateWorldTransforms(*itNode);
 				}
 			}
-		}
+		}*/
 
 		mAnimationSystem.update(delta);
 
@@ -134,12 +134,12 @@ namespace se::app {
 			Entity* entity = pair.second.entity;
 
 			animation::NodeData& nodeData = node->getData();
-			if (nodeData.animated) {
+			//if (nodeData.animated) {
 				entity->position = nodeData.worldTransforms.position;
 				entity->orientation = nodeData.worldTransforms.orientation;
 				entity->scale = nodeData.worldTransforms.scale;
 				entity->updated.set( static_cast<int>(Entity::Update::Animation) );
-			}
+			//}
 		}
 
 		SOMBRA_INFO_LOG << "End";

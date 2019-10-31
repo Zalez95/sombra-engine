@@ -1,20 +1,20 @@
 #include <gtest/gtest.h>
-#include <se/animation/LinearAnimations.h>
+#include <se/animation/StepAnimations.h>
 
 using namespace se::animation;
 static constexpr float kTolerance = 0.000001f;
 
-TEST(Animation, vec3LinearInterpolation)
+TEST(Animation, vec3StepInterpolation)
 {
 	const glm::vec3 expectedValues[] = {
 		{ -2.717610597f, 2.315870285f, 1.709684491f },
 		{ -2.717610597f, 2.315870285f, 1.709684491f },
-		{ 2.439607381f, -2.434396266f, 2.084875822f },
+		{ -2.717610597f, 2.315870285f, 1.709684491f },
 		{ 4.445192337f, -4.281722545f, 2.230783700f },
 		{ 4.445192337f, -4.281722545f, 2.230783700f }
 	};
 
-	AnimationVec3Linear animation;
+	AnimationVec3Step animation;
 	animation.addKeyFrame({ { -2.717610597f, 2.315870285f, 1.709684491f }, 0.005f });
 	animation.addKeyFrame({ { 4.445192337f, -4.281722545f, 2.230783700f }, 0.769285f });
 
@@ -32,17 +32,17 @@ TEST(Animation, vec3LinearInterpolation)
 }
 
 
-TEST(Animation, quatLinearInterpolation)
+TEST(Animation, quatStepInterpolation)
 {
 	const glm::quat expectedValues[] = {
 		{ 0.896704018f, -0.041954714f, 0.412458598f, 0.155047193f },
 		{ 0.896704018f, -0.041954714f, 0.412458598f, 0.155047193f },
-		{ 0.534737288f, 0.577074706f, 0.589202642f, 0.184068545f },
+		{ 0.896704018f, -0.041954714f, 0.412458598f, 0.155047193f },
 		{ 0.297078251f, 0.747193455f, 0.570527613f, 0.167167067f },
 		{ 0.297078251f, 0.747193455f, 0.570527613f, 0.167167067f }
 	};
 
-	AnimationQuatLinear animation;
+	AnimationQuatStep animation;
 	animation.addKeyFrame({ { 0.896704018f, -0.041954714f, 0.412458598f, 0.155047193f }, 0.005f });
 	animation.addKeyFrame({ { 0.297078251f, 0.747193455f, 0.570527613f, 0.167167067f }, 0.769285f });
 

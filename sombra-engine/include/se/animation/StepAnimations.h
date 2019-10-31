@@ -1,5 +1,5 @@
-#ifndef LINEAR_ANIMATIONS_H
-#define LINEAR_ANIMATIONS_H
+#ifndef STEP_ANIMATIONS_H
+#define STEP_ANIMATIONS_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -8,15 +8,16 @@
 namespace se::animation {
 
 	/**
-	 * Class AnimationQuatLinear, it's an Animation that holds vec3
-	 * transformation data. It also implements a linear interpolation function
+	 * Class AnimationQuatStep, it's an Animation that holds vec3
+	 * transformation data. It also implements a step interpolation function
 	 */
-	class AnimationVec3Linear : public Animation<glm::vec3, float>
+	class AnimationVec3Step : public Animation<glm::vec3, float>
 	{
 	protected:
-		/** The linear interpolation function used for calculating the
+		/** The step interpolation function used for calculating the
 		 * vec3 transformation with the Animations KeyFrames and the given
-		 * timePoint
+		 * timePoint. The return value of this intepolation function is always
+		 * the first of the keyframes.
 		 *
 		 * @param	k1 the first KeyFrame data
 		 * @param	k2 the second KeyFrame data
@@ -24,8 +25,8 @@ namespace se::animation {
 		 * @return	the interpolated vec3 transformation
 		 * @note	k2 must be later than k1 */
 		virtual glm::vec3 interpolationFunction(
-			const KeyFrame& k1, const KeyFrame& k2, float timePoint
-		) const override;
+			const KeyFrame& k1, const KeyFrame& /*k2*/, float /*timePoint*/
+		) const override { return k1.transformation; };
 
 		/** Calculates the time in seconds since the start of the Animation of
 		 * the given KeyFrame
@@ -38,15 +39,16 @@ namespace se::animation {
 
 
 	/**
-	 * Class AnimationQuatLinear, it's an Animation that holds quaternion
-	 * transformation data. It also implements a linear interpolation function
+	 * Class AnimationQuatStep, it's an Animation that holds quaternion
+	 * transformation data. It also implements a step interpolation function
 	 */
-	class AnimationQuatLinear : public Animation<glm::quat, float>
+	class AnimationQuatStep : public Animation<glm::quat, float>
 	{
 	protected:
-		/** The linear interpolation function used for calculating the
+		/** The step interpolation function used for calculating the
 		 * quat transformation with the Animations KeyFrames and the given
-		 * timePoint
+		 * timePoint. The return value of this intepolation function is always
+		 * the first of the keyframes.
 		 *
 		 * @param	k1 the first KeyFrame data
 		 * @param	k2 the second KeyFrame data
@@ -54,8 +56,8 @@ namespace se::animation {
 		 * @return	the interpolated quat transformation
 		 * @note	k2 must be later than k1 */
 		virtual glm::quat interpolationFunction(
-			const KeyFrame& k1, const KeyFrame& k2, float timePoint
-		) const override;
+			const KeyFrame& k1, const KeyFrame& /*k2*/, float /*timePoint*/
+		) const override { return k1.transformation; };
 
 		/** Calculates the time in seconds since the start of the Animation of
 		 * the given KeyFrame
@@ -68,4 +70,4 @@ namespace se::animation {
 
 }
 
-#endif		// LINEAR_ANIMATIONS_H
+#endif		// STEP_ANIMATIONS_H

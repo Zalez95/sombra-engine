@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include "Result.h"
-#include "../animation/IAnimator.h"
+#include "../animation/CompositeAnimator.h"
 #include "../animation/AnimationNode.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Renderable3D.h"
@@ -77,8 +77,8 @@ namespace se::loaders {
 		/** The Skins loaded by a SceneReader */
 		std::vector<std::unique_ptr<app::Skin>> skins;
 
-		/** The Animators loaded by a SceneReader */
-		std::vector<std::unique_ptr<animation::IAnimator>> animators;
+		/** The CompositeAnimator loaded by a SceneReader */
+		std::vector<std::unique_ptr<animation::CompositeAnimator>> animators;
 	};
 
 

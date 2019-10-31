@@ -28,6 +28,7 @@ namespace se::loaders {
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
+		using CAnimatorUPtr = std::unique_ptr<animation::CompositeAnimator>;
 		using MeshPrimitives = std::vector<std::size_t>;
 		using Buffer = std::vector<std::byte>;
 
@@ -84,7 +85,7 @@ namespace se::loaders {
 			std::vector<CameraUPtr> cameras;
 			std::vector<Node> nodes;
 			std::vector<SceneUPtr> scenes;
-			std::vector<IAnimatorUPtr> animators;
+			std::vector<CAnimatorUPtr> compositeAnimators;
 		};
 
 	private:	// Attributes
@@ -242,14 +243,15 @@ namespace se::loaders {
 			std::unique_ptr<QuatAnimation>& out2
 		) const;
 
-		/** Creates a new IAnimation from the given GLTF JSON Animation Channel
-		 * and returns it inthe given output parameters
+		/** Creates a new TransformationAnimation from the given GLTF JSON
+		 * Animation Channel and returns it in the given output parameters
 		 *
 		 * @param	jsonChannel the JSON object with the Animation Channel to
 		 *			parse
 		 * @param	vec3Animations a map with the Vec3 IAnimations
 		 * @param	quatAnimations a map with the Quat IAnimations
-		 * @param	out the pointer used for returning the IAnimator
+		 * @param	out the pointer used for returning the
+		 *			TransformationAnimation
 		 * @return	a Result object with the result of the parse operation */
 		Result parseAnimationChannel(
 			const nlohmann::json& jsonChannel,

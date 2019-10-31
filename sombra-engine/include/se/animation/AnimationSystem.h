@@ -1,6 +1,7 @@
 #ifndef ANIMATION_SYSTEM_H
 #define ANIMATION_SYSTEM_H
 
+#include <vector>
 #include "IAnimator.h"
 
 namespace se::animation {

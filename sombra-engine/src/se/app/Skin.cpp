@@ -10,13 +10,7 @@ namespace se::app {
 		glm::mat4 invertedModelMatrix = glm::inverse(modelMatrix);
 
 		for (const auto& [node, nodeIndex] : skin.jointIndices) {
-			// Get the joint global transforms
-			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), node->getData().worldTransforms.position);
-			glm::mat4 rotation		= glm::mat4_cast(node->getData().worldTransforms.orientation);
-			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), node->getData().worldTransforms.scale);
-			glm::mat4 nodeWorldTransforms = translation * rotation * scale;
-
-			jointMatrices[nodeIndex] = invertedModelMatrix * nodeWorldTransforms * skin.inverseBindMatrices[nodeIndex];
+			jointMatrices[nodeIndex] = invertedModelMatrix * node->getData().worldMatrix * skin.inverseBindMatrices[nodeIndex];
 		}
 
 		return jointMatrices;
