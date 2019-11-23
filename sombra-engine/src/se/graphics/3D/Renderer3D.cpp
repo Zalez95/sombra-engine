@@ -10,15 +10,25 @@ namespace se::graphics {
 
 	Renderer3D::Renderer3D()
 	{
-		mProgram.init();
-		mSkinningProgram.init();
+		if (!mProgramPBR.init()) {
+			SOMBRA_ERROR_LOG << "Failed to create the Program3D";
+		}
+
+		if (!mProgramPBRSkinning.init()) {
+			SOMBRA_ERROR_LOG << "Failed to create the Program3DSkinning";
+		}
+
+		if (!mProgramSky.init()) {
+			SOMBRA_ERROR_LOG << "Failed to create the ProgramSky";
+		}
 	}
 
 
 	Renderer3D::~Renderer3D()
 	{
-		mProgram.end();
-		mSkinningProgram.end();
+		mProgramPBR.end();
+		mProgramPBRSkinning.end();
+		mProgramSky.end();
 	}
 
 
@@ -35,6 +45,36 @@ namespace se::graphics {
 	}
 
 
+	void Renderer3D::renderSky(const Camera* camera, const Renderable3D& sky)
+	{
+		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f);
+		if (camera) {
+			viewMatrix = camera->getViewMatrix();
+			projectionMatrix = camera->getProjectionMatrix();
+		}
+
+		auto mesh = sky.getMesh();
+		auto material = sky.getMaterial();
+
+		GL_WRAP( glDisable(GL_CULL_FACE) );
+		mProgramSky.enable();
+
+		// Bind the program data
+		mProgramSky.setModelMatrix(sky.getModelMatrix());
+		mProgramSky.setViewMatrix(viewMatrix);
+		mProgramSky.setProjectionMatrix(projectionMatrix);
+
+		// Draw
+		mesh->bind();
+		const IndexBuffer& ibo = mesh->getIBO();
+		GL_WRAP( glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ibo.getIndexCount()), toGLType(ibo.getIndexType()), nullptr) );
+		mesh->unbind();
+
+		mProgramSky.disable();
+		GL_WRAP( glEnable(GL_CULL_FACE) );
+	}
+
+
 	void Renderer3D::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
 	{
 		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f);
@@ -44,10 +84,10 @@ namespace se::graphics {
 		}
 
 		// Render the renderable3Ds without skinning
-		mProgram.enable();
-		mProgram.setViewMatrix(viewMatrix);
-		mProgram.setProjectionMatrix(projectionMatrix);
-		mProgram.setLights(pointLights);
+		mProgramPBR.enable();
+		mProgramPBR.setViewMatrix(viewMatrix);
+		mProgramPBR.setProjectionMatrix(projectionMatrix);
+		mProgramPBR.setLights(pointLights);
 		while (!mRenderable3Ds.empty()) {
 			const Renderable3D* renderable3D = mRenderable3Ds.front();
 			mRenderable3Ds.pop();
@@ -58,8 +98,8 @@ namespace se::graphics {
 			if (!mesh) { continue; }
 
 			// Bind the program data
-			mProgram.setModelMatrix(renderable3D->getModelMatrix());
-			if (material) { startMaterial(*material, mProgram); }
+			mProgramPBR.setModelMatrix(renderable3D->getModelMatrix());
+			if (material) { startMaterial(*material, mProgramPBR); }
 
 			// Draw
 			mesh->bind();
@@ -70,13 +110,13 @@ namespace se::graphics {
 			// Unbind the program data
 			if (material) { endMaterial(*material); }
 		}
-		mProgram.disable();
+		mProgramPBR.disable();
 
 		// Render the renderable3Ds with skinning
-		mSkinningProgram.enable();
-		mSkinningProgram.setViewMatrix(viewMatrix);
-		mSkinningProgram.setProjectionMatrix(projectionMatrix);
-		mSkinningProgram.setLights(pointLights);
+		mProgramPBRSkinning.enable();
+		mProgramPBRSkinning.setViewMatrix(viewMatrix);
+		mProgramPBRSkinning.setProjectionMatrix(projectionMatrix);
+		mProgramPBRSkinning.setLights(pointLights);
 		while (!mSkinnedRenderable3Ds.empty()) {
 			const Renderable3D* renderable3D = mSkinnedRenderable3Ds.front();
 			mSkinnedRenderable3Ds.pop();
@@ -87,9 +127,9 @@ namespace se::graphics {
 			if (!mesh) { continue; }
 
 			// Bind the program data
-			mSkinningProgram.setModelMatrix(renderable3D->getModelMatrix());
-			mSkinningProgram.setJointMatrices(renderable3D->getJointMatrices());
-			if (material) { startMaterial(*material, mSkinningProgram); }
+			mProgramPBRSkinning.setModelMatrix(renderable3D->getModelMatrix());
+			mProgramPBRSkinning.setJointMatrices(renderable3D->getJointMatrices());
+			if (material) { startMaterial(*material, mProgramPBRSkinning); }
 
 			// Draw
 			mesh->bind();
@@ -100,11 +140,11 @@ namespace se::graphics {
 			// Unbind the program data
 			if (material) { endMaterial(*material); }
 		}
-		mSkinningProgram.disable();
+		mProgramPBRSkinning.disable();
 	}
 
 // Private functions
-	void Renderer3D::startMaterial(const Material& material, Program3D& program)
+	void Renderer3D::startMaterial(const Material& material, ProgramPBR& program)
 	{
 		program.setMaterial(material);
 

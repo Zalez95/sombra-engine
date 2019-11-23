@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Class Result, it holds the result of some operation

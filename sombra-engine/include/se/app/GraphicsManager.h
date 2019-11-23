@@ -52,18 +52,7 @@ namespace se::app {
 		 * @param	camera a pointer to the camera to add to the
 		 *			GraphicsManager
 		 * @note	The Camera initial data is overridden by the Entity one */
-		void addEntity(Entity* entity, CameraUPtr camera);
-
-		/** Adds the given Entity and its Renderable3D data to the
-		 * GraphicsManager
-		 *
-		 * @param	entity a pointer to the Entity to add to the
-		 *			GraphicsManager
-		 * @param	renderable3D a pointer to the Renderable3D to add to the
-		 *			GraphicsManager
-		 * @note	The Renderable3D initial data is overridden by the Entity
-		 *			one */
-		void addEntity(Entity* entity, Renderable3DUPtr renderable3D);
+		void addCameraEntity(Entity* entity, CameraUPtr camera);
 
 		/** Adds the given Entity and its Renderable3D and skin data to the
 		 * GraphicsManager
@@ -73,13 +62,24 @@ namespace se::app {
 		 * @param	renderable3D a pointer to the Renderable3D to add to the
 		 *			GraphicsManager
 		 * @param	skin a pointer to the Skin needed for the skeletal animation
-		 *			of the renderable3D mesh
+		 *			of the renderable3D mesh (optional)
 		 * @note	The Renderable3D initial data is overridden by the Entity
 		 *			one */
-		void addEntity(
+		void addRenderableEntity(
 			Entity* entity,
-			Renderable3DUPtr renderable3D, SkinSPtr skin
+			Renderable3DUPtr renderable3D, SkinSPtr skin = nullptr
 		);
+
+		/** Adds the given Entity and its Sky Renderable3D data to the
+		 * GraphicsManager
+		 *
+		 * @param	entity a pointer to the Entity to add to the
+		 *			GraphicsManager
+		 * @param	renderable3D a pointer to the Renderable3D to add to the
+		 *			GraphicsManager as a Sky
+		 * @note	The Renderable3D initial data is overridden by the Entity
+		 *			one */
+		void addSkyEntity(Entity* entity, Renderable3DUPtr renderable3D);
 
 		/** Adds the given Entity and its PointLight data to the
 		 * GraphicsManager
@@ -90,7 +90,7 @@ namespace se::app {
 		 *			GraphicsManager
 		 * @note	The PointLight initial data is overridden by the Entity
 		 *			one */
-		void addEntity(Entity* entity, PointLightUPtr pointLight);
+		void addPointLightEntity(Entity* entity, PointLightUPtr pointLight);
 
 		/** Removes the given Entity from the GraphicsManager so it won't
 		 * longer be updated

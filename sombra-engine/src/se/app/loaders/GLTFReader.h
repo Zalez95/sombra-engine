@@ -4,12 +4,12 @@
 #include <string>
 #include <cstddef>
 #include <nlohmann/json_fwd.hpp>
-#include "se/loaders/SceneReader.h"
-#include "se/utils/Image.h"
+#include "se/app/loaders/SceneReader.h"
+#include "se/app/Image.h"
 #include "se/graphics/Texture.h"
 #include "se/animation/IAnimation.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Class GLTFReader, it's used to create meshes from the given texts
@@ -76,7 +76,7 @@ namespace se::loaders {
 			std::vector<Buffer> buffers;
 			std::vector<BufferView> bufferViews;
 			std::vector<Sampler> samplers;
-			std::vector<utils::Image> images;
+			std::vector<Image> images;
 			std::vector<TextureSPtr> textures;
 			std::vector<MaterialSPtr> materials;
 			std::vector<Renderable3DUPtr> renderable3Ds;

@@ -7,7 +7,7 @@
 namespace se::utils { class FileReader; }
 namespace se::graphics { class Font; struct Character; }
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Class FontReader, it's used to load the Fonts from the given

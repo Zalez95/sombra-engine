@@ -1,11 +1,11 @@
-#include "se/loaders/FontReader.h"
-#include "se/loaders/ImageReader.h"
-#include "se/utils/Image.h"
+#include "se/app/loaders/FontReader.h"
+#include "se/app/loaders/ImageReader.h"
+#include "se/app/Image.h"
 #include "se/utils/FileReader.h"
 #include "se/graphics/text/Font.h"
 #include "se/graphics/Texture.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	FontReader::FontUPtr FontReader::read(utils::FileReader& fileReader) const
 	{
@@ -46,8 +46,8 @@ namespace se::loaders {
 				fileReader.getValuePair(trash, "=", fontTextureName);
 				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
 
-				utils::Image atlasImg;
-				loaders::Result result = ImageReader::read(fontTexturePath, atlasImg, 1);
+				Image atlasImg;
+				Result result = ImageReader::read(fontTexturePath, atlasImg, 1);
 				if (!result) {
 					throw std::runtime_error("Error while reading the atlas image \"" + fontTexturePath + "\": " + result.description());
 				}

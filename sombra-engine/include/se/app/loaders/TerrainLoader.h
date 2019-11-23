@@ -3,23 +3,22 @@
 
 #include <memory>
 #include <string>
-#include "../app/GraphicsManager.h"
-#include "../app/PhysicsManager.h"
-#include "../app/CollisionManager.h"
+#include "../GraphicsManager.h"
+#include "../PhysicsManager.h"
+#include "../CollisionManager.h"
 
-namespace se::app { struct Entity; }
-namespace se::utils { struct Image; }
 namespace se::graphics { class Mesh; }
 namespace se::collision { class TerrainCollider; }
 
-namespace se::loaders {
+namespace se::app {
 
+	struct Entity;
+	struct Image;
 	struct RawMesh;
 
 
 	/**
-	 * Class TerrainLoader, it's used to create meshes from raw data or from the
-	 * given files
+	 * Class TerrainLoader, it's used to create terrain meshes from raw data
 	 */
 	class TerrainLoader
 	{
@@ -71,7 +70,7 @@ namespace se::loaders {
 		 * @return	a pointer to the new Terrain entity */
 		EntityUPtr createTerrain(
 			const std::string& name, float size,
-			const utils::Image& heightMap, float maxHeight
+			const Image& heightMap, float maxHeight
 		);
 	private:
 		/** Creates the mesh of the Terrain from the given data
@@ -81,9 +80,9 @@ namespace se::loaders {
 		 *			that contains the positions in the Y axis of the vertices
 		 *			of the Terrain
 		 * @return	a pointer to the new RawMesh */
-		RawMeshUPtr createRawMesh(
-			const std::string& name, const utils::Image& heightMap
-		) const;
+		static RawMeshUPtr createRawMesh(
+			const std::string& name, const Image& heightMap
+		);
 
 		/** Creates a new TerrainCollider from the given height map
 		 *
@@ -91,9 +90,9 @@ namespace se::loaders {
 		 *			that contains the positions in the Y axis of the vertices
 		 *			of the Terrain.
 		 * @return	a pointer to the new TerrainCollider */
-		TerrainColliderUPtr createTerrainCollider(
-			const utils::Image& heightMap
-		) const;
+		static TerrainColliderUPtr createTerrainCollider(
+			const Image& heightMap
+		);
 
 		/** Return the height located in the height map at the given position
 		 *
@@ -103,9 +102,9 @@ namespace se::loaders {
 		 * @param	x the position in the X axis that we want to read
 		 * @param	z the position in the Z axis that we want to read
 		 * @return	the height at the given position in the range [-0.5, 0.5] */
-		float getHeight(
-			const utils::Image& heightMap, std::size_t x, std::size_t z
-		) const;
+		static float getHeight(
+			const Image& heightMap, std::size_t x, std::size_t z
+		);
 	};
 
 }

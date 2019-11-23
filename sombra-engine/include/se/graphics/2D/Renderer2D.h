@@ -62,6 +62,12 @@ namespace se::graphics {
 		std::queue<const Renderable2D*> mRenderable2Ds;
 
 	public:		// Functions
+		/** Creates a new Renderer2D */
+		Renderer2D();
+
+		/** Class destructor */
+		~Renderer2D();
+
 		/** Submits the given Renderable 2D to the queue of Renderable2Ds to
 		 * render
 		 *

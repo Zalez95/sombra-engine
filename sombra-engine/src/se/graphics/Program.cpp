@@ -77,18 +77,33 @@ namespace se::graphics {
 	}
 
 
-	int Program::getUniformLocation(const char* name) const
+	bool Program::addUniform(const char* name)
 	{
 		GL_WRAP( int uniformLocation = glGetUniformLocation(mProgramId, name) );
 
 		if (uniformLocation == -1) {
 			SOMBRA_WARN_LOG << "Uniform variable \"" << name << "\" wasn't found";
+			return false;
 		}
 
-		return uniformLocation;
+		mUniformLocations.emplace(name, uniformLocation);
+
+		return true;
 	}
 
 
+	void Program::enable() const
+	{
+		GL_WRAP( glUseProgram(mProgramId) );
+	}
+
+
+	void Program::disable() const
+	{
+		GL_WRAP( glUseProgram(0) );
+	}
+
+// Private functions
 	template <>
 	void Program::setUniform<int>(int location, const int& value) const
 	{
@@ -198,18 +213,6 @@ namespace se::graphics {
 	void Program::setUniform<glm::mat4>(int location, const glm::mat4& value) const
 	{
 		setUniformV(location, 1, &value);
-	}
-
-
-	void Program::enable() const
-	{
-		GL_WRAP( glUseProgram(mProgramId) );
-	}
-
-
-	void Program::disable() const
-	{
-		GL_WRAP( glUseProgram(0) );
 	}
 
 }

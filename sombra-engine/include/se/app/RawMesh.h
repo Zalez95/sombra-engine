@@ -5,7 +5,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Struct RawMesh. It holds all the mesh readed data by the loader classes.

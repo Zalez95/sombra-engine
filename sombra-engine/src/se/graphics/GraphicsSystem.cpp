@@ -23,9 +23,6 @@ namespace se::graphics {
 		GL_WRAP( glEnable(GL_CULL_FACE) );
 		GL_WRAP( glCullFace(GL_BACK) );
 		GL_WRAP( glFrontFace(GL_CCW) );			// Render only the counter-clockwise faces
-
-		// The Clear Color of the window
-		GL_WRAP( glClearColor(0.0f, 0.75f, 1.0f, 1.0f) );
 	}
 
 
@@ -77,7 +74,7 @@ namespace se::graphics {
 
 
 	void GraphicsSystem::render() {
-		GL_WRAP( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) );
+		GL_WRAP( glClear(GL_DEPTH_BUFFER_BIT) );
 		for (ILayer* layer : mLayers) {
 			layer->render();
 		}

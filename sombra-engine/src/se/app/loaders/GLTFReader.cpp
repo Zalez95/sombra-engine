@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include "GLTFReader.h"
 #include "se/utils/MathUtils.h"
-#include "se/loaders/ImageReader.h"
+#include "se/app/loaders/ImageReader.h"
 #include "se/graphics/Texture.h"
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Mesh.h"
@@ -12,7 +12,7 @@
 #include "se/animation/LinearAnimations.h"
 #include "se/animation/TransformationAnimators.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	enum class InterpolationType
 	{
@@ -126,7 +126,7 @@ namespace se::loaders {
 		mDefaultMaterial = std::make_shared<graphics::Material>(graphics::Material{
 			"DefaultMaterial",
 			{ glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), nullptr, 1.0f, 1.0f, nullptr },
-			nullptr, nullptr, nullptr, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
+			nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
 		});
 	}
 
@@ -517,8 +517,8 @@ namespace se::loaders {
 		if (itUri != jsonImage.end()) {
 			std::string path = mBasePath + itUri->get<std::string>();
 
-			utils::Image& image = mGLTFData.images.emplace_back();
-			Result result = loaders::ImageReader::read(path, image);
+			Image& image = mGLTFData.images.emplace_back();
+			Result result = ImageReader::read(path, image);
 			if (result) {
 				return Result();
 			}
@@ -543,7 +543,7 @@ namespace se::loaders {
 				return Result(false, "Source index " + std::to_string(sourceId) + " out of range");
 			}
 
-			const utils::Image& image = mGLTFData.images[sourceId];
+			const Image& image = mGLTFData.images[sourceId];
 
 			graphics::ColorFormat format = graphics::ColorFormat::RGB;
 			switch (image.channels) {
@@ -661,6 +661,12 @@ namespace se::loaders {
 			}
 
 			material->normalTexture = mGLTFData.textures[index];
+
+			material->normalScale = 1.0f;
+			auto itScale = itNormalTexture->find("strength");
+			if (itScale != itNormalTexture->end()) {
+				material->normalScale = *itScale;
+			}
 		}
 
 		auto itOcclusionTexture = jsonMaterial.find("occlusionTexture");
@@ -676,6 +682,12 @@ namespace se::loaders {
 			}
 
 			material->occlusionTexture = mGLTFData.textures[index];
+
+			material->occlusionStrength = 1.0f;
+			auto itStrength = itOcclusionTexture->find("strength");
+			if (itStrength != itOcclusionTexture->end()) {
+				material->occlusionStrength = *itStrength;
+			}
 		}
 
 		auto itEmissiveTexture = jsonMaterial.find("emissiveTexture");

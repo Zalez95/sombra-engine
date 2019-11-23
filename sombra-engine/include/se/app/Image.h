@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstddef>
 
-namespace se::utils {
+namespace se::app {
 
 	/**
 	 * Struct Class, it holds the data of an image in memory.

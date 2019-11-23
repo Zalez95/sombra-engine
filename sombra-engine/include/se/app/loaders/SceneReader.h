@@ -4,13 +4,13 @@
 #include <vector>
 #include <memory>
 #include "Result.h"
-#include "../animation/CompositeAnimator.h"
-#include "../animation/AnimationNode.h"
-#include "../graphics/3D/Camera.h"
-#include "../graphics/3D/Renderable3D.h"
-#include "../app/Skin.h"
+#include "se/animation/CompositeAnimator.h"
+#include "se/animation/AnimationNode.h"
+#include "se/graphics/3D/Camera.h"
+#include "se/graphics/3D/Renderable3D.h"
+#include "../Skin.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Class Scene, holds a single Scene Graph

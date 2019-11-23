@@ -4,8 +4,9 @@
 #include "se/graphics/3D/Mesh.h"
 #include "se/collision/HalfEdgeMesh.h"
 
-namespace se::loaders {
+namespace se::app {
 
+	struct Image;
 	struct RawMesh;
 
 
@@ -29,6 +30,32 @@ namespace se::loaders {
 		 *			if the HalfEdgeMesh was loaded correctly or not */
 		static std::pair<collision::HalfEdgeMesh, bool> createHalfEdgeMesh(
 			const RawMesh& rawMesh
+		);
+
+		/** Creates a Sphere mesh from the given data. The generated RawMesh
+		 * will only have setted the positions and face indices.
+		 *
+		 * @param	name the name of the mesh
+		 * @param	segments the number of segments of the Sphere mesh
+		 * @param	rings the number of rings of the Sphere mesh
+		 * @param	radius the radius of the sphere mesh
+		 * @return	the new RawMesh */
+		static RawMesh createSphereMesh(
+			const std::string& name,
+			std::size_t segments, std::size_t rings, float radius
+		);
+
+		/** Creates a Dome mesh from the given data. The generated RawMesh
+		 * will only have setted the positions and face indices.
+		 *
+		 * @param	name the name of the mesh
+		 * @param	segments the number of segments of the Dome mesh
+		 * @param	rings the number of rings of the Dome mesh
+		 * @param	radius the radius of the Dome mesh
+		 * @return	the new RawMesh */
+		static RawMesh createDomeMesh(
+			const std::string& name,
+			std::size_t segments, std::size_t rings, float radius
 		);
 
 		/** Calculates the Normals of the given vertices

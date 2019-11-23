@@ -8,29 +8,27 @@ namespace se::graphics {
 	class Program;
 
 
-	/** Program2D class, it's a high level Program used by the
-	 * SceneRenderer so it doesn't need to search and set the uniform
-	 * variables */
+	/**
+	 * Program2D class, it's a high level Program used by the Renderer2D so it
+	 * doesn't need to search and set the uniform variables
+	 */
 	class Program2D
 	{
 	private:	// Attributes
 		/** The Program of the renderer */
 		Program* mProgram;
 
-		/** Holds the uniform variables location so we don't have to get them
-		 * in each render call */
-		struct UniformLocations
-		{
-			int modelMatrix;
-			int textureSampler;
-		} mUniformLocations;
-
 	public:		// Functions
 		/** Creates a new Program2D */
-		Program2D();
+		Program2D() : mProgram(nullptr) {};
 
-		/** Class destructor */
-		~Program2D();
+		/** Function called for initializing all the needed resources
+		 *
+		 * @return	true on success, false otherwise */
+		virtual bool init();
+
+		/** Function called for cleaning all the needed resources */
+		virtual void end();
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
@@ -49,14 +47,23 @@ namespace se::graphics {
 		 *
 		 * @param	unit the id of the texture sampler */
 		void setTextureSampler(int unit);
-	private:
+	protected:
 		/** Creates the Shaders and the Program that the current class will use
-		 * for setting the uniform variables */
-		void initShaders();
+		 * for setting the uniform variables
+		 *
+		 * @param	vertexShaderPath the path to the vertex shader of the new
+		 *			Program
+		 * @param	fragmentShaderPath the path to the fragment shader of the
+		 *			new Program
+		 * @return	true if the shaders were loaded successfully, false
+		 *			otherwise */
+		virtual bool createProgram(
+			const char* vertexShaderPath,
+			const char* fragmentShaderPath
+		);
 
-		/** Gets the location of all the uniform variables and stores them in
-		 * mUniformLocations */
-		void initUniformLocations();
+		/** Adds the uniform variables to the program */
+		virtual bool addUniforms();
 	};
 
 }

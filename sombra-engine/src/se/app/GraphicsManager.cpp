@@ -12,7 +12,7 @@ namespace se::app {
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, CameraUPtr camera)
+	void GraphicsManager::addCameraEntity(Entity* entity, CameraUPtr camera)
 	{
 		if (!entity || !camera) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Camera";
@@ -32,7 +32,7 @@ namespace se::app {
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D)
+	void GraphicsManager::addRenderableEntity(Entity* entity, Renderable3DUPtr renderable3D, SkinSPtr skin)
 	{
 		if (!entity || !renderable3D) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Renderable3D";
@@ -49,14 +49,20 @@ namespace se::app {
 		// Add the Renderable3D
 		mLayer3D.addRenderable3D(rPtr);
 		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " added successfully";
+		if (skin) {
+			mRenderable3DSkins.emplace(rPtr, skin);
+			SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " and skin " << skin.get() << " added successfully";
+		}
+		else {
+			SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " added successfully";
+		}
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, Renderable3DUPtr renderable3D, SkinSPtr skin)
+	void GraphicsManager::addSkyEntity(Entity* entity, Renderable3DUPtr renderable3D)
 	{
 		if (!entity || !renderable3D) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Renderable3D with skin";
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Sky Renderable3D";
 			return;
 		}
 
@@ -67,15 +73,14 @@ namespace se::app {
 		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
 		rPtr->setModelMatrix(translation * rotation * scale);
 
-		// Add the Renderable3D and the skin
-		mLayer3D.addRenderable3D(rPtr);
-		mRenderable3DSkins.emplace(renderable3D.get(), skin);
+		// Add the Renderable3D
+		mLayer3D.setSky(rPtr);
 		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " and skin " << skin.get() << " added successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Sky Renderable3D " << rPtr << " added successfully";
 	}
 
 
-	void GraphicsManager::addEntity(Entity* entity, PointLightUPtr pointLight)
+	void GraphicsManager::addPointLightEntity(Entity* entity, PointLightUPtr pointLight)
 	{
 		if (!entity || !pointLight) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as PointLight";

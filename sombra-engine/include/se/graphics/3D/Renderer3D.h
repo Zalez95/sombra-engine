@@ -4,7 +4,8 @@
 #include <queue>
 #include <glm/glm.hpp>
 #include "Program3D.h"
-#include "Program3DSkinning.h"
+#include "ProgramPBR.h"
+#include "ProgramPBRSkinning.h"
 
 namespace se::graphics {
 
@@ -14,17 +15,20 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Renderer3D, it's a Forward Renderer used for rendering
-	 * Renderable3Ds without skeletal animation
+	 * Class Renderer3D, it's a Forward Renderer used for rendering the 3D scene
 	 */
 	class Renderer3D
 	{
 	private:	// Attributes
-		/** The Program of the renderer */
-		Program3D mProgram;
+		/** The Program used for drawing the Renderable3Ds */
+		ProgramPBR mProgramPBR;
 
-		/** The Program with skinning animation of the renderer */
-		Program3DSkinning mSkinningProgram;
+		/** The Program used for drawing the Renderable3Ds with skinning
+		 * animation */
+		ProgramPBRSkinning mProgramPBRSkinning;
+
+		/** The Program used for drawing the sky */
+		Program3D mProgramSky;
 
 		/** The Renderable3Ds that we want to render */
 		std::queue<const Renderable3D*> mRenderable3Ds;
@@ -46,6 +50,13 @@ namespace se::graphics {
 		 *			to render */
 		void submit(const Renderable3D* renderable3D);
 
+		/** Renders the given Sky
+		 *
+		 * @param	camera a pointer to the Camera used to set the perspective
+		 * 			from where we are going to render the scene
+		 * @param	sky the Sky mesh and its properties to render */
+		void renderSky(const Camera* camera, const Renderable3D& sky);
+
 		/** Renders the Renderable3Ds that currently are in the render queue
 		 *
 		 * @param	camera a pointer to the Camera used to set the perspective
@@ -63,7 +74,7 @@ namespace se::graphics {
 		 *
 		 * @param	material the material to use
 		 * @param	program the program to use */
-		void startMaterial(const Material& material, Program3D& program);
+		void startMaterial(const Material& material, ProgramPBR& program);
 
 		/** Clears the properties setted for rendering with the given material
 		 *

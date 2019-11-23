@@ -103,7 +103,12 @@ namespace se::app {
 			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
 
 			float deltaTime = durationInSeconds.count();
-			if (deltaTime >= mUpdateTime) {
+			float waitTime = mUpdateTime - deltaTime;
+			if (waitTime > 0) {
+				SOMBRA_DEBUG_LOG << "Wait " << waitTime << " seconds";
+				std::this_thread::sleep_for( std::chrono::duration<float>(waitTime) );
+			}
+			else {
 				lastTP = currentTP;
 				std::cout << deltaTime << "ms\r";
 
@@ -125,10 +130,6 @@ namespace se::app {
 				SOMBRA_INFO_LOG << "Render phase";
 				mGraphicsManager->render();
 				mWindowSystem->swapBuffers();
-			}
-			else {
-				SOMBRA_DEBUG_LOG << "Wait " << mUpdateTime - deltaTime << " seconds";
-				std::this_thread::sleep_for( std::chrono::duration<float>(mUpdateTime - deltaTime) );
 			}
 		}
 

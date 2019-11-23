@@ -3,9 +3,9 @@
 
 #include <string>
 #include "Result.h"
-#include "../utils/Image.h"
+#include "../Image.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * ImageReader Class. Its used to read and load images from files.
@@ -21,7 +21,7 @@ namespace se::loaders {
 		 *			load (automatically detected by default)
 		 * @return	a Result object with the result of the operation */
 		static Result read(
-			const std::string& path, utils::Image& output,
+			const std::string& path, Image& output,
 			int forceNumChannels = 0
 		);
 	};

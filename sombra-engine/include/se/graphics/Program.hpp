@@ -6,14 +6,20 @@ namespace se::graphics {
 	template <typename T>
 	void Program::setUniform(const char* name, const T& value) const
 	{
-		setUniform(getUniformLocation(name), value);
+		auto itUniform = mUniformLocations.find(name);
+		if (itUniform != mUniformLocations.end()) {
+			setUniform(itUniform->second, value);
+		}
 	}
 
 
 	template <typename T>
 	void Program::setUniformV(const char* name, std::size_t count, const T* valuePtr) const
 	{
-		setUniformV(getUniformLocation(name), count, valuePtr);
+		auto itUniform = mUniformLocations.find(name);
+		if (itUniform != mUniformLocations.end()) {
+			setUniformV(itUniform->second, count, valuePtr);
+		}
 	}
 
 }

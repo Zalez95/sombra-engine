@@ -1,9 +1,9 @@
 #include <SOIL/SOIL.h>
-#include "se/loaders/ImageReader.h"
+#include "se/app/loaders/ImageReader.h"
 
-namespace se::loaders {
+namespace se::app {
 
-	Result ImageReader::read(const std::string& path, utils::Image& output, int forceNumChannels)
+	Result ImageReader::read(const std::string& path, Image& output, int forceNumChannels)
 	{
 		int soilForceChannels = forceNumChannels;
 		if (forceNumChannels <= 0) {
@@ -16,7 +16,7 @@ namespace se::loaders {
 			return Result(false, "Error loading the image located in \"" + path + "\": " + SOIL_last_result());
 		}
 
-		output = utils::Image{
+		output = Image{
 			std::unique_ptr<std::byte>(reinterpret_cast<std::byte*>(pixels)),
 			static_cast<std::size_t>(width), static_cast<std::size_t>(height),
 			channels

@@ -1,13 +1,16 @@
 #include <array>
 #include <glm/gtc/type_ptr.hpp>
-#include "se/loaders/MeshLoader.h"
-#include "se/loaders/RawMesh.h"
+#include "se/app/loaders/MeshLoader.h"
+#include "se/app/RawMesh.h"
 #include "se/graphics/buffers/VertexBuffer.h"
 #include "se/graphics/buffers/IndexBuffer.h"
 #include "se/graphics/buffers/VertexArray.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 
-namespace se::loaders {
+namespace se::app {
+
+	static void createInternalRingsMesh(RawMesh&, std::size_t, std::size_t, float, glm::vec2);
+
 
 	graphics::Mesh MeshLoader::createGraphicsMesh(const RawMesh& rawMesh)
 	{
@@ -102,6 +105,62 @@ namespace se::loaders {
 	}
 
 
+	RawMesh MeshLoader::createSphereMesh(
+		const std::string& name,
+		std::size_t segments, std::size_t rings, float radius
+	) {
+		RawMesh rawMesh(name);
+		rawMesh.positions.reserve((rings - 1) * segments + 2);
+		rawMesh.faceIndices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+
+		// Creates the bottom skullcap
+		rawMesh.positions.push_back({ 0.0f, -radius, 0.0f });
+		for (std::size_t j = 0; j < segments; ++j) {
+			rawMesh.faceIndices.push_back(0);
+			rawMesh.faceIndices.push_back(j + 1);
+			rawMesh.faceIndices.push_back((j + 1 < segments)? j + 2 : 1);
+		}
+
+		// Creates the internal rings
+		float ringAngle = glm::pi<float>() / rings;
+		createInternalRingsMesh(rawMesh, segments, rings-2, radius, { ringAngle - glm::half_pi<float>(), glm::half_pi<float>() - ringAngle });
+
+		// Creates the top skullcap
+		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
+		for (std::size_t j = 0; j < segments; ++j) {
+			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 2 - segments + j);
+			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 1);
+			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+		}
+
+		return std::move(rawMesh);
+	}
+
+
+	RawMesh MeshLoader::createDomeMesh(
+		const std::string& name,
+		std::size_t segments, std::size_t rings, float radius
+	) {
+		RawMesh rawMesh(name);
+		rawMesh.positions.reserve(rings * segments + 1);
+		rawMesh.faceIndices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+
+		// Creates the internal rings
+		float ringAngle = glm::pi<float>() / rings;
+		createInternalRingsMesh(rawMesh, segments, rings-1, radius, { 0, glm::half_pi<float>() - ringAngle });
+
+		// Creates the top skullcap
+		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
+		for (std::size_t j = 0; j < segments; ++j) {
+			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 2 - segments + j);
+			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 1);
+			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+		}
+
+		return std::move(rawMesh);
+	}
+
+
 	std::vector<glm::vec3> MeshLoader::calculateNormals(
 		const std::vector<glm::vec3>& positions,
 		const std::vector<unsigned short>& faceIndices
@@ -161,6 +220,47 @@ namespace se::loaders {
 		}
 
 		return tangents;
+	}
+
+
+	void createInternalRingsMesh(
+		RawMesh& rawMesh,
+		std::size_t segments, std::size_t rings, float radius,
+		glm::vec2 latitude
+	) {
+		std::size_t currentRingIndex = rawMesh.positions.size();
+
+		// Creates the vertices
+		float segmentAngle = glm::two_pi<float>() / segments;
+		float ringAngle = (latitude[1] - latitude[0]) / rings;
+
+		for (std::size_t i = 0; i < rings + 1; ++i) {
+			float currentRingLatitude = i * ringAngle + latitude[0];
+			float currentRingRadius = radius * glm::cos(currentRingLatitude);
+
+			float y = radius * glm::sin(currentRingLatitude);
+			for (std::size_t j = 0; j < segments; ++j) {
+				float currentSegmentLongitude = j * segmentAngle - glm::pi<float>();
+				float x = currentRingRadius * glm::cos(currentSegmentLongitude);
+				float z = currentRingRadius * glm::sin(currentSegmentLongitude);
+				rawMesh.positions.push_back({ x, y, z });
+			}
+		}
+
+		// Creates the face indices
+		for (std::size_t i = 0; i < rings; ++i) {
+			std::size_t previousRingIndex = currentRingIndex;
+			currentRingIndex += segments;
+
+			for (std::size_t j = 0; j < segments; ++j) {
+				rawMesh.faceIndices.push_back(previousRingIndex + j);
+				rawMesh.faceIndices.push_back(currentRingIndex + j);
+				rawMesh.faceIndices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
+				rawMesh.faceIndices.push_back(previousRingIndex + j);
+				rawMesh.faceIndices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
+				rawMesh.faceIndices.push_back((j + 1 < segments)? previousRingIndex + j + 1 : previousRingIndex);
+			}
+		}
 	}
 
 }

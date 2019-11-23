@@ -6,7 +6,7 @@
 
 namespace se::utils { class FileReader; }
 
-namespace se::loaders {
+namespace se::app {
 
 	/**
 	 * Class TerrainReader, it's used to create meshes from raw data or from the

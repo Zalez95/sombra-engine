@@ -2,7 +2,6 @@
 #define LAYER_3D_H
 
 #include <vector>
-#include <glm/glm.hpp>
 #include "../ILayer.h"
 #include "Renderer3D.h"
 
@@ -20,14 +19,8 @@ namespace se::graphics {
 	class Layer3D : public ILayer
 	{
 	private:	// Attributes
-		static constexpr unsigned int kWidth	= 640;
-		static constexpr unsigned int kHeight	= 480;
-
 		/** The Renderer used by the layer to render the Scene */
 		Renderer3D mRenderer3D;
-
-		/** The Camera used by the Layer */
-		Camera* mCamera;
 
 		/** The 3D renderables that the layer must render */
 		std::vector<const Renderable3D*> mRenderable3Ds;
@@ -35,9 +28,15 @@ namespace se::graphics {
 		/** The lights that illuminates the scene */
 		std::vector<const PointLight*> mPointLights;
 
+		/** The sky used by the Layer */
+		const Renderable3D* mSky;
+
+		/** The Camera used by the Layer */
+		Camera* mCamera;
+
 	public:		// Functions
 		/** Creates a new Layer3D */
-		Layer3D() : mCamera(nullptr) {};
+		Layer3D() : mSky(nullptr), mCamera(nullptr) {};
 
 		/** Adds the given Renderable to the Layer so it will be rendered
 		 *
@@ -64,6 +63,11 @@ namespace se::graphics {
 		 * @param	pointLight pointLight a pointer to the PointLight to
 		 *			remove */
 		void removePointLight(const PointLight* pointLight);
+
+		/** Sets the given Renderable as the Layer's Sky
+		 *
+		 * @param	sky a pointer to the Renderable3D used as Sky */
+		void setSky(const Renderable3D* sky) { mSky = sky; }
 
 		/** Sets the given camera as the one used to render the Scene */
 		void setCamera(Camera* camera) { mCamera = camera; };

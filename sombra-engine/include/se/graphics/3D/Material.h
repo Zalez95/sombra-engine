@@ -50,8 +50,14 @@ namespace se::graphics {
 		/** The normal map texture */
 		TextureSPtr normalTexture;
 
+		/** The scale applied to the normal map texture */
+		float normalScale;
+
 		/** The occlusion map texture */
 		TextureSPtr occlusionTexture;
+
+		/** The amount of occlusion applied */
+		float occlusionStrength;
 
 		/** The emissive map texture */
 		TextureSPtr emissiveTexture;

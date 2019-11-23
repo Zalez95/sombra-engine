@@ -7,6 +7,9 @@ namespace se::graphics {
 	{
 		GL_WRAP( glGenTextures(1, &mTextureId) );
 		SOMBRA_TRACE_LOG << "Created Texture " << mTextureId;
+
+		setFiltering(TextureFilter::Nearest, TextureFilter::Nearest);
+		setWrapping(TextureWrap::Repeat, TextureWrap::Repeat);
 	}
 
 

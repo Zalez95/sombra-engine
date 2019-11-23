@@ -170,14 +170,18 @@ namespace se::app {
 			if ((itEntityRB1 != mEntityRBMap.end()) && (itEntityRB2 != mEntityRBMap.end())) {
 				physics::RigidBody* rb1 = itEntityRB1->second.get();
 				physics::RigidBody* rb2 = itEntityRB2->second.get();
+				if ((rb1->getConfig().invertedMass != 0.0f) || (rb2->getConfig().invertedMass != 0.0f)) {
+					SOMBRA_DEBUG_LOG << "Handling CollisionEvent between " << rb1 << " and " << rb2;
 
-				SOMBRA_DEBUG_LOG << "Handling CollisionEvent between " << rb1 << " and " << rb2;
-
-				if (manifold->state[collision::Manifold::State::Intersecting]) {
-					handleIntersectingManifold(rb1, rb2, manifold);
+					if (manifold->state[collision::Manifold::State::Intersecting]) {
+						handleIntersectingManifold(rb1, rb2, manifold);
+					}
+					else {
+						handleDisjointManifold(manifold);
+					}
 				}
 				else {
-					handleDisjointManifold(manifold);
+					SOMBRA_TRACE_LOG << "Skipping CollisionEvent between infinite mass RigidBodies " << rb1 << " and " << rb2;
 				}
 			}
 			else {

@@ -16,7 +16,9 @@ namespace se::graphics {
 		unsigned int mTextureId;
 
 	public:		// Functions
-		/** Creates a new Texture */
+		/** Creates a new Texture
+		 * @note	the generated Texture will have Nearest filtering and
+		 *			Repeat wrapping enabled by default */
 		Texture();
 		Texture(const Texture& other) = delete;
 		Texture(Texture&& other);

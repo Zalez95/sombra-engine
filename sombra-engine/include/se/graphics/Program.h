@@ -1,6 +1,9 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
+#include <string>
+#include <unordered_map>
+
 namespace se::graphics {
 
 	class Shader;
@@ -15,6 +18,10 @@ namespace se::graphics {
 	private:	// Attributes
 		/** The id of the shader object */
 		unsigned int mProgramId;
+
+		/** The maps the uniform variable names with their respective
+		 * locations */
+		std::unordered_map<std::string, int> mUniformLocations;
 
 	public:		// Functions
 		/** Creates and links a OpenGL Program from the specified shaders
@@ -33,13 +40,13 @@ namespace se::graphics {
 		Program& operator=(const Program& other) = delete;
 		Program& operator=(Program&& other);
 
-		/** Return the location of the given uniform name
+		/** Adds the given uniform variable to the program, so it can be setted
+		 * later with the @see setUniform and @see setUniformV functions
 		 *
-		 * @param	name the name of the uniform variable that we want
-		 *			the location
-		 * @return	the location of the uniform variable, -1 if the uniform
-		 *			name wasn't found */
-		int getUniformLocation(const char* name) const;
+		 * @param	name the name of the uniform variable that we want to add
+		 * @return	true if the uniform variable was found in the program
+		 *			shaders, false otherwise */
+		bool addUniform(const char* name);
 
 		/** Sets the value of the given uniform variable
 		 *
@@ -48,14 +55,6 @@ namespace se::graphics {
 		 * @note	if the name wasn't found, the data will be ignored */
 		template <typename T>
 		void setUniform(const char* name, const T& value) const;
-
-		/** Sets the value of the given uniform variable
-		 *
-		 * @param	location the uniform variable location
-		 * @param	value the new value of the variable
-		 * @note	if the location is -1, the data will be ignored */
-		template <typename T>
-		void setUniform(int location, const T& value) const;
 
 		/** Sets the values of the given array of values uniform variable
 		 *
@@ -68,6 +67,21 @@ namespace se::graphics {
 			const char* name, std::size_t count, const T* valuePtr
 		) const;
 
+		/** Uses the current shader object so they can be used as part
+		 * of the current rendering state */
+		void enable() const;
+
+		/** Resets the current shader object */
+		void disable() const;
+	private:
+		/** Sets the value of the given uniform variable
+		 *
+		 * @param	location the uniform variable location
+		 * @param	value the new value of the variable
+		 * @note	if the location is -1, the data will be ignored */
+		template <typename T>
+		void setUniform(int location, const T& value) const;
+
 		/** Sets the values of the given array of values uniform variable
 		 *
 		 * @param	location the uniform variable location
@@ -78,13 +92,6 @@ namespace se::graphics {
 		void setUniformV(
 			int location, std::size_t count, const T* valuePtr
 		) const;
-
-		/** Uses the current shader object so they can be used as part
-		 * of the current rendering state */
-		void enable() const;
-
-		/** Resets the current shader object */
-		void disable() const;
 	};
 
 }

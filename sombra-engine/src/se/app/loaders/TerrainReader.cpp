@@ -1,9 +1,9 @@
-#include "se/loaders/TerrainReader.h"
-#include "se/loaders/ImageReader.h"
+#include "se/app/loaders/TerrainReader.h"
+#include "se/app/loaders/ImageReader.h"
 #include "se/utils/FileReader.h"
 #include "se/app/Entity.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	TerrainReader::EntityUPtr TerrainReader::read(utils::FileReader& fileReader)
 	{
@@ -49,8 +49,8 @@ namespace se::loaders {
 			}
 		}
 
-		utils::Image heightMap;
-		loaders::Result result = ImageReader::read(heightMapPath, heightMap, 1);
+		Image heightMap;
+		Result result = ImageReader::read(heightMapPath, heightMap, 1);
 		if (!result) {
 			throw std::runtime_error("Error while reading the heighMap \"" + heightMapPath + "\": " + result.description());
 		}

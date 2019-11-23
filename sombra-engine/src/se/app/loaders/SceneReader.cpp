@@ -1,7 +1,7 @@
-#include "se/loaders/SceneReader.h"
+#include "se/app/loaders/SceneReader.h"
 #include "GLTFReader.h"
 
-namespace se::loaders {
+namespace se::app {
 
 	SceneReader::SceneReaderUPtr SceneReader::createSceneReader(SceneFileType fileType)
 	{

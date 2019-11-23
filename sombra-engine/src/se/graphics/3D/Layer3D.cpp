@@ -39,8 +39,13 @@ namespace se::graphics {
 
 	void Layer3D::render()
 	{
-		for (const Renderable3D* renderable3D : mRenderable3Ds)
+		if (mSky) {
+			mRenderer3D.renderSky(mCamera, *mSky);
+		}
+
+		for (const Renderable3D* renderable3D : mRenderable3Ds) {
 			mRenderer3D.submit(renderable3D);
+		}
 		mRenderer3D.render(mCamera, mPointLights);
 	}
 

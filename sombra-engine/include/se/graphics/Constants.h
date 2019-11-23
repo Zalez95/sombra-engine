@@ -18,6 +18,7 @@ namespace se::graphics {
 	enum class ShaderType
 	{
 		Vertex,
+		Geometry,
 		Fragment
 	};
 

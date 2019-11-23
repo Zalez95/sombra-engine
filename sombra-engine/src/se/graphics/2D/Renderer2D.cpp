@@ -22,6 +22,20 @@ namespace se::graphics {
 	}
 
 
+	Renderer2D::Renderer2D()
+	{
+		if (!mProgram.init()) {
+			SOMBRA_ERROR_LOG << "Failed to create the Program2D";
+		}
+	}
+
+
+	Renderer2D::~Renderer2D()
+	{
+		mProgram.end();
+	}
+
+
 	void Renderer2D::submit(const Renderable2D* renderable2D)
 	{
 		if (renderable2D) {
