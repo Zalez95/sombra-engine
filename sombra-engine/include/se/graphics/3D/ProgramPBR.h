@@ -8,7 +8,7 @@
 namespace se::graphics {
 
 	struct Material;
-	struct PointLight;
+	struct ILight;
 
 
 	/**
@@ -46,15 +46,14 @@ namespace se::graphics {
 		 *			uniform variables in the shaders */
 		void setMaterial(const Material& material) const;
 
-		/** Sets the uniform variables for the given PointLights
+		/** Sets the uniform variables for the given ILights
 		 *
-		 * @param	pointLights a vector of pointer to the PointLights with the
-		 *			data that we want to set as uniform variables in the
-		 *			shaders
-		 * @note	the maximum number of PointLights is MAX_LIGHTS, so if
+		 * @param	lights a vector of pointers to the ILights with the data
+		 *			that we want to set as uniform variables in the shaders
+		 * @note	the maximum number of Lights is MAX_LIGHTS, so if
 		 *			there are more lights in the given vector only the first
 		 *			lights of the vector will be submited */
-		void setLights(const std::vector<const PointLight*>& pointLights) const;
+		void setLights(const std::vector<const ILight*>& lights) const;
 	protected:
 		/** Adds the uniform variables to the program */
 		virtual bool addUniforms();

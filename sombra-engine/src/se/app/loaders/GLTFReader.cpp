@@ -276,6 +276,15 @@ namespace se::app {
 			}
 		}
 
+		if (auto itExtensions = jsonGLTF.find("extensions"); itExtensions != jsonGLTF.end()) {
+			if (auto itKHRLights = itExtensions->find("KHR_lights_punctual"); itKHRLights != itExtensions->end()) {
+				Result result = parseKHRLights(*itKHRLights);
+				if (!result) {
+					return Result(false, std::string("Failed to read the KHR_lights_punctual extension: ") + result.description());
+				}
+			}
+		}
+
 		if (auto itSkins = jsonGLTF.find("skins"); itSkins != jsonGLTF.end()) {
 			mGLTFData.skins.reserve(itSkins->size());
 			for (std::size_t skinId = 0; skinId < itSkins->size(); ++skinId) {
@@ -901,7 +910,7 @@ namespace se::app {
 
 	Result GLTFReader::parseCamera(const nlohmann::json& jsonCamera)
 	{
-		auto itType = jsonCamera.find("name");
+		auto itType = jsonCamera.find("type");
 		auto itPerspective = jsonCamera.find("perspective");
 		auto itOrthographic = jsonCamera.find("orthographic");
 
@@ -1298,6 +1307,96 @@ namespace se::app {
 		compositeAnimator->setLoopTime(maxLoopTime);
 
 		mGLTFData.compositeAnimators.emplace_back(std::move(compositeAnimator));
+		return Result();
+	}
+
+
+	Result GLTFReader::parseKHRLights(const nlohmann::json& jsonKHRLights)
+	{
+		if (auto itLights = jsonKHRLights.find("lights"); itLights != jsonKHRLights.end()) {
+			mGLTFData.lights.reserve(itLights->size());
+			for (std::size_t lightId = 0; lightId < itLights->size(); ++lightId) {
+				Result result = parseLight( (*itLights)[lightId] );
+				if (!result) {
+					return Result(false, "Failed to read the lights property at light " + std::to_string(lightId) + ": " + result.description());
+				}
+			}
+		}
+		else {
+			return Result(false, "Missing \"lights\" property");
+		}
+
+		return Result();
+	}
+
+
+	Result GLTFReader::parseLight(const nlohmann::json& jsonLight)
+	{
+		std::unique_ptr<graphics::ILight> light;
+
+		auto itType = jsonLight.find("type");
+		if (itType != jsonLight.end()) {
+			if (*itType == "directional") {
+				auto directionalLight = std::make_unique<graphics::DirectionalLight>();
+				directionalLight->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+				light = std::move(directionalLight);
+			}
+			else if (*itType == "point") {
+				auto pointLight = std::make_unique<graphics::PointLight>();
+				pointLight->position = glm::vec3(0.0f);
+
+				auto itRange = jsonLight.find("range");
+				pointLight->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
+
+				light = std::move(pointLight);
+			}
+			else if (*itType == "spot") {
+				auto spotLight = std::make_unique<graphics::SpotLight>();
+				spotLight->position = glm::vec3(0.0f);
+				spotLight->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+
+				auto itRange = jsonLight.find("range");
+				spotLight->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
+
+				auto itSpot = jsonLight.find("spot");
+				if (itSpot == jsonLight.end()) {
+					return Result(false, "A SpotLight must have a spot property");
+				}
+
+				auto itInnerConeAngle = itSpot->find("innerConeAngle");
+				spotLight->innerConeAngle = (itInnerConeAngle != itSpot->end())? itInnerConeAngle->get<float>() : 0.0f;
+
+				auto itOuterConeAngle = itSpot->find("outerConeAngle");
+				spotLight->outerConeAngle = (itOuterConeAngle != itSpot->end())? itOuterConeAngle->get<float>() : glm::quarter_pi<float>();
+
+				light = std::move(spotLight);
+			}
+			else {
+				return Result(false, "Invalid type property \"" + itType->get<std::string>() + "\"");
+			}
+		}
+		else {
+			return Result(false, "A light must have a type property");
+		}
+
+		auto itName = jsonLight.find("name");
+		light->name = (itName != jsonLight.end())? *itName : "";
+
+		auto itColor = jsonLight.find("color");
+		if (itColor != jsonLight.end()) {
+			std::vector<float> fVector = *itColor;
+			if (fVector.size() >= 3) {
+				light->color = *reinterpret_cast<glm::vec3*>(fVector.data());
+			}
+		}
+		else {
+			light->color = glm::vec3(1.0f);
+		}
+
+		auto itIntensity = jsonLight.find("intensity");
+		light->intensity = (itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f;
+
+		mGLTFData.lights.emplace_back(std::move(light));
 		return Result();
 	}
 

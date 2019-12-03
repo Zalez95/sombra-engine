@@ -20,19 +20,19 @@ namespace se::graphics {
 	}
 
 
-	void Layer3D::addPointLight(const PointLight* pointLight)
+	void Layer3D::addLight(const ILight* light)
 	{
-		if (pointLight) {
-			mPointLights.push_back(pointLight);
+		if (light) {
+			mLights.push_back(light);
 		}
 	}
 
 
-	void Layer3D::removePointLight(const PointLight* pointLight)
+	void Layer3D::removeLight(const ILight* light)
 	{
-		mPointLights.erase(
-			std::remove(mPointLights.begin(), mPointLights.end(), pointLight),
-			mPointLights.end()
+		mLights.erase(
+			std::remove(mLights.begin(), mLights.end(), light),
+			mLights.end()
 		);
 	}
 
@@ -46,7 +46,7 @@ namespace se::graphics {
 		for (const Renderable3D* renderable3D : mRenderable3Ds) {
 			mRenderer3D.submit(renderable3D);
 		}
-		mRenderer3D.render(mCamera, mPointLights);
+		mRenderer3D.render(mCamera, mLights);
 	}
 
 }

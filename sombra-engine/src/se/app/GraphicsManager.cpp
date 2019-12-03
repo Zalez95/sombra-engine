@@ -80,21 +80,30 @@ namespace se::app {
 	}
 
 
-	void GraphicsManager::addPointLightEntity(Entity* entity, PointLightUPtr pointLight)
+	void GraphicsManager::addLightEntity(Entity* entity, LightUPtr light)
 	{
-		if (!entity || !pointLight) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as PointLight";
+		if (!entity || !light) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as ILight";
 			return;
 		}
 
 		// The PointLight initial data is overridden by the entity one
-		graphics::PointLight* pPtr = pointLight.get();
-		pPtr->position = entity->position;
+		graphics::ILight* lPtr = light.get();
+		if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(lPtr))) {
+			dLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+		}
+		else if (auto pLight = (dynamic_cast<graphics::PointLight*>(lPtr))) {
+			pLight->position = entity->position;
+		}
+		else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(lPtr))) {
+			sLight->position = entity->position;
+			sLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+		}
 
-		// Add the PointLight
-		mLayer3D.addPointLight(pPtr);
-		mPointLightEntities.emplace(entity, std::move(pointLight));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with PointLight " << pPtr << " added successfully";
+		// Add the ILight
+		mLayer3D.addLight(lPtr);
+		mLightEntities.emplace(entity, std::move(light));
+		SOMBRA_INFO_LOG << "Entity " << entity << " with ILight " << lPtr << " added successfully";
 	}
 
 
@@ -114,11 +123,11 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Renderable3D Entity " << entity << " removed successfully";
 		}
 
-		auto itPointLight = mPointLightEntities.find(entity);
-		if (itPointLight != mPointLightEntities.end()) {
-			mLayer3D.removePointLight(itPointLight->second.get());
-			mPointLightEntities.erase(itPointLight);
-			SOMBRA_INFO_LOG << "PointLight Entity " << entity << " removed successfully";
+		auto itLight = mLightEntities.find(entity);
+		if (itLight != mLightEntities.end()) {
+			mLayer3D.removeLight(itLight->second.get());
+			mLightEntities.erase(itLight);
+			SOMBRA_INFO_LOG << "ILight Entity " << entity << " removed successfully";
 		}
 	}
 
@@ -159,13 +168,22 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_DEBUG_LOG << "Updating the PointLights";
-		for (auto& pair : mPointLightEntities) {
+		SOMBRA_DEBUG_LOG << "Updating the ILights";
+		for (auto& pair : mLightEntities) {
 			Entity* entity = pair.first;
-			graphics::PointLight* pointLight = pair.second.get();
+			graphics::ILight* light = pair.second.get();
 
 			if (entity->updated.any()) {
-				pointLight->position = entity->position;
+				if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(light))) {
+					dLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+				}
+				else if (auto pLight = (dynamic_cast<graphics::PointLight*>(light))) {
+					pLight->position = entity->position;
+				}
+				else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(light))) {
+					sLight->position = entity->position;
+					sLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+				}
 			}
 		}
 

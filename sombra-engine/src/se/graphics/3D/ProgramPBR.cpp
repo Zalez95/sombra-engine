@@ -70,22 +70,24 @@ namespace se::graphics {
 	}
 
 
-	void ProgramPBR::setLights(const std::vector<const PointLight*>& pointLights) const
+	void ProgramPBR::setLights(const std::vector<const ILight*>& lights) const
 	{
-		int numPointLights = std::min(static_cast<int>(pointLights.size()), kMaxPointLights);
-
-		mProgram->setUniform("uNumPointLights", numPointLights);
-
+		int numPointLights = 0;
 		std::array<glm::vec3, kMaxPointLights> positions;
-		for (int i = 0; i < numPointLights; ++i) {
-			const PointLight& pLight = *pointLights[i];
-			mProgram->setUniform(("uPointLights[" + std::to_string(i) + "].baseLight.lightColor").c_str(), pLight.base.lightColor);
-			mProgram->setUniform(("uPointLights[" + std::to_string(i) + "].attenuation.constant").c_str(), pLight.attenuation.constant);
-			mProgram->setUniform(("uPointLights[" + std::to_string(i) + "].attenuation.linear").c_str(), pLight.attenuation.linear);
-			mProgram->setUniform(("uPointLights[" + std::to_string(i) + "].attenuation.exponential").c_str(), pLight.attenuation.exponential);
-			positions[i] = pLight.position;
+
+		for (const ILight* light : lights) {
+			const PointLight* pLight = dynamic_cast<const PointLight*>(light);
+			if (pLight && (numPointLights < kMaxPointLights)) {
+				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].color").c_str(), pLight->color);
+				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].intensity").c_str(), pLight->intensity);
+				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].inverseRange").c_str(), pLight->inverseRange);
+				positions[numPointLights] = pLight->position;
+
+				numPointLights++;
+			}
 		}
 
+		mProgram->setUniform("uNumPointLights", numPointLights);
 		mProgram->setUniformV("uPointLightsPositions", numPointLights, positions.data());
 	}
 
@@ -122,10 +124,9 @@ namespace se::graphics {
 			return false;
 		}
 		for (int i = 0; i < kMaxPointLights; ++i) {
-			if (!mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].baseLight.lightColor").c_str())
-				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].attenuation.constant").c_str())
-				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].attenuation.linear").c_str())
-				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].attenuation.exponential").c_str())
+			if (!mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].color").c_str())
+				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].intensity").c_str())
+				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].inverseRange").c_str())
 			) {
 				return false;
 			}

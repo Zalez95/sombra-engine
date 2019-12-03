@@ -9,7 +9,7 @@ namespace se::graphics {
 
 	class Renderable3D;
 	class Camera;
-	struct PointLight;
+	struct ILight;
 
 
 	/**
@@ -26,7 +26,7 @@ namespace se::graphics {
 		std::vector<const Renderable3D*> mRenderable3Ds;
 
 		/** The lights that illuminates the scene */
-		std::vector<const PointLight*> mPointLights;
+		std::vector<const ILight*> mLights;
 
 		/** The sky used by the Layer */
 		const Renderable3D* mSky;
@@ -51,18 +51,16 @@ namespace se::graphics {
 		 *			remove */
 		void removeRenderable3D(const Renderable3D* renderable3D);
 
-		/** Adds the given PointLight to the Layer so it will be rendered
+		/** Adds the given ILight to the Layer so it will be rendered
 		 *
-		 * @param	pointLight PointLight a pointer to the PointLight to
-		 *			add */
-		void addPointLight(const PointLight* pointLight);
+		 * @param	light a pointer to the ILight to add */
+		void addLight(const ILight* light);
 
-		/** Removes the given PointLight from the Layer so it will no longer
-		 * be rendered
+		/** Removes the given ILight from the Layer so it will no longer be
+		 * rendered
 		 *
-		 * @param	pointLight pointLight a pointer to the PointLight to
-		 *			remove */
-		void removePointLight(const PointLight* pointLight);
+		 * @param	light a pointer to the ILight to remove */
+		void removeLight(const ILight* light);
 
 		/** Sets the given Renderable as the Layer's Sky
 		 *

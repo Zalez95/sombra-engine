@@ -35,22 +35,12 @@ struct Material
 	float alphaCutoff;
 };
 
-struct BaseLight
-{
-	vec3 lightColor;
-};
-
-struct Attenuation
-{
-	float constant;
-	float linear;
-	float exponential;
-};
 
 struct PointLight
 {
-	BaseLight baseLight;
-	Attenuation attenuation;
+	vec3 color;
+	float intensity;
+	float inverseRange;
 };
 
 
@@ -123,13 +113,11 @@ vec3 fresnelSchlick(float cosTheta, vec3 reflectivity)
 vec3 calculateRadiance(PointLight pointLight, float lightDistance)
 {
 	// Calculate the attenuation of the point light
-	float attenuation	= pointLight.attenuation.constant
-						+ pointLight.attenuation.linear * lightDistance
-						+ pointLight.attenuation.exponential * lightDistance * lightDistance;
-	attenuation			= (attenuation != 0.0)? 1.0 / attenuation : 1.0;
+	float attenuation = clamp(1.0 - pow(lightDistance * pointLight.inverseRange, 4.0), 0.0, 1.0);
+	attenuation /= lightDistance * lightDistance;
 
 	// Calculate the light radiance
-	return attenuation * pointLight.baseLight.lightColor;
+	return attenuation * pointLight.color * pointLight.intensity;
 }
 
 

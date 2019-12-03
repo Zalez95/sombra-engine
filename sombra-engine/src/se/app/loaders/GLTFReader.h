@@ -20,6 +20,7 @@ namespace se::app {
 		using MaterialSPtr = std::shared_ptr<graphics::Material>;
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
+		using LightUPtr = std::unique_ptr<graphics::ILight>;
 		using SkinUPtr = std::unique_ptr<app::Skin>;
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
 		using SceneUPtr = std::unique_ptr<Scene>;
@@ -81,6 +82,7 @@ namespace se::app {
 			std::vector<MaterialSPtr> materials;
 			std::vector<Renderable3DUPtr> renderable3Ds;
 			std::vector<MeshPrimitives> meshPrimitives;
+			std::vector<LightUPtr> lights;
 			std::vector<SkinUPtr> skins;
 			std::vector<CameraUPtr> cameras;
 			std::vector<Node> nodes;
@@ -266,6 +268,20 @@ namespace se::app {
 		 * @param	jsonAnimation the JSON object with the Animation to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseAnimation(const nlohmann::json& jsonAnimation);
+
+		/** Used to parse the KHR_lights_punctual extension
+		 *
+		 * @param	jsonKHRLights the JSON object with the KHR_lights_punctual
+		 *			object to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseKHRLights(const nlohmann::json& jsonKHRLights);
+
+		/** Creates a new Light from the given GLTF JSON Light and appends
+		 * it to the mGLTFData
+		 *
+		 * @param	jsonLight the JSON object with the Light to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseLight(const nlohmann::json& jsonLight);
 	};
 
 }

@@ -7,6 +7,7 @@
 #include "se/animation/CompositeAnimator.h"
 #include "se/animation/AnimationNode.h"
 #include "se/graphics/3D/Camera.h"
+#include "se/graphics/3D/Lights.h"
 #include "se/graphics/3D/Renderable3D.h"
 #include "../Skin.h"
 
@@ -37,6 +38,12 @@ namespace se::app {
 
 			/** The index to the Renderable3D indices of the Entity */
 			std::size_t renderable3DsIndex;
+
+			/** If the Entity has a Light or not */
+			bool hasLight;
+
+			/** The index of the Light of the Entity in a Lights vector */
+			std::size_t lightIndex;
 
 			/** If the Entity has a Skin or not */
 			bool hasSkin;
@@ -73,6 +80,9 @@ namespace se::app {
 
 		/** The Renderable3Ds loaded by a SceneReader */
 		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;
+
+		/** The Lights loaded by a SceneReader */
+		std::vector<std::unique_ptr<graphics::ILight>> lights;
 
 		/** The Skins loaded by a SceneReader */
 		std::vector<std::unique_ptr<app::Skin>> skins;

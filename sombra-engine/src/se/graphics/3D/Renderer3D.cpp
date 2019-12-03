@@ -75,7 +75,7 @@ namespace se::graphics {
 	}
 
 
-	void Renderer3D::render(const Camera* camera, const std::vector<const PointLight*>& pointLights)
+	void Renderer3D::render(const Camera* camera, const std::vector<const ILight*>& lights)
 	{
 		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f);
 		if (camera) {
@@ -87,7 +87,7 @@ namespace se::graphics {
 		mProgramPBR.enable();
 		mProgramPBR.setViewMatrix(viewMatrix);
 		mProgramPBR.setProjectionMatrix(projectionMatrix);
-		mProgramPBR.setLights(pointLights);
+		mProgramPBR.setLights(lights);
 		while (!mRenderable3Ds.empty()) {
 			const Renderable3D* renderable3D = mRenderable3Ds.front();
 			mRenderable3Ds.pop();
@@ -116,7 +116,7 @@ namespace se::graphics {
 		mProgramPBRSkinning.enable();
 		mProgramPBRSkinning.setViewMatrix(viewMatrix);
 		mProgramPBRSkinning.setProjectionMatrix(projectionMatrix);
-		mProgramPBRSkinning.setLights(pointLights);
+		mProgramPBRSkinning.setLights(lights);
 		while (!mSkinnedRenderable3Ds.empty()) {
 			const Renderable3D* renderable3D = mSkinnedRenderable3Ds.front();
 			mSkinnedRenderable3Ds.pop();

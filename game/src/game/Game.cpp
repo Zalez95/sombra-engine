@@ -370,11 +370,17 @@ namespace game {
 			camera1->setPerspectiveProjectionMatrix(kFOV, kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			se::graphics::BaseLight baseLight1{ glm::vec3(1.0f, 0.75f, 0.8f) }, baseLight2{ glm::vec3(1.0f, 0.5f, 0.5f) };
-			se::graphics::Attenuation attenuation1{ 0.25f, 0.2f, 0.1f };
-			pointLight1 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3(0.0f) });
-			pointLight2 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight2, attenuation1, glm::vec3(0.0f) });
-			pointLight3 = std::make_unique<se::graphics::PointLight>(se::graphics::PointLight{ baseLight1, attenuation1, glm::vec3(0.0f) });
+			pointLight1 = std::make_unique<se::graphics::PointLight>();
+			pointLight1->name = "pointLight1";
+			pointLight1->intensity = 5.0f;
+			pointLight2 = std::make_unique<se::graphics::PointLight>();
+			pointLight2->name = "pointLight2";
+			pointLight2->color = glm::vec3(0.5f, 1.0f, 0.5f);
+			pointLight2->intensity = 2.0f;
+			pointLight3 = std::make_unique<se::graphics::PointLight>();
+			pointLight3->name = "pointLight3";
+			pointLight3->color = glm::vec3(1.0f, 0.5f, 0.5f);
+			pointLight3->intensity = 10.0f;
 
 			// Fonts
 			se::utils::FileReader fileReader3("res/fonts/arial.fnt");
@@ -428,7 +434,7 @@ namespace game {
 		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
 
 		mGraphicsManager->addCameraEntity(player.get(), std::move(camera1));
-		mGraphicsManager->addPointLightEntity(player.get(), std::move(pointLight1));
+		mGraphicsManager->addLightEntity(player.get(), std::move(pointLight1));
 		mAudioManager->setListener(player.get());
 		mInputManager->addEntity(player.get());
 
@@ -608,14 +614,14 @@ namespace game {
 		auto eL2 = std::make_unique<se::app::Entity>("point-light2");
 		eL2->position = glm::vec3(-3, 1, 5);
 		eL2->scale = glm::vec3(0.1f);
-		mGraphicsManager->addPointLightEntity(eL2.get(), std::move(pointLight2));
+		mGraphicsManager->addLightEntity(eL2.get(), std::move(pointLight2));
 		mGraphicsManager->addRenderableEntity(eL2.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
 		mEntities.push_back(std::move(eL2));
 
 		auto eL3 = std::make_unique<se::app::Entity>("point-light3");
 		eL3->position = glm::vec3(2, 10, 5);
 		eL3->scale = glm::vec3(0.1f);
-		mGraphicsManager->addPointLightEntity(eL3.get(), std::move(pointLight3));
+		mGraphicsManager->addLightEntity(eL3.get(), std::move(pointLight3));
 		mGraphicsManager->addRenderableEntity(eL3.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
 		mEntities.push_back(std::move(eL3));
 

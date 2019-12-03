@@ -11,7 +11,7 @@ namespace se::graphics {
 
 	class Renderable3D;
 	class Camera;
-	struct PointLight;
+	struct ILight;
 
 
 	/**
@@ -61,12 +61,12 @@ namespace se::graphics {
 		 *
 		 * @param	camera a pointer to the Camera used to set the perspective
 		 * 			from where we are going to render the scene
-		 * @param	pointLights a vector with pointers to the lights that will
-		 *			affect to the next renders
+		 * @param	lights a vector with pointers to the lights that will
+		 *			affect to the next render
 		 * @note	after calling this method the render queue will be empty */
 		void render(
 			const Camera* camera,
-			const std::vector<const PointLight*>& pointLights
+			const std::vector<const ILight*>& lights
 		);
 	private:
 		/** Sets the uniforms and other properties needed for rendering with the
