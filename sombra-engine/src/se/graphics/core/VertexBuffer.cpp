@@ -1,11 +1,12 @@
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/buffers/VertexBuffer.h"
+#include "se/graphics/core/VertexBuffer.h"
+#include "se/graphics/core/GLWrapper.h"
 
 namespace se::graphics {
 
-	VertexBuffer::VertexBuffer(const void* data, std::size_t size)
+	VertexBuffer::VertexBuffer()
 	{
-		createBuffer(data, size);
+		GL_WRAP( glGenBuffers(1, &mBufferId) );
+		SOMBRA_TRACE_LOG << "Created VBO " << mBufferId;
 	}
 
 
@@ -39,6 +40,19 @@ namespace se::graphics {
 	}
 
 
+	void VertexBuffer::setData(const void* data, std::size_t size)
+	{
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
+		GL_WRAP( glBufferData(
+			GL_ARRAY_BUFFER,
+			size,
+			data,
+			GL_STATIC_DRAW
+		) );
+		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+	}
+
+
 	void VertexBuffer::bind() const
 	{
 		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
@@ -48,23 +62,6 @@ namespace se::graphics {
 	void VertexBuffer::unbind() const
 	{
 		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
-	}
-
-// Private functions
-	void VertexBuffer::createBuffer(const void* data, std::size_t size)
-	{
-		GL_WRAP( glGenBuffers(1, &mBufferId) );
-
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
-		GL_WRAP( glBufferData(
-			GL_ARRAY_BUFFER,
-			size,
-			data,
-			GL_STATIC_DRAW
-		) );
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
-
-		SOMBRA_TRACE_LOG << "Created VBO " << mBufferId;
 	}
 
 }

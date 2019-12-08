@@ -34,17 +34,22 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~ProgramPBR() {};
 
-		/** Function called for creating the program and initializing all the
-		 * needed resources
+		/** Sets the uniform variables fot the given Model matrix
 		 *
-		 * @return	true on success, false otherwise */
-		virtual bool init() override;
+		 * @param	modelMatrix the matrix that we want to set as the
+		 *			Model matrix in the shaders */
+		void setModelMatrix(const glm::mat4& modelMatrix) const;
 
-		/** Sets the uniform variables for the given material
+		/** Sets the uniforms and other properties needed for rendering with the
+		 * given material
 		 *
-		 * @param	material the material with the data that we want to set as
-		 *			uniform variables in the shaders */
+		 * @param	material the material with the data that we want to set */
 		void setMaterial(const Material& material) const;
+
+		/** Clears the properties setted for rendering with the given material
+		 *
+		 * @param	material the material with the data that we want to unset */
+		void unsetMaterial(const Material& material) const;
 
 		/** Sets the uniform variables for the given ILights
 		 *
@@ -55,8 +60,17 @@ namespace se::graphics {
 		 *			lights of the vector will be submited */
 		void setLights(const std::vector<const ILight*>& lights) const;
 	protected:
-		/** Adds the uniform variables to the program */
-		virtual bool addUniforms();
+		/** Creates the Shaders and the Program that the current class will use
+		 * for setting the uniform variables
+		 *
+		 * @return	true if the shaders were loaded successfully, false
+		 *			otherwise */
+		virtual bool createProgram() override;
+
+		/** Adds the uniform variables to the program
+		 *
+		 * @return	true if the uniform variables were found, false otherwise */
+		virtual bool addUniforms() override;
 	};
 
 }

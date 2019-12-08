@@ -1,5 +1,5 @@
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/buffers/IndexBuffer.h"
+#include "se/graphics/core/IndexBuffer.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 

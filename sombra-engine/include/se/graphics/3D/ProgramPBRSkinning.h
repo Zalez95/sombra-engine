@@ -19,11 +19,6 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~ProgramPBRSkinning() {};
 
-		/** Function called for initializing all the needed resources
-		 *
-		 * @return	true on success, false otherwise */
-		virtual bool init() override;
-
 		/** Sets the uniform variables for the given joint matrices
 		 *
 		 * @param	jointMatrices a vector with all the joint matrices */
@@ -31,7 +26,16 @@ namespace se::graphics {
 			const std::vector<glm::mat4>& jointMatrices
 		) const;
 	protected:
-		/** Adds the uniform variables to the program */
+		/** Creates the Shaders and the Program that the current class will use
+		 * for setting the uniform variables
+		 *
+		 * @return	true if the shaders were loaded successfully, false
+		 *			otherwise */
+		virtual bool createProgram() override;
+
+		/** Adds the uniform variables to the program
+		 *
+		 * @return	true if the uniform variables were found, false otherwise */
 		virtual bool addUniforms() override;
 	};
 

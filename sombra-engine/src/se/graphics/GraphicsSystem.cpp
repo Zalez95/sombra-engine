@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <algorithm>
-#include "se/graphics/GLWrapper.h"
 #include "se/graphics/GraphicsSystem.h"
+#include "core/GLWrapper.h"
 
 namespace se::graphics {
 

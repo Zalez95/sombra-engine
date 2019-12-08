@@ -1,5 +1,5 @@
-#include "se/graphics/Texture.h"
-#include "se/graphics/GLWrapper.h"
+#include "se/graphics/core/Texture.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 

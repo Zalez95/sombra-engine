@@ -46,14 +46,14 @@ struct PointLight
 
 // ____ GLOBAL VARIABLES ____
 // Input data in view tangent from the vertex shader
-in VertexData
+in FragmentIn
 {
 	vec3 position;
 	vec2 texCoord0;
-} vsVertex;
+} fsVertex;
 
-flat in int vsNumPointLights;
-in vec3 vsPointLightsPositions[MAX_POINT_LIGHTS];
+flat in int fsNumPointLights;
+in vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
 
 // Uniform variables
 uniform Material	uMaterial;
@@ -127,13 +127,13 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 {
 	vec3 totalLightColor = vec3(0.0);
 
-	vec3 viewDirection		= normalize(-vsVertex.position);
+	vec3 viewDirection		= normalize(-fsVertex.position);
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(surfaceNormal, viewDirection), 0.0);
 
-	for (int i = 0; i < vsNumPointLights; ++i) {
+	for (int i = 0; i < fsNumPointLights; ++i) {
 		// Calculate the light direction and distance from the current point
-		vec3 lightDirection	= vsPointLightsPositions[i] - vsVertex.position;
+		vec3 lightDirection	= fsPointLightsPositions[i] - fsVertex.position;
 		float lightDistance	= length(lightDirection);
 		lightDirection /= lightDistance;
 
@@ -168,11 +168,11 @@ void main()
 {
 	// Get the texture data for the current fragment
 	vec4 surfaceColor = (uMaterial.pbrMetallicRoughness.useBaseColorTexture)?
-		pow(texture(uMaterial.pbrMetallicRoughness.baseColorTexture, vsVertex.texCoord0), vec4(2.2)) :
+		pow(texture(uMaterial.pbrMetallicRoughness.baseColorTexture, fsVertex.texCoord0), vec4(2.2)) :
 		vec4(1.0);
 	surfaceColor *= uMaterial.pbrMetallicRoughness.baseColorFactor;
 
-	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.metallicRoughnessTexture, vsVertex.texCoord0);
+	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.metallicRoughnessTexture, fsVertex.texCoord0);
 
 	float metallic = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
 		uMaterial.pbrMetallicRoughness.metallicFactor * metallicRoughnessColor.b :
@@ -183,16 +183,16 @@ void main()
 		uMaterial.pbrMetallicRoughness.roughnessFactor;
 
 	vec3 surfaceNormal = (uMaterial.useNormalTexture)?
-		normalize(2.0 * texture(uMaterial.normalTexture, vsVertex.texCoord0).rgb - 1.0)
+		normalize(2.0 * texture(uMaterial.normalTexture, fsVertex.texCoord0).rgb - 1.0)
 			* vec3(uMaterial.normalScale, uMaterial.normalScale, 1.0) :
 		vec3(0.0, 0.0, 1.0);
 
 	float surfaceAO = (uMaterial.useOcclusionTexture)?
-		texture(uMaterial.occlusionTexture, vsVertex.texCoord0).r :
+		texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r :
 		0.0;
 
 	vec3 emissiveColor = (uMaterial.useEmissiveTexture)?
-		texture(uMaterial.emissiveTexture, vsVertex.texCoord0).rgb :
+		texture(uMaterial.emissiveTexture, fsVertex.texCoord0).rgb :
 		vec3(1.0);
 	emissiveColor *= uMaterial.emissiveFactor;
 

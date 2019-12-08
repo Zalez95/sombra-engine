@@ -1,23 +1,35 @@
 #include <array>
-#include <sstream>
 #include <fstream>
 #include "se/graphics/3D/ProgramPBR.h"
-#include "se/graphics/Shader.h"
-#include "se/graphics/Program.h"
 #include "se/graphics/3D/Lights.h"
 #include "se/graphics/3D/Material.h"
+#include "se/graphics/core/Shader.h"
+#include "se/graphics/core/Program.h"
+#include "../core/GLWrapper.h"
 
 namespace se::graphics {
 
-	bool ProgramPBR::init()
+	void ProgramPBR::setModelMatrix(const glm::mat4& modelMatrix) const
 	{
-		return createProgram("res/shaders/vertexPBR.glsl", "res/shaders/fragmentPBR.glsl")
-			&& addUniforms();
+		mProgram->setUniform("uModelMatrix", modelMatrix);
 	}
 
 
 	void ProgramPBR::setMaterial(const Material& material) const
 	{
+		// Set the material alphaMode
+		if (material.alphaMode == AlphaMode::Blend) {
+			GL_WRAP( glEnable(GL_BLEND) );
+			GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+			GL_WRAP( glDisable(GL_DEPTH_TEST) );
+		}
+
+		// Unset face culling
+		if (material.doubleSided) {
+			GL_WRAP( glDisable(GL_CULL_FACE) );
+		}
+
+		// Set uniforms
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.baseColorFactor", material.pbrMetallicRoughness.baseColorFactor);
 
 		int useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
@@ -70,6 +82,21 @@ namespace se::graphics {
 	}
 
 
+	void ProgramPBR::unsetMaterial(const Material& material) const
+	{
+		// Set face culling
+		if (material.doubleSided) {
+			GL_WRAP( glEnable(GL_CULL_FACE) );
+		}
+
+		// Set the material alphaMode
+		if (material.alphaMode == AlphaMode::Blend) {
+			GL_WRAP( glEnable(GL_DEPTH_TEST) );
+			GL_WRAP( glDisable(GL_BLEND) );
+		}
+	}
+
+
 	void ProgramPBR::setLights(const std::vector<const ILight*>& lights) const
 	{
 		int numPointLights = 0;
@@ -92,50 +119,80 @@ namespace se::graphics {
 	}
 
 // Private functions
-	bool ProgramPBR::addUniforms()
+	bool ProgramPBR::createProgram()
 	{
-		if (!Program3D::addUniforms()) {
+		// 1. Read the shader text from the shader files
+		std::string vertexShaderText;
+		if (std::ifstream ifs("res/shaders/vertexPBR.glsl"); ifs.good()) {
+			vertexShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+		}
+		else {
 			return false;
 		}
 
-		if (!mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorFactor")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorTexture")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.metallicFactor")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.roughnessFactor")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture")
-			|| !mProgram->addUniform("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture")
-			|| !mProgram->addUniform("uMaterial.useNormalTexture")
-			|| !mProgram->addUniform("uMaterial.normalTexture")
-			|| !mProgram->addUniform("uMaterial.normalScale")
-			|| !mProgram->addUniform("uMaterial.useOcclusionTexture")
-			|| !mProgram->addUniform("uMaterial.occlusionTexture")
-			|| !mProgram->addUniform("uMaterial.occlusionStrength")
-			|| !mProgram->addUniform("uMaterial.useEmissiveTexture")
-			|| !mProgram->addUniform("uMaterial.emissiveTexture")
-			|| !mProgram->addUniform("uMaterial.emissiveFactor")
-			|| !mProgram->addUniform("uMaterial.checkAlphaCutoff")
-			|| !mProgram->addUniform("uMaterial.alphaCutoff")
-		) {
+		std::string fragmentShaderText;
+		if (std::ifstream ifs("res/shaders/fragmentPBR.glsl"); ifs.good()) {
+			fragmentShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+		}
+		else {
 			return false;
 		}
 
-		if (!mProgram->addUniform("uNumPointLights")) {
-			return false;
+		// 2. Create the Program
+		try {
+			Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
+			Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
+			const Shader* shaders[] = { &vertexShader, &fragmentShader };
+			mProgram = new Program(shaders, 2);
 		}
-		for (int i = 0; i < kMaxPointLights; ++i) {
-			if (!mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].color").c_str())
-				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].intensity").c_str())
-				|| !mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].inverseRange").c_str())
-			) {
-				return false;
+		catch (std::exception& e) {
+			SOMBRA_ERROR_LOG << e.what();
+
+			if (mProgram) {
+				delete mProgram;
 			}
-		}
-		if (!mProgram->addUniform("uPointLightsPositions")) {
+
 			return false;
 		}
 
 		return true;
+	}
+
+
+	bool ProgramPBR::addUniforms()
+	{
+		bool ret = Program3D::addUniforms();
+
+		ret &= mProgram->addUniform("uModelMatrix");
+
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorFactor");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorTexture");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.metallicFactor");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.roughnessFactor");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture");
+		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture");
+		ret &= mProgram->addUniform("uMaterial.useNormalTexture");
+		ret &= mProgram->addUniform("uMaterial.normalTexture");
+		ret &= mProgram->addUniform("uMaterial.normalScale");
+		ret &= mProgram->addUniform("uMaterial.useOcclusionTexture");
+		ret &= mProgram->addUniform("uMaterial.occlusionTexture");
+		ret &= mProgram->addUniform("uMaterial.occlusionStrength");
+		ret &= mProgram->addUniform("uMaterial.useEmissiveTexture");
+		ret &= mProgram->addUniform("uMaterial.emissiveTexture");
+		ret &= mProgram->addUniform("uMaterial.emissiveFactor");
+		ret &= mProgram->addUniform("uMaterial.checkAlphaCutoff");
+		ret &= mProgram->addUniform("uMaterial.alphaCutoff");
+
+		ret &= mProgram->addUniform("uNumPointLights");
+		for (int i = 0; i < kMaxPointLights; ++i) {
+			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].color").c_str());
+			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].intensity").c_str());
+			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].inverseRange").c_str());
+		}
+		ret &= mProgram->addUniform("uPointLightsPositions");
+
+		return ret;
 	}
 
 }

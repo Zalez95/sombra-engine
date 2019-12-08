@@ -2,6 +2,7 @@
 #define RENDERABLE_3D_H
 
 #include <memory>
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace se::graphics {
@@ -17,8 +18,8 @@ namespace se::graphics {
 	class Renderable3D
 	{
 	private:	// Nested types
-		typedef std::shared_ptr<Mesh> MeshSPtr;
-		typedef std::shared_ptr<Material> MaterialSPtr;
+		using MeshSPtr = std::shared_ptr<Mesh>;
+		using MaterialSPtr = std::shared_ptr<Material>;
 
 	private:	// Attributes
 		/** The Mesh of the Renderable3D */

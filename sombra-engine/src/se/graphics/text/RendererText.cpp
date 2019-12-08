@@ -2,12 +2,12 @@
 #include <sstream>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/Shader.h"
-#include "se/graphics/Program.h"
-#include "se/graphics/Texture.h"
+#include "se/graphics/core/Shader.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/core/Texture.h"
 #include "se/graphics/text/RendererText.h"
 #include "se/graphics/text/RenderableText.h"
+#include "../core/GLWrapper.h"
 
 namespace se::graphics {
 

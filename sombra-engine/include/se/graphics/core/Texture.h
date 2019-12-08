@@ -1,7 +1,6 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <cstddef>
 #include "Constants.h"
 
 namespace se::graphics {

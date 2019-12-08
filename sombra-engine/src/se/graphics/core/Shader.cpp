@@ -1,7 +1,7 @@
 #include <string>
 #include <stdexcept>
-#include "se/graphics/Shader.h"
-#include "se/graphics/GLWrapper.h"
+#include "se/graphics/core/Shader.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 

@@ -3,8 +3,8 @@
 
 #include <queue>
 #include "Program2D.h"
-#include "../buffers/VertexArray.h"
-#include "../buffers/VertexBuffer.h"
+#include "../core/VertexArray.h"
+#include "../core/VertexBuffer.h"
 
 namespace se::graphics {
 

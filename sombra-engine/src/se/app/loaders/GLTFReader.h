@@ -2,11 +2,10 @@
 #define GLTF_READER_H
 
 #include <string>
-#include <cstddef>
 #include <nlohmann/json_fwd.hpp>
 #include "se/app/loaders/SceneReader.h"
 #include "se/app/Image.h"
-#include "se/graphics/Texture.h"
+#include "se/graphics/core/Texture.h"
 #include "se/animation/IAnimation.h"
 
 namespace se::app {

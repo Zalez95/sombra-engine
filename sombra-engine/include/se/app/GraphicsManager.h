@@ -24,6 +24,8 @@ namespace se::app {
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
 		using LightUPtr = std::unique_ptr<graphics::ILight>;
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
+		using RenderableTerrainUPtr =
+			std::unique_ptr<graphics::RenderableTerrain>;
 		using SkinSPtr = std::shared_ptr<Skin>;
 
 	private:	// Attributes
@@ -36,6 +38,7 @@ namespace se::app {
 		std::map<Entity*, CameraUPtr> mCameraEntities;
 		std::map<Entity*, LightUPtr> mLightEntities;
 		std::multimap<Entity*, Renderable3DUPtr> mRenderable3DEntities;
+		std::map<Entity*, RenderableTerrainUPtr> mRenderableTerrainEntities;
 		std::map<graphics::Renderable3D*, SkinSPtr> mRenderable3DSkins;
 
 	public:		// Functions
@@ -76,6 +79,14 @@ namespace se::app {
 		 * @note	The Renderable3D initial data is overridden by the Entity
 		 *			one */
 		void addSkyEntity(Entity* entity, Renderable3DUPtr renderable3D);
+
+		/** Adds the given Entity and its RenderableTerrain data to the
+		 * GraphicsManager
+		 *
+		 * @param	entity a pointer to the Entity to add to the GraphicsManager
+		 * @param	renderable a pointer to the RenderableTerrain to add to the
+		 *			GraphicsManager */
+		void addTerrainEntity(Entity* entity, RenderableTerrainUPtr renderable);
 
 		/** Adds the given Entity and its ILight data to the GraphicsManager
 		 *

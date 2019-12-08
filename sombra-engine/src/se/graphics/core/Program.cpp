@@ -1,10 +1,9 @@
-#include <string>
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "se/graphics/Program.h"
-#include "se/graphics/Shader.h"
-#include "se/graphics/GLWrapper.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/core/Shader.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 

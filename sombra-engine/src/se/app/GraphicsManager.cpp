@@ -80,6 +80,21 @@ namespace se::app {
 	}
 
 
+	void GraphicsManager::addTerrainEntity(Entity* entity, RenderableTerrainUPtr renderable)
+	{
+		if (!entity || !renderable) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RenderableTerrain";
+			return;
+		}
+
+		// Add the Renderable3D
+		graphics::RenderableTerrain* rPtr = renderable.get();
+		mLayer3D.setTerrain(rPtr);
+		mRenderableTerrainEntities.emplace(entity, std::move(renderable));
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << rPtr << " added successfully";
+	}
+
+
 	void GraphicsManager::addLightEntity(Entity* entity, LightUPtr light)
 	{
 		if (!entity || !light) {
@@ -137,6 +152,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Update start";
 
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
+		bool activeCameraUpdated = false;
 		for (auto& pair : mCameraEntities) {
 			Entity* entity = pair.first;
 			graphics::Camera* camera = pair.second.get();
@@ -145,6 +161,10 @@ namespace se::app {
 				camera->setPosition(entity->position);
 				camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation);
 				camera->setUp({ 0.0f, 1.0f, 0.0f });
+
+				if (camera == mLayer3D.getCamera()) {
+					activeCameraUpdated = true;
+				}
 			}
 		}
 
@@ -165,6 +185,15 @@ namespace se::app {
 			if (itSkin != mRenderable3DSkins.end()) {
 				const Skin& skin = *itSkin->second;
 				renderable3D->setJointMatrices( calculateJointMatrices(skin, renderable3D->getModelMatrix()) );
+			}
+		}
+
+		SOMBRA_DEBUG_LOG << "Updating the RenderableTerrains";
+		for (auto& pair : mRenderableTerrainEntities) {
+			graphics::RenderableTerrain* renderableTerrain = pair.second.get();
+
+			if (activeCameraUpdated) {
+				renderableTerrain->update(*mLayer3D.getCamera());
 			}
 		}
 

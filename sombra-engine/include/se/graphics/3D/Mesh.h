@@ -2,9 +2,9 @@
 #define MESH_H
 
 #include <vector>
-#include "../buffers/VertexBuffer.h"
-#include "../buffers/IndexBuffer.h"
-#include "../buffers/VertexArray.h"
+#include "../core/VertexBuffer.h"
+#include "../core/IndexBuffer.h"
+#include "../core/VertexArray.h"
 
 namespace se::graphics {
 

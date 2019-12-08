@@ -1,8 +1,8 @@
 #include <string>
 #include <stdexcept>
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/Texture.h"
-#include "se/graphics/buffers/FrameBuffer.h"
+#include "se/graphics/core/FrameBuffer.h"
+#include "se/graphics/core/Texture.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 

@@ -25,14 +25,14 @@ uniform int uNumPointLights;							// Number of lights to process
 uniform vec3 uPointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions in world space
 
 // Output data in tangent space
-out VertexData
+out FragmentIn
 {
 	vec3 position;
 	vec2 texCoord0;
-} vsVertex;
+} fsVertex;
 
-flat out int vsNumPointLights;
-out vec3 vsPointLightsPositions[MAX_POINT_LIGHTS];
+flat out int fsNumPointLights;
+out vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
 
 
 // Functions
@@ -65,12 +65,12 @@ void main()
 	gl_Position		= uProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in tangent space
-	vsVertex.position	= tbnMatrix * vec3(vertexView);
-	vsVertex.texCoord0	= aVertexTexCoord0;
+	fsVertex.position	= tbnMatrix * vec3(vertexView);
+	fsVertex.texCoord0	= aVertexTexCoord0;
 
 	// Calculate the PointLights coordinates in tangent space
-	vsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
-	for (int i = 0; i < vsNumPointLights; ++i) {
-		vsPointLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
+	fsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
+	for (int i = 0; i < fsNumPointLights; ++i) {
+		fsPointLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
 	}
 }

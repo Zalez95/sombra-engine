@@ -1,7 +1,7 @@
 #ifndef FRAME_BUFFER_H
 #define FRAME_BUFFER_H
 
-#include "../Constants.h"
+#include "Constants.h"
 
 namespace se::graphics {
 

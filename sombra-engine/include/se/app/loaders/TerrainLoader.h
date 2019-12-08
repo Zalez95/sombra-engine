@@ -3,18 +3,18 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "../GraphicsManager.h"
 #include "../PhysicsManager.h"
 #include "../CollisionManager.h"
 
-namespace se::graphics { class Mesh; }
+namespace se::graphics { class RenderableTerrain; }
 namespace se::collision { class TerrainCollider; }
 
 namespace se::app {
 
 	struct Entity;
 	struct Image;
-	struct RawMesh;
 
 
 	/**
@@ -25,7 +25,8 @@ namespace se::app {
 	private:	// Nested types
 		using EntityUPtr = std::unique_ptr<app::Entity>;
 		using TerrainColliderUPtr = std::unique_ptr<collision::TerrainCollider>;
-		using RawMeshUPtr = std::unique_ptr<RawMesh>;
+		using RenderableTerrainUPtr =
+			std::unique_ptr<graphics::RenderableTerrain>;
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */
@@ -63,25 +64,31 @@ namespace se::app {
 		 *
 		 * @param	name the name of the new Entity
 		 * @param	size the length in the X and Z axis of the Terrain
-		 * @param	heightMap an Image used that contains the height of the
-		 * 			vertices of the Terrain's mesh
 		 * @param	maxHeight the maximum height of the vertices of the
 		 *			Terrain's mesh
+		 * @param	heightMap an Image used that contains the height of the
+		 * 			vertices of the Terrain's mesh
+		 * @param	lodDistances the minimum distance to the camera at each
+		 *			level of detail
 		 * @return	a pointer to the new Terrain entity */
 		EntityUPtr createTerrain(
-			const std::string& name, float size,
-			const Image& heightMap, float maxHeight
+			const std::string& name, float size, float maxHeight,
+			const Image& heightMap, const std::vector<float>& lodDistances
 		);
 	private:
-		/** Creates the mesh of the Terrain from the given data
+		/** Creates a new RenderableTerrain from the given data
 		 *
-		 * @param	name the name of the mesh
-		 * @param	heightMap an Image that represents the height map
-		 *			that contains the positions in the Y axis of the vertices
-		 *			of the Terrain
-		 * @return	a pointer to the new RawMesh */
-		static RawMeshUPtr createRawMesh(
-			const std::string& name, const Image& heightMap
+		 * @param	size the length in the X and Z axis of the Terrain
+		 * @param	maxHeight the maximum height of the vertices of the
+		 *			Terrain's mesh
+		 * @param	heightMap an Image used that contains the height of the
+		 * 			vertices of the Terrain's mesh
+		 * @param	lodDistances the minimum distance to the camera at each
+		 *			level of detail
+		 * @return	a pointer to the new RenderableTerrain */
+		static RenderableTerrainUPtr createTerrainRenderable(
+			float size, float maxHeight,
+			const Image& heightMap, const std::vector<float>& lodDistances
 		);
 
 		/** Creates a new TerrainCollider from the given height map
@@ -89,16 +96,18 @@ namespace se::app {
 		 * @param	heightMap an Image that represents the height map
 		 *			that contains the positions in the Y axis of the vertices
 		 *			of the Terrain.
+		 * @param	scaleVector a vector with the scale of the TerrainCollider
+		 *			in each axis
 		 * @return	a pointer to the new TerrainCollider */
 		static TerrainColliderUPtr createTerrainCollider(
-			const Image& heightMap
+			const Image& heightMap, const glm::vec3& scaleVector
 		);
 
 		/** Return the height located in the height map at the given position
 		 *
 		 * @param	heightMap an Image that represents the height map
 		 *			that contains the positions in the Y axis of the vertices
-		 *			of the Terrain.
+		 *			of the Terrain
 		 * @param	x the position in the X axis that we want to read
 		 * @param	z the position in the Z axis that we want to read
 		 * @return	the height at the given position in the range [-0.5, 0.5] */

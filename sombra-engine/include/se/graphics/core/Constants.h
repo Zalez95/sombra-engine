@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include <cstddef>
+
 namespace se::graphics {
 
 	/** The different data types that can be stored in a buffer/texture */

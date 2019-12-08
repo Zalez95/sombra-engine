@@ -5,7 +5,6 @@
 #include "GLTFReader.h"
 #include "se/utils/MathUtils.h"
 #include "se/app/loaders/ImageReader.h"
-#include "se/graphics/Texture.h"
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/3D/Mesh.h"
 #include "se/animation/StepAnimations.h"
@@ -768,7 +767,9 @@ namespace se::app {
 					const Accessor& a = mGLTFData.accessors[accessorId];
 					const BufferView& bv = mGLTFData.bufferViews[a.bufferViewId];
 					const Buffer& b = mGLTFData.buffers[bv.bufferId];
-					auto& vbo = vbos.emplace_back(b.data() + bv.offset + a.byteOffset, bv.length);
+
+					auto& vbo = vbos.emplace_back();
+					vbo.setData(b.data() + bv.offset + a.byteOffset, bv.length);
 
 					// Add the VBO to the VAO
 					vao.bind();

@@ -4,8 +4,7 @@
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
-#include "../Texture.h"
-#include "../Constants.h"
+#include "../core/Texture.h"
 
 namespace se::graphics {
 

@@ -2,19 +2,20 @@
 #include <sstream>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/Texture.h"
+#include "se/graphics/core/Texture.h"
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/2D/Renderable2D.h"
+#include "../core/GLWrapper.h"
 
 namespace se::graphics {
 
 	constexpr float Renderer2D::Quad2D::kPositions[];
 
 
-	Renderer2D::Quad2D::Quad2D() :
-		mPositionsBuffer(kPositions, kNumVertices * kNumComponentsPerVertex)
+	Renderer2D::Quad2D::Quad2D()
 	{
+		mPositionsBuffer.setData(kPositions, kNumVertices * kNumComponentsPerVertex);
+
 		mVAO.bind();
 		mPositionsBuffer.bind();
 		mVAO.setVertexAttribute(0, TypeId::Float, false, kNumComponentsPerVertex, 0);
@@ -68,9 +69,6 @@ namespace se::graphics {
 			GL_WRAP( glDrawArrays(GL_TRIANGLE_STRIP, 0, mQuad.getNumVertices()) );
 			if (texture) { texture->unbind(); }
 		}
-
-		mQuad.unbind();
-		mProgram.disable();
 
 		GL_WRAP( glEnable(GL_DEPTH_TEST) );
 		GL_WRAP( glDisable(GL_BLEND) );

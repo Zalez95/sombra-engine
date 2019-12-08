@@ -3,7 +3,7 @@
 #include "se/app/Image.h"
 #include "se/utils/FileReader.h"
 #include "se/graphics/text/Font.h"
-#include "se/graphics/Texture.h"
+#include "se/graphics/core/Texture.h"
 
 namespace se::app {
 

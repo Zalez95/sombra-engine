@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 #include "se/utils/Log.h"
-#include "se/graphics/Constants.h"
+#include "se/graphics/core/Constants.h"
 
 #define GL_WRAP(x)					\
 	se::graphics::glClearError();	\
@@ -31,9 +31,11 @@ namespace se::graphics {
 				case GL_INVALID_FRAMEBUFFER_OPERATION:	errorTag = "INVALID_FRAMEBUFFER_OPERATION";	break;
 			}
 
+			const char* errorString = reinterpret_cast<const char*>( glGetString(error) );
+
 			utils::Log::getInstance()(utils::LogLevel::Error) << location
 				<< "OpenGL function \"" << glFunction << "\" returned error code " << error
-				<< " (" << errorTag << "): \"" << glGetString(error) << "\"";
+				<< " (" << errorTag << "): \"" << (errorString? errorString : "") << "\"";
 		}
 	}
 
@@ -59,6 +61,7 @@ namespace se::graphics {
 	{
 		switch (type) {
 			case ShaderType::Vertex:	return GL_VERTEX_SHADER;
+			case ShaderType::Geometry:	return GL_GEOMETRY_SHADER;
 			case ShaderType::Fragment:	return GL_FRAGMENT_SHADER;
 			default:					return GL_NONE;
 		}

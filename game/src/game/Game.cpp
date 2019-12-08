@@ -13,7 +13,6 @@
 #include <se/app/AnimationManager.h>
 #include <se/app/AudioManager.h>
 
-#include <se/graphics/Texture.h>
 #include <se/graphics/GraphicsSystem.h>
 #include <se/graphics/3D/Camera.h>
 #include <se/graphics/3D/Lights.h>
@@ -234,8 +233,8 @@ namespace game {
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
+		se::app::Image heightMap1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		std::shared_ptr<se::app::Image> heightMap1 = nullptr;
 		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, chessTexture = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
@@ -345,8 +344,7 @@ namespace game {
 				throw std::runtime_error(result.description());
 			}
 
-			heightMap1 = std::make_shared<se::app::Image>();
-			result = se::app::ImageReader::read("res/images/terrain.png", *heightMap1, 1);
+			result = se::app::ImageReader::read("res/images/terrain.png", heightMap1, 1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -447,7 +445,8 @@ namespace game {
 		mEntities.push_back(std::move(skyEntity));
 
 		// Terrain
-		mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, *heightMap1, 10.0f) );
+		std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
+		mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances) );
 
 		// Plane
 		auto plane = std::make_unique<se::app::Entity>("plane");

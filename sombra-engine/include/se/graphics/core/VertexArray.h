@@ -1,7 +1,7 @@
 #ifndef VERTEX_ARRAY_H
 #define VERTEX_ARRAY_H
 
-#include "../Constants.h"
+#include "Constants.h"
 
 namespace se::graphics {
 
@@ -48,6 +48,16 @@ namespace se::graphics {
 		void setVertexAttribute(
 			unsigned int index,
 			TypeId type, bool normalized, int componentSize, int stride
+		) const;
+
+		/** Sets rate that a vertex attribute advance each time a instance is
+		 * drawn
+		 *
+		 * @param	index the index of the attribute to set the divisor
+		 * @param	divisor the rate that the attribute advances for each
+		 *			instance */
+		void setAttributeDivisor(
+			unsigned int index, unsigned int divisor
 		) const;
 
 		/** Binds the Vertex Array Object */

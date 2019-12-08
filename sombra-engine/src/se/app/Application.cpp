@@ -113,7 +113,7 @@ namespace se::app {
 				std::cout << deltaTime << "ms\r";
 
 				// Update the Systems
-				SOMBRA_INFO_LOG << "Update phase";
+				SOMBRA_INFO_LOG << "Update phase (" << deltaTime << ")";
 				mWindowSystem->update();
 				if (mWindowSystem->getInputData().keys[SE_KEY_ESCAPE]) {
 					mState = AppState::Stopped;

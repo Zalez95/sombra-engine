@@ -1,6 +1,5 @@
-#include "se/graphics/GLWrapper.h"
-#include "se/graphics/buffers/VertexArray.h"
-#include "se/graphics/buffers/VertexBuffer.h"
+#include "se/graphics/core/VertexArray.h"
+#include "GLWrapper.h"
 
 namespace se::graphics {
 
@@ -47,7 +46,22 @@ namespace se::graphics {
 	) const
 	{
 		GL_WRAP( glEnableVertexAttribArray(index) );
-		GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
+
+		if ((type == TypeId::Float) || (type == TypeId::HalfFloat)) {
+			GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
+		}
+		else if (type == TypeId::Double) {
+			GL_WRAP( glVertexAttribLPointer(index, componentSize, toGLType(type), stride, 0) );
+		}
+		else {
+			GL_WRAP( glVertexAttribIPointer(index, componentSize, toGLType(type), stride, 0) );
+		}
+	}
+
+
+	void VertexArray::setAttributeDivisor(unsigned int index, unsigned int divisor) const
+	{
+		GL_WRAP( glVertexAttribDivisor(index, divisor) );
 	}
 
 

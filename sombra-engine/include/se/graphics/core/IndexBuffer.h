@@ -1,7 +1,7 @@
 #ifndef INDEX_BUFFER_H
 #define INDEX_BUFFER_H
 
-#include "../Constants.h"
+#include "Constants.h"
 
 namespace se::graphics {
 

@@ -1,39 +1,10 @@
-#include <string>
-#include <sstream>
 #include <fstream>
-#include <GL/glew.h>
 #include "se/graphics/2D/Program2D.h"
-#include "se/graphics/Shader.h"
-#include "se/graphics/Program.h"
+#include "se/graphics/core/Shader.h"
+#include "se/graphics/core/Program.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
-
-	bool Program2D::init()
-	{
-		return createProgram("res/shaders/vertex2D.glsl", "res/shaders/fragment2D.glsl")
-			&& addUniforms();
-	}
-
-
-	void Program2D::end()
-	{
-		if (mProgram) {
-			delete mProgram;
-		}
-	}
-
-
-	void Program2D::enable() const
-	{
-		mProgram->enable();
-	}
-
-
-	void Program2D::disable() const
-	{
-		mProgram->disable();
-	}
-
 
 	void Program2D::setModelMatrix(const glm::mat4& modelMatrix)
 	{
@@ -48,43 +19,41 @@ namespace se::graphics {
 
 
 // Private functions
-	bool Program2D::createProgram(const char* vertexShaderPath, const char* fragmentShaderPath)
+	bool Program2D::createProgram()
 	{
 		// 1. Read the shader text from the shader files
-		std::ifstream reader;
-
 		std::string vertexShaderText;
-		std::stringstream vertexShaderStream;
-		reader.open(vertexShaderPath);
-		if (reader.good()) {
-			vertexShaderStream << reader.rdbuf();
-			vertexShaderText = vertexShaderStream.str();
-			reader.close();
+		if (std::ifstream ifs("res/shaders/vertex2D.glsl"); ifs.good()) {
+			vertexShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 		}
 		else {
-			reader.close();
 			return false;
 		}
 
 		std::string fragmentShaderText;
-		std::stringstream fragmentShaderStream;
-		reader.open(fragmentShaderPath);
-		if (reader.good()) {
-			fragmentShaderStream << reader.rdbuf();
-			fragmentShaderText = fragmentShaderStream.str();
-			reader.close();
+		if (std::ifstream ifs("res/shaders/fragment2D.glsl"); ifs.good()) {
+			fragmentShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 		}
 		else {
-			reader.close();
 			return false;
 		}
 
-		Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
-		Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
-
 		// 2. Create the Program
-		const Shader* shaders[] = { &vertexShader, &fragmentShader };
-		mProgram = new Program(shaders, 2);
+		try {
+			Shader vertexShader(vertexShaderText.c_str(), ShaderType::Vertex);
+			Shader fragmentShader(fragmentShaderText.c_str(), ShaderType::Fragment);
+			const Shader* shaders[] = { &vertexShader, &fragmentShader };
+			mProgram = new Program(shaders, 2);
+		}
+		catch (std::exception& e) {
+			SOMBRA_ERROR_LOG << e.what();
+
+			if (mProgram) {
+				delete mProgram;
+			}
+
+			return false;
+		}
 
 		return true;
 	}
@@ -92,8 +61,12 @@ namespace se::graphics {
 
 	bool Program2D::addUniforms()
 	{
-		return mProgram->addUniform("uModelMatrix")
-			&& mProgram->addUniform("uTextureSampler");
+		bool ret = true;
+
+		ret &= mProgram->addUniform("uModelMatrix");
+		ret &= mProgram->addUniform("uTextureSampler");
+
+		return ret;
 	}
 
 }

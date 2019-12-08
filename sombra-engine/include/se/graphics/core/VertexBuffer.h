@@ -1,6 +1,8 @@
 #ifndef VERTEX_BUFFER_H
 #define VERTEX_BUFFER_H
 
+#include "Constants.h"
+
 namespace se::graphics {
 
 	/**
@@ -17,18 +19,8 @@ namespace se::graphics {
 		unsigned int mBufferId;
 
 	public:		// Functions
-		/** Creates a new VertexBuffer
-		 *
-		 * @param	data a pointer to the data of the buffer
-		 * @param	size the size of the data buffer */
-		VertexBuffer(const void* data, std::size_t size);
-
-		/** Creates a new VertexBuffer
-		 *
-		 * @param	data a pointer to the data of the buffer
-		 * @param	count the number of elements in the data array */
-		template <typename T>
-		VertexBuffer(const T* data, std::size_t count);
+		/** Creates a new VertexBuffer */
+		VertexBuffer();
 
 		VertexBuffer(const VertexBuffer& other) = delete;
 		VertexBuffer(VertexBuffer&& other);
@@ -40,24 +32,31 @@ namespace se::graphics {
 		VertexBuffer& operator=(const VertexBuffer& other) = delete;
 		VertexBuffer& operator=(VertexBuffer&& other);
 
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the buffer
+		 * @param	count the number of elements in the data array */
+		template <typename T>
+		void setData(const T* data, std::size_t count);
+
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the new buffer
+		 * @param	size the size of the data buffer */
+		void setData(const void* data, std::size_t size);
+
 		/** Binds the Vertex Buffer Object */
 		void bind() const;
 
 		/** Unbinds the Vertex Buffer Object */
 		void unbind() const;
-	private:
-		/** Creates the actual buffer
-		 *
-		 * @param	data a pointer to the data of the new buffer
-		 * @param	size the size of the data buffer */
-		void createBuffer(const void* data, std::size_t size);
 	};
 
 
 	template <typename T>
-	VertexBuffer::VertexBuffer(const T* data, std::size_t count)
+	void VertexBuffer::setData(const T* data, std::size_t count)
 	{
-		createBuffer(data, count * sizeof(T));
+		setData(static_cast<const void*>(data), count * sizeof(T));
 	}
 
 }
