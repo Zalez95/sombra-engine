@@ -425,7 +425,7 @@ namespace game {
 		se::physics::RigidBodyConfig config1(40.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 		config1.linearDrag = 0.01f;
 		config1.angularDrag = 0.01f;
-		config1.frictionCoefficient = 2.5f;
+		config1.frictionCoefficient = 1.16f;
 		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(config1, se::physics::RigidBodyData());
 		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
 		mCollisionManager->addEntity(player.get(), std::move(collider1));
@@ -519,7 +519,9 @@ namespace game {
 			nonMovableCube->position = glm::vec3(-50.0f, 0.0f, -40.0f);
 			nonMovableCube->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(se::physics::RigidBodyConfig(0.001f), se::physics::RigidBodyData());
+			se::physics::RigidBodyConfig config2(0.001f);
+			config2.frictionCoefficient = 1.4f;
+			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mCollisionManager->addEntity(nonMovableCube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(nonMovableCube.get(), std::move(rigidBody2));

@@ -24,7 +24,9 @@ namespace se::app {
 		mGraphicsManager.addTerrainEntity(entity.get(), std::move(renderableTerrain));
 
 		// Physics data
-		auto rb = std::make_unique<physics::RigidBody>(physics::RigidBodyConfig(0.2f), physics::RigidBodyData());
+		physics::RigidBodyConfig config(0.2f);
+		config.frictionCoefficient = 1.0f;
+		auto rb = std::make_unique<physics::RigidBody>(config, physics::RigidBodyData());
 		mPhysicsManager.addEntity(entity.get(), std::move(rb));
 
 		// Collider data

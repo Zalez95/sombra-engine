@@ -24,7 +24,7 @@ namespace se::physics {
 	private:	// Attributes
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run */
-		static constexpr int kMaxIterations = 16;
+		static constexpr int kMaxIterations = 10;
 
 		/** The vector that holds the registered Constraints in the
 		 * ConstraintManager */

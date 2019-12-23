@@ -171,7 +171,9 @@ namespace se::app {
 				physics::RigidBody* rb1 = itEntityRB1->second.get();
 				physics::RigidBody* rb2 = itEntityRB2->second.get();
 				if ((rb1->getConfig().invertedMass != 0.0f) || (rb2->getConfig().invertedMass != 0.0f)) {
-					SOMBRA_DEBUG_LOG << "Handling CollisionEvent between " << rb1 << " and " << rb2;
+					SOMBRA_DEBUG_LOG << "Handling CollisionEvent between "
+						<< rb1 << " (p=" << glm::to_string(rb1->getData().position) << ", o=" << glm::to_string(rb1->getData().orientation) << ") and "
+						<< rb2 << " (p=" << glm::to_string(rb2->getData().position) << ", o=" << glm::to_string(rb2->getData().orientation) << ")";
 
 					if (manifold->state[collision::Manifold::State::Intersecting]) {
 						handleIntersectingManifold(rb1, rb2, manifold);
@@ -203,7 +205,7 @@ namespace se::app {
 		bool updateFrictionMasses = true;
 		if (manifold->contacts.size() > manifoldConstraints.size()) {
 			float mu1 = rb1->getConfig().frictionCoefficient, mu2 = rb2->getConfig().frictionCoefficient;
-			float mu = std::sqrt(mu1 * mu1 + mu2 * mu2);
+			float mu = std::sqrt((mu1 * mu1 + mu2 * mu2) / 2.0f);
 			SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
 
 			// Increase the number of constraints up to the number of contacts
@@ -270,8 +272,8 @@ namespace se::app {
 			std::size_t iAxis = std::distance(&contact.normal.x, std::min_element(&contact.normal.x, &contact.normal.x + 3, absCompare));
 			vAxis[iAxis] = 1.0f;
 
-			glm::vec3 tangent1 = glm::cross(contact.normal, vAxis);
-			glm::vec3 tangent2 = glm::cross(contact.normal, tangent1);
+			glm::vec3 tangent1 = glm::normalize(glm::cross(contact.normal, vAxis));
+			glm::vec3 tangent2 = glm::normalize(glm::cross(contact.normal, tangent1));
 
 			manifoldConstraints[i].normalConstraint.setNormal(contact.normal);
 			manifoldConstraints[i].normalConstraint.setConstraintVectors({ r1, r2 });

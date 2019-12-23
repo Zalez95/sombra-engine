@@ -75,6 +75,7 @@ namespace se::app {
 				&& manifold->state[collision::Manifold::State::Updated]
 			) {
 				auto event = new CollisionEvent(itPair1->second, itPair2->second, manifold);
+				SOMBRA_DEBUG_LOG << "Notifing new CollisionEvent " << *event;
 				mEventManager.publish(event);
 			}
 		}

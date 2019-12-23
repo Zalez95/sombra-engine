@@ -39,13 +39,13 @@ namespace se::app {
 	private:	// Attributes
 		/** The velocity of the constraint resolution process of the
 		 * NormalConstraints */
-		static constexpr float kCollisionBeta = 0.2f;
+		static constexpr float kCollisionBeta = 0.1f;
 
 		/** The restitution factor of all the NormalConstraints */
 		static constexpr float kCollisionRestitutionFactor = 0.2f;
 
 		/** The slop penetration value of all the NormalConstraints */
-		static constexpr float kCollisionSlopPenetration = 0.0005f;
+		static constexpr float kCollisionSlopPenetration = 0.005f;
 
 		/** The slop restitution value of all the NormalConstraints */
 		static constexpr float kCollisionSlopRestitution = 0.5f;

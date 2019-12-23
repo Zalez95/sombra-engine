@@ -80,7 +80,9 @@ namespace se::physics {
 		 * @param	rigidBody the RigidBody to update */
 		static void updateTransformsMatrix(RigidBody& rigidBody);
 
-		/** Updates the motion value of the given RigidBody
+		/** Updates the motion value of the given RigidBody. The motion value
+		 * is calculated as a recency-weighted average of its current value and
+		 * its old ones
 		 *
 		 * @param	rigidBody the RigidBody to update
 		 * @param	bias the proportion of the new motion value due to its old

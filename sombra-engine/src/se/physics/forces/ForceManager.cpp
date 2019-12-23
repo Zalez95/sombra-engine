@@ -56,16 +56,23 @@ namespace se::physics {
 
 	void ForceManager::applyForces()
 	{
-		// Clean the older Forces
-		for (auto& rbForce : mRBForces) {
-			rbForce.rigidBody->getData().forceSum = glm::vec3(0.0f);
-			rbForce.rigidBody->getData().torqueSum = glm::vec3(0.0f);
+		// Clean the older Forces and wake up the RigidBodies to apply the
+		// Forces
+		for (auto& [rigidBody, force] : mRBForces) {
+			if (!force->isConstant()
+				|| !rigidBody->checkState(RigidBodyState::Sleeping)
+			) {
+				rigidBody->getData().forceSum = glm::vec3(0.0f);
+				rigidBody->getData().torqueSum = glm::vec3(0.0f);
+				RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Sleeping, false);
+			}
 		}
 
-		// Apply the current Forces
-		for (auto& rbForce : mRBForces) {
-			rbForce.force->apply(rbForce.rigidBody);
-			RigidBodyDynamics::setState(*rbForce.rigidBody, RigidBodyState::Sleeping, false);
+		// Apply the current Forces to the awaken RigidBodies
+		for (auto& [rigidBody, force] : mRBForces) {
+			if (!rigidBody->checkState(RigidBodyState::Sleeping)) {
+				force->apply(rigidBody);
+			}
 		}
 	}
 
