@@ -61,17 +61,11 @@ namespace se::graphics {
 	void IndexBuffer::createBuffer(const void* data, std::size_t size)
 	{
 		GL_WRAP( glGenBuffers(1, &mBufferId) );
-
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );
-		GL_WRAP( glBufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
-			size,
-			data,
-			GL_STATIC_DRAW
-		) );
-		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0) );
-
 		SOMBRA_TRACE_LOG << "Created IBO " << mBufferId;
+
+		bind();
+		GL_WRAP( glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW) );
+		unbind();
 	}
 
 }

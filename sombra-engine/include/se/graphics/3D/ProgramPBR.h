@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "Program3D.h"
+#include "../core/UniformBuffer.h"
 
 namespace se::graphics {
 
@@ -26,30 +27,27 @@ namespace se::graphics {
 			static constexpr int kEmissive			= 4;
 		};
 
+		struct UniformBlockIndices
+		{
+			static constexpr int kPointLights		= 0;
+		};
+
 	protected:	// Attributes
 		/** The maximum number of point lights in the program */
 		static constexpr int kMaxPointLights = 4;
 
+		/** The Uniform Buffer used to set the PointLights */
+		UniformBuffer mPointLightsUBO;
+
 	public:		// Functions
 		/** Class destructor */
-		virtual ~ProgramPBR() {};
+		virtual ~ProgramPBR() = default;
 
 		/** Sets the uniform variables fot the given Model matrix
 		 *
 		 * @param	modelMatrix the matrix that we want to set as the
 		 *			Model matrix in the shaders */
-		void setModelMatrix(const glm::mat4& modelMatrix) const;
-
-		/** Sets the uniforms and other properties needed for rendering with the
-		 * given material
-		 *
-		 * @param	material the material with the data that we want to set */
-		void setMaterial(const Material& material) const;
-
-		/** Clears the properties setted for rendering with the given material
-		 *
-		 * @param	material the material with the data that we want to unset */
-		void unsetMaterial(const Material& material) const;
+		void setModelMatrix(const glm::mat4& modelMatrix);
 
 		/** Sets the uniform variables for the given ILights
 		 *
@@ -58,7 +56,18 @@ namespace se::graphics {
 		 * @note	the maximum number of Lights is MAX_LIGHTS, so if
 		 *			there are more lights in the given vector only the first
 		 *			lights of the vector will be submited */
-		void setLights(const std::vector<const ILight*>& lights) const;
+		void setLights(const std::vector<const ILight*>& lights);
+
+		/** Sets the uniforms and other properties needed for rendering with the
+		 * given material
+		 *
+		 * @param	material the material with the data that we want to set */
+		void setMaterial(const Material& material);
+
+		/** Clears the properties setted for rendering with the given material
+		 *
+		 * @param	material the material with the data that we want to unset */
+		void unsetMaterial(const Material& material);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

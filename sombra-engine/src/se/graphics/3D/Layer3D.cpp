@@ -5,7 +5,10 @@ namespace se::graphics {
 
 	void Layer3D::addRenderable3D(const Renderable3D* renderable3D)
 	{
-		if (renderable3D) {
+		if (renderable3D->hasSkeleton()) {
+			mSkinnedRenderable3Ds.push_back(renderable3D);
+		}
+		else {
 			mRenderable3Ds.push_back(renderable3D);
 		}
 	}
@@ -13,10 +16,18 @@ namespace se::graphics {
 
 	void Layer3D::removeRenderable3D(const Renderable3D* renderable3D)
 	{
-		mRenderable3Ds.erase(
-			std::remove(mRenderable3Ds.begin(), mRenderable3Ds.end(), renderable3D),
-			mRenderable3Ds.end()
-		);
+		if (renderable3D->hasSkeleton()) {
+			mSkinnedRenderable3Ds.erase(
+				std::remove(mSkinnedRenderable3Ds.begin(), mSkinnedRenderable3Ds.end(), renderable3D),
+				mSkinnedRenderable3Ds.end()
+			);
+		}
+		else {
+			mRenderable3Ds.erase(
+				std::remove(mRenderable3Ds.begin(), mRenderable3Ds.end(), renderable3D),
+				mRenderable3Ds.end()
+			);
+		}
 	}
 
 
@@ -49,6 +60,9 @@ namespace se::graphics {
 
 		for (const Renderable3D* renderable3D : mRenderable3Ds) {
 			mRendererPBR.submit(renderable3D);
+		}
+		for (const Renderable3D* renderable3D : mSkinnedRenderable3Ds) {
+			mRendererPBR.submitSkinned(renderable3D);
 		}
 		mRendererPBR.render(mCamera, mLights);
 	}

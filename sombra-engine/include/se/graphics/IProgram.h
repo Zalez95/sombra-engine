@@ -22,7 +22,7 @@ namespace se::graphics {
 		IProgram() : mProgram(nullptr) {};
 
 		/** Class destructor */
-		virtual ~IProgram() {};
+		virtual ~IProgram() = default;
 
 		/** Function called for initializing all the needed resources
 		 *

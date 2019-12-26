@@ -9,19 +9,19 @@
 
 namespace se::graphics {
 
-	void ProgramTerrain::setXZSize(float xzSize) const
+	void ProgramTerrain::setXZSize(float xzSize)
 	{
 		mProgram->setUniform("uXZSize", xzSize);
 	}
 
 
-	void ProgramTerrain::setMaxHeight(float maxHeight) const
+	void ProgramTerrain::setMaxHeight(float maxHeight)
 	{
 		mProgram->setUniform("uMaxHeight", maxHeight);
 	}
 
 
-	void ProgramTerrain::setHeightMap(const Texture& heightMap) const
+	void ProgramTerrain::setHeightMap(const Texture& heightMap)
 	{
 		mProgram->setUniform("uHeightMap", TextureUnits::kHeightMap);
 		heightMap.bind(TextureUnits::kHeightMap);

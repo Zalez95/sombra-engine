@@ -14,7 +14,7 @@ namespace se::graphics {
 	{
 	public:		// Functions
 		/** Class destructor */
-		virtual ~Program2D() {};
+		virtual ~Program2D() = default;
 
 		/** Sets the uniform variables fot the given Model matrix
 		 *

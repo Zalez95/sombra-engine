@@ -11,7 +11,7 @@ layout (location = 0) in vec3 aVertexPosition;			// Position attribute
 layout (location = 1) in vec3 aVertexNormal;			// Normal attribute
 layout (location = 2) in vec3 aVertexTangent;			// Tangent attribute
 layout (location = 3) in vec2 aVertexTexCoord0;			// Vertex Texture Coords attribute
-layout (location = 6) in vec4 aVertexJoints;			// Vertex joint indices
+layout (location = 6) in uvec4 aVertexJoints;			// Vertex joint indices
 layout (location = 7) in vec4 aVertexWeights;			// Vertex weights of each joint
 
 // Uniform variables
@@ -39,10 +39,10 @@ out vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
 void main()
 {
 	// Calculate the skeleton pose matrix
-	mat4 poseMatrix = aVertexWeights.x * uJointMatrices[int(aVertexJoints.x)]
-					+ aVertexWeights.y * uJointMatrices[int(aVertexJoints.y)]
-					+ aVertexWeights.z * uJointMatrices[int(aVertexJoints.z)]
-					+ aVertexWeights.w * uJointMatrices[int(aVertexJoints.w)];
+	mat4 poseMatrix = aVertexWeights.x * uJointMatrices[aVertexJoints.x]
+					+ aVertexWeights.y * uJointMatrices[aVertexJoints.y]
+					+ aVertexWeights.z * uJointMatrices[aVertexJoints.z]
+					+ aVertexWeights.w * uJointMatrices[aVertexJoints.w];
 
 	// Calculate the Model-View matrix with the pose
 	mat4 modelViewMatrix = uViewMatrix * uModelMatrix * poseMatrix;

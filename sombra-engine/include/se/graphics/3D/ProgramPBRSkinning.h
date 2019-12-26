@@ -17,14 +17,12 @@ namespace se::graphics {
 
 	public:		// Functions
 		/** Class destructor */
-		virtual ~ProgramPBRSkinning() {};
+		virtual ~ProgramPBRSkinning() = default;
 
 		/** Sets the uniform variables for the given joint matrices
 		 *
 		 * @param	jointMatrices a vector with all the joint matrices */
-		void setJointMatrices(
-			const std::vector<glm::mat4>& jointMatrices
-		) const;
+		void setJointMatrices(const std::vector<glm::mat4>& jointMatrices);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

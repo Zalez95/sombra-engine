@@ -6,13 +6,13 @@
 
 namespace se::graphics {
 
-	void Program3D::setViewMatrix(const glm::mat4& viewMatrix) const
+	void Program3D::setViewMatrix(const glm::mat4& viewMatrix)
 	{
 		mProgram->setUniform("uViewMatrix", viewMatrix);
 	}
 
 
-	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix) const
+	void Program3D::setProjectionMatrix(const glm::mat4& projectionMatrix)
 	{
 		mProgram->setUniform("uProjectionMatrix", projectionMatrix);
 	}

@@ -26,14 +26,13 @@ namespace se::graphics {
 
 	void RendererPBR::submit(const Renderable3D* renderable3D)
 	{
-		if (renderable3D) {
-			if (renderable3D->hasSkeleton()) {
-				mSkinnedRenderable3Ds.push(renderable3D);
-			}
-			else {
-				mRenderable3Ds.push(renderable3D);
-			}
-		}
+		mRenderable3Ds.push(renderable3D);
+	}
+
+
+	void RendererPBR::submitSkinned(const Renderable3D* renderable3D)
+	{
+		mSkinnedRenderable3Ds.push(renderable3D);
 	}
 
 

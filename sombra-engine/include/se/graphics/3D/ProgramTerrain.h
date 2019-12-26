@@ -23,23 +23,23 @@ namespace se::graphics {
 
 	public:		// Functions
 		/** Class destructor */
-		virtual ~ProgramTerrain() {};
+		virtual ~ProgramTerrain() = default;
 
 		/** Sets the size of the terrain in the XZ plane
 		 *
 		 * @param	xzSize the new size of the terrain in the XZ plane */
-		void setXZSize(float xzSize) const;
+		void setXZSize(float xzSize);
 
 		/** Sets the maximum height of the terrain in the Y axis
 		 *
 		 * @param	maxHeight the new maximum height of the terrain in the Y
 		 *			axis */
-		void setMaxHeight(float maxHeight) const;
+		void setMaxHeight(float maxHeight);
 
 		/** Sets the height map texture
 		 *
 		 * @param	heightMap the texture to use as height map */
-		void setHeightMap(const Texture& heightMap) const;
+		void setHeightMap(const Texture& heightMap);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

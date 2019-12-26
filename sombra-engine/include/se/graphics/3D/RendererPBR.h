@@ -46,6 +46,13 @@ namespace se::graphics {
 		 *			to render */
 		void submit(const Renderable3D* renderable3D);
 
+		/** Submits the given Renderable3D to the queue of Renderable3Ds with
+		 * skinning to render
+		 *
+		 * @param	renderable3D a pointer to the Renderable3D that we want
+		 *			to render */
+		void submitSkinned(const Renderable3D* renderable3D);
+
 		/** Renders the Renderable3Ds that currently are in the render queue
 		 *
 		 * @param	camera a pointer to the Camera used to set the perspective

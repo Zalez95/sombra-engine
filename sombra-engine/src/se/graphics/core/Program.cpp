@@ -91,6 +91,30 @@ namespace se::graphics {
 	}
 
 
+	bool Program::addUniformBlock(const char* name)
+	{
+		GL_WRAP( int uniformLocation = glGetUniformBlockIndex(mProgramId, name) );
+
+		if (uniformLocation == -1) {
+			SOMBRA_WARN_LOG << "Uniform block \"" << name << "\" wasn't found";
+			return false;
+		}
+
+		mUniformBlocks.emplace(name, uniformLocation);
+
+		return true;
+	}
+
+
+	void Program::setUniformBlock(const char* name, unsigned int blockIndex) const
+	{
+		auto itUniformBlock = mUniformBlocks.find(name);
+		if (itUniformBlock != mUniformBlocks.end()) {
+			GL_WRAP( glUniformBlockBinding(mProgramId, blockIndex, itUniformBlock->second) );
+		}
+	}
+
+
 	void Program::enable() const
 	{
 		GL_WRAP( glUseProgram(mProgramId) );

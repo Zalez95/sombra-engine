@@ -42,14 +42,9 @@ namespace se::graphics {
 
 	void VertexBuffer::setData(const void* data, std::size_t size)
 	{
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );
-		GL_WRAP( glBufferData(
-			GL_ARRAY_BUFFER,
-			size,
-			data,
-			GL_STATIC_DRAW
-		) );
-		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+		bind();
+		GL_WRAP( glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW) );
+		unbind();
 	}
 
 

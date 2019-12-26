@@ -35,7 +35,6 @@ struct Material
 	float alphaCutoff;
 };
 
-
 struct PointLight
 {
 	vec3 color;
@@ -45,7 +44,7 @@ struct PointLight
 
 
 // ____ GLOBAL VARIABLES ____
-// Input data in view tangent from the vertex shader
+// Input data in tangent space from the vertex shader
 in FragmentIn
 {
 	vec3 position;
@@ -56,8 +55,12 @@ flat in int fsNumPointLights;
 in vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
 
 // Uniform variables
-uniform Material	uMaterial;
-uniform PointLight	uPointLights[MAX_POINT_LIGHTS];
+layout (std140) uniform LightsBlock
+{
+	PointLight uPointLights[MAX_POINT_LIGHTS];
+};
+
+uniform Material uMaterial;
 
 // Output data
 out vec4 glFragColor;

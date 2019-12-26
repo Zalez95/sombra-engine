@@ -9,13 +9,47 @@
 
 namespace se::graphics {
 
-	void ProgramPBR::setModelMatrix(const glm::mat4& modelMatrix) const
+	struct ShaderPointLight
+	{
+		glm::vec3 color;
+		float intensity;
+		float inverseRange;
+		glm::vec3 padding;
+	};
+
+
+	void ProgramPBR::setModelMatrix(const glm::mat4& modelMatrix)
 	{
 		mProgram->setUniform("uModelMatrix", modelMatrix);
 	}
 
 
-	void ProgramPBR::setMaterial(const Material& material) const
+	void ProgramPBR::setLights(const std::vector<const ILight*>& lights)
+	{
+		int uNumPointLights = 0;
+		std::array<ShaderPointLight, kMaxPointLights> uPointLights;
+		std::array<glm::vec3, kMaxPointLights> uPointLightsPositions;
+
+		for (const ILight* light : lights) {
+			const PointLight* pLight = dynamic_cast<const PointLight*>(light);
+			if (pLight && (uNumPointLights < kMaxPointLights)) {
+				uPointLights[uNumPointLights].color = pLight->color;
+				uPointLights[uNumPointLights].intensity = pLight->intensity;
+				uPointLights[uNumPointLights].inverseRange = pLight->inverseRange;
+				uPointLightsPositions[uNumPointLights] = pLight->position;
+				uNumPointLights++;
+			}
+		}
+
+		mProgram->setUniform("uNumPointLights", uNumPointLights);
+		mPointLightsUBO.setData(uPointLights.data(), uPointLights.size());
+		mPointLightsUBO.bind(UniformBlockIndices::kPointLights);
+		mProgram->setUniformBlock("LightsBlock", UniformBlockIndices::kPointLights);
+		mProgram->setUniformV("uPointLightsPositions", uNumPointLights, uPointLightsPositions.data());
+	}
+
+
+	void ProgramPBR::setMaterial(const Material& material)
 	{
 		// Set the material alphaMode
 		if (material.alphaMode == AlphaMode::Blend) {
@@ -82,7 +116,7 @@ namespace se::graphics {
 	}
 
 
-	void ProgramPBR::unsetMaterial(const Material& material) const
+	void ProgramPBR::unsetMaterial(const Material& material)
 	{
 		// Set face culling
 		if (material.doubleSided) {
@@ -94,28 +128,6 @@ namespace se::graphics {
 			GL_WRAP( glEnable(GL_DEPTH_TEST) );
 			GL_WRAP( glDisable(GL_BLEND) );
 		}
-	}
-
-
-	void ProgramPBR::setLights(const std::vector<const ILight*>& lights) const
-	{
-		int numPointLights = 0;
-		std::array<glm::vec3, kMaxPointLights> positions;
-
-		for (const ILight* light : lights) {
-			const PointLight* pLight = dynamic_cast<const PointLight*>(light);
-			if (pLight && (numPointLights < kMaxPointLights)) {
-				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].color").c_str(), pLight->color);
-				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].intensity").c_str(), pLight->intensity);
-				mProgram->setUniform(("uPointLights[" + std::to_string(numPointLights) + "].inverseRange").c_str(), pLight->inverseRange);
-				positions[numPointLights] = pLight->position;
-
-				numPointLights++;
-			}
-		}
-
-		mProgram->setUniform("uNumPointLights", numPointLights);
-		mProgram->setUniformV("uPointLightsPositions", numPointLights, positions.data());
 	}
 
 // Private functions
@@ -165,6 +177,10 @@ namespace se::graphics {
 
 		ret &= mProgram->addUniform("uModelMatrix");
 
+		ret &= mProgram->addUniform("uNumPointLights");
+		ret &= mProgram->addUniformBlock("LightsBlock");
+		ret &= mProgram->addUniform("uPointLightsPositions");
+
 		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorFactor");
 		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture");
 		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorTexture");
@@ -183,14 +199,6 @@ namespace se::graphics {
 		ret &= mProgram->addUniform("uMaterial.emissiveFactor");
 		ret &= mProgram->addUniform("uMaterial.checkAlphaCutoff");
 		ret &= mProgram->addUniform("uMaterial.alphaCutoff");
-
-		ret &= mProgram->addUniform("uNumPointLights");
-		for (int i = 0; i < kMaxPointLights; ++i) {
-			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].color").c_str());
-			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].intensity").c_str());
-			ret &= mProgram->addUniform(("uPointLights[" + std::to_string(i) + "].inverseRange").c_str());
-		}
-		ret &= mProgram->addUniform("uPointLightsPositions");
 
 		return ret;
 	}

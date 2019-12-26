@@ -45,6 +45,9 @@ namespace se::app {
 		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
 		rPtr->setModelMatrix(translation * rotation * scale);
+		if (skin) {
+			rPtr->setJointMatrices( calculateJointMatrices(*skin, rPtr->getModelMatrix()) );
+		}
 
 		// Add the Renderable3D
 		mLayer3D.addRenderable3D(rPtr);

@@ -10,7 +10,7 @@
 
 namespace se::graphics {
 
-	void ProgramPBRSkinning::setJointMatrices(const std::vector<glm::mat4>& jointMatrices) const
+	void ProgramPBRSkinning::setJointMatrices(const std::vector<glm::mat4>& jointMatrices)
 	{
 		std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(kMaxJoints));
 		mProgram->setUniformV("uJointMatrices", numJoints, jointMatrices.data());

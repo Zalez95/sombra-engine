@@ -25,13 +25,13 @@ namespace se::graphics {
 		 *
 		 * @param	viewMatrix the matrix that we want to set as the
 		 *			View matrix in the shaders */
-		void setViewMatrix(const glm::mat4& viewMatrix) const;
+		void setViewMatrix(const glm::mat4& viewMatrix);
 
 		/** Sets the uniform variables for the given Projection matrix
 		 *
 		 * @param	projectionMatrix the matrix that we want to set as the
 		 *			Projection matrix in the shaders */
-		void setProjectionMatrix(const glm::mat4& projectionMatrix) const;
+		void setProjectionMatrix(const glm::mat4& projectionMatrix);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

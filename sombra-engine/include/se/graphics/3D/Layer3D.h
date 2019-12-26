@@ -33,6 +33,10 @@ namespace se::graphics {
 		/** The 3D renderables that the layer must render */
 		std::vector<const Renderable3D*> mRenderable3Ds;
 
+		/** The 3D renderables with skeletal animation that the layer must
+		 * render */
+		std::vector<const Renderable3D*> mSkinnedRenderable3Ds;
+
 		/** The sky used by the Layer */
 		const Renderable3D* mSky;
 

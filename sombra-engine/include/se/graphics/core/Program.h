@@ -19,9 +19,11 @@ namespace se::graphics {
 		/** The id of the shader object */
 		unsigned int mProgramId;
 
-		/** The maps the uniform variable names with their respective
-		 * locations */
+		/** Maps the uniform variable names with their respective locations */
 		std::unordered_map<std::string, int> mUniformLocations;
+
+		/** Maps the uniform block names with their respective locations */
+		std::unordered_map<std::string, int> mUniformBlocks;
 
 	public:		// Functions
 		/** Creates and links a OpenGL Program from the specified shaders
@@ -48,6 +50,14 @@ namespace se::graphics {
 		 *			shaders, false otherwise */
 		bool addUniform(const char* name);
 
+		/** Adds the given uniform block to the program, so it can be setted
+		 * later with the @see setUniformBlock function
+		 *
+		 * @param	name the name of the uniform block that we want to set
+		 * @return	true if the uniform block was found in the program shaders,
+		 *			false otherwise */
+		bool addUniformBlock(const char* name);
+
 		/** Sets the value of the given uniform variable
 		 *
 		 * @param	name the name of the uniform variable that we want to set
@@ -66,6 +76,14 @@ namespace se::graphics {
 		void setUniformV(
 			const char* name, std::size_t count, const T* valuePtr
 		) const;
+
+		/** Binds the given uniform block index to the given program's uniform
+		 * block name
+		 *
+		 * @param	name the name of the uniform block that we want to set
+		 * @param	blockIndex the index of the uniform block to set
+		 * @note	if the name wasn't found, the index won't be set */
+		void setUniformBlock(const char* name, unsigned int blockIndex) const;
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
