@@ -40,7 +40,7 @@ namespace se::graphics {
 
 		/** Creates a new DirectionalLight */
 		DirectionalLight() :
-			ILight(), direction(0.0f, 0.0f,-1.0f) {};
+			ILight(), direction(0.0f, 0.0f, 1.0f) {};
 	};
 
 
@@ -93,7 +93,7 @@ namespace se::graphics {
 		/** Creates a new SpotLight */
 		SpotLight() :
 			ILight(),
-			direction(0.0f, 0.0f,-1.0f), position(0.0f), inverseRange(0.0f),
+			direction(0.0f, 0.0f, 1.0f), position(0.0f), inverseRange(0.0f),
 			innerConeAngle(0.0f), outerConeAngle(glm::quarter_pi<float>()) {};
 	};
 

@@ -1,11 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include <memory>
-#include <vector>
-#include <string>
-
-namespace se::window { class WindowSystem; }
+namespace se::window { struct WindowData; class WindowSystem; }
 namespace se::graphics { class GraphicsSystem; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { class CollisionWorld; }
@@ -14,7 +10,6 @@ namespace se::audio { class AudioEngine; }
 
 namespace se::app {
 
-	struct Entity;
 	class EventManager;
 	class InputManager;
 	class GraphicsManager;
@@ -30,8 +25,6 @@ namespace se::app {
 	class Application
 	{
 	protected:	// Nested Types
-		using EntityUPtr = std::unique_ptr<Entity>;
-
 		/** The different states in which the application could be */
 		enum class AppState
 		{
@@ -46,9 +39,10 @@ namespace se::app {
 		static constexpr float kContactPrecision	= 0.0000001f;
 		static constexpr float kContactSeparation	= 0.00001f;
 
+		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;
 
-		/** The state of the application */
+		/** The state of the Application */
 		AppState mState;
 
 		window::WindowSystem* mWindowSystem;
@@ -57,9 +51,6 @@ namespace se::app {
 		collision::CollisionWorld* mCollisionWorld;
 		animation::AnimationSystem* mAnimationSystem;
 		audio::AudioEngine* mAudioEngine;
-
-		/** The Entities that exists currently in the application */
-		std::vector<EntityUPtr> mEntities;
 
 		/** The managers that hold the data of the entities */
 		EventManager* mEventManager;
@@ -71,25 +62,41 @@ namespace se::app {
 		AudioManager* mAudioManager;
 
 	public:		// Functions
-		/** Creates a new Game */
-		Application(
-			const std::string& title, int width, int height,
-			float updateTime
-		);
+		/** Creates a new Application
+		 *
+		 * @param	title the configuration of the Application window
+		 * @param	updateTime the minimum elapsed time between updates in
+		 *			seconds */
+		Application(const window::WindowData& windowConfig, float updateTime);
 
 		/** Class destructor */
 		virtual ~Application();
 
+		/** Function used start the application
+		 * @note	the current thread will be used by the application until
+		 *			@see end is called */
+		virtual void start();
+
+		/** Function used to stop the application */
+		virtual void stop();
+	protected:
 		/** Runs the Game
 		 *
 		 * @return	true if the Game exited succesfully, false otherwise */
-		virtual bool run();
-	protected:
-		/**  Function used to initialize the application's entities data */
-		virtual void init() = 0;
+		bool run();
 
-		/** Function used to remove the application's entities data */
-		virtual void end() = 0;
+		/** Retrieves all the user input */
+		virtual void onInput();
+
+		/** Updates the application managers and systems each main loop
+		 * iteration
+		 *
+		 * @param	deltaTime the elapsed time since the last update in
+		 *			seconds */
+		virtual void onUpdate(float deltaTime);
+
+		/** Renders the scene */
+		virtual void onRender();
 	};
 
 }

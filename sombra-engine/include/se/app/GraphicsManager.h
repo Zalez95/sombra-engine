@@ -38,8 +38,9 @@ namespace se::app {
 		std::map<Entity*, CameraUPtr> mCameraEntities;
 		std::map<Entity*, LightUPtr> mLightEntities;
 		std::multimap<Entity*, Renderable3DUPtr> mRenderable3DEntities;
-		std::map<Entity*, RenderableTerrainUPtr> mRenderableTerrainEntities;
 		std::map<graphics::Renderable3D*, SkinSPtr> mRenderable3DSkins;
+		std::map<Entity*, Renderable3DUPtr> mSkyEntities;
+		std::map<Entity*, RenderableTerrainUPtr> mRenderableTerrainEntities;
 
 	public:		// Functions
 		/** Creates a new GraphicsManager

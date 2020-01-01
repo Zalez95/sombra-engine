@@ -4,5 +4,5 @@
 int main()
 {
 	game::Game miGame;
-	miGame.run();
+	miGame.start();
 }

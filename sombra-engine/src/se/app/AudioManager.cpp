@@ -14,7 +14,7 @@ namespace se::app {
 		// The Listener initial data is overridden by the entity one
 		mAudioEngine.setListenerPosition(entity->position);
 		mAudioEngine.setListenerOrientation(
-			glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+			glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation,
 			glm::vec3(0.0f, 1.0f, 0.0)
 		);
 		mAudioEngine.setListenerVelocity(entity->velocity);
@@ -36,7 +36,7 @@ namespace se::app {
 		audio::Source* sPtr = source.get();
 		sPtr->setPosition(entity->position);
 		sPtr->setOrientation(
-			glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+			glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation,
 			glm::vec3(0.0f, 1.0f, 0.0)
 		);
 		sPtr->setVelocity(entity->velocity);
@@ -68,7 +68,7 @@ namespace se::app {
 		if (mListener && mListener->updated.any()) {
 			mAudioEngine.setListenerPosition(mListener->position);
 			mAudioEngine.setListenerOrientation(
-				glm::vec3(0.0f, 0.0f, -1.0f) * mListener->orientation,
+				glm::vec3(0.0f, 0.0f, 1.0f) * mListener->orientation,
 				glm::vec3(0.0f, 1.0f, 0.0)
 			);
 			mAudioEngine.setListenerVelocity(mListener->velocity);
@@ -82,7 +82,7 @@ namespace se::app {
 			if (entity->updated.any()) {
 				source->setPosition(entity->position);
 				source->setOrientation(
-					glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation,
+					glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation,
 					glm::vec3(0.0f, 1.0f, 0.0)
 				);
 				source->setVelocity(entity->velocity);

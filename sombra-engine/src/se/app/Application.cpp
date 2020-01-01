@@ -1,13 +1,11 @@
 #include <chrono>
 #include <thread>
-#include <iostream>
 #include "se/utils/Log.h"
 #include "se/window/WindowSystem.h"
 #include "se/graphics/GraphicsSystem.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
-#include "se/app/Entity.h"
 #include "se/app/Application.h"
 #include "se/app/EventManager.h"
 #include "se/app/InputManager.h"
@@ -19,8 +17,12 @@
 
 namespace se::app {
 
-	Application::Application(const std::string& title, int width, int height, float updateTime) :
-		mUpdateTime(updateTime), mState(AppState::Stopped)
+	Application::Application(const window::WindowData& windowConfig, float updateTime) :
+		mUpdateTime(updateTime), mState(AppState::Stopped),
+		mWindowSystem(nullptr), mGraphicsSystem(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
+		mAnimationSystem(nullptr), mAudioEngine(nullptr),
+		mEventManager(nullptr), mInputManager(nullptr), mGraphicsManager(nullptr), mPhysicsManager(nullptr),
+		mCollisionManager(nullptr), mAnimationManager(nullptr), mAudioManager(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 		try {
@@ -28,7 +30,7 @@ namespace se::app {
 			mEventManager = new EventManager();
 
 			// Window
-			mWindowSystem = new window::WindowSystem({ title, width, height, false, false, false });
+			mWindowSystem = new window::WindowSystem(windowConfig);
 
 			// Input
 			mInputManager = new InputManager(*mWindowSystem);
@@ -36,7 +38,7 @@ namespace se::app {
 			// Graphics
 			mGraphicsSystem = new graphics::GraphicsSystem();
 			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
-			mGraphicsSystem->setViewport(width, height);
+			mGraphicsSystem->setViewport(windowConfig.width, windowConfig.height);
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);
@@ -56,7 +58,7 @@ namespace se::app {
 		}
 		catch (std::exception& e) {
 			mState = AppState::Error;
-			SOMBRA_ERROR_LOG << " Error creating the application: " << e.what();
+			SOMBRA_ERROR_LOG << " Error while creating the application: " << e.what();
 		}
 		SOMBRA_INFO_LOG << "Application created";
 	}
@@ -65,30 +67,46 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
-		delete mAudioManager;
-		delete mAudioEngine;
-		delete mAnimationManager;
-		delete mAnimationSystem;
-		delete mCollisionManager;
-		delete mCollisionWorld;
-		delete mPhysicsManager;
-		delete mPhysicsEngine;
-		delete mGraphicsManager;
-		delete mGraphicsSystem;
-		delete mInputManager;
-		delete mWindowSystem;
-		delete mEventManager;
+		if (mAudioManager) { delete mAudioManager; }
+		if (mAudioEngine) { delete mAudioEngine; }
+		if (mAnimationManager) { delete mAnimationManager; }
+		if (mAnimationSystem) { delete mAnimationSystem; }
+		if (mCollisionManager) { delete mCollisionManager; }
+		if (mCollisionWorld) { delete mCollisionWorld; }
+		if (mPhysicsManager) { delete mPhysicsManager; }
+		if (mPhysicsEngine) { delete mPhysicsEngine; }
+		if (mGraphicsManager) { delete mGraphicsManager; }
+		if (mGraphicsSystem) { delete mGraphicsSystem; }
+		if (mInputManager) { delete mInputManager; }
+		if (mWindowSystem) { delete mWindowSystem; }
+		if (mEventManager) { delete mEventManager; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
+	void Application::start()
+	{
+		SOMBRA_INFO_LOG << "Starting the Application";
 
+		run();
+	}
+
+
+	void Application::stop()
+	{
+		SOMBRA_INFO_LOG << "Stopping the Application";
+
+		if (mState == AppState::Running) {
+			mState = AppState::Stopped;
+		}
+	}
+
+// Private functions
 	bool Application::run()
 	{
 		SOMBRA_INFO_LOG << "Start running";
-		init();
 
 		if (mState != AppState::Stopped) {
-			SOMBRA_ERROR_LOG << " Bad game state";
+			SOMBRA_ERROR_LOG << "Bad initial state";
 			return false;
 		}
 
@@ -110,32 +128,56 @@ namespace se::app {
 			}
 			else {
 				lastTP = currentTP;
-				std::cout << deltaTime << "ms\r";
+
+				// Retrieve the input
+				onInput();
 
 				// Update the Systems
-				SOMBRA_INFO_LOG << "Update phase (" << deltaTime << ")";
-				mWindowSystem->update();
-				if (mWindowSystem->getInputData().keys[SE_KEY_ESCAPE]) {
-					mState = AppState::Stopped;
-				}
-				mInputManager->update();
-				mPhysicsManager->doDynamics(deltaTime);
-				mCollisionManager->update(deltaTime);
-				mPhysicsManager->doConstraints(deltaTime);
-				mAnimationManager->update(deltaTime);
-				mAudioManager->update();
-				mGraphicsManager->update();
+				onUpdate(deltaTime);
 
 				// Draw
-				SOMBRA_INFO_LOG << "Render phase";
-				mGraphicsManager->render();
-				mWindowSystem->swapBuffers();
+				onRender();
 			}
 		}
 
-		end();
+		if (mState != AppState::Stopped) {
+			SOMBRA_ERROR_LOG << "Error while running";
+			return false;
+		}
+
 		SOMBRA_INFO_LOG << "End running";
 		return true;
+	}
+
+
+	void Application::onInput()
+	{
+		SOMBRA_DEBUG_LOG << "Init";
+		mWindowSystem->update();
+		mInputManager->update();
+		SOMBRA_DEBUG_LOG << "End";
+	}
+
+
+	void Application::onUpdate(float deltaTime)
+	{
+		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
+		mAnimationManager->update(deltaTime);
+		mPhysicsManager->doDynamics(deltaTime);
+		mCollisionManager->update(deltaTime);
+		mPhysicsManager->doConstraints(deltaTime);
+		mAudioManager->update();
+		mGraphicsManager->update();
+		SOMBRA_DEBUG_LOG << "End";
+	}
+
+
+	void Application::onRender()
+	{
+		SOMBRA_DEBUG_LOG << "Init";
+		mGraphicsManager->render();
+		mWindowSystem->swapBuffers();
+		SOMBRA_DEBUG_LOG << "End";
 	}
 
 }

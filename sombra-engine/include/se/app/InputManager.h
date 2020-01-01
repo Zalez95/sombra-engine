@@ -1,13 +1,12 @@
 #ifndef INPUT_MANAGER_H
 #define INPUT_MANAGER_H
 
-#include <vector>
+#include <memory>
+#include <deque>
+#include "ICommand.h"
 #include "../window/WindowSystem.h"
 
 namespace se::app {
-
-	struct Entity;
-
 
 	/**
 	 * Class InputManager, it's a Manager used for updating the Entities's
@@ -15,17 +14,44 @@ namespace se::app {
 	 */
 	class InputManager
 	{
+	private:	// Nested types
+		using KeyType = int;
+		using ICommandUPtr = std::unique_ptr<ICommand>;
+		using MouseCommandUPtr = std::unique_ptr<MouseCommand>;
+		using ScrollCommandUPtr = std::unique_ptr<ScrollCommand>;
+
 	private:	// Attributes
-		static constexpr float kRunSpeed	= 7.5f;
-		static constexpr float kJumpSpeed	= 10.0f;
-		static constexpr float kMouseSpeed	= 5.0f;
+		/** Max number of buttons in the keyboard */
+		static constexpr int kMaxKeys = 1024;
+
+		/** Max number of buttons in the mouse */
+		static constexpr int kMaxMouseButtons = 32;
+
+		/** The number of state in which a button can be */
+		static constexpr int kNStates =
+			static_cast<int>(window::ButtonState::NumStates);
 
 		/** A reference to the WindowSystem used for checking the player's
 		 * input data */
 		window::WindowSystem& mWindowSystem;
 
-		/** The Entities to update */
-		std::vector<Entity*> mEntities;
+		/** Maps each key code with its respective Commands to execute after
+		 * the user input */
+		ICommandUPtr mKeyCommands[kMaxKeys][kNStates];
+
+		/** Maps each mouse button code with its respective Commands to execute
+		 * after the user input */
+		ICommandUPtr mButtonCommands[kMaxMouseButtons][kNStates];
+
+		/** The command to execute when the mouse location changes */
+		MouseCommandUPtr mMouseCommand;
+
+		/** The command to execute when the scroll state changes */
+		ScrollCommandUPtr mScrollCommand;
+
+		/** A queue that holds all the commands that must be executed in the
+		 * next update call due to the user input from oldest to newest */
+		std::deque<ICommand*> mCommandQueue;
 
 	public:		// Functions
 		/** Creates a new InputManager
@@ -34,42 +60,38 @@ namespace se::app {
 		 *			input of the player */
 		InputManager(window::WindowSystem& windowSystem);
 
-		/** Adds the given Entity to the InputManager
+		/** Adds the given key command to execute
 		 *
-		 * @param	entity a pointer to the Entity to add to the
-		 *			InputManager */
-		void addEntity(Entity* entity);
+		 * @param	keyCode the code of the key
+		 * @param	state the state in which the key must be
+		 * @param	command a pointer to the command to execute */
+		void addKeyCommand(
+			KeyType keyCode, window::ButtonState state,
+			ICommandUPtr command
+		);
 
-		/** Removes the given Entity from the InputManager so it won't
-		 * longer be updated
+		/** Adds the given mouse button command to execute
 		 *
-		 * @param	entity a pointer to the Entity to remove from the
-		 *			InputManager */
-		void removeEntity(Entity* entity);
+		 * @param	buttonCode the code of the mouse button
+		 * @param	state the state in which the mouse button must be
+		 * @param	command a pointer to the command to execute */
+		void addButtonCommand(
+			KeyType buttonCode, window::ButtonState state,
+			ICommandUPtr command
+		);
 
-		/** Updates the Entities with the player input */
+		/** Sets the given mouse movement command to execute
+		 *
+		 * @param	command a pointer to the command to execute */
+		void setMouseCommand(MouseCommandUPtr command);
+
+		/** Sets the given scroll movement command to execute
+		 *
+		 * @param	command a pointer to the command to execute */
+		void setScrollCommand(ScrollCommandUPtr command);
+
+		/** Executes all the user input commands */
 		void update();
-	private:
-		/** Updates the orientation of the given Entity with the player's
-		 * mouse input
-		 *
-		 * @param	entity a pointer to the Entity to update
-		 * @param	inputData the current player's input data */
-		void doMouseInput(
-			Entity* entity, const window::InputData& inputData
-		) const;
-
-		/** Updates the locations of the given Entity with the player's
-		 * mouse input
-		 *
-		 * @param	entity a pointer to the Entity to update
-		 * @param	inputData the current player's input data */
-		void doKeyboardInput(
-			Entity* entity, const window::InputData& inputData
-		) const;
-
-		/** Resets the mouse position to the center of the screen */
-		void resetMousePosition() const;
 	};
 
 }

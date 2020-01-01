@@ -50,21 +50,23 @@ namespace se::graphics {
 
 	void Layer3D::render()
 	{
-		if (mSky) {
-			mRendererSky.render(mCamera, *mSky);
-		}
+		if (mCamera) {
+			if (mSky) {
+				mRendererSky.render(mCamera, *mSky);
+			}
 
-		if (mTerrain) {
-			mRendererTerrain.render(mCamera, mLights, *mTerrain);
-		}
+			if (mTerrain) {
+				mRendererTerrain.render(mCamera, mLights, *mTerrain);
+			}
 
-		for (const Renderable3D* renderable3D : mRenderable3Ds) {
-			mRendererPBR.submit(renderable3D);
+			for (const Renderable3D* renderable3D : mRenderable3Ds) {
+				mRendererPBR.submit(renderable3D);
+			}
+			for (const Renderable3D* renderable3D : mSkinnedRenderable3Ds) {
+				mRendererPBR.submitSkinned(renderable3D);
+			}
+			mRendererPBR.render(mCamera, mLights);
 		}
-		for (const Renderable3D* renderable3D : mSkinnedRenderable3Ds) {
-			mRendererPBR.submitSkinned(renderable3D);
-		}
-		mRendererPBR.render(mCamera, mLights);
 	}
 
 }

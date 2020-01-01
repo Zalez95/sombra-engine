@@ -1,9 +1,12 @@
+#include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <AudioFile.h>
 
-#include <se/app/Entity.h>
+#include <se/window/KeyCodes.h>
+
 #include <se/app/Image.h>
 #include <se/app/RawMesh.h>
 #include <se/app/InputManager.h>
@@ -12,6 +15,11 @@
 #include <se/app/CollisionManager.h>
 #include <se/app/AnimationManager.h>
 #include <se/app/AudioManager.h>
+#include <se/app/loaders/MeshLoader.h>
+#include <se/app/loaders/ImageReader.h>
+#include <se/app/loaders/FontReader.h>
+#include <se/app/loaders/TerrainLoader.h>
+#include <se/app/loaders/SceneReader.h>
 
 #include <se/graphics/GraphicsSystem.h>
 #include <se/graphics/3D/Camera.h>
@@ -38,36 +46,12 @@
 #include <se/audio/Buffer.h>
 #include <se/audio/Source.h>
 
-#include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/ImageReader.h>
-#include <se/app/loaders/FontReader.h>
-#include <se/app/loaders/TerrainLoader.h>
-#include <se/app/loaders/SceneReader.h>
-#include <AudioFile.h>
-
 #include <se/utils/Log.h>
 #include <se/utils/FileReader.h>
 
 #include "game/Game.h"
 
 namespace game {
-
-// static variables definition
-	const std::string Game::kTitle		= "< SOMBRA >";
-	const unsigned int Game::kWidth		= 1280;
-	const unsigned int Game::kHeight	= 720;
-	const float Game::kUpdateTime		= 0.016f;
-	const unsigned int Game::kNumCubes	= 50;
-	const float Game::kFOV				= glm::radians(60.0f);
-	const float Game::kZNear			= 0.1f;
-	const float Game::kZFar				= 2000.0f;
-
-// Public functions
-	Game::Game() : se::app::Application(kTitle, kWidth, kHeight, kUpdateTime) {}
-
-
-	Game::~Game() {}
-
 
 	se::app::RawMesh createRawMesh(
 		const se::collision::HalfEdgeMesh& heMesh,
@@ -219,10 +203,15 @@ namespace game {
 		return meshData;
 	}
 
+// Public functions
+	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime) {}
 
-	void Game::init()
+
+	Game::~Game() {}
+
+
+	void Game::start()
 	{
-		mWindowSystem->setCursorVisibility(false);
 		SOMBRA_INFO_LOG << mGraphicsSystem->getGLInfo();
 		mGraphicsSystem->addLayer(&mLayer2D);
 
@@ -365,7 +354,7 @@ namespace game {
 
 			// Cameras
 			camera1 = std::make_unique<se::graphics::Camera>();
-			camera1->setPerspectiveProjectionMatrix(kFOV, kWidth / static_cast<float>(kHeight), kZNear, kZFar);
+			camera1->setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
 			pointLight1 = std::make_unique<se::graphics::PointLight>();
@@ -419,24 +408,41 @@ namespace game {
 		 * GAME DATA
 		 *********************************************************************/
 		// Player
-		auto player	= std::make_unique<se::app::Entity>("player");
-		player->position = glm::vec3(0, 1, 10);
+		auto player = std::make_unique<se::app::Entity>("player");
+		mPlayer = player.get();
+		mEntities.emplace_back(std::move(player));
 
-		se::physics::RigidBodyConfig config1(40.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
+		mPlayer->position = glm::vec3(0.0f, 1.0f, 10.0f);
+		mPlayer->orientation = glm::quat(glm::vec3(0.0f, glm::pi<float>(), 0.0f));
+
+		se::physics::RigidBodyConfig config1(0.001f);
+		config1.invertedMass = 1.0f / 40.0f;	// No inertia tensor so the player can't rotate due to collisions
 		config1.linearDrag = 0.01f;
 		config1.angularDrag = 0.01f;
 		config1.frictionCoefficient = 1.16f;
 		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(config1, se::physics::RigidBodyData());
 		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
-		mCollisionManager->addEntity(player.get(), std::move(collider1));
-		mPhysicsManager->addEntity(player.get(), std::move(rigidBody1));
+		mCollisionManager->addEntity(mPlayer, std::move(collider1));
+		mPhysicsManager->addEntity(mPlayer, std::move(rigidBody1));
 
-		mGraphicsManager->addCameraEntity(player.get(), std::move(camera1));
-		mGraphicsManager->addLightEntity(player.get(), std::move(pointLight1));
-		mAudioManager->setListener(player.get());
-		mInputManager->addEntity(player.get());
+		mGraphicsManager->addCameraEntity(mPlayer, std::move(camera1));
+		mGraphicsManager->addLightEntity(mPlayer, std::move(pointLight1));
+		mAudioManager->setListener(mPlayer);
 
-		mEntities.push_back(std::move(player));
+		mInputManager->setMouseCommand(std::make_unique<MouseFPSControl>(*mWindowSystem, mPlayerInput, kMouseSpeed));
+		mInputManager->addKeyCommand(SE_KEY_W, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Front, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_W, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Front, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_A, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Left, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_A, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Left, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_S, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Back, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_S, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Back, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_D, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Right, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_D, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Right, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_SPACE, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Up, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_SPACE, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Up, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_LEFT_CONTROL, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Down, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_LEFT_CONTROL, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Down, mPlayerInput));
+		mInputManager->addKeyCommand(SE_KEY_ESCAPE, se::window::ButtonState::Pressed, std::make_unique<CloseCommand>(*this));
 
 		// Sky
 		auto skyEntity = std::make_unique<se::app::Entity>("sky");
@@ -464,7 +470,13 @@ namespace game {
 		mEntities.push_back(std::move(plane));
 
 		// Fixed cubes
-		glm::vec3 cubePositions[5] = { glm::vec3(2, 5, -10), glm::vec3(0, 7, -10), glm::vec3(0, 5, -8), glm::vec3(0, 5, -10), glm::vec3(10, 5, -10) };
+		glm::vec3 cubePositions[5] = {
+			{ 2.0f, 5.0f, -10.0f },
+			{ 0.0f, 7.0f, -10.0f },
+			{ 0.0f, 5.0f, -8.0f },
+			{ 0.0f, 5.0f, -10.0f },
+			{ 10.0f, 5.0f, -10.0f }
+		};
 		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
 		se::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
@@ -483,13 +495,13 @@ namespace game {
 				mAudioManager->addSource(cube.get(), std::move(source1));
 			}
 			if (i == 3) {
-				rigidBody2->getData().angularVelocity = glm::vec3(0, 10, 0);
+				rigidBody2->getData().angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
 				rb2 = rigidBody2.get();
 			}
 			if (i == 4) {
 				cube->velocity += glm::vec3(-1, 0, 0);
 			}
-			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
+			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 			mCollisionManager->addEntity(cube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
@@ -565,7 +577,7 @@ namespace game {
 			displacement *= 0.1f;
 
 			auto tubeSlice = std::make_unique<se::app::Entity>("tube");
-			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1, 0, 0)));
+			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
 			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
@@ -595,7 +607,7 @@ namespace game {
 			config2.angularDrag = 0.9f;
 			config2.frictionCoefficient = 0.5f;
 			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
-			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1,1,1));
+			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 			mCollisionManager->addEntity(cube.get(), std::move(collider2));
 			mPhysicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
@@ -613,14 +625,14 @@ namespace game {
 		});
 
 		auto eL2 = std::make_unique<se::app::Entity>("point-light2");
-		eL2->position = glm::vec3(-3, 1, 5);
+		eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
 		eL2->scale = glm::vec3(0.1f);
 		mGraphicsManager->addLightEntity(eL2.get(), std::move(pointLight2));
 		mGraphicsManager->addRenderableEntity(eL2.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
 		mEntities.push_back(std::move(eL2));
 
 		auto eL3 = std::make_unique<se::app::Entity>("point-light3");
-		eL3->position = glm::vec3(2, 10, 5);
+		eL3->position = glm::vec3(2.0f, 10.0f, 5.0f);
 		eL3->scale = glm::vec3(0.1f);
 		mGraphicsManager->addLightEntity(eL3.get(), std::move(pointLight3));
 		mGraphicsManager->addRenderableEntity(eL3.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
@@ -654,11 +666,17 @@ namespace game {
 				mEntities.push_back( std::move(entity) );
 			}
 		}
+
+		Application::start();
 	}
 
 
-	void Game::end()
+	void Game::stop()
 	{
+		if (mState == AppState::Stopped) { return; }
+
+		Application::stop();
+
 		for (se::physics::Force* force : mForces) {
 			mPhysicsEngine->getForceManager().removeForce(force);
 			delete force;
@@ -675,7 +693,6 @@ namespace game {
 		}
 
 		for (EntityUPtr& entity : mEntities) {
-			mInputManager->removeEntity(entity.get());
 			mGraphicsManager->removeEntity(entity.get());
 			mPhysicsManager->removeEntity(entity.get());
 			mCollisionManager->removeEntity(entity.get());
@@ -685,6 +702,62 @@ namespace game {
 		mEntities.clear();
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
+	}
+
+// Private functions
+	void Game::onUpdate(float deltaTime)
+	{
+		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
+		std::cout << deltaTime << "ms\r";
+
+		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * mPlayer->orientation;
+		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
+		glm::vec3 right		= glm::cross(forward, up);
+
+		// Set the pitch and yaw
+		if ((mPlayerInput.yaw != 0.0f) || (mPlayerInput.pitch != 0.0f)) {
+			float yaw = mPlayerInput.yaw * deltaTime;
+			float pitch = mPlayerInput.pitch * deltaTime;
+			mPlayerInput.yaw = mPlayerInput.pitch = 0.0f;
+
+			// Clamp the pitch
+			float currentPitch = std::asin(forward.y);
+			float nextPitch = currentPitch + pitch;
+			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
+			pitch = nextPitch - currentPitch;
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mPlayer << " orientation (" << pitch << ", " << yaw << ")";
+
+			// Apply the rotation
+			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
+			mPlayer->orientation = glm::normalize(qPitch * mPlayer->orientation * qYaw);
+			mPlayer->updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+		}
+
+		// Add WASD movement
+		glm::vec3 direction(0.0f);
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Front)]) { direction += forward; }
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Back)]) { direction -= forward; }
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Right)]) { direction += right; }
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Left)]) { direction -= right; }
+		float length = glm::length(direction);
+		if (length > 0.0f) {
+			mPlayer->velocity += kRunSpeed * direction / length;
+			mPlayer->updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+		}
+
+		// Add the world Y velocity
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Up)]) {
+			mPlayer->velocity += kJumpSpeed * up;
+			mPlayer->updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+		}
+		if (mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Down)]) {
+			mPlayer->velocity -= kJumpSpeed * up;
+			mPlayer->updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+		}
+
+		Application::onUpdate(deltaTime);
+		SOMBRA_DEBUG_LOG << "End";
 	}
 
 }

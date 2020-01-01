@@ -22,7 +22,7 @@ namespace se::app {
 		// The Camera initial data is overridden by the entity one
 		graphics::Camera* cPtr = camera.get();
 		cPtr->setPosition(entity->position);
-		cPtr->setTarget(entity->position + glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation);
+		cPtr->setTarget(entity->position + glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
 		cPtr->setUp({ 0.0f, 1.0f, 0.0f });
 
 		// Add the Camera
@@ -78,7 +78,7 @@ namespace se::app {
 
 		// Add the Renderable3D
 		mLayer3D.setSky(rPtr);
-		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
+		mSkyEntities.emplace(entity, std::move(renderable3D));
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Sky Renderable3D " << rPtr << " added successfully";
 	}
 
@@ -108,14 +108,14 @@ namespace se::app {
 		// The PointLight initial data is overridden by the entity one
 		graphics::ILight* lPtr = light.get();
 		if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(lPtr))) {
-			dLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+			dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 		}
 		else if (auto pLight = (dynamic_cast<graphics::PointLight*>(lPtr))) {
 			pLight->position = entity->position;
 		}
 		else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(lPtr))) {
 			sLight->position = entity->position;
-			sLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+			sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 		}
 
 		// Add the ILight
@@ -141,6 +141,20 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Renderable3D Entity " << entity << " removed successfully";
 		}
 
+		auto itSky = mSkyEntities.find(entity);
+		if (itSky != mSkyEntities.end()) {
+			mLayer3D.setSky(nullptr);
+			mSkyEntities.erase(itSky);
+			SOMBRA_INFO_LOG << "Sky Renderable3D Entity " << entity << " removed successfully";
+		}
+
+		auto itRenderableTerrain = mRenderableTerrainEntities.find(entity);
+		if (itRenderableTerrain != mRenderableTerrainEntities.end()) {
+			mLayer3D.setTerrain(nullptr);
+			mRenderableTerrainEntities.erase(itRenderableTerrain);
+			SOMBRA_INFO_LOG << "RenderableTerrain Entity " << entity << " removed successfully";
+		}
+
 		auto itLight = mLightEntities.find(entity);
 		if (itLight != mLightEntities.end()) {
 			mLayer3D.removeLight(itLight->second.get());
@@ -162,7 +176,7 @@ namespace se::app {
 
 			if (entity->updated.any()) {
 				camera->setPosition(entity->position);
-				camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation);
+				camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
 				camera->setUp({ 0.0f, 1.0f, 0.0f });
 
 				if (camera == mLayer3D.getCamera()) {
@@ -207,14 +221,14 @@ namespace se::app {
 
 			if (entity->updated.any()) {
 				if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(light))) {
-					dLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+					dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 				}
 				else if (auto pLight = (dynamic_cast<graphics::PointLight*>(light))) {
 					pLight->position = entity->position;
 				}
 				else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(light))) {
 					sLight->position = entity->position;
-					sLight->direction = glm::vec3(0.0f, 0.0f, -1.0f) * entity->orientation;
+					sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 				}
 			}
 		}

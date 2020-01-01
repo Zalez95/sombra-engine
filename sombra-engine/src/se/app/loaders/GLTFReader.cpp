@@ -1339,7 +1339,7 @@ namespace se::app {
 		if (itType != jsonLight.end()) {
 			if (*itType == "directional") {
 				auto directionalLight = std::make_unique<graphics::DirectionalLight>();
-				directionalLight->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+				directionalLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
 				light = std::move(directionalLight);
 			}
 			else if (*itType == "point") {
@@ -1354,7 +1354,7 @@ namespace se::app {
 			else if (*itType == "spot") {
 				auto spotLight = std::make_unique<graphics::SpotLight>();
 				spotLight->position = glm::vec3(0.0f);
-				spotLight->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+				spotLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
 
 				auto itRange = jsonLight.find("range");
 				spotLight->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;

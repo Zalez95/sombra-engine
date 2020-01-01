@@ -1,7 +1,7 @@
 include(GNUInstallDirs)
 
 # Find the executable source files
-set(GAME_SOURCES "src/game/Game.cpp" "src/main.cpp")
+file(GLOB_RECURSE GAME_SOURCES "src/*.cpp")
 
 # Create the executable
 add_executable(Game ${GAME_SOURCES})

@@ -23,7 +23,8 @@ namespace se::app {
 
 
 	/**
-	 * Class IEvent, the base IEvent that all events should inherit from.
+	 * Class IEvent, it's the base class that all events should inherit from to
+	 * be notified by the EventManager
 	 * @note	derived events should also have a kTopic public constant
 	 *			property with the Topic of the IEvent
 	 */
@@ -31,7 +32,7 @@ namespace se::app {
 	{
 	public:		// Functions
 		/** Class destructor */
-		virtual ~IEvent() {};
+		virtual ~IEvent() = default;
 
 		/** @return	the Topic of the IEvent */
 		virtual Topic getTopic() const = 0;
