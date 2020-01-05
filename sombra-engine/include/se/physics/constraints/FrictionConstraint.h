@@ -50,7 +50,7 @@ namespace se::physics {
 		FrictionConstraint(
 			const std::array<RigidBody*, 2>& rigidBodies,
 			float gravityAcceleration, float frictionCoefficient
-		) : Constraint(&mConstraintBounds, rigidBodies),
+		) : Constraint(rigidBodies),
 			mConstraintBounds{ 0.0f, 0.0f },
 			mGravityAcceleration(gravityAcceleration),
 			mFrictionCoefficient(frictionCoefficient),
@@ -60,11 +60,15 @@ namespace se::physics {
 		/** Class destructor */
 		virtual ~FrictionConstraint() = default;
 
-		/** @return the value of the Bias of the constraint */
-		float getBias() const override;
+		/** @return	the ConstraintBounds of the Constraint */
+		virtual const ConstraintBounds& getConstraintBounds() const override
+		{ return mConstraintBounds; };
 
-		/** @return the Jacobian matrix of the constraint */
-		std::array<float, 12> getJacobianMatrix() const override;
+		/** @return	the value of the Bias of the constraint */
+		virtual float getBias() const override;
+
+		/** @return	the Jacobian matrix of the constraint */
+		virtual std::array<float, 12> getJacobianMatrix() const override;
 
 		/** Sets the constraint vectors of the NormalConstraint
 		 *

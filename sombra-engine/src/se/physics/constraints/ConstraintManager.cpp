@@ -35,42 +35,20 @@ namespace se::physics {
 		mConstraints.push_back(constraint);
 		mConstraintRBMap.push_back(rbIndices);
 		mLambdaMatrix.push_back(0.0f);
-		const ConstraintBounds* cb = constraint->getConstraintBounds();
-		mLambdaMinMatrix.push_back(cb->alphaMin);
-		mLambdaMaxMatrix.push_back(cb->alphaMax);
 	}
 
 
 	void ConstraintManager::removeConstraint(Constraint* constraint)
 	{
 		auto itConstraint = std::find(mConstraints.begin(), mConstraints.end(), constraint);
-		std::size_t iConstraint = std::distance(mConstraints.begin(), itConstraint);
 		if (itConstraint == mConstraints.end()) { return; }
+
+		std::size_t iConstraint = std::distance(mConstraints.begin(), itConstraint);
 
 		// Remove the RigidBodies if the constraint to remove is the only one
 		// that uses them
-		for (std::size_t i = 0; i < 2; ++i) {
-			std::size_t iRB = mConstraintRBMap[iConstraint][i];
-
-			std::size_t count = 0;
-			bool shouldRemove = std::none_of(
-				mConstraintRBMap.begin(), mConstraintRBMap.end(),
-				[&count, iRB](const IndexPair& item) {
-					return (item[0] == iRB || item[1] == iRB) && (count++ > 0);
-				}
-			);
-
-			if (shouldRemove) {
-				// Remove the RigidBody
-				mRigidBodies.erase(mRigidBodies.begin() + iRB);
-
-				// Shift the mConstraintRBMap RigidBody indices left
-				for (IndexPair& pair : mConstraintRBMap) {
-					if (pair[0] > iRB) { --pair[0]; }
-					if (pair[1] > iRB) { --pair[1]; }
-				}
-			}
-			else {
+		for (std::size_t iRB : mConstraintRBMap[iConstraint]) {
+			if (!tryRemoveRigidBody(iRB)) {
 				// Change the Sleeping state to force to solve the rest of the
 				// Constraints in the next update
 				RigidBodyDynamics::setState(*mRigidBodies[iRB], RigidBodyState::Sleeping, false);
@@ -81,14 +59,66 @@ namespace se::physics {
 		mConstraints.erase(itConstraint);
 		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
 		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
-		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
-		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
+	}
+
+
+	void ConstraintManager::removeRigidBody(RigidBody* rigidBody)
+	{
+		auto itRigidBody = std::find(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
+		if (itRigidBody == mRigidBodies.end()) { return; }
+
+		std::size_t iRB = std::distance(mRigidBodies.begin(), itRigidBody);
+		for (auto itConstraint = mConstraints.begin(); itConstraint != mConstraints.end();) {
+			std::size_t iConstraint = std::distance(mConstraints.begin(), itConstraint);
+
+			// Check if any of the Constraint RigidBodies is the RigidBody to
+			// remove
+			bool shouldRemove = false;
+			std::size_t iiRB = -1, iRB2 = -1;
+			if (iRB == mConstraintRBMap[iConstraint][0]) {
+				shouldRemove = true;
+				iiRB = 0;
+				iRB2 = mConstraintRBMap[iConstraint][1];
+			}
+			else if (iRB == mConstraintRBMap[iConstraint][1]) {
+				shouldRemove = true;
+				iiRB = 1;
+				iRB2 = mConstraintRBMap[iConstraint][0];
+			}
+
+			if (shouldRemove) {
+				// Remove the other RigidBody if the constraint to remove is
+				// the only one that uses it
+				if (!tryRemoveRigidBody(iRB2)) {
+					// Change the Sleeping state to force to solve the rest of
+					// the Constraints in the next update
+					RigidBodyDynamics::setState(*mRigidBodies[iRB2], RigidBodyState::Sleeping, false);
+				}
+				else {
+					// Update the iRB index with its new value due to the
+					// removal stage
+					iRB = mConstraintRBMap[iConstraint][iiRB];
+				}
+
+				// Remove the constraint and its cached data
+				itConstraint = mConstraints.erase(itConstraint);
+				mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
+				mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
+			}
+			else {
+				++itConstraint;
+			}
+		}
+
+		// Remove the current RigidBody
+		tryRemoveRigidBody(iRB);
 	}
 
 
 	void ConstraintManager::update(float deltaTime)
 	{
 		// 1. Update the matrices
+		updateLambdaBoundsMatrices();
 		updateBiasMatrix();
 		updateShouldSolveMatrix();
 		updateInverseMassMatrix();
@@ -107,6 +137,22 @@ namespace se::physics {
 	}
 
 // Private functions
+	void ConstraintManager::updateLambdaBoundsMatrices()
+	{
+		mLambdaMinMatrix = std::vector<float>();
+		mLambdaMinMatrix.reserve(mConstraints.size());
+
+		mLambdaMaxMatrix = std::vector<float>();
+		mLambdaMaxMatrix.reserve(mConstraints.size());
+
+		for (const Constraint* c : mConstraints) {
+			auto cb = c->getConstraintBounds();
+			mLambdaMinMatrix.push_back(cb.lambdaMin);
+			mLambdaMaxMatrix.push_back(cb.lambdaMax);
+		}
+	}
+
+
 	void ConstraintManager::updateBiasMatrix()
 	{
 		mBiasMatrix = std::vector<float>();
@@ -374,6 +420,30 @@ namespace se::physics {
 			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::ConstraintsSolved, true);
 			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::Sleeping, false);
 		}
+	}
+
+
+	bool ConstraintManager::tryRemoveRigidBody(std::size_t iRB)
+	{
+		std::size_t count = 0;
+		if (std::none_of(
+				mConstraintRBMap.begin(), mConstraintRBMap.end(),
+				[&](const IndexPair& item) { return ((item[0] == iRB) || (item[1] == iRB)) && (count++ > 0); }
+			)
+		) {
+			// Remove the RigidBody
+			mRigidBodies.erase(mRigidBodies.begin() + iRB);
+
+			// Shift the mConstraintRBMap RigidBody indices left
+			for (IndexPair& pair : mConstraintRBMap) {
+				if (pair[0] > iRB) { --pair[0]; }
+				if (pair[1] > iRB) { --pair[1]; }
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 
 }

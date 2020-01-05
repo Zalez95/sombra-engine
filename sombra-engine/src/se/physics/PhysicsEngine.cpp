@@ -16,6 +16,9 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
+		mForceManager.removeRigidBody(rigidBody);
+		mConstraintManager.removeRigidBody(rigidBody);
+
 		mRigidBodies.erase(
 			std::remove(mRigidBodies.begin(), mRigidBodies.end(), rigidBody),
 			mRigidBodies.end()

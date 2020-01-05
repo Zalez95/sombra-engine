@@ -3,9 +3,6 @@
 
 namespace se::physics {
 
-	constexpr ConstraintBounds DistanceConstraint::kConstraintBounds;
-
-
 	std::array<float, 12> DistanceConstraint::getJacobianMatrix() const
 	{
 		glm::vec3 p1 = mRigidBodies[0]->getData().position + mAnchorPoints[0];

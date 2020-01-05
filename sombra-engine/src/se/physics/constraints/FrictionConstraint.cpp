@@ -25,8 +25,8 @@ namespace se::physics {
 
 	void FrictionConstraint::calculateConstraintBounds(float contactMass)
 	{
-		mConstraintBounds.alphaMax = mFrictionCoefficient * contactMass * mGravityAcceleration;
-		mConstraintBounds.alphaMin = -mConstraintBounds.alphaMax;
+		mConstraintBounds.lambdaMax = mFrictionCoefficient * contactMass * mGravityAcceleration;
+		mConstraintBounds.lambdaMin = -mConstraintBounds.lambdaMax;
 	}
 
 }

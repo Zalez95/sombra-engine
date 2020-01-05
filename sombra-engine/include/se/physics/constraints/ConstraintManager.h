@@ -97,12 +97,22 @@ namespace se::physics {
 		 *			remove */
 		void removeConstraint(Constraint* constraint);
 
+		/** Removes all the Constraints that constains the given RigidBody
+		 * from the ConstraintManager.
+		 *
+		 * @param	rigidBody a pointer to the RigidBody whose Constraints we
+		 *			want to remove */
+		void removeRigidBody(RigidBody* rigidBody);
+
 		/** Applies the constraints stored in the ConstraintManager
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
 		void update(float deltaTime);
 	private:
+		/** Updates the lambda min and lambda max matrices value */
+		void updateLambdaBoundsMatrices();
+
 		/** Updates the bias matrix value */
 		void updateBiasMatrix();
 
@@ -178,6 +188,13 @@ namespace se::physics {
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
 		void updateRigidBodies(float deltaTime);
+
+		/** Deletes the RigidBody located at the given index if it has zero or
+		 * one Constraint users
+		 *
+		 * @param	iRB the index of the RigidBody in mRigidBodies
+		 * @return	true if the RigidBody was removed, false otherwise */
+		bool tryRemoveRigidBody(std::size_t iRB);
 	};
 
 }

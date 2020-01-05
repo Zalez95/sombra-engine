@@ -14,13 +14,13 @@ namespace se::physics {
 	 */
 	struct ConstraintBounds
 	{
-		/** The minimum value that the alpha variable of the constraint could
+		/** The minimum value that the lambda variable of the constraint could
 		 * have */
-		float alphaMin;
+		float lambdaMin;
 
-		/** The maximum value that the alpha variable of the constraint could
+		/** The maximum value that the lambda variable of the constraint could
 		 * have */
-		float alphaMax;
+		float lambdaMax;
 	};
 
 
@@ -35,34 +35,22 @@ namespace se::physics {
 	class Constraint
 	{
 	protected:	// Attributes
-		/** A pointer to the bounds of the Constraint */
-		const ConstraintBounds* mConstraintBounds;
-
 		/** The two RigidBodies affected by the constraint */
 		std::array<RigidBody*, 2> mRigidBodies;
 
 	public:		// Functions
 		/** Creates a new Constraint */
-		Constraint() :
-			mConstraintBounds(nullptr), mRigidBodies{ nullptr, nullptr } {};
+		Constraint() : mRigidBodies{ nullptr, nullptr } {};
 
 		/** Creates a new Constraint
 		 *
-		 * @param	constraintBounds a pointer to the data of the Constraint
 		 * @param	rigidBodies the two rigidBodies affected by the
 		 *			Constraint */
-		Constraint(
-			const ConstraintBounds* constraintBounds,
-			const std::array<RigidBody*, 2>& rigidBodies
-		) : mConstraintBounds(constraintBounds),
+		Constraint(const std::array<RigidBody*, 2>& rigidBodies) :
 			mRigidBodies(rigidBodies) {};
 
 		/** Class destructor */
 		virtual ~Constraint() = default;
-
-		/** @return the a pointer to the ConstraintBounds of the Constraint */
-		const ConstraintBounds* getConstraintBounds() const
-		{ return mConstraintBounds; };
 
 		/** Returns the specified RigidBody
 		 *
@@ -71,10 +59,13 @@ namespace se::physics {
 		RigidBody* getRigidBody(std::size_t rb) const
 		{ return mRigidBodies[rb]; };
 
-		/** @return the value of the Bias of the constraint */
+		/** @return	the ConstraintBounds of the Constraint */
+		virtual const ConstraintBounds& getConstraintBounds() const = 0;
+
+		/** @return	the value of the Bias of the constraint */
 		virtual float getBias() const = 0;
 
-		/** @return the Jacobian matrix of the constraint */
+		/** @return	the Jacobian matrix of the constraint */
 		virtual std::array<float, 12> getJacobianMatrix() const = 0;
 	};
 

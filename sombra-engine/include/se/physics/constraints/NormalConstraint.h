@@ -72,7 +72,7 @@ namespace se::physics {
 			const std::array<RigidBody*, 2>& rigidBodies,
 			float beta, float restitutionFactor,
 			float slopPenetration, float slopRestitution
-		) : Constraint(&kConstraintBounds, rigidBodies),
+		) : Constraint(rigidBodies),
 			mBeta(beta), mRestitutionFactor(restitutionFactor),
 			mSlopPenetration(slopPenetration),
 			mSlopRestitution(slopRestitution),
@@ -82,11 +82,15 @@ namespace se::physics {
 		/** Class destructor */
 		virtual ~NormalConstraint() = default;
 
-		/** @return the value of the Bias of the constraint */
-		float getBias() const override;
+		/** @return	the ConstraintBounds of the Constraint */
+		virtual const ConstraintBounds& getConstraintBounds() const override
+		{ return kConstraintBounds; };
 
-		/** @return the Jacobian matrix of the constraint */
-		std::array<float, 12> getJacobianMatrix() const override;
+		/** @return	the value of the Bias of the constraint */
+		virtual float getBias() const override;
+
+		/** @return	the Jacobian matrix of the constraint */
+		virtual std::array<float, 12> getJacobianMatrix() const override;
 
 		/** Sets the constraint vectors of the NormalConstraint
 		 *

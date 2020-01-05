@@ -34,7 +34,7 @@ namespace se::app {
 		};
 
 	protected:	// Attributes
-		static constexpr float kBaseBias			= 0.5f;
+		static constexpr float kBaseBias			= 0.1f;
 		static constexpr float kMinFDifference		= 0.00001f;
 		static constexpr float kContactPrecision	= 0.0000001f;
 		static constexpr float kContactSeparation	= 0.00001f;

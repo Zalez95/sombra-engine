@@ -532,7 +532,7 @@ namespace game {
 			nonMovableCube->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
 			se::physics::RigidBodyConfig config2(0.001f);
-			config2.frictionCoefficient = 1.4f;
+			config2.frictionCoefficient = 0.75f;
 			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mCollisionManager->addEntity(nonMovableCube.get(), std::move(collider2));

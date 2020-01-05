@@ -44,20 +44,18 @@ namespace se::physics {
 		ConstraintManager& getConstraintManager()
 		{ return mConstraintManager; };
 
-		/** Adds the given RigidBody to the PhysicsEngine so it will
-		 * be updated
+		/** Adds the given RigidBody to the PhysicsEngine so it will be updated
 		 *
-		 * @param	rigidBody a pointer to the RigidBody that we want
-		 *			to update */
+		 * @param	rigidBody a pointer to the RigidBody that we want to
+		 *			update */
 		void addRigidBody(RigidBody* rigidBody);
 
-		/** Removes the given RigidBody from the PhysicsEngine so it
-		 * won't longer be updated
+		/** Removes the given RigidBody from the PhysicsEngine so it won't
+		 * longer be updated
 		 *
-		 * @param	rigidBody a pointer to the RigidBody that we want
-		 *			to update
-		 * @note	you must call this function before deleting the
-		 *			RigidBody */
+		 * @param	rigidBody a pointer to the RigidBody that we want to update
+		 * @note	the Forces and Constraints that references the RigidBody
+		 *			will also be removed from the PhysicsEngine */
 		void removeRigidBody(RigidBody* rigidBody);
 
 		/** Resets the Integrated and ConstraintsSolved state of all the

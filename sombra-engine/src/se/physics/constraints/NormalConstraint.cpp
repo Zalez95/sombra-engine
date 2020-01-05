@@ -3,9 +3,6 @@
 
 namespace se::physics {
 
-	constexpr ConstraintBounds NormalConstraint::kConstraintBounds;
-
-
 	float NormalConstraint::getBias() const
 	{
 		// The penetration and restitution slops are based on

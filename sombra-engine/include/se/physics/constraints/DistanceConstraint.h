@@ -31,14 +31,18 @@ namespace se::physics {
 		 * @note	initially the anchor points are located in the RigidBody
 		 *			origins */
 		DistanceConstraint(const std::array<RigidBody*, 2>& rigidBodies) :
-			Constraint(&kConstraintBounds, rigidBodies),
+			Constraint(rigidBodies),
 			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
-		/** @return the value of the Bias of the constraint */
-		float getBias() const override { return 0.0f; };
+		/** @return	the ConstraintBounds of the Constraint */
+		virtual const ConstraintBounds& getConstraintBounds() const override
+		{ return kConstraintBounds; };
 
-		/** @return the Jacobian matrix of the constraint */
-		std::array<float, 12> getJacobianMatrix() const override;
+		/** @return	the value of the Bias of the constraint */
+		virtual float getBias() const override { return 0.0f; };
+
+		/** @return	the Jacobian matrix of the constraint */
+		virtual std::array<float, 12> getJacobianMatrix() const override;
 
 		/** Sets the anchor points of the DistanceConstraint
 		 *
