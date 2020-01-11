@@ -15,6 +15,7 @@ Third party libraries used:
 - OpenAL Soft		- Library for playing audio in 3D virtual environments (http://openal-soft.org/)
 - AudioFile			- Library for reading WAV audio files (https://github.com/adamstark/AudioFile)
 - Nlohmann JSON		- Library for parsing JSON Objects (https://github.com/nlohmann/json)
+- FreeType			- Library for reading OpenType font files (https://www.freetype.org)
 - Google Test		- Library used to create tests for the SombraEngine library (https://github.com/google/googletest).
 
 Project structure:
