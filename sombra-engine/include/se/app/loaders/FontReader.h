@@ -1,11 +1,9 @@
 #ifndef FONT_READER_H
 #define FONT_READER_H
 
-#include <memory>
 #include <vector>
-
-namespace se::utils { class FileReader; }
-namespace se::graphics { class Font; struct Character; }
+#include "Result.h"
+#include "../../graphics/2D/Font.h"
 
 namespace se::app {
 
@@ -15,36 +13,24 @@ namespace se::app {
 	 */
 	class FontReader
 	{
-	private:	// Nested types
-		using FontUPtr = std::unique_ptr<graphics::Font>;
+	private:	// Attributes
+		/** The width of the generated glyphs in pixels (also applies for the
+		 * height) */
+		static constexpr unsigned int kGlyphWidth = 48;
 
 	public:		// Functions
-		/** Parses the Font in the given file and returns it
+		/** Reads the font located at the given path
 		 *
-		 * @note	the cursor of the FileReader will be moved after parsing
-		 *			the file
-		 * @param	fileReader the file reader with the Font that we want
-		 *			to parse
-		 * @return	the parsed Font
-		 * @throw	runtime_error in case of any error while parsing */
-		FontUPtr read(utils::FileReader& fileReader) const;
-	private:
-		/** Parses the Font in the given file and returns it
-		 *
-		 * @param	fileReader the file reader with the Font that we want
-		 *			to parse
-		 * @return	a pointer to the parsed Font
-		 * @throw	runtime_error in case of any error while parsing */
-		FontUPtr parseFont(utils::FileReader& fileReader) const;
-
-		/** Parses the Character at the current position of the given file and
-		 * returns it
-		 *
-		 * @param	fileReader the file reader with the file that we want
-		 *			to read
-		 * @return	the parsed Character
-		 * @throw	runtime_error in case of an unexpected text */
-		graphics::Character parseCharacter(utils::FileReader& fileReader) const;
+		 * @param	path the location of the Font
+		 * @param	characterSet the set of characters to load to the Font
+		 * @param	output where the new Font will be stored
+		 * @return	a Result object with the result of the operation
+		 * @note	if a character of the characterSet is not found in the font
+		 *			it won't be loaded */
+		static Result read(
+			const std::string& path,
+			const std::vector<char>& characterSet, se::graphics::Font& output
+		);
 	};
 
 }

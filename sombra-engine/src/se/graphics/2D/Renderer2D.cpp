@@ -9,9 +9,6 @@
 
 namespace se::graphics {
 
-	constexpr float Renderer2D::Quad2D::kPositions[];
-
-
 	Renderer2D::Quad2D::Quad2D()
 	{
 		mPositionsBuffer.setData(kPositions, kNumVertices * kNumComponentsPerVertex);
@@ -45,13 +42,15 @@ namespace se::graphics {
 	}
 
 
-	void Renderer2D::render()
+	void Renderer2D::render(const glm::mat4& projectionMatrix)
 	{
 		GL_WRAP( glEnable(GL_BLEND) );
 		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
 		GL_WRAP( glDisable(GL_DEPTH_TEST) );
 
 		mProgram.enable();
+		mProgram.setProjectionMatrix(projectionMatrix);
+
 		mQuad.bind();
 
 		while (!mRenderable2Ds.empty()) {
@@ -62,7 +61,7 @@ namespace se::graphics {
 			transforms *= glm::scale(glm::mat4(1.0f), glm::vec3(renderable2D->getScale(), 1));
 			auto texture = renderable2D->getTexture();
 
-			mProgram.setModelMatrix(transforms);
+			mProgram.setModelViewMatrix(transforms);
 			mProgram.setTextureSampler(0);
 
 			if (texture) { texture->bind(0); }

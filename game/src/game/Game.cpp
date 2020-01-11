@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 #include <glm/glm.hpp>
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -27,8 +28,6 @@
 #include <se/graphics/3D/Mesh.h>
 #include <se/graphics/3D/Material.h>
 #include <se/graphics/3D/Renderable3D.h>
-#include <se/graphics/text/Font.h>
-#include <se/graphics/text/RenderableText.h>
 
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
@@ -227,14 +226,13 @@ namespace game {
 		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, chessTexture = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
-		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
+		std::shared_ptr<se::graphics::Font> pagella;
 		se::app::Scenes loadedScenes;
 
 		try {
 			// Readers
 			AudioFile<float> audioFile;
-			se::app::FontReader fontReader;
 			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
 
 			// Meshes
@@ -370,8 +368,12 @@ namespace game {
 			pointLight3->intensity = 10.0f;
 
 			// Fonts
-			se::utils::FileReader fileReader3("res/fonts/arial.fnt");
-			arial = std::move(fontReader.read(fileReader3));
+			std::vector<char> characterSet(128);
+			std::iota(characterSet.begin(), characterSet.end(), 0);
+			pagella = std::make_shared<se::graphics::Font>();
+			if (!se::app::FontReader::read("res/fonts/texgyrepagella-regular.otf", characterSet, *pagella)) {
+				throw std::runtime_error("Error reading the font file");
+			}
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
@@ -398,10 +400,11 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// RenderableTexts
-		se::graphics::RenderableText renderableText1("First try rendering text", arial, 10, glm::vec2());
+		mRenderableTexts.emplace_back("First try rendering text", pagella, glm::vec2(0.0f), glm::vec2(50.0f));
+		mLayer2D.addRenderableText(&mRenderableTexts.back());
 
 		// Renderable2Ds
-		mRenderable2Ds.emplace_back(glm::vec2(0.75f, 0.75f), glm::vec2(0.15f, 0.2f), logoTexture);
+		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), logoTexture);
 		mLayer2D.addRenderable2D(&mRenderable2Ds.back());
 
 		/*********************************************************************
@@ -700,6 +703,14 @@ namespace game {
 			mAudioManager->removeEntity(entity.get());
 		}
 		mEntities.clear();
+
+		for (const se::graphics::RenderableText& renderable : mRenderableTexts) {
+			mLayer2D.removeRenderableText(&renderable);
+		}
+
+		for (const se::graphics::Renderable2D& renderable : mRenderable2Ds) {
+			mLayer2D.removeRenderable2D(&renderable);
+		}
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
 	}

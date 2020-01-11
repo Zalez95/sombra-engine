@@ -13,7 +13,7 @@ namespace se::app {
 	class ImageReader
 	{
 	public:		// Functions
-		/** Reads the image located at the given position
+		/** Reads the image located at the given path
 		 *
 		 * @param	path the location of the image
 		 * @param	output where the new Image will be stored

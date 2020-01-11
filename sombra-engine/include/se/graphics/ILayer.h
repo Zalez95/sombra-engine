@@ -15,6 +15,12 @@ namespace se::graphics {
 
 		/** Draws the Layer */
 		virtual void render() = 0;
+
+		/** Sets the viewport size
+		 *
+		 * @param	width the new width of the layer viewport to render to
+		 * @param	height the new height of the layer viewport to render to */
+		virtual void setViewportSize(int width, int height) = 0;
 	};
 
 }

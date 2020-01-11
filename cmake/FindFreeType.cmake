@@ -11,7 +11,7 @@ include(FindPackageHandleStandardArgs)
 find_path(
 	FREETYPE_INCLUDE_DIR
 	QUIET
-	NAMES "freetype2/ft2build.h"
+	NAMES "freetype2" "ft2build.h"
 )
 
 # Search for the libs
@@ -30,7 +30,7 @@ if(FREETYPE_FOUND)
 	# Create the dependency target
 	add_library(FreeType UNKNOWN IMPORTED)
 	set_target_properties(FreeType PROPERTIES
-		INTERFACE_INCLUDE_DIRECTORIES ${FREETYPE_INCLUDE_DIR}
+		INTERFACE_INCLUDE_DIRECTORIES "${FREETYPE_INCLUDE_DIR}/freetype2"
 		IMPORTED_LOCATION ${FREETYPE_LIBRARY}
 	)
 endif()

@@ -1,5 +1,5 @@
-#ifndef RENDERER_2D_H
-#define RENDERER_2D_H
+#ifndef RENDERER_TEXT_H
+#define RENDERER_TEXT_H
 
 #include <queue>
 #include "Program2D.h"
@@ -8,14 +8,13 @@
 
 namespace se::graphics {
 
-	class Renderable2D;
+	class RenderableText;
 
 
 	/**
-	 * Class Renderer2D, it's a Forward Renderer used for rendering 2D
-	 * graphics elements
+	 * Class RendererText, it's a Forward Renderer used for rendering texts
 	 */
-	class Renderer2D
+	class RendererText
 	{
 	private:	// Attributes
 		/** The Program of the renderer */
@@ -58,24 +57,24 @@ namespace se::graphics {
 			inline void unbind() const { mVAO.unbind(); };
 		} mQuad;
 
-		/** The Renderable2Ds that we want to render */
-		std::queue<const Renderable2D*> mRenderable2Ds;
+		/** The RenderableTexts that we want to render */
+		std::queue<const RenderableText*> mRenderableTexts;
 
 	public:		// Functions
-		/** Creates a new Renderer2D */
-		Renderer2D();
+		/** Creates a new RendererText */
+		RendererText();
 
 		/** Class destructor */
-		~Renderer2D();
+		~RendererText();
 
-		/** Submits the given Renderable 2D to the queue of Renderable2Ds to
+		/** Submits the given RenderableTexts to the queue of RenderableTexts to
 		 * render
 		 *
-		 * @param	renderable2D a pointer to the Renderable2D that we want to
-		 *			render */
-		void submit(const Renderable2D* renderable2D);
+		 * @param	renderableText a pointer to the RenderableText that we want
+		 *			to render */
+		void submit(const RenderableText* renderableText);
 
-		/** Renders the Renderable2Ds that currently are in the render queue
+		/** Renders the RenderableTexts that currently are in the render queue
 		 *
 		 * @param	projectionMatrix the matrix to use as Projection matrix in
 		 *			the shaders
@@ -85,4 +84,4 @@ namespace se::graphics {
 
 }
 
-#endif		// RENDERER_2D_H
+#endif		// RENDERER_TEXT_H

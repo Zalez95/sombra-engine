@@ -17,7 +17,7 @@ ExternalProject_Add(FreeTypeDownload
 ExternalProject_Get_Property(FreeTypeDownload INSTALL_DIR)
 
 set(FREETYPE_FOUND TRUE)
-set(FREETYPE_INCLUDE_DIR "${INSTALL_DIR}/include")
+set(FREETYPE_INCLUDE_DIR "${INSTALL_DIR}/include/freetype2")
 set(FREETYPE_LIBRARY_DIR "${INSTALL_DIR}/lib/")
 if(BUILD_SHARED_LIBS)
 	set(FREETYPE_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}freetype${CMAKE_SHARED_LIBRARY_SUFFIX}")

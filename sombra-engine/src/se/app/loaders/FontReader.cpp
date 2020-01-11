@@ -1,131 +1,56 @@
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include "se/app/loaders/FontReader.h"
-#include "se/app/loaders/ImageReader.h"
-#include "se/app/Image.h"
-#include "se/utils/FileReader.h"
-#include "se/graphics/text/Font.h"
 #include "se/graphics/core/Texture.h"
 
 namespace se::app {
 
-	FontReader::FontUPtr FontReader::read(utils::FileReader& fileReader) const
-	{
-		try {
-			// 1. Get the input file
-			if (fileReader.getState() != utils::FileState::OK) {
-				throw std::runtime_error("Error reading the file");
-			}
-
-			// 2. Parse the Meshes
-			return parseFont(fileReader);
+	Result FontReader::read(
+		const std::string& path,
+		const std::vector<char>& characterSet, se::graphics::Font& output
+	) {
+		FT_Library library;
+		if (FT_Init_FreeType(&library)) {
+			return Result(false, "An error occurred during library initialization");
 		}
-		catch (const std::exception& e) {
-			throw std::runtime_error("Error parsing the Font in the file \"" + fileReader.getFilePath() + "\": " + e.what());
+
+		FT_Face face;
+		if (FT_New_Face(library, path.c_str(), 0, &face)) {
+			return Result(false, "Failed to load font");
 		}
-	}
 
-// Private functions
-	FontReader::FontUPtr FontReader::parseFont(utils::FileReader& fileReader) const
-	{
-		std::string fontName, trash;
-		std::vector<graphics::Character> characters;
-		auto textureAtlas = std::make_shared<graphics::Texture>();
-		unsigned int nCharacters = 0, iCharacter = 0;
+		// Read the name
+		if (face->family_name) {
+			output.name = face->family_name;
+		}
 
-		std::string token;
-		while (fileReader.getValue(token) == utils::FileState::OK) {
-			if (token == "info") {
-				fileReader.getValuePair(trash, "=", fontName);
-				fileReader.discardLine();
-			}
-			else if (token == "common") {
-				fileReader.discardLine();
-			}
-			else if (token == "page") {
-				fileReader >> trash;
-				std::string fontTextureName;
-				fileReader.getValuePair(trash, "=", fontTextureName);
-				std::string fontTexturePath = fileReader.getDirectory() + fontTextureName.substr(1, fontTextureName.size() - 2);
-
-				Image atlasImg;
-				Result result = ImageReader::read(fontTexturePath, atlasImg, 1);
-				if (!result) {
-					throw std::runtime_error("Error while reading the atlas image \"" + fontTexturePath + "\": " + result.description());
-				}
-
-				textureAtlas->setImage(
-					atlasImg.pixels.get(), graphics::TypeId::Byte, graphics::ColorFormat::Red,
-					atlasImg.width, atlasImg.height
+		// Read the characters (glyphs)
+		FT_Set_Pixel_Sizes(face, kGlyphWidth, 0);
+		for (char c : characterSet) {
+			if (!FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+				auto glyphTexture = std::make_unique<graphics::Texture>();
+				glyphTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+				glyphTexture->setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge);
+				glyphTexture->setImage(
+					face->glyph->bitmap.buffer,
+					graphics::TypeId::UnsignedByte,
+					graphics::ColorFormat::Red,
+					face->glyph->bitmap.width, face->glyph->bitmap.rows
 				);
-			}
-			else if (token == "chars") {
-				if (fileReader.getValuePair(trash, "=", nCharacters) == utils::FileState::OK) {
-					characters.reserve(nCharacters);
-				}
-			}
-			else if (token == "char") {
-				if (iCharacter < nCharacters) {
-					characters.push_back(parseCharacter(fileReader));
-				}
-				++iCharacter;
-			}
-			else {
-				throw std::runtime_error("Error: unexpected word \"" + token + "\" at line " + std::to_string(fileReader.getNumLines()));
+
+				output.characters[c] = {
+					std::move(glyphTexture),
+					{ face->glyph->bitmap.width, face->glyph->bitmap.rows },
+					{ face->glyph->bitmap_left, face->glyph->bitmap_top },
+					static_cast<unsigned int>(face->glyph->advance.x >> 6),
+				};
 			}
 		}
 
-		if (iCharacter != nCharacters) {
-			throw std::runtime_error("Error: expected " + std::to_string(nCharacters) + " characters, parsed " + std::to_string(iCharacter));
-		}
+		FT_Done_Face(face);
+		FT_Done_FreeType(library);
 
-		return std::make_unique<graphics::Font>(fontName, characters, textureAtlas);
-	}
-
-
-	graphics::Character FontReader::parseCharacter(utils::FileReader& fileReader) const
-	{
-		graphics::Character ret = {};
-		std::string name, trash;
-		int intValue;
-
-		bool flag = true;
-		while (flag) {
-			fileReader.getValuePair(name, "=", intValue);
-			if (name == "id") {
-				ret.id = intValue;
-			}
-			else if (name == "x") {
-				ret.position.x = intValue;
-			}
-			else if (name == "y") {
-				ret.position.y = intValue;
-			}
-			else if (name == "width") {
-				ret.size.x = intValue;
-			}
-			else if (name == "height") {
-				ret.size.y = intValue;
-			}
-			else if (name == "xoffset") {
-				ret.offset.x = intValue;
-			}
-			else if (name == "yoffset") {
-				ret.offset.y = intValue;
-			}
-			else if (name == "xadvance") {
-				ret.advance = intValue;
-			}
-			else if (name == "page") {
-				continue;
-			}
-			else if (name == "chnl") {
-				flag = false;
-			}
-			else {
-				throw std::runtime_error("Error: unexpected word \"" + name + "\" at line " + std::to_string(fileReader.getNumLines()));
-			}
-		}
-
-		return ret;
+		return Result();
 	}
 
 }

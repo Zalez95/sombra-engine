@@ -6,9 +6,15 @@
 
 namespace se::graphics {
 
-	void Program2D::setModelMatrix(const glm::mat4& modelMatrix)
+	void Program2D::setModelViewMatrix(const glm::mat4& modelViewMatrix)
 	{
-		mProgram->setUniform("uModelMatrix", modelMatrix);
+		mProgram->setUniform("uModelViewMatrix", modelViewMatrix);
+	}
+
+
+	void Program2D::setProjectionMatrix(const glm::mat4& projectionMatrix)
+	{
+		mProgram->setUniform("uProjectionMatrix", projectionMatrix);
 	}
 
 
@@ -63,7 +69,8 @@ namespace se::graphics {
 	{
 		bool ret = true;
 
-		ret &= mProgram->addUniform("uModelMatrix");
+		ret &= mProgram->addUniform("uModelViewMatrix");
+		ret &= mProgram->addUniform("uProjectionMatrix");
 		ret &= mProgram->addUniform("uTextureSampler");
 
 		return ret;

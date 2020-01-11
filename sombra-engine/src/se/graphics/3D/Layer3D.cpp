@@ -69,4 +69,7 @@ namespace se::graphics {
 		}
 	}
 
+
+	void Layer3D::setViewportSize(int /*width*/, int /*height*/) {}
+
 }

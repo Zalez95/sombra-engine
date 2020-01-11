@@ -16,11 +16,17 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~Program2D() = default;
 
-		/** Sets the uniform variables fot the given Model matrix
+		/** Sets the uniform variables for the given ModelView matrix
 		 *
-		 * @param	modelMatrix the matrix that we want to set as the
-		 *			Model matrix in the shaders */
-		void setModelMatrix(const glm::mat4& modelMatrix);
+		 * @param	modelViewMatrix the matrix that we want to set as the
+		 *			ModelView matrix in the shaders */
+		void setModelViewMatrix(const glm::mat4& modelViewMatrix);
+
+		/** Sets the uniform variables for the given Projection matrix
+		 *
+		 * @param	projectionMatrix the matrix that we want to set as the
+		 *			Projection matrix in the shaders */
+		void setProjectionMatrix(const glm::mat4& projectionMatrix);
 
 		/** Sets the uniform variables for the texture sampler
 		 *

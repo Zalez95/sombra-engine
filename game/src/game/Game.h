@@ -8,6 +8,7 @@
 #include <se/app/Entity.h>
 #include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/Renderable2D.h>
+#include <se/graphics/2D/RenderableText.h>
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Force.h>
 #include <se/physics/constraints/Constraint.h>
@@ -45,6 +46,7 @@ namespace game {
 		se::app::Entity* mPlayer;
 		InputTransforms mPlayerInput;
 		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
+		std::vector<se::graphics::RenderableText> mRenderableTexts;
 		std::vector<se::audio::Buffer> mBuffers;
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;

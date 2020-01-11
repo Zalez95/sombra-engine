@@ -5,7 +5,7 @@
 
 namespace se::graphics {
 
-	GraphicsSystem::GraphicsSystem()
+	GraphicsSystem::GraphicsSystem() : mViewportWidth(0), mViewportHeight(0)
 	{
 		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {
@@ -23,6 +23,9 @@ namespace se::graphics {
 		GL_WRAP( glEnable(GL_CULL_FACE) );
 		GL_WRAP( glCullFace(GL_BACK) );
 		GL_WRAP( glFrontFace(GL_CCW) );			// Render only the counter-clockwise faces
+
+		// Allow non-aligned textures
+		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
 	}
 
 
@@ -52,13 +55,22 @@ namespace se::graphics {
 
 	void GraphicsSystem::setViewport(int width, int height)
 	{
-		GL_WRAP( glViewport(0, 0, width, height) );
+		mViewportWidth = width;
+		mViewportHeight = height;
+
+		GL_WRAP( glViewport(0, 0, mViewportWidth, mViewportHeight) );
+
+		for (ILayer* layer : mLayers) {
+			layer->setViewportSize(mViewportWidth, mViewportHeight);
+		}
 	}
 
 
 	void GraphicsSystem::addLayer(ILayer* layer)
 	{
 		if (layer) {
+			layer->setViewportSize(mViewportWidth, mViewportHeight);
+
 			mLayers.push_back(layer);
 		}
 	}
@@ -73,8 +85,10 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::render() {
+	void GraphicsSystem::render()
+	{
 		GL_WRAP( glClear(GL_DEPTH_BUFFER_BIT) );
+
 		for (ILayer* layer : mLayers) {
 			layer->render();
 		}

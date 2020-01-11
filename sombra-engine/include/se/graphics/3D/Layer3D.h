@@ -97,7 +97,13 @@ namespace se::graphics {
 		Camera* getCamera() const { return mCamera; };
 
 		/** Draws the scene */
-		void render() override;
+		virtual void render() override;
+
+		/** Sets the viewport size
+		 *
+		 * @param	width the new width of the layer viewport to render to
+		 * @param	height the new height of the layer viewport to render to */
+		virtual void setViewportSize(int width, int height) override;
 	};
 
 }

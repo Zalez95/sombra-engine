@@ -17,6 +17,12 @@ namespace se::graphics {
 		/** The Layers that the GraphicsSystem will render */
 		std::vector<ILayer*> mLayers;
 
+		/** The width of the viewport */
+		int mViewportWidth;
+
+		/** The height of the viewport */
+		int mViewportHeight;
+
 	public:		// Functions
 		/** Creates a new Graphics System
 		 * @throw	runtime_error if failed to initialize GLEW */

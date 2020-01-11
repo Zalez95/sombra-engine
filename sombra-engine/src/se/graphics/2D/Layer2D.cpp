@@ -22,11 +22,40 @@ namespace se::graphics {
 	}
 
 
+	void Layer2D::addRenderableText(const RenderableText* renderableText)
+	{
+		if (renderableText) {
+			mRenderableTexts.push_back(renderableText);
+		}
+	}
+
+
+	void Layer2D::removeRenderableText(const RenderableText* renderableText)
+	{
+		mRenderableTexts.erase(
+			std::remove(mRenderableTexts.begin(), mRenderableTexts.end(), renderableText),
+			mRenderableTexts.end()
+		);
+	}
+
+
 	void Layer2D::render()
 	{
-		for (const Renderable2D* renderable2D : mRenderable2Ds)
+		for (const Renderable2D* renderable2D : mRenderable2Ds) {
 			mRenderer2D.submit(renderable2D);
-		mRenderer2D.render();
+		}
+		mRenderer2D.render(mProjectionMatrix);
+
+		for (const RenderableText* renderableText : mRenderableTexts) {
+			mRendererText.submit(renderableText);
+		}
+		mRendererText.render(mProjectionMatrix);
+	}
+
+
+	void Layer2D::setViewportSize(int width, int height)
+	{
+		mProjectionMatrix = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
 	}
 
 }
