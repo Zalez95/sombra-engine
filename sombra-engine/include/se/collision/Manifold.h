@@ -18,9 +18,9 @@ namespace se::collision {
 		/** The different states in which a Manifold can be */
 		enum State : int
 		{
-			Intersecting = 0,	//< The Manifold Colliders are intersecting
-			Updated,			//< Manifold updated by the CollisionWorld
-			Count				//< The number of States
+			Intersecting = 0,	///< The Manifold Colliders are intersecting
+			Updated,			///< Manifold updated by the CollisionWorld
+			Count				///< The number of States
 		};
 
 		/** The maximum number of Contacts in the Manifold */

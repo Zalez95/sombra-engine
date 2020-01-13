@@ -44,12 +44,16 @@ namespace se::graphics {
 		int maxFragmentUniforms = -1;
 		GL_WRAP( glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniforms) );
 
+		int maxTextureUnits = -1;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+
 		return	std::string("OpenGL Renderer: ") + glRenderer + "\n"
 				+ "OpenGL version supported: " + glVersion + "\n"
 				+ "GLSL version supported: " + glslVersion + "\n"
 				+ "Max vertex uniforms: " + std::to_string(maxVertexUniforms) + "\n"
 				+ "Max geometry uniforms: " + std::to_string(maxGeometryUniforms) + "\n"
-				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n";
+				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n"
+				+ "Max texture units: " + std::to_string(maxTextureUnits) + "\n";
 	}
 
 

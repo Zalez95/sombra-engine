@@ -34,8 +34,8 @@ namespace se::utils {
 		switch (level) {
 			case LogLevel::Trace:	label = "TRACE";	break;
 			case LogLevel::Debug:	label = "DEBUG";	break;
-			case LogLevel::Info:	label = "INFO";		break;
-			case LogLevel::Warning:	label = "WARN";		break;
+			case LogLevel::Info:	label = "INFO ";	break;
+			case LogLevel::Warning:	label = "WARN ";	break;
 			case LogLevel::Error:	label = "ERROR";	break;
 			case LogLevel::Fatal:	label = "FATAL";	break;
 		}

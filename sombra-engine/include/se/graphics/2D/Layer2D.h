@@ -4,13 +4,8 @@
 #include <vector>
 #include "../ILayer.h"
 #include "Renderer2D.h"
-#include "RendererText.h"
 
 namespace se::graphics {
-
-	class Renderable2D;
-	class RenderableText;
-
 
 	/**
 	 * Class Layer2D, it's a class that holds all the 2D elements that must be
@@ -21,9 +16,6 @@ namespace se::graphics {
 	private:	// Attributes
 		/** The Renderer used by the layer to render the Scene */
 		Renderer2D mRenderer2D;
-
-		/** The Renderer used by the layer to render the Scene */
-		RendererText mRendererText;
 
 		/** The projection matrix to use in the shaders */
 		glm::mat4 mProjectionMatrix;

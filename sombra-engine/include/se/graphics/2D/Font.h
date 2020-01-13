@@ -18,8 +18,9 @@ namespace se::graphics {
 	 */
 	struct Character
 	{
-		/** The texture of the Character glyph */
-		std::unique_ptr<Texture> texture;
+		/** The position of the top left corner of the Character in the Font
+		 * atlas texture */
+		glm::uvec2 atlasPosition;
 
 		/** The size in pixels of the Character glyph */
 		glm::uvec2 size;
@@ -43,8 +44,17 @@ namespace se::graphics {
 		/** The name of the font */
 		std::string name;
 
+		/** The atlas texture with the character glyphs */
+		std::shared_ptr<Texture> textureAtlas;
+
+		/** The size of the texture atlas */
+		glm::uvec2 atlasSize;
+
 		/** The maps each character with its actual graphics representation */
 		std::unordered_map<char, Character> characters;
+
+		/** The maximum size in pixels that any character can have */
+		glm::uvec2 maxCharacterSize;
 	};
 
 }

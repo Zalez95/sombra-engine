@@ -47,6 +47,7 @@ namespace game {
 		InputTransforms mPlayerInput;
 		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
 		std::vector<se::graphics::RenderableText> mRenderableTexts;
+		se::graphics::RenderableText* mFPSText;
 		std::vector<se::audio::Buffer> mBuffers;
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;

@@ -18,10 +18,10 @@ namespace se::app {
 		 * in the updated bitset */
 		enum class Update : int
 		{
-			Input,		//< The Entity has changed due to the InputManager
-			Physics,	//< The Entity has changed due to the PhysicsManager
-			Animation,	//< The Entity has changed due to the AnimationManager
-			Count		//< The number of indices
+			Input,		///< The Entity has changed due to the InputManager
+			Physics,	///< The Entity has changed due to the PhysicsManager
+			Animation,	///< The Entity has changed due to the AnimationManager
+			Count		///< The number of indices
 		};
 
 		/** The name of the Entity */

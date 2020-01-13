@@ -41,15 +41,17 @@ namespace se::graphics {
 
 	void Layer2D::render()
 	{
+		mRenderer2D.start(mProjectionMatrix);
+
 		for (const Renderable2D* renderable2D : mRenderable2Ds) {
 			mRenderer2D.submit(renderable2D);
 		}
-		mRenderer2D.render(mProjectionMatrix);
 
 		for (const RenderableText* renderableText : mRenderableTexts) {
-			mRendererText.submit(renderableText);
+			mRenderer2D.submit(renderableText);
 		}
-		mRendererText.render(mProjectionMatrix);
+
+		mRenderer2D.end();
 	}
 
 

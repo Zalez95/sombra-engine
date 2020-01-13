@@ -1,16 +1,12 @@
 #include <fstream>
+#include <algorithm>
 #include "se/graphics/2D/Program2D.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/Program.h"
+#include "se/graphics/core/Texture.h"
 #include "se/utils/Log.h"
 
 namespace se::graphics {
-
-	void Program2D::setModelViewMatrix(const glm::mat4& modelViewMatrix)
-	{
-		mProgram->setUniform("uModelViewMatrix", modelViewMatrix);
-	}
-
 
 	void Program2D::setProjectionMatrix(const glm::mat4& projectionMatrix)
 	{
@@ -18,9 +14,13 @@ namespace se::graphics {
 	}
 
 
-	void Program2D::setTextureSampler(int unit)
+	void Program2D::setTextures(const TextureSPtr* textures, std::size_t textureCount)
 	{
-		mProgram->setUniform("uTextureSampler", unit);
+		int numTextures = std::min(kMaxTextures, static_cast<int>(textureCount));
+		for (int i = 0; i < numTextures; ++i) {
+			mProgram->setUniform(("uTextures[" + std::to_string(i) + "]").c_str(), i);
+			textures[i]->bind(i);
+		}
 	}
 
 
@@ -69,9 +69,10 @@ namespace se::graphics {
 	{
 		bool ret = true;
 
-		ret &= mProgram->addUniform("uModelViewMatrix");
 		ret &= mProgram->addUniform("uProjectionMatrix");
-		ret &= mProgram->addUniform("uTextureSampler");
+		for (std::size_t i = 0; i < kMaxTextures; ++i) {
+			ret &= mProgram->addUniform(("uTextures[" + std::to_string(i) + "]").c_str());
+		}
 
 		return ret;
 	}

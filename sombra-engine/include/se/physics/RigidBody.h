@@ -10,10 +10,10 @@ namespace se::physics {
 	/** The different states in which a RigidBody can be */
 	enum class RigidBodyState : int
 	{
-		Sleeping,			//< The RigidBody simulation is stopped
-		Integrated,			//< The RigidBody has changed due to the simulation
-		ConstraintsSolved,	//< The RigidBody has changed due to its constraints
-		Count				//< The number of States
+		Sleeping,			///< The RigidBody simulation is stopped
+		Integrated,			///< Changed due to the dynamics simulation
+		ConstraintsSolved,	///< Changed due to the constraints
+		Count				///< The number of States
 	};
 
 

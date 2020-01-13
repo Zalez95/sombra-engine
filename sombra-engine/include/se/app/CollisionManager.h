@@ -26,7 +26,7 @@ namespace se::app {
 		 * the Colliders */
 		collision::CollisionWorld& mCollisionWorld;
 
-		/** The EventManager used for notifing events */
+		/** The EventManager used for notifying events */
 		EventManager& mEventManager;
 
 		/** Maps the Entities added to the CollisionManager and its Colliders */

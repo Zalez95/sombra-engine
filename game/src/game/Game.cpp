@@ -227,7 +227,7 @@ namespace game {
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
-		std::shared_ptr<se::graphics::Font> pagella;
+		std::shared_ptr<se::graphics::Font> arial;
 		se::app::Scenes loadedScenes;
 
 		try {
@@ -370,8 +370,8 @@ namespace game {
 			// Fonts
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), 0);
-			pagella = std::make_shared<se::graphics::Font>();
-			if (!se::app::FontReader::read("res/fonts/texgyrepagella-regular.otf", characterSet, *pagella)) {
+			arial = std::make_shared<se::graphics::Font>();
+			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
 				throw std::runtime_error("Error reading the font file");
 			}
 
@@ -400,11 +400,12 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// RenderableTexts
-		mRenderableTexts.emplace_back("First try rendering text", pagella, glm::vec2(0.0f), glm::vec2(50.0f));
+		mRenderableTexts.emplace_back(glm::vec2(0.0f), glm::vec2(16.0f), arial, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "");
+		mFPSText = &mRenderableTexts.back();
 		mLayer2D.addRenderableText(&mRenderableTexts.back());
 
 		// Renderable2Ds
-		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), logoTexture);
+		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
 		mLayer2D.addRenderable2D(&mRenderable2Ds.back());
 
 		/*********************************************************************
@@ -719,7 +720,7 @@ namespace game {
 	void Game::onUpdate(float deltaTime)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
-		std::cout << deltaTime << "ms\r";
+		mFPSText->setText(std::to_string(deltaTime) + " ms");
 
 		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * mPlayer->orientation;
 		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);

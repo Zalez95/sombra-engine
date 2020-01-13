@@ -67,7 +67,7 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Detecting collisions between the colliders";
 		mCollisionWorld.update();
 
-		SOMBRA_DEBUG_LOG << "Notifing contact manifolds";
+		SOMBRA_DEBUG_LOG << "Notifying contact manifolds";
 		for (const collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
 			auto itPair1 = mColliderEntityMap.find(manifold->colliders[0]);
 			auto itPair2 = mColliderEntityMap.find(manifold->colliders[1]);
@@ -75,7 +75,7 @@ namespace se::app {
 				&& manifold->state[collision::Manifold::State::Updated]
 			) {
 				auto event = new CollisionEvent(itPair1->second, itPair2->second, manifold);
-				SOMBRA_DEBUG_LOG << "Notifing new CollisionEvent " << *event;
+				SOMBRA_DEBUG_LOG << "Notifying new CollisionEvent " << *event;
 				mEventManager.publish(event);
 			}
 		}

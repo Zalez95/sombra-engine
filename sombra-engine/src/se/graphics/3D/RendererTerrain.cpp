@@ -5,47 +5,47 @@
 
 namespace se::graphics {
 
-	static const float kNormal[] = {
+	static constexpr float kNormal[] = {
 		 0.0f, 0.0f, 0.0f,-0.5f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f,
 		 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, 0.5f,-0.5f, 0.0f,-0.5f
 	};
 
-	static const float kBottom[] = {
+	static constexpr float kBottom[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f, 0.0f, 0.5f,
 		 0.5f, 0.5f, 0.5f, 0.0f, 0.5f,-0.5f,-0.5f,-0.5f,
 	};
 
-	static const float kTop[] = {
+	static constexpr float kTop[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f, 0.5f, 0.5f,
 		 0.5f, 0.0f, 0.5f,-0.5f, 0.0f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kLeft[] = {
+	static constexpr float kLeft[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.5f,
 		 0.5f, 0.0f, 0.5f,-0.5f, 0.0f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kRight[] = {
+	static constexpr float kRight[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f, 0.0f, 0.5f,
 		 0.5f, 0.5f, 0.5f,-0.5f, 0.0f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kBottomLeft[] = {
+	static constexpr float kBottomLeft[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.5f, 0.0f, 0.5f,
 		 0.5f, 0.5f, 0.5f, 0.0f, 0.5f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kBottomRight[] = {
+	static constexpr float kBottomRight[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f,
 		 0.0f, 0.5f, 0.5f, 0.5f, 0.5f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kTopLeft[] = {
+	static constexpr float kTopLeft[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.5f, 0.5f, 0.5f,
 		 0.5f, 0.0f, 0.5f,-0.5f, 0.0f,-0.5f,-0.5f,-0.5f
 	};
 
-	static const float kTopRight[] = {
+	static constexpr float kTopRight[] = {
 		 0.0f, 0.0f,-0.5f,-0.5f,-0.5f, 0.0f,-0.5f, 0.5f,
 		 0.5f, 0.5f, 0.5f,-0.5f, 0.0f,-0.5f,-0.5f,-0.5f
 	};
@@ -84,8 +84,8 @@ namespace se::graphics {
 	void RendererTerrain::Patch::drawInstances()
 	{
 		// Set submitted instances data
-		mVBOXZLocations.setData(mXZLocations.data(), mXZLocations.size());
-		mVBOLods.setData(mLods.data(), mLods.size());
+		mVBOXZLocations.setData(mXZLocations.data(), mInstanceCount);
+		mVBOLods.setData(mLods.data(), mInstanceCount);
 
 		// Render instanced
 		mVAO.bind();
