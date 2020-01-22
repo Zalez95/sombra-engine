@@ -12,11 +12,6 @@ namespace se::graphics {
 	 */
 	class Program3D : public IProgram
 	{
-	protected:	// Nested types
-		struct TextureUnits {
-			static constexpr int kBaseColor = 0;
-		};
-
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Program3D() {};

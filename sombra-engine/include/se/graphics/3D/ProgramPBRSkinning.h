@@ -13,7 +13,7 @@ namespace se::graphics {
 	{
 	protected:	// Attributes
 		/** The maximum number of joints in the program */
-		static constexpr int kMaxJoints = 64;
+		static constexpr unsigned int kMaxJoints = 64;
 
 	public:		// Functions
 		/** Class destructor */

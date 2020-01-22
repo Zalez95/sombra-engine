@@ -25,15 +25,15 @@ struct Material
 	bool useNormalTexture;
 	sampler2D normalTexture;
 	float normalScale;
-	bool useOcclusionTexture;
-	sampler2D occlusionTexture;
-	float occlusionStrength;
-	bool useEmissiveTexture;
-	sampler2D emissiveTexture;
-	vec3 emissiveFactor;
-	bool checkAlphaCutoff;
-	float alphaCutoff;
 };
+
+struct SplatmapMaterial
+{
+	uint numMaterials;
+	Material materials[4];
+	sampler2D splatmapTexture;
+};
+
 
 struct PointLight
 {
@@ -60,7 +60,7 @@ layout (std140) uniform LightsBlock
 	PointLight uPointLights[MAX_POINT_LIGHTS];
 };
 
-uniform Material uMaterial;
+uniform SplatmapMaterial	uSMaterial;
 
 // Output data
 out vec4 glFragColor;
@@ -166,59 +166,57 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 }
 
 
+/** Calculates how much the material located at the given index affects the
+ * final material */
+float getMaterialRate(vec4 splatmapColor, uint materialIndex)
+{
+	switch (materialIndex) {
+		case 0u:	return splatmapColor.r;
+		case 1u:	return splatmapColor.g;
+		case 2u:	return splatmapColor.b;
+		case 3u:	return splatmapColor.a;
+		default:	return 0.0;
+	}
+}
+
+
 // ____ MAIN PROGRAM ____
 void main()
 {
-	// Get the texture data for the current fragment
-	vec4 surfaceColor = (uMaterial.pbrMetallicRoughness.useBaseColorTexture)?
-		pow(texture(uMaterial.pbrMetallicRoughness.baseColorTexture, fsVertex.texCoord0), vec4(2.2)) :
-		vec4(1.0);
-	surfaceColor *= uMaterial.pbrMetallicRoughness.baseColorFactor;
+	// Get the splatmap texture data for the current fragment
+	vec4 splatmapColor = texture(uSMaterial.splatmapTexture, fsVertex.texCoord0);
 
-	vec4 metallicRoughnessColor = texture(uMaterial.pbrMetallicRoughness.metallicRoughnessTexture, fsVertex.texCoord0);
+	vec3 color = vec3(0.0);
+	for (uint i = 0u; i < uSMaterial.numMaterials; ++i) {
+		// Get the texture data of the material for the current fragment
+		vec4 surfaceColor = (uSMaterial.materials[i].pbrMetallicRoughness.useBaseColorTexture)?
+			pow(texture(uSMaterial.materials[i].pbrMetallicRoughness.baseColorTexture, fsVertex.texCoord0), vec4(2.2)) :
+			vec4(1.0);
+		surfaceColor *= uSMaterial.materials[i].pbrMetallicRoughness.baseColorFactor;
 
-	float metallic = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
-		uMaterial.pbrMetallicRoughness.metallicFactor * metallicRoughnessColor.b :
-		uMaterial.pbrMetallicRoughness.metallicFactor;
+		vec4 metallicRoughnessColor = texture(uSMaterial.materials[i].pbrMetallicRoughness.metallicRoughnessTexture, fsVertex.texCoord0);
 
-	float roughness = (uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture)?
-		uMaterial.pbrMetallicRoughness.roughnessFactor * metallicRoughnessColor.g :
-		uMaterial.pbrMetallicRoughness.roughnessFactor;
+		float metallic = (uSMaterial.materials[i].pbrMetallicRoughness.useMetallicRoughnessTexture)?
+			uSMaterial.materials[i].pbrMetallicRoughness.metallicFactor * metallicRoughnessColor.b :
+			uSMaterial.materials[i].pbrMetallicRoughness.metallicFactor;
 
-	vec3 surfaceNormal = (uMaterial.useNormalTexture)?
-		normalize(2.0 * texture(uMaterial.normalTexture, fsVertex.texCoord0).rgb - 1.0)
-			* vec3(uMaterial.normalScale, uMaterial.normalScale, 1.0) :
-		vec3(0.0, 0.0, 1.0);
+		float roughness = (uSMaterial.materials[i].pbrMetallicRoughness.useMetallicRoughnessTexture)?
+			uSMaterial.materials[i].pbrMetallicRoughness.roughnessFactor * metallicRoughnessColor.g :
+			uSMaterial.materials[i].pbrMetallicRoughness.roughnessFactor;
 
-	float surfaceAO = (uMaterial.useOcclusionTexture)?
-		texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r :
-		0.0;
+		vec3 surfaceNormal = (uSMaterial.materials[i].useNormalTexture)?
+			normalize(2.0 * texture(uSMaterial.materials[i].normalTexture, fsVertex.texCoord0).rgb - 1.0)
+				* vec3(uSMaterial.materials[i].normalScale, uSMaterial.materials[i].normalScale, 1.0) :
+			vec3(0.0, 0.0, 1.0);
 
-	vec3 emissiveColor = (uMaterial.useEmissiveTexture)?
-		texture(uMaterial.emissiveTexture, fsVertex.texCoord0).rgb :
-		vec3(1.0);
-	emissiveColor *= uMaterial.emissiveFactor;
-
-	// Check alpha cutoff
-	if (uMaterial.checkAlphaCutoff && (surfaceColor.a < uMaterial.alphaCutoff)) {
-		discard;
-	}
-	else {
 		// Calculate direct lighting
-		vec3 color = calculateDirectLighting(surfaceColor.rgb, metallic, roughness, surfaceNormal);
-
-		// Set ambient occlusion
-		color = (uMaterial.useOcclusionTexture)?
-			mix(color, color * surfaceAO, uMaterial.occlusionStrength) :
-			color;
-
-		// Add emissive color
-		color += emissiveColor;
-
-		// Gamma correction
-		color = color / (color + vec3(1.0));
-		color = pow(color, vec3(1.0 / SCREEN_GAMMA));
-
-		glFragColor = vec4(color, surfaceColor.a);
+		vec3 directColor = calculateDirectLighting(surfaceColor.rgb, metallic, roughness, surfaceNormal);
+		color += getMaterialRate(splatmapColor, i) * directColor;
 	}
+
+	// Gamma correction
+	color = color / (color + vec3(1.0));
+	color = pow(color, vec3(1.0 / SCREEN_GAMMA));
+
+	glFragColor = vec4(color, 1.0);
 }

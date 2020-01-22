@@ -1,5 +1,6 @@
 #include <cassert>
 #include "se/app/loaders/TerrainLoader.h"
+#include "se/app/loaders/ImageReader.h"
 #include "se/app/Entity.h"
 #include "se/app/Image.h"
 #include "se/graphics/3D/Material.h"
@@ -11,7 +12,8 @@ namespace se::app {
 
 	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
 		const std::string& name, float size, float maxHeight,
-		const Image& heightMap, const std::vector<float>& lodDistances
+		const Image& heightMap, const std::vector<float>& lodDistances,
+		SplatmapMaterialSPtr terrainMaterial
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
 
@@ -20,7 +22,7 @@ namespace se::app {
 		entity->scale = scaleVector;
 
 		// Graphics data
-		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances);
+		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, terrainMaterial);
 		mGraphicsManager.addTerrainEntity(entity.get(), std::move(renderableTerrain));
 
 		// Physics data
@@ -39,22 +41,17 @@ namespace se::app {
 // Private functions
 	TerrainLoader::RenderableTerrainUPtr TerrainLoader::createTerrainRenderable(
 		float size, float maxHeight,
-		const Image& heightMap, const std::vector<float>& lodDistances
+		const Image& heightMap, const std::vector<float>& lodDistances,
+		SplatmapMaterialSPtr terrainMaterial
 	) {
-		auto heightMapTexture = std::make_shared<se::graphics::Texture>();
+		auto heightMapTexture = std::make_shared<graphics::Texture>();
 		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 		heightMapTexture->setImage(
-			heightMap.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::Red,
+			heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red,
 			heightMap.width, heightMap.height
 		);
 
-		std::shared_ptr<se::graphics::Material> terrainMaterial(new se::graphics::Material{
-			"terrain_material",
-			se::graphics::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr },
-			nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-		});
-
-		return std::make_unique<se::graphics::RenderableTerrain>(size, maxHeight, heightMapTexture, lodDistances, terrainMaterial);
+		return std::make_unique<graphics::RenderableTerrain>(size, maxHeight, heightMapTexture, lodDistances, terrainMaterial);
 	}
 
 

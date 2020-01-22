@@ -21,7 +21,7 @@ namespace se::graphics {
 
 	protected:	// Attributes
 		/** The maximum number of textures in the program */
-		static constexpr int kMaxTextures = 32;
+		static constexpr int kMaxTextures = 16;
 
 	public:		// Functions
 		/** Class destructor */

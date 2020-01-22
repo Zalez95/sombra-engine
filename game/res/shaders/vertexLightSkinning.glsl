@@ -1,8 +1,8 @@
 #version 330 core
 
 // ____ CONSTANTS ____
-const int MAX_POINT_LIGHTS = 4;
-const int MAX_JOINTS = 64;
+const uint MAX_POINT_LIGHTS = 4u;
+const uint MAX_JOINTS = 64u;
 
 
 // ____ GLOBAL VARIABLES ____
@@ -21,7 +21,7 @@ uniform mat4 uProjectionMatrix;							// View space to NDC space Matrix
 
 uniform mat4 uJointMatrices[MAX_JOINTS];				// The joint matrices of the Skeleton
 
-uniform int uNumPointLights;							// Number of lights to process
+uniform uint uNumPointLights;							// Number of lights to process
 uniform vec3 uPointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions in world space
 
 // Output data in tangent space
@@ -31,7 +31,7 @@ out FragmentIn
 	vec2 texCoord0;
 } fsVertex;
 
-flat out int fsNumPointLights;
+flat out uint fsNumPointLights;
 out vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
 
 
@@ -70,7 +70,7 @@ void main()
 
 	// Calculate the PointLights coordinates in tangent space
 	fsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
-	for (int i = 0; i < fsNumPointLights; ++i) {
+	for (uint i = 0u; i < fsNumPointLights; ++i) {
 		fsPointLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
 	}
 }

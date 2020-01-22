@@ -1,9 +1,7 @@
 #ifndef PROGRAM_TERRAIN_H
 #define PROGRAM_TERRAIN_H
 
-#include <vector>
-#include <glm/glm.hpp>
-#include "ProgramPBR.h"
+#include "ProgramSplatmap.h"
 
 namespace se::graphics {
 
@@ -14,11 +12,11 @@ namespace se::graphics {
 	 * ProgramTerrain class, it's a high level Program used by the Renderer so
 	 * it doesn't need to search and set the uniform variables
 	 */
-	class ProgramTerrain : public ProgramPBR
+	class ProgramTerrain : public ProgramSplatmap
 	{
 	protected:	// Nested types
 		struct TextureUnits {
-			static constexpr int kHeightMap			= 5;
+			static constexpr int kHeightMap = 14;
 		};
 
 	public:		// Functions

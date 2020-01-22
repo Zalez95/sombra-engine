@@ -7,26 +7,6 @@ namespace se::app {
 
 	InputManager::InputManager(window::WindowSystem& windowSystem) : mWindowSystem(windowSystem)
 	{
-		mWindowSystem.onScroll([&](double x, double y) {
-			auto command = mScrollCommand.get();
-			if (command) {
-				command->setScrollPosition(x, y);
-				if (std::find(mCommandQueue.begin(), mCommandQueue.end(), command) == mCommandQueue.end()) {
-					mCommandQueue.push_back(command);
-				}
-			}
-		});
-
-		mWindowSystem.onMouseMove([&](double x, double y) {
-			auto command = mMouseCommand.get();
-			if (command) {
-				command->setMousePosition(x, y);
-				if (std::find(mCommandQueue.begin(), mCommandQueue.end(), command) == mCommandQueue.end()) {
-					mCommandQueue.push_back(command);
-				}
-			}
-		});
-
 		mWindowSystem.onKey([&](int keyCode, window::ButtonState state) {
 			SOMBRA_DEBUG_LOG << "Key " << keyCode << " (" << static_cast<char>(keyCode) << ") with state " << static_cast<int>(state);
 
@@ -42,6 +22,36 @@ namespace se::app {
 			auto command = mButtonCommands[buttonCode][static_cast<int>(state)].get();
 			if (command) {
 				mCommandQueue.push_back(command);
+			}
+		});
+
+		mWindowSystem.onMouseMove([&](double x, double y) {
+			auto command = mMouseCommand.get();
+			if (command) {
+				command->setMousePosition(x, y);
+				if (std::find(mCommandQueue.begin(), mCommandQueue.end(), command) == mCommandQueue.end()) {
+					mCommandQueue.push_back(command);
+				}
+			}
+		});
+
+		mWindowSystem.onScroll([&](double x, double y) {
+			auto command = mScrollCommand.get();
+			if (command) {
+				command->setScrollPosition(x, y);
+				if (std::find(mCommandQueue.begin(), mCommandQueue.end(), command) == mCommandQueue.end()) {
+					mCommandQueue.push_back(command);
+				}
+			}
+		});
+
+		mWindowSystem.onResize([&](double x, double y) {
+			auto command = mResizeCommand.get();
+			if (command) {
+				command->setWindowSize(x, y);
+				if (std::find(mCommandQueue.begin(), mCommandQueue.end(), command) == mCommandQueue.end()) {
+					mCommandQueue.push_back(command);
+				}
 			}
 		});
 	}
@@ -68,6 +78,12 @@ namespace se::app {
 	void InputManager::setScrollCommand(ScrollCommandUPtr command)
 	{
 		mScrollCommand = std::move(command);
+	}
+
+
+	void InputManager::setResizeCommand(ResizeCommandUPtr command)
+	{
+		mResizeCommand = std::move(command);
 	}
 
 

@@ -1,42 +1,36 @@
-#ifndef PROGRAM_PBR_H
-#define PROGRAM_PBR_H
+#ifndef PROGRAM_SPLATMAP_H
+#define PROGRAM_SPLATMAP_H
 
 #include "ProgramLight.h"
 
 namespace se::graphics {
 
-	struct Material;
+	struct SplatmapMaterial;
 
 
 	/**
-	 * ProgramPBR class, it's a high level Program used by the Renderer so
+	 * ProgramSplatmap class, it's a high level Program used by the Renderer so
 	 * it doesn't need to search and set the uniform variables
 	 */
-	class ProgramPBR : public ProgramLight
+	class ProgramSplatmap : public ProgramLight
 	{
 	protected:	// Nested types
 		struct TextureUnits {
-			static constexpr int kBaseColor			= 0;
-			static constexpr int kMetallicRoughness	= 1;
-			static constexpr int kNormal			= 2;
-			static constexpr int kOcclusion			= 3;
-			static constexpr int kEmissive			= 4;
+			static constexpr int kBaseColor0			= 0;
+			static constexpr int kMetallicRoughness0	= 1;
+			static constexpr int kNormal0				= 2;
+			static constexpr int kSplatmap				= 13;
 		};
 
 	public:		// Functions
 		/** Class destructor */
-		virtual ~ProgramPBR() = default;
+		virtual ~ProgramSplatmap() = default;
 
 		/** Sets the uniforms and other properties needed for rendering with the
 		 * given material
 		 *
 		 * @param	material the material with the data that we want to set */
-		void setMaterial(const Material& material);
-
-		/** Clears the properties setted for rendering with the given material
-		 *
-		 * @param	material the material with the data that we want to unset */
-		void unsetMaterial(const Material& material);
+		void setMaterial(const SplatmapMaterial& material);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables
@@ -53,4 +47,4 @@ namespace se::graphics {
 
 }
 
-#endif		// PROGRAM_PBR_H
+#endif		// PROGRAM_SPLATMAP_H

@@ -9,8 +9,8 @@
 namespace se::app {
 
 	/**
-	 * Class InputManager, it's a Manager used for updating the Entities's
-	 * data based on the Player's input
+	 * Class InputManager, it's a Manager used for handling the user input at a
+	 * constant time interval
 	 */
 	class InputManager
 	{
@@ -19,6 +19,7 @@ namespace se::app {
 		using ICommandUPtr = std::unique_ptr<ICommand>;
 		using MouseCommandUPtr = std::unique_ptr<MouseCommand>;
 		using ScrollCommandUPtr = std::unique_ptr<ScrollCommand>;
+		using ResizeCommandUPtr = std::unique_ptr<ResizeCommand>;
 
 	private:	// Attributes
 		/** Max number of buttons in the keyboard */
@@ -48,6 +49,9 @@ namespace se::app {
 
 		/** The command to execute when the scroll state changes */
 		ScrollCommandUPtr mScrollCommand;
+
+		/** The command to execute when the window size changes */
+		ResizeCommandUPtr mResizeCommand;
 
 		/** A queue that holds all the commands that must be executed in the
 		 * next update call due to the user input from oldest to newest */
@@ -80,15 +84,20 @@ namespace se::app {
 			ICommandUPtr command
 		);
 
-		/** Sets the given mouse movement command to execute
+		/** Sets the mouse movement command to execute
 		 *
 		 * @param	command a pointer to the command to execute */
 		void setMouseCommand(MouseCommandUPtr command);
 
-		/** Sets the given scroll movement command to execute
+		/** Sets the scroll movement command to execute
 		 *
 		 * @param	command a pointer to the command to execute */
 		void setScrollCommand(ScrollCommandUPtr command);
+
+		/** Sets the resize command to execute
+		 *
+		 * @param	command a pointer to the command to execute */
+		void setResizeCommand(ResizeCommandUPtr command);
 
 		/** Executes all the user input commands */
 		void update();

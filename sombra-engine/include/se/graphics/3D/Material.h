@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <glm/glm.hpp>
+#include "../../utils/FixedVector.h"
 #include "../core/Texture.h"
 
 namespace se::graphics {
@@ -74,6 +75,40 @@ namespace se::graphics {
 		/** Indicates if each face of the Mesh should be rendered by both
 		 * sides */
 		bool doubleSided;
+	};
+
+
+	/**
+	 * Struct BasicMaterial, it holds surface material properties.
+	 * It's a simplified version of the Material so it can be used with
+	 * splatmaps
+	 */
+	struct BasicMaterial
+	{
+		/** The PBRMetallicRoughness data of the Material */
+		PBRMetallicRoughness pbrMetallicRoughness;
+
+		/** The normal map texture */
+		TextureSPtr normalTexture;
+
+		/** The scale applied to the normal map texture */
+		float normalScale;
+	};
+
+
+	/**
+	 * Struct SplatmapMaterial, it holds up to 4 BasicMaterials that can be
+	 * combined with its splatmap
+	 */
+	struct SplatmapMaterial
+	{
+		/** The different BasicMaterials that can be combined */
+		utils::FixedVector<BasicMaterial, 4> materials;
+
+		/** The splatmap texture, its a RGBA textures that codifies in each of
+		 * its channels which material should be used at each position and in
+		 * what percentage */
+		TextureSPtr splatmapTexture;
 	};
 
 }

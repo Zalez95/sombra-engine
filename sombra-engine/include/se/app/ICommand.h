@@ -73,6 +73,34 @@ namespace se::app {
 		void setScrollPosition(double x, double y) { mX = x; mY = y; };
 	};
 
+
+	/**
+	 * Class ResizeCommand, it's the base class that all window resize
+	 * commands should inherit from to get executed after the user input
+	 */
+	class ResizeCommand : public ICommand
+	{
+	protected:	// Attributes
+		/** The window X size */
+		double mX;
+
+		/** The window Y size */
+		double mY;
+
+	public:		// Functions
+		/** Creates a new ResizeCommand */
+		ResizeCommand() : mX(0.0), mY(0.0) {};
+
+		/** Class destructor */
+		virtual ~ResizeCommand() = default;
+
+		/** Sets the new window size of the ResizeCommand
+		 *
+		 * @param	x the window x size
+		 * @param	y the window y size */
+		void setWindowSize(double x, double y) { mX = x; mY = y; };
+	};
+
 }
 
 #endif		// I_COMMAND_H

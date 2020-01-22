@@ -1,9 +1,6 @@
 #include <fstream>
 #include <algorithm>
-#include <GL/glew.h>
 #include "se/graphics/3D/ProgramPBRSkinning.h"
-#include "se/graphics/3D/Lights.h"
-#include "se/graphics/3D/Material.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/Program.h"
 #include "se/utils/Log.h"
@@ -21,7 +18,7 @@ namespace se::graphics {
 	{
 		// 1. Read the shader text from the shader files
 		std::string vertexShaderText;
-		if (std::ifstream ifs("res/shaders/vertexPBRSkinning.glsl"); ifs.good()) {
+		if (std::ifstream ifs("res/shaders/vertexLightSkinning.glsl"); ifs.good()) {
 			vertexShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 		}
 		else {

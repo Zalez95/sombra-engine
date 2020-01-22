@@ -8,7 +8,7 @@ namespace se::graphics {
 
 	class Camera;
 	class Texture;
-	struct Material;
+	struct SplatmapMaterial;
 
 
 	/**
@@ -18,7 +18,7 @@ namespace se::graphics {
 	{
 	public:		// Nested types
 		using TextureSPtr = std::shared_ptr<Texture>;
-		using MaterialSPtr = std::shared_ptr<Material>;
+		using SplatmapMaterialSPtr = std::shared_ptr<SplatmapMaterial>;
 
 	private:	// Attributes
 		/** The size of the terrain in the XZ plane */
@@ -37,8 +37,8 @@ namespace se::graphics {
 		 * Local space to World space */
 		glm::mat4 mModelMatrix;
 
-		/** The Material of the Terrain */
-		MaterialSPtr mMaterial;
+		/** The SplatmapMaterial of the Terrain */
+		SplatmapMaterialSPtr mMaterial;
 
 	public:		// Functions
 		/** Creates a new RenderableTerrain
@@ -49,10 +49,11 @@ namespace se::graphics {
 		 * @param	heightMap the texture to use as height map in the terrain
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	material the material of the Terrain */
+		 * @param	material the SplatmapMaterial of the Terrain */
 		RenderableTerrain(
 			float size, float maxHeight, TextureSPtr heightMap,
-			const std::vector<float>& lodDistances, MaterialSPtr material
+			const std::vector<float>& lodDistances,
+			SplatmapMaterialSPtr material
 		) : mSize(size), mMaxHeight(maxHeight), mHeightMap(heightMap),
 			mQuadTree(size, lodDistances),
 			mModelMatrix(1.0f), mMaterial(material) {};
@@ -67,8 +68,8 @@ namespace se::graphics {
 		/** @return	the height map texture of the Terrain */
 		TextureSPtr getHeightMap() const { return mHeightMap; };
 
-		/** @return	a pointer to the Material of the Terrain */
-		const MaterialSPtr getMaterial() const { return mMaterial; };
+		/** @return	a pointer to the SplatmapMaterial of the Terrain */
+		const SplatmapMaterialSPtr getMaterial() const { return mMaterial; };
 
 		/** @return	the model matrix of the Terrain */
 		glm::mat4 getModelMatrix() const { return mModelMatrix; };

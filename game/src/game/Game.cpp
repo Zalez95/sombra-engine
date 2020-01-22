@@ -221,7 +221,7 @@ namespace game {
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
-		se::app::Image heightMap1;
+		se::app::Image heightMap1, splatMap1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
 		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, chessTexture = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
@@ -332,6 +332,11 @@ namespace game {
 			}
 
 			result = se::app::ImageReader::read("res/images/terrain.png", heightMap1, 1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
+
+			result = se::app::ImageReader::read("res/images/splatmap.png", splatMap1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -455,8 +460,15 @@ namespace game {
 		mEntities.push_back(std::move(skyEntity));
 
 		// Terrain
+		auto terrainMaterial = std::make_shared<se::graphics::SplatmapMaterial>();
+		terrainMaterial->splatmapTexture = std::make_shared<se::graphics::Texture>();
+		terrainMaterial->splatmapTexture->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
+		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
+		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
+		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
+
 		std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-		mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances) );
+		mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial) );
 
 		// Plane
 		auto plane = std::make_unique<se::app::Entity>("plane");

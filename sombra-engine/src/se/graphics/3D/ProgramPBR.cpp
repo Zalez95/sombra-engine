@@ -1,53 +1,11 @@
-#include <array>
 #include <fstream>
 #include "se/graphics/3D/ProgramPBR.h"
-#include "se/graphics/3D/Lights.h"
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/Program.h"
 #include "../core/GLWrapper.h"
 
 namespace se::graphics {
-
-	struct ShaderPointLight
-	{
-		glm::vec3 color;
-		float intensity;
-		float inverseRange;
-		glm::vec3 padding;
-	};
-
-
-	void ProgramPBR::setModelMatrix(const glm::mat4& modelMatrix)
-	{
-		mProgram->setUniform("uModelMatrix", modelMatrix);
-	}
-
-
-	void ProgramPBR::setLights(const std::vector<const ILight*>& lights)
-	{
-		int uNumPointLights = 0;
-		std::array<ShaderPointLight, kMaxPointLights> uPointLights;
-		std::array<glm::vec3, kMaxPointLights> uPointLightsPositions;
-
-		for (const ILight* light : lights) {
-			const PointLight* pLight = dynamic_cast<const PointLight*>(light);
-			if (pLight && (uNumPointLights < kMaxPointLights)) {
-				uPointLights[uNumPointLights].color = pLight->color;
-				uPointLights[uNumPointLights].intensity = pLight->intensity;
-				uPointLights[uNumPointLights].inverseRange = pLight->inverseRange;
-				uPointLightsPositions[uNumPointLights] = pLight->position;
-				uNumPointLights++;
-			}
-		}
-
-		mProgram->setUniform("uNumPointLights", uNumPointLights);
-		mPointLightsUBO.setData(uPointLights.data(), uPointLights.size());
-		mPointLightsUBO.bind(UniformBlockIndices::kPointLights);
-		mProgram->setUniformBlock("LightsBlock", UniformBlockIndices::kPointLights);
-		mProgram->setUniformV("uPointLightsPositions", uNumPointLights, uPointLightsPositions.data());
-	}
-
 
 	void ProgramPBR::setMaterial(const Material& material)
 	{
@@ -135,7 +93,7 @@ namespace se::graphics {
 	{
 		// 1. Read the shader text from the shader files
 		std::string vertexShaderText;
-		if (std::ifstream ifs("res/shaders/vertexPBR.glsl"); ifs.good()) {
+		if (std::ifstream ifs("res/shaders/vertexLight.glsl"); ifs.good()) {
 			vertexShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 		}
 		else {
@@ -173,13 +131,7 @@ namespace se::graphics {
 
 	bool ProgramPBR::addUniforms()
 	{
-		bool ret = Program3D::addUniforms();
-
-		ret &= mProgram->addUniform("uModelMatrix");
-
-		ret &= mProgram->addUniform("uNumPointLights");
-		ret &= mProgram->addUniformBlock("LightsBlock");
-		ret &= mProgram->addUniform("uPointLightsPositions");
+		bool ret = ProgramLight::addUniforms();
 
 		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.baseColorFactor");
 		ret &= mProgram->addUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture");

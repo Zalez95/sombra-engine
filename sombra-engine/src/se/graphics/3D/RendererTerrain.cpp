@@ -152,8 +152,6 @@ namespace se::graphics {
 		mBottomRight.drawInstances();
 		mTopLeft.drawInstances();
 		mTopRight.drawInstances();
-
-		if (material) { mProgram.unsetMaterial(*material); }
 	}
 
 // Private functions

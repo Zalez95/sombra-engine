@@ -1,5 +1,3 @@
-#include <array>
-#include <sstream>
 #include <fstream>
 #include "se/graphics/3D/ProgramTerrain.h"
 #include "se/graphics/core/Shader.h"
@@ -48,7 +46,7 @@ namespace se::graphics {
 		}
 
 		std::string fragmentShaderText;
-		if (std::ifstream ifs("res/shaders/fragmentPBR.glsl"); ifs.good()) {
+		if (std::ifstream ifs("res/shaders/fragmentSplatmap.glsl"); ifs.good()) {
 			fragmentShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 		}
 		else {
@@ -79,7 +77,7 @@ namespace se::graphics {
 
 	bool ProgramTerrain::addUniforms()
 	{
-		bool ret = ProgramPBR::addUniforms();
+		bool ret = ProgramSplatmap::addUniforms();
 
 		ret &= mProgram->addUniform("uXZSize");
 		ret &= mProgram->addUniform("uMaxHeight");
