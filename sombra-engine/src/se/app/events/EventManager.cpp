@@ -1,8 +1,7 @@
-#include "se/app/EventManager.h"
+#include "se/app/events/EventManager.h"
 #include "se/utils/Log.h"
 
-namespace se::app
-{
+namespace se::app {
 
 	void EventManager::subscribe(IEventListener* eventListener, Topic topic)
 	{

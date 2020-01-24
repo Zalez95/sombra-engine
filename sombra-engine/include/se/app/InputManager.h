@@ -2,7 +2,7 @@
 #define INPUT_MANAGER_H
 
 #include <deque>
-#include "EventManager.h"
+#include "events/EventManager.h"
 #include "../window/WindowSystem.h"
 
 namespace se::app {

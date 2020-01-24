@@ -9,7 +9,7 @@
 #include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
 #include "../utils/FixedVector.h"
-#include "EventManager.h"
+#include "events/EventManager.h"
 
 namespace se::app {
 

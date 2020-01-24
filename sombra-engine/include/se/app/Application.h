@@ -17,6 +17,7 @@ namespace se::app {
 	class CollisionManager;
 	class AnimationManager;
 	class AudioManager;
+	class GUIManager;
 
 
 	/**
@@ -60,6 +61,7 @@ namespace se::app {
 		CollisionManager* mCollisionManager;
 		AnimationManager* mAnimationManager;
 		AudioManager* mAudioManager;
+		GUIManager* mGUIManager;
 
 	public:		// Functions
 		/** Creates a new Application

@@ -4,7 +4,7 @@
 #include <array>
 #include <vector>
 #include <functional>
-#include "events/Event.h"
+#include "Event.h"
 
 namespace se::app
 {

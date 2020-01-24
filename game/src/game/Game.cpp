@@ -21,6 +21,8 @@
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
 #include <se/app/loaders/SceneReader.h>
+#include <se/app/gui/GUIManager.h>
+#include <se/app/gui/Rectangle.h>
 
 #include <se/graphics/GraphicsSystem.h>
 #include <se/graphics/3D/Camera.h>
@@ -203,7 +205,8 @@ namespace game {
 	}
 
 // Public functions
-	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime)
+	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime),
+		mPlayer(nullptr), mFPSText(nullptr), mPanel(nullptr)
 	{
 		mEventManager->subscribe(this, se::app::Topic::Key);
 		mEventManager->subscribe(this, se::app::Topic::Mouse);
@@ -413,12 +416,12 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// RenderableTexts
-		mRenderableTexts.emplace_back(glm::vec2(0.0f), glm::vec2(16.0f), arial, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "");
+		mRenderableTexts.emplace_back(glm::vec2(0.0f), glm::vec2(16.0f), 0, arial, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "");
 		mFPSText = &mRenderableTexts.back();
 		mLayer2D.addRenderableText(&mRenderableTexts.back());
 
 		// Renderable2Ds
-		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
+		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), 0, glm::vec4(1.0f), logoTexture);
 		mLayer2D.addRenderable2D(&mRenderable2Ds.back());
 
 		/*********************************************************************
@@ -676,6 +679,27 @@ namespace game {
 			}
 		}
 
+		// GUI
+		mPanel = new se::app::Panel(&mLayer2D);
+		mPanel->setSize(glm::vec2(60.0f));
+		mPanel->setPosition(glm::vec2(500.0f, 20.0f));
+
+		mLabel = new se::app::Label(&mLayer2D);
+		mLabel->setFont(arial);
+		mLabel->setCharacterScale({ 12, 12 });
+		mLabel->setSize({ 30.0f, 15.0f });
+		mLabel->setPosition({ 15.0f, 5.0f });
+		mLabel->setText("LABEL");
+		mPanel->add(mLabel);
+
+		mButton = new se::app::Button(std::make_unique<se::app::Rectangle>(), &mLayer2D);
+		mButton->setSize({ 20.0f, 10.0f });
+		mButton->setPosition({ 30.0f, 30.0f });
+		mButton->setColor({ 1.0f, 0.5f, 0.5f, 1.0f });
+		mPanel->add(mButton);
+
+		mGUIManager->add(mPanel);
+
 		resetMousePosition();
 
 		Application::start();
@@ -687,6 +711,15 @@ namespace game {
 		if (mState == AppState::Stopped) { return; }
 
 		Application::stop();
+
+		if (mPanel) {
+			mGUIManager->remove(mPanel);
+			mPanel->remove(mButton);
+			mPanel->remove(mLabel);
+			delete mPanel;
+			delete mButton;
+			delete mLabel;
+		}
 
 		for (se::physics::Force* force : mForces) {
 			mPhysicsEngine->getForceManager().removeForce(force);
@@ -729,7 +762,6 @@ namespace game {
 		tryCall(&Game::onKeyEvent, event);
 		tryCall(&Game::onMouseEvent, event);
 	}
-
 
 // Private functions
 	void Game::onUpdate(float deltaTime)

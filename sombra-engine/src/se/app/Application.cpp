@@ -7,13 +7,14 @@
 #include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
-#include "se/app/EventManager.h"
 #include "se/app/InputManager.h"
 #include "se/app/GraphicsManager.h"
 #include "se/app/PhysicsManager.h"
 #include "se/app/CollisionManager.h"
 #include "se/app/AnimationManager.h"
 #include "se/app/AudioManager.h"
+#include "se/app/events/EventManager.h"
+#include "se/app/gui/GUIManager.h"
 
 namespace se::app {
 
@@ -37,8 +38,9 @@ namespace se::app {
 
 			// Graphics
 			mGraphicsSystem = new graphics::GraphicsSystem();
-			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+			mGraphicsManager = new GraphicsManager(*mGraphicsSystem, *mEventManager);
 			mGraphicsSystem->setViewport({ windowConfig.width, windowConfig.height });
+			mGUIManager = new GUIManager(*mEventManager);
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);
@@ -67,6 +69,7 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
+		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioManager) { delete mAudioManager; }
 		if (mAudioEngine) { delete mAudioEngine; }
 		if (mAnimationManager) { delete mAnimationManager; }

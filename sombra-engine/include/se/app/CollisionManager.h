@@ -5,7 +5,7 @@
 #include <memory>
 #include "../collision/Collider.h"
 #include "../collision/CollisionWorld.h"
-#include "EventManager.h"
+#include "events/EventManager.h"
 
 namespace se::app {
 

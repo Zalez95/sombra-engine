@@ -12,7 +12,7 @@ namespace se::graphics {
 	class RenderableText
 	{
 	private:	// Nested types
-		typedef std::shared_ptr<Font> FontSPtr;
+		using FontSPtr = std::shared_ptr<Font>;
 
 	private:	// Attributes
 		/** The position in pixels of the Text */
@@ -89,6 +89,11 @@ namespace se::graphics {
 		 *
 		 * @param	zIndex the new z-index in pixels of the RenderableText */
 		void setZIndex(unsigned char zIndex) { mZIndex = zIndex; };
+
+		/** Sets the font of the RenderableText
+		 *
+		 * @param	font a pointer to the Font of the RenderableText */
+		void setFont(FontSPtr font) { mFont = font; };
 
 		/** Sets the color of the RenderableText
 		 *

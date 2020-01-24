@@ -262,9 +262,9 @@ namespace se::app {
 // Private functions
 	void GraphicsManager::onResizeEvent(const ResizeEvent& event)
 	{
-		auto width = static_cast<int>(event.getWidth());
-		auto height = static_cast<int>(event.getHeight());
-		mGraphicsSystem.setViewport(width, height);
+		auto width = static_cast<unsigned int>(event.getWidth());
+		auto height = static_cast<unsigned int>(event.getHeight());
+		mGraphicsSystem.setViewport({ width, height });
 	}
 
 }

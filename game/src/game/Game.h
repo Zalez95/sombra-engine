@@ -6,9 +6,12 @@
 #include <string>
 #include <se/app/Application.h>
 #include <se/app/Entity.h>
-#include <se/app/EventManager.h>
+#include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
+#include <se/app/gui/Panel.h>
+#include <se/app/gui/Label.h>
+#include <se/app/gui/Button.h>
 #include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/Renderable2D.h>
 #include <se/graphics/2D/RenderableText.h>
@@ -76,6 +79,9 @@ namespace game {
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;
 		std::vector<se::animation::IAnimator*> mAnimators;
+		se::app::Panel* mPanel;
+		se::app::Label* mLabel;
+		se::app::Button* mButton;
 
 	public:		// Functions
 		/** Creates a new Game */

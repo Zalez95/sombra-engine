@@ -3,7 +3,7 @@
 
 #include <map>
 #include "Skin.h"
-#include "EventManager.h"
+#include "events/EventManager.h"
 #include "../graphics/GraphicsSystem.h"
 #include "../graphics/3D/Layer3D.h"
 #include "../graphics/3D/Camera.h"
