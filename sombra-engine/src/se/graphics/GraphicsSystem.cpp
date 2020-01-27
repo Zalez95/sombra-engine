@@ -5,7 +5,7 @@
 
 namespace se::graphics {
 
-	GraphicsSystem::GraphicsSystem() : mViewportWidth(0), mViewportHeight(0)
+	GraphicsSystem::GraphicsSystem() : mViewportSize(0)
 	{
 		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {
@@ -57,15 +57,14 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::setViewport(int width, int height)
+	void GraphicsSystem::setViewport(const glm::uvec2& viewportSize)
 	{
-		mViewportWidth = width;
-		mViewportHeight = height;
+		mViewportSize = viewportSize;
 
-		GL_WRAP( glViewport(0, 0, mViewportWidth, mViewportHeight) );
+		GL_WRAP( glViewport(0, 0, mViewportSize.x, mViewportSize.y) );
 
 		for (ILayer* layer : mLayers) {
-			layer->setViewportSize(mViewportWidth, mViewportHeight);
+			layer->setViewportSize(viewportSize);
 		}
 	}
 
@@ -73,7 +72,7 @@ namespace se::graphics {
 	void GraphicsSystem::addLayer(ILayer* layer)
 	{
 		if (layer) {
-			layer->setViewportSize(mViewportWidth, mViewportHeight);
+			layer->setViewportSize(mViewportSize);
 
 			mLayers.push_back(layer);
 		}

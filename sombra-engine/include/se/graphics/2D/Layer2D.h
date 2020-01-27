@@ -1,6 +1,7 @@
 #ifndef LAYER_2D_H
 #define LAYER_2D_H
 
+#include <array>
 #include <vector>
 #include "../ILayer.h"
 #include "Renderer2D.h"
@@ -13,18 +14,28 @@ namespace se::graphics {
 	 */
 	class Layer2D : public ILayer
 	{
+	private:	// Nested types
+		template <typename T, std::size_t S>
+		using ArrayOfVectors = std::array<std::vector<T>, S>;
+
 	private:	// Attributes
+		/** Tha maximum value of the z-index of the Renderables */
+		static constexpr std::size_t kMaxZIndex = 256;
+
 		/** The Renderer used by the layer to render the Scene */
 		Renderer2D mRenderer2D;
+
+		/** The size of the viewport */
+		glm::uvec2 mViewportSize;
 
 		/** The projection matrix to use in the shaders */
 		glm::mat4 mProjectionMatrix;
 
-		/** The 3D renderables that the layer must render */
-		std::vector<const Renderable2D*> mRenderable2Ds;
+		/** The Renderable2Ds that the layer must render */
+		ArrayOfVectors<const Renderable2D*, kMaxZIndex> mRenderable2Ds;
 
-		/** The 3D renderables that the layer must render */
-		std::vector<const RenderableText*> mRenderableTexts;
+		/** The RenderableTexts that the layer must render */
+		ArrayOfVectors<const RenderableText*, kMaxZIndex> mRenderableTexts;
 
 	public:		// Functions
 		/** Adds the given Renderable to the Layer so it will be rendered
@@ -52,13 +63,15 @@ namespace se::graphics {
 		/** Draws the scene */
 		void render() override;
 
+		/** @return	the viewport size */
+		const glm::uvec2& getViewportSize() const { return mViewportSize; };
+
 		/** Sets the viewport size
 		 *
-		 * @param	width the new width of the layer viewport to render to
-		 * @param	height the new height of the layer viewport to render to
+		 * @param	viewportSize the new size of the layer viewport to render to
 		 * @note	the origin of the render viewport is located at the
 		 *			top-left corner */
-		virtual void setViewportSize(int width, int height) override;
+		virtual void setViewportSize(const glm::uvec2& viewportSize) override;
 	};
 
 }

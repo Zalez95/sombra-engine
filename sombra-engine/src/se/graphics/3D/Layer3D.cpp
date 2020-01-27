@@ -70,6 +70,6 @@ namespace se::graphics {
 	}
 
 
-	void Layer3D::setViewportSize(int /*width*/, int /*height*/) {}
+	void Layer3D::setViewportSize(const glm::uvec2& /*viewportSize*/) {}
 
 }

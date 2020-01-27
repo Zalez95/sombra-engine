@@ -25,6 +25,12 @@ namespace se::graphics {
 		/** The scale in pixels of the 2D element */
 		glm::vec2 mScale;
 
+		/** Determines the drawing order of the Renderable2D, so it can appear
+		 * on top of other Renderable2Ds/Texts independently of when it was
+		 * submitted to the Renderer2D. The smaller the value the further back
+		 * it will appear. */
+		unsigned char mZIndex;
+
 		/** The RGBA color of the 2D element */
 		glm::vec4 mColor;
 
@@ -36,12 +42,16 @@ namespace se::graphics {
 		 *
 		 * @param	position the 2D position in pixels of the Renderable2D
 		 * @param	scale the 2D scale in pixels of the Renderable2D
+		 * @param	zIndex the index used for calculating the drawing order
+		 *			of the Renderable2D
 		 * @param	color the RGBA color of the Renderable2D
 		 * @param	texture a pointer to the texture of the Renderable2D */
 		Renderable2D(
 			const glm::vec2& position, const glm::vec2& scale,
-			const glm::vec4& color, const TextureSPtr texture = nullptr
-		) :	mPosition(position), mScale(scale),
+			unsigned char zIndex = 0,
+			const glm::vec4& color = glm::vec4(1.0f),
+			const TextureSPtr texture = nullptr
+		) :	mPosition(position), mScale(scale), mZIndex(zIndex),
 			mColor(color), mTexture(texture) {};
 
 		/** @return	the position in pixels of the Renderable2D */
@@ -49,6 +59,9 @@ namespace se::graphics {
 
 		/** @return	the scale in pixels of the Renderable2D */
 		const glm::vec2& getScale() const { return mScale; };
+
+		/** @return	the z-index of the Renderable2D */
+		unsigned char getZIndex() const { return mZIndex; };
 
 		/** @return	the RGBA color of the Renderable2D */
 		const glm::vec4& getColor() const { return mColor; };
@@ -65,6 +78,11 @@ namespace se::graphics {
 		 *
 		 * @param	scale the new scale in pixels of the Renderable2D */
 		void setScale(const glm::vec2& scale) { mScale = scale; };
+
+		/** Sets the z-index of the Renderable2D
+		 *
+		 * @param	zIndex the new z-index in pixels of the Renderable2D */
+		void setZIndex(unsigned char zIndex) { mZIndex = zIndex; };
 
 		/** Sets the color of the Renderable2D
 		 *

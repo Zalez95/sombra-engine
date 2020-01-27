@@ -17,11 +17,8 @@ namespace se::graphics {
 		/** The Layers that the GraphicsSystem will render */
 		std::vector<ILayer*> mLayers;
 
-		/** The width of the viewport */
-		int mViewportWidth;
-
-		/** The height of the viewport */
-		int mViewportHeight;
+		/** The size of the layers viewports */
+		glm::uvec2 mViewportSize;
 
 	public:		// Functions
 		/** Creates a new Graphics System
@@ -33,9 +30,8 @@ namespace se::graphics {
 
 		/** Sets the viewport resolution
 		 *
-		 * @param	width the width of the viewport
-		 * @param	height the height of the viewport */
-		void setViewport(int width, int height);
+		 * @param	viewportSize the new size of the layer viewports */
+		void setViewport(const glm::uvec2& viewportSize);
 
 		/** Adds the given ILayer to the GraphicsSystem so it will
 		 * be rendered in each render call

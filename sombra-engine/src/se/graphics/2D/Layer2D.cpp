@@ -2,40 +2,50 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/graphics/2D/Layer2D.h"
+#include "se/graphics/2D/Renderable2D.h"
+#include "se/graphics/2D/RenderableText.h"
 
 namespace se::graphics {
 
 	void Layer2D::addRenderable2D(const Renderable2D* renderable2D)
 	{
 		if (renderable2D) {
-			mRenderable2Ds.push_back(renderable2D);
+			mRenderable2Ds[renderable2D->getZIndex()].push_back(renderable2D);
 		}
 	}
 
 
 	void Layer2D::removeRenderable2D(const Renderable2D* renderable2D)
 	{
-		mRenderable2Ds.erase(
-			std::remove(mRenderable2Ds.begin(), mRenderable2Ds.end(), renderable2D),
-			mRenderable2Ds.end()
-		);
+		if (renderable2D) {
+			unsigned char zIndex = renderable2D->getZIndex();
+
+			mRenderable2Ds[zIndex].erase(
+				std::remove(mRenderable2Ds[zIndex].begin(), mRenderable2Ds[zIndex].end(), renderable2D),
+				mRenderable2Ds[zIndex].end()
+			);
+		}
 	}
 
 
 	void Layer2D::addRenderableText(const RenderableText* renderableText)
 	{
 		if (renderableText) {
-			mRenderableTexts.push_back(renderableText);
+			mRenderableTexts[renderableText->getZIndex()].push_back(renderableText);
 		}
 	}
 
 
 	void Layer2D::removeRenderableText(const RenderableText* renderableText)
 	{
-		mRenderableTexts.erase(
-			std::remove(mRenderableTexts.begin(), mRenderableTexts.end(), renderableText),
-			mRenderableTexts.end()
-		);
+		if (renderableText) {
+			unsigned char zIndex = renderableText->getZIndex();
+
+			mRenderableTexts[zIndex].erase(
+				std::remove(mRenderableTexts[zIndex].begin(), mRenderableTexts[zIndex].end(), renderableText),
+				mRenderableTexts[zIndex].end()
+			);
+		}
 	}
 
 
@@ -43,21 +53,24 @@ namespace se::graphics {
 	{
 		mRenderer2D.start(mProjectionMatrix);
 
-		for (const Renderable2D* renderable2D : mRenderable2Ds) {
-			mRenderer2D.submit(renderable2D);
-		}
+		for (std::size_t zIndex = 0; zIndex < kMaxZIndex; ++zIndex) {
+			for (const Renderable2D* renderable2D : mRenderable2Ds[zIndex]) {
+				mRenderer2D.submit(renderable2D);
+			}
 
-		for (const RenderableText* renderableText : mRenderableTexts) {
-			mRenderer2D.submit(renderableText);
+			for (const RenderableText* renderableText : mRenderableTexts[zIndex]) {
+				mRenderer2D.submit(renderableText);
+			}
 		}
 
 		mRenderer2D.end();
 	}
 
 
-	void Layer2D::setViewportSize(int width, int height)
+	void Layer2D::setViewportSize(const glm::uvec2& viewportSize)
 	{
-		mProjectionMatrix = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
+		mViewportSize = viewportSize;
+		mProjectionMatrix = glm::ortho(0.0f, static_cast<float>(mViewportSize.x), static_cast<float>(mViewportSize.y), 0.0f, -1.0f, 1.0f);
 	}
 
 }

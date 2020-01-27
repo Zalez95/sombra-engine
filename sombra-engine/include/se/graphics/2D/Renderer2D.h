@@ -14,8 +14,9 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Renderer2D, it's a Forward Renderer used for rendering 2D
-	 * graphics elements
+	 * Class Renderer2D, it's a Batch Renderer used for rendering 2D
+	 * graphics elements. The Renderer2D draws the elements in the given order
+	 * without taking in count its z-index.
 	 */
 	class Renderer2D
 	{

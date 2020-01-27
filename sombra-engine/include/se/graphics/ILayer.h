@@ -1,6 +1,8 @@
 #ifndef I_LAYER_H
 #define I_LAYER_H
 
+#include <glm/glm.hpp>
+
 namespace se::graphics {
 
 	/**
@@ -18,9 +20,9 @@ namespace se::graphics {
 
 		/** Sets the viewport size
 		 *
-		 * @param	width the new width of the layer viewport to render to
-		 * @param	height the new height of the layer viewport to render to */
-		virtual void setViewportSize(int width, int height) = 0;
+		 * @param	viewportSize the new size of the layer viewport to render
+		 *			to */
+		virtual void setViewportSize(const glm::uvec2& viewportSize) = 0;
 	};
 
 }
