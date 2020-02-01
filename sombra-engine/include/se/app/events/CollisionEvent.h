@@ -1,7 +1,7 @@
-#ifndef COLLISION__EVENT_H
-#define COLLISION__EVENT_H
+#ifndef COLLISION_EVENT_H
+#define COLLISION_EVENT_H
 
-#include "../IEvent.h"
+#include "Event.h"
 #include "../../collision/Manifold.h"
 
 namespace se::app {
@@ -13,11 +13,9 @@ namespace se::app {
 	 * Class CollisionEvent, its an event used for notify of collision
 	 * detected by the CollisionManager
 	 */
-	class CollisionEvent : public IEvent
+	class CollisionEvent : public Event<Topic::Collision>
 	{
-	public:		// Attributes
-		static constexpr Topic kTopic = Topic::Collision;
-	private:
+	private:	// Attributes
 		/** The Entities affected by the CollisionEvent */
 		Entity* mEntities[2];
 
@@ -35,12 +33,6 @@ namespace se::app {
 			const collision::Manifold* manifold
 		) : mEntities{ entity1, entity2 }, mManifold(manifold) {};
 
-		/** Class destructor */
-		virtual ~CollisionEvent() {};
-
-		/** @return	the Topic of the CollisionEvent */
-		virtual Topic getTopic() const override { return kTopic; };
-
 		/** Returns a pointer to the requested Entity
 		 *
 		 * @param	second the flag used to select the Entity to return
@@ -51,7 +43,7 @@ namespace se::app {
 
 		/** @return	a pointer to the collision Manifold */
 		const collision::Manifold* getManifold() const { return mManifold; };
-	protected:
+	private:
 		/** Appends the current CollisionEvent formated as text to the given
 		 * ostream
 		 *
@@ -59,7 +51,7 @@ namespace se::app {
 		 *			current CollisionEvent */
 		virtual void printTo(std::ostream& os) const
 		{
-			os	<< "{ kTopic : " << Topic::Collision << ", mEntities : [ "
+			os	<< "{ kTopic : " << kTopic << ", mEntities : [ "
 				<< mEntities[0] << ", " << mEntities[1] << " ], mManifold : "
 				<< mManifold << " }";
 		};
@@ -67,4 +59,4 @@ namespace se::app {
 
 }
 
-#endif		// COLLISION__EVENT_H
+#endif		// COLLISION_EVENT_H

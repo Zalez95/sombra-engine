@@ -33,11 +33,11 @@ namespace se::app {
 			mWindowSystem = new window::WindowSystem(windowConfig);
 
 			// Input
-			mInputManager = new InputManager(*mWindowSystem);
+			mInputManager = new InputManager(*mWindowSystem, *mEventManager);
 
 			// Graphics
 			mGraphicsSystem = new graphics::GraphicsSystem();
-			mGraphicsManager = new GraphicsManager(*mGraphicsSystem);
+			mGraphicsManager = new GraphicsManager(*mGraphicsSystem, *mEventManager);
 			mGraphicsSystem->setViewport(windowConfig.width, windowConfig.height);
 
 			// Physics

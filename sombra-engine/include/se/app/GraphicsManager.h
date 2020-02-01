@@ -2,23 +2,25 @@
 #define GRAPHICS_MANAGER_H
 
 #include <map>
+#include "Skin.h"
+#include "EventManager.h"
 #include "../graphics/GraphicsSystem.h"
 #include "../graphics/3D/Layer3D.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Lights.h"
 #include "../graphics/3D/Renderable3D.h"
-#include "Skin.h"
 
 namespace se::app {
 
 	struct Entity;
+	class ResizeEvent;
 
 
 	/**
 	 * Class GraphicsManager, it's a Manager used for storing, updating and
 	 * rendering the Entities' graphics data
 	 */
-	class GraphicsManager
+	class GraphicsManager : public IEventListener
 	{
 	private:	// Nested types
 		using CameraUPtr = std::unique_ptr<graphics::Camera>;
@@ -31,6 +33,9 @@ namespace se::app {
 	private:	// Attributes
 		/** The System used for rendering the data of the Entities */
 		graphics::GraphicsSystem& mGraphicsSystem;
+
+		/** The EventManager that will notify the events */
+		EventManager& mEventManager;
 
 		/** The Layer3D used by the GraphicsSystem */
 		graphics::Layer3D mLayer3D;
@@ -46,8 +51,21 @@ namespace se::app {
 		/** Creates a new GraphicsManager
 		 *
 		 * @param	graphicsSystem a reference to the GraphicsSystem used by
-		 * 			the GraphicsManager to render the entities */
-		GraphicsManager(graphics::GraphicsSystem& graphicsSystem);
+		 * 			the GraphicsManager to render the entities
+		 * @param	eventManager a reference to the EventManager that the
+		 *			GraphicsManager will be subscribed to */
+		GraphicsManager(
+			graphics::GraphicsSystem& graphicsSystem,
+			EventManager& eventManager
+		);
+
+		/** Class destructor */
+		~GraphicsManager();
+
+		/** Notifies the GraphicsManager of the given event
+		 *
+		 * @param	event the IEvent to notify */
+		virtual void notify(const IEvent& event) override;
 
 		/** Adds the given Entity and its Camera data to the GraphicsManager
 		 *
@@ -109,6 +127,12 @@ namespace se::app {
 
 		/** Renders the graphics data of the Entities */
 		void render();
+	private:
+		/** Handles the given ResizeEvent by notifying the GraphicsSystem of
+		 * the window resize
+		 *
+		 * @param	event the ResizeEvent to handle */
+		void onResizeEvent(const ResizeEvent& event);
 	};
 
 }

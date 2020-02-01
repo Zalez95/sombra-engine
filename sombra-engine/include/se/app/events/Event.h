@@ -8,14 +8,27 @@ namespace se::app {
 	/** The different Topics that an IEvent can have */
 	enum class Topic : int
 	{
+		Mouse,
+		Scroll,
+		Resize,
+		Key,
 		Collision,
 		NumTopics
 	};
 
 
+	/** Prints the topic to the given stream
+	 *
+	 * @param	os the stream to print to
+	 * @param	t the topic to print
+	 * @return	the stream */
 	constexpr std::ostream& operator<<(std::ostream& os, const Topic& t)
 	{
 		switch (t) {
+			case Topic::Mouse:		return os << "Topic::Mouse";
+			case Topic::Scroll:		return os << "Topic::Scroll";
+			case Topic::Resize:		return os << "Topic::Resize";
+			case Topic::Key:		return os << "Topic::Key";
 			case Topic::Collision:	return os << "Topic::Collision";
 			default:				return os;
 		}
@@ -23,10 +36,8 @@ namespace se::app {
 
 
 	/**
-	 * Class IEvent, it's the base class that all events should inherit from to
-	 * be notified by the EventManager
-	 * @note	derived events should also have a kTopic public constant
-	 *			property with the Topic of the IEvent
+	 * Class IEvent, it holds the information that we want to share with the
+	 * listeners subscribed to the IEvent's topic.
 	 */
 	class IEvent
 	{
@@ -51,6 +62,26 @@ namespace se::app {
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current IEvent */
 		virtual void printTo(std::ostream& os) const = 0 ;
+	};
+
+
+	/**
+	 * Class IEvent, it's the base class that all events should inherit from to
+	 * be notified by the EventManager
+	 */
+	template <Topic t>
+	class Event : public IEvent
+	{
+	public:		// Attributes
+		/** The topic of the Event */
+		static constexpr Topic kTopic = t;
+
+	public:		// Functions
+		/** Class destructor */
+		virtual ~Event() = default;
+
+		/** @return	the Topic of the IEvent */
+		virtual Topic getTopic() const { return kTopic; };
 	};
 
 }

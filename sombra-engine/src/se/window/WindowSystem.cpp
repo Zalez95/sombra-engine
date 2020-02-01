@@ -119,10 +119,13 @@ namespace se::window {
 
 			glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int button, int /*scancode*/, int action, int /*mods*/)
 			{
-				if (action != GLFW_REPEAT) {
-					auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-					userWindow->onKeyCB(button, (action == GLFW_RELEASE)? ButtonState::Released : ButtonState::Pressed);
-				}
+				auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+				userWindow->onKeyCB(
+					button,
+					(action == GLFW_PRESS)? ButtonState::Pressed :
+					(action == GLFW_REPEAT)? ButtonState::Repeated :
+					ButtonState::Released
+				);
 			});
 		}
 	}
@@ -136,7 +139,11 @@ namespace se::window {
 			glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int /*mods*/)
 			{
 				auto userWindow = reinterpret_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-				userWindow->onMouseButtonCB(button, (action == GLFW_RELEASE)? ButtonState::Released : ButtonState::Pressed);
+				userWindow->onMouseButtonCB(
+					button,
+					(action == GLFW_PRESS)? ButtonState::Pressed :
+					ButtonState::Released
+				);
 			});
 		}
 	}

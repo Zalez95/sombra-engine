@@ -42,6 +42,7 @@ namespace se::window {
 	enum class ButtonState : int
 	{
 		Released = 0,
+		Repeated,
 		Pressed,
 		NumStates
 	};

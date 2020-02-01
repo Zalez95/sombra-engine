@@ -203,10 +203,18 @@ namespace game {
 	}
 
 // Public functions
-	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime) {}
+	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime)
+	{
+		mEventManager->subscribe(this, se::app::Topic::Key);
+		mEventManager->subscribe(this, se::app::Topic::Mouse);
+	}
 
 
-	Game::~Game() {}
+	Game::~Game()
+	{
+		mEventManager->unsubscribe(this, se::app::Topic::Mouse);
+		mEventManager->unsubscribe(this, se::app::Topic::Key);
+	}
 
 
 	void Game::start()
@@ -438,21 +446,6 @@ namespace game {
 		mGraphicsManager->addLightEntity(mPlayer, std::move(pointLight1));
 		mAudioManager->setListener(mPlayer);
 
-		mInputManager->setMouseCommand(std::make_unique<MouseFPSControl>(*mWindowSystem, mPlayerInput, kMouseSpeed));
-		mInputManager->addKeyCommand(SE_KEY_W, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Front, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_W, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Front, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_A, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Left, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_A, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Left, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_S, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Back, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_S, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Back, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_D, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Right, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_D, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Right, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_SPACE, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Up, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_SPACE, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Up, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_LEFT_CONTROL, se::window::ButtonState::Pressed, std::make_unique<StartMoving>(InputTransforms::Direction::Down, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_LEFT_CONTROL, se::window::ButtonState::Released, std::make_unique<StopMoving>(InputTransforms::Direction::Down, mPlayerInput));
-		mInputManager->addKeyCommand(SE_KEY_ESCAPE, se::window::ButtonState::Pressed, std::make_unique<CloseCommand>(*this));
-
 		// Sky
 		auto skyEntity = std::make_unique<se::app::Entity>("sky");
 		auto renderable3D = std::make_unique<se::graphics::Renderable3D>(domeMesh, nullptr);
@@ -683,6 +676,8 @@ namespace game {
 			}
 		}
 
+		resetMousePosition();
+
 		Application::start();
 	}
 
@@ -727,6 +722,14 @@ namespace game {
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
 	}
+
+
+	void Game::notify(const se::app::IEvent& event)
+	{
+		tryCall(&Game::onKeyEvent, event);
+		tryCall(&Game::onMouseEvent, event);
+	}
+
 
 // Private functions
 	void Game::onUpdate(float deltaTime)
@@ -782,6 +785,64 @@ namespace game {
 
 		Application::onUpdate(deltaTime);
 		SOMBRA_DEBUG_LOG << "End";
+	}
+
+
+	void Game::onKeyEvent(const se::app::KeyEvent& event)
+	{
+		switch (event.getKeyCode()) {
+			case SE_KEY_W:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Front)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_A:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Left)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_S:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Back)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_D:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Right)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_SPACE:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Up)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_LEFT_CONTROL:
+				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Down)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_ESCAPE:
+				stop();
+				break;
+			default:
+				break;
+		}
+	}
+
+
+	void Game::onMouseEvent(const se::app::MouseEvent& event)
+	{
+		if (event.getType() == se::app::MouseEvent::Type::Move) {
+			auto moveEvent = static_cast<const se::app::MouseMoveEvent&>(event);
+
+			// Get the mouse movement from the center of the screen in the range [-1, 1]
+			const se::window::WindowData& data = mWindowSystem->getWindowData();
+			double mouseDeltaX = 2.0 * moveEvent.getX() / data.width - 1.0;
+			double mouseDeltaY = 1.0 - 2.0 * moveEvent.getY() / data.height;	// note that the Y position is upsidedown
+
+			// Multiply the values by the mouse speed
+			mPlayerInput.yaw = kMouseSpeed * static_cast<float>(mouseDeltaX);
+			mPlayerInput.pitch = kMouseSpeed * static_cast<float>(mouseDeltaY);
+
+			resetMousePosition();
+		}
+	}
+
+
+	void Game::resetMousePosition()
+	{
+		SOMBRA_DEBUG_LOG << "Changing the mouse position to the center of the window";
+
+		const se::window::WindowData& data = mWindowSystem->getWindowData();
+		mWindowSystem->setMousePosition(data.width / 2.0, data.height / 2.0);
 	}
 
 }
