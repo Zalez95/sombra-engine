@@ -7,19 +7,17 @@
 
 namespace se::graphics {
 
-	void Layer2D::addRenderable2D(const Renderable2D* renderable2D)
+	void Layer2D::addRenderable2D(const Renderable2D* renderable2D, unsigned char zIndex)
 	{
 		if (renderable2D) {
-			mRenderable2Ds[renderable2D->getZIndex()].push_back(renderable2D);
+			mRenderable2Ds[zIndex].push_back(renderable2D);
 		}
 	}
 
 
-	void Layer2D::removeRenderable2D(const Renderable2D* renderable2D)
+	void Layer2D::removeRenderable2D(const Renderable2D* renderable2D, unsigned char zIndex)
 	{
 		if (renderable2D) {
-			unsigned char zIndex = renderable2D->getZIndex();
-
 			mRenderable2Ds[zIndex].erase(
 				std::remove(mRenderable2Ds[zIndex].begin(), mRenderable2Ds[zIndex].end(), renderable2D),
 				mRenderable2Ds[zIndex].end()
@@ -28,19 +26,17 @@ namespace se::graphics {
 	}
 
 
-	void Layer2D::addRenderableText(const RenderableText* renderableText)
+	void Layer2D::addRenderableText(const RenderableText* renderableText, unsigned char zIndex)
 	{
 		if (renderableText) {
-			mRenderableTexts[renderableText->getZIndex()].push_back(renderableText);
+			mRenderableTexts[zIndex].push_back(renderableText);
 		}
 	}
 
 
-	void Layer2D::removeRenderableText(const RenderableText* renderableText)
+	void Layer2D::removeRenderableText(const RenderableText* renderableText, unsigned char zIndex)
 	{
 		if (renderableText) {
-			unsigned char zIndex = renderableText->getZIndex();
-
 			mRenderableTexts[zIndex].erase(
 				std::remove(mRenderableTexts[zIndex].begin(), mRenderableTexts[zIndex].end(), renderableText),
 				mRenderableTexts[zIndex].end()

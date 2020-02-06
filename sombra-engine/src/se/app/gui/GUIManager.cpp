@@ -2,10 +2,12 @@
 
 namespace se::app {
 
-	GUIManager::GUIManager(EventManager& eventManager) : mEventManager(eventManager)
+	GUIManager::GUIManager(EventManager& eventManager, const glm::vec2& initialWindowSize) :
+		mEventManager(eventManager)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 		mEventManager.subscribe(this, Topic::Mouse);
+		mRootComponent.setSize(initialWindowSize);
 	}
 
 
@@ -16,9 +18,9 @@ namespace se::app {
 	}
 
 
-	void GUIManager::add(IComponent* component)
+	void GUIManager::add(IComponent* component, const Anchor& anchor, const Proportions& proportions)
 	{
-		mRootComponent.add(component);
+		mRootComponent.add(component, anchor, proportions);
 	}
 
 
@@ -35,9 +37,9 @@ namespace se::app {
 	}
 
 // Private functions
-	void GUIManager::onResizeEvent(const ResizeEvent& /*event*/)
+	void GUIManager::onResizeEvent(const ResizeEvent& event)
 	{
-		// TODO:
+		mRootComponent.setSize({ static_cast<float>(event.getWidth()), static_cast<float>(event.getHeight()) });
 	}
 
 

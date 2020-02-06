@@ -17,7 +17,7 @@ namespace se::graphics {
 	class Program2D : public IProgram
 	{
 	private:	// Nested types
-		typedef std::shared_ptr<Texture> TextureSPtr;
+		using TextureSPtr = std::shared_ptr<Texture>;
 
 	protected:	// Attributes
 		/** The maximum number of textures in the program */

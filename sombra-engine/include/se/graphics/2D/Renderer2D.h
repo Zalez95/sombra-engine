@@ -15,13 +15,12 @@ namespace se::graphics {
 
 	/**
 	 * Class Renderer2D, it's a Batch Renderer used for rendering 2D
-	 * graphics elements. The Renderer2D draws the elements in the given order
-	 * without taking in count its z-index.
+	 * graphics elements. The Renderer2D draws the elements in the given order.
 	 */
 	class Renderer2D
 	{
 	private:	// Nested types
-		typedef std::shared_ptr<Texture> TextureSPtr;
+		using TextureSPtr = std::shared_ptr<Texture>;
 
 		/** Holds the data of each of the vertices that the Batch can draw */
 		struct BatchVertex

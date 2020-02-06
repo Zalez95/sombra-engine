@@ -5,13 +5,13 @@ namespace se::app {
 	Label::Label(graphics::Layer2D* layer2D) :
 		mRenderableText(mPosition, mSize), mLayer2D(layer2D)
 	{
-		mLayer2D->addRenderableText(&mRenderableText);
+		mLayer2D->addRenderableText(&mRenderableText, mZIndex);
 	}
 
 
 	Label::~Label()
 	{
-		mLayer2D->removeRenderableText(&mRenderableText);
+		mLayer2D->removeRenderableText(&mRenderableText, mZIndex);
 	}
 
 
@@ -31,8 +31,23 @@ namespace se::app {
 
 	void Label::setZIndex(unsigned char zIndex)
 	{
+		mLayer2D->removeRenderableText(&mRenderableText, mZIndex);
 		IComponent::setZIndex(zIndex);
-		mRenderableText.setZIndex(mZIndex);
+		mLayer2D->addRenderableText(&mRenderableText, mZIndex);
+	}
+
+
+	void Label::setVisibility(bool isVisible)
+	{
+		bool wasVisible = mIsVisible;
+		IComponent::setVisibility(isVisible);
+
+		if (wasVisible && !mIsVisible) {
+			mLayer2D->removeRenderableText(&mRenderableText, mZIndex);
+		}
+		else if (!wasVisible && mIsVisible) {
+			mLayer2D->addRenderableText(&mRenderableText, mZIndex);
+		}
 	}
 
 
@@ -58,5 +73,14 @@ namespace se::app {
 	{
 		mRenderableText.setText(text);
 	}
+
+
+	void Label::onHover(const MouseMoveEvent& /*event*/) {}
+
+
+	void Label::onClick(const MouseButtonEvent& /*event*/) {}
+
+
+	void Label::onRelease(const MouseButtonEvent& /*event*/) {}
 
 }

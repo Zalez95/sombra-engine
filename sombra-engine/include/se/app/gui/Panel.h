@@ -43,6 +43,11 @@ namespace se::app {
 		 * @param	zIndex the new z-index of the Panel */
 		virtual void setZIndex(unsigned char zIndex) override;
 
+		/** Sets the Panel visibility on/off
+		 *
+		 * @param	isVisible if Panel must be shown or not */
+		virtual void setVisibility(bool isVisible) override;
+
 		/** Sets the color of the Panel
 		 *
 		 * @param	color the new color of the panel */

@@ -2,6 +2,7 @@
 #define BUTTON_H
 
 #include <memory>
+#include <functional>
 #include "IComponent.h"
 #include "IBounds.h"
 #include "../../graphics/2D/Renderable2D.h"
@@ -35,6 +36,9 @@ namespace se::app {
 		/** If the button is pressed or not */
 		bool mIsPressed;
 
+		/** A pointer to the function to call when the Button is pressed */
+		std::function<void()> mAction;
+
 	public:		// Functions
 		/** Creates a new Button
 		 *
@@ -63,10 +67,20 @@ namespace se::app {
 		 * @param	zIndex the new z-index of the Button */
 		virtual void setZIndex(unsigned char zIndex) override;
 
+		/** Sets the Button visibility on/off
+		 *
+		 * @param	isVisible if Button must be shown or not */
+		virtual void setVisibility(bool isVisible) override;
+
 		/** Sets the color of the Button
 		 *
 		 * @param	color the new color of the Button */
 		void setColor(const glm::vec4& color);
+
+		/** Performs the given action when the Button is pressed
+		 *
+		 * @param	action the function to execute */
+		void setAction(const std::function<void()>& action);
 
 		/** Handles a mouse pointer over the Button
 		 *

@@ -81,7 +81,8 @@ namespace game {
 		std::vector<se::animation::IAnimator*> mAnimators;
 		se::app::Panel* mPanel;
 		se::app::Label* mLabel;
-		se::app::Button* mButton;
+		se::app::Button* mCloseButton;
+		bool mHandleInput;
 
 	public:		// Functions
 		/** Creates a new Game */

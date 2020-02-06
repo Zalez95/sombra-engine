@@ -26,16 +26,30 @@ namespace se::app {
 		/** Creates a new GUIManager
 		 *
 		 * @param	eventManager a reference to the EventManager that the
-		 *			GUIManager will be subscribed to */
-		GUIManager(EventManager& eventManager);
+		 *			GUIManager will be subscribed to
+		 * @param	initialWindowSize the initial window size */
+		GUIManager(
+			EventManager& eventManager,
+			const glm::vec2& initialWindowSize
+		);
 
 		/** Class destructor */
 		~GUIManager();
 
 		/** Adds the given component to the GUIComponent
 		 *
-		 * @param	component a pointer to the IComponent to add */
-		void add(IComponent* component);
+		 * @param	component a pointer to the IComponent to add
+		 * @param	anchor the Anchor where the given IComponent will be
+		 *			added so it can change it's position when the window size
+		 *			changes
+		 * @param	proportions the Proportions that the given IComponent must
+		 *			have so it can be resized when the window does so
+		 * @note	the child IComponent will be added on top of the current
+		 *			one (with the next z-index) */
+		void add(
+			IComponent* component,
+			const Anchor& anchor, const Proportions& proportions
+		);
 
 		/** Removes the given component from the GUIComponent
 		 *

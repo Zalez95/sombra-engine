@@ -6,15 +6,14 @@
 
 namespace se::window {
 
-	WindowSystem::WindowSystem(const WindowData& windowData) :
-		mWindowData(windowData), mWindow(nullptr)
+	WindowSystem::WindowSystem(const WindowData& windowData) : mWindowData(windowData), mWindow(nullptr)
 	{
-		// 1. Init GLFW
+		// Init GLFW
 		if (!glfwInit()) {
 			throw std::runtime_error("Failed to initialize GLFW");
 		}
 
-		// 2. Create the window
+		// Create the window
 		glfwWindowHint(GLFW_SAMPLES, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -29,12 +28,6 @@ namespace se::window {
 
 		glfwMakeContextCurrent(mWindow);
 		glfwSetWindowUserPointer(mWindow, this);
-
-		// 3. Config the window
-		glfwSwapInterval(mWindowData.vsync? 1 : 0);
-		glfwWindowHint(GLFW_RESIZABLE, mWindowData.resizable);
-		glfwSetInputMode(mWindow, GLFW_CURSOR, mWindowData.cursorVisibility? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
-
 		glfwSetErrorCallback([](int error, const char* description)
 		{
 			SOMBRA_ERROR_LOG << "Error \"" << error << "\": " << description;
@@ -64,6 +57,40 @@ namespace se::window {
 	void WindowSystem::setMousePosition(double x, double y)
 	{
 		glfwSetCursorPos(mWindow, x, y);
+	}
+
+
+	void WindowSystem::setFullscreen(bool isFullscreen)
+	{
+		if (isFullscreen) {
+			int numMonitors = 0;
+			GLFWmonitor** monitors = glfwGetMonitors(&numMonitors);
+			if (numMonitors > 0) {
+				const GLFWvidmode* mode = glfwGetVideoMode(monitors[0]);
+				glfwSetWindowMonitor(mWindow, monitors[0], 0, 0, mode->width, mode->height, mode->refreshRate);
+			}
+		}
+		else {
+			glfwSetWindowMonitor(mWindow, nullptr, 0, 0, mWindowData.width, mWindowData.height, GLFW_DONT_CARE);
+		}
+	}
+
+
+	void WindowSystem::setResizable(bool isResizable)
+	{
+		glfwWindowHint(GLFW_RESIZABLE, isResizable);
+	}
+
+
+	void WindowSystem::setVsync(bool hasVsync)
+	{
+		glfwSwapInterval(hasVsync);
+	}
+
+
+	void WindowSystem::setCursorVisibility(bool isVisible)
+	{
+		glfwSetInputMode(mWindow, GLFW_CURSOR, isVisible? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 	}
 
 

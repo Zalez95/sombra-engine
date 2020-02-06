@@ -23,18 +23,6 @@ namespace se::window {
 
 		/** The window height */
 		int height;
-
-		/** If the window is in fullscreen mode or not */
-		bool fullscreen;
-
-		/** If the window is resizable or not */
-		bool resizable;
-
-		/** If the window has v-sync enabled or not */
-		bool vsync;
-
-		/** If the cursor must be shown or not */
-		bool cursorVisibility;
 	};
 
 
@@ -55,7 +43,7 @@ namespace se::window {
 	class WindowSystem
 	{
 	private:	// Attributes
-		/** The data of the window, like its flags and size */
+		/** The config of the window */
 		WindowData mWindowData;
 
 		/** A pointer to the GLFW Window */
@@ -98,6 +86,26 @@ namespace se::window {
 		 * @param	x the position of the mouse in the X axis
 		 * @param	y the position of the mouse in the Y axis */
 		void setMousePosition(double x, double y);
+
+		/** Sets the window fullscreen mode on/off
+		 *
+		 * @param	isFullscreen if the window is in fullscreen mode or not */
+		void setFullscreen(bool isFullscreen);
+
+		/** Sets the window resize on/off
+		 *
+		 * @param	isResizable if the window is resizable or not */
+		void setResizable(bool isResizable);
+
+		/** Sets the vsync on/off
+		 *
+		 * @param	hasVsync if the window has v-sync enabled or not */
+		void setVsync(bool hasVsync);
+
+		/** Sets the cursor visibility on/off
+		 *
+		 * @param	isVisible if the cursor must be shown or not */
+		void setCursorVisibility(bool isVisible);
 
 		/** Sets the callback function to execute when the window is resized
 		 *

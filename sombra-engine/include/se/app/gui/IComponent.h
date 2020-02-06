@@ -13,11 +13,11 @@ namespace se::app {
 	class IComponent
 	{
 	protected:	// Attributes
-		/** The IComponent dimensions in the X and Y axis */
+		/** The IComponent dimensions in pixels in the X and Y axis */
 		glm::vec2 mSize;
 
-		/** The location of the top-left corner of the IComponent in the X
-		 * and Y axis */
+		/** The location of the top-left corner of the IComponent in pixels
+		 * in the X and Y axis */
 		glm::vec2 mPosition;
 
 		/** The z-index used for drawing the IComponent on top of other
@@ -25,9 +25,13 @@ namespace se::app {
 		 * appear. */
 		unsigned char mZIndex;
 
+		/** If the IComponent is visible or not */
+		bool mIsVisible;
+
 	public:		// Functions
 		/** Creates a new IComponent */
-		IComponent() : mSize(0.0f), mPosition(0.0f), mZIndex(0) {};
+		IComponent() :
+			mSize(0.0f), mPosition(0.0f), mZIndex(0), mIsVisible(true) {};
 
 		/** Class destructor */
 		virtual ~IComponent() = default;
@@ -41,6 +45,9 @@ namespace se::app {
 
 		/** @return	the z-index of the IComponent */
 		unsigned char getZIndex() const { return mZIndex; };
+
+		/** @return	true if the IComponent is visible, false otherwise */
+		bool isVisible() const { return mIsVisible; };
 
 		/** Sets the position of the IComponent
 		 *
@@ -59,23 +66,28 @@ namespace se::app {
 		 * @param	zIndex the new z-index of the IComponent */
 		virtual void setZIndex(unsigned char zIndex) { mZIndex = zIndex; };
 
+		/** Sets the IComponent visibility on/off
+		 *
+		 * @param	isVisible if IComponent must be shown or not */
+		virtual void setVisibility(bool isVisible) { mIsVisible = isVisible; };
+
 		/** Handles a mouse pointer over the IComponent
 		 *
 		 * @param	event the MouseMoveEvent that holds the location of the
 		 *			mouse */
-		virtual void onHover(const MouseMoveEvent& event) {};
+		virtual void onHover(const MouseMoveEvent& event) = 0;
 
 		/** Handles a mouse click on the IComponent
 		 *
 		 * @param	event the MouseButtonEvent that holds the state of the
 		 *			button pressed */
-		virtual void onClick(const MouseButtonEvent& event) {};
+		virtual void onClick(const MouseButtonEvent& event) = 0;
 
 		/** Handles a mouse click release on the IComponent
 		 *
 		 * @param	event the MouseButtonEvent that holds the state of the
 		 *			button pressed */
-		virtual void onRelease(const MouseButtonEvent& event) {};
+		virtual void onRelease(const MouseButtonEvent& event) = 0;
 	};
 
 }

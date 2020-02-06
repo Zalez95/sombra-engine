@@ -205,8 +205,8 @@ namespace game {
 	}
 
 // Public functions
-	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight, false, false, false, false }, kUpdateTime),
-		mPlayer(nullptr), mFPSText(nullptr), mPanel(nullptr)
+	Game::Game() : se::app::Application({ kTitle, kWidth, kHeight }, kUpdateTime),
+		mPlayer(nullptr), mFPSText(nullptr), mPanel(nullptr), mHandleInput(false)
 	{
 		mEventManager->subscribe(this, se::app::Topic::Key);
 		mEventManager->subscribe(this, se::app::Topic::Mouse);
@@ -416,13 +416,13 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// RenderableTexts
-		mRenderableTexts.emplace_back(glm::vec2(0.0f), glm::vec2(16.0f), 0, arial, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "");
+		mRenderableTexts.emplace_back(glm::vec2(0.0f), glm::vec2(16.0f), arial, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "");
 		mFPSText = &mRenderableTexts.back();
-		mLayer2D.addRenderableText(&mRenderableTexts.back());
+		mLayer2D.addRenderableText(&mRenderableTexts.back(), 0);
 
 		// Renderable2Ds
-		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), 0, glm::vec4(1.0f), logoTexture);
-		mLayer2D.addRenderable2D(&mRenderable2Ds.back());
+		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
+		mLayer2D.addRenderable2D(&mRenderable2Ds.back(), 0);
 
 		/*********************************************************************
 		 * GAME DATA
@@ -681,26 +681,34 @@ namespace game {
 
 		// GUI
 		mPanel = new se::app::Panel(&mLayer2D);
-		mPanel->setSize(glm::vec2(60.0f));
-		mPanel->setPosition(glm::vec2(500.0f, 20.0f));
+		mPanel->setColor({ 1.0f, 1.0f, 1.0f, 0.8f });
+		se::app::Proportions panelProportions;
+		panelProportions.relativeSize = glm::vec2(0.8f);
+		mGUIManager->add(mPanel, se::app::Anchor(), panelProportions);
 
 		mLabel = new se::app::Label(&mLayer2D);
 		mLabel->setFont(arial);
 		mLabel->setCharacterScale({ 12, 12 });
-		mLabel->setSize({ 30.0f, 15.0f });
-		mLabel->setPosition({ 15.0f, 5.0f });
-		mLabel->setText("LABEL");
-		mPanel->add(mLabel);
+		mLabel->setText("Exit");
+		se::app::Anchor labelAnchor;
+		labelAnchor.relativePosition = { 0.5f, 0.1f };
+		se::app::Proportions labelProportions;
+		labelProportions.relativeSize = glm::vec2(0.05f);
+		mPanel->add(mLabel, labelAnchor, labelProportions);
 
-		mButton = new se::app::Button(std::make_unique<se::app::Rectangle>(), &mLayer2D);
-		mButton->setSize({ 20.0f, 10.0f });
-		mButton->setPosition({ 30.0f, 30.0f });
-		mButton->setColor({ 1.0f, 0.5f, 0.5f, 1.0f });
-		mPanel->add(mButton);
+		mCloseButton = new se::app::Button(std::make_unique<se::app::Rectangle>(), &mLayer2D);
+		mCloseButton->setColor({ 1.0f, 0.5f, 0.5f, 1.0f });
+		mCloseButton->setAction([this]() { stop(); });
+		se::app::Anchor buttonAnchor;
+		buttonAnchor.relativePosition = { 0.5f, 0.1f };
+		se::app::Proportions buttonProportions;
+		buttonProportions.relativeSize = glm::vec2(0.15f);
+		mPanel->add(mCloseButton, buttonAnchor, buttonProportions);
 
-		mGUIManager->add(mPanel);
-
+		mHandleInput = true;
 		resetMousePosition();
+		mWindowSystem->setCursorVisibility(false);
+		mPanel->setVisibility(false);
 
 		Application::start();
 	}
@@ -714,10 +722,8 @@ namespace game {
 
 		if (mPanel) {
 			mGUIManager->remove(mPanel);
-			mPanel->remove(mButton);
-			mPanel->remove(mLabel);
 			delete mPanel;
-			delete mButton;
+			delete mCloseButton;
 			delete mLabel;
 		}
 
@@ -746,11 +752,11 @@ namespace game {
 		mEntities.clear();
 
 		for (const se::graphics::RenderableText& renderable : mRenderableTexts) {
-			mLayer2D.removeRenderableText(&renderable);
+			mLayer2D.removeRenderableText(&renderable, 0);
 		}
 
 		for (const se::graphics::Renderable2D& renderable : mRenderable2Ds) {
-			mLayer2D.removeRenderable2D(&renderable);
+			mLayer2D.removeRenderable2D(&renderable, 0);
 		}
 
 		mGraphicsSystem->removeLayer(&mLayer2D);
@@ -822,6 +828,16 @@ namespace game {
 
 	void Game::onKeyEvent(const se::app::KeyEvent& event)
 	{
+		if (!mHandleInput) {
+			if ((event.getKeyCode() == SE_KEY_ESCAPE) && (event.getState() != se::app::KeyEvent::State::Released)) {
+				mHandleInput = true;
+				resetMousePosition();
+				mWindowSystem->setCursorVisibility(false);
+				mPanel->setVisibility(false);
+			}
+			return;
+		}
+
 		switch (event.getKeyCode()) {
 			case SE_KEY_W:
 				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Front)] = (event.getState() != se::app::KeyEvent::State::Released);
@@ -842,7 +858,12 @@ namespace game {
 				mPlayerInput.movement[static_cast<int>(InputTransforms::Direction::Down)] = (event.getState() != se::app::KeyEvent::State::Released);
 				break;
 			case SE_KEY_ESCAPE:
-				stop();
+				if (event.getState() != se::app::KeyEvent::State::Released) {
+					mHandleInput = false;
+					resetMousePosition();
+					mWindowSystem->setCursorVisibility(true);
+					mPanel->setVisibility(true);
+				}
 				break;
 			default:
 				break;
@@ -852,6 +873,8 @@ namespace game {
 
 	void Game::onMouseEvent(const se::app::MouseEvent& event)
 	{
+		if (!mHandleInput) { return; }
+
 		if (event.getType() == se::app::MouseEvent::Type::Move) {
 			auto moveEvent = static_cast<const se::app::MouseMoveEvent&>(event);
 

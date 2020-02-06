@@ -40,7 +40,7 @@ namespace se::app {
 			mGraphicsSystem = new graphics::GraphicsSystem();
 			mGraphicsManager = new GraphicsManager(*mGraphicsSystem, *mEventManager);
 			mGraphicsSystem->setViewport({ windowConfig.width, windowConfig.height });
-			mGUIManager = new GUIManager(*mEventManager);
+			mGUIManager = new GUIManager(*mEventManager, { windowConfig.width, windowConfig.height });
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);

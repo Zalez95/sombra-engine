@@ -9,13 +9,13 @@ namespace se::app {
 	{
 		mBounds->setPosition(mSize);
 		mBounds->setPosition(mPosition);
-		mLayer2D->addRenderable2D(&mRenderable2D);
+		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
 	}
 
 
 	Button::~Button()
 	{
-		mLayer2D->removeRenderable2D(&mRenderable2D);
+		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
 	}
 
 
@@ -37,8 +37,23 @@ namespace se::app {
 
 	void Button::setZIndex(unsigned char zIndex)
 	{
+		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
 		IComponent::setZIndex(zIndex);
-		mRenderable2D.setZIndex(mZIndex);
+		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+	}
+
+
+	void Button::setVisibility(bool isVisible)
+	{
+		bool wasVisible = mIsVisible;
+		IComponent::setVisibility(isVisible);
+
+		if (wasVisible && !mIsVisible) {
+			mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
+		}
+		else if (!wasVisible && mIsVisible) {
+			mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+		}
 	}
 
 
@@ -48,10 +63,16 @@ namespace se::app {
 	}
 
 
+	void Button::setAction(const std::function<void()>& action)
+	{
+		mAction = action;
+	}
+
+
 	void Button::onHover(const MouseMoveEvent& event)
 	{
 		glm::vec2 mousePosition(static_cast<float>(event.getX()), static_cast<float>(event.getY()));
-		mIsOver = mBounds->contains(mousePosition);
+		mIsOver = mIsVisible && mBounds->contains(mousePosition);
 	}
 
 
@@ -66,6 +87,7 @@ namespace se::app {
 	void Button::onRelease(const MouseButtonEvent& event)
 	{
 		if (mIsPressed && (event.getKeyCode() == SE_MOUSE_BUTTON_1)) {
+			mAction();
 			mIsPressed = false;
 		}
 	}

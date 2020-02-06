@@ -49,6 +49,11 @@ namespace se::app {
 		 * @param	zIndex the new z-index of the Label */
 		virtual void setZIndex(unsigned char zIndex) override;
 
+		/** Sets the Label visibility on/off
+		 *
+		 * @param	isVisible if Label must be shown or not */
+		virtual void setVisibility(bool isVisible) override;
+
 		/** Sets the font of the Label
 		 *
 		 * @param	font a pointer to the Font of the Label */
@@ -68,6 +73,24 @@ namespace se::app {
 		 *
 		 * @param	text the new text of the Label */
 		void setText(const std::string& text);
+
+		/** Handles a mouse pointer over the Label
+		 *
+		 * @param	event the MouseMoveEvent that holds the location of the
+		 *			mouse */
+		virtual void onHover(const MouseMoveEvent& event) override;
+
+		/** Handles a mouse click on the Label
+		 *
+		 * @param	event the MouseButtonEvent that holds the state of the
+		 *			button pressed */
+		virtual void onClick(const MouseButtonEvent& event) override;
+
+		/** Handles a mouse click release on the Label
+		 *
+		 * @param	event the MouseButtonEvent that holds the state of the
+		 *			button pressed */
+		virtual void onRelease(const MouseButtonEvent& event) override;
 	};
 
 }
