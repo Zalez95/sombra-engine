@@ -11,7 +11,7 @@ namespace se::graphics {
 
 	/**
 	 * Class Renderable2D, it's a 2D graphic entity that holds a position,
-	 * scale and texture
+	 * size and texture
 	 */
 	class Renderable2D
 	{
@@ -22,8 +22,8 @@ namespace se::graphics {
 		/** The position in pixels of the 2D element */
 		glm::vec2 mPosition;
 
-		/** The scale in pixels of the 2D element */
-		glm::vec2 mScale;
+		/** The size in pixels of the 2D element */
+		glm::vec2 mSize;
 
 		/** The RGBA color of the 2D element */
 		glm::vec4 mColor;
@@ -35,21 +35,21 @@ namespace se::graphics {
 		/** Creates a new Renderable2D
 		 *
 		 * @param	position the 2D position in pixels of the Renderable2D
-		 * @param	scale the 2D scale in pixels of the Renderable2D
+		 * @param	size the 2D size in pixels of the Renderable2D
 		 * @param	color the RGBA color of the Renderable2D
 		 * @param	texture a pointer to the texture of the Renderable2D */
 		Renderable2D(
-			const glm::vec2& position, const glm::vec2& scale,
+			const glm::vec2& position, const glm::vec2& size,
 			const glm::vec4& color = glm::vec4(1.0f),
 			const TextureSPtr texture = nullptr
-		) :	mPosition(position), mScale(scale),
+		) :	mPosition(position), mSize(size),
 			mColor(color), mTexture(texture) {};
 
 		/** @return	the position in pixels of the Renderable2D */
 		const glm::vec2& getPosition() const { return mPosition; };
 
-		/** @return	the scale in pixels of the Renderable2D */
-		const glm::vec2& getScale() const { return mScale; };
+		/** @return	the size in pixels of the Renderable2D */
+		const glm::vec2& getSize() const { return mSize; };
 
 		/** @return	the RGBA color of the Renderable2D */
 		const glm::vec4& getColor() const { return mColor; };
@@ -62,10 +62,10 @@ namespace se::graphics {
 		 * @param	position the new position in pixels of the Renderable2D */
 		void setPosition(const glm::vec2& position) { mPosition = position; };
 
-		/** Sets the scale of the Renderable2D
+		/** Sets the size of the Renderable2D
 		 *
-		 * @param	scale the new scale in pixels of the Renderable2D */
-		void setScale(const glm::vec2& scale) { mScale = scale; };
+		 * @param	size the new size in pixels of the Renderable2D */
+		void setSize(const glm::vec2& size) { mSize = size; };
 
 		/** Sets the color of the Renderable2D
 		 *

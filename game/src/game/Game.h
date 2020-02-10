@@ -80,7 +80,7 @@ namespace game {
 		std::vector<se::physics::Constraint*> mConstraints;
 		std::vector<se::animation::IAnimator*> mAnimators;
 		se::app::Panel* mPanel;
-		se::app::Label* mLabel;
+		se::app::Label* mExitLabel;
 		se::app::Button* mCloseButton;
 		bool mHandleInput;
 

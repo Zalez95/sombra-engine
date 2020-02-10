@@ -81,7 +81,7 @@ namespace se::app {
 		);
 	}
 
-// Pricate functions
+// Private functions
 	glm::vec2 ComposedComponent::calculateChildPosition(const IComponent& child, const Anchor& anchor) const
 	{
 		glm::vec2 originLocation(0.0f);

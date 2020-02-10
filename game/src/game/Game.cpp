@@ -686,18 +686,16 @@ namespace game {
 		panelProportions.relativeSize = glm::vec2(0.8f);
 		mGUIManager->add(mPanel, se::app::Anchor(), panelProportions);
 
-		mLabel = new se::app::Label(&mLayer2D);
-		mLabel->setFont(arial);
-		mLabel->setCharacterScale({ 12, 12 });
-		mLabel->setText("Exit");
-		se::app::Anchor labelAnchor;
-		labelAnchor.relativePosition = { 0.5f, 0.1f };
-		se::app::Proportions labelProportions;
-		labelProportions.relativeSize = glm::vec2(0.05f);
-		mPanel->add(mLabel, labelAnchor, labelProportions);
+		mExitLabel = new se::app::Label(&mLayer2D);
+		mExitLabel->setFont(arial);
+		mExitLabel->setCharacterSize({ 24, 24 });
+		mExitLabel->setHorizontalAlignment(se::app::Label::HorizontalAlignment::Center);
+		mExitLabel->setVerticalAlignment(se::app::Label::VerticalAlignment::Center);
+		mExitLabel->setText("Exit");
 
-		mCloseButton = new se::app::Button(std::make_unique<se::app::Rectangle>(), &mLayer2D);
+		mCloseButton = new se::app::Button(&mLayer2D, std::make_unique<se::app::Rectangle>());
 		mCloseButton->setColor({ 1.0f, 0.5f, 0.5f, 1.0f });
+		mCloseButton->setLabel(mExitLabel);
 		mCloseButton->setAction([this]() { stop(); });
 		se::app::Anchor buttonAnchor;
 		buttonAnchor.relativePosition = { 0.5f, 0.1f };
@@ -724,7 +722,7 @@ namespace game {
 			mGUIManager->remove(mPanel);
 			delete mPanel;
 			delete mCloseButton;
-			delete mLabel;
+			delete mExitLabel;
 		}
 
 		for (se::physics::Force* force : mForces) {

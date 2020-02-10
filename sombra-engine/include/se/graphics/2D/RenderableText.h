@@ -7,7 +7,7 @@ namespace se::graphics {
 
 	/**
 	 * Class RenderableText, it's a 2D graphic entity used to render text.
-	 * It that holds a position, scale and a Font
+	 * It that holds its position, size and Font
 	 */
 	class RenderableText
 	{
@@ -18,8 +18,10 @@ namespace se::graphics {
 		/** The position in pixels of the Text */
 		glm::vec2 mPosition;
 
-		/** The scale in pixels of each character in the Text */
-		glm::vec2 mScale;
+		/** The maximum size in pixels of each character in the Text
+		 * @note	this value will be used for calculating the scale to apply
+		 *			to each character depending on its own size in the Font */
+		glm::vec2 mSize;
 
 		/** The font of the Text */
 		FontSPtr mFont;
@@ -34,25 +36,25 @@ namespace se::graphics {
 		/** Creates a new RenderableText
 		 *
 		 * @param	position the 2D position in pixels of the RenderableText
-		 * @param	scale the 2D scale in pixels of each character in the
+		 * @param	size the 2D size in pixels of each character in the
 		 *			RenderableText
 		 * @param	font a pointer to the Font of the RenderableText
 		 * @param	color the color of the RenderableText
 		 * @param	text the text to render of the RenderableText */
 		RenderableText(
-			const glm::vec2& position, const glm::vec2& scale,
+			const glm::vec2& position, const glm::vec2& size,
 			FontSPtr font = nullptr,
 			const glm::vec4& color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
 			const std::string text = ""
-		) :	mPosition(position), mScale(scale),
+		) : mPosition(position), mSize(size),
 			mFont(font), mColor(color), mText(text) {};
 
 		/** @return	the position in pixels of the RenderableText */
 		const glm::vec2& getPosition() const { return mPosition; };
 
-		/** @return	the scale in pixels of each character in the
+		/** @return	the maximum size in pixels of each character in the
 		 *			RenderableText */
-		const glm::vec2& getScale() const { return mScale; };
+		const glm::vec2& getSize() const { return mSize; };
 
 		/** @return	a pointer to the font of the RenderableText */
 		FontSPtr getFont() const { return mFont; };
@@ -68,10 +70,11 @@ namespace se::graphics {
 		 * @param	position the new position in pixels of the RenderableText */
 		void setPosition(const glm::vec2& position) { mPosition = position; };
 
-		/** Sets the scale of the RenderableText
+		/** Sets the maximum size of each of the characters in the Text
 		 *
-		 * @param	scale the new scale in pixels of the RenderableText */
-		void setScale(const glm::vec2& scale) { mScale = scale; };
+		 * @param	size the new maximum size in pixels of the characters in
+		 *			the Text */
+		void setSize(const glm::vec2& size) { mSize = size; };
 
 		/** Sets the font of the RenderableText
 		 *

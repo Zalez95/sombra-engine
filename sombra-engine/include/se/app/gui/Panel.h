@@ -14,12 +14,12 @@ namespace se::app {
 	class Panel : public ComposedComponent
 	{
 	private:	// Attributes
-		/** The Renderable2D used for drawing of the Panel */
-		graphics::Renderable2D mRenderable2D;
-
 		/** A pointer to the Layer2D where @see Renderable2D will be submitted
 		 * for drawing the Panel */
 		graphics::Layer2D* mLayer2D;
+
+		/** The Renderable2D used for drawing of the Panel */
+		graphics::Renderable2D mRenderable2D;
 
 	public:		// Functions
 		/** Creates a new Panel */

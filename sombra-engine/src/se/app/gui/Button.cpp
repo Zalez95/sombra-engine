@@ -1,21 +1,22 @@
 #include "se/app/gui/Button.h"
+#include "se/app/gui/Label.h"
 #include "se/window/MouseButtonCodes.h"
 
 namespace se::app {
 
-	Button::Button(IBoundsIPtr bounds, graphics::Layer2D* layer2D) :
-		mBounds(std::move(bounds)), mRenderable2D(mPosition, mSize), mLayer2D(layer2D),
-		mIsOver(false), mIsPressed(false)
+	Button::Button(graphics::Layer2D* layer2D, IBoundsIPtr bounds) :
+		mLayer2D(layer2D), mBounds(std::move(bounds)), mRenderable2D(mPosition, mSize),
+		mIsOver(false), mIsPressed(false), mLabel(nullptr)
 	{
 		mBounds->setPosition(mSize);
 		mBounds->setPosition(mPosition);
-		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+		setVisibility(true);
 	}
 
 
 	Button::~Button()
 	{
-		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
+		setVisibility(false);
 	}
 
 
@@ -24,6 +25,7 @@ namespace se::app {
 		IComponent::setPosition(position);
 		mBounds->setPosition(mPosition + mSize / 2.0f);
 		mRenderable2D.setPosition(mPosition);
+		mLabel->setPosition(mPosition);
 	}
 
 
@@ -31,7 +33,8 @@ namespace se::app {
 	{
 		IComponent::setSize(size);
 		mBounds->setSize(mSize);
-		mRenderable2D.setScale(mSize);
+		mRenderable2D.setSize(mSize);
+		mLabel->setSize(mSize);
 	}
 
 
@@ -40,6 +43,10 @@ namespace se::app {
 		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
 		IComponent::setZIndex(zIndex);
 		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+
+		if (mLabel) {
+			mLabel->setZIndex(mZIndex + 1);
+		}
 	}
 
 
@@ -54,12 +61,26 @@ namespace se::app {
 		else if (!wasVisible && mIsVisible) {
 			mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
 		}
+
+		if (mLabel) {
+			mLabel->setVisibility(mIsVisible);
+		}
 	}
 
 
 	void Button::setColor(const glm::vec4& color)
 	{
 		mRenderable2D.setColor(color);
+	}
+
+
+	void Button::setLabel(Label* label)
+	{
+		mLabel = label;
+		mLabel->setSize(mSize);
+		mLabel->setPosition(mPosition);
+		mLabel->setZIndex(mZIndex + 1);
+		mLabel->setVisibility(mIsVisible);
 	}
 
 

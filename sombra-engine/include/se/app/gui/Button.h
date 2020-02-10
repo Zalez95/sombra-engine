@@ -10,6 +10,9 @@
 
 namespace se::app {
 
+	class Label;
+
+
 	/**
 	 * Class Button, it's an IComponent used for doing actions when it's clicked
 	 * with the mouse
@@ -20,15 +23,15 @@ namespace se::app {
 		using IBoundsIPtr = std::unique_ptr<IBounds>;
 
 	private:	// Attributes
+		/** A pointer to the Layer2D where @see Renderable2D will be submitted
+		 * for drawing the Button */
+		graphics::Layer2D* mLayer2D;
+
 		/** The bounds of the Button for checking if the mouse is over it */
 		IBoundsIPtr mBounds;
 
 		/** The Renderable2D used for drawing of the Button */
 		graphics::Renderable2D mRenderable2D;
-
-		/** A pointer to the Layer2D where @see Renderable2D will be submitted
-		 * for drawing the Button */
-		graphics::Layer2D* mLayer2D;
 
 		/** If the mouse is over or not */
 		bool mIsOver;
@@ -36,17 +39,20 @@ namespace se::app {
 		/** If the button is pressed or not */
 		bool mIsPressed;
 
+		/** The Label of the Button */
+		Label* mLabel;
+
 		/** A pointer to the function to call when the Button is pressed */
 		std::function<void()> mAction;
 
 	public:		// Functions
 		/** Creates a new Button
 		 *
-		 * @param	bounds a pointer to the Bounds object used for checking if
-		 *			the mouse is over the button or not
 		 * @param	layer2D a pointer to the Layer2D where the button will be
-		 *			drawn */
-		Button(IBoundsIPtr bounds, graphics::Layer2D* layer2D);
+		 *			drawn
+		 * @param	bounds a pointer to the Bounds object used for checking if
+		 *			the mouse is over the button or not */
+		Button(graphics::Layer2D* layer2D, IBoundsIPtr bounds);
 
 		/** Class destructor */
 		virtual ~Button();
@@ -76,6 +82,13 @@ namespace se::app {
 		 *
 		 * @param	color the new color of the Button */
 		void setColor(const glm::vec4& color);
+
+		/** Sets the label of the Button
+		 *
+		 * @param	label a pointer to the ne Label of the Button
+		 * @note	the label is always located at the center of the Button and
+		 *			its the next z-index */
+		void setLabel(Label* label);
 
 		/** Performs the given action when the Button is pressed
 		 *

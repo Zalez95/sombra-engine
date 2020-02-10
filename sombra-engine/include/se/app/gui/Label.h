@@ -1,6 +1,7 @@
 #ifndef LABEL_H
 #define LABEL_H
 
+#include <vector>
 #include "IComponent.h"
 #include "../../graphics/2D/RenderableText.h"
 #include "../../graphics/2D/Layer2D.h"
@@ -12,16 +13,42 @@ namespace se::app {
 	 */
 	class Label : public IComponent
 	{
-	private:	// Nested types
+	public:		// Nested types
+		/** The horizontal alignment of the text lines inside the Label */
+		enum class HorizontalAlignment { Left, Center, Right };
+
+		/** The vertical alignment of the text lines inside the Label */
+		enum class VerticalAlignment { Top, Center, Bottom };
+	private:
 		using FontSPtr = std::shared_ptr<graphics::Font>;
+		using RenderableTextUPtr = std::unique_ptr<graphics::RenderableText>;
 
 	private:	// Attributes
-		/** The RenderableText used for drawing of the Label */
-		graphics::RenderableText mRenderableText;
-
 		/** A pointer to the Layer2D where @see RenderableText will be submitted
 		 * for drawing the Label */
 		graphics::Layer2D* mLayer2D;
+
+		/** The RenderableText used for drawing each line of the Label */
+		std::vector<RenderableTextUPtr> mRenderableTexts;
+
+		/** The font of the Text */
+		FontSPtr mFont;
+
+		/** The maximum character size to use with the Text */
+		glm::vec2 mCharacterSize;
+
+		/** The horizontal alignment of the Text lines */
+		HorizontalAlignment mHorizontalAlignment;
+
+		/** The vertical alignment of the Text lines */
+		VerticalAlignment mVerticalAlignment;
+
+		/** The RGBA color of the Text */
+		glm::vec4 mColor;
+
+		/** The full text that should be written
+		 * @note	if it's too large the printed one could be smaller */
+		std::string mFullText;
 
 	public:		// Functions
 		/** Creates a new Label
@@ -59,10 +86,20 @@ namespace se::app {
 		 * @param	font a pointer to the Font of the Label */
 		void setFont(FontSPtr font);
 
-		/** Sets the scale of each character in the Label text
+		/** Sets the size of each character in the Label text
 		 *
-		 * @param	scale the new scale in pixels of the Label text */
-		void setCharacterScale(const glm::vec2& scale);
+		 * @param	size the new size in pixels of the characters of the text */
+		void setCharacterSize(const glm::vec2& size);
+
+		/** Sets the horizontal alignment of the text lines of the Label
+		 *
+		 * @param	alignment the new horizontal alignment of the text */
+		void setHorizontalAlignment(HorizontalAlignment alignment);
+
+		/** Sets the vertical alignment of the text lines of the Label
+		 *
+		 * @param	alignment the new vertical alignment of the text */
+		void setVerticalAlignment(VerticalAlignment alignment);
 
 		/** Sets the color of the Label
 		 *
@@ -91,6 +128,32 @@ namespace se::app {
 		 * @param	event the MouseButtonEvent that holds the state of the
 		 *			button pressed */
 		virtual void onRelease(const MouseButtonEvent& event) override;
+	private:
+		/** Updates the RenderableTexts with the current properties of
+		 * the Label */
+		void updateRenderableTexts();
+
+		/** Splits the given input text into multiple lines limited by the
+		 * Label size
+		 *
+		 * @param	input a reference to the input text without break lines
+		 *			(it will be modified)
+		 * @param	output the vector where the lines will be appended
+		 * @note	the lines in the output vector will be taken in count for
+		 *			calculating the size left */
+		void wordWrap(std::string& input, std::vector<std::string>& output);
+
+		/** Calculates the 2D position of the given line based on the Label
+		 * position, alignment and its line number
+		 *
+		 * @param	lines the vector of text lines to print
+		 * @param	iLine the index of the text line in @see lines to calculate
+		 *			its position
+		 * @return	a vector with the 2D position in pixels of the line */
+		glm::vec2 calculateLinePosition(
+			const std::vector<std::string>& lines,
+			std::size_t iLine
+		) const;
 	};
 
 }

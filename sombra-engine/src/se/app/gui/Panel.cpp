@@ -2,16 +2,15 @@
 
 namespace se::app {
 
-	Panel::Panel(graphics::Layer2D* layer2D) :
-		mRenderable2D(mPosition, mSize), mLayer2D(layer2D)
+	Panel::Panel(graphics::Layer2D* layer2D) : mLayer2D(layer2D), mRenderable2D(mPosition, mSize)
 	{
-		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+		setVisibility(true);
 	}
 
 
 	Panel::~Panel()
 	{
-		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
+		setVisibility(false);
 	}
 
 
@@ -25,7 +24,7 @@ namespace se::app {
 	void Panel::setSize(const glm::vec2& size)
 	{
 		ComposedComponent::setSize(size);
-		mRenderable2D.setScale(mSize);
+		mRenderable2D.setSize(mSize);
 	}
 
 

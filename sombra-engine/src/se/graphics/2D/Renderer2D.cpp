@@ -92,15 +92,15 @@ namespace se::graphics {
 			unsigned char textureId = renderable2D->getTexture()? addTexture(renderable2D->getTexture()) : -1;
 
 			glm::vec2 position = renderable2D->getPosition();
-			glm::vec2 scale = renderable2D->getScale();
+			glm::vec2 size = renderable2D->getSize();
 			glm::vec4 color = renderable2D->getColor();
 			BatchVertex vertices[] = {
 				{ { position.x, position.y }, { 0.0f, 0.0f }, color, textureId },
-				{ { position.x, position.y + scale.y }, { 0.0f, 1.0f }, color, textureId },
-				{ { position.x + scale.x, position.y }, { 1.0f, 0.0f }, color, textureId },
-				{ { position.x + scale.x, position.y }, { 1.0f, 0.0f }, color, textureId },
-				{ { position.x, position.y + scale.y }, { 0.0f, 1.0f }, color, textureId },
-				{ { position.x + scale.x, position.y + scale.y }, { 1.0f, 1.0f }, color, textureId }
+				{ { position.x, position.y + size.y }, { 0.0f, 1.0f }, color, textureId },
+				{ { position.x + size.x, position.y }, { 1.0f, 0.0f }, color, textureId },
+				{ { position.x + size.x, position.y }, { 1.0f, 0.0f }, color, textureId },
+				{ { position.x, position.y + size.y }, { 0.0f, 1.0f }, color, textureId },
+				{ { position.x + size.x, position.y + size.y }, { 1.0f, 1.0f }, color, textureId }
 			};
 
 			mBatch.submit(vertices, 6);
@@ -118,7 +118,7 @@ namespace se::graphics {
 			unsigned char textureId = font->textureAtlas? addTexture(font->textureAtlas) : -1;
 
 			// Add the vertices of the quad of each character in the text
-			glm::vec2 characterScale = renderableText->getScale() / glm::vec2(font->maxCharacterSize);
+			glm::vec2 characterScale = renderableText->getSize() / glm::vec2(font->maxCharacterSize);
 			glm::vec2 advance(0.0f);
 
 			for (char c : renderableText->getText()) {
