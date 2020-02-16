@@ -6,6 +6,7 @@
 #include "se/graphics/core/IndexBuffer.h"
 #include "se/graphics/core/VertexArray.h"
 #include "se/collision/HalfEdgeMeshExt.h"
+#include "se/utils/FixedVector.h"
 
 namespace se::app {
 
@@ -114,6 +115,47 @@ namespace se::app {
 
 		// Validate the HEMesh
 		return std::pair(heMesh, allFacesLoaded && collision::validateMesh(heMesh).first);
+	}
+
+
+	std::pair<RawMesh, bool> MeshLoader::createRawMesh(
+		const collision::HalfEdgeMesh& heMesh,
+		const collision::ContiguousVector<glm::vec3>& normals
+	) {
+		if (heMesh.faces.size() != normals.size()) { return std::pair(RawMesh(), false); }
+
+		RawMesh rawMesh("heMeshTriangles");
+
+		// The faces must be triangles
+		collision::HalfEdgeMesh heMeshTriangles = collision::triangulateFaces(heMesh);
+
+		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
+		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
+		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
+
+		std::map<int, int> vertexMap;
+		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
+			glm::vec3 normal = collision::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
+
+			glm::vec3 c1 = glm::cross(normal, glm::vec3(0.0f, 0.0f, 1.0f));
+			glm::vec3 c2 = glm::cross(normal, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::vec3 tangent = (glm::length(c1) > glm::length(c2))? c1 : c2;
+
+			rawMesh.positions.push_back(itVertex->location);
+			rawMesh.normals.push_back(normal);
+			rawMesh.tangents.push_back(tangent);
+			vertexMap.emplace(itVertex.getIndex(), rawMesh.positions.size() - 1);
+		}
+
+		for (auto itFace = heMeshTriangles.faces.begin(); itFace != heMeshTriangles.faces.end(); ++itFace) {
+			utils::FixedVector<int, 3> faceIndices;
+			collision::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
+			for (int iVertex : faceIndices) {
+				rawMesh.faceIndices.push_back(vertexMap[iVertex]);
+			}
+		}
+
+		return std::pair(rawMesh, true);
 	}
 
 

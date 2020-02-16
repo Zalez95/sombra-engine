@@ -12,24 +12,22 @@ namespace se::app {
 	 */
 	struct Anchor
 	{
+		/** The different points of an IComponent the can be sticked */
+		enum class Origin
+		{ TopLeft, TopRight, BottomLeft, BottomRight, Center };
+
 		/** The origin point of the IComponent that will be sticked to its
 		 * parent */
-		enum class Origin
-		{ TopLeft, TopRight, BottomLeft, BottomRight, Center } origin;
+		Origin origin = Origin::Center;
 
 		/** The relative position of the origin of the IComponent to its parent
 		 * in the range [0, 1], being 0 the top/left and 1 the bottom/right
 		 * in each axis respectively */
-		glm::vec2 relativePosition;
+		glm::vec2 relativePosition = glm::vec2(0.5f);
 
 		/** The offset of the origin of the IComponent to @see relativePosition
 		 * in pixels */
-		glm::vec2 offset;
-
-		/** Creates a new Anchor at the Center of its parent
-		 * ComposedComponent */
-		Anchor() :
-			origin(Origin::Center), relativePosition(0.5f), offset(0.0f) {};
+		glm::vec2 offset = glm::vec2(0.0f);
 	};
 
 
@@ -40,28 +38,20 @@ namespace se::app {
 	struct Proportions
 	{
 		/** The size of a IComponent relative to its parent */
-		glm::vec2 relativeSize;
+		glm::vec2 relativeSize = glm::vec2(1.0f);
 
 		/** If the aspect ratio must be preserved if the IComponent must be
 		 * resized */
-		bool preserveAspectRatio;
+		bool preserveAspectRatio = false;
 
 		/** The aspect ratio to preserve if @see preserveAspectRatio is true */
-		float aspectRatio;
+		float aspectRatio = 1.0f;
 
 		/** The minimum size in pixels of the IComponent */
-		glm::vec2 minimumSize;
+		glm::vec2 minimumSize = glm::vec2(0.0f);
 
 		/** The maximum size in pixels of the IComponent */
-		glm::vec2 maximumSize;
-
-		/** Creates a new Proportions with the same size than its parent
-		 * IComponent */
-		Proportions() :
-			relativeSize(1.0f),
-			preserveAspectRatio(false), aspectRatio(1.0f),
-			minimumSize(0.0f),
-			maximumSize( std::numeric_limits<float>::max() ) {};
+		glm::vec2 maximumSize = glm::vec2(std::numeric_limits<float>::max());
 	};
 
 

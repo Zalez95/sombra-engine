@@ -10,7 +10,7 @@ namespace se::animation {
 	{
 	public:		// Functions
 		/** Class destructor */
-		virtual ~IAnimator() {};
+		virtual ~IAnimator() = default;
 
 		/** @return	the elapsed time in seconds since the start of the animation
 		 *			before the animation starts from the begining */

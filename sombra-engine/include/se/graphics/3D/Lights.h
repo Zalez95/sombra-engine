@@ -16,16 +16,13 @@ namespace se::graphics {
 		std::string name;
 
 		/** The light color */
-		glm::vec3 color;
+		glm::vec3 color = glm::vec3(1.0f);
 
 		/** The brightness of the light */
-		float intensity;
-
-		/** Creates a new ILight */
-		ILight() : color(1.0f), intensity(1.0f) {};
+		float intensity = 1.0f;
 
 		/** Class destructor */
-		virtual ~ILight() {};
+		virtual ~ILight() = default;
 	};
 
 
@@ -36,11 +33,7 @@ namespace se::graphics {
 	struct DirectionalLight : public ILight
 	{
 		/** The direction where the light points to */
-		glm::vec3 direction;
-
-		/** Creates a new DirectionalLight */
-		DirectionalLight() :
-			ILight(), direction(0.0f, 0.0f, 1.0f) {};
+		glm::vec3 direction = glm::vec3(0.0f, 0.0f, 1.0f);
 	};
 
 
@@ -51,15 +44,11 @@ namespace se::graphics {
 	struct PointLight : public ILight
 	{
 		/** The position of the light */
-		glm::vec3 position;
+		glm::vec3 position = glm::vec3(0.0f);
 
 		/** The inverse of the distance where the light intensity is considered
 		 * to be zero */
-		float inverseRange;
-
-		/** Creates a new PointLight */
-		PointLight() :
-			ILight(), position(0.0f), inverseRange(0.0f) {};
+		float inverseRange = 0.0f;
 	};
 
 
@@ -73,28 +62,22 @@ namespace se::graphics {
 	struct SpotLight : public ILight
 	{
 		/** The direction where the light points to */
-		glm::vec3 direction;
+		glm::vec3 direction = glm::vec3(0.0f, 0.0f, 1.0f);
 
 		/** The position of the light */
-		glm::vec3 position;
+		glm::vec3 position = glm::vec3(0.0f);
 
 		/** The inverse of the distance where the light intensity is considered
 		 * to be zero */
-		float inverseRange;
+		float inverseRange = 0.0f;
 
 		/** Angle in radians from the center of the SpotLight where the falloff
 		 * begins */
-		float innerConeAngle;
+		float innerConeAngle = 0.0f;
 
 		/** Angle in radians from the center of the SpotLight where the falloff
 		 * ends */
-		float outerConeAngle;
-
-		/** Creates a new SpotLight */
-		SpotLight() :
-			ILight(),
-			direction(0.0f, 0.0f, 1.0f), position(0.0f), inverseRange(0.0f),
-			innerConeAngle(0.0f), outerConeAngle(glm::quarter_pi<float>()) {};
+		float outerConeAngle = glm::quarter_pi<float>();
 	};
 
 }

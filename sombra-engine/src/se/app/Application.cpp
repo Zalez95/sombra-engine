@@ -19,7 +19,7 @@
 namespace se::app {
 
 	Application::Application(const window::WindowData& windowConfig, float updateTime) :
-		mUpdateTime(updateTime), mState(AppState::Stopped),
+		mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
 		mWindowSystem(nullptr), mGraphicsSystem(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
 		mAnimationSystem(nullptr), mAudioEngine(nullptr),
 		mEventManager(nullptr), mInputManager(nullptr), mGraphicsManager(nullptr), mPhysicsManager(nullptr),
@@ -37,7 +37,7 @@ namespace se::app {
 			mInputManager = new InputManager(*mWindowSystem, *mEventManager);
 
 			// Graphics
-			mGraphicsSystem = new graphics::GraphicsSystem();
+			mGraphicsSystem = new graphics::GraphicsSystem({ windowConfig.width, windowConfig.height });
 			mGraphicsManager = new GraphicsManager(*mGraphicsSystem, *mEventManager);
 			mGraphicsSystem->setViewport({ windowConfig.width, windowConfig.height });
 			mGUIManager = new GUIManager(*mEventManager, { windowConfig.width, windowConfig.height });
@@ -60,7 +60,7 @@ namespace se::app {
 		}
 		catch (std::exception& e) {
 			mState = AppState::Error;
-			SOMBRA_ERROR_LOG << " Error while creating the application: " << e.what();
+			SOMBRA_ERROR_LOG << " Error while creating the Application: " << e.what();
 		}
 		SOMBRA_INFO_LOG << "Application created";
 	}
@@ -86,6 +86,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
+
 	void Application::start()
 	{
 		SOMBRA_INFO_LOG << "Starting the Application";
@@ -99,7 +100,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Stopping the Application";
 
 		if (mState == AppState::Running) {
-			mState = AppState::Stopped;
+			mStopRunning = true;
 		}
 	}
 
@@ -117,8 +118,9 @@ namespace se::app {
 		 * MAIN LOOP
 		 *********************************************************************/
 		mState = AppState::Running;
+		mStopRunning = false;
 		auto lastTP = std::chrono::high_resolution_clock::now();
-		while (mState == AppState::Running) {
+		while (!mStopRunning) {
 			// Calculate the elapsed time since the last update
 			auto currentTP = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
@@ -143,10 +145,7 @@ namespace se::app {
 			}
 		}
 
-		if (mState != AppState::Stopped) {
-			SOMBRA_ERROR_LOG << "Error while running";
-			return false;
-		}
+		mState = AppState::Stopped;
 
 		SOMBRA_INFO_LOG << "End running";
 		return true;

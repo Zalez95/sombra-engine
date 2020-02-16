@@ -51,7 +51,7 @@ namespace se::animation {
 		TransformationAnimator() : mLoopTime(0.0f), mAccumulatedTime(0.0f) {};
 
 		/** Class destructor */
-		virtual ~TransformationAnimator() {};
+		virtual ~TransformationAnimator() = default;
 
 		/** @return	the elapsed time in seconds since the start of the animation
 		 *			before the animation starts from the begining */

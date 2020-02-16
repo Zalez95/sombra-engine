@@ -22,8 +22,10 @@ namespace se::graphics {
 
 	public:		// Functions
 		/** Creates a new Graphics System
+		 *
+		 * @param	viewportSize the initial viewport size of the layers
 		 * @throw	runtime_error if failed to initialize GLEW */
-		GraphicsSystem();
+		GraphicsSystem(const glm::uvec2& viewportSize);
 
 		/** @return	the OpenGL version info */
 		std::string getGLInfo() const;

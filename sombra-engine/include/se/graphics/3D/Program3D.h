@@ -14,7 +14,7 @@ namespace se::graphics {
 	{
 	public:		// Functions
 		/** Class destructor */
-		virtual ~Program3D() {};
+		virtual ~Program3D() = default;
 
 		/** Sets the uniform variables for the given View matrix
 		 *

@@ -34,12 +34,12 @@ namespace se::app {
 
 		/** Sets the ResizeEvent width
 		 *
-		 * @param	the new ResizeEvent width */
+		 * @param	width the new ResizeEvent width */
 		void setWidth(double width) { mWidth = width; };
 
 		/** Sets the ResizeEvent height
 		 *
-		 * @param	the new ResizeEvent height */
+		 * @param	height the new ResizeEvent height */
 		void setHeight(double height) { mHeight = height; };
 	protected:
 		/** Appends the current ResizeEvent formated as text to the given

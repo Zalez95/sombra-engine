@@ -8,12 +8,12 @@ namespace se::app {
 	/** The different Topics that an IEvent can have */
 	enum class Topic : int
 	{
-		Mouse,
-		Scroll,
-		Resize,
-		Key,
-		Collision,
-		NumTopics
+		Mouse = 0,		// Notifies Mouse related input events
+		Resize,			// Notifies Window resize input events
+		Key,			// Notifies Keyboard input events
+		Collision,		// Notifies collision detection events
+		Application,	// Reserved for client code events
+		NumTopics		// Total number of events
 	};
 
 
@@ -25,12 +25,12 @@ namespace se::app {
 	constexpr std::ostream& operator<<(std::ostream& os, const Topic& t)
 	{
 		switch (t) {
-			case Topic::Mouse:		return os << "Topic::Mouse";
-			case Topic::Scroll:		return os << "Topic::Scroll";
-			case Topic::Resize:		return os << "Topic::Resize";
-			case Topic::Key:		return os << "Topic::Key";
-			case Topic::Collision:	return os << "Topic::Collision";
-			default:				return os;
+			case Topic::Mouse:			return os << "Topic::Mouse";
+			case Topic::Resize:			return os << "Topic::Resize";
+			case Topic::Key:			return os << "Topic::Key";
+			case Topic::Collision:		return os << "Topic::Collision";
+			case Topic::Application:	return os << "Topic::Application";
+			default:					return os;
 		}
 	}
 

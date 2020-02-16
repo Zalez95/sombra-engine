@@ -5,7 +5,7 @@
 
 namespace se::graphics {
 
-	GraphicsSystem::GraphicsSystem() : mViewportSize(0)
+	GraphicsSystem::GraphicsSystem(const glm::uvec2& viewportSize) : mViewportSize(viewportSize)
 	{
 		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {

@@ -27,7 +27,7 @@ namespace se::graphics {
 
 		/** The offset distance of top left corner of the Character in relation
 		 * to the cursor position */
-		glm::uvec2 offset;
+		glm::ivec2 offset;
 
 		/** The horizontal advance to the next Character after adding the
 		 * current Character to a text */

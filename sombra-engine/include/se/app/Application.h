@@ -21,12 +21,14 @@ namespace se::app {
 
 
 	/**
-	 * Class Application, TODO: complete documentation
+	 * Class Application, it's the class that every App must inherit from
+	 * to get access to all the SOMBRA managers and systems and to be updated
+	 * at a constant rate.
 	 */
 	class Application
 	{
 	protected:	// Nested Types
-		/** The different states in which the application could be */
+		/** The different states in which the Application could be */
 		enum class AppState
 		{
 			Error,
@@ -45,6 +47,9 @@ namespace se::app {
 
 		/** The state of the Application */
 		AppState mState;
+
+		/** The vairable used for stopping the main loop */
+		bool mStopRunning;
 
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsSystem* mGraphicsSystem;
@@ -66,7 +71,8 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new Application
 		 *
-		 * @param	title the configuration of the Application window
+		 * @param	windowConfig the initial configuration with which the
+		 *			window is going to be created
 		 * @param	updateTime the minimum elapsed time between updates in
 		 *			seconds */
 		Application(const window::WindowData& windowConfig, float updateTime);
@@ -74,30 +80,31 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~Application();
 
-		/** Function used start the application
-		 * @note	the current thread will be used by the application until
+		/** Function used for starting the Application
+		 * @note	the current thread will be used by the Application until
 		 *			@see end is called */
-		virtual void start();
+		void start();
 
-		/** Function used to stop the application */
-		virtual void stop();
+		/** Function used for stopping the Application */
+		void stop();
 	protected:
-		/** Runs the Game
+		/** Runs the Application
 		 *
-		 * @return	true if the Game exited succesfully, false otherwise */
+		 * @return	true if the Application exited succesfully, false
+		 *			otherwise */
 		bool run();
 
 		/** Retrieves all the user input */
 		virtual void onInput();
 
-		/** Updates the application managers and systems each main loop
+		/** Updates the Application managers and systems each main loop
 		 * iteration
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
 		virtual void onUpdate(float deltaTime);
 
-		/** Renders the scene */
+		/** Draws to screen */
 		virtual void onRender();
 	};
 

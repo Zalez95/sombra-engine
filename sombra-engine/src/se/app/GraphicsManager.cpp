@@ -149,10 +149,10 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Camera Entity " << entity << " removed successfully";
 		}
 
-		auto itRenderable3D = mRenderable3DEntities.find(entity);
-		if (itRenderable3D != mRenderable3DEntities.end()) {
+		auto [itRenderable3DBegin, itRenderable3DEnd] = mRenderable3DEntities.equal_range(entity);
+		for (auto itRenderable3D = itRenderable3DBegin; itRenderable3D != itRenderable3DEnd;) {
 			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
-			mRenderable3DEntities.erase(itRenderable3D);
+			itRenderable3D = mRenderable3DEntities.erase(itRenderable3D);
 			SOMBRA_INFO_LOG << "Renderable3D Entity " << entity << " removed successfully";
 		}
 

@@ -21,7 +21,9 @@ namespace se::app
 
 		/** Notifies the IEventListener of the given event
 		 *
-		 * @param	event the IEvent to notify */
+		 * @param	event the IEvent to notify
+		 * @note	you must not send events from code that handles them, nor
+		 *			remove/add listeners to the manager */
 		virtual void notify(const IEvent& event) = 0;
 	protected:
 		/** Tries to call the given event handler function with the correct

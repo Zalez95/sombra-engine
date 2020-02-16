@@ -23,13 +23,24 @@ namespace se::app {
 		 * @return	the new Graphics Mesh */
 		static graphics::Mesh createGraphicsMesh(const RawMesh& rawMesh);
 
-		/** creates a HalfEdgeMesh with the given mesh data
+		/** Creates a HalfEdgeMesh with the given mesh data
 		 *
 		 * @param	rawMesh the data with which we will create the HalfEdgeMesh
 		 * @return	a pair with the loaded HafEdgeMesh and a bool that indicates
 		 *			if the HalfEdgeMesh was loaded correctly or not */
 		static std::pair<collision::HalfEdgeMesh, bool> createHalfEdgeMesh(
 			const RawMesh& rawMesh
+		);
+
+		/** Creates a RawMesh from the given HalfEdgeMesh
+		 *
+		 * @param	heMesh the original HalfEdgeMesh to create the RawMEsh from
+		 * @param	normals the normal vectors of the heMesh faces
+		 * @return	a pair with the created RawMesh and a bool that indicates
+		 *			if the HalfEdgeMesh was loaded correctly or not */
+		static std::pair<RawMesh, bool> createRawMesh(
+			const se::collision::HalfEdgeMesh& heMesh,
+			const se::collision::ContiguousVector<glm::vec3>& normals
 		);
 
 		/** Creates a Sphere mesh from the given data. The generated RawMesh

@@ -24,7 +24,7 @@ namespace se::app {
 
 		std::vector<unsigned short> faceIndices;
 
-		RawMesh(const std::string& name) : name(name) {};
+		RawMesh(const std::string& name = "") : name(name) {};
 	};
 
 }

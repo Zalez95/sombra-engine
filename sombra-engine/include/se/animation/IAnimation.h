@@ -13,7 +13,7 @@ namespace se::animation {
 	{
 	public:
 		/** Class destructor */
-		virtual ~IAnimation() {};
+		virtual ~IAnimation() = default;
 
 		/** Calculates an interpolated transformation by applying an
 		 * interpolation function to the data of the KeyFrames
@@ -52,7 +52,7 @@ namespace se::animation {
 
 	public:		// Functions
 		/** Class destructor */
-		virtual ~Animation() {};
+		virtual ~Animation() = default;
 
 		/** Adds a new KeyFrame to the Animation
 		 *
