@@ -81,11 +81,11 @@ namespace se::window {
 		/** @return	true if the window is closed */
 		bool isClosed() const;
 
-		/** Sets the mouse position in the window
+		/** Sets the window size
 		 *
-		 * @param	x the position of the mouse in the X axis
-		 * @param	y the position of the mouse in the Y axis */
-		void setMousePosition(double x, double y);
+		 * @param	width the new window width
+		 * @param	height the new window height */
+		void setSize(int width, int height);
 
 		/** Sets the window fullscreen mode on/off
 		 *
@@ -97,10 +97,16 @@ namespace se::window {
 		 * @param	isResizable if the window is resizable or not */
 		void setResizable(bool isResizable);
 
-		/** Sets the vsync on/off
+		/** Sets the VSync on/off
 		 *
-		 * @param	hasVsync if the window has v-sync enabled or not */
-		void setVsync(bool hasVsync);
+		 * @param	hasVsync if the window has VSync enabled or not */
+		void setVSync(bool hasVsync);
+
+		/** Sets the mouse position in the window
+		 *
+		 * @param	x the position of the mouse in the X axis
+		 * @param	y the position of the mouse in the Y axis */
+		void setMousePosition(double x, double y);
 
 		/** Sets the cursor visibility on/off
 		 *

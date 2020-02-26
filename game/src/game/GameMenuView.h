@@ -28,16 +28,16 @@ namespace game {
 		/** The controller that will handle the user input */
 		GameMenuController& mController;
 
-		/** The Panel that will Hold all the elements of the InGameMenu */
+		/** The Panel that will Hold all the elements of the GameMenu */
 		se::app::Panel mPanel;
 
-		/** The Labels of the InGameMenu */
+		/** The Labels of the GameMenu */
 		se::app::Label mTitleLabel;
 
-		/** The different Buttons of the InGameMenu */
+		/** The different Buttons of the GameMenu */
 		se::app::Button mBackButton, mQuitButton;
 
-		/** The Labels of the InGameMenu Buttons */
+		/** The Labels of the GameMenu Buttons */
 		se::app::Label mBackLabel, mQuitLabel;
 
 	public:		// Functions

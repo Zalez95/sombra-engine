@@ -45,6 +45,7 @@ namespace game {
 	{
 		Start,
 		MainMenu,
+		SettingsMenu,
 		Level,
 		GameMenu,
 		Stopped
@@ -54,6 +55,7 @@ namespace game {
 	enum class GameEvent : se::utils::StateMachine::Event
 	{
 		GoToMainMenu,
+		GoToSettings,
 		StartLevel,
 		AddGameMenu,
 		RemoveGameMenu,

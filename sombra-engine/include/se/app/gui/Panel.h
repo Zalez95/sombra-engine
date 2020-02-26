@@ -24,9 +24,15 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new Panel */
 		Panel(graphics::Layer2D* layer2D);
+		Panel(const Panel& other) = default;
+		Panel(Panel&& other) = default;
 
 		/** Class destructor */
 		virtual ~Panel();
+
+		/** Assignment operator */
+		Panel& operator=(const Panel& other) = default;
+		Panel& operator=(Panel&& other) = default;
 
 		/** Sets the position of the Panel
 		 *

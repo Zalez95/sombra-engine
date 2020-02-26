@@ -20,7 +20,7 @@ namespace se::app {
 	class Button : public IComponent
 	{
 	protected:	// Nested types
-		using IBoundsIPtr = std::unique_ptr<IBounds>;
+		using IBoundsUPtr = std::unique_ptr<IBounds>;
 
 	private:	// Attributes
 		/** A pointer to the Layer2D where @see Renderable2D will be submitted
@@ -28,7 +28,7 @@ namespace se::app {
 		graphics::Layer2D* mLayer2D;
 
 		/** The bounds of the Button for checking if the mouse is over it */
-		IBoundsIPtr mBounds;
+		IBoundsUPtr mBounds;
 
 		/** The Renderable2D used for drawing of the Button */
 		graphics::Renderable2D mRenderable2D;
@@ -42,6 +42,9 @@ namespace se::app {
 		/** The Label of the Button */
 		Label* mLabel;
 
+		/** The scale of the Label relative to the Button size */
+		glm::vec2 mLabelScale;
+
 		/** A pointer to the function to call when the Button is pressed */
 		std::function<void()> mAction;
 
@@ -52,10 +55,16 @@ namespace se::app {
 		 *			drawn
 		 * @param	bounds a pointer to the Bounds object used for checking if
 		 *			the mouse is over the button or not */
-		Button(graphics::Layer2D* layer2D, IBoundsIPtr bounds);
+		Button(graphics::Layer2D* layer2D, IBoundsUPtr bounds);
+		Button(const Button& other);
+		Button(Button&& other) = default;
 
 		/** Class destructor */
 		virtual ~Button();
+
+		/** Assignment operator */
+		Button& operator=(const Button& other);
+		Button& operator=(Button&& other) = default;
 
 		/** Sets the position of the Button
 		 *
@@ -86,9 +95,13 @@ namespace se::app {
 		/** Sets the label of the Button
 		 *
 		 * @param	label a pointer to the ne Label of the Button
+		 * @param	labelScale the label scale relative to the Button one
 		 * @note	the label is always located at the center of the Button and
 		 *			its the next z-index */
-		void setLabel(Label* label);
+		void setLabel(
+			Label* label,
+			const glm::vec2& labelScale = glm::vec2(1.0f)
+		);
 
 		/** Performs the given action when the Button is pressed
 		 *

@@ -18,6 +18,14 @@ namespace se::app {
 		glm::vec2 mSize;
 
 	public:		// Functions
+		/** Creates a copy of the current Rectangle object
+		 *
+		 * @return	a pointer to a Copy of the current Rectangle object, the
+		 *			caller of this function is responsible of clearing the
+		 *			object after it's use */
+		virtual IBounds* clone() const override
+		{ return new Rectangle(*this); };
+
 		/** Sets the 2D position of the Rectangle
 		 *
 		 * @param	position the new 2D position of the top-left corner of the

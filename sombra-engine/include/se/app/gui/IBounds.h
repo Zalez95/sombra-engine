@@ -15,6 +15,13 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~IBounds() = default;
 
+		/** Creates a copy of the current IBounds object
+		 *
+		 * @return	a pointer to a Copy of the current IBounds object, the
+		 *			caller of this function is responsible of clearing the
+		 *			object after it's use */
+		virtual IBounds* clone() const = 0;
+
 		/** Sets the 2D position of the IBounds
 		 *
 		 * @param	position the new 2D position of the center of the IBounds */

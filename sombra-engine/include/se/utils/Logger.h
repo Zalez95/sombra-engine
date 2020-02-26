@@ -46,7 +46,7 @@ namespace se::utils {
 		/** Creates a new Logger
 		 *
 		 * @param	path the path to the log file to write to */
-		Logger(const std::string& path) :
+		Logger(const char* path) :
 			mLogFile(path, std::ios::app), mMaxLogLevel(LogLevel::Debug) {};
 		Logger(const Logger& other) = delete;
 		Logger(Logger&& other);

@@ -35,6 +35,7 @@ namespace game {
 	void MainMenuController::onConfig()
 	{
 		SOMBRA_DEBUG_LOG << "start";
+		mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToSettings));
 		SOMBRA_DEBUG_LOG << "end";
 	}
 

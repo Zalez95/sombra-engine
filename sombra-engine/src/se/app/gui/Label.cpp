@@ -105,7 +105,7 @@ namespace se::app {
 	}
 
 
-	void Label::setText(const std::string& text)
+	void Label::setText(const char* text)
 	{
 		mFullText = text;
 		updateRenderableTexts();

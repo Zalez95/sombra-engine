@@ -54,9 +54,11 @@ namespace se::window {
 	}
 
 
-	void WindowSystem::setMousePosition(double x, double y)
+	void WindowSystem::setSize(int width, int height)
 	{
-		glfwSetCursorPos(mWindow, x, y);
+		mWindowData.width = width;
+		mWindowData.height = height;
+		glfwSetWindowSize(mWindow, width, height);
 	}
 
 
@@ -82,9 +84,15 @@ namespace se::window {
 	}
 
 
-	void WindowSystem::setVsync(bool hasVsync)
+	void WindowSystem::setVSync(bool hasVSync)
 	{
-		glfwSwapInterval(hasVsync);
+		glfwSwapInterval(hasVSync);
+	}
+
+
+	void WindowSystem::setMousePosition(double x, double y)
+	{
+		glfwSetCursorPos(mWindow, x, y);
 	}
 
 

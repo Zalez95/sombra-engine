@@ -4,14 +4,25 @@
 
 namespace se::app {
 
-	Button::Button(graphics::Layer2D* layer2D, IBoundsIPtr bounds) :
+	Button::Button(graphics::Layer2D* layer2D, IBoundsUPtr bounds) :
 		mLayer2D(layer2D), mBounds(std::move(bounds)), mRenderable2D(mPosition, mSize),
-		mIsOver(false), mIsPressed(false), mLabel(nullptr)
+		mIsOver(false), mIsPressed(false), mLabel(nullptr), mLabelScale(1.0f)
 	{
 		mBounds->setPosition(mSize);
 		mBounds->setPosition(mPosition);
 		setVisibility(true);
 	}
+
+
+	Button::Button(const Button& other) :
+		mLayer2D(other.mLayer2D),
+		mBounds(IBoundsUPtr(other.mBounds->clone())),
+		mRenderable2D(other.mRenderable2D),
+		mIsOver(other.mIsOver),
+		mIsPressed(other.mIsPressed),
+		mLabel(other.mLabel),
+		mLabelScale(other.mLabelScale),
+		mAction(other.mAction) {}
 
 
 	Button::~Button()
@@ -20,12 +31,30 @@ namespace se::app {
 	}
 
 
+	Button& Button::operator=(const Button& other)
+	{
+		mLayer2D = other.mLayer2D;
+		mBounds = IBoundsUPtr(other.mBounds->clone());
+		mRenderable2D = other.mRenderable2D;
+		mIsOver = other.mIsOver;
+		mIsPressed = other.mIsPressed;
+		mLabel = other.mLabel;
+		mLabelScale = other.mLabelScale;
+		mAction = other.mAction;
+
+		return *this;
+	}
+
+
 	void Button::setPosition(const glm::vec2& position)
 	{
 		IComponent::setPosition(position);
 		mBounds->setPosition(mPosition + mSize / 2.0f);
 		mRenderable2D.setPosition(mPosition);
-		mLabel->setPosition(mPosition);
+
+		if (mLabel) {
+			mLabel->setPosition(mPosition + (mSize - mLabel->getSize()) / 2.0f);
+		}
 	}
 
 
@@ -34,7 +63,10 @@ namespace se::app {
 		IComponent::setSize(size);
 		mBounds->setSize(mSize);
 		mRenderable2D.setSize(mSize);
-		mLabel->setSize(mSize);
+
+		if (mLabel) {
+			mLabel->setSize(mLabelScale * mSize);
+		}
 	}
 
 
@@ -74,11 +106,13 @@ namespace se::app {
 	}
 
 
-	void Button::setLabel(Label* label)
+	void Button::setLabel(Label* label, const glm::vec2& labelScale)
 	{
 		mLabel = label;
-		mLabel->setSize(mSize);
-		mLabel->setPosition(mPosition);
+		mLabelScale = labelScale;
+
+		mLabel->setSize(mLabelScale * mSize);
+		mLabel->setPosition(mPosition + (mSize - mLabel->getSize()) / 2.0f);
 		mLabel->setZIndex(mZIndex + 1);
 		mLabel->setVisibility(mIsVisible);
 	}

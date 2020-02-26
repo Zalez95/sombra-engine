@@ -56,9 +56,15 @@ namespace se::app {
 		 * @param	layer2D a pointer to the Layer2D where the Label will be
 		 *			drawn */
 		Label(graphics::Layer2D* layer2D);
+		Label(const Label& other) = default;
+		Label(Label&& other) = default;
 
 		/** Class destructor */
 		virtual ~Label();
+
+		/** Assignment operator */
+		Label& operator=(const Label& other) = default;
+		Label& operator=(Label&& other) = default;
 
 		/** Sets the position of the Label
 		 *
@@ -109,7 +115,7 @@ namespace se::app {
 		/** Sets the text of the Label
 		 *
 		 * @param	text the new text of the Label */
-		void setText(const std::string& text);
+		void setText(const char* text);
 
 		/** Handles a mouse pointer over the Label
 		 *

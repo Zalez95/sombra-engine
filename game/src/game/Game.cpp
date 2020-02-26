@@ -6,6 +6,7 @@
 #include "Game.h"
 #include "Level.h"
 #include "MainMenuController.h"
+#include "SettingsMenuController.h"
 #include "GameMenuController.h"
 
 namespace game {
@@ -48,6 +49,10 @@ namespace game {
 			fClearAllScreens();
 			mGameData.currentGameScreens.push_back( new Level(mGameData) );
 		};
+		auto fLoadSettings = [this, fClearAllScreens]() {
+			fClearAllScreens();
+			mGameData.currentGameScreens.push_back( new SettingsMenuController(mGameData) );
+		};
 		auto fAddGameMenu = [this]() {
 			dynamic_cast<Level*>(mGameData.currentGameScreens.back())->setHandleInput(false);
 			mGameData.currentGameScreens.push_back( new GameMenuController(mGameData) );
@@ -75,9 +80,19 @@ namespace game {
 				fLoadLevel
 			}, {
 				static_cast<se::utils::StateMachine::State>(GameState::MainMenu),
+				static_cast<se::utils::StateMachine::Event>(GameEvent::GoToSettings),
+				static_cast<se::utils::StateMachine::State>(GameState::SettingsMenu),
+				fLoadSettings
+			}, {
+				static_cast<se::utils::StateMachine::State>(GameState::MainMenu),
 				static_cast<se::utils::StateMachine::Event>(GameEvent::Quit),
 				static_cast<se::utils::StateMachine::State>(GameState::Stopped),
 				fStop
+			}, {
+				static_cast<se::utils::StateMachine::State>(GameState::SettingsMenu),
+				static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu),
+				static_cast<se::utils::StateMachine::State>(GameState::MainMenu),
+				fLoadMainMenu
 			}, {
 				static_cast<se::utils::StateMachine::State>(GameState::Level),
 				static_cast<se::utils::StateMachine::Event>(GameEvent::AddGameMenu),
