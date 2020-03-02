@@ -49,26 +49,18 @@ namespace se::collision {
 	}
 
 
-	std::vector<CompositeCollider::ConvexColliderSPtr> CompositeCollider::getOverlapingParts(
-		const AABB& aabb
-	) const
+	void CompositeCollider::processOverlapingParts(const AABB& aabb, const ConvexShapeCallback& callback) const
 	{
-		using ConcaveColliderSPtr = std::shared_ptr<ConcaveCollider>;
-		std::vector<ConvexColliderSPtr> overlapingParts;
-
 		for (const ColliderSPtr& part : mParts) {
 			if (overlaps(aabb, part->getAABB())) {
-				if (ConvexColliderSPtr convexPart = std::dynamic_pointer_cast<ConvexCollider>(part)) {
-					overlapingParts.push_back(convexPart);
+				if (auto convexPart = std::dynamic_pointer_cast<ConvexCollider>(part)) {
+					callback(*convexPart);
 				}
-				else if (ConcaveColliderSPtr concavePart = std::dynamic_pointer_cast<ConcaveCollider>(part)) {
-					auto overlapingParts2 = concavePart->getOverlapingParts(aabb);
-					overlapingParts.insert(overlapingParts.end(), overlapingParts2.begin(), overlapingParts2.end());
+				else if (auto concavePart = std::dynamic_pointer_cast<ConcaveCollider>(part)) {
+					concavePart->processOverlapingParts(aabb, callback);
 				}
 			}
 		}
-
-		return overlapingParts;
 	}
 
 // Private functions

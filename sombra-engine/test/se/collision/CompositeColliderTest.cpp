@@ -102,26 +102,26 @@ TEST(CompositeCollider, getOverlapingPartsQH1)
 	auto expectedRes = std::make_unique<ConvexPolyhedron>(meshData);
 	expectedRes->setTransforms(transforms);
 
-	auto result = cc1.getOverlapingParts(aabb1);
-	ASSERT_EQ(static_cast<int>(result.size()), 1);
+	cc1.processOverlapingParts(aabb1, [&](const ConvexCollider& part) {
+		const std::vector<glm::vec3> testDirections = {
+			{  0.526099324f,  0.848074734f, -0.063156284f },
+			{  0.847218513f,  0.394129663f, -0.356205850f },
+			{  0.549060404f,  0.393087625f, -0.737573623f },
+			{ -0.670807957f,  0.684541285f,  0.285341858f },
+			{ -0.279787182f, -0.341919273f,  0.897112190f },
+			{  0.041331931f, -0.795864343f,  0.604062557f },
+			{  0.320478677f, -0.716775774f, -0.619294762f },
+			{ -0.672019600f, -0.404401332f,  0.620362162f }
+		};
 
-	const std::vector<glm::vec3> testDirections = {
-		{  0.526099324f,  0.848074734f, -0.063156284f },
-		{  0.847218513f,  0.394129663f, -0.356205850f },
-		{  0.549060404f,  0.393087625f, -0.737573623f },
-		{ -0.670807957f,  0.684541285f,  0.285341858f },
-		{ -0.279787182f, -0.341919273f,  0.897112190f },
-		{  0.041331931f, -0.795864343f,  0.604062557f },
-		{  0.320478677f, -0.716775774f, -0.619294762f },
-		{ -0.672019600f, -0.404401332f,  0.620362162f }
-	};
-	for (const glm::vec3& dir : testDirections) {
-		glm::vec3 pointWorld1, pointWorld2, pointLocal1, pointLocal2;
-		result.front()->getFurthestPointInDirection(dir, pointWorld1, pointLocal1);
-		expectedRes->getFurthestPointInDirection(dir, pointWorld2, pointLocal2);
-		for (int i = 0; i < 3; ++i) {
-			EXPECT_NEAR(pointWorld1[i], pointWorld2[i], kTolerance);
-			EXPECT_NEAR(pointLocal1[i], pointLocal2[i], kTolerance);
+		for (const glm::vec3& dir : testDirections) {
+			glm::vec3 pointWorld1, pointWorld2, pointLocal1, pointLocal2;
+			part.getFurthestPointInDirection(dir, pointWorld1, pointLocal1);
+			expectedRes->getFurthestPointInDirection(dir, pointWorld2, pointLocal2);
+			for (int i = 0; i < 3; ++i) {
+				EXPECT_NEAR(pointWorld1[i], pointWorld2[i], kTolerance);
+				EXPECT_NEAR(pointLocal1[i], pointLocal2[i], kTolerance);
+			}
 		}
-	}
+	});
 }

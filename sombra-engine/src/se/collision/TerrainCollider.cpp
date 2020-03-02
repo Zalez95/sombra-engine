@@ -26,12 +26,8 @@ namespace se::collision {
 	}
 
 
-	std::vector<TerrainCollider::ConvexColliderSPtr> TerrainCollider::getOverlapingParts(
-		const AABB& aabb
-	) const
+	void TerrainCollider::processOverlapingParts(const AABB& aabb, const ConvexShapeCallback& callback) const
 	{
-		std::vector<ConvexColliderSPtr> triangleColliders;
-
 		auto xIndexToX = [this](int i) { return i / static_cast<float>(mXSize - 1) - 0.5f; };
 		auto zIndexToZ = [this](int i) { return i / static_cast<float>(mZSize - 1) - 0.5f; };
 
@@ -62,20 +58,20 @@ namespace se::collision {
 
 					std::array<glm::vec3, 3> triangleVertices1{ v0, v1, v2 };
 					if (checkYAxis(localAABB, triangleVertices1)) {
-						triangleColliders.push_back( std::make_shared<TriangleCollider>(triangleVertices1) );
-						triangleColliders.back()->setTransforms(mTransformsMatrix);
+						TriangleCollider trianglePart(triangleVertices1);
+						trianglePart.setTransforms(mTransformsMatrix);
+						callback(trianglePart);
 					}
 
 					std::array<glm::vec3, 3> triangleVertices2{ v1, v3, v2 };
 					if (checkYAxis(localAABB, triangleVertices2)) {
-						triangleColliders.push_back( std::make_shared<TriangleCollider>(triangleVertices2) );
-						triangleColliders.back()->setTransforms(mTransformsMatrix);
+						TriangleCollider trianglePart(triangleVertices2);
+						trianglePart.setTransforms(mTransformsMatrix);
+						callback(trianglePart);
 					}
 				}
 			}
 		}
-
-		return triangleColliders;
 	}
 
 // Private functions

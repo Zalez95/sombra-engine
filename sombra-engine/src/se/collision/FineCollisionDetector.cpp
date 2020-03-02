@@ -91,22 +91,22 @@ namespace se::collision {
 
 		// Get the overlapping convex parts of the concave collider with the
 		// convex one
-		for (auto part : concaveCollider.getOverlapingParts(convexCollider.getAABB())) {
+		concaveCollider.processOverlapingParts(convexCollider.getAABB(), [&](const ConvexCollider& part) {
 			// GJK algorithm
 			auto [collides, simplex] = (convexFirst)?
-				mGJKCollisionDetector.calculate(convexCollider, *part) :
-				mGJKCollisionDetector.calculate(*part, convexCollider);
+				mGJKCollisionDetector.calculate(convexCollider, part) :
+				mGJKCollisionDetector.calculate(part, convexCollider);
 			if (!collides) {
-				continue;
+				return;
 			}
 
 			// EPA Algorithm
 			Contact contact;
 			bool contactFilled = (convexFirst)?
-				mEPACollisionDetector.calculate(convexCollider, *part, simplex, contact) :
-				mEPACollisionDetector.calculate(*part, convexCollider, simplex, contact);
+				mEPACollisionDetector.calculate(convexCollider, part, simplex, contact) :
+				mEPACollisionDetector.calculate(part, convexCollider, simplex, contact);
 			if (!contactFilled) {
-				continue;
+				return;
 			}
 
 			nNewContacts++;
@@ -118,7 +118,7 @@ namespace se::collision {
 
 			// Add the new contact to the manifold
 			addContact(contact, manifold);
-		}
+		});
 
 		if (nNewContacts == 0) {
 			manifold.contacts.clear();
@@ -144,18 +144,18 @@ namespace se::collision {
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider
-		for (auto part1 : collider1.getOverlapingParts(collider2.getAABB())) {
-			for (auto part2 : collider2.getOverlapingParts(part1->getAABB())) {
+		collider1.processOverlapingParts(collider2.getAABB(), [&](const ConvexCollider& part1) {
+			collider2.processOverlapingParts(part1.getAABB(), [&](const ConvexCollider& part2) {
 				// GJK algorithm
-				auto [collides, simplex] = mGJKCollisionDetector.calculate(*part1, *part2);
+				auto [collides, simplex] = mGJKCollisionDetector.calculate(part1, part2);
 				if (!collides) {
-					continue;
+					return;
 				}
 
 				// EPA Algorithm
 				Contact contact;
-				if (!mEPACollisionDetector.calculate(*part1, *part2, simplex, contact)) {
-					continue;
+				if (!mEPACollisionDetector.calculate(part1, part2, simplex, contact)) {
+					return;
 				}
 
 				nNewContacts++;
@@ -167,8 +167,8 @@ namespace se::collision {
 
 				// Add the new contact to the manifold
 				addContact(contact, manifold);
-			}
-		}
+			});
+		});
 
 		if (nNewContacts == 0) {
 			manifold.contacts.clear();

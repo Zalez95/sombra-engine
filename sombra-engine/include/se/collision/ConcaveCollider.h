@@ -2,7 +2,7 @@
 #define CONCAVE_COLLIDER_H
 
 #include <vector>
-#include <memory>
+#include <functional>
 #include "Collider.h"
 
 namespace se::collision {
@@ -16,7 +16,7 @@ namespace se::collision {
 	class ConcaveCollider : public Collider
 	{
 	public:		// Nested types
-		using ConvexColliderSPtr = std::shared_ptr<ConvexCollider>;
+		using ConvexShapeCallback = std::function<void(const ConvexCollider&)>;
 
 	public:		// Functions
 		/** Class destructor */
@@ -44,14 +44,13 @@ namespace se::collision {
 		/** Resets the updated state of the ConcaveCollider */
 		virtual void resetUpdatedState() override = 0;
 
-		/** Calculates the posible overlaping parts of the Collider with the
-		 * given AABB
+		/** Calls the given callback for each of the overlaping convex parts of
+		 * the ConcaveCollider with the given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	the pointers to the Convex parts of the collider that could
-		 *			be overlaping with the given AABB */
-		virtual std::vector<ConvexColliderSPtr> getOverlapingParts(
-			const AABB& aabb
+		 * @param	callback the function to call */
+		virtual void processOverlapingParts(
+			const AABB& aabb, const ConvexShapeCallback& callback
 		) const = 0;
 	};
 

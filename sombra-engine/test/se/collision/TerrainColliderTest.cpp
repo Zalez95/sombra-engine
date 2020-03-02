@@ -94,10 +94,11 @@ TEST(TerrainCollider, getOverlapingParts1)
 
 	tc1.setTransforms(transforms);
 
-	auto result = tc1.getOverlapingParts(aabb1);
+	std::size_t result = 0;
+	tc1.processOverlapingParts(aabb1, [&result](const ConvexCollider&) { result++; });
 
 	std::vector<TriangleCollider> expectedRes = {};
-	ASSERT_EQ(result.size(), expectedRes.size());
+	ASSERT_EQ(result, expectedRes.size());
 }
 
 
@@ -151,10 +152,7 @@ TEST(TerrainCollider, getOverlapingParts2)
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 transforms = t * r * s;
-
 	tc1.setTransforms(transforms);
-
-	auto result = tc1.getOverlapingParts(aabb1);
 
 	std::vector<TriangleCollider> expectedRes = {
 		TriangleCollider({
@@ -202,13 +200,15 @@ TEST(TerrainCollider, getOverlapingParts2)
 		cp.setTransforms(transforms);
 	}
 
-	ASSERT_EQ(result.size(), expectedRes.size());
-	for (std::size_t i = 0; i < result.size(); ++i) {
-		AABB aabb2 = result[i]->getAABB();
-		AABB aabb3 = expectedRes[i].getAABB();
+	std::size_t iPart = 0;
+	tc1.processOverlapingParts(aabb1, [&](const ConvexCollider& part) {
+		AABB aabb2 = part.getAABB();
+		AABB aabb3 = expectedRes[iPart].getAABB();
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(aabb2.minimum[j], aabb3.minimum[j], kTolerance);
 			EXPECT_NEAR(aabb2.maximum[j], aabb3.maximum[j], kTolerance);
 		}
-	}
+		iPart++;
+	});
+	EXPECT_EQ(iPart, expectedRes.size());
 }

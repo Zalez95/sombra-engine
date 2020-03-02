@@ -1,6 +1,7 @@
 #ifndef COMPOSITE_COLLIDER_H
 #define COMPOSITE_COLLIDER_H
 
+#include <memory>
 #include "ConcaveCollider.h"
 
 namespace se::collision {
@@ -58,14 +59,13 @@ namespace se::collision {
 		/** Resets the updated state of the CompositeCollider */
 		void resetUpdatedState() override;
 
-		/** Calculates the posible overlaping parts of the Collider with the
-		 * given AABB
+		/** Calls the given callback for each of the overlaping convex parts of
+		 * the CompositeCollider with the given AABB
 		 *
 		 * @param	aabb the AABB to compare
-		 * @return	the pointers to the Convex parts of the collider that could
-		 *			be overlaping with the given AABB */
-		std::vector<ConvexColliderSPtr> getOverlapingParts(
-			const AABB& aabb
+		 * @param	callback the function to call */
+		virtual void processOverlapingParts(
+			const AABB& aabb, const ConvexShapeCallback& callback
 		) const override;
 	private:
 		/** Calculates the AABB of the CompositeCollider with its Convex
