@@ -68,6 +68,7 @@ namespace se::app {
 		 *
 		 * @param	delta the elapsed time since the last update in seconds */
 		void update(float delta);
+		std::string getName(const glm::vec3& rayOrigin, const glm::vec3& rayDirection);
 	};
 
 }

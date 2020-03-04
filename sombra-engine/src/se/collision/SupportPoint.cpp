@@ -3,6 +3,20 @@
 
 namespace se::collision {
 
+	SupportPoint::SupportPoint() :
+		mCSOPosition(0.0f),
+		mWorldPosition{ glm::vec3(0.0f), glm::vec3(0.0f) },
+		mLocalPosition{ glm::vec3(0.0f), glm::vec3(0.0f) } {}
+
+
+	SupportPoint::SupportPoint(
+		const glm::vec3& worldPosition1, const glm::vec3& localPosition1,
+		const glm::vec3& worldPosition2, const glm::vec3& localPosition2
+	) : mCSOPosition(worldPosition1 - worldPosition2),
+		mWorldPosition{ worldPosition1, worldPosition2 },
+		mLocalPosition{ localPosition1, localPosition2 } {}
+
+
 	SupportPoint::SupportPoint(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		const glm::vec3& direction

@@ -28,10 +28,18 @@ namespace se::collision {
 
 	public:		// Functions
 		/** Creates a new SupportPoint */
-		SupportPoint() :
-			mCSOPosition(0.0f),
-			mWorldPosition{ glm::vec3(0.0f), glm::vec3(0.0f) },
-			mLocalPosition{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
+		SupportPoint();
+
+		/** Creates a new SupportPoint
+		 *
+		 * @param	worldPosition1 the world position of the first point
+		 * @param	localPosition1 the local position of the first point
+		 * @param	worldPosition2 the world position of the second point
+		 * @param	localPosition2 the local position of the second point */
+		SupportPoint(
+			const glm::vec3& worldPosition1, const glm::vec3& localPosition1,
+			const glm::vec3& worldPosition2, const glm::vec3& localPosition2
+		);
 
 		/** Creates a new SupportPoint as the furthest point in the given
 		 * direction inside the Minkowski Difference (or the Configuration

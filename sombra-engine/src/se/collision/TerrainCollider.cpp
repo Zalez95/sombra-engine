@@ -37,16 +37,16 @@ namespace se::collision {
 		// Calculate the indices of the terrain vertices to check with the
 		// local position of the AABB
 		int iSizeX	= static_cast<int>(mXSize),
-			iMinX	= static_cast<int>(iSizeX * (localAABB.minimum.x + 0.5f)),
-			iMaxX	= static_cast<int>(std::ceil(iSizeX * (localAABB.maximum.x + 0.5f))),
+			iMinX	= static_cast<int>((iSizeX - 1) * (localAABB.minimum.x + 0.5f)),
+			iMaxX	= static_cast<int>(std::ceil((iSizeX - 1) * (localAABB.maximum.x + 0.5f))),
 			iSizeZ	= static_cast<int>(mZSize),
-			iMinZ	= static_cast<int>(iSizeZ * (localAABB.minimum.z + 0.5f)),
-			iMaxZ	= static_cast<int>(std::ceil(iSizeZ * (localAABB.maximum.z + 0.5f)));
+			iMinZ	= static_cast<int>((iSizeZ - 1) * (localAABB.minimum.z + 0.5f)),
+			iMaxZ	= static_cast<int>(std::ceil((iSizeZ - 1) * (localAABB.maximum.z + 0.5f)));
 
-		if ((iMinX < 0) && (iMaxX >= 0))			{ iMinX = 0; }
-		if ((iMaxX >= iSizeZ) && (iMinX < iSizeX))	{ iMaxX = mXSize - 1; }
-		if ((iMinZ < 0) && (iMaxZ >= 0))			{ iMinZ = 0; }
-		if ((iMaxZ >= iSizeZ) && (iMinZ < iSizeZ))	{ iMaxZ = mZSize - 1; }
+		if ((iMinX < 0) && (iMaxX >= 0))				{ iMinX = 0; }
+		if ((iMaxX >= iSizeX) && (iMinX < iSizeX - 1))	{ iMaxX = iSizeX - 1; }
+		if ((iMinZ < 0) && (iMaxZ >= 0))				{ iMinZ = 0; }
+		if ((iMaxZ >= iSizeZ) && (iMinZ < iSizeZ - 1))	{ iMaxZ = iSizeZ - 1; }
 
 		if ((iMinX >= 0) && (iMaxX < iSizeZ) && (iMinZ >= 0) && (iMaxZ < iSizeZ)) {
 			for (int z = iMinZ; z < iMaxZ; ++z) {
@@ -83,9 +83,9 @@ namespace se::collision {
 		};
 
 		for (std::size_t z = 0; z < mZSize; ++z) {
-			float zPos = z / static_cast<float>(mZSize - 1) - 0.5f;
+			float zPos = (mZSize > 1)? z / static_cast<float>(mZSize - 1) - 0.5f : 0.0f;
 			for (std::size_t x = 0; x < mXSize; ++x) {
-				float xPos = x / static_cast<float>(mXSize - 1) - 0.5f;
+				float xPos = (mXSize > 1)? x / static_cast<float>(mXSize - 1) - 0.5f : 0.0f;
 				float yPos = mHeights[z * mXSize + x];
 
 				glm::vec3 localPosition(xPos, yPos, zPos);

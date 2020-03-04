@@ -3,6 +3,7 @@
 
 #include <se/app/Entity.h>
 #include <se/window/WindowSystem.h>
+#include <se/app/CollisionManager.h>
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
@@ -22,6 +23,7 @@ namespace game {
 		se::app::Entity& mEntity;
 		se::app::EventManager& mEventManager;
 		se::window::WindowSystem& mWindowSystem;
+		se::app::CollisionManager& mCollisionManager;
 
 		static constexpr float kRunSpeed			= 2.5f;
 		static constexpr float kJumpSpeed			= 3.0f;
@@ -47,7 +49,8 @@ namespace game {
 		 * @param	windowSystem the WindowSystem of the Game */
 		PlayerController(
 			se::app::Entity& entity,
-			se::app::EventManager&, se::window::WindowSystem& windowSystem
+			se::app::EventManager&, se::window::WindowSystem& windowSystem,
+			se::app::CollisionManager& collisionManager
 		);
 
 		/** Class destructor */

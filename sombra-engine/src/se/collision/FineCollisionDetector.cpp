@@ -50,7 +50,7 @@ namespace se::collision {
 	) const
 	{
 		// GJK algorithm
-		auto [collides, simplex] = mGJKCollisionDetector.calculate(collider1, collider2);
+		auto [collides, simplex] = mGJKCollisionDetector.calculateIntersection(collider1, collider2);
 		if (!collides) {
 			manifold.contacts.clear();
 			manifold.state.reset(Manifold::State::Intersecting);
@@ -94,8 +94,8 @@ namespace se::collision {
 		concaveCollider.processOverlapingParts(convexCollider.getAABB(), [&](const ConvexCollider& part) {
 			// GJK algorithm
 			auto [collides, simplex] = (convexFirst)?
-				mGJKCollisionDetector.calculate(convexCollider, part) :
-				mGJKCollisionDetector.calculate(part, convexCollider);
+				mGJKCollisionDetector.calculateIntersection(convexCollider, part) :
+				mGJKCollisionDetector.calculateIntersection(part, convexCollider);
 			if (!collides) {
 				return;
 			}
@@ -147,7 +147,7 @@ namespace se::collision {
 		collider1.processOverlapingParts(collider2.getAABB(), [&](const ConvexCollider& part1) {
 			collider2.processOverlapingParts(part1.getAABB(), [&](const ConvexCollider& part2) {
 				// GJK algorithm
-				auto [collides, simplex] = mGJKCollisionDetector.calculate(part1, part2);
+				auto [collides, simplex] = mGJKCollisionDetector.calculateIntersection(part1, part2);
 				if (!collides) {
 					return;
 				}
@@ -224,7 +224,7 @@ namespace se::collision {
 			glm::vec3 v0 = manifold.contacts[i].worldPosition[0] - changedWorldPos0;
 			glm::vec3 v1 = manifold.contacts[i].worldPosition[1] - changedWorldPos1;
 
-			if ((glm::length(v0) >= mContactSeparation) || (glm::length(v1) >= mContactSeparation)) {
+			if ((glm::dot(v0, v0) >= mContactSeparation2) || (glm::dot(v1, v1) >= mContactSeparation2)) {
 				if (i + 1 < manifold.contacts.size()) {
 					std::swap(manifold.contacts[i], manifold.contacts.back());
 				}
@@ -249,7 +249,7 @@ namespace se::collision {
 				[&](const Contact& contact) {
 					glm::vec3 v0 = newContact.worldPosition[0] - contact.worldPosition[0];
 					glm::vec3 v1 = newContact.worldPosition[1] - contact.worldPosition[1];
-					return ((glm::length(v0) < mContactSeparation) && (glm::length(v1) < mContactSeparation));
+					return ((glm::dot(v0, v0) < mContactSeparation2) && (glm::dot(v1, v1) < mContactSeparation2));
 				}
 			);
 	}
@@ -268,43 +268,39 @@ namespace se::collision {
 		Contact* contact2 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				float d1 = glm::length(c1->worldPosition[0] - contact1->worldPosition[0]);
-				float d2 = glm::length(c2->worldPosition[0] - contact1->worldPosition[0]);
-				return d1 < d2;
+				glm::vec3 contact1c1 = c1->worldPosition[0] - contact1->worldPosition[0];
+				glm::vec3 contact1c2 = c2->worldPosition[0] - contact1->worldPosition[0];
+				return glm::dot(contact1c1, contact1c1) < glm::dot(contact1c2, contact1c2);
 			}
 		);
 
 		Contact* contact3 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 p1 = utils::getClosestPointInEdge(
+				glm::vec3 vDist1 = c1->worldPosition[0] - utils::getClosestPointInEdge(
 					c1->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
-				float d1 = glm::length(c1->worldPosition[0] - p1);
-				glm::vec3 p2 = utils::getClosestPointInEdge(
+				glm::vec3 vDist2 = c2->worldPosition[0] - utils::getClosestPointInEdge(
 					c2->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
-				float d2 = glm::length(c2->worldPosition[0] - p2);
-				return d1 < d2;
+				return glm::dot(vDist1, vDist1) < glm::dot(vDist2, vDist2);
 			}
 		);
 
 		Contact* contact4 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 p1 = utils::getClosestPointInPlane(
+				glm::vec3 vDist1 = c1->worldPosition[0] - utils::getClosestPointInPlane(
 					c1->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
-				float d1 = glm::length(c1->worldPosition[0] - p1);
-				glm::vec3 p2 = utils::getClosestPointInPlane(
+				glm::vec3 vDist2 = c2->worldPosition[0] - utils::getClosestPointInPlane(
 					c2->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
-				float d2 = glm::length(c2->worldPosition[0] - p2);
-				return d1 < d2;
+				return glm::dot(vDist1, vDist1) < glm::dot(vDist2, vDist2);
 			}
 		);
 

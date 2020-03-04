@@ -139,7 +139,7 @@ namespace se::app {
 
 			glm::vec3 c1 = glm::cross(normal, glm::vec3(0.0f, 0.0f, 1.0f));
 			glm::vec3 c2 = glm::cross(normal, glm::vec3(0.0f, 1.0f, 0.0f));
-			glm::vec3 tangent = (glm::length(c1) > glm::length(c2))? c1 : c2;
+			glm::vec3 tangent = (glm::dot(c1, c1) > glm::dot(c2, c2))? c1 : c2;
 
 			rawMesh.positions.push_back(itVertex->location);
 			rawMesh.normals.push_back(normal);

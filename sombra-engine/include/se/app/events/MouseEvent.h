@@ -176,7 +176,7 @@ namespace se::app {
 		virtual Type getType() const override { return mState; };
 
 		/** @return	the button code of the MouseButtonEvent */
-		int getKeyCode() const { return mButtonCode; };
+		int getButtonCode() const { return mButtonCode; };
 	private:
 		/** Appends the current MouseButtonEvent formated as text to the given
 		 * ostream

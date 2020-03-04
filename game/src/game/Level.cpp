@@ -372,8 +372,8 @@ namespace game {
 		config1.angularDrag = 0.01f;
 		config1.frictionCoefficient = 1.16f;
 		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(config1, se::physics::RigidBodyData());
-		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
-		mGameData.collisionManager->addEntity(mPlayerEntity, std::move(collider1));
+		//auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
+		//mGameData.collisionManager->addEntity(mPlayerEntity, std::move(collider1));
 		mGameData.physicsManager->addEntity(mPlayerEntity, std::move(rigidBody1));
 
 		mGameData.graphicsManager->addCameraEntity(mPlayerEntity, std::move(camera1));
@@ -552,6 +552,7 @@ namespace game {
 			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
 			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
+			mGameData.physicsEngine->getForceManager().addRBForce(rigidBody2.get(), gravity);
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, nullptr);
@@ -669,7 +670,7 @@ namespace game {
 	void Level::setHandleInput(bool handle)
 	{
 		if (handle && !mPlayerController) {
-			mPlayerController = new PlayerController(*mPlayerEntity, *mGameData.eventManager, *mGameData.windowSystem);
+			mPlayerController = new PlayerController(*mPlayerEntity, *mGameData.eventManager, *mGameData.windowSystem, *mGameData.collisionManager);
 			mPlayerController->resetMousePosition();
 			mGameData.windowSystem->setCursorVisibility(false);
 		}

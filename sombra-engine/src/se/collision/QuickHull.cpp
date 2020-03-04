@@ -90,14 +90,13 @@ namespace se::collision {
 		for (int i = 0; i < 6; ++i) {
 			if (extremePointIndices[i] < 0) { continue; }
 
-			glm::vec3 p1 = meshData.vertices[extremePointIndices[i]].location;
-
 			for (int j = i + 1; j < 6; ++j) {
 				if (extremePointIndices[j] < 0) { continue; }
 
-				glm::vec3 p2 = meshData.vertices[extremePointIndices[j]].location;
+				glm::vec3 p1p2	= meshData.vertices[extremePointIndices[j]].location
+								- meshData.vertices[extremePointIndices[i]].location;
 
-				float currentLength = glm::length(p2 - p1);
+				float currentLength = glm::dot(p1p2, p1p2);
 				if (currentLength > maxLength) {
 					iSimplexVertices[0] = extremePointIndices[i];
 					iSimplexVertices[1] = extremePointIndices[j];
@@ -118,7 +117,9 @@ namespace se::collision {
 			maxLength = -std::numeric_limits<float>::max();
 			for (auto it = meshData.vertices.begin(); it != meshData.vertices.end(); ++it) {
 				glm::vec3 projection = p0 + dirP0P1 * glm::dot(it->location - p0, dirP0P1);
-				float currentLength = glm::length(it->location - projection);
+
+				glm::vec3 p2e = it->location - projection;
+				float currentLength = glm::dot(p2e, p2e);
 				if (currentLength > maxLength) {
 					iSimplexVertices[2] = it.getIndex();
 					maxLength = currentLength;
@@ -235,7 +236,10 @@ namespace se::collision {
 			[&](int iV1, int iV2) {
 				glm::vec3 proj1 = p1 + dirP1P2 * glm::dot(vertices[iV1].location - p1, dirP1P2);
 				glm::vec3 proj2 = p1 + dirP1P2 * glm::dot(vertices[iV2].location - p1, dirP1P2);
-				return glm::length(vertices[iV1].location - proj1) < glm::length(vertices[iV2].location - proj2);
+
+				glm::vec3 vDist1 = vertices[iV1].location - proj1;
+				glm::vec3 vDist2 = vertices[iV2].location - proj2;
+				return glm::dot(vDist1, vDist1) < glm::dot(vDist2, vDist2);
 			}
 		);
 	}

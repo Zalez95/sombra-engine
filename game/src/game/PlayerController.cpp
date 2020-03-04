@@ -1,4 +1,5 @@
 #include <se/window/KeyCodes.h>
+#include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
 #include <glm/gtx/string_cast.hpp>
 #include "PlayerController.h"
@@ -6,8 +7,9 @@
 namespace game {
 
 	PlayerController::PlayerController(
-		se::app::Entity& entity, se::app::EventManager& eventManager, se::window::WindowSystem& windowSystem
-	) : mEntity(entity), mEventManager(eventManager), mWindowSystem(windowSystem), mYaw(0.0f), mPitch(0.0f), mMovement{}
+		se::app::Entity& entity, se::app::EventManager& eventManager, se::window::WindowSystem& windowSystem,
+		se::app::CollisionManager& collisionManager
+	) : mEntity(entity), mEventManager(eventManager), mWindowSystem(windowSystem), mCollisionManager(collisionManager), mYaw(0.0f), mPitch(0.0f), mMovement{}
 	{
 		mEventManager.subscribe(this, se::app::Topic::Key);
 		mEventManager.subscribe(this, se::app::Topic::Mouse);
@@ -131,6 +133,15 @@ namespace game {
 			mPitch = kMouseSpeed * static_cast<float>(mouseDeltaY);
 
 			resetMousePosition();
+		}
+		else if (event.getType() == se::app::MouseEvent::Type::ButtonPressed) {
+			auto buttonEvent = static_cast<const se::app::MouseButtonEvent&>(event);
+
+			if (buttonEvent.getButtonCode() == SE_MOUSE_BUTTON_LEFT) {
+				glm::vec3 forward = mEntity.orientation * glm::vec3(0.0f, 0.0f, 1.0f);
+				std::string entityName = mCollisionManager.getName(mEntity.position, forward);
+				SOMBRA_INFO_LOG << "Selected entity: " << entityName;
+			}
 		}
 	}
 

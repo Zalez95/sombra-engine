@@ -31,6 +31,8 @@ namespace se::collision {
 		/** The precision of the comparisons in the GJK algorithm */
 		const float mEpsilon;
 
+		const float mRCEpsilon = 0.001f;
+
 	public:		// Functions
 		/** Creates a new GJKCollisionDetector
 		 *
@@ -46,8 +48,19 @@ namespace se::collision {
 		 *			tells if the two ConvexColliders are intersecting and a
 		 *			vector with the SupportPoints of the simplex needed to
 		 *			check the collision. */
-		std::pair<bool, SupportPointVector> calculate(
+		std::pair<bool, SupportPointVector> calculateIntersection(
 			const ConvexCollider& collider1, const ConvexCollider& collider2
+		) const;
+
+		/** Checks if the given ray intersects the given collider
+		 *
+		 * @param	rayOrigin the origin point of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @param	collider the collider to test
+		 * @return	true if the ray intersects the collider */
+		bool GJKCollisionDetector::calculateRayCast(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			const ConvexCollider& collider
 		) const;
 	private:
 		/** Updates the given direction and simplex, reducing it to the lowest

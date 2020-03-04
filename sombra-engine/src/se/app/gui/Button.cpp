@@ -133,7 +133,7 @@ namespace se::app {
 
 	void Button::onClick(const MouseButtonEvent& event)
 	{
-		if (mIsOver && (event.getKeyCode() == SE_MOUSE_BUTTON_1)) {
+		if (mIsOver && (event.getButtonCode() == SE_MOUSE_BUTTON_LEFT)) {
 			mIsPressed = true;
 		}
 	}
@@ -141,7 +141,7 @@ namespace se::app {
 
 	void Button::onRelease(const MouseButtonEvent& event)
 	{
-		if (mIsPressed && (event.getKeyCode() == SE_MOUSE_BUTTON_1)) {
+		if (mIsPressed && (event.getButtonCode() == SE_MOUSE_BUTTON_LEFT)) {
 			mAction();
 			mIsPressed = false;
 		}

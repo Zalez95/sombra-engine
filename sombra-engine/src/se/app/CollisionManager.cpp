@@ -3,6 +3,7 @@
 #include "se/app/Entity.h"
 #include "se/app/CollisionManager.h"
 #include "se/app/events/CollisionEvent.h"
+#include "se/collision/ConvexCollider.h"
 
 namespace se::app {
 
@@ -81,6 +82,20 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "CollisionManager updated";
+	}
+
+
+	std::string CollisionManager::getName(const glm::vec3& rayOrigin, const glm::vec3& rayDirection)
+	{
+		collision::GJKCollisionDetector gjk(0.0001f);
+		for (auto& pair : mColliderEntityMap) {
+			if (auto collider = dynamic_cast<const collision::ConvexCollider*>(pair.first)) {
+				if (gjk.calculateRayCast(rayOrigin, rayDirection, *collider)) {
+					return pair.second->name;
+				}
+			}
+		}
+		return "";
 	}
 
 }

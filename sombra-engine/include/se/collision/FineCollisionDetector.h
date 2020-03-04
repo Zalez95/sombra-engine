@@ -30,9 +30,10 @@ namespace se::collision {
 		 * Contact between the two ConvexColliders that are intersecting */
 		EPACollisionDetector mEPACollisionDetector;
 
-		/** The minimum distance between the coordinates of two Contact used
-		 * to determine if a contact is the same than other one */
-		const float mContactSeparation;
+		/** The square of the minimum distance between the coordinates of two
+		 * Contacts used for determining if one contact is the same than the
+		 * other one */
+		const float mContactSeparation2;
 
 	public:		// Functions
 		/** Creates a new FineCollisionDetector
@@ -49,7 +50,7 @@ namespace se::collision {
 			float contactSeparation
 		) : mGJKCollisionDetector(contactPrecision),
 			mEPACollisionDetector(minFDifference, contactPrecision),
-			mContactSeparation(contactSeparation) {};
+			mContactSeparation2(contactSeparation * contactSeparation) {};
 
 		/** Checks if the Colliders of the given manifold are intersecting,
 		 * and if that is the case, updates the manifold contact data of the
