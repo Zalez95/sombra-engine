@@ -5,7 +5,7 @@
 #define GL_WRAP(x)					\
 	se::graphics::glClearError();	\
 	x;								\
-	se::graphics::glLogError(#x, LOCATION);
+	se::graphics::glLogError(#x, __FUNCTION__, __LINE__);
 
 
 namespace se::graphics {
@@ -16,7 +16,7 @@ namespace se::graphics {
 	}
 
 
-	static void glLogError(const char* glFunction, const std::string& location)
+	static void glLogError(const char* glFunction, const char* function, int line)
 	{
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -33,7 +33,7 @@ namespace se::graphics {
 
 			const char* errorString = reinterpret_cast<const char*>( glGetString(error) );
 
-			utils::Log::getInstance()(utils::LogLevel::Error) << location
+			utils::Log::getInstance()(utils::LogLevel::Error) << FORMAT_LOCATION(function, line)
 				<< "OpenGL function \"" << glFunction << "\" returned error code " << error
 				<< " (" << errorTag << "): \"" << (errorString? errorString : "") << "\"";
 		}

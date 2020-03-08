@@ -2,12 +2,12 @@
 #define LOGGER_H
 
 #include <mutex>
-#include <string>
-#include <sstream>
+#include <ostream>
 #include <fstream>
 
 namespace se::utils {
 
+	template <typename T, std::streamsize S>
 	class LogStream;
 
 
@@ -32,6 +32,9 @@ namespace se::utils {
 	 */
 	class Logger
 	{
+	private:	// Nested types
+		using MyStream = LogStream<char, 1024>;
+
 	private:	// Attributes
 		/** The log file */
 		std::ofstream mLogFile;
@@ -62,23 +65,24 @@ namespace se::utils {
 		 *
 		 * @param	level the LogLevel of the text to write
 		 * @return	the new LogStream object */
-		LogStream operator()(LogLevel level);
+		MyStream operator()(LogLevel level);
+
+		/** Writes the given stream to the log file with other metadata like the
+		 * date, time, log level and thread id
+		 *
+		 * @param	stream with the text to write to the log file
+		 * @note	if the level of a stream is lower than the maximum level
+		 *			it won't be written */
+		void write(const MyStream& stream);
 
 		/** Changes the maximum log level to show in the log file
 		 * @param	level the new maximum level */
 		void setLogLevel(LogLevel level) { mMaxLogLevel = level; };
-
-		/** Writes the given text in the log file with other metadata like the
-		 * date, time, log level and thread id
-		 *
-		 * @param	level the level of the log text that we are going to write
-		 * @param	text the text to write to the log file
-		 * @note	if the level of a message is lower than the maximum level
-		 *			it won't be written */
-		void write(LogLevel level, const std::string& text);
 	private:
-		/** @return	the current time formated as a string */
-		static std::string getTimeString();
+		/** Appends the current formated time to the given stream
+		 *
+		 * @param	os the stream where the time will be appended */
+		static void putTime(std::ostream& os);
 	};
 
 
@@ -86,9 +90,45 @@ namespace se::utils {
 	 * Class LogStream, it's used to write text to the Logger in a stream like
 	 * fashion
 	 */
-	class LogStream : public std::ostringstream
+	template <typename CharT, std::streamsize Size>
+	class LogStream : public std::basic_ostream<CharT>
 	{
+	private:	// Nested types
+		/**
+		 * Class ArrayStreambuf, it's an streambuf with a compile-time
+		 * fixed size
+		 */
+		class ArrayStreambuf : public std::basic_streambuf<CharT>
+		{
+		private:	// Nested types
+			using Base = std::basic_streambuf<CharT>;
+			using char_type = typename Base::char_type;
+			using int_type = typename Base::int_type;
+
+		private:	// Attributes
+			/** The buffer used for storing the text */
+			char_type mBuffer[Size];
+
+		public:		// Functions
+			/** Creates a new ostreambuf */
+			ArrayStreambuf() : mBuffer{}
+			{ Base::setp(mBuffer, mBuffer + Size); };
+
+			/** Ensures that there is space left in the buffer
+			 *
+			 * @param	ch the character to store
+			 * @return	Traits::eof() on fail, anything else otherwise */
+			int_type overflow(int_type ch) { return Base::overflow(ch); };
+
+			/** @return	a pointer to the internal buffer of the
+			 *			ArrayStreambuf */
+			const char* data() const { return mBuffer; };
+		};
+
 	private:	// Attributes
+		/** The streambuf used for storing the text */
+		ArrayStreambuf mASBuf;
+
 		/** The logger that we will use to write to the log file */
 		Logger& mLogger;
 
@@ -101,10 +141,17 @@ namespace se::utils {
 		 * @param	logger the Logger to use to write to the log file
 		 * @param	level the LogLevel of the text to write */
 		LogStream(Logger& logger, LogLevel level) :
+			std::basic_ostream<CharT>(&mASBuf),
 			mLogger(logger), mLevel(level) {};
 
 		/** Class destructor */
-		~LogStream() { mLogger.write(mLevel, str()); };
+		~LogStream() { mLogger.write(*this); };
+
+		/** @return	the LogLevel of the LogStream */
+		LogLevel getLevel() const { return mLevel; };
+
+		/** @return	a pointer to the internal buffer of the LogStream */
+		const char* c_str() const { return mASBuf.data(); };
 	};
 
 }

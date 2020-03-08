@@ -43,13 +43,13 @@ namespace se::collision {
 		const ConvexCollider& collider
 	) const
 	{
-		glm::vec3 pointRandom(0.0f);
-		collider.getFurthestPointInDirection(glm::sphericalRand(1.0f), pointRandom, glm::vec3());
+		glm::vec3 pointRandomW(0.0f), pointRandomL(0.0f);
+		collider.getFurthestPointInDirection(glm::sphericalRand(1.0f), pointRandomW, pointRandomL);
 
 		float lambda = 0.0f;
 		glm::vec3 x = rayOrigin;
 		glm::vec3 n(0.0f);
-		glm::vec3 v = x - pointRandom;
+		glm::vec3 v = x - pointRandomW;
 		SupportPointVector simplex = {};
 
 		while (glm::dot(v, v) > mRCEpsilon * mRCEpsilon) {
@@ -69,7 +69,8 @@ namespace se::collision {
 			}
 
 			simplex.emplace_back(x, x, pointWorld, pointLocal);
-			doSimplex(simplex, glm::vec3(0.0f));
+			glm::vec3 searchDir(0.0f);
+			doSimplex(simplex, searchDir);
 
 			auto itMin = std::min_element(simplex.begin(), simplex.end(), [](const SupportPoint& sp1, const SupportPoint& sp2) {
 				return glm::dot(sp1.getCSOPosition(), sp1.getCSOPosition()) < glm::dot(sp2.getCSOPosition(), sp2.getCSOPosition());

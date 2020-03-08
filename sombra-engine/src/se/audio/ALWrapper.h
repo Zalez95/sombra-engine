@@ -5,7 +5,7 @@
 #define AL_WRAP(x)					\
 	se::audio::alClearError();		\
 	x;								\
-	se::audio::alLogError(#x, LOCATION);
+	se::audio::alLogError(#x, __FUNCTION__, __LINE__);
 
 
 namespace se::audio {
@@ -16,7 +16,7 @@ namespace se::audio {
 	}
 
 
-	static void alLogError(const char* alFunction, const std::string& location)
+	static void alLogError(const char* alFunction, const char* function, int line)
 	{
 		ALenum error;
 		while ((error = alGetError()) != AL_NO_ERROR) {
@@ -30,7 +30,7 @@ namespace se::audio {
 				case AL_OUT_OF_MEMORY:		errorTag = "AL_OUT_OF_MEMORY";		break;
 			}
 
-			utils::Log::getInstance()(utils::LogLevel::Error) << location
+			utils::Log::getInstance()(utils::LogLevel::Error) << FORMAT_LOCATION(function, line)
 				<< "OpenAL function \"" << alFunction << "\" returned error code " << error
 				<< " (" << errorTag << "): \"" << alGetString(error) << "\"";
 		}

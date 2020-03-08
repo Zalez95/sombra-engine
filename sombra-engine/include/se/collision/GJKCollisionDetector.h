@@ -58,7 +58,7 @@ namespace se::collision {
 		 * @param	rayDirection the direction of the ray
 		 * @param	collider the collider to test
 		 * @return	true if the ray intersects the collider */
-		bool GJKCollisionDetector::calculateRayCast(
+		bool calculateRayCast(
 			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
 			const ConvexCollider& collider
 		) const;

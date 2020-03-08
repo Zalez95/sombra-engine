@@ -18,20 +18,20 @@ namespace se::utils {
 	}
 
 
-	LogStream Logger::operator()(LogLevel level)
+	Logger::MyStream Logger::operator()(LogLevel level)
 	{
-		return LogStream(*this, level);
+		return MyStream(*this, level);
 	}
 
 
-	void Logger::write(LogLevel level, const std::string& text)
+	void Logger::write(const MyStream& stream)
 	{
 		// Check if the text should be written with the current log level
-		if (level < mMaxLogLevel) { return; }
+		if (stream.getLevel() < mMaxLogLevel) { return; }
 
 		// Get the level label
-		std::string label;
-		switch (level) {
+		const char* label = "";
+		switch (stream.getLevel()) {
 			case LogLevel::Trace:	label = "TRACE";	break;
 			case LogLevel::Debug:	label = "DEBUG";	break;
 			case LogLevel::Info:	label = "INFO ";	break;
@@ -42,15 +42,20 @@ namespace se::utils {
 
 		// Write to the log file
 		std::lock_guard<std::mutex> locker(mMutex);
-		mLogFile
-			<< getTimeString()
-			<< " [" << label << "]"
-			<< std::hex << " 0x" << std::this_thread::get_id()
-			<< " " << text << std::endl;
+
+		putTime(mLogFile);
+		mLogFile << " [" << label << "]";
+		mLogFile << std::hex << " 0x" << std::this_thread::get_id() << std::dec;
+
+		if (stream.good()) {
+			mLogFile << " " << stream.c_str();
+		}
+
+		mLogFile << std::endl;
 	}
 
 // Private functions
-	std::string Logger::getTimeString()
+	void Logger::putTime(std::ostream& os)
 	{
 		static const char timeFormat[] = "%Y/%m/%d %H:%M:%S";
 		using namespace std::chrono;
@@ -59,12 +64,9 @@ namespace se::utils {
 		system_clock::duration tp = now.time_since_epoch();
 		tp -= duration_cast<seconds>(tp);
 
-		std::ostringstream ss;
 		std::time_t tt = system_clock::to_time_t(now);
-		ss	<< std::put_time(std::localtime(&tt), timeFormat)
+		os	<< std::put_time(std::localtime(&tt), timeFormat)
 			<< '.' << std::setw(3) << std::setfill('0') << tp / milliseconds(1);
-
-		return ss.str();
 	}
 
 }
