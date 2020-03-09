@@ -1,7 +1,6 @@
 #ifndef IMAGE_READER_H
 #define IMAGE_READER_H
 
-#include <string>
 #include "Result.h"
 #include "../Image.h"
 
@@ -21,8 +20,7 @@ namespace se::app {
 		 *			load (automatically detected by default)
 		 * @return	a Result object with the result of the operation */
 		static Result read(
-			const std::string& path, Image& output,
-			int forceNumChannels = 0
+			const char* path, Image& output, int forceNumChannels = 0
 		);
 	};
 

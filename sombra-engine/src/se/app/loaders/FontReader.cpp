@@ -8,7 +8,7 @@
 namespace se::app {
 
 	Result FontReader::read(
-		const std::string& path,
+		const char* path,
 		const std::vector<char>& characterSet, const glm::uvec2& characterSize,
 		const glm::uvec2& atlasSize, se::graphics::Font& output
 	) {
@@ -24,7 +24,7 @@ namespace se::app {
 		}
 
 		FT_Face face;
-		if (FT_New_Face(library, path.c_str(), 0, &face)) {
+		if (FT_New_Face(library, path, 0, &face)) {
 			return Result(false, "Failed to load font");
 		}
 

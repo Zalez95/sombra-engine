@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "se/graphics/core/Program.h"
@@ -85,7 +86,10 @@ namespace se::graphics {
 			return false;
 		}
 
-		mUniformLocations.emplace(name, uniformLocation);
+		mUniformLocations.insert(
+			std::lower_bound(mUniformLocations.begin(), mUniformLocations.end(), name, compare),
+			NameLocation{ name, uniformLocation }
+		);
 
 		return true;
 	}
@@ -100,7 +104,10 @@ namespace se::graphics {
 			return false;
 		}
 
-		mUniformBlocks.emplace(name, uniformLocation);
+		mUniformBlocks.insert(
+			std::lower_bound(mUniformBlocks.begin(), mUniformBlocks.end(), name, compare),
+			NameLocation{ name, uniformLocation }
+		);
 
 		return true;
 	}
@@ -108,9 +115,9 @@ namespace se::graphics {
 
 	void Program::setUniformBlock(const char* name, unsigned int blockIndex) const
 	{
-		auto itUniformBlock = mUniformBlocks.find(name);
+		auto itUniformBlock = std::lower_bound(mUniformBlocks.begin(), mUniformBlocks.end(), name, compare);
 		if (itUniformBlock != mUniformBlocks.end()) {
-			GL_WRAP( glUniformBlockBinding(mProgramId, blockIndex, itUniformBlock->second) );
+			GL_WRAP( glUniformBlockBinding(mProgramId, blockIndex, itUniformBlock->location) );
 		}
 	}
 
@@ -127,6 +134,12 @@ namespace se::graphics {
 	}
 
 // Private functions
+	bool Program::compare(const NameLocation& nameLocation, const char* name)
+	{
+		return nameLocation.name < name;
+	}
+
+
 	template <>
 	void Program::setUniform<int>(int location, const int& value) const
 	{

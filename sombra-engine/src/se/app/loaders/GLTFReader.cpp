@@ -526,7 +526,7 @@ namespace se::app {
 			std::string path = mBasePath + itUri->get<std::string>();
 
 			Image& image = mGLTFData.images.emplace_back();
-			Result result = ImageReader::read(path, image);
+			Result result = ImageReader::read(path.c_str(), image);
 			if (result) {
 				return Result();
 			}

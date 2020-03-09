@@ -2,7 +2,7 @@
 #define PROGRAM_H
 
 #include <string>
-#include <unordered_map>
+#include <vector>
 
 namespace se::graphics {
 
@@ -15,15 +15,23 @@ namespace se::graphics {
 	 */
 	class Program
 	{
+	private:	// Nested types
+		/** Maps an uniform name with its location */
+		struct NameLocation
+		{
+			std::string name;	///< The name of the uniform
+			int location;		///< The location of the uniform
+		};
+
 	private:	// Attributes
 		/** The id of the shader object */
 		unsigned int mProgramId;
 
 		/** Maps the uniform variable names with their respective locations */
-		std::unordered_map<std::string, int> mUniformLocations;
+		std::vector<NameLocation> mUniformLocations;
 
 		/** Maps the uniform block names with their respective locations */
-		std::unordered_map<std::string, int> mUniformBlocks;
+		std::vector<NameLocation> mUniformBlocks;
 
 	public:		// Functions
 		/** Creates and links a OpenGL Program from the specified shaders
@@ -92,6 +100,14 @@ namespace se::graphics {
 		/** Resets the current shader object */
 		void disable() const;
 	private:
+		/** Compares the given NameLocation with the given name
+		 *
+		 * @param	nameLocation the NameLocation to compare
+		 * @param	name the name to compare with
+		 * @return	true if the name of @see nameLocation is smaller than
+		 *			@see name, false otherwise */
+		static bool compare(const NameLocation& nameLocation, const char* name);
+
 		/** Sets the value of the given uniform variable
 		 *
 		 * @param	location the uniform variable location

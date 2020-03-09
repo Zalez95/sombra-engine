@@ -1,6 +1,5 @@
 #include <cassert>
 #include "se/app/loaders/TerrainLoader.h"
-#include "se/app/loaders/ImageReader.h"
 #include "se/app/Entity.h"
 #include "se/app/Image.h"
 #include "se/graphics/3D/Material.h"

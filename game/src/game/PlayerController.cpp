@@ -4,6 +4,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include "PlayerController.h"
 
+extern bool PRINT;
+
 namespace game {
 
 	PlayerController::PlayerController(
@@ -108,6 +110,11 @@ namespace game {
 				break;
 			case SE_KEY_SPACE:
 				mMovement[static_cast<int>(Direction::Up)] = (event.getState() != se::app::KeyEvent::State::Released);
+				break;
+			case SE_KEY_P:
+				if (event.getState() != se::app::KeyEvent::State::Released) {
+					PRINT = !PRINT;
+				}
 				break;
 			case SE_KEY_LEFT_CONTROL:
 				mMovement[static_cast<int>(Direction::Down)] = (event.getState() != se::app::KeyEvent::State::Released);

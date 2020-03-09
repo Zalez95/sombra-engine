@@ -18,7 +18,9 @@ namespace se::graphics {
 	{
 		int numTextures = std::min(kMaxTextures, static_cast<int>(textureCount));
 		for (int i = 0; i < numTextures; ++i) {
-			mProgram->setUniform(("uTextures[" + std::to_string(i) + "]").c_str(), i);
+			utils::ArrayStreambuf<char, 64> aStreambuf;
+			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
+			mProgram->setUniform(aStreambuf.data(), i);
 			textures[i]->bind(i);
 		}
 	}
@@ -71,7 +73,9 @@ namespace se::graphics {
 
 		ret &= mProgram->addUniform("uProjectionMatrix");
 		for (std::size_t i = 0; i < kMaxTextures; ++i) {
-			ret &= mProgram->addUniform(("uTextures[" + std::to_string(i) + "]").c_str());
+			utils::ArrayStreambuf<char, 64> aStreambuf;
+			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
+			ret &= mProgram->addUniform(aStreambuf.data());
 		}
 
 		return ret;

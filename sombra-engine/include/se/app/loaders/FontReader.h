@@ -31,7 +31,7 @@ namespace se::app {
 		 * @note	if the atlas texture isn't big enough to hold all the
 		 *			characters some of them won't be added to the Font */
 		static Result read(
-			const std::string& path,
+			const char* path,
 			const std::vector<char>& characterSet, const glm::uvec2& characterSize,
 			const glm::uvec2& atlasSize, se::graphics::Font& output
 		);

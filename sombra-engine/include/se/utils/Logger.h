@@ -4,6 +4,7 @@
 #include <mutex>
 #include <ostream>
 #include <fstream>
+#include "StringUtils.h"
 
 namespace se::utils {
 
@@ -93,41 +94,9 @@ namespace se::utils {
 	template <typename CharT, std::streamsize Size>
 	class LogStream : public std::basic_ostream<CharT>
 	{
-	private:	// Nested types
-		/**
-		 * Class ArrayStreambuf, it's an streambuf with a compile-time
-		 * fixed size
-		 */
-		class ArrayStreambuf : public std::basic_streambuf<CharT>
-		{
-		private:	// Nested types
-			using Base = std::basic_streambuf<CharT>;
-			using char_type = typename Base::char_type;
-			using int_type = typename Base::int_type;
-
-		private:	// Attributes
-			/** The buffer used for storing the text */
-			char_type mBuffer[Size];
-
-		public:		// Functions
-			/** Creates a new ostreambuf */
-			ArrayStreambuf() : mBuffer{}
-			{ Base::setp(mBuffer, mBuffer + Size); };
-
-			/** Ensures that there is space left in the buffer
-			 *
-			 * @param	ch the character to store
-			 * @return	Traits::eof() on fail, anything else otherwise */
-			int_type overflow(int_type ch) { return Base::overflow(ch); };
-
-			/** @return	a pointer to the internal buffer of the
-			 *			ArrayStreambuf */
-			const char* data() const { return mBuffer; };
-		};
-
 	private:	// Attributes
 		/** The streambuf used for storing the text */
-		ArrayStreambuf mASBuf;
+		ArrayStreambuf<CharT, Size> mASBuf;
 
 		/** The logger that we will use to write to the log file */
 		Logger& mLogger;

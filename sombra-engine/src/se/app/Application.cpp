@@ -126,12 +126,12 @@ namespace se::app {
 			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
 
 			float deltaTime = durationInSeconds.count();
-			float waitTime = mUpdateTime - deltaTime;
+			/*float waitTime = mUpdateTime - deltaTime;
 			if (waitTime > 0) {
 				SOMBRA_DEBUG_LOG << "Wait " << waitTime << " seconds";
 				std::this_thread::sleep_for( std::chrono::duration<float>(waitTime) );
 			}
-			else {
+			else {*/
 				lastTP = currentTP;
 
 				// Retrieve the input
@@ -142,7 +142,7 @@ namespace se::app {
 
 				// Draw
 				onRender();
-			}
+			//}
 		}
 
 		mState = AppState::Stopped;

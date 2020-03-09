@@ -50,7 +50,7 @@ namespace se::app {
 		}
 
 		Image heightMap;
-		Result result = ImageReader::read(heightMapPath, heightMap, 1);
+		Result result = ImageReader::read(heightMapPath.c_str(), heightMap, 1);
 		if (!result) {
 			throw std::runtime_error("Error while reading the heighMap \"" + heightMapPath + "\": " + result.description());
 		}

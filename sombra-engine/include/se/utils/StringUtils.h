@@ -1,7 +1,57 @@
-#include <string>
+#include <array>
 #include <vector>
+#include <string>
+#include <streambuf>
 
 namespace se::utils {
+	/**
+	 * Class ArrayStreambuf, it's an streambuf with a compile-time
+	 * fixed size
+	 */
+	template <typename CharT, std::streamsize Size>
+	class ArrayStreambuf : public std::basic_streambuf<CharT>
+	{
+	private:	// Nested types
+		using Base = std::basic_streambuf<CharT>;
+		using char_type = typename Base::char_type;
+
+	private:	// Attributes
+		/** The buffer used for storing the text */
+		std::array<char_type, Size> mBuffer;
+
+	public:		// Functions
+		/** Creates a new ArrayStreambuf */
+		ArrayStreambuf() : mBuffer{} { setBuffer(); };
+		ArrayStreambuf(const ArrayStreambuf& other) :
+			mBuffer(other.mBuffer) { setBuffer(); };
+		ArrayStreambuf(ArrayStreambuf&& other) :
+			mBuffer(other.mBuffer) { setBuffer(); };
+
+		/** Assignment operator */
+		ArrayStreambuf& operator=(const ArrayStreambuf& other)
+		{
+			mBuffer = other.mBuffer;
+			setBuffer();
+			return *this;
+		};
+		ArrayStreambuf& operator=(ArrayStreambuf&& other)
+		{
+			mBuffer = other.mBuffer;
+			setBuffer();
+			return *this;
+		};
+
+		/** @return	a pointer to the internal buffer of the ArrayStreambuf */
+		const char* data() const { return mBuffer.data(); };
+	private:
+		/** Sets mBuffer as the buffer to use by the parent streambuf */
+		void setBuffer()
+		{
+			Base::setp(mBuffer.data(), mBuffer.data() + Size);
+			Base::setg(mBuffer.data(), mBuffer.data(), mBuffer.data() + Size);
+		};
+	};
+
 
 	/** Removes the spaces, tabs, etc. characters located at the left of the
 	 * given string
