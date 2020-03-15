@@ -2,7 +2,7 @@
 #define COARSE_COLLISION_DETECTOR_H
 
 #include <deque>
-#include <vector>
+#include <functional>
 #include "AABB.h"
 
 namespace se::collision {
@@ -18,6 +18,7 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
+		using IntersectionCallback = std::function<void(const ColliderPair&)>;
 
 		/** Holds cached data of a Collider */
 		struct ColliderData
@@ -37,13 +38,13 @@ namespace se::collision {
 		 * @param	collider a pointer to the Collider to submit */
 		void submit(const Collider* collider);
 
-		/** Calculates and returns the Colliders whose AABBs are currently
-		 * intersecting
+		/** Calls the given callback for each of the detected intersections
+		 * between Colliders AABBs
 		 *
-		 * @return	all the pairs of Colliders whose AABBs are intersecting
+		 * @param	callback the function to call
 		 * @note	after calling this function all the Colliders will be
 		 * 			cleared from the CoarseCollisionDetector */
-		std::vector<ColliderPair> getIntersectingColliders();
+		void processIntersectingColliders(const IntersectionCallback& callback);
 	};
 
 }

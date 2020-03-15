@@ -30,6 +30,21 @@ namespace se::utils {
 	);
 
 
+	/** Projects the given point onto the the given 3D edge
+	 *
+	 * @param	point the 3D coordinates of the point
+	 * @param	edge an array with the 2 points of the edge
+	 * @param	projectionPrecision the precision of the projected point onto
+	 *			the edge
+	 * @return	a pair with a boolean that tells if the projected point lies
+	 *			within the edge and the projected point in barycentric
+	 *			coordinates */
+	std::pair<bool, glm::vec2> projectPointOnEdge(
+		const glm::vec3& point, const std::array<glm::vec3, 2>& edge,
+		float projectionPrecision
+	);
+
+
 	/** Calculates the closest point to p in the given plane
 	 *
 	 * @param	p the point
@@ -60,19 +75,16 @@ namespace se::utils {
 
 	/** Projects the given point onto the the given 3D triangle
 	 *
-	 * @param	point the 3D coordinates of the point in world space
-	 * @param	triangle an array with the 3 points of the triangle in
-	 *			world space
+	 * @param	point the 3D coordinates of the point
+	 * @param	triangle an array with the 3 points of the triangle
 	 * @param	projectionPrecision the precision of the projected point onto
 	 *			the triangle
-	 * @param	projectedPoint a reference to the vector where we are going
-	 *			to store the coordinates of the projected point in
-	 *			barycentric coordinates
-	 * @return	true if the point could be projected onto the triangle,
-	 *			false otherwise */
-	bool projectPointOnTriangle(
+	 * @return	a pair with a boolean that tells if the projected point lies
+	 *			within the triangle and the projected point in barycentric
+	 *			coordinates */
+	std::pair<bool, glm::vec3> projectPointOnTriangle(
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
-		float projectionPrecision, glm::vec3& projectedPoint
+		float projectionPrecision
 	);
 
 

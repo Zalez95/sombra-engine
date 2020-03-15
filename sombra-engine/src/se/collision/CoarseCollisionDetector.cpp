@@ -9,21 +9,17 @@ namespace se::collision {
 	}
 
 
-	std::vector<CoarseCollisionDetector::ColliderPair> CoarseCollisionDetector::getIntersectingColliders()
+	void CoarseCollisionDetector::processIntersectingColliders(const IntersectionCallback& callback)
 	{
-		std::vector<ColliderPair> ret;
-
 		while (!mColliders.empty()) {
 			for (std::size_t i = 1; i < mColliders.size(); ++i) {
 				if ( overlaps(mColliders[0].aabb, mColliders[i].aabb) ) {
-					ret.push_back(std::make_pair(mColliders[0].collider, mColliders[i].collider));
+					callback({ mColliders[0].collider, mColliders[i].collider });
 				}
 			}
 
 			mColliders.pop_front();
 		}
-
-		return ret;
 	}
 
 }

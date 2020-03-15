@@ -1,7 +1,7 @@
 #ifndef EPA_COLLISION_DETECTOR_H
 #define EPA_COLLISION_DETECTOR_H
 
-#include "../utils/FixedVector.h"
+#include "Simplex.h"
 
 namespace se::collision {
 
@@ -17,9 +17,6 @@ namespace se::collision {
 	 */
 	class EPACollisionDetector
 	{
-	private:	// Nested types
-		using InitialSimplex = utils::FixedVector<SupportPoint, 4>;
-
 	private:	// Attributes
 		/** The minimum difference between the distances to the origin of
 		 * a HEFace and the next SupportPoint during the Polytope expansion step
@@ -44,12 +41,11 @@ namespace se::collision {
 		 * @param	collider2 the second of the ConvexColliders that are
 		 *			intersecting
 		 * @param	simplex the points of the initial simplex
-		 * @param	ret a reference to the deepest Contact (return parameter)
-		 * @return	true if the Contact data was successfully created, false
-		 *			otherwise */
-		bool calculate(
+		 * @return	a pair with a boolean that tells if the Contact data was
+		 *			successfully created and the deepest Contact */
+		std::pair<bool, Contact> calculate(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			InitialSimplex& simplex, Contact& ret
+			Simplex& simplex
 		) const;
 	private:
 		/** Creates an initial polytope from the given simplex
@@ -64,7 +60,7 @@ namespace se::collision {
 		 *			expanded to a tetrahedron */
 		Polytope createInitialPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			InitialSimplex& simplex
+			Simplex& simplex
 		) const;
 
 		/** Expands the given edge simplex to a tetrahedron
@@ -77,7 +73,7 @@ namespace se::collision {
 		 *			case the simplex must be an edge (size == 2) */
 		void tetrahedronFromEdge(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			InitialSimplex& simplex
+			Simplex& simplex
 		) const;
 
 		/** Expands the given triangle simplex to a tetrahedron
@@ -90,16 +86,7 @@ namespace se::collision {
 		 *			case the simplex must be a triangle (size == 3) */
 		void tetrahedronFromTriangle(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
-			InitialSimplex& simplex
-		) const;
-
-		/** Checks if the given tetrahedron has the origin of coordinates inside
-		 *
-		 * @param	vertices the 4 vertices of the tetrahedron
-		 * @return	true if the origin of coordinates is inside the tetrahedron,
-		 *			false otherwise */
-		bool isOriginInsideTetrahedron(
-			const utils::FixedVector<glm::vec3, 4>& vertices
+			Simplex& simplex
 		) const;
 
 		/** Expands the given polytope iteratively until it finds the closest
@@ -120,17 +107,16 @@ namespace se::collision {
 			Polytope& polytope
 		) const;
 
-		/** Fills the Contact data with the normal of closest face in the
+		/** Calculates the Contact data with the normal of closest face in the
 		 * Polytope to the origin, and the distance and coordinates of the
 		 * closest point of this face to the origin
 		 *
 		 * @param	polytope the Polytope with which we want to fill the Contact
 		 *			data
 		 * @param	iClosestFace the index of the closest face in the Polytope
-		 * @param	ret a reference to the Contact where we are going to store
-		 *			the data */
-		void fillContactData(
-			const Polytope& polytope, int iClosestFace, Contact& ret
+		 * @return	the Contact data */
+		Contact calculateContactData(
+			const Polytope& polytope, int iClosestFace
 		) const;
 	};
 

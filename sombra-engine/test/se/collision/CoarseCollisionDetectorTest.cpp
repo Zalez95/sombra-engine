@@ -29,16 +29,13 @@ TEST(CoarseCollisionDetector, collide)
 	bs2.setTransforms(glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 3.0f, 5.0f)));
 	ccd.submit(&bs2);
 
-	auto result = ccd.getIntersectingColliders();
-	std::set<std::pair<Collider*, Collider*>> expectedRes = {
+	std::set<std::pair<const Collider*, const Collider*>> expectedRes = {
 		std::make_pair(&cp1, &cp2),
 		std::make_pair(&cp1, &bs2)
 	};
-
-	ASSERT_EQ(result.size(), expectedRes.size());
-	for (auto& pair1 : result) {
+	ccd.processIntersectingColliders([&](const std::pair<const Collider*, const Collider*>& pair1) {
 		bool flag = false;
-		for (auto& pair2 : result) {
+		for (auto& pair2 : expectedRes) {
 			if ((pair1.first == pair2.first && pair1.second == pair2.second)
 				|| (pair1.first == pair2.second && pair1.second == pair2.first)
 			) {
@@ -48,5 +45,5 @@ TEST(CoarseCollisionDetector, collide)
 		}
 
 		EXPECT_TRUE(flag);
-	}
+	});
 }

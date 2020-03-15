@@ -25,6 +25,7 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
+		using ManifoldCallback = std::function<void(const Manifold&)>;
 
 	private:	// Attributes
 		/** The CoarseCollisionDetector of the CollisionWorld. We will use
@@ -40,11 +41,7 @@ namespace se::collision {
 		std::vector<Collider*> mColliders;
 
 		/** Maps a pair of Colliders with the the Manifold of it's collision */
-		std::map<ColliderPair, Manifold> mMapCollidersManifolds;
-
-		/** The cached pointers to all the current contact Manifolds of all
-		 * the detected collisions */
-		std::vector<const Manifold*> mManifolds;
+		std::map<ColliderPair, Manifold> mCollidersManifoldMap;
 
 	public:		// Functions
 		/** Creates a new CollisionWorld
@@ -60,10 +57,6 @@ namespace se::collision {
 			float minFDifference, float contactPrecision,
 			float contactSeparation
 		);
-
-		/** @return	all the contact Manifolds of the detected collisions */
-		const std::vector<const Manifold*>& getCollisionManifolds() const
-		{ return mManifolds; };
 
 		/** Adds the given Collider to the CollisionWorld so it will
 		 * check if it collides with the other Colliders
@@ -85,6 +78,12 @@ namespace se::collision {
 		 *			vector returned by @see getCollisionManifolds, while the
 		 *			old non intersecting ones will be removed from it */
 		void update();
+
+		/** Calls the given callback for each of the active collision Manifolds
+		 * generated during the last @see update call
+		 *
+		 * @param	callback the function to call */
+		void processCollisionManifolds(const ManifoldCallback& callback) const;
 	};
 
 }

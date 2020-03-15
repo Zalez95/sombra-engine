@@ -59,10 +59,8 @@ namespace se::collision {
 		const glm::vec3 p2CSO = mMesh.vertices[faceIndices[2]].location;
 		glm::vec3 closestPoint = utils::getClosestPointInPlane(glm::vec3(0.0f), { p0CSO, p1CSO, p2CSO });
 		float distance = glm::length(closestPoint);
-		glm::vec3 closestPointBarycentricCoords;
-		bool inside = utils::projectPointOnTriangle(
-			closestPoint, { p0CSO, p1CSO, p2CSO },
-			mPrecision, closestPointBarycentricCoords
+		auto [inside, closestPointBarycentricCoords] = utils::projectPointOnTriangle(
+			closestPoint, { p0CSO, p1CSO, p2CSO }, mPrecision
 		);
 		mFaceDistances.emplace(FaceDistanceData{ closestPoint, distance, inside, closestPointBarycentricCoords });
 

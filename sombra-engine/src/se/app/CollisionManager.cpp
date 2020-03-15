@@ -4,6 +4,7 @@
 #include "se/app/CollisionManager.h"
 #include "se/app/events/CollisionEvent.h"
 #include "se/collision/ConvexCollider.h"
+#include "se/collision/GJKRayCaster.h"
 
 namespace se::app {
 
@@ -69,17 +70,17 @@ namespace se::app {
 		mCollisionWorld.update();
 
 		SOMBRA_DEBUG_LOG << "Notifying contact manifolds";
-		for (const collision::Manifold* manifold : mCollisionWorld.getCollisionManifolds()) {
-			auto itPair1 = mColliderEntityMap.find(manifold->colliders[0]);
-			auto itPair2 = mColliderEntityMap.find(manifold->colliders[1]);
+		mCollisionWorld.processCollisionManifolds([this](const collision::Manifold& manifold) {
+			auto itPair1 = mColliderEntityMap.find(manifold.colliders[0]);
+			auto itPair2 = mColliderEntityMap.find(manifold.colliders[1]);
 			if ((itPair1 != mColliderEntityMap.end()) && (itPair2 != mColliderEntityMap.end())
-				&& manifold->state[collision::Manifold::State::Updated]
+				&& manifold.state[collision::Manifold::State::Updated]
 			) {
-				auto event = new CollisionEvent(itPair1->second, itPair2->second, manifold);
+				auto event = new CollisionEvent(itPair1->second, itPair2->second, &manifold);
 				SOMBRA_DEBUG_LOG << "Notifying new CollisionEvent " << *event;
 				mEventManager.publish(event);
 			}
-		}
+		});
 
 		SOMBRA_INFO_LOG << "CollisionManager updated";
 	}
@@ -87,10 +88,11 @@ namespace se::app {
 
 	std::string CollisionManager::getName(const glm::vec3& rayOrigin, const glm::vec3& rayDirection)
 	{
-		collision::GJKCollisionDetector gjk(0.0001f);
+		collision::GJKRayCaster gjk(0.0001f);
 		for (auto& pair : mColliderEntityMap) {
 			if (auto collider = dynamic_cast<const collision::ConvexCollider*>(pair.first)) {
-				if (gjk.calculateRayCast(rayOrigin, rayDirection, *collider)) {
+				bool intersects = gjk.calculateRayCast(rayOrigin, rayDirection, *collider).first;
+				if (intersects) {
 					return pair.second->name;
 				}
 			}

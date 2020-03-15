@@ -59,8 +59,8 @@ namespace se::collision {
 		}
 
 		// EPA Algorithm
-		Contact contact;
-		if (!mEPACollisionDetector.calculate(collider1, collider2, simplex, contact)) {
+		auto [success, contact] = mEPACollisionDetector.calculate(collider1, collider2, simplex);
+		if (!success) {
 			manifold.contacts.clear();
 			manifold.state.reset(Manifold::State::Intersecting);
 			manifold.state.set(Manifold::State::Updated);
@@ -101,11 +101,10 @@ namespace se::collision {
 			}
 
 			// EPA Algorithm
-			Contact contact;
-			bool contactFilled = (convexFirst)?
-				mEPACollisionDetector.calculate(convexCollider, part, simplex, contact) :
-				mEPACollisionDetector.calculate(part, convexCollider, simplex, contact);
-			if (!contactFilled) {
+			auto [success, contact] = (convexFirst)?
+				mEPACollisionDetector.calculate(convexCollider, part, simplex) :
+				mEPACollisionDetector.calculate(part, convexCollider, simplex);
+			if (!success) {
 				return;
 			}
 
@@ -153,8 +152,8 @@ namespace se::collision {
 				}
 
 				// EPA Algorithm
-				Contact contact;
-				if (!mEPACollisionDetector.calculate(part1, part2, simplex, contact)) {
+				auto [success, contact] = mEPACollisionDetector.calculate(part1, part2, simplex);
+				if (!success) {
 					return;
 				}
 

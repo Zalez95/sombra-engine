@@ -1,7 +1,6 @@
 #ifndef CONCAVE_COLLIDER_H
 #define CONCAVE_COLLIDER_H
 
-#include <vector>
 #include <functional>
 #include "Collider.h"
 

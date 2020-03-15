@@ -18,6 +18,17 @@ namespace se::utils {
 
 
 	template <typename T, std::size_t N>
+	template <typename InputIterator>
+	FixedVector<T, N>::FixedVector(InputIterator first, InputIterator last) :
+		mNumElements(0)
+	{
+		for (auto it = first; it != last; ++it) {
+			push_back(*it);
+		}
+	}
+
+
+	template <typename T, std::size_t N>
 	bool operator==(const FixedVector<T, N>& fv1, const FixedVector<T, N>& fv2)
 	{
 		bool equal = true;
@@ -75,10 +86,7 @@ namespace se::utils {
 	template <typename... Args>
 	typename FixedVector<T, N>::iterator FixedVector<T, N>::emplace_back(Args&&... args)
 	{
-		mElements[mNumElements] = T(std::forward<Args>(args)...);
-		mNumElements++;
-
-		return &mElements[mNumElements - 1];
+		return push_back( T(std::forward<Args>(args)...) );
 	}
 
 
@@ -86,6 +94,29 @@ namespace se::utils {
 	void FixedVector<T, N>::pop_back()
 	{
 		mNumElements--;
+	}
+
+
+	template <typename T, std::size_t N>
+	typename FixedVector<T, N>::iterator FixedVector<T, N>::insert(const_iterator it, const T& value)
+	{
+		iterator itCopy = const_cast<iterator>(it);
+
+		mNumElements++;
+		for (iterator it2 = end() - 1; it2 != itCopy; --it2) {
+			*it2 = *(it2 - 1);
+		}
+		*itCopy = value;
+
+		return itCopy;
+	}
+
+
+	template <typename T, std::size_t N>
+	template <typename... Args>
+	typename FixedVector<T, N>::iterator FixedVector<T, N>::emplace(const_iterator it, Args&&... args)
+	{
+		return insert(it, T(std::forward<Args>(args)...));
 	}
 
 

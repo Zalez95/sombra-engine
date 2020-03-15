@@ -6,7 +6,6 @@
 #include "se/collision/ConvexCollider.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "se/collision/FineCollisionDetector.h"
-#include "se/utils/FixedVector.h"
 #include "Polytope.h"
 
 namespace se::collision {
@@ -21,22 +20,22 @@ namespace se::collision {
 	}
 
 
-	bool EPACollisionDetector::calculate(
+	std::pair<bool, Contact> EPACollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		InitialSimplex& simplex, Contact& ret
+		Simplex& simplex
 	) const
 	{
-		bool contactUpdated = false;
+		std::pair<bool, Contact> ret = { false, Contact{} };
 
 		if (simplex.size() == 1) {
 			// The simplex's only point is the origin
-			ret.penetration = 0.0f;
-			ret.normal = glm::vec3(0.0f);
+			ret.second.penetration = 0.0f;
+			ret.second.normal = glm::vec3(0.0f);
 			for (int i = 0; i < 2; ++i) {
-				ret.worldPosition[i] = simplex[0].getWorldPosition(i);
-				ret.localPosition[i] = simplex[0].getLocalPosition(i);
+				ret.second.worldPosition[i] = simplex[0].getWorldPosition(i);
+				ret.second.localPosition[i] = simplex[0].getLocalPosition(i);
 			}
-			contactUpdated = true;
+			ret.first = true;
 		}
 		else if (simplex.size() > 1) {
 			// Create the initial polytope to expand from the simplex points
@@ -46,18 +45,18 @@ namespace se::collision {
 			int iClosestFace = expandPolytope(collider1, collider2, polytope);
 			if (iClosestFace >= 0) {
 				// Fill the Contact data with the closest face of the Polytope
-				fillContactData(polytope, iClosestFace, ret);
-				contactUpdated = true;
+				ret.second = calculateContactData(polytope, iClosestFace);
+				ret.first = true;
 			}
 		}
 
-		return contactUpdated;
+		return ret;
 	}
 
 // Private functions
 	Polytope EPACollisionDetector::createInitialPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		InitialSimplex& simplex
+		Simplex& simplex
 	) const
 	{
 		if (simplex.size() == 2) {
@@ -73,10 +72,10 @@ namespace se::collision {
 
 	void EPACollisionDetector::tetrahedronFromEdge(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		InitialSimplex& simplex
+		Simplex& simplex
 	) const
 	{
-		InitialSimplex vertices;
+		Simplex vertices;
 		glm::vec3 v01 = simplex[1].getCSOPosition() - simplex[0].getCSOPosition();
 
 		// 1. Find the closest coordinate axis to being orthonormal to the
@@ -119,7 +118,7 @@ namespace se::collision {
 
 	void EPACollisionDetector::tetrahedronFromTriangle(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
-		InitialSimplex& simplex
+		Simplex& simplex
 	) const
 	{
 		// Search two support points with the simplex's triangle normal
@@ -130,46 +129,14 @@ namespace se::collision {
 		SupportPoint sp1(collider1, collider2, tNormal);
 		SupportPoint sp2(collider1, collider2,-tNormal);
 
-		if (isOriginInsideTetrahedron({
-				simplex[0].getCSOPosition(), simplex[1].getCSOPosition(),
-				sp1.getCSOPosition(), sp2.getCSOPosition()
-			})
-		) {
-			simplex = { simplex[0], simplex[1], sp1, sp2 };
-		}
-		else if (isOriginInsideTetrahedron({
-				simplex[1].getCSOPosition(), simplex[2].getCSOPosition(),
-				sp1.getCSOPosition(), sp2.getCSOPosition()
-			})
-		) {
+		simplex = { simplex[0], simplex[1], sp1, sp2 };
+		if (!isOriginInside(simplex, mProjectionPrecision)) {
 			simplex = { simplex[1], simplex[2], sp1, sp2 };
-		}
-		else {
-			simplex = { simplex[2], simplex[0], sp1, sp2 };
-		}
-	}
 
-
-	bool EPACollisionDetector::isOriginInsideTetrahedron(
-		const utils::FixedVector<glm::vec3, 4>& vertices
-	) const
-	{
-		if (vertices.size() < 4) { return false; }
-
-		for (int i = 0; i < 4; ++i) {
-			int iV1 = i % 3, iV2 = (i + 1) % 3, iV3 = (i + 2) % 3, iV4 = (i + 3) % 3;
-
-			glm::vec3 v1v2 = vertices[iV2] - vertices[iV1];
-			glm::vec3 v1v3 = vertices[iV3] - vertices[iV1];
-			glm::vec3 tNormal = glm::normalize(glm::cross(v1v2, v1v3));
-			if ((glm::dot(tNormal, vertices[iV1]) > -mProjectionPrecision)
-				== (glm::dot(tNormal, vertices[iV4]) > -mProjectionPrecision)
-			) {
-				return false;
+			if (!isOriginInside(simplex, mProjectionPrecision)) {
+				simplex = { simplex[2], simplex[0], sp1, sp2 };
 			}
 		}
-
-		return true;
 	}
 
 
@@ -184,8 +151,9 @@ namespace se::collision {
 
 		// Store the HEFace indices in a vector ordered by their distance to
 		// the origin
-		std::vector<int> facesByDistance;
 		const HalfEdgeMesh& meshData = polytope.getMesh();
+		std::vector<int> facesByDistance;
+		facesByDistance.reserve(meshData.faces.size());
 		for (auto itFace = meshData.faces.begin(); itFace != meshData.faces.end(); ++itFace) {
 			if (polytope.getDistanceData(itFace.getIndex()).inside) {
 				facesByDistance.insert(
@@ -308,10 +276,10 @@ namespace se::collision {
 	}
 
 
-	void EPACollisionDetector::fillContactData(
-		const Polytope& polytope, int iClosestFace, Contact& ret
-	) const
+	Contact EPACollisionDetector::calculateContactData(const Polytope& polytope, int iClosestFace) const
 	{
+		Contact ret;
+
 		const HalfEdgeMesh& meshData = polytope.getMesh();
 		glm::vec3 faceNormal = polytope.getNormal(iClosestFace);
 		FaceDistanceData faceDistance = polytope.getDistanceData(iClosestFace);
@@ -329,15 +297,15 @@ namespace se::collision {
 		ret.penetration = faceDistance.distance;
 		ret.normal = faceNormal;
 		for (int i = 0; i < 2; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				ret.worldPosition[i][j] = originBarycentricCoords.x * sp1.getWorldPosition(i)[j]
-					+ originBarycentricCoords.y * sp2.getWorldPosition(i)[j]
-					+ originBarycentricCoords.z * sp3.getWorldPosition(i)[j];
-				ret.localPosition[i][j] = originBarycentricCoords.x * sp1.getLocalPosition(i)[j]
-					+ originBarycentricCoords.y * sp2.getLocalPosition(i)[j]
-					+ originBarycentricCoords.z * sp3.getLocalPosition(i)[j];
-			}
+			ret.worldPosition[i] = originBarycentricCoords.x * sp1.getWorldPosition(i)
+				+ originBarycentricCoords.y * sp2.getWorldPosition(i)
+				+ originBarycentricCoords.z * sp3.getWorldPosition(i);
+			ret.localPosition[i] = originBarycentricCoords.x * sp1.getLocalPosition(i)
+				+ originBarycentricCoords.y * sp2.getLocalPosition(i)
+				+ originBarycentricCoords.z * sp3.getLocalPosition(i);
 		}
+
+		return ret;
 	}
 
 }

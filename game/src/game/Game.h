@@ -75,6 +75,9 @@ namespace game {
 		/** The transition table of the StateMachine of the Game*/
 		std::vector<se::utils::StateMachine::Transition> mGameTransitions;
 
+		float mAccumulatedTime;
+		int mNumFrames;
+
 	public:		// Functions
 		/** Creates a new Game */
 		Game();

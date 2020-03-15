@@ -48,9 +48,16 @@ namespace se::utils {
 
 		/** Creates a new FixedVector
 		 *
-		 * @param	list the initial elements stored inside the FixedVector.
+		 * @param	list the initial elements stored inside the FixedVector
 		 * @note	it will be stored up to N elements */
 		FixedVector(std::initializer_list<T> list);
+
+		/** Creates a new FixedVector
+		 *
+		 * @param	first the first iterator of the range to copy
+		 * @param	last the past-the-end iterator of the range to copy */
+		template <typename InputIterator>
+		FixedVector(InputIterator first, InputIterator last);
 
 		/** Returns the Element i of the FixedVector
 		 *
@@ -177,6 +184,26 @@ namespace se::utils {
 		/** Removes the last Element of the FixedVector
 		 * @note	if the FixedVector is empty, it causes undefined behavior */
 		void pop_back();
+
+		/** Inserts the given element into the FixedVector at the position
+		 * located at the given iterator
+		 *
+		 * @param	it an iterator to the position to insert the element
+		 * @param	value the element to insert
+		 * @note	the next stored elements will be displaced one position
+		 *			right inside the FixedVector */
+		iterator insert(const_iterator it, const T& value);
+
+		/** Inserts the given element into the FixedVector at the position
+		 * located at the given iterator
+		 *
+		 * @param	it an iterator to the position to insert the element
+		 * @param	args the arguments needed for calling the constructor of
+		 *			the new Element
+		 * @note	the next stored elements will be displaced one position
+		 *			right inside the FixedVector */
+		template <typename... Args>
+		iterator emplace(const_iterator it, Args&& ... args);
 
 		/** Removes the element located at the given iterator from the
 		 * FixedVector

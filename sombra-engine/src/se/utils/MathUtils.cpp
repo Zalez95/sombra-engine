@@ -6,20 +6,38 @@ namespace se::utils {
 		const glm::vec3& p,
 		const glm::vec3& e1, const glm::vec3& e2
 	) {
-		glm::vec3 ret(0.0f);
-
-		glm::vec3 ve1p = p - e1, ve2p = p - e2, ve1e2 = glm::normalize(e2 - e1);
-		if (float dot1 = glm::dot(ve1p, ve1e2) <= 0.0f) {
-			ret = e1;
-		}
-		else if (glm::dot(ve2p, ve1e2) >= 0.0f) {
-			ret = e2;
-		}
-		else {
-			ret = e1 + dot1 * ve1e2;
+		glm::vec3 ve1p = p - e1, ve2p = p - e2, ve1e2 = e2 - e1;
+		float distance = glm::length(ve1e2);
+		if (distance > 0.0f) {
+			ve1e2 /= distance;
 		}
 
-		return ret;
+		float lambda = glm::dot(ve1p, ve1e2);
+		if (lambda < 0.0f) {
+			lambda = 0.0f;
+		}
+		else if (glm::dot(ve2p, ve1e2) > 0.0f) {
+			lambda = distance;
+		}
+
+		return e1 + lambda * ve1e2;
+	}
+
+
+	std::pair<bool, glm::vec2> projectPointOnEdge(
+		const glm::vec3& point, const std::array<glm::vec3, 2>& edge,
+		float projectionPrecision
+	) {
+		glm::vec3 v0v1 = edge[1] - edge[0], v0p = point - edge[0];
+
+		glm::vec3 v0v1norm = glm::normalize(v0v1);
+		float beta	= (glm::dot(v0p, v0v1norm) * v0v1norm).length() / v0v1.length();
+		float alpha	= 1.0f - beta;
+
+		bool inside = ((-projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
+					&& (-projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision));
+		glm::vec2 projectedPoint = glm::vec2(alpha, beta);
+		return std::make_pair(inside, projectedPoint);
 	}
 
 
@@ -69,9 +87,9 @@ namespace se::utils {
 	}
 
 
-	bool projectPointOnTriangle(
+	std::pair<bool, glm::vec3> projectPointOnTriangle(
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
-		float projectionPrecision, glm::vec3& projectedPoint
+		float projectionPrecision
 	) {
 		glm::vec3 u = triangle[1] - triangle[0], v = triangle[2] - triangle[0], w = point - triangle[0];
 		glm::vec3 n = glm::cross(u, v);
@@ -81,15 +99,11 @@ namespace se::utils {
 		float beta	= glm::dot(glm::cross(w, v), n) / nLengthSq;
 		float alpha	= 1.0f - gamma - beta;
 
-		if ((-projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
-			&& (-projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision)
-			&& (-projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision)
-		) {
-			projectedPoint = glm::vec3(alpha, beta, gamma);
-			return true;
-		}
-
-		return false;
+		bool inside = ((-projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)
+					&& (-projectionPrecision <= beta) && (beta <= 1.0f + projectionPrecision)
+					&& (-projectionPrecision <= gamma) && (gamma <= 1.0f + projectionPrecision));
+		glm::vec3 projectedPoint = glm::vec3(alpha, beta, gamma);
+		return std::make_pair(inside, projectedPoint);
 	}
 
 

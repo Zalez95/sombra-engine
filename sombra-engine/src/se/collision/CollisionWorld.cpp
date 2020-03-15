@@ -28,25 +28,15 @@ namespace se::collision {
 	void CollisionWorld::update()
 	{
 		// Clean old non intersecting Manifolds
-		for (std::size_t i = 0; i < mManifolds.size();) {
-			Manifold* pManifold = const_cast<Manifold*>(mManifolds[i]);
-
-			if (!pManifold->state[Manifold::State::Intersecting]) {
-				auto itPair = mMapCollidersManifolds.find(std::make_pair(pManifold->colliders[0], pManifold->colliders[1]));
-				if (itPair != mMapCollidersManifolds.end()) {
-					mMapCollidersManifolds.erase(itPair);
-				}
-
-				if (i + 1 < mManifolds.size()) {
-					std::swap(mManifolds[i], mManifolds.back());
-				}
-				mManifolds.pop_back();
+		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end();) {
+			if (!it->second.state[Manifold::State::Intersecting]) {
+				it = mCollidersManifoldMap.erase(it);
 			}
 			else {
 				// Set the remaining Manifolds' state to not intersecting
-				pManifold->state.reset(Manifold::State::Intersecting);
-				pManifold->state.set(Manifold::State::Updated);
-				++i;
+				it->second.state.reset(Manifold::State::Intersecting);
+				it->second.state.set(Manifold::State::Updated);
+				++it;
 			}
 		}
 
@@ -54,17 +44,15 @@ namespace se::collision {
 		for (Collider* collider : mColliders) {
 			mCoarseCollisionDetector.submit(collider);
 		}
-		auto intersectingColliders = mCoarseCollisionDetector.getIntersectingColliders();
-
-		// Narrow collision phase
-		for (ColliderPair& pair : intersectingColliders) {
+		mCoarseCollisionDetector.processIntersectingColliders([this](const ColliderPair& pair) {
 			// Find a Manifold between the given colliders
-			auto itPairManifold = mMapCollidersManifolds.find(std::make_pair(pair.first, pair.second));
-			if (itPairManifold == mMapCollidersManifolds.end()) {
-				itPairManifold = mMapCollidersManifolds.find(std::make_pair(pair.second, pair.first));
+			auto itPairManifold = mCollidersManifoldMap.find(std::make_pair(pair.first, pair.second));
+			if (itPairManifold == mCollidersManifoldMap.end()) {
+				itPairManifold = mCollidersManifoldMap.find(std::make_pair(pair.second, pair.first));
 			}
 
-			if (itPairManifold != mMapCollidersManifolds.end()) {
+			// Narrow collision phase
+			if (itPairManifold != mCollidersManifoldMap.end()) {
 				// Set the Manifold back to its old state (if we are at this
 				// stage it was Intersecting)
 				itPairManifold->second.state.set(Manifold::State::Intersecting);
@@ -77,19 +65,26 @@ namespace se::collision {
 				// Create a new Manifold
 				Manifold manifold(pair.first, pair.second);
 				if (mFineCollisionDetector.collide(manifold)) {
-					itPairManifold = mMapCollidersManifolds.emplace(
+					mCollidersManifoldMap.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(pair.first, pair.second),
 						std::forward_as_tuple(manifold)
-					).first;
-					mManifolds.push_back(&itPairManifold->second);
+					);
 				}
 			}
-		}
+		});
 
 		// Reset the updated state of all the Colliders
 		for (Collider* collider : mColliders) {
 			collider->resetUpdatedState();
+		}
+	}
+
+
+	void CollisionWorld::processCollisionManifolds(const ManifoldCallback& callback) const
+	{
+		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end(); ++it) {
+			callback(it->second);
 		}
 	}
 

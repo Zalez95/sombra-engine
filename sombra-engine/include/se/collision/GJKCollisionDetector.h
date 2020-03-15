@@ -3,8 +3,7 @@
 
 #include <utility>
 #include <glm/glm.hpp>
-#include "../utils/FixedVector.h"
-#include "SupportPoint.h"
+#include "Simplex.h"
 
 namespace se::collision {
 
@@ -12,7 +11,7 @@ namespace se::collision {
 
 
 	/**
-	 * Class GJKCollisionDetector, it's the class used to detect collisions
+	 * Class GJKCollisionDetector, it's the class used for detecting collisions
 	 * between arbitrary convex shapes with the GJK (Gilbert–Johnson–Keerthi)
 	 * Algorithm.
 	 *
@@ -24,9 +23,6 @@ namespace se::collision {
 	 */
 	class GJKCollisionDetector
 	{
-	private:	// Nested types
-		using SupportPointVector = utils::FixedVector<SupportPoint, 4>;
-
 	private:	// Attributes
 		/** The precision of the comparisons in the GJK algorithm */
 		const float mEpsilon;
@@ -48,19 +44,8 @@ namespace se::collision {
 		 *			tells if the two ConvexColliders are intersecting and a
 		 *			vector with the SupportPoints of the simplex needed to
 		 *			check the collision. */
-		std::pair<bool, SupportPointVector> calculateIntersection(
+		std::pair<bool, Simplex> calculateIntersection(
 			const ConvexCollider& collider1, const ConvexCollider& collider2
-		) const;
-
-		/** Checks if the given ray intersects the given collider
-		 *
-		 * @param	rayOrigin the origin point of the ray
-		 * @param	rayDirection the direction of the ray
-		 * @param	collider the collider to test
-		 * @return	true if the ray intersects the collider */
-		bool calculateRayCast(
-			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-			const ConvexCollider& collider
 		) const;
 	private:
 		/** Updates the given direction and simplex, reducing it to the lowest
@@ -73,7 +58,7 @@ namespace se::collision {
 		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex(SupportPointVector& simplex, glm::vec3& direction) const;
+		bool doSimplex(Simplex& simplex, glm::vec3& direction) const;
 
 		/** Updates the given direction and simplex in 0 dimensions
 		 *
@@ -84,9 +69,7 @@ namespace se::collision {
 		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex0D(
-			SupportPointVector& simplex, glm::vec3& direction
-		) const;
+		bool doSimplex0D(Simplex& simplex, glm::vec3& direction) const;
 
 		/** Updates the given direction and simplex in 1 dimensions
 		 *
@@ -98,9 +81,7 @@ namespace se::collision {
 		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex1D(
-			SupportPointVector& simplex, glm::vec3& direction
-		) const;
+		bool doSimplex1D(Simplex& simplex, glm::vec3& direction) const;
 
 		/** Updates the given direction and simplex in 2 dimensions
 		 *
@@ -112,9 +93,7 @@ namespace se::collision {
 		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex2D(
-			SupportPointVector& simplex, glm::vec3& direction
-		) const;
+		bool doSimplex2D(Simplex& simplex, glm::vec3& direction) const;
 
 		/** Updates the given direction and simplex in 3 dimensions
 		 *
@@ -126,9 +105,7 @@ namespace se::collision {
 		 *			SupportPoint
 		 * @return	true if the origin is inside the given simplex, false
 		 * 			otherwise */
-		bool doSimplex3D(
-			SupportPointVector& simplex, glm::vec3& direction
-		) const;
+		bool doSimplex3D(Simplex& simplex, glm::vec3& direction) const;
 	};
 
 }

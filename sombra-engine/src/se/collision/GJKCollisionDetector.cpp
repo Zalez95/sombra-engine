@@ -1,5 +1,4 @@
 #include <cassert>
-#include <algorithm>
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include "se/collision/ConvexCollider.h"
@@ -7,7 +6,7 @@
 
 namespace se::collision {
 
-	std::pair<bool, GJKCollisionDetector::SupportPointVector> GJKCollisionDetector::calculateIntersection(
+	std::pair<bool, Simplex> GJKCollisionDetector::calculateIntersection(
 		const ConvexCollider& collider1, const ConvexCollider& collider2
 	) const
 	{
@@ -15,7 +14,7 @@ namespace se::collision {
 		glm::vec3 c1Location = collider1.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 c2Location = collider2.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 direction = (c1Location == c2Location)? glm::sphericalRand(1.0f) : glm::normalize(c2Location - c1Location);
-		SupportPointVector simplex = { SupportPoint(collider1, collider2, direction) };
+		Simplex simplex = { SupportPoint(collider1, collider2, direction) };
 
 		bool containsOrigin = doSimplex(simplex, direction);
 		while (!containsOrigin) {
@@ -37,54 +36,8 @@ namespace se::collision {
 		return std::make_pair(true, simplex);
 	}
 
-
-	bool GJKCollisionDetector::calculateRayCast(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		const ConvexCollider& collider
-	) const
-	{
-		glm::vec3 pointRandomW(0.0f), pointRandomL(0.0f);
-		collider.getFurthestPointInDirection(glm::sphericalRand(1.0f), pointRandomW, pointRandomL);
-
-		float lambda = 0.0f;
-		glm::vec3 x = rayOrigin;
-		glm::vec3 n(0.0f);
-		glm::vec3 v = x - pointRandomW;
-		SupportPointVector simplex = {};
-
-		while (glm::dot(v, v) > mRCEpsilon * mRCEpsilon) {
-			glm::vec3 pointWorld(0.0f), pointLocal(0.0f);
-			collider.getFurthestPointInDirection(v, pointWorld, pointLocal);
-
-			glm::vec3 w = x - pointWorld;
-			if (glm::dot(w, v) > mEpsilon) {
-				if (glm::dot(v, rayDirection) >= -mEpsilon) {
-					return false;
-				}
-				else {
-					lambda -= glm::dot(v, w) / glm::dot(v, rayDirection);
-					x = rayOrigin + lambda * rayDirection;
-					n = v;
-				}
-			}
-
-			simplex.emplace_back(x, x, pointWorld, pointLocal);
-			glm::vec3 searchDir(0.0f);
-			doSimplex(simplex, searchDir);
-
-			auto itMin = std::min_element(simplex.begin(), simplex.end(), [](const SupportPoint& sp1, const SupportPoint& sp2) {
-				return glm::dot(sp1.getCSOPosition(), sp1.getCSOPosition()) < glm::dot(sp2.getCSOPosition(), sp2.getCSOPosition());
-			});
-			v = itMin->getCSOPosition();
-		}
-
-		return true;
-	}
-
 // Private functions
-	bool GJKCollisionDetector::doSimplex(
-		SupportPointVector& simplex, glm::vec3& searchDir
-	) const
+	bool GJKCollisionDetector::doSimplex(Simplex& simplex, glm::vec3& searchDir) const
 	{
 		assert(!simplex.empty() && "The simplex has to have at least one initial point");
 
@@ -110,9 +63,7 @@ namespace se::collision {
 	}
 
 
-	bool GJKCollisionDetector::doSimplex0D(
-		SupportPointVector& simplex, glm::vec3& searchDir
-	) const
+	bool GJKCollisionDetector::doSimplex0D(Simplex& simplex, glm::vec3& searchDir) const
 	{
 		bool ret = false;
 
@@ -133,9 +84,7 @@ namespace se::collision {
 	}
 
 
-	bool GJKCollisionDetector::doSimplex1D(
-		SupportPointVector& simplex, glm::vec3& searchDir
-	) const
+	bool GJKCollisionDetector::doSimplex1D(Simplex& simplex, glm::vec3& searchDir) const
 	{
 		bool ret = false;
 
@@ -166,9 +115,7 @@ namespace se::collision {
 	}
 
 
-	bool GJKCollisionDetector::doSimplex2D(
-		SupportPointVector& simplex, glm::vec3& searchDir
-	) const
+	bool GJKCollisionDetector::doSimplex2D(Simplex& simplex, glm::vec3& searchDir) const
 	{
 		bool ret = false;
 
@@ -213,9 +160,7 @@ namespace se::collision {
 	}
 
 
-	bool GJKCollisionDetector::doSimplex3D(
-		SupportPointVector& simplex, glm::vec3& searchDir
-	) const
+	bool GJKCollisionDetector::doSimplex3D(Simplex& simplex, glm::vec3& searchDir) const
 	{
 		bool ret = false;
 
