@@ -40,9 +40,13 @@
 #include <se/audio/Source.h>
 
 #include <se/utils/Log.h>
+#include <se/utils/Repository.h>
 
 #include "Level.h"
 #include "Game.h"
+
+using FontSPtr = std::shared_ptr<se::graphics::Font>;
+using FontRepository = se::utils::Repository<FontSPtr>;
 
 namespace game {
 
@@ -158,7 +162,9 @@ namespace game {
 	}
 
 // Public functions
-	Level::Level(GameData& gameData) : IGameScreen(gameData), mPlayerEntity(nullptr), mPlayerController(nullptr)
+	Level::Level(GameData& gameData) :
+		IGameScreen(gameData), mPlayerEntity(nullptr), mPlayerController(nullptr),
+		mLogoTexture(nullptr), mPickText(nullptr)
 	{
 		mGameData.eventManager->subscribe(this, se::app::Topic::Key);
 
@@ -169,9 +175,9 @@ namespace game {
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
-		se::app::Image heightMap1, splatMap1;
+		se::app::Image heightMap1, splatMap1, logo1, reticle1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, chessTexture = nullptr;
+		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, reticleTexture = nullptr, chessTexture = nullptr;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
@@ -273,7 +279,6 @@ namespace game {
 			}
 
 			// Images
-			se::app::Image logo1;
 			result = se::app::ImageReader::read("res/images/logo.png", logo1);
 			if (!result) {
 				throw std::runtime_error(result.description());
@@ -289,11 +294,22 @@ namespace game {
 				throw std::runtime_error(result.description());
 			}
 
+			result = se::app::ImageReader::read("res/images/reticle.png", reticle1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
+
 			// Textures
 			logoTexture = std::make_shared<se::graphics::Texture>();
 			logoTexture->setImage(
 				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 				logo1.width, logo1.height
+			);
+
+			reticleTexture = std::make_shared<se::graphics::Texture>();
+			reticleTexture->setImage(
+				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
+				reticle1.width, reticle1.height
 			);
 
 			float pixels[] = {
@@ -352,8 +368,16 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// Renderable2Ds
-		mRenderable2Ds.emplace_back(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
-		mGameData.layer2D->addRenderable2D(&mRenderable2Ds.back(), 0);
+		mLogoTexture = new se::graphics::Renderable2D(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
+		mGameData.layer2D->addRenderable2D(mLogoTexture, 0);
+		mReticleTexture = new se::graphics::Renderable2D(glm::vec2(kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f), glm::vec2(20.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
+		mGameData.layer2D->addRenderable2D(mReticleTexture, 0);
+		mPickText = new se::graphics::RenderableText(
+			glm::vec2(0.0f, 700.0f), glm::vec2(16.0f),
+			FontRepository::getInstance().get([](FontSPtr font) { return font->name == "Arial"; }),
+			glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)
+		);
+		mGameData.layer2D->addRenderableText(mPickText, 0);
 
 		/*********************************************************************
 		 * GAME DATA
@@ -372,8 +396,8 @@ namespace game {
 		config1.angularDrag = 0.01f;
 		config1.frictionCoefficient = 1.16f;
 		auto rigidBody1 = std::make_unique<se::physics::RigidBody>(config1, se::physics::RigidBodyData());
-		//auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
-		//mGameData.collisionManager->addEntity(mPlayerEntity, std::move(collider1));
+		auto collider1 = std::make_unique<se::collision::BoundingSphere>(0.5f);
+		mGameData.collisionManager->addEntity(mPlayerEntity, std::move(collider1));
 		mGameData.physicsManager->addEntity(mPlayerEntity, std::move(rigidBody1));
 
 		mGameData.graphicsManager->addCameraEntity(mPlayerEntity, std::move(camera1));
@@ -423,7 +447,7 @@ namespace game {
 		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
 		se::physics::RigidBody *rb1 = nullptr, *rb2 = nullptr;
 		for (std::size_t i = 0; i < 5; ++i) {
-			auto cube = std::make_unique<se::app::Entity>("non-random-cube");
+			auto cube = std::make_unique<se::app::Entity>("non-random-cube-" + std::to_string(i));
 			cube->position = cubePositions[i];
 
 			se::physics::RigidBodyConfig config2(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
@@ -496,10 +520,10 @@ namespace game {
 			auto rigidBody3 = std::make_unique<se::physics::RigidBody>(config3, se::physics::RigidBodyData());
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 
-			mGameData.physicsEngine->getForceManager().addRBForce(rigidBody3.get(), gravity);
-
+			auto rb3Ptr = rigidBody3.get();
 			mGameData.collisionManager->addEntity(gravityCube.get(), std::move(collider3));
 			mGameData.physicsManager->addEntity(gravityCube.get(), std::move(rigidBody3));
+			mGameData.physicsEngine->getForceManager().addRBForce(rb3Ptr, gravity);
 
 			auto renderable3D3 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, redMaterial);
 			mGameData.graphicsManager->addRenderableEntity(gravityCube.get(), std::move(renderable3D3));
@@ -542,7 +566,7 @@ namespace game {
 
 		// Random cubes
 		for (std::size_t i = 0; i < kNumCubes; ++i) {
-			auto cube = std::make_unique<se::app::Entity>("random-cube");
+			auto cube = std::make_unique<se::app::Entity>("random-cube-" + std::to_string(i));
 			cube->position = glm::ballRand(50.0f);
 
 			se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
@@ -642,9 +666,12 @@ namespace game {
 			mGameData.audioManager->removeEntity(entity.get());
 		}
 
-		for (const se::graphics::Renderable2D& renderable : mRenderable2Ds) {
-			mGameData.layer2D->removeRenderable2D(&renderable, 0);
-		}
+		mGameData.layer2D->removeRenderable2D(mLogoTexture, 0);
+		delete mLogoTexture;
+		mGameData.layer2D->removeRenderable2D(mReticleTexture, 0);
+		delete mReticleTexture;
+		mGameData.layer2D->removeRenderableText(mPickText, 0);
+		delete mPickText;
 
 		mGameData.eventManager->unsubscribe(this, se::app::Topic::Key);
 	}
@@ -670,7 +697,7 @@ namespace game {
 	void Level::setHandleInput(bool handle)
 	{
 		if (handle && !mPlayerController) {
-			mPlayerController = new PlayerController(*mPlayerEntity, *mGameData.eventManager, *mGameData.windowSystem, *mGameData.collisionManager);
+			mPlayerController = new PlayerController(mGameData, *mPlayerEntity, *mPickText);
 			mPlayerController->resetMousePosition();
 			mGameData.windowSystem->setCursorVisibility(false);
 		}

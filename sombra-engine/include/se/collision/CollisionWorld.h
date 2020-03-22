@@ -5,6 +5,7 @@
 #include "Manifold.h"
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
+#include "GJKRayCaster.h"
 
 namespace se::collision {
 
@@ -26,6 +27,9 @@ namespace se::collision {
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
 		using ManifoldCallback = std::function<void(const Manifold&)>;
+		using RayCastCallback = std::function<
+			void(const Collider&, const RayCast&)
+		>;
 
 	private:	// Attributes
 		/** The CoarseCollisionDetector of the CollisionWorld. We will use
@@ -36,6 +40,9 @@ namespace se::collision {
 		/** The FineCollisionDetector of the CollisionWorld. We will use
 		 * it to generate all the contact data */
 		FineCollisionDetector mFineCollisionDetector;
+
+		/** The GJKRayCaster used for checking ray hits */
+		GJKRayCaster mRayCaster;
 
 		/** All the Colliders to check */
 		std::vector<Collider*> mColliders;
@@ -84,6 +91,17 @@ namespace se::collision {
 		 *
 		 * @param	callback the function to call */
 		void processCollisionManifolds(const ManifoldCallback& callback) const;
+
+		/** Checks which colliders intersects with the given ray and calls the
+		 * given callback function for each of the intersecting colliders
+		 *
+		 * @param	rayOrigin the origin point of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @param	callback the function to call */
+		void processRayCast(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			const RayCastCallback& callback
+		) const;
 	};
 
 }

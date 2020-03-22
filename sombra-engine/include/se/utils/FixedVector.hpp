@@ -123,14 +123,16 @@ namespace se::utils {
 	template <typename T, std::size_t N>
 	typename FixedVector<T, N>::iterator FixedVector<T, N>::erase(const_iterator it)
 	{
-		if (it != end()) {
-			for (iterator it2 = it + 1; it2 != end(); ++it2) {
+		iterator itCopy = const_cast<iterator>(it);
+
+		if (itCopy != end()) {
+			for (iterator it2 = itCopy + 1; it2 != end(); ++it2) {
 				*(it2 - 1) = *it2;
 			}
 			mNumElements--;
 		}
 
-		return it;
+		return itCopy;
 	}
 
 }

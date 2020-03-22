@@ -20,6 +20,7 @@ namespace se::app {
 	{
 	private:	// Nested types
 		using ColliderUPtr = std::unique_ptr<collision::Collider>;
+		using EntityRayCastPair = std::pair<Entity*, collision::RayCast>;
 
 	private:	// Attributes
 		/** The CollisionWorld used for detecting the collisions the data of
@@ -68,7 +69,10 @@ namespace se::app {
 		 *
 		 * @param	delta the elapsed time since the last update in seconds */
 		void update(float delta);
-		std::string getName(const glm::vec3& rayOrigin, const glm::vec3& rayDirection);
+
+		std::vector<EntityRayCastPair> getEntities(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection
+		) const;
 	};
 
 }

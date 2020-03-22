@@ -30,8 +30,9 @@ namespace se::utils {
 	) {
 		glm::vec3 v0v1 = edge[1] - edge[0], v0p = point - edge[0];
 
-		glm::vec3 v0v1norm = glm::normalize(v0v1);
-		float beta	= (glm::dot(v0p, v0v1norm) * v0v1norm).length() / v0v1.length();
+		float v0v1Length = glm::length(v0v1);
+		glm::vec3 v0v1norm = (v0v1Length > 0.0f)? v0v1 / v0v1Length : glm::vec3(0.0f);
+		float beta	= glm::length(glm::dot(v0p, v0v1norm) * v0v1norm) / v0v1Length;
 		float alpha	= 1.0f - beta;
 
 		bool inside = ((-projectionPrecision <= alpha) && (alpha <= 1.0f + projectionPrecision)

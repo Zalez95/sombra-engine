@@ -7,8 +7,13 @@
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
+#include <se/graphics/3D/Renderable3D.h>
+#include <se/graphics/2D/RenderableText.h>
 
 namespace game {
+
+	struct GameData;
+
 
 	/**
 	 * Class PlayerController, TODO:
@@ -20,15 +25,14 @@ namespace game {
 		{ Front = 0, Back, Right, Left, Up, Down, NumDirections };
 
 	private:	// Attributes
+		GameData& mGameData;
 		se::app::Entity& mEntity;
-		se::app::EventManager& mEventManager;
-		se::window::WindowSystem& mWindowSystem;
-		se::app::CollisionManager& mCollisionManager;
+		se::graphics::RenderableText& mPickText;
 
-		static constexpr float kRunSpeed			= 2.5f;
-		static constexpr float kJumpSpeed			= 3.0f;
-		static constexpr float kMouseSpeed			= 100.0f;
-		static constexpr float kPitchLimit			= 0.05f;
+		static constexpr float kRunSpeed	= 2.5f;
+		static constexpr float kJumpSpeed	= 3.0f;
+		static constexpr float kMouseSpeed	= 100.0f;
+		static constexpr float kPitchLimit	= 0.05f;
 
 		/** The rotation based on the mouse movement around the world Y axis
 		 * @note	this values are framerate dependant */
@@ -41,16 +45,22 @@ namespace game {
 		/** The state of the movement in each direction */
 		std::array<bool, static_cast<int>(Direction::NumDirections)> mMovement;
 
+		/** If the mouse left button was pressed or not */
+		bool mClicked;
+
+		std::shared_ptr<se::graphics::Mesh> mTetrahedronMesh;
+		std::shared_ptr<se::graphics::Material> mYellowMaterial;
+
 	public:		// Functions
 		/** Creates a new PlayerController
 		 *
-		 * @param	entity the Entity to control as a player
-		 * @param	EventManager the EventManager to subscribe the Player to
-		 * @param	windowSystem the WindowSystem of the Game */
+		 * @param	gameData a reference to the GameData
+		 * @param	entity a reference to the Entity to control as a player
+		 * @param	pickText the text to write to */
 		PlayerController(
+			GameData& gameData,
 			se::app::Entity& entity,
-			se::app::EventManager&, se::window::WindowSystem& windowSystem,
-			se::app::CollisionManager& collisionManager
+			se::graphics::RenderableText& pickText
 		);
 
 		/** Class destructor */

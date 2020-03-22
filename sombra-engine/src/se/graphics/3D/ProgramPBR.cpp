@@ -24,7 +24,7 @@ namespace se::graphics {
 		// Set uniforms
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.baseColorFactor", material.pbrMetallicRoughness.baseColorFactor);
 
-		int useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
+		bool useBaseColorTexture = (material.pbrMetallicRoughness.baseColorTexture != nullptr);
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture", useBaseColorTexture);
 		if (useBaseColorTexture) {
 			mProgram->setUniform("uMaterial.pbrMetallicRoughness.baseColorTexture", TextureUnits::kBaseColor);
@@ -34,14 +34,14 @@ namespace se::graphics {
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.metallicFactor", material.pbrMetallicRoughness.metallicFactor);
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.roughnessFactor", material.pbrMetallicRoughness.roughnessFactor);
 
-		int useMetallicRoughnessTexture = (material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
+		bool useMetallicRoughnessTexture = (material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture", useMetallicRoughnessTexture);
 		if (useMetallicRoughnessTexture) {
 			mProgram->setUniform("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture", TextureUnits::kMetallicRoughness);
 			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
 		}
 
-		int useNormalTexture = (material.normalTexture != nullptr);
+		bool useNormalTexture = (material.normalTexture != nullptr);
 		mProgram->setUniform("uMaterial.useNormalTexture", useNormalTexture);
 		if (useNormalTexture) {
 			mProgram->setUniform("uMaterial.normalTexture", TextureUnits::kNormal);
@@ -49,7 +49,7 @@ namespace se::graphics {
 			mProgram->setUniform("uMaterial.normalScale", material.normalScale);
 		}
 
-		int useOcclusionTexture = (material.occlusionTexture != nullptr);
+		bool useOcclusionTexture = (material.occlusionTexture != nullptr);
 		mProgram->setUniform("uMaterial.useOcclusionTexture", useOcclusionTexture);
 		if (useOcclusionTexture) {
 			mProgram->setUniform("uMaterial.occlusionTexture", TextureUnits::kOcclusion);
@@ -57,7 +57,7 @@ namespace se::graphics {
 			mProgram->setUniform("uMaterial.occlusionStrength", material.occlusionStrength);
 		}
 
-		int useEmissiveTexture = (material.emissiveTexture != nullptr);
+		bool useEmissiveTexture = (material.emissiveTexture != nullptr);
 		mProgram->setUniform("uMaterial.useEmissiveTexture", useEmissiveTexture);
 		if (useEmissiveTexture) {
 			mProgram->setUniform("uMaterial.emissiveTexture", TextureUnits::kEmissive);
@@ -66,7 +66,7 @@ namespace se::graphics {
 
 		mProgram->setUniform("uMaterial.emissiveFactor", material.emissiveFactor);
 
-		int checkAlphaCutoff = (material.alphaMode == AlphaMode::Mask);
+		bool checkAlphaCutoff = (material.alphaMode == AlphaMode::Mask);
 		mProgram->setUniform("uMaterial.checkAlphaCutoff", checkAlphaCutoff);
 		if (checkAlphaCutoff) {
 			mProgram->setUniform("uMaterial.alphaCutoff", material.alphaCutoff);

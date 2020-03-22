@@ -17,7 +17,7 @@ namespace se::graphics {
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorFactor";
 			mProgram->setUniform(aStreambuf.data(), material.materials[i].pbrMetallicRoughness.baseColorFactor);
 
-			int useBaseColorTexture = (material.materials[i].pbrMetallicRoughness.baseColorTexture != nullptr);
+			bool useBaseColorTexture = (material.materials[i].pbrMetallicRoughness.baseColorTexture != nullptr);
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.useBaseColorTexture";
 			mProgram->setUniform(aStreambuf.data(), useBaseColorTexture);
@@ -36,7 +36,7 @@ namespace se::graphics {
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.roughnessFactor";
 			mProgram->setUniform(aStreambuf.data(), material.materials[i].pbrMetallicRoughness.roughnessFactor);
 
-			int useMetallicRoughnessTexture = (material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
+			bool useMetallicRoughnessTexture = (material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture != nullptr);
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.useMetallicRoughnessTexture";
 			mProgram->setUniform(aStreambuf.data(), useMetallicRoughnessTexture);
@@ -47,7 +47,7 @@ namespace se::graphics {
 				material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness0);
 			}
 
-			int useNormalTexture = (material.materials[i].normalTexture != nullptr);
+			bool useNormalTexture = (material.materials[i].normalTexture != nullptr);
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].useNormalTexture";
 			mProgram->setUniform(aStreambuf.data(), useNormalTexture);

@@ -8,7 +8,8 @@
 #include "TestMeshes.h"
 
 using namespace se::collision;
-static constexpr float kContactPrecision	= 0.0000001f;
+static constexpr float kContactPrecision = 0.0000001f;
+static constexpr int kMaxIterations = 32;
 
 TEST(Raycast, Cube1)
 {
@@ -22,7 +23,7 @@ TEST(Raycast, Cube1)
 	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), p1);
 	bb1.setTransforms(t1 * r1);
 
-	GJKRayCaster gjk(kContactPrecision);
+	GJKRayCaster gjk(kContactPrecision, kMaxIterations);
 	bool res = gjk.calculateRayCast(rayOrigin, rayOrientation * glm::vec3(0.0f, 0.0f, 1.0f), bb1).first;
 
 	ASSERT_TRUE(res);

@@ -1,11 +1,17 @@
 #include <algorithm>
 #include "se/collision/CollisionWorld.h"
 #include "se/collision/Collider.h"
+#include "se/collision/ConvexCollider.h"
+#include "se/collision/ConcaveCollider.h"
 
 namespace se::collision {
 
+	static constexpr int kMaxRayCasterIterations = 32;
+
+
 	CollisionWorld::CollisionWorld(float minFDifference, float contactPrecision, float contactSeparation) :
-		mFineCollisionDetector(minFDifference, contactPrecision, contactSeparation) {}
+		mFineCollisionDetector(minFDifference, contactPrecision, contactSeparation),
+		mRayCaster(contactPrecision, kMaxRayCasterIterations) {}
 
 
 	void CollisionWorld::addCollider(Collider* collider)
@@ -85,6 +91,25 @@ namespace se::collision {
 	{
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end(); ++it) {
 			callback(it->second);
+		}
+	}
+
+
+	void CollisionWorld::processRayCast(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+		const RayCastCallback& callback
+	) const
+	{
+		for (const Collider* collider : mColliders) {
+			if (auto convexCollider = dynamic_cast<const ConvexCollider*>(collider)) {
+				auto [intersects, rayCast] = mRayCaster.calculateRayCast(rayOrigin, rayDirection, *convexCollider);
+				if (intersects) {
+					callback(*collider, rayCast);
+				}
+			}
+			/*else if (auto concaveCollider = dynamic_cast<const ConcaveCollider*>(collider)) {
+
+			}*/
 		}
 	}
 

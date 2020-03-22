@@ -183,6 +183,20 @@ namespace se::graphics {
 
 
 	template <>
+	void Program::setUniform<bool>(int location, const bool& value) const
+	{
+		GL_WRAP( glUniform1i(location, value) );
+	}
+
+
+	template <>
+	void Program::setUniformV<bool>(int location, std::size_t count, const bool* valuePtr) const
+	{
+		GL_WRAP( glUniform1iv(location, count, reinterpret_cast<const GLint*>(valuePtr)) );
+	}
+
+
+	template <>
 	void Program::setUniform<glm::vec2>(int location, const glm::vec2& value) const
 	{
 		GL_WRAP( glUniform2f(location, value.x, value.y) );

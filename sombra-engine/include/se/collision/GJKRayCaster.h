@@ -1,8 +1,8 @@
 #ifndef GJK_RAY_CASTER_H
 #define GJK_RAY_CASTER_H
 
-#include <utility>
 #include "RayCast.h"
+#include "Simplex.h"
 
 namespace se::collision {
 
@@ -24,11 +24,17 @@ namespace se::collision {
 		/** The precision of the comparisons in the GJK algorithm */
 		const float mEpsilon;
 
+		/** The maximum number of iterations of the algorithm */
+		const int mMaxIterations;
+
 	public:		// Functions
 		/** Creates a new GJKRayCaster
 		 *
-		 * @param	epsilon the comparison precision of the algorithm */
-		GJKRayCaster(float epsilon) : mEpsilon(epsilon) {};
+		 * @param	epsilon the comparison precision of the algorithm
+		 * @param	maxIterations the maximum number of iterations of the
+		 *			algorithm */
+		GJKRayCaster(float epsilon, int maxIterations) :
+			mEpsilon(epsilon), mMaxIterations(maxIterations) {};
 
 		/** Checks if the given ray intersects the given collider
 		 *
@@ -41,6 +47,88 @@ namespace se::collision {
 			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
 			const ConvexCollider& collider
 		) const;
+	private:
+		/** Calculates the closest point to the origin of coordinates in CSO
+		 * space in the given simplex
+		 *
+		 * @param	simplex the simplex to calculate its closest point to the
+		 *			origin
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin
+		 * @return	a pair with a boolean that tells if the SupportPoint was
+		 *			calculated successfully and the closest SupportPoint to
+		 *			the origin */
+		std::pair<bool, SupportPoint> calculateClosestPoint(
+			const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		) const;
+
+		/** Implements @see calculateClosestPoint with a simplex of 1 vertex
+		 *
+		 * @param	simplex the simplex to calculate its closest point to the
+		 *			origin
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin
+		 * @return	a pair with a boolean that tells if the SupportPoint was
+		 *			calculated successfully and the closest SupportPoint to
+		 *			the origin */
+		std::pair<bool, SupportPoint> calculateClosestPoint1(
+			const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		) const;
+
+		/** Implements @see calculateClosestPoint with a simplex of 2 vertices
+		 *
+		 * @param	simplex the simplex to calculate its closest point to the
+		 *			origin
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin
+		 * @return	a pair with a boolean that tells if the SupportPoint was
+		 *			calculated successfully and the closest SupportPoint to
+		 *			the origin */
+		std::pair<bool, SupportPoint> calculateClosestPoint2(
+			const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		) const;
+
+		/** Implements @see calculateClosestPoint with a simplex of 3 vertices
+		 *
+		 * @param	simplex the simplex to calculate its closest point to the
+		 *			origin
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin
+		 * @return	a pair with a boolean that tells if the SupportPoint was
+		 *			calculated successfully and the closest SupportPoint to
+		 *			the origin */
+		std::pair<bool, SupportPoint> calculateClosestPoint3(
+			const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		) const;
+
+		/** Implements @see calculateClosestPoint with a simplex of 4 vertices
+		 *
+		 * @param	simplex the simplex to calculate its closest point to the
+		 *			origin
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin
+		 * @return	a pair with a boolean that tells if the SupportPoint was
+		 *			calculated successfully and the closest SupportPoint to
+		 *			the origin */
+		std::pair<bool, SupportPoint> calculateClosestPoint4(
+			const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		) const;
+
+		/** Removes the simplex points that arent being used for calculating the
+		 * closest distance to the origin
+		 *
+		 * @param	simplex the simplex to remove its points
+		 * @param	closestPoints a vector of bools that tells which vertices
+		 *			of the simplex were used for calculating the closest point
+		 *			to the origin */
+		static void reduce(
+			Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
+		);
 	};
 
 }

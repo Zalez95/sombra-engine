@@ -6,6 +6,7 @@
 
 #include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/Renderable2D.h>
+#include <se/graphics/2D/RenderableText.h>
 
 #include <se/app/Entity.h>
 #include <se/audio/Buffer.h>
@@ -35,18 +36,19 @@ namespace game {
 		std::vector<EntityUPtr> mEntities;
 		se::app::Entity* mPlayerEntity;
 		PlayerController* mPlayerController;
-		std::vector<se::graphics::Renderable2D> mRenderable2Ds;
 		std::vector<se::audio::Buffer> mBuffers;
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;
 		std::vector<se::animation::IAnimator*> mAnimators;
+		se::graphics::Renderable2D *mLogoTexture, *mReticleTexture;
+		se::graphics::RenderableText* mPickText;
 
 	public:		// Functions
 		/** Creates a new Level and loads all the needed resources into
 		 * the GameData
 		 *
-		 * @param	game a reference to the GameData where we are going to load
-		 *			the Level menu */
+		 * @param	gameData a reference to the GameData where we are going to
+		 *			load the Level menu */
 		Level(GameData& gameData);
 
 		/** Class destructor, it clears all the used resources from the
