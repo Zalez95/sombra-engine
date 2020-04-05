@@ -19,7 +19,7 @@ namespace game {
 	struct GameData
 	{
 		se::window::WindowSystem* windowSystem;
-		se::graphics::GraphicsSystem* graphicsSystem;
+		se::graphics::GraphicsEngine* graphicsEngine;
 		se::physics::PhysicsEngine* physicsEngine;
 		se::collision::CollisionWorld* collisionWorld;
 		se::animation::AnimationSystem* animationSystem;

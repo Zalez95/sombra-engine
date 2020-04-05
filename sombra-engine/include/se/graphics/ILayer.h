@@ -6,8 +6,8 @@
 namespace se::graphics {
 
 	/**
-	 * Class ILayer. It's an interface that the GraphicsSystem will use to
-	 * render all the Graphics elements.
+	 * Class ILayer. It's an interface used by the GraphicsEngine for rendering
+	 * all the Renderable elements.
 	 */
 	class ILayer
 	{

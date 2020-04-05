@@ -1,11 +1,11 @@
 #include <stdexcept>
 #include <algorithm>
-#include "se/graphics/GraphicsSystem.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "core/GLWrapper.h"
 
 namespace se::graphics {
 
-	GraphicsSystem::GraphicsSystem(const glm::uvec2& viewportSize) : mViewportSize(viewportSize)
+	GraphicsEngine::GraphicsEngine(const glm::uvec2& viewportSize) : mViewportSize(viewportSize)
 	{
 		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {
@@ -29,7 +29,7 @@ namespace se::graphics {
 	}
 
 
-	std::string GraphicsSystem::getGLInfo() const
+	std::string GraphicsEngine::getGLInfo() const
 	{
 		GL_WRAP( const char* glRenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER)) );
 		GL_WRAP( const char* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION)) );
@@ -57,7 +57,7 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::setViewport(const glm::uvec2& viewportSize)
+	void GraphicsEngine::setViewport(const glm::uvec2& viewportSize)
 	{
 		mViewportSize = viewportSize;
 
@@ -69,7 +69,7 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::addLayer(ILayer* layer)
+	void GraphicsEngine::addLayer(ILayer* layer)
 	{
 		if (layer) {
 			layer->setViewportSize(mViewportSize);
@@ -79,7 +79,7 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::removeLayer(ILayer* layer)
+	void GraphicsEngine::removeLayer(ILayer* layer)
 	{
 		mLayers.erase(
 			std::remove(mLayers.begin(), mLayers.end(), layer),
@@ -88,7 +88,7 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsSystem::render()
+	void GraphicsEngine::render()
 	{
 		GL_WRAP( glClear(GL_DEPTH_BUFFER_BIT) );
 

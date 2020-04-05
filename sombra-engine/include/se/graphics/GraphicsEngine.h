@@ -1,5 +1,5 @@
-#ifndef GRAPHICS_SYSTEM_H
-#define GRAPHICS_SYSTEM_H
+#ifndef GRAPHICS_ENGINE_H
+#define GRAPHICS_ENGINE_H
 
 #include <vector>
 #include <string>
@@ -8,13 +8,13 @@
 namespace se::graphics {
 
 	/**
-	 * Class GraphicsSystem. It prepares all the OpenGL data and holds all the
+	 * Class GraphicsEngine. It prepares all the OpenGL data and holds all the
 	 * Layers to render
 	 */
-	class GraphicsSystem
+	class GraphicsEngine
 	{
 	private:	// Attributes
-		/** The Layers that the GraphicsSystem will render */
+		/** The Layers that the GraphicsEngine will render */
 		std::vector<ILayer*> mLayers;
 
 		/** The size of the layers viewports */
@@ -25,7 +25,7 @@ namespace se::graphics {
 		 *
 		 * @param	viewportSize the initial viewport size of the layers
 		 * @throw	runtime_error if failed to initialize GLEW */
-		GraphicsSystem(const glm::uvec2& viewportSize);
+		GraphicsEngine(const glm::uvec2& viewportSize);
 
 		/** @return	the OpenGL version info */
 		std::string getGLInfo() const;
@@ -35,17 +35,17 @@ namespace se::graphics {
 		 * @param	viewportSize the new size of the layer viewports */
 		void setViewport(const glm::uvec2& viewportSize);
 
-		/** Adds the given ILayer to the GraphicsSystem so it will
+		/** Adds the given ILayer to the GraphicsEngine so it will
 		 * be rendered in each render call
 		 *
 		 * @param	layer a pointer to the ILayer that we want
-		 *			to add to the GraphicsSystem */
+		 *			to add to the GraphicsEngine */
 		void addLayer(ILayer* layer);
 
-		/** Removes the given ILayer from the GraphicsSystem
+		/** Removes the given ILayer from the GraphicsEngine
 		 *
 		 * @param	layer a pointer to the ILayer that we want to remove from
-		 *			the GraphicsSystem
+		 *			the GraphicsEngine
 		 * @note	you must call this function before deleting the
 		 *			Layer */
 		void removeLayer(ILayer* layer);
@@ -56,4 +56,4 @@ namespace se::graphics {
 
 }
 
-#endif		// GRAPHICS_SYSTEM_H
+#endif		// GRAPHICS_ENGINE_H

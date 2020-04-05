@@ -2,7 +2,7 @@
 #define APPLICATION_H
 
 namespace se::window { struct WindowData; class WindowSystem; }
-namespace se::graphics { class GraphicsSystem; }
+namespace se::graphics { class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { class CollisionWorld; }
 namespace se::animation { class AnimationSystem; }
@@ -52,7 +52,7 @@ namespace se::app {
 		bool mStopRunning;
 
 		window::WindowSystem* mWindowSystem;
-		graphics::GraphicsSystem* mGraphicsSystem;
+		graphics::GraphicsEngine* mGraphicsEngine;
 		physics::PhysicsEngine* mPhysicsEngine;
 		collision::CollisionWorld* mCollisionWorld;
 		animation::AnimationSystem* mAnimationSystem;

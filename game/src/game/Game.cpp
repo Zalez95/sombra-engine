@@ -2,7 +2,7 @@
 #include <se/utils/Log.h>
 #include <se/utils/Repository.h>
 #include <se/app/loaders/FontReader.h>
-#include <se/graphics/GraphicsSystem.h>
+#include <se/graphics/GraphicsEngine.h>
 #include "Game.h"
 #include "Level.h"
 #include "MainMenuController.h"
@@ -18,7 +18,7 @@ namespace game {
 	Game::Game() : Application({ kTitle, kWidth, kHeight }, kUpdateTime), mGameData{}
 	{
 		mGameData.windowSystem = mWindowSystem;
-		mGameData.graphicsSystem = mGraphicsSystem;
+		mGameData.graphicsEngine = mGraphicsEngine;
 		mGameData.physicsEngine = mPhysicsEngine;
 		mGameData.collisionWorld = mCollisionWorld;
 		mGameData.animationSystem = mAnimationSystem;
@@ -129,7 +129,7 @@ namespace game {
 			}
 
 			mGameData.layer2D = new se::graphics::Layer2D();
-			mGameData.graphicsSystem->addLayer(mGameData.layer2D);
+			mGameData.graphicsEngine->addLayer(mGameData.layer2D);
 
 			mGameData.fpsText = new se::graphics::RenderableText
 				(glm::vec2(0.0f), glm::vec2(16.0f),
@@ -170,7 +170,7 @@ namespace game {
 		}
 
 		if (mGameData.layer2D) {
-			mGameData.graphicsSystem->removeLayer(mGameData.layer2D);
+			mGameData.graphicsEngine->removeLayer(mGameData.layer2D);
 			delete mGameData.layer2D;
 		}
 

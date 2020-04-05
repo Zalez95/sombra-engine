@@ -6,17 +6,17 @@
 
 namespace se::app {
 
-	GraphicsManager::GraphicsManager(graphics::GraphicsSystem& graphicsSystem, EventManager& eventManager) :
-		mGraphicsSystem(graphicsSystem), mEventManager(eventManager)
+	GraphicsManager::GraphicsManager(graphics::GraphicsEngine& graphicsEngine, EventManager& eventManager) :
+		mGraphicsEngine(graphicsEngine), mEventManager(eventManager)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
-		mGraphicsSystem.addLayer(&mLayer3D);
+		mGraphicsEngine.addLayer(&mLayer3D);
 	}
 
 
 	GraphicsManager::~GraphicsManager()
 	{
-		mGraphicsSystem.removeLayer(&mLayer3D);
+		mGraphicsEngine.removeLayer(&mLayer3D);
 		mEventManager.unsubscribe(this, Topic::Resize);
 	}
 
@@ -255,7 +255,7 @@ namespace se::app {
 	void GraphicsManager::render()
 	{
 		SOMBRA_INFO_LOG << "Render start";
-		mGraphicsSystem.render();
+		mGraphicsEngine.render();
 		SOMBRA_INFO_LOG << "Render end";
 	}
 
@@ -264,7 +264,7 @@ namespace se::app {
 	{
 		auto width = static_cast<unsigned int>(event.getWidth());
 		auto height = static_cast<unsigned int>(event.getHeight());
-		mGraphicsSystem.setViewport({ width, height });
+		mGraphicsEngine.setViewport({ width, height });
 	}
 
 }

@@ -4,7 +4,7 @@
 #include <map>
 #include "Skin.h"
 #include "events/EventManager.h"
-#include "../graphics/GraphicsSystem.h"
+#include "../graphics/GraphicsEngine.h"
 #include "../graphics/3D/Layer3D.h"
 #include "../graphics/3D/Camera.h"
 #include "../graphics/3D/Lights.h"
@@ -31,13 +31,13 @@ namespace se::app {
 		using SkinSPtr = std::shared_ptr<Skin>;
 
 	private:	// Attributes
-		/** The System used for rendering the data of the Entities */
-		graphics::GraphicsSystem& mGraphicsSystem;
+		/** The GraphicsEngine used for rendering the data of the Entities */
+		graphics::GraphicsEngine& mGraphicsEngine;
 
 		/** The EventManager that will notify the events */
 		EventManager& mEventManager;
 
-		/** The Layer3D used by the GraphicsSystem */
+		/** The Layer3D used by the GraphicsEngine */
 		graphics::Layer3D mLayer3D;
 
 		std::map<Entity*, CameraUPtr> mCameraEntities;
@@ -50,12 +50,12 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new GraphicsManager
 		 *
-		 * @param	graphicsSystem a reference to the GraphicsSystem used by
+		 * @param	graphicsEngine a reference to the GraphicsEngine used by
 		 * 			the GraphicsManager to render the entities
 		 * @param	eventManager a reference to the EventManager that the
 		 *			GraphicsManager will be subscribed to */
 		GraphicsManager(
-			graphics::GraphicsSystem& graphicsSystem,
+			graphics::GraphicsEngine& graphicsEngine,
 			EventManager& eventManager
 		);
 
@@ -128,7 +128,7 @@ namespace se::app {
 		/** Renders the graphics data of the Entities */
 		void render();
 	private:
-		/** Handles the given ResizeEvent by notifying the GraphicsSystem of
+		/** Handles the given ResizeEvent by notifying the GraphicsEngine of
 		 * the window resize
 		 *
 		 * @param	event the ResizeEvent to handle */

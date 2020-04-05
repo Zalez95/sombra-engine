@@ -2,7 +2,7 @@
 #include <thread>
 #include "se/utils/Log.h"
 #include "se/window/WindowSystem.h"
-#include "se/graphics/GraphicsSystem.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
@@ -20,7 +20,7 @@ namespace se::app {
 
 	Application::Application(const window::WindowData& windowConfig, float updateTime) :
 		mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
-		mWindowSystem(nullptr), mGraphicsSystem(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
+		mWindowSystem(nullptr), mGraphicsEngine(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
 		mAnimationSystem(nullptr), mAudioEngine(nullptr),
 		mEventManager(nullptr), mInputManager(nullptr), mGraphicsManager(nullptr), mPhysicsManager(nullptr),
 		mCollisionManager(nullptr), mAnimationManager(nullptr), mAudioManager(nullptr)
@@ -37,9 +37,9 @@ namespace se::app {
 			mInputManager = new InputManager(*mWindowSystem, *mEventManager);
 
 			// Graphics
-			mGraphicsSystem = new graphics::GraphicsSystem({ windowConfig.width, windowConfig.height });
-			mGraphicsManager = new GraphicsManager(*mGraphicsSystem, *mEventManager);
-			mGraphicsSystem->setViewport({ windowConfig.width, windowConfig.height });
+			mGraphicsEngine = new graphics::GraphicsEngine({ windowConfig.width, windowConfig.height });
+			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager);
+			mGraphicsEngine->setViewport({ windowConfig.width, windowConfig.height });
 			mGUIManager = new GUIManager(*mEventManager, { windowConfig.width, windowConfig.height });
 
 			// Physics
@@ -79,7 +79,7 @@ namespace se::app {
 		if (mPhysicsManager) { delete mPhysicsManager; }
 		if (mPhysicsEngine) { delete mPhysicsEngine; }
 		if (mGraphicsManager) { delete mGraphicsManager; }
-		if (mGraphicsSystem) { delete mGraphicsSystem; }
+		if (mGraphicsEngine) { delete mGraphicsEngine; }
 		if (mInputManager) { delete mInputManager; }
 		if (mWindowSystem) { delete mWindowSystem; }
 		if (mEventManager) { delete mEventManager; }
