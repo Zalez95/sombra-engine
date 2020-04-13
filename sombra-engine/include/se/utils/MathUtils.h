@@ -3,10 +3,24 @@
 
 #include <array>
 #include <vector>
+#include <utility>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace se::utils {
+
+	/** Struct PairHash, used for calculating the hash value of pairs */
+	struct PairHash
+	{
+		/** Calculates the hash value of the given pair
+		 *
+		 * @param	pair the pair to calculate its hash value
+		 * @return	the hash value */
+		template <typename T1, typename T2>
+		std::size_t operator()(const std::pair<T1, T2>& pair) const
+		{ return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second); }
+	};
+
 
 	/** Calculates the pow with the given numbers
 	 *

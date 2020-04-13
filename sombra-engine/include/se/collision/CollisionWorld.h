@@ -6,10 +6,34 @@
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
 #include "GJKRayCaster.h"
+#include "../utils/MathUtils.h"
 
 namespace se::collision {
 
 	class Collider;
+
+
+	/** Struct CollisionWorldData, holds all the Configuration parameters of the
+	 * CollisionWorld */
+	struct CollisionWorldData
+	{
+		/** The minimum difference between the distances to the origin of two
+		 * faces needed for the EPA algorithm */
+		float minFDifference;
+
+		/** The precision of the calculated Contact points */
+		float contactPrecision;
+
+		/** The minimum distance between the coordinates of two Contact used for
+		 * determining if a contact is the same than another one */
+		float contactSeparation;
+
+		/** The maximum number of collision Manifolds */
+		std::size_t maxManifolds;
+
+		/** The maximum number of iterations for the ray casting algorithm */
+		int maxRayCasterIterations;
+	};
 
 
 	/**
@@ -26,6 +50,7 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
+		using ManifoldRef = Manifold::Repository::Reference;
 		using ManifoldCallback = std::function<void(const Manifold&)>;
 		using RayCastCallback = std::function<
 			void(const Collider&, const RayCast&)
@@ -41,29 +66,24 @@ namespace se::collision {
 		 * it to generate all the contact data */
 		FineCollisionDetector mFineCollisionDetector;
 
+		/** The repository that holds all the Manifolds of the CollisionWorld */
+		Manifold::Repository mManifoldRepository;
+
 		/** The GJKRayCaster used for checking ray hits */
 		GJKRayCaster mRayCaster;
 
 		/** All the Colliders to check */
 		std::vector<Collider*> mColliders;
 
-		/** Maps a pair of Colliders with the the Manifold of it's collision */
-		std::map<ColliderPair, Manifold> mCollidersManifoldMap;
+		/** Maps a pair of Colliders with the Manifold of it's collision */
+		std::unordered_map<ColliderPair, ManifoldRef, utils::PairHash>
+			mCollidersManifoldMap;
 
 	public:		// Functions
 		/** Creates a new CollisionWorld
 		 *
-		 * @param	minFDifference the minimum difference between the distances
-		 *			to the origin of two faces needed for the EPA algorithm
-		 * @param	contactPrecision the precision of the calculated Contact
-		 *			points
-		 * @param	contactSeparation the minimum distance between the
-		 *			coordinates of two Contact used to determine if a contact
-		 *			is the same than another one */
-		CollisionWorld(
-			float minFDifference, float contactPrecision,
-			float contactSeparation
-		);
+		 * @param	config the configuration parameters of the CollisionWorld */
+		CollisionWorld(const CollisionWorldData& config);
 
 		/** Adds the given Collider to the CollisionWorld so it will
 		 * check if it collides with the other Colliders

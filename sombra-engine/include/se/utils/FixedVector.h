@@ -1,6 +1,7 @@
 #ifndef FIXED_VECTOR_H
 #define FIXED_VECTOR_H
 
+#include <cstddef>
 #include <iterator>
 #include <initializer_list>
 
@@ -31,8 +32,8 @@ namespace se::utils {
 		using const_reverse_iterator	= std::reverse_iterator<const_iterator>;
 
 	private:	// Attributes
-		/** The array where the elements will be stored */
-		T mElements[N];
+		/** The array of memory where the elements will be stored */
+		std::byte mData[N * sizeof(T)];
 
 		/** The number of Elements added to the FixedVector */
 		size_type mNumElements;
@@ -63,13 +64,15 @@ namespace se::utils {
 		 *
 		 * @param	i the index of the Element
 		 * @return	a reference to the Element */
-		T& operator[](size_type i) { return mElements[i]; };
+		T& operator[](size_type i)
+		{ return reinterpret_cast<T*>(mData)[i]; };
 
 		/** Returns the Element i of the FixedVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a const reference to the Element */
-		const T& operator[](size_type i) const { return mElements[i]; };
+		const T& operator[](size_type i) const
+		{ return reinterpret_cast<const T*>(mData)[i]; };
 
 		/** Compares the given FixedVectors
 		 *
@@ -92,29 +95,36 @@ namespace se::utils {
 		);
 
 		/** @return	the initial iterator of the FixedVector */
-		iterator begin() { return &mElements[0]; };
+		iterator begin()
+		{ return reinterpret_cast<T*>(mData); };
 
 		/** @return	the initial iterator of the FixedVector */
-		const_iterator begin() const { return &mElements[0]; };
+		const_iterator begin() const
+		{ return reinterpret_cast<const T*>(mData); };
 
 		/** @return	the final iterator of the FixedVector */
-		iterator end() { return &mElements[0] + mNumElements; };
+		iterator end()
+		{ return reinterpret_cast<T*>(mData) + mNumElements; };
 
 		/** @return	the final iterator of the FixedVector */
-		const_iterator end() const { return &mElements[0] + mNumElements; };
+		const_iterator end() const
+		{ return reinterpret_cast<const T*>(mData) + mNumElements; };
 
 		/** @return	the initial reverse iterator of the FixedVector */
-		reverse_iterator rbegin() { return &mElements[0] + mNumElements; };
+		reverse_iterator rbegin()
+		{ return reinterpret_cast<T*>(mData) + mNumElements; };
 
 		/** @return	the final reverse iterator of the FixedVector */
 		const_reverse_iterator rbegin() const
-		{ return &mElements[0] + mNumElements; };
+		{ return reinterpret_cast<const T*>(mData) + mNumElements; };
 
 		/** @return	the final reverse iterator of the FixedVector */
-		reverse_iterator rend() { return &mElements[0]; };
+		reverse_iterator rend()
+		{ return reinterpret_cast<T*>(mData); };
 
 		/** @return	the initial reverse iterator of the FixedVector */
-		const_reverse_iterator rend() const { return &mElements[0]; };
+		const_reverse_iterator rend() const
+		{ return reinterpret_cast<const T*>(mData); };
 
 		/** @return	the number of Elements in the FixedVector */
 		size_type size() const { return mNumElements; };
@@ -133,25 +143,31 @@ namespace se::utils {
 
 		/** @return	a reference to the first element in the FixedVector
 		 * @note	if the FixedVector is empty, it causes undefined behavior */
-		T& front() { return mElements[0]; };
+		T& front()
+		{ return reinterpret_cast<T*>(mData)[0]; };
 
 		/** @return	a reference to the first element in the FixedVector
 		 * @note	if the FixedVector is empty, it causes undefined behavior */
-		const T& front() const { return mElements[0]; };
+		const T& front() const
+		{ return reinterpret_cast<const T*>(mData)[0]; };
 
 		/** @return	a reference to the last element in the FixedVector
 		 * @note	if the FixedVector is empty, it causes undefined behavior */
-		T& back() { return mElements[mNumElements - 1]; };
+		T& back()
+		{ return reinterpret_cast<T*>(mData)[mNumElements - 1]; };
 
 		/** @return	a reference to the last element in the FixedVector
 		 * @note	if the FixedVector is empty, it causes undefined behavior */
-		const T& back() const { return mElements[mNumElements - 1]; };
+		const T& back() const
+		{ return reinterpret_cast<const T*>(mData)[mNumElements - 1]; };
 
 		/** @return	a pointer to the first element stored in the FixedVector */
-		T* data() { return &mElements[0]; };
+		T* data()
+		{ return reinterpret_cast<T*>(mData); };
 
 		/** @return	a pointer to the first element stored in the FixedVector */
-		const T* data() const { return &mElements[0]; };
+		const T* data() const
+		{ return reinterpret_cast<const T*>(mData); };
 
 		/** Removes all the elements in the FixedVector */
 		void clear();

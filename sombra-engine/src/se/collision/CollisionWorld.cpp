@@ -3,15 +3,17 @@
 #include "se/collision/Collider.h"
 #include "se/collision/ConvexCollider.h"
 #include "se/collision/ConcaveCollider.h"
+#include "se/utils/Log.h"
 
 namespace se::collision {
 
-	static constexpr int kMaxRayCasterIterations = 32;
-
-
-	CollisionWorld::CollisionWorld(float minFDifference, float contactPrecision, float contactSeparation) :
-		mFineCollisionDetector(minFDifference, contactPrecision, contactSeparation),
-		mRayCaster(contactPrecision, kMaxRayCasterIterations) {}
+	CollisionWorld::CollisionWorld(const CollisionWorldData& config) :
+		mFineCollisionDetector(config.minFDifference, config.contactPrecision, config.contactSeparation),
+		mManifoldRepository( static_cast<Manifold::Repository::size_type>(config.maxManifolds) ),
+		mRayCaster(config.contactPrecision, config.maxRayCasterIterations)
+	{
+		mCollidersManifoldMap.reserve(config.maxManifolds);
+	}
 
 
 	void CollisionWorld::addCollider(Collider* collider)
@@ -35,13 +37,13 @@ namespace se::collision {
 	{
 		// Clean old non intersecting Manifolds
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end();) {
-			if (!it->second.state[Manifold::State::Intersecting]) {
+			if (!it->second->state[Manifold::State::Intersecting]) {
 				it = mCollidersManifoldMap.erase(it);
 			}
 			else {
 				// Set the remaining Manifolds' state to not intersecting
-				it->second.state.reset(Manifold::State::Intersecting);
-				it->second.state.set(Manifold::State::Updated);
+				it->second->state.reset(Manifold::State::Intersecting);
+				it->second->state.set(Manifold::State::Updated);
 				++it;
 			}
 		}
@@ -61,21 +63,26 @@ namespace se::collision {
 			if (itPairManifold != mCollidersManifoldMap.end()) {
 				// Set the Manifold back to its old state (if we are at this
 				// stage it was Intersecting)
-				itPairManifold->second.state.set(Manifold::State::Intersecting);
-				itPairManifold->second.state.reset(Manifold::State::Updated);
+				itPairManifold->second->state.set(Manifold::State::Intersecting);
+				itPairManifold->second->state.reset(Manifold::State::Updated);
 
 				// Update the Manifold data
-				mFineCollisionDetector.collide(itPairManifold->second);
+				mFineCollisionDetector.collide(*itPairManifold->second);
 			}
 			else {
 				// Create a new Manifold
-				Manifold manifold(pair.first, pair.second);
-				if (mFineCollisionDetector.collide(manifold)) {
-					mCollidersManifoldMap.emplace(
-						std::piecewise_construct,
-						std::forward_as_tuple(pair.first, pair.second),
-						std::forward_as_tuple(manifold)
-					);
+				ManifoldRef manifold = mManifoldRepository.add(pair.first, pair.second);
+				if (manifold) {
+					if (mFineCollisionDetector.collide(*manifold)) {
+						mCollidersManifoldMap.emplace(
+							std::piecewise_construct,
+							std::forward_as_tuple(pair.first, pair.second),
+							std::forward_as_tuple(std::move(manifold))
+						);
+					}
+				}
+				else {
+					SOMBRA_ERROR_LOG << "Can't create more Manifolds";
 				}
 			}
 		});
@@ -90,7 +97,7 @@ namespace se::collision {
 	void CollisionWorld::processCollisionManifolds(const ManifoldCallback& callback) const
 	{
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end(); ++it) {
-			callback(it->second);
+			callback(*it->second);
 		}
 	}
 

@@ -1,9 +1,10 @@
 #ifndef HALF_EDGE_MESH_H
 #define HALF_EDGE_MESH_H
 
-#include <map>
+#include <unordered_map>
 #include <glm/glm.hpp>
 #include "ContiguousVector.h"
+#include "../utils/MathUtils.h"
 
 namespace se::collision {
 
@@ -82,7 +83,8 @@ namespace se::collision {
 		ContiguousVector<HEFace> faces;
 
 		/** Maps two HEVertex indices with the HEEdge that references them */
-		std::map<std::pair<int, int>, int> vertexEdgeMap;
+		std::unordered_map<std::pair<int, int>, int, utils::PairHash>
+			vertexEdgeMap;
 	};
 
 

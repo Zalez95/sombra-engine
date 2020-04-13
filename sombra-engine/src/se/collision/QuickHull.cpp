@@ -61,7 +61,7 @@ namespace se::collision {
 		mConvexHullMesh = HalfEdgeMesh();
 		mConvexHullNormals = ContiguousVector<glm::vec3>();
 		mFaceOutsideVertices = ContiguousVector<std::vector<int>>();
-		mVertexIndexMap = std::map<int, int>();
+		mVertexIndexMap = std::unordered_map<int, int>();
 	}
 
 // Private functions

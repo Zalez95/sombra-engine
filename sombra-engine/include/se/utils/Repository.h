@@ -14,6 +14,8 @@ namespace se::utils {
 	class Repository
 	{
 	public:		// Nested types
+		using value_type = T;
+		using size_type = SizeType;
 		using SearchCallback = std::function<bool(const T&)>;
 
 		/**

@@ -1,8 +1,8 @@
 #ifndef SKIN_H
 #define SKIN_H
 
-#include <map>
 #include <vector>
+#include <unordered_map>
 #include "../animation/AnimationNode.h"
 
 namespace se::app {
@@ -14,7 +14,7 @@ namespace se::app {
 	struct Skin
 	{
 		/** Maps the AnimationNodes with their respective joint indices */
-		std::map<animation::AnimationNode*, int> jointIndices;
+		std::unordered_map<animation::AnimationNode*, std::size_t> jointIndices;
 
 		/** The inverse bind matrices of the joints, they're used to transform
 		 * the mesh to the local space of each joint */

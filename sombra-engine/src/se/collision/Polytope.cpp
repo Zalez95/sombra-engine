@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/collision/HalfEdgeMeshExt.h"
-#include "se/utils/MathUtils.h"
 #include "Polytope.h"
 
 namespace se::collision {

@@ -3,7 +3,6 @@
 
 #include "AABB.h"
 #include "HalfEdgeMesh.h"
-#include "../utils/MathUtils.h"
 #include "../utils/FixedVector.h"
 
 namespace se::collision {

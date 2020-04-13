@@ -66,9 +66,6 @@ namespace se::utils {
 	{
 		if (index < mMaxElements) {
 			mRefCounts[index]--;
-			if (mRefCounts[index] <= 0) {
-				mData[index] = T();
-			}
 		}
 	}
 

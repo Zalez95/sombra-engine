@@ -4,7 +4,7 @@
 namespace se::window { struct WindowData; class WindowSystem; }
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
-namespace se::collision { class CollisionWorld; }
+namespace se::collision { struct CollisionWorldData; class CollisionWorld; }
 namespace se::animation { class AnimationSystem; }
 namespace se::audio { class AudioEngine; }
 
@@ -75,11 +75,14 @@ namespace se::app {
 		 *			window is going to be created
 		 * @param	graphicsConfig the initial configuration with which the
 		 *			GraphicsEngine is going to be created
+		 * @param	collisionConfig the initial configuration with which the
+		 *			CollisionWorld is going to be created
 		 * @param	updateTime the minimum elapsed time between updates in
 		 *			seconds */
 		Application(
 			const window::WindowData& windowConfig,
 			const graphics::GraphicsData& graphicsConfig,
+			const collision::CollisionWorldData& collisionConfig,
 			float updateTime
 		);
 

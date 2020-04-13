@@ -4,6 +4,7 @@
 #include <bitset>
 #include "Contact.h"
 #include "../utils/FixedVector.h"
+#include "../utils/Repository.h"
 
 namespace se::collision {
 
@@ -15,6 +16,8 @@ namespace se::collision {
 	 */
 	struct Manifold
 	{
+		using Repository = utils::Repository<Manifold, unsigned short>;
+
 		/** The different states in which a Manifold can be */
 		enum State : int
 		{

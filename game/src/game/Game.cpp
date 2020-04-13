@@ -13,7 +13,11 @@
 namespace game {
 
 	Game::Game() :
-		Application({ kTitle, kWidth, kHeight }, { { kWidth, kHeight }, 64, 1, 16, 2 }, kUpdateTime),
+		Application(
+			{ kTitle, kWidth, kHeight }, { { kWidth, kHeight }, 64, 1, 16, 2 },
+			{ kMinFDifference, kContactPrecision, kContactSeparation, kMaxManifolds, kMaxRayCasterIterations },
+			kUpdateTime
+		),
 		mGameData{}
 	{
 		mGameData.windowSystem = mWindowSystem;

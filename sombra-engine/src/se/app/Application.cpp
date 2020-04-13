@@ -19,10 +19,11 @@
 namespace se::app {
 
 	Application::Application(
-		const window::WindowData& windowConfig, const graphics::GraphicsData& graphicsConfig,
+		const window::WindowData& windowConfig,
+		const graphics::GraphicsData& graphicsConfig,
+		const collision::CollisionWorldData& collisionConfig,
 		float updateTime
-	) :
-		mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
+	) : mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
 		mWindowSystem(nullptr), mGraphicsEngine(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
 		mAnimationSystem(nullptr), mAudioEngine(nullptr),
 		mEventManager(nullptr), mInputManager(nullptr), mGraphicsManager(nullptr), mPhysicsManager(nullptr),
@@ -49,7 +50,7 @@ namespace se::app {
 			mPhysicsManager = new PhysicsManager(*mPhysicsEngine, *mEventManager);
 
 			// Collision
-			mCollisionWorld = new collision::CollisionWorld(kMinFDifference, kContactPrecision, kContactSeparation);
+			mCollisionWorld = new collision::CollisionWorld(collisionConfig);
 			mCollisionManager = new CollisionManager(*mCollisionWorld, *mEventManager);
 
 			// Animation

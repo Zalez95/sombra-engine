@@ -6,7 +6,6 @@
 #include <glm/gtc/constants.hpp>
 #include "se/collision/AABB.h"
 #include "se/collision/HalfEdgeMeshExt.h"
-#include "se/utils/MathUtils.h"
 
 #define NORMALIZATION_ZERO 0.0001f
 

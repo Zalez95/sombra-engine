@@ -1,7 +1,6 @@
 #ifndef QUICK_HULL_H
 #define QUICK_HULL_H
 
-#include <map>
 #include <glm/glm.hpp>
 #include "HalfEdgeMesh.h"
 
@@ -35,7 +34,7 @@ namespace se::collision {
 
 		/** Maps the indices of the vertices in the current Mesh with the ones
 		 * in the convex hull */
-		std::map<int, int> mVertexIndexMap;
+		std::unordered_map<int, int> mVertexIndexMap;
 
 	public:		// Functions
 		/** Creates a new QuickHull object

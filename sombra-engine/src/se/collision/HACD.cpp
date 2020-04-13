@@ -6,7 +6,6 @@
 #include "se/collision/QuickHull.h"
 #include "se/collision/HalfEdgeMeshExt.h"
 #include "se/utils/FixedVector.h"
-#include "se/utils/MathUtils.h"
 
 namespace se::collision {
 
@@ -284,7 +283,7 @@ namespace se::collision {
 		HalfEdgeMesh newMesh;
 		FaceNormals newMeshNormals;
 
-		std::map<int, int> vertexMap;
+		std::unordered_map<int, int> vertexMap;
 		for (int iFace1 : iFaces) {
 			std::vector<int> iFace1Vertices, iFace2Vertices;
 

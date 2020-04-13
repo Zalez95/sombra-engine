@@ -133,7 +133,7 @@ namespace se::app {
 		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
 		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
 
-		std::map<int, int> vertexMap;
+		std::unordered_map<int, int> vertexMap;
 		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
 			glm::vec3 normal = collision::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
 

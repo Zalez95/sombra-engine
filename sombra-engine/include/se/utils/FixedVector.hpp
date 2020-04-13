@@ -10,7 +10,7 @@ namespace se::utils {
 		size_type i = 0;
 		for (const T& member : list) {
 			if (i < mNumElements) {
-				mElements[i] = member;
+				new (mData + i * sizeof(T)) T(member);
 			}
 			++i;
 		}
@@ -35,7 +35,7 @@ namespace se::utils {
 
 		if (fv1.mNumElements == fv2.mNumElements) {
 			for (auto i = 0; i < fv1.mNumElements; ++i) {
-				if (fv1.mElements[i] != fv2.mElements[i]) {
+				if (reinterpret_cast<const T*>(fv1.mData)[i] != reinterpret_cast<const T*>(fv2.mData)[i]) {
 					equal = false;
 					break;
 				}
@@ -75,10 +75,7 @@ namespace se::utils {
 	template <typename T, std::size_t N>
 	typename FixedVector<T, N>::iterator FixedVector<T, N>::push_back(T element)
 	{
-		mElements[mNumElements] = element;
-		mNumElements++;
-
-		return &mElements[mNumElements - 1];
+		return emplace_back(element);
 	}
 
 
@@ -86,13 +83,17 @@ namespace se::utils {
 	template <typename... Args>
 	typename FixedVector<T, N>::iterator FixedVector<T, N>::emplace_back(Args&&... args)
 	{
-		return push_back( T(std::forward<Args>(args)...) );
+		new (mData + mNumElements * sizeof(T)) T(std::forward<Args>(args)...);
+		mNumElements++;
+
+		return &reinterpret_cast<T*>(mData)[mNumElements - 1];
 	}
 
 
 	template <typename T, std::size_t N>
 	void FixedVector<T, N>::pop_back()
 	{
+		back().~T();
 		mNumElements--;
 	}
 
@@ -102,8 +103,8 @@ namespace se::utils {
 	{
 		iterator itCopy = const_cast<iterator>(it);
 
-		mNumElements++;
-		for (iterator it2 = end() - 1; it2 != itCopy; --it2) {
+		emplace_back( back() );
+		for (iterator it2 = end() - 2; it2 != itCopy; --it2) {
 			*it2 = *(it2 - 1);
 		}
 		*itCopy = value;
@@ -129,7 +130,7 @@ namespace se::utils {
 			for (iterator it2 = itCopy + 1; it2 != end(); ++it2) {
 				*(it2 - 1) = *it2;
 			}
-			mNumElements--;
+			pop_back();
 		}
 
 		return itCopy;
