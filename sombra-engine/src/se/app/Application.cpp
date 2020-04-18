@@ -18,7 +18,10 @@
 
 namespace se::app {
 
-	Application::Application(const window::WindowData& windowConfig, float updateTime) :
+	Application::Application(
+		const window::WindowData& windowConfig, const graphics::GraphicsData& graphicsConfig,
+		float updateTime
+	) :
 		mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
 		mWindowSystem(nullptr), mGraphicsEngine(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
 		mAnimationSystem(nullptr), mAudioEngine(nullptr),
@@ -37,9 +40,8 @@ namespace se::app {
 			mInputManager = new InputManager(*mWindowSystem, *mEventManager);
 
 			// Graphics
-			mGraphicsEngine = new graphics::GraphicsEngine({ windowConfig.width, windowConfig.height });
+			mGraphicsEngine = new graphics::GraphicsEngine(graphicsConfig);
 			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager);
-			mGraphicsEngine->setViewport({ windowConfig.width, windowConfig.height });
 			mGUIManager = new GUIManager(*mEventManager, { windowConfig.width, windowConfig.height });
 
 			// Physics

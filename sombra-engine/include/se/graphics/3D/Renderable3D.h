@@ -4,11 +4,11 @@
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
+#include "Material.h"
 
 namespace se::graphics {
 
 	class Mesh;
-	struct Material;
 
 
 	/**
@@ -19,14 +19,14 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using MeshSPtr = std::shared_ptr<Mesh>;
-		using MaterialSPtr = std::shared_ptr<Material>;
+		using MaterialRef = Material::Repository::Reference;
 
 	private:	// Attributes
 		/** The Mesh of the Renderable3D */
 		MeshSPtr mMesh;
 
 		/** The Material of the Renderable3D */
-		MaterialSPtr mMaterial;
+		MaterialRef mMaterial;
 
 		/** The matrix that transforms the coordinates of the Mesh from
 		 * Local space to World space */
@@ -44,11 +44,11 @@ namespace se::graphics {
 		/** Creates a new Renderable3D
 		 *
 		 * @param	mesh a pointer to the Mesh of the Renderable3D
-		 * @param	material a pointer to the Material of the Renderable3D
+		 * @param	material the Material of the Renderable3D
 		 * @param	modelMatrix the model matrix of the Renderable3D, by default
 		 *			the identity matrix */
 		Renderable3D(
-			MeshSPtr mesh, MaterialSPtr material,
+			MeshSPtr mesh, MaterialRef material,
 			const glm::mat4& modelMatrix = glm::mat4(1.0f)
 		) : mMesh(mesh), mMaterial(material),
 			mModelMatrix(modelMatrix), mHasSkeleton(false) {};
@@ -56,8 +56,8 @@ namespace se::graphics {
 		/** @return	a pointer to the Mesh of the Renderable3D */
 		const MeshSPtr getMesh() const { return mMesh; };
 
-		/** @return	a pointer to the Material of the Renderable3D */
-		const MaterialSPtr getMaterial() const { return mMaterial; };
+		/** @return	the Material of the Renderable3D */
+		const MaterialRef getMaterial() const { return mMaterial; };
 
 		/** @return	the model matrix of the Renderable3D */
 		glm::mat4 getModelMatrix() const { return mModelMatrix; };

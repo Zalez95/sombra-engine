@@ -7,6 +7,7 @@
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
 #include <se/graphics/2D/Layer2D.h>
+#include <se/graphics/GraphicsEngine.h>
 #include <se/utils/Repository.h>
 #include "MainMenuController.h"
 
@@ -21,6 +22,9 @@ namespace game {
 	private:	// Attributes
 		/** The Layer2D that will be used for drawing the GUI */
 		se::graphics::Layer2D& mLayer2D;
+
+		/** The GraphicsEngine that holds all the Fonts */
+		se::graphics::GraphicsEngine& mGraphicsEngine;
 
 		/** The GUIManager used for retrieving input events */
 		se::app::GUIManager& mGUIManager;
@@ -44,15 +48,18 @@ namespace game {
 		/** Creates a new MainMenuView
 		 *
 		 * @param	layer2D the Layer2D to use for rendering the GUI components
+		 * @param	graphicsEngine the GraphicsEngine that holds the Fonts
 		 * @param	guiManager the GUIManager to use for retrieving input
 		 *			events
 		 * @param	controller the MainMenuController that will handle the user
 		 *			input */
 		MainMenuView(
 			se::graphics::Layer2D& layer2D,
+			se::graphics::GraphicsEngine& graphicsEngine,
 			se::app::GUIManager& guiManager,
 			MainMenuController& controller
-		) : mLayer2D(layer2D), mGUIManager(guiManager), mController(controller),
+		) : mLayer2D(layer2D), mGraphicsEngine(graphicsEngine),
+			mGUIManager(guiManager), mController(controller),
 			mPanel(&mLayer2D), mTitleLabel(&mLayer2D), mVersionLabel(&mLayer2D),
 			mStartButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
 			mConfigButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
@@ -60,9 +67,8 @@ namespace game {
 			mStartLabel(&mLayer2D), mConfigLabel(&mLayer2D),
 			mQuitLabel(&mLayer2D)
 		{
-			using FontSPtr = std::shared_ptr<se::graphics::Font>;
-			auto arial = se::utils::Repository<FontSPtr>::getInstance()
-				.get([](FontSPtr font) { return font->name == "Arial"; });
+			auto arial = mGraphicsEngine.getFontRepository()
+				.find([](const se::graphics::Font& font) { return font.name == "Arial"; });
 
 			mTitleLabel.setText("SOMBRA");
 			mTitleLabel.setFont(arial);

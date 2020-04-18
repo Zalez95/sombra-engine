@@ -8,6 +8,7 @@
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
 #include <se/graphics/2D/Layer2D.h>
+#include <se/graphics/GraphicsEngine.h>
 #include <se/utils/Repository.h>
 #include "SettingsMenuController.h"
 
@@ -26,6 +27,9 @@ namespace game {
 	private:	// Attributes
 		/** The Layer2D that will be used for drawing the GUI */
 		se::graphics::Layer2D& mLayer2D;
+
+		/** The GraphicsEngine that holds all the Fonts */
+		se::graphics::GraphicsEngine& mGraphicsEngine;
 
 		/** The GUIManager used for retrieving input events */
 		se::app::GUIManager& mGUIManager;
@@ -49,21 +53,23 @@ namespace game {
 		/** Creates a new SettingsMenuView
 		 *
 		 * @param	layer2D the Layer2D to use for rendering the GUI components
+		 * @param	graphicsEngine the GraphicsEngine that holds the Fonts
 		 * @param	guiManager the GUIManager to use for retrieving input
 		 *			events
 		 * @param	controller the SettingsMenuController that will handle the
 		 *			user input */
 		SettingsMenuView(
 			se::graphics::Layer2D& layer2D,
+			se::graphics::GraphicsEngine& graphicsEngine,
 			se::app::GUIManager& guiManager,
 			SettingsMenuController& controller
-		) : mLayer2D(layer2D), mGUIManager(guiManager), mController(controller),
+		) : mLayer2D(layer2D), mGraphicsEngine(graphicsEngine),
+			mGUIManager(guiManager), mController(controller),
 			mSelectedWindowLabel(nullptr), mSelectedVSyncLabel(nullptr),
 			mPanel(&mLayer2D)
 		{
-			using FontSPtr = std::shared_ptr<se::graphics::Font>;
-			auto arial = se::utils::Repository<FontSPtr>::getInstance()
-				.get([](FontSPtr font) { return font->name == "Arial"; });
+			auto arial = mGraphicsEngine.getFontRepository()
+				.find([](const se::graphics::Font& font) { return font.name == "Arial"; });
 
 			mLabels.reserve(2 + 2 * 4);
 			mButtons.reserve(1 + 2 * 2);
@@ -78,7 +84,7 @@ namespace game {
 			se::app::Anchor titleLabelAnchor;
 			titleLabelAnchor.relativePosition = { 0.5f, 0.1f };
 			se::app::Proportions titleLabelProportions;
-			titleLabelProportions.relativeSize = glm::vec2(0.25f, 0.1f);
+			titleLabelProportions.relativeSize = { 0.25f, 0.1f };
 			mPanel.add(&titleLabel, titleLabelAnchor, titleLabelProportions);
 
 			addParameter(
@@ -109,7 +115,7 @@ namespace game {
 			se::app::Anchor backButtonAnchor;
 			backButtonAnchor.relativePosition = { 0.1f, 0.85f };
 			se::app::Proportions backButtonProportions;
-			backButtonProportions.relativeSize = glm::vec2(0.15f, 0.1f);
+			backButtonProportions.relativeSize = { 0.15f, 0.1f };
 			mPanel.add(&backButton, backButtonAnchor, backButtonProportions);
 
 			mPanel.setColor({ 0.153f, 0.275f, 0.392f, 1.0f });
@@ -153,9 +159,8 @@ namespace game {
 			const std::function<void()>& actionL,
 			const std::function<void()>& actionR
 		) {
-			using FontSPtr = std::shared_ptr<se::graphics::Font>;
-			auto arial = se::utils::Repository<FontSPtr>::getInstance()
-				.get([](FontSPtr font) { return font->name == "Arial"; });
+			auto arial = mGraphicsEngine.getFontRepository()
+				.find([](const se::graphics::Font& font) { return font.name == "Arial"; });
 
 			auto& parameterLabel = mLabels.emplace_back(&mLayer2D);
 			parameterLabel.setFont(arial);
@@ -168,7 +173,7 @@ namespace game {
 			parameterLabelAnchor.origin = se::app::Anchor::Origin::TopLeft;
 			parameterLabelAnchor.relativePosition = { 0.15f, yOffset };
 			se::app::Proportions parameterLabelProportions;
-			parameterLabelProportions.relativeSize = glm::vec2(0.25f, 0.1f);
+			parameterLabelProportions.relativeSize = { 0.25f, 0.1f };
 			mPanel.add(&parameterLabel, parameterLabelAnchor, parameterLabelProportions);
 
 			auto& buttonLLabel = mLabels.emplace_back(&mLayer2D);
@@ -196,11 +201,11 @@ namespace game {
 			se::app::Anchor valueLabelAnchor;
 			valueLabelAnchor.relativePosition = { 0.65f, yOffset + 0.05f };
 			se::app::Proportions valueLabelProportions;
-			valueLabelProportions.relativeSize = glm::vec2(0.15f, 0.1f);
+			valueLabelProportions.relativeSize = { 0.15f, 0.1f };
 			mPanel.add(&valueLabel, valueLabelAnchor, valueLabelProportions);
 
 			se::app::Proportions buttonLRProportions;
-			buttonLRProportions.relativeSize = glm::vec2(0.15f, 0.1f);
+			buttonLRProportions.relativeSize = { 0.15f, 0.1f };
 
 			auto& buttonL = mButtons.emplace_back(&mLayer2D, std::make_unique<se::app::Rectangle>());
 			buttonL.setColor({ 0.0f, 1.0f, 0.0f, 0.75f });

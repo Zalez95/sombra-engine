@@ -8,7 +8,7 @@ namespace game {
 	MainMenuController::MainMenuController(GameData& gameData) : IGameScreen(gameData), mView(nullptr)
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mView = new MainMenuView(*mGameData.layer2D, *mGameData.guiManager, *this);
+		mView = new MainMenuView(*mGameData.layer2D, *mGameData.graphicsEngine, *mGameData.guiManager, *this);
 		SOMBRA_DEBUG_LOG << "end";
 	}
 

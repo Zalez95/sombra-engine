@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
 #include "se/app/Entity.h"
@@ -11,6 +12,7 @@ namespace se::app {
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 		mGraphicsEngine.addLayer(&mLayer3D);
+		addLayer(&mLayer3D);
 	}
 
 
@@ -24,6 +26,30 @@ namespace se::app {
 	void GraphicsManager::notify(const IEvent& event)
 	{
 		tryCall(&GraphicsManager::onResizeEvent, event);
+	}
+
+
+	void GraphicsManager::addLayer(graphics::ILayer* layer)
+	{
+		if (!layer) {
+			SOMBRA_WARN_LOG << "ILayer " << layer << " couldn't be added";
+			return;
+		}
+
+		layer->setViewportSize( mGraphicsEngine.getViewportSize() );
+		mLayers.push_back(layer);
+		SOMBRA_INFO_LOG << "Layer " << layer << " added successfully";
+	}
+
+
+	void GraphicsManager::removeLayer(graphics::ILayer* layer)
+	{
+		auto itLayer = std::find(mLayers.begin(), mLayers.end(), layer);
+		if (itLayer != mLayers.end()) {
+			mLayer3D.setCamera(nullptr);
+			mLayers.erase(itLayer);
+			SOMBRA_INFO_LOG << "Layer " << layer << " removed successfully";
+		}
 	}
 
 
@@ -264,7 +290,11 @@ namespace se::app {
 	{
 		auto width = static_cast<unsigned int>(event.getWidth());
 		auto height = static_cast<unsigned int>(event.getHeight());
-		mGraphicsEngine.setViewport({ width, height });
+
+		mGraphicsEngine.setViewportSize({ width, height });
+		for (graphics::ILayer* layer : mLayers) {
+			layer->setViewportSize({ width, height });
+		}
 	}
 
 }

@@ -49,7 +49,7 @@ namespace game {
 		bool mClicked;
 
 		std::shared_ptr<se::graphics::Mesh> mTetrahedronMesh;
-		std::shared_ptr<se::graphics::Material> mYellowMaterial;
+		se::graphics::Material::Repository::Reference mYellowMaterial;
 
 	public:		// Functions
 		/** Creates a new PlayerController

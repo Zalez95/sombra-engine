@@ -5,7 +5,6 @@
 #include <nlohmann/json_fwd.hpp>
 #include "se/app/loaders/SceneReader.h"
 #include "se/app/Image.h"
-#include "se/graphics/core/Texture.h"
 #include "se/animation/IAnimation.h"
 
 namespace se::app {
@@ -16,8 +15,8 @@ namespace se::app {
 	class GLTFReader : public SceneReader
 	{
 	private:	// Nested types
-		using MaterialSPtr = std::shared_ptr<graphics::Material>;
-		using TextureSPtr = std::shared_ptr<graphics::Texture>;
+		using MaterialRef = graphics::Material::Repository::Reference;
+		using TextureRef = graphics::Texture::Repository::Reference;
 		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
 		using LightUPtr = std::unique_ptr<graphics::ILight>;
 		using SkinUPtr = std::unique_ptr<app::Skin>;
@@ -77,8 +76,8 @@ namespace se::app {
 			std::vector<BufferView> bufferViews;
 			std::vector<Sampler> samplers;
 			std::vector<Image> images;
-			std::vector<TextureSPtr> textures;
-			std::vector<MaterialSPtr> materials;
+			std::vector<TextureRef> textures;
+			std::vector<MaterialRef> materials;
 			std::vector<Renderable3DUPtr> renderable3Ds;
 			std::vector<MeshPrimitives> meshPrimitives;
 			std::vector<LightUPtr> lights;
@@ -94,14 +93,17 @@ namespace se::app {
 		std::string mBasePath;
 
 		/** The default GLTF material */
-		MaterialSPtr mDefaultMaterial;
+		MaterialRef mDefaultMaterial;
 
 		/** The temporarily read GLTF data */
 		GLTFData mGLTFData;
 
 	public:		// Functions
-		/** Creates a new GLTFReader */
-		GLTFReader();
+		/** Creates a new GLTFReader
+		 *
+		 * @param	graphicsEngine the GraphicsEngine used for storing
+		 *			Textures and Materials */
+		GLTFReader(graphics::GraphicsEngine& graphicsEngine);
 
 		/** Parses the given GLTF file and stores the result in the given
 		 * Scenes object

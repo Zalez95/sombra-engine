@@ -159,7 +159,7 @@ namespace se::graphics {
 	}
 
 // Private functions
-	unsigned char Renderer2D::addTexture(TextureSPtr texture)
+	unsigned char Renderer2D::addTexture(TextureRef texture)
 	{
 		unsigned char textureIndex = 0;
 

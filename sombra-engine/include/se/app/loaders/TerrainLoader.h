@@ -25,8 +25,8 @@ namespace se::app {
 	private:	// Nested types
 		using EntityUPtr = std::unique_ptr<app::Entity>;
 		using TerrainColliderUPtr = std::unique_ptr<collision::TerrainCollider>;
-		using SplatmapMaterialSPtr =
-			std::shared_ptr<graphics::SplatmapMaterial>;
+		using SplatmapMaterialRef =
+			graphics::SplatmapMaterial::Repository::Reference;
 		using RenderableTerrainUPtr =
 			std::unique_ptr<graphics::RenderableTerrain>;
 
@@ -37,6 +37,9 @@ namespace se::app {
 		/** The GraphicsManager used to store the Renderable3Ds of the
 		 * Terrains */
 		app::GraphicsManager& mGraphicsManager;
+
+		/** The GraphicsEngine used for storing Textures and Materials */
+		graphics::GraphicsEngine& mGraphicsEngine;
 
 		/** The PhysicsManager used to store the PhysicsEntities of the
 		 * Terrains */
@@ -50,15 +53,19 @@ namespace se::app {
 		 *
 		 * @param	graphicsManager the GraphicsManager that holds the graphics
 		 *			data of the Terrain Entities
+		 * @param	graphicsEngine the GraphicsEngine used for storing
+		 *			Textures and Materials
 		 * @param	physicsManager the PhysicsManager that holds the physics
 		 *			data of the Terrain Entities
 		 * @param	collisionManager the CollisionManager that holds the
 		 *			collider data of the Terrain Entities */
 		TerrainLoader(
 			app::GraphicsManager& graphicsManager,
+			graphics::GraphicsEngine& graphicsEngine,
 			app::PhysicsManager& physicsManager,
 			app::CollisionManager& collisionManager
 		) : mGraphicsManager(graphicsManager),
+			mGraphicsEngine(graphicsEngine),
 			mPhysicsManager(physicsManager),
 			mCollisionManager(collisionManager) {};
 
@@ -72,13 +79,13 @@ namespace se::app {
 		 * 			vertices of the Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	terrainMaterial the material to use for rendering the
+		 * @param	terrainMaterial the material used for rendering the
 		 *			terrain
 		 * @return	a pointer to the new Terrain entity */
 		EntityUPtr createTerrain(
 			const std::string& name, float size, float maxHeight,
 			const Image& heightMap, const std::vector<float>& lodDistances,
-			SplatmapMaterialSPtr terrainMaterial
+			SplatmapMaterialRef terrainMaterial
 		);
 	private:
 		/** Creates a new RenderableTerrain from the given data
@@ -90,13 +97,14 @@ namespace se::app {
 		 * 			vertices of the Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	terrainMaterial the material to use for rendering the
+		 * @param	terrainMaterial the material used for rendering the
 		 *			terrain
-		 * @return	a pointer to the new RenderableTerrain */
-		static RenderableTerrainUPtr createTerrainRenderable(
+		 * @return	a pointer to the new RenderableTerrain, nullptr if it
+		 *			failed */
+		RenderableTerrainUPtr createTerrainRenderable(
 			float size, float maxHeight,
 			const Image& heightMap, const std::vector<float>& lodDistances,
-			SplatmapMaterialSPtr terrainMaterial
+			SplatmapMaterialRef terrainMaterial
 		);
 
 		/** Creates a new TerrainCollider from the given height map

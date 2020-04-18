@@ -10,7 +10,7 @@ namespace se::app {
 	Result FontReader::read(
 		const char* path,
 		const std::vector<char>& characterSet, const glm::uvec2& characterSize,
-		const glm::uvec2& atlasSize, se::graphics::Font& output
+		const glm::uvec2& atlasSize, FontRef& output
 	) {
 		if ((characterSize.x + 2 * kGlyphSeparation > atlasSize.x)
 			|| (characterSize.y + 2 * kGlyphSeparation > atlasSize.y)
@@ -28,9 +28,21 @@ namespace se::app {
 			return Result(false, "Failed to load font");
 		}
 
+		// Create the Font
+		auto font = mGraphicsEngine.getFontRepository().add();
+		if (!font) {
+			return Result(false, "Failed to create the Font");
+		}
+
+		// Create the atlas texture
+		font->textureAtlas = mGraphicsEngine.getTextureRepository().add();
+		if (!font->textureAtlas) {
+			return Result(false, "Failed to create the Font atlas texture");
+		}
+
 		// Read the name
 		if (face->family_name) {
-			output.name = face->family_name;
+			font->name = face->family_name;
 		}
 
 		// Read the characters (glyphs) in RGBA format
@@ -44,7 +56,7 @@ namespace se::app {
 			if (FT_Load_Char(face, c, FT_LOAD_RENDER)) { continue; }
 
 			// Add the character metadata
-			output.characters[c] = {
+			font->characters[c] = {
 				atlasPosition,
 				{ face->glyph->bitmap.width, face->glyph->bitmap.rows },
 				{ face->glyph->bitmap_left, face->glyph->bitmap_top },
@@ -75,18 +87,18 @@ namespace se::app {
 			}
 		}
 
-		output.maxCharacterSize = characterSize;
-		output.textureAtlas = std::make_shared<graphics::Texture>();
-		output.textureAtlas->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
-		output.textureAtlas->setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge);
-		output.textureAtlas->setImage(pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y);
-		output.atlasSize = atlasSize;
+		font->maxCharacterSize = characterSize;
+		font->textureAtlas->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+		font->textureAtlas->setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge);
+		font->textureAtlas->setImage(pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y);
+		font->atlasSize = atlasSize;
 
 		// Clear
 		delete[] pixels;
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 
+		output = std::move(font);
 		return Result();
 	}
 

@@ -32,9 +32,15 @@ namespace se::app {
 		/** Creates a new IComponent */
 		IComponent() :
 			mSize(0.0f), mPosition(0.0f), mZIndex(0), mIsVisible(true) {};
+		IComponent(const IComponent& other) = default;
+		IComponent(IComponent&& other) = default;
 
 		/** Class destructor */
 		virtual ~IComponent() = default;
+
+		/** Assignment operator */
+		IComponent& operator=(const IComponent& other) = default;
+		IComponent& operator=(IComponent&& other) = default;
 
 		/** @return	the IComponent dimensions in the X and Y axis */
 		const glm::vec2& getSize() const { return mSize; };

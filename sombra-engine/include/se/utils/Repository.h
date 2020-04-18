@@ -2,6 +2,7 @@
 #define REPOSITORY_H
 
 #include <vector>
+#include <functional>
 
 namespace se::utils {
 
@@ -9,52 +10,139 @@ namespace se::utils {
 	 * Class Repository, it holds all the elements of the given type loaded by
 	 * the Application and provides a single point for accessing to them
 	 */
-	template <typename T>
+	template <typename T, typename SizeType = unsigned long>
 	class Repository
 	{
+	public:		// Nested types
+		using SearchCallback = std::function<bool(const T&)>;
+
+		/**
+		 * Class Reference, it's used for accesing to the Elements stored in
+		 * the Repository. If the number of Reference objects pointing to one
+		 * Element reaches 0, it will get removed from the Repository
+		 */
+		class Reference
+		{
+		private:	// Attributes
+			/** A pointer to the Repository where the Elements are stored */
+			Repository* mRepository;
+
+			/** The index of the Element that the Reference is pointing to */
+			SizeType mIndex;
+
+		public:		// Functions
+			/** Creates a new Reference
+			 *
+			 * @param	repository a pointer to the Repository where the
+			 *			Elements are stored */
+			Reference(Repository* repository = nullptr);
+
+			/** Creates a new Reference
+			 *
+			 * @param	repository a pointer to the Repository where the
+			 *			Elements are stored
+			 * @param	index the index of the Element that the Reference will
+			 *			point to */
+			Reference(Repository* repository, SizeType index);
+			Reference(const Reference& other);
+			Reference(Reference&& other);
+
+			/** Class destructor */
+			~Reference();
+
+			/** Assignment operator */
+			Reference& operator=(const Reference& other);
+			Reference& operator=(Reference&& other);
+
+			/** Casts the current Reference to a bool. True if the Reference
+			 * points to an Elements still active, false otherwise */
+			operator bool() const
+			{ return mRepository && (mIndex < mRepository->mMaxElements); };
+
+			/** @return	a reference to the current Element that the Reference is
+			 *			pointing to */
+			T& operator*() const { return mRepository->mData[mIndex]; };
+
+			/** @return	a pointer to the current Element that the Reference is
+			 *			pointing to */
+			T* operator->() const { return &mRepository->mData[mIndex]; };
+
+			/** Compares the given References
+			 *
+			 * @param	lhs the first References to compare
+			 * @param	rhs the second References to compare
+			 * @return	true if the both References are the same, false
+			 *			otherwise */
+			friend bool operator==(const Reference& lhs, const Reference& rhs)
+			{ return (lhs.mRepository == rhs.mRepository)
+				&& (lhs.mIndex == rhs.mIndex); };
+
+			/** Compares the given References
+			 *
+			 * @param	lhs the first References to compare
+			 * @param	rhs the second References to compare
+			 * @return	true if the both References are different, false
+			 *			otherwise */
+			friend bool operator!=(const Reference& lhs, const Reference& rhs)
+			{ return !(lhs == rhs); };
+
+			/** Compares the given References
+			 *
+			 * @param	lhs the first References to compare
+			 * @param	rhs the second References to compare
+			 * @return	true if lhs has a smaller value than rhs, false
+			 *			otherwise */
+			friend bool operator<(const Reference& lhs, const Reference& rhs)
+			{ return lhs.mIndex < rhs.mIndex; };
+
+			/** @return	the index of the Element that the Reference is pointing
+			 *			to in the Repository */
+			SizeType get() const { return mIndex; };
+		};
+
 	private:	// Attributes
+		/** The maximum number of Elements that can be sotred in the
+		 * Repository */
+		SizeType mMaxElements;
+
 		/** All the data stored in the Repository */
 		std::vector<T> mData;
 
+		/** All the data stored in the Repository */
+		std::vector<unsigned long> mRefCounts;
+
 	public:
-		/** Copy constructor */
-		Repository(const Repository&) = delete;
-
-		/** Copy assignment operator */
-		void operator=(const Repository&) = delete;
-
-		/** @return	the only instance of the Repository */
-		static Repository& getInstance();
-
-		/** Adds the given element to the Repository
+		/** Creates a new Repository
 		 *
-		 * @param	element a pointer to the element to add */
-		void add(T element);
+		 * @param	maxElements the maximum number of Elements that can be
+		 *			stored in the Repository */
+		Repository(SizeType maxElements);
 
-		/** Removes the given element from the Repository
+		/** Creates a new element in the Repository
 		 *
-		 * @param	element a pointer to the element to add */
-		void remove(T element);
-
-		/** Removes all the inserted elements in the Repository */
-		void clear();
+		 * @param	args the argument list with which we are going to create
+		 *			the new Element
+		 * @return	a Reference object to the new Element */
+		template <typename... Args>
+		Reference add(Args&&... args);
 
 		/** Searchs an element with the given comparison function
 		 *
-		 * @param	f the comparison function used for search
-		 * @return	true if found, false otherwise */
-		template <class F>
-		bool has(const F& f) const;
+		 * @param	callback the comparison function used for searching
+		 * @return	a Reference object to the Element searched */
+		Reference find(const SearchCallback& callback);
 
-		/** Searchs an element with the given comparison function
+		/** Increments the number of references pointing to the Element located
+		 * at the given index
 		 *
-		 * @param	f the comparison function used for search
-		 * @return	the element searched, undetermined if not found */
-		template <class F>
-		const T& get(const F& f) const;
-	private:
-		/** Creates a new Repository */
-		Repository() = default;
+		 * @param	index the index of the Element */
+		void incrementRefCount(SizeType index);
+
+		/** Decrements the number of references pointing to the Element located
+		 * at the given index
+		 *
+		 * @param	index the index of the Element */
+		void decrementRefCount(SizeType index);
 	};
 
 }

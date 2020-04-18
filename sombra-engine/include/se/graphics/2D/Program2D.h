@@ -1,14 +1,11 @@
 #ifndef PROGRAM_2D_H
 #define PROGRAM_2D_H
 
-#include <memory>
 #include <glm/glm.hpp>
 #include "../IProgram.h"
+#include "../core/Texture.h"
 
 namespace se::graphics {
-
-	class Texture;
-
 
 	/**
 	 * Program2D class, it's a high level Program used by the Renderer2D so it
@@ -17,7 +14,7 @@ namespace se::graphics {
 	class Program2D : public IProgram
 	{
 	private:	// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
+		using TextureRef = Texture::Repository::Reference;
 
 	protected:	// Attributes
 		/** The maximum number of textures in the program */
@@ -37,7 +34,7 @@ namespace se::graphics {
 		 *
 		 * @param	textures a pointer to the textures to set
 		 * @param	textureCount the number of textures to set */
-		void setTextures(const TextureSPtr* textures, std::size_t textureCount);
+		void setTextures(const TextureRef* textures, std::size_t textureCount);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

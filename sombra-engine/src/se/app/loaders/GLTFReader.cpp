@@ -120,12 +120,12 @@ namespace se::app {
 	}
 
 
-	GLTFReader::GLTFReader()
+	GLTFReader::GLTFReader(graphics::GraphicsEngine& graphicsEngine) : SceneReader(graphicsEngine)
 	{
-		mDefaultMaterial = std::make_shared<graphics::Material>(graphics::Material{
+		mDefaultMaterial = mGraphicsEngine.getMaterialRepository().add(graphics::Material{
 			"DefaultMaterial",
-			{ glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), nullptr, 1.0f, 1.0f, nullptr },
-			nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
+			{ glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), {}, 1.0f, 1.0f, {} },
+			{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
 		});
 	}
 
@@ -542,7 +542,10 @@ namespace se::app {
 
 	Result GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
 	{
-		auto texture = std::make_unique<graphics::Texture>();
+		auto texture = mGraphicsEngine.getTextureRepository().add();
+		if (!texture) {
+			return Result(false, "Failed to create the texture");
+		}
 
 		auto itSource = jsonTexture.find("source");
 		if (itSource != jsonTexture.end()) {
@@ -595,7 +598,7 @@ namespace se::app {
 
 	Result GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
 	{
-		auto material = std::make_unique<graphics::Material>();
+		auto material = mGraphicsEngine.getMaterialRepository().add();
 
 		auto itName = jsonMaterial.find("name");
 		if (itName != jsonMaterial.end()) {
@@ -750,7 +753,7 @@ namespace se::app {
 	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive)
 	{
 		std::shared_ptr<graphics::Mesh> mesh = nullptr;
-		std::shared_ptr<graphics::Material> material = mDefaultMaterial;
+		graphics::Material::Repository::Reference material = mDefaultMaterial;
 
 		graphics::VertexArray vao;
 		std::vector<graphics::VertexBuffer> vbos;
@@ -1069,7 +1072,7 @@ namespace se::app {
 						if (currentId < mGLTFData.nodes.size()) {
 							animation::AnimationNode* currentNode = mGLTFData.nodes[currentId].sceneEntity.animationNode;
 
-							for (int childId : mGLTFData.nodes[currentId].children) {
+							for (std::size_t childId : mGLTFData.nodes[currentId].children) {
 								auto itChild = currentNode->emplace(currentNode->cbegin(), mGLTFData.nodes[childId].nodeData);
 								if (itChild == currentNode->end()) {
 									return Result(false, "Failed to create an AnimationNode for the node " + std::to_string(childId));

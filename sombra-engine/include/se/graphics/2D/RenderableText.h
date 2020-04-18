@@ -12,7 +12,7 @@ namespace se::graphics {
 	class RenderableText
 	{
 	private:	// Nested types
-		using FontSPtr = std::shared_ptr<Font>;
+		using FontRef = Font::Repository::Reference;
 
 	private:	// Attributes
 		/** The position in pixels of the Text */
@@ -24,7 +24,7 @@ namespace se::graphics {
 		glm::vec2 mSize;
 
 		/** The font of the Text */
-		FontSPtr mFont;
+		FontRef mFont;
 
 		/** The RGBA color of the Text */
 		glm::vec4 mColor;
@@ -43,8 +43,8 @@ namespace se::graphics {
 		 * @param	text the text to render of the RenderableText */
 		RenderableText(
 			const glm::vec2& position, const glm::vec2& size,
-			FontSPtr font = nullptr,
-			const glm::vec4& color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+			FontRef font = FontRef(),
+			const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f },
 			const std::string text = ""
 		) : mPosition(position), mSize(size),
 			mFont(font), mColor(color), mText(text) {};
@@ -57,7 +57,7 @@ namespace se::graphics {
 		const glm::vec2& getSize() const { return mSize; };
 
 		/** @return	a pointer to the font of the RenderableText */
-		FontSPtr getFont() const { return mFont; };
+		FontRef getFont() const { return mFont; };
 
 		/** @return	the RGBA color of the RenderableText */
 		const glm::vec4& getColor() const { return mColor; };
@@ -78,8 +78,8 @@ namespace se::graphics {
 
 		/** Sets the font of the RenderableText
 		 *
-		 * @param	font a pointer to the Font of the RenderableText */
-		void setFont(FontSPtr font) { mFont = font; };
+		 * @param	font a Reference to the Font of the RenderableText */
+		void setFont(FontRef font) { mFont = font; };
 
 		/** Sets the color of the RenderableText
 		 *

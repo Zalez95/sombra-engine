@@ -2,6 +2,7 @@
 #include <se/utils/Log.h>
 #include <se/utils/Repository.h>
 #include <se/app/loaders/FontReader.h>
+#include <se/app/GraphicsManager.h>
 #include <se/graphics/GraphicsEngine.h>
 #include "Game.h"
 #include "Level.h"
@@ -11,11 +12,9 @@
 
 namespace game {
 
-	using FontSPtr = std::shared_ptr<se::graphics::Font>;
-	using FontRepository = se::utils::Repository<FontSPtr>;
-
-
-	Game::Game() : Application({ kTitle, kWidth, kHeight }, kUpdateTime), mGameData{}
+	Game::Game() :
+		Application({ kTitle, kWidth, kHeight }, { { kWidth, kHeight }, 64, 1, 16, 2 }, kUpdateTime),
+		mGameData{}
 	{
 		mGameData.windowSystem = mWindowSystem;
 		mGameData.graphicsEngine = mGraphicsEngine;
@@ -118,24 +117,20 @@ namespace game {
 
 		try {
 			// Font load
+			se::app::FontReader fontReader(*mGraphicsEngine);
+
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), '\0');
-			auto arial = std::make_unique<se::graphics::Font>();
-			if (se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
-				FontRepository::getInstance().add( std::move(arial) );
-			}
-			else {
+			se::graphics::Font::Repository::Reference arial;
+			if (!fontReader.read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, arial)) {
 				throw std::runtime_error("Error reading the font file");
 			}
 
 			mGameData.layer2D = new se::graphics::Layer2D();
 			mGameData.graphicsEngine->addLayer(mGameData.layer2D);
+			mGameData.graphicsManager->addLayer(mGameData.layer2D);
 
-			mGameData.fpsText = new se::graphics::RenderableText
-				(glm::vec2(0.0f), glm::vec2(16.0f),
-				FontRepository::getInstance().get([](FontSPtr font) { return font->name == "Arial"; }),
-				glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)
-			);
+			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
 			mGameData.layer2D->addRenderableText(mGameData.fpsText, 255);
 		}
 		catch (std::exception& e) {
@@ -170,11 +165,10 @@ namespace game {
 		}
 
 		if (mGameData.layer2D) {
+			mGameData.graphicsManager->removeLayer(mGameData.layer2D);
 			mGameData.graphicsEngine->removeLayer(mGameData.layer2D);
 			delete mGameData.layer2D;
 		}
-
-		FontRepository::getInstance().clear();
 	}
 
 // Private functions

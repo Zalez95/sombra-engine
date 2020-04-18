@@ -45,9 +45,6 @@
 #include "Level.h"
 #include "Game.h"
 
-using FontSPtr = std::shared_ptr<se::graphics::Font>;
-using FontRepository = se::utils::Repository<FontSPtr>;
-
 namespace game {
 
 	se::collision::HalfEdgeMesh createTestTube1()
@@ -164,30 +161,30 @@ namespace game {
 // Public functions
 	Level::Level(GameData& gameData) :
 		IGameScreen(gameData), mPlayerEntity(nullptr), mPlayerController(nullptr),
-		mLogoTexture(nullptr), mPickText(nullptr)
+		mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
 	{
 		mGameData.eventManager->subscribe(this, se::app::Topic::Key);
 
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::app::TerrainLoader terrainLoader(*mGameData.graphicsManager, *mGameData.physicsManager, *mGameData.collisionManager);
+		se::app::TerrainLoader terrainLoader(*mGameData.graphicsManager, *mGameData.graphicsEngine, *mGameData.physicsManager, *mGameData.collisionManager);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
 		se::app::Image heightMap1, splatMap1, logo1, reticle1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		std::shared_ptr<se::graphics::Texture> logoTexture = nullptr, reticleTexture = nullptr, chessTexture = nullptr;
+		se::graphics::Texture::Repository::Reference logoTexture, reticleTexture, chessTexture;
 		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
 		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
-		std::shared_ptr<se::graphics::Font> arial;
+		se::graphics::Font::Repository::Reference arial;
 		se::app::Scenes loadedScenes;
 
 		try {
 			// Readers
 			AudioFile<float> audioFile;
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
+			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF, *mGameData.graphicsEngine);
 
 			// Meshes
 			se::app::RawMesh cubeRawMesh("Cube");
@@ -300,13 +297,19 @@ namespace game {
 			}
 
 			// Textures
-			logoTexture = std::make_shared<se::graphics::Texture>();
+			logoTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			if (!logoTexture) {
+				throw std::runtime_error("Couldn't create the logo texture");
+			}
 			logoTexture->setImage(
 				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 				logo1.width, logo1.height
 			);
 
-			reticleTexture = std::make_shared<se::graphics::Texture>();
+			reticleTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			if (!reticleTexture) {
+				throw std::runtime_error("Couldn't create the reticle texture");
+			}
 			reticleTexture->setImage(
 				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 				reticle1.width, reticle1.height
@@ -316,7 +319,10 @@ namespace game {
 				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
 				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
-			chessTexture = std::make_shared<se::graphics::Texture>();
+			chessTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			if (!chessTexture) {
+				throw std::runtime_error("Couldn't create the chess texture");
+			}
 			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, 2, 2);
 
 			// Cameras
@@ -337,12 +343,7 @@ namespace game {
 			pointLight3->intensity = 10.0f;
 
 			// Fonts
-			std::vector<char> characterSet(128);
-			std::iota(characterSet.begin(), characterSet.end(), 0);
-			arial = std::make_shared<se::graphics::Font>();
-			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
-				throw std::runtime_error("Error reading the font file");
-			}
+			arial = mGameData.graphicsEngine->getFontRepository().find([](const se::graphics::Font& font) { return font.name == "Arial"; });
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
@@ -372,11 +373,7 @@ namespace game {
 		mGameData.layer2D->addRenderable2D(mLogoTexture, 0);
 		mReticleTexture = new se::graphics::Renderable2D(glm::vec2(kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f), glm::vec2(20.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
 		mGameData.layer2D->addRenderable2D(mReticleTexture, 0);
-		mPickText = new se::graphics::RenderableText(
-			glm::vec2(0.0f, 700.0f), glm::vec2(16.0f),
-			FontRepository::getInstance().get([](FontSPtr font) { return font->name == "Arial"; }),
-			glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)
-		);
+		mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
 		mGameData.layer2D->addRenderableText(mPickText, 0);
 
 		/*********************************************************************
@@ -411,24 +408,28 @@ namespace game {
 		mEntities.push_back(std::move(skyEntity));
 
 		// Terrain
-		auto terrainMaterial = std::make_shared<se::graphics::SplatmapMaterial>();
-		terrainMaterial->splatmapTexture = std::make_shared<se::graphics::Texture>();
-		terrainMaterial->splatmapTexture->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
-		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
-		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
-		terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr }, nullptr, 1.0f });
+		auto splatmapTex = mGameData.graphicsEngine->getTextureRepository().add();
+		auto terrainMaterial = mGameData.graphicsEngine->getSplatmapMaterialRepository().add();
+		if (splatmapTex && terrainMaterial) {
+			splatmapTex->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
 
-		std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-		mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial) );
+			terrainMaterial->splatmapTexture = std::move(splatmapTex);
+			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+
+			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
+			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial) );
+		}
 
 		// Plane
 		auto plane = std::make_unique<se::app::Entity>("plane");
 		plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-		std::shared_ptr<se::graphics::Material> planeMaterial(new se::graphics::Material{
+		auto planeMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 			"plane_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), nullptr, 0.2f, 0.5f, nullptr },
-			nullptr, 1.0f, nullptr, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
+			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
+			{}, 1.0f, {}, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
 		});
 
 		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(planeMesh, planeMaterial);
@@ -472,10 +473,10 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
+			auto tmpMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 				"tmp_material",
-				se::graphics::PBRMetallicRoughness{ colors[i], nullptr, 0.2f, 0.5f, nullptr },
-				nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				se::graphics::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
+				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
 			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, tmpMaterial);
@@ -488,10 +489,10 @@ namespace game {
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		{
-			std::shared_ptr<se::graphics::Material> redMaterial(new se::graphics::Material{
+			auto redMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 				"tmp_material",
-				se::graphics::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr },
-				nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				se::graphics::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
+				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
 			auto nonMovableCube = std::make_unique<se::app::Entity>("non-movable-cube");
@@ -547,13 +548,13 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
-			std::shared_ptr<se::graphics::Material> tmpMaterial(new se::graphics::Material{
+			auto tmpMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 				"tmp_material",
 				se::graphics::PBRMetallicRoughness{
 					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
-					nullptr, 0.2f, 0.5f, nullptr
+				{}, 0.2f, 0.5f, {}
 				},
-				nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			});
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
@@ -586,10 +587,10 @@ namespace game {
 		}
 
 		// Lights
-		std::shared_ptr<se::graphics::Material> lightMaterial(new se::graphics::Material{
+		auto lightMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 			"light_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), nullptr, 0.2f, 0.5f, nullptr },
-			nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(5.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
+			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
+			{}, 1.0f, {}, 1.0f, {}, glm::vec3(5.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
 		});
 
 		auto eL2 = std::make_unique<se::app::Entity>("point-light2");

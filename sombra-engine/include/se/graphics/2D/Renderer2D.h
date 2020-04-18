@@ -20,7 +20,7 @@ namespace se::graphics {
 	class Renderer2D
 	{
 	private:	// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
+		using TextureRef = Texture::Repository::Reference;
 
 		/** Holds the data of each of the vertices that the Batch can draw */
 		struct BatchVertex
@@ -93,7 +93,7 @@ namespace se::graphics {
 		Batch mBatch;
 
 		/** The textures used for rendering the Batch */
-		utils::FixedVector<TextureSPtr, 16> mTextures;
+		utils::FixedVector<TextureRef, 16> mTextures;
 
 	public:		// Functions
 		/** Creates a new Renderer2D */
@@ -132,7 +132,7 @@ namespace se::graphics {
 		 * @return	the index of the texture in the array of Texture uniforms
 		 * @note	if the array of Texture uniforms is full the Batch will be
 		 *			rendered */
-		unsigned char addTexture(TextureSPtr texture);
+		unsigned char addTexture(TextureRef texture);
 
 		/** Draws the batch and clears the texture array of Texture uniforms */
 		void drawBatch();

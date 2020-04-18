@@ -9,6 +9,7 @@
 #include "se/graphics/3D/Camera.h"
 #include "se/graphics/3D/Lights.h"
 #include "se/graphics/3D/Renderable3D.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "../Skin.h"
 
 namespace se::app {
@@ -105,18 +106,34 @@ namespace se::app {
 	 */
 	class SceneReader
 	{
-	private:	// Nested types
+	protected:	// Nested types
 		using SceneReaderUPtr = std::unique_ptr<SceneReader>;
 
+	protected:	// Attributes
+		/** The GraphicsEngine used for storing Textures and Materials */
+		graphics::GraphicsEngine& mGraphicsEngine;
+
 	public:		// Functions
+		/** Creates a new SceneReader
+		 *
+		 * @param	graphicsEngine the GraphicsEngine used for storing
+		 *			Textures and Materials */
+		SceneReader(graphics::GraphicsEngine& graphicsEngine) :
+			mGraphicsEngine(graphicsEngine) {};
+
 		/** Class destructor */
 		virtual ~SceneReader() = default;
 
 		/** Creates a SceneReader capable of reading the given file format
 		 *
 		 * @param	fileType the FileType that we want to read
+		 * @param	graphicsEngine the GraphicsEngine used for storing
+		 *			Textures and Materials
 		 * @return	a pointer to the new SceneReader */
-		static SceneReaderUPtr createSceneReader(SceneFileType fileType);
+		static SceneReaderUPtr createSceneReader(
+			SceneFileType fileType,
+			graphics::GraphicsEngine& graphicsEngine
+		);
 
 		/** Parses the given file and stores the result in the given Scenes
 		 * object

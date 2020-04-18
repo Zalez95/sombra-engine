@@ -12,7 +12,7 @@ namespace se::app {
 	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
 		const std::string& name, float size, float maxHeight,
 		const Image& heightMap, const std::vector<float>& lodDistances,
-		SplatmapMaterialSPtr terrainMaterial
+		SplatmapMaterialRef terrainMaterial
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
 
@@ -41,9 +41,13 @@ namespace se::app {
 	TerrainLoader::RenderableTerrainUPtr TerrainLoader::createTerrainRenderable(
 		float size, float maxHeight,
 		const Image& heightMap, const std::vector<float>& lodDistances,
-		SplatmapMaterialSPtr terrainMaterial
+		SplatmapMaterialRef terrainMaterial
 	) {
-		auto heightMapTexture = std::make_shared<graphics::Texture>();
+		auto heightMapTexture = mGraphicsEngine.getTextureRepository().add();
+		if (!heightMapTexture) {
+			return nullptr;
+		}
+
 		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 		heightMapTexture->setImage(
 			heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red,

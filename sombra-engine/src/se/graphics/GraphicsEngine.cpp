@@ -5,7 +5,7 @@
 
 namespace se::graphics {
 
-	GraphicsEngine::GraphicsEngine(const glm::uvec2& viewportSize) : mViewportSize(viewportSize)
+	GraphicsEngine::GraphicsEngine(const GraphicsData& config)
 	{
 		glewExperimental = true;
 		if (glewInit() != GLEW_OK) {
@@ -26,6 +26,15 @@ namespace se::graphics {
 
 		// Allow non-aligned textures
 		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
+
+		// Create the Repositories
+		mTextureRepo = std::make_unique<Texture::Repository>(config.maxTextures);
+		mFontRepo = std::make_unique<Font::Repository>(config.maxFonts);
+		mMaterialRepo = std::make_unique<Material::Repository>(config.maxMaterials);
+		mSplatmapMaterialRepo = std::make_unique<SplatmapMaterial::Repository>(config.maxSplatmapMaterials);
+
+		// Set the initial viewport size
+		setViewportSize(config.viewportSize);
 	}
 
 
@@ -57,23 +66,17 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsEngine::setViewport(const glm::uvec2& viewportSize)
+	void GraphicsEngine::setViewportSize(const glm::uvec2& viewportSize)
 	{
 		mViewportSize = viewportSize;
 
 		GL_WRAP( glViewport(0, 0, mViewportSize.x, mViewportSize.y) );
-
-		for (ILayer* layer : mLayers) {
-			layer->setViewportSize(viewportSize);
-		}
 	}
 
 
 	void GraphicsEngine::addLayer(ILayer* layer)
 	{
 		if (layer) {
-			layer->setViewportSize(mViewportSize);
-
 			mLayers.push_back(layer);
 		}
 	}

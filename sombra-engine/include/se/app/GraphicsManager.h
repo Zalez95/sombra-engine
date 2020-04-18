@@ -40,6 +40,9 @@ namespace se::app {
 		/** The Layer3D used by the GraphicsEngine */
 		graphics::Layer3D mLayer3D;
 
+		/** The layers to update when the window is resized */
+		std::vector<graphics::ILayer*> mLayers;
+
 		std::map<Entity*, CameraUPtr> mCameraEntities;
 		std::map<Entity*, LightUPtr> mLightEntities;
 		std::multimap<Entity*, Renderable3DUPtr> mRenderable3DEntities;
@@ -66,6 +69,17 @@ namespace se::app {
 		 *
 		 * @param	event the IEvent to notify */
 		virtual void notify(const IEvent& event) override;
+
+		/** Adds the given ILayer so it will be resized when the Window does so
+		 *
+		 * @param	layer a pointer to the layer to add */
+		void addLayer(graphics::ILayer* layer);
+
+		/** Removes the given ILayer so it won't longer be resized when the
+		 * Window does so
+		 *
+		 * @param	layer a pointer to the layer to remove */
+		void removeLayer(graphics::ILayer* layer);
 
 		/** Adds the given Entity and its Camera data to the GraphicsManager
 		 *

@@ -15,6 +15,7 @@ namespace se::app {
 
 
 	Button::Button(const Button& other) :
+		IComponent(other),
 		mLayer2D(other.mLayer2D),
 		mBounds(IBoundsUPtr(other.mBounds->clone())),
 		mRenderable2D(other.mRenderable2D),
@@ -33,6 +34,7 @@ namespace se::app {
 
 	Button& Button::operator=(const Button& other)
 	{
+		IComponent::operator=(other);
 		mLayer2D = other.mLayer2D;
 		mBounds = IBoundsUPtr(other.mBounds->clone());
 		mRenderable2D = other.mRenderable2D;

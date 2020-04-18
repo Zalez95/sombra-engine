@@ -2,7 +2,7 @@
 #define APPLICATION_H
 
 namespace se::window { struct WindowData; class WindowSystem; }
-namespace se::graphics { class GraphicsEngine; }
+namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { class CollisionWorld; }
 namespace se::animation { class AnimationSystem; }
@@ -73,9 +73,15 @@ namespace se::app {
 		 *
 		 * @param	windowConfig the initial configuration with which the
 		 *			window is going to be created
+		 * @param	graphicsConfig the initial configuration with which the
+		 *			GraphicsEngine is going to be created
 		 * @param	updateTime the minimum elapsed time between updates in
 		 *			seconds */
-		Application(const window::WindowData& windowConfig, float updateTime);
+		Application(
+			const window::WindowData& windowConfig,
+			const graphics::GraphicsData& graphicsConfig,
+			float updateTime
+		);
 
 		/** Class destructor */
 		virtual ~Application();

@@ -1,13 +1,10 @@
 #ifndef RENDERABLE_2D_H
 #define RENDERABLE_2D_H
 
-#include <memory>
 #include <glm/glm.hpp>
+#include "../core/Texture.h"
 
 namespace se::graphics {
-
-	class Texture;
-
 
 	/**
 	 * Class Renderable2D, it's a 2D graphic entity that holds a position,
@@ -16,7 +13,7 @@ namespace se::graphics {
 	class Renderable2D
 	{
 	private:	// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
+		using TextureRef = Texture::Repository::Reference;
 
 	private:	// Attributes
 		/** The position in pixels of the 2D element */
@@ -29,7 +26,7 @@ namespace se::graphics {
 		glm::vec4 mColor;
 
 		/** The texture of the 2D element */
-		TextureSPtr mTexture;
+		TextureRef mTexture;
 
 	public:		// Functions
 		/** Creates a new Renderable2D
@@ -41,7 +38,7 @@ namespace se::graphics {
 		Renderable2D(
 			const glm::vec2& position, const glm::vec2& size,
 			const glm::vec4& color = glm::vec4(1.0f),
-			const TextureSPtr texture = nullptr
+			const TextureRef texture = TextureRef()
 		) :	mPosition(position), mSize(size),
 			mColor(color), mTexture(texture) {};
 
@@ -55,7 +52,7 @@ namespace se::graphics {
 		const glm::vec4& getColor() const { return mColor; };
 
 		/** @return	the texture of the Renderable 2D */
-		TextureSPtr getTexture() const { return mTexture; };
+		TextureRef getTexture() const { return mTexture; };
 
 		/** Sets the position of the Renderable2D
 		 *
@@ -75,7 +72,7 @@ namespace se::graphics {
 		/** Sets the texture of the Renderable2D
 		 *
 		 * @param	texture the new texture of the Renderable2D */
-		void setTexture(TextureSPtr texture) { mTexture = texture; };
+		void setTexture(TextureRef texture) { mTexture = texture; };
 	};
 
 }

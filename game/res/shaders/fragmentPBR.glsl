@@ -208,9 +208,7 @@ void main()
 		vec3 color = calculateDirectLighting(surfaceColor.rgb, metallic, roughness, surfaceNormal);
 
 		// Set ambient occlusion
-		color = (uMaterial.useOcclusionTexture)?
-			mix(color, color * surfaceAO, uMaterial.occlusionStrength) :
-			color;
+		color += uMaterial.occlusionStrength * surfaceAO * surfaceColor.rgb;
 
 		// Add emissive color
 		color += emissiveColor;

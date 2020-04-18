@@ -3,12 +3,12 @@
 
 #include <memory>
 #include "QuadTree.h"
+#include "../core/Texture.h"
+#include "Material.h"
 
 namespace se::graphics {
 
 	class Camera;
-	class Texture;
-	struct SplatmapMaterial;
 
 
 	/**
@@ -17,8 +17,8 @@ namespace se::graphics {
 	class RenderableTerrain
 	{
 	public:		// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
-		using SplatmapMaterialSPtr = std::shared_ptr<SplatmapMaterial>;
+		using TextureRef = Texture::Repository::Reference;
+		using SplatmapMaterialRef = SplatmapMaterial::Repository::Reference;
 
 	private:	// Attributes
 		/** The size of the terrain in the XZ plane */
@@ -28,7 +28,7 @@ namespace se::graphics {
 		float mMaxHeight;
 
 		/** The height map texture of the Terrain */
-		TextureSPtr mHeightMap;
+		TextureRef mHeightMap;
 
 		/** The terrain QuadTree */
 		QuadTree mQuadTree;
@@ -38,7 +38,7 @@ namespace se::graphics {
 		glm::mat4 mModelMatrix;
 
 		/** The SplatmapMaterial of the Terrain */
-		SplatmapMaterialSPtr mMaterial;
+		SplatmapMaterialRef mMaterial;
 
 	public:		// Functions
 		/** Creates a new RenderableTerrain
@@ -51,9 +51,9 @@ namespace se::graphics {
 		 *			level of detail
 		 * @param	material the SplatmapMaterial of the Terrain */
 		RenderableTerrain(
-			float size, float maxHeight, TextureSPtr heightMap,
+			float size, float maxHeight, TextureRef heightMap,
 			const std::vector<float>& lodDistances,
-			SplatmapMaterialSPtr material
+			SplatmapMaterialRef material
 		) : mSize(size), mMaxHeight(maxHeight), mHeightMap(heightMap),
 			mQuadTree(size, lodDistances),
 			mModelMatrix(1.0f), mMaterial(material) {};
@@ -66,10 +66,10 @@ namespace se::graphics {
 		float getMaxHeight() const { return mMaxHeight; };
 
 		/** @return	the height map texture of the Terrain */
-		TextureSPtr getHeightMap() const { return mHeightMap; };
+		TextureRef getHeightMap() const { return mHeightMap; };
 
-		/** @return	a pointer to the SplatmapMaterial of the Terrain */
-		const SplatmapMaterialSPtr getMaterial() const { return mMaterial; };
+		/** @return	the SplatmapMaterial of the Terrain */
+		const SplatmapMaterialRef getMaterial() const { return mMaterial; };
 
 		/** @return	the model matrix of the Terrain */
 		glm::mat4 getModelMatrix() const { return mModelMatrix; };

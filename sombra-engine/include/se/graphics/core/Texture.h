@@ -2,6 +2,7 @@
 #define TEXTURE_H
 
 #include "Constants.h"
+#include "../../utils/Repository.h"
 
 namespace se::graphics {
 
@@ -10,6 +11,9 @@ namespace se::graphics {
 	 */
 	class Texture
 	{
+	public:		// Nested Types
+		using Repository = utils::Repository<Texture, unsigned short>;
+
 	private:	// Attributes
 		/** The id of the texture object */
 		unsigned int mTextureId;

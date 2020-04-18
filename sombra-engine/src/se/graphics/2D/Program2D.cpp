@@ -14,7 +14,7 @@ namespace se::graphics {
 	}
 
 
-	void Program2D::setTextures(const TextureSPtr* textures, std::size_t textureCount)
+	void Program2D::setTextures(const TextureRef* textures, std::size_t textureCount)
 	{
 		int numTextures = std::min(kMaxTextures, static_cast<int>(textureCount));
 		for (int i = 0; i < numTextures; ++i) {

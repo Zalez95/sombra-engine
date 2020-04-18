@@ -1,7 +1,7 @@
 #ifndef LABEL_H
 #define LABEL_H
 
-#include <vector>
+#include <memory>
 #include "IComponent.h"
 #include "../../graphics/2D/RenderableText.h"
 #include "../../graphics/2D/Layer2D.h"
@@ -20,7 +20,7 @@ namespace se::app {
 		/** The vertical alignment of the text lines inside the Label */
 		enum class VerticalAlignment { Top, Center, Bottom };
 	private:
-		using FontSPtr = std::shared_ptr<graphics::Font>;
+		using FontRef = graphics::Font::Repository::Reference;
 		using RenderableTextUPtr = std::unique_ptr<graphics::RenderableText>;
 
 	private:	// Attributes
@@ -32,7 +32,7 @@ namespace se::app {
 		std::vector<RenderableTextUPtr> mRenderableTexts;
 
 		/** The font of the Text */
-		FontSPtr mFont;
+		FontRef mFont;
 
 		/** The maximum character size to use with the Text */
 		glm::vec2 mCharacterSize;
@@ -56,14 +56,14 @@ namespace se::app {
 		 * @param	layer2D a pointer to the Layer2D where the Label will be
 		 *			drawn */
 		Label(graphics::Layer2D* layer2D);
-		Label(const Label& other) = default;
+		Label(const Label& other);
 		Label(Label&& other) = default;
 
 		/** Class destructor */
 		virtual ~Label();
 
 		/** Assignment operator */
-		Label& operator=(const Label& other) = default;
+		Label& operator=(const Label& other);
 		Label& operator=(Label&& other) = default;
 
 		/** Sets the position of the Label
@@ -90,7 +90,7 @@ namespace se::app {
 		/** Sets the font of the Label
 		 *
 		 * @param	font a pointer to the Font of the Label */
-		void setFont(FontSPtr font);
+		void setFont(FontRef font);
 
 		/** Sets the size of each character in the Label text
 		 *

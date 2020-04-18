@@ -6,8 +6,7 @@
 namespace se::app {
 
 	Label::Label(graphics::Layer2D* layer2D) :
-		mLayer2D(layer2D),
-		mFont(nullptr), mCharacterSize(0.0f),
+		mLayer2D(layer2D), mCharacterSize(0.0f),
 		mHorizontalAlignment(HorizontalAlignment::Left),
 		mVerticalAlignment(VerticalAlignment::Top),
 		mColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -16,9 +15,46 @@ namespace se::app {
 	}
 
 
+	Label::Label(const Label& other) :
+		IComponent(other),
+		mLayer2D(other.mLayer2D),
+		mFont(other.mFont),
+		mCharacterSize(other.mCharacterSize),
+		mHorizontalAlignment(other.mHorizontalAlignment),
+		mVerticalAlignment(other.mVerticalAlignment),
+		mColor(other.mColor),
+		mFullText(other.mFullText)
+	{
+		mRenderableTexts.reserve(other.mRenderableTexts.size());
+		for (const auto& renderableText : other.mRenderableTexts) {
+			mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(*renderableText) );
+		}
+	}
+
+
 	Label::~Label()
 	{
 		setVisibility(false);
+	}
+
+
+	Label& Label::operator=(const Label& other)
+	{
+		IComponent::operator=(other);
+		mLayer2D = other.mLayer2D;
+		mFont = other.mFont;
+		mCharacterSize = other.mCharacterSize;
+		mHorizontalAlignment = other.mHorizontalAlignment;
+		mVerticalAlignment = other.mVerticalAlignment;
+		mColor = other.mColor;
+		mFullText = other.mFullText;
+
+		mRenderableTexts.reserve(other.mRenderableTexts.size());
+		for (const auto& renderableText : other.mRenderableTexts) {
+			mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(*renderableText) );
+		}
+
+		return *this;
 	}
 
 
@@ -68,7 +104,7 @@ namespace se::app {
 	}
 
 
-	void Label::setFont(FontSPtr font)
+	void Label::setFont(FontRef font)
 	{
 		mFont = font;
 		updateRenderableTexts();

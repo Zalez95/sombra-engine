@@ -1,16 +1,12 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include <memory>
 #include <string>
 #include <glm/glm.hpp>
 #include "../../utils/FixedVector.h"
 #include "../core/Texture.h"
 
 namespace se::graphics {
-
-	using TextureSPtr = std::shared_ptr<Texture>;
-
 
 	/**
 	 * Struct PBRMetallicRoughness, It holds all the parameters related to the
@@ -22,7 +18,7 @@ namespace se::graphics {
 		glm::vec4 baseColorFactor;
 
 		/** The base color texture */
-		TextureSPtr baseColorTexture;
+		Texture::Repository::Reference baseColorTexture;
 
 		/** The metalness of the material */
 		float metallicFactor;
@@ -31,7 +27,7 @@ namespace se::graphics {
 		float roughnessFactor;
 
 		/** The metallic-roughness texture */
-		TextureSPtr metallicRoughnessTexture;
+		Texture::Repository::Reference metallicRoughnessTexture;
 	};
 
 
@@ -41,6 +37,8 @@ namespace se::graphics {
 	 */
 	struct Material
 	{
+		using Repository = utils::Repository<Material, unsigned short>;
+
 		/** The name of the Material */
 		std::string name;
 
@@ -48,19 +46,19 @@ namespace se::graphics {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		TextureSPtr normalTexture;
+		Texture::Repository::Reference normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale;
 
 		/** The occlusion map texture */
-		TextureSPtr occlusionTexture;
+		Texture::Repository::Reference occlusionTexture;
 
 		/** The amount of occlusion applied */
 		float occlusionStrength;
 
 		/** The emissive map texture */
-		TextureSPtr emissiveTexture;
+		Texture::Repository::Reference emissiveTexture;
 
 		/** The RGB components of the emissive color of the material */
 		glm::vec3 emissiveFactor;
@@ -89,7 +87,7 @@ namespace se::graphics {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		TextureSPtr normalTexture;
+		Texture::Repository::Reference normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale;
@@ -102,13 +100,15 @@ namespace se::graphics {
 	 */
 	struct SplatmapMaterial
 	{
+		using Repository = utils::Repository<SplatmapMaterial, unsigned short>;
+
 		/** The different BasicMaterials that can be combined */
 		utils::FixedVector<BasicMaterial, 4> materials;
 
 		/** The splatmap texture, its a RGBA textures that codifies in each of
 		 * its channels which material should be used at each position and in
 		 * what percentage */
-		TextureSPtr splatmapTexture;
+		Texture::Repository::Reference splatmapTexture;
 	};
 
 }

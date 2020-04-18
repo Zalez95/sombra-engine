@@ -46,10 +46,10 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		mYellowMaterial = std::shared_ptr<se::graphics::Material>(new se::graphics::Material{
+		mYellowMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
 			"yellow_material",
-			se::graphics::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, nullptr, 0.2f, 0.5f, nullptr },
-			nullptr, 1.0f, nullptr, 1.0f, nullptr, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+			se::graphics::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
+			{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 		});
 	}
 
