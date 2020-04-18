@@ -6,6 +6,7 @@
 #include "se/physics/PhysicsEngine.h"
 #include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
+#include "se/utils/TaskSet.h"
 #include "se/app/Application.h"
 #include "se/app/InputManager.h"
 #include "se/app/GraphicsManager.h"
@@ -25,12 +26,15 @@ namespace se::app {
 		float updateTime
 	) : mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
 		mWindowSystem(nullptr), mGraphicsEngine(nullptr), mPhysicsEngine(nullptr), mCollisionWorld(nullptr),
-		mAnimationSystem(nullptr), mAudioEngine(nullptr),
+		mAnimationSystem(nullptr), mAudioEngine(nullptr), mTaskManager(nullptr),
 		mEventManager(nullptr), mInputManager(nullptr), mGraphicsManager(nullptr), mPhysicsManager(nullptr),
 		mCollisionManager(nullptr), mAnimationManager(nullptr), mAudioManager(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 		try {
+			// Tasks
+			mTaskManager = new utils::TaskManager(kMaxTasks);
+
 			// Events
 			mEventManager = new EventManager();
 
@@ -86,6 +90,7 @@ namespace se::app {
 		if (mInputManager) { delete mInputManager; }
 		if (mWindowSystem) { delete mWindowSystem; }
 		if (mEventManager) { delete mEventManager; }
+		if (mTaskManager) { delete mTaskManager; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
@@ -167,12 +172,24 @@ namespace se::app {
 	void Application::onUpdate(float deltaTime)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
-		mAnimationManager->update(deltaTime);
-		mPhysicsManager->doDynamics(deltaTime);
-		mCollisionManager->update(deltaTime);
-		mPhysicsManager->doConstraints(deltaTime);
-		mAudioManager->update();
-		mGraphicsManager->update();
+
+		utils::TaskSet taskSet(*mTaskManager);
+		auto animationTask = taskSet.createTask([&]() { mAnimationManager->update(deltaTime); });
+		auto dynamicsTask = taskSet.createTask([&]() { mPhysicsManager->doDynamics(deltaTime); });
+		auto collisionTask = taskSet.createTask([&]() { mCollisionManager->update(deltaTime); });
+		auto constraintsTask = taskSet.createTask([&]() { mPhysicsManager->doConstraints(deltaTime); });
+		auto audioTask = taskSet.createTask([&]() { mAudioManager->update(); });
+		auto graphicsTask = taskSet.createTask([&]() { mGraphicsManager->update(); });
+
+		taskSet.depends(collisionTask, dynamicsTask);
+		taskSet.depends(constraintsTask, collisionTask);
+		taskSet.depends(audioTask, constraintsTask);
+		taskSet.depends(audioTask, animationTask);
+		taskSet.depends(graphicsTask, constraintsTask);
+		taskSet.depends(graphicsTask, animationTask);
+
+		taskSet.submitAndWait();
+
 		SOMBRA_DEBUG_LOG << "End";
 	}
 

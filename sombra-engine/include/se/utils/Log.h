@@ -31,7 +31,7 @@ namespace se::utils {
 
 
 #define FORMAT_LOCATION(function, line) function << "(" << line << "): "
-#define LOCATION FORMAT_LOCATION(__FUNCTION__, __LINE__)
+#define LOCATION FORMAT_LOCATION(__func__, __LINE__)
 
 #define SOMBRA_TRACE_LOG	\
 	se::utils::Log::getInstance()(se::utils::LogLevel::Trace)	<< LOCATION

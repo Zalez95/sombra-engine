@@ -7,6 +7,7 @@ namespace se::physics { class PhysicsEngine; }
 namespace se::collision { struct CollisionWorldData; class CollisionWorld; }
 namespace se::animation { class AnimationSystem; }
 namespace se::audio { class AudioEngine; }
+namespace se::utils { class TaskManager; }
 
 namespace se::app {
 
@@ -37,6 +38,7 @@ namespace se::app {
 		};
 
 	protected:	// Attributes
+		static constexpr int kMaxTasks				= 1024;
 		static constexpr float kBaseBias			= 0.1f;
 		static constexpr float kMinFDifference		= 0.00001f;
 		static constexpr float kContactPrecision	= 0.0000001f;
@@ -57,6 +59,7 @@ namespace se::app {
 		collision::CollisionWorld* mCollisionWorld;
 		animation::AnimationSystem* mAnimationSystem;
 		audio::AudioEngine* mAudioEngine;
+		utils::TaskManager* mTaskManager;
 
 		/** The managers that hold the data of the entities */
 		EventManager* mEventManager;
