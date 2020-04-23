@@ -57,6 +57,19 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLPrimitive(PrimitiveType primitive)
+	{
+		switch (primitive) {
+			case PrimitiveType::Point:			return GL_POINT;
+			case PrimitiveType::Line:			return GL_LINE;
+			case PrimitiveType::Triangle:		return GL_TRIANGLES;
+			case PrimitiveType::TriangleFan:	return GL_TRIANGLE_FAN;
+			case PrimitiveType::TriangleStrip:	return GL_TRIANGLE_STRIP;
+			default:							return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLShader(ShaderType type)
 	{
 		switch (type) {

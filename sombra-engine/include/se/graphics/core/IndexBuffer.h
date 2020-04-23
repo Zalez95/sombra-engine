@@ -1,6 +1,7 @@
 #ifndef INDEX_BUFFER_H
 #define INDEX_BUFFER_H
 
+#include "Bindable.h"
 #include "Constants.h"
 
 namespace se::graphics {
@@ -12,7 +13,7 @@ namespace se::graphics {
 	 * An Index Buffer Object is a buffer with the indices to the vertices
 	 * that form the faces of the mesh
 	 */
-	class IndexBuffer
+	class IndexBuffer : public Bindable
 	{
 	private:	// Attributes
 		/** The id of the index buffer */
@@ -25,24 +26,8 @@ namespace se::graphics {
 		std::size_t mIndexCount;
 
 	public:		// Functions
-		/** Creates a new IndexBuffer
-		 *
-		 * @param	data a pointer to the data of the buffer
-		 * @param	size the size of the data buffer
-		 * @param	type the TypeId of the data of the buffer
-		 * @param	count the number of indices in the buffer */
-		IndexBuffer(
-			const void* data, std::size_t size,
-			TypeId type, std::size_t count
-		);
-
-		/** Creates a new IndexBuffer
-		 *
-		 * @param	data a pointer to the data of the buffer
-		 * @param	type the TypeId of the data of the buffer
-		 * @param	count the number of indices in the buffer */
-		template <typename T>
-		IndexBuffer(const T* data, TypeId type, std::size_t count);
+		/** Creates a new IndexBuffer */
+		IndexBuffer();
 
 		IndexBuffer(const IndexBuffer& other) = delete;
 		IndexBuffer(IndexBuffer&& other);
@@ -54,6 +39,41 @@ namespace se::graphics {
 		IndexBuffer& operator=(const IndexBuffer& other) = delete;
 		IndexBuffer& operator=(IndexBuffer&& other);
 
+		/** Resizes and sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the buffer
+		 * @param	type the TypeId of the elements
+		 * @param	count the number of elements in the data array */
+		template <typename T>
+		void resizeAndCopy(const T* data, TypeId type, std::size_t count);
+
+		/** Resizes and sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the new buffer
+		 * @param	size the size of the data buffer
+		 * @param	type the TypeId of the elements
+		 * @param	count the number of elements in the data array */
+		void resizeAndCopy(
+			const void* data, std::size_t size, TypeId type, std::size_t count
+		);
+
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the buffer
+		 * @param	count the number of elements in the data array
+		 * @param	offset the offset into the buffer where the data will be
+		 *			copied */
+		template <typename T>
+		void copy(const T* data, std::size_t count, std::size_t offset = 0);
+
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the new buffer
+		 * @param	size the size of the data buffer
+		 * @param	offset the offset into the buffer where the data will be
+		 *			copied in bytes */
+		void copy(const void* data, std::size_t size, std::size_t offset = 0);
+
 		/** @return	the TypeId of the indices of the buffer */
 		TypeId getIndexType() const { return mIndexType; };
 
@@ -61,24 +81,30 @@ namespace se::graphics {
 		std::size_t getIndexCount() const { return mIndexCount; };
 
 		/** Binds te Index Buffer Object */
-		void bind() const;
+		void bind() const override;
 
 		/** Unbinds the Index Buffer Object */
-		void unbind() const;
-	private:
-		/** Creates the actual buffer
-		 *
-		 * @param	data a pointer to the data of the new buffer
-		 * @param	size the size of the data buffer */
-		void createBuffer(const void* data, std::size_t size);
+		void unbind() const override;
 	};
 
 
 	template <typename T>
-	IndexBuffer::IndexBuffer(const T* data, TypeId type, std::size_t count) :
-		mIndexType(type), mIndexCount(count)
+	void IndexBuffer::resizeAndCopy(
+		const T* data, TypeId type, std::size_t count
+	) {
+		resizeAndCopy(
+			static_cast<const void*>(data), count * sizeof(T), type, count
+		);
+	}
+
+
+	template <typename T>
+	void IndexBuffer::copy(const T* data, std::size_t count, std::size_t offset)
 	{
-		createBuffer(data, count * sizeof(T));
+		copy(
+			static_cast<const void*>(data), count * sizeof(T),
+			offset * sizeof(T)
+		);
 	}
 
 }

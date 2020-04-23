@@ -1,7 +1,8 @@
 #include "se/graphics/3D/RendererPBR.h"
 #include "se/graphics/3D/Mesh.h"
 #include "se/graphics/3D/Camera.h"
-#include "../core/GLWrapper.h"
+#include "se/graphics/core/Graphics.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
 
@@ -45,7 +46,7 @@ namespace se::graphics {
 		}
 
 		// Render the renderable3Ds without skinning
-		mProgramPBR.enable();
+		mProgramPBR.bind();
 		mProgramPBR.setViewMatrix(viewMatrix);
 		mProgramPBR.setProjectionMatrix(projectionMatrix);
 		mProgramPBR.setLights(lights);
@@ -64,15 +65,14 @@ namespace se::graphics {
 
 			// Draw
 			mesh->bind();
-			const IndexBuffer& ibo = mesh->getIBO();
-			GL_WRAP( glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ibo.getIndexCount()), toGLType(ibo.getIndexType()), nullptr) );
+			Graphics::drawIndexed(PrimitiveType::Triangle, mesh->getIBO().getIndexCount(), mesh->getIBO().getIndexType());
 
 			// Unbind the program data
 			if (material) { mProgramPBR.unsetMaterial(*material); }
 		}
 
 		// Render the renderable3Ds with skinning
-		mProgramPBRSkinning.enable();
+		mProgramPBRSkinning.bind();
 		mProgramPBRSkinning.setViewMatrix(viewMatrix);
 		mProgramPBRSkinning.setProjectionMatrix(projectionMatrix);
 		mProgramPBRSkinning.setLights(lights);
@@ -92,8 +92,7 @@ namespace se::graphics {
 
 			// Draw
 			mesh->bind();
-			const IndexBuffer& ibo = mesh->getIBO();
-			GL_WRAP( glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ibo.getIndexCount()), toGLType(ibo.getIndexType()), nullptr) );
+			Graphics::drawIndexed(PrimitiveType::Triangle, mesh->getIBO().getIndexCount(), mesh->getIBO().getIndexType());
 
 			// Unbind the program data
 			if (material) { mProgramPBRSkinning.unsetMaterial(*material); }

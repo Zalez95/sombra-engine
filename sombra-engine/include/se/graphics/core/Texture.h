@@ -1,15 +1,16 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include "Bindable.h"
 #include "Constants.h"
 #include "../../utils/Repository.h"
 
 namespace se::graphics {
 
 	/**
-	 * Texture Class
+	 * Texture Class, TODO:
 	 */
-	class Texture
+	class Texture : public Bindable
 	{
 	public:		// Nested Types
 		using Repository = utils::Repository<Texture, unsigned short>;
@@ -17,6 +18,9 @@ namespace se::graphics {
 	private:	// Attributes
 		/** The id of the texture object */
 		unsigned int mTextureId;
+
+		/** The texture unit where the texture will be bound */
+		unsigned int mSlot;
 
 	public:		// Functions
 		/** Creates a new Texture
@@ -35,6 +39,11 @@ namespace se::graphics {
 
 		/** @return the id of the Texture */
 		inline unsigned int getTextureId() const { return mTextureId; };
+
+		/** Sets the texture unit where the texture will be bound
+		 *
+		 * @param	slot the texture unit where we want to bind the texture */
+		void setTextureUnit(unsigned int slot) { mSlot = slot; };
 
 		/** Sets the filtering method used by the texture
 		 *
@@ -67,13 +76,11 @@ namespace se::graphics {
 		/** Generate mipmaps for the current texture */
 		void generateMipMap() const;
 
-		/** Binds the Texture
-		 *
-		 * @param	slot the texture unit where we want to bind the texture */
-		void bind(unsigned int slot = 0) const;
+		/** Binds the Texture */
+		void bind() const override;
 
 		/** Unbinds the Texture */
-		void unbind() const;
+		void unbind() const override;
 	};
 
 }

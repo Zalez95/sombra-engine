@@ -21,7 +21,8 @@ namespace se::graphics {
 			utils::ArrayStreambuf<char, 64> aStreambuf;
 			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
 			mProgram->setUniform(aStreambuf.data(), i);
-			textures[i]->bind(i);
+			textures[i]->setTextureUnit(i);
+			textures[i]->bind();
 		}
 	}
 

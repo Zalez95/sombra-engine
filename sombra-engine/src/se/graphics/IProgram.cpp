@@ -26,15 +26,15 @@ namespace se::graphics {
 	}
 
 
-	void IProgram::enable() const
+	void IProgram::bind() const
 	{
-		mProgram->enable();
+		mProgram->bind();
 	}
 
 
-	void IProgram::disable() const
+	void IProgram::unbind() const
 	{
-		mProgram->disable();
+		mProgram->unbind();
 	}
 
 }

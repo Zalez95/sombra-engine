@@ -2,7 +2,6 @@
 #include "se/graphics/3D/ProgramTerrain.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/Program.h"
-#include "se/graphics/core/Texture.h"
 #include "se/utils/Log.h"
 
 namespace se::graphics {
@@ -19,10 +18,11 @@ namespace se::graphics {
 	}
 
 
-	void ProgramTerrain::setHeightMap(const Texture& heightMap)
+	void ProgramTerrain::setHeightMap(Texture::Repository::Reference heightMap)
 	{
 		mProgram->setUniform("uHeightMap", TextureUnits::kHeightMap);
-		heightMap.bind(TextureUnits::kHeightMap);
+		heightMap->setTextureUnit(TextureUnits::kHeightMap);
+		heightMap->bind();
 	}
 
 // Private functions

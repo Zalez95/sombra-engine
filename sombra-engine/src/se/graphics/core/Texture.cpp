@@ -3,7 +3,7 @@
 
 namespace se::graphics {
 
-	Texture::Texture()
+	Texture::Texture() : mSlot(0)
 	{
 		GL_WRAP( glGenTextures(1, &mTextureId) );
 		SOMBRA_TRACE_LOG << "Created Texture " << mTextureId;
@@ -13,9 +13,8 @@ namespace se::graphics {
 	}
 
 
-	Texture::Texture(Texture&& other)
+	Texture::Texture(Texture&& other) : mTextureId(other.mTextureId)
 	{
-		mTextureId = other.mTextureId;
 		other.mTextureId = 0;
 	}
 
@@ -93,9 +92,9 @@ namespace se::graphics {
 	}
 
 
-	void Texture::bind(unsigned int slot) const
+	void Texture::bind() const
 	{
-		GL_WRAP( glActiveTexture(GL_TEXTURE0 + slot) );
+		GL_WRAP( glActiveTexture(GL_TEXTURE0 + mSlot) );
 		GL_WRAP( glBindTexture(GL_TEXTURE_2D, mTextureId) );
 	}
 

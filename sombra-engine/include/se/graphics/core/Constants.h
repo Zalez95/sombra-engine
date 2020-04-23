@@ -25,6 +25,17 @@ namespace se::graphics {
 	};
 
 
+	/** The different primitives (sets of vertices) that can be drawn */
+	enum class PrimitiveType
+	{
+		Point,
+		Line,
+		Triangle,
+		TriangleFan,
+		TriangleStrip
+	};
+
+
 	/** The Color format for the Textures */
 	enum class ColorFormat
 	{

@@ -6,6 +6,7 @@
 #include "../../utils/FixedVector.h"
 #include "../core/VertexArray.h"
 #include "../core/VertexBuffer.h"
+#include "../core/IndexBuffer.h"
 
 namespace se::graphics {
 
@@ -51,11 +52,11 @@ namespace se::graphics {
 			 * Batch */
 			VertexBuffer mVBOTextureIds;
 
+			/** The Index Buffer Object of the Batch */
+			IndexBuffer mIBO;
+
 			/** The Vertex Array Object of the Batch */
 			VertexArray mVAO;
-
-			/** The number of vertices in the Batch */
-			std::size_t mVertexCount;
 
 			/** The 2D positions of the vertices of the Batch */
 			std::vector<glm::vec2> mPositions;
@@ -69,23 +70,46 @@ namespace se::graphics {
 			/** The texture indices of the vertices of the Batch */
 			std::vector<unsigned char> mTextureIds;
 
+			/** The indices of the faces of the Batch */
+			std::vector<unsigned short> mIndices;
+
 		public:		// Functions
-			/** Creates a new Batch */
-			Batch();
+			/** Creates a new Batch
+			 * @param	maxVertices the maximum number of vertices that can be
+			 *			stored into the Batch
+			 * @param	maxIndices the maximum number of indices that can be
+			 *			stored into the Batch */
+			Batch(std::size_t maxVertices, std::size_t maxIndices);
 
 			/** Submits the given vertices to the Batch
 			 *
 			 * @param	vertices a pointer to the vertices to submit
-			 * @param	vertexCount the number of vertices to submit */
-			void submit(const BatchVertex* vertices, std::size_t vertexCount);
+			 * @param	vertexCount the number of vertices to submit
+			 * @param	indices a pointer to the indices to submit
+			 * @param	indexCount the number of indices to submit */
+			void submit(
+				const BatchVertex* vertices, std::size_t vertexCount,
+				const unsigned short* indices, std::size_t indexCount
+			);
 
 			/** Draws the Batch
 			 *
 			 * @note	after the Batch is drawn, the batch will be empty */
 			void draw();
+
+			/** @return	the number of vertices left until the Batch is full */
+			std::size_t getVerticesLeft() const
+			{ return mPositions.capacity() - mPositions.size(); };
+
+			/** @return	the number of indices left until the Batch is full */
+			std::size_t getIndicesLeft() const
+			{ return mPositions.capacity() - mPositions.size(); };
 		};
 
 	private:	// Attributes
+		/** The maximum number of quads in each batch */
+		static constexpr unsigned int kQuadsPerBatch = 1024;
+
 		/** The Program of the renderer */
 		Program2D mProgram;
 

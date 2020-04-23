@@ -1,6 +1,7 @@
 #ifndef VERTEX_BUFFER_H
 #define VERTEX_BUFFER_H
 
+#include "Bindable.h"
 #include "Constants.h"
 
 namespace se::graphics {
@@ -12,7 +13,7 @@ namespace se::graphics {
 	 * A Vertex Buffer Object is a buffer with the vertex data of a Mesh
 	 * (position, color, normals, UVs...)
 	 */
-	class VertexBuffer
+	class VertexBuffer : public Bindable
 	{
 	private:	// Attributes
 		/** The id of the Buffer Array */
@@ -32,31 +33,59 @@ namespace se::graphics {
 		VertexBuffer& operator=(const VertexBuffer& other) = delete;
 		VertexBuffer& operator=(VertexBuffer&& other);
 
-		/** Sets the buffer data
+		/** Resizes and sets the buffer data
 		 *
 		 * @param	data a pointer to the data of the buffer
 		 * @param	count the number of elements in the data array */
 		template <typename T>
-		void setData(const T* data, std::size_t count);
+		void resizeAndCopy(const T* data, std::size_t count);
+
+		/** Resizes and sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the new buffer
+		 * @param	size the size of the data buffer */
+		void resizeAndCopy(const void* data, std::size_t size);
+
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the buffer
+		 * @param	count the number of elements in the data array
+		 * @param	offset the offset into the buffer where the data will be
+		 *			copied */
+		template <typename T>
+		void copy(const T* data, std::size_t count, std::size_t offset = 0);
 
 		/** Sets the buffer data
 		 *
 		 * @param	data a pointer to the data of the new buffer
-		 * @param	size the size of the data buffer */
-		void setData(const void* data, std::size_t size);
+		 * @param	size the size of the data buffer
+		 * @param	offset the offset into the buffer where the data will be
+		 *			copied */
+		void copy(const void* data, std::size_t size, std::size_t offset = 0);
 
 		/** Binds the Vertex Buffer Object */
-		void bind() const;
+		void bind() const override;
 
 		/** Unbinds the Vertex Buffer Object */
-		void unbind() const;
+		void unbind() const override;
 	};
 
 
 	template <typename T>
-	void VertexBuffer::setData(const T* data, std::size_t count)
+	void VertexBuffer::resizeAndCopy(const T* data, std::size_t count)
 	{
-		setData(static_cast<const void*>(data), count * sizeof(T));
+		resizeAndCopy(static_cast<const void*>(data), count * sizeof(T));
+	}
+
+
+	template <typename T>
+	void VertexBuffer::copy(
+		const T* data, std::size_t count, std::size_t offset
+	) {
+		copy(
+			static_cast<const void*>(data), count * sizeof(T),
+			offset * sizeof(T)
+		);
 	}
 
 }

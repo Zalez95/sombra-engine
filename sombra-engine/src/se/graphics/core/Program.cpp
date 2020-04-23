@@ -45,16 +45,15 @@ namespace se::graphics {
 	}
 
 
-	Program::Program(Program&& other)
+	Program::Program(Program&& other) : mProgramId(other.mProgramId)
 	{
-		mProgramId = other.mProgramId;
 		other.mProgramId = 0;
 	}
 
 
 	Program::~Program()
 	{
-		disable();
+		unbind();
 
 		if (mProgramId != 0) {
 			GL_WRAP( glDeleteProgram(mProgramId) );
@@ -122,13 +121,13 @@ namespace se::graphics {
 	}
 
 
-	void Program::enable() const
+	void Program::bind() const
 	{
 		GL_WRAP( glUseProgram(mProgramId) );
 	}
 
 
-	void Program::disable() const
+	void Program::unbind() const
 	{
 		GL_WRAP( glUseProgram(0) );
 	}

@@ -2,6 +2,7 @@
 #define I_PROGRAM_H
 
 #include <glm/glm.hpp>
+#include "core/Bindable.h"
 
 namespace se::graphics {
 
@@ -11,7 +12,7 @@ namespace se::graphics {
 	/**
 	 * IProgram class, it's a high level Program used to set Uniform Variables
 	 */
-	class IProgram
+	class IProgram : public Bindable
 	{
 	protected:	// Attributes
 		/** The actual Program */
@@ -34,10 +35,10 @@ namespace se::graphics {
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
-		virtual void enable() const;
+		virtual void bind() const override;
 
 		/** Resets the current shader object */
-		virtual void disable() const;
+		virtual void unbind() const override;
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

@@ -1,12 +1,10 @@
 #ifndef PROGRAM_TERRAIN_H
 #define PROGRAM_TERRAIN_H
 
+#include "../core/Texture.h"
 #include "ProgramSplatmap.h"
 
 namespace se::graphics {
-
-	class Texture;
-
 
 	/**
 	 * ProgramTerrain class, it's a high level Program used by the Renderer so
@@ -37,7 +35,7 @@ namespace se::graphics {
 		/** Sets the height map texture
 		 *
 		 * @param	heightMap the texture to use as height map */
-		void setHeightMap(const Texture& heightMap);
+		void setHeightMap(Texture::Repository::Reference heightMap);
 	protected:
 		/** Creates the Shaders and the Program that the current class will use
 		 * for setting the uniform variables

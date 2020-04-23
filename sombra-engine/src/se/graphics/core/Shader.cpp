@@ -34,9 +34,8 @@ namespace se::graphics {
 	}
 
 
-	Shader::Shader(Shader&& other)
+	Shader::Shader(Shader&& other) : mShaderId(other.mShaderId)
 	{
-		mShaderId = other.mShaderId;
 		other.mShaderId = 0;
 	}
 

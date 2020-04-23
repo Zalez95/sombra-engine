@@ -2,7 +2,8 @@
 #include "se/graphics/3D/Renderable3D.h"
 #include "se/graphics/3D/Camera.h"
 #include "se/graphics/3D/Mesh.h"
-#include "../core/GLWrapper.h"
+#include "se/graphics/core/Graphics.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
 
@@ -30,19 +31,18 @@ namespace se::graphics {
 
 		auto mesh = sky.getMesh();
 
-		GL_WRAP( glDisable(GL_CULL_FACE) );
+		Graphics::setCulling(false);
 
 		// Bind the program data
-		mProgram.enable();
+		mProgram.bind();
 		mProgram.setViewMatrix(viewMatrix);
 		mProgram.setProjectionMatrix(projectionMatrix);
 
 		// Draw
 		mesh->bind();
-		const IndexBuffer& ibo = mesh->getIBO();
-		GL_WRAP( glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ibo.getIndexCount()), toGLType(ibo.getIndexType()), nullptr) );
+		Graphics::drawIndexed(PrimitiveType::Triangle, mesh->getIBO().getIndexCount(), mesh->getIBO().getIndexType());
 
-		GL_WRAP( glEnable(GL_CULL_FACE) );
+		Graphics::setCulling(true);
 	}
 
 }

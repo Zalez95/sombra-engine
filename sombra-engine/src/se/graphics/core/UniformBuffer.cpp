@@ -3,16 +3,16 @@
 
 namespace se::graphics {
 
-	UniformBuffer::UniformBuffer()
+	UniformBuffer::UniformBuffer() : mSlot(0)
 	{
 		GL_WRAP( glGenBuffers(1, &mBufferId) );
 		SOMBRA_TRACE_LOG << "Created UBO " << mBufferId;
 	}
 
 
-	UniformBuffer::UniformBuffer(UniformBuffer&& other)
+	UniformBuffer::UniformBuffer(UniformBuffer&& other) :
+		mBufferId(other.mBufferId), mSlot(other.mSlot)
 	{
-		mBufferId = other.mBufferId;
 		other.mBufferId = 0;
 	}
 
@@ -34,13 +34,14 @@ namespace se::graphics {
 		}
 
 		mBufferId = other.mBufferId;
+		mSlot = other.mSlot;
 		other.mBufferId = 0;
 
 		return *this;
 	}
 
 
-	void UniformBuffer::setData(const void* data, std::size_t size)
+	void UniformBuffer::copy(const void* data, std::size_t size)
 	{
 		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, mBufferId) );
 		GL_WRAP( glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW) );
@@ -48,9 +49,9 @@ namespace se::graphics {
 	}
 
 
-	void UniformBuffer::bind(unsigned int slot) const
+	void UniformBuffer::bind() const
 	{
-		GL_WRAP( glBindBufferBase(GL_UNIFORM_BUFFER, slot, mBufferId) );
+		GL_WRAP( glBindBufferBase(GL_UNIFORM_BUFFER, mSlot, mBufferId) );
 	}
 
 

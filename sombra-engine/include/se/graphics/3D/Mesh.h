@@ -5,6 +5,7 @@
 #include "../core/VertexBuffer.h"
 #include "../core/IndexBuffer.h"
 #include "../core/VertexArray.h"
+#include "../core/Bindable.h"
 
 namespace se::graphics {
 
@@ -27,7 +28,7 @@ namespace se::graphics {
 	/**
 	 * Class Mesh, it holds the buffers that creates a 3D mesh
 	 */
-	class Mesh
+	class Mesh : public Bindable
 	{
 	private:	// Attributes
 		/** The vertex buffers of the Mesh */
@@ -58,10 +59,10 @@ namespace se::graphics {
 		const IndexBuffer& getIBO() const;
 
 		/** Binds the VAO of the Mesh */
-		void bind() const;
+		void bind() const override;
 
 		/** Unbinds the VAO of the Mesh */
-		void unbind() const;
+		void unbind() const override;
 	};
 
 }

@@ -3,13 +3,24 @@
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/2D/Renderable2D.h"
 #include "se/graphics/2D/RenderableText.h"
-#include "../core/GLWrapper.h"
+#include "se/graphics/core/Graphics.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
 
-	Renderer2D::Batch::Batch() : mVertexCount(0)
+	static constexpr unsigned short sQuadIndices[] = { 0, 2, 1, 1, 2, 3 };
+
+
+	Renderer2D::Batch::Batch(std::size_t maxVertices, std::size_t maxIndices) :
+		mPositions(maxVertices), mTexCoords(maxVertices), mColors(maxVertices), mTextureIds(maxVertices),
+		mIndices(maxIndices)
 	{
 		mVAO.bind();
+
+		mVBOPositions.resizeAndCopy(mPositions.data(), maxVertices);
+		mVBOTexCoords.resizeAndCopy(mTexCoords.data(), maxVertices);
+		mVBOColors.resizeAndCopy(mColors.data(), maxVertices);
+		mVBOTextureIds.resizeAndCopy(mTextureIds.data(), maxVertices);
 
 		mVBOPositions.bind();
 		mVAO.setVertexAttribute(0, TypeId::Float, false, 2, 0);
@@ -23,12 +34,22 @@ namespace se::graphics {
 		mVBOTextureIds.bind();
 		mVAO.setVertexAttribute(3, TypeId::UnsignedByte, false, 1, 0);
 
-		mVAO.unbind();
+		mIBO.bind();
+
+		mPositions.clear();
+		mTexCoords.clear();
+		mColors.clear();
+		mTextureIds.clear();
+		mIndices.clear();
 	}
 
 
-	void Renderer2D::Batch::submit(const BatchVertex* vertices, std::size_t vertexCount)
-	{
+	void Renderer2D::Batch::submit(
+		const BatchVertex* vertices, std::size_t vertexCount,
+		const unsigned short* indices, std::size_t indexCount
+	) {
+		auto lastVertex = static_cast<unsigned short>(mPositions.size());
+
 		for (std::size_t i = 0; i < vertexCount; ++i) {
 			mPositions.push_back(vertices[i].position);
 			mTexCoords.push_back(vertices[i].texCoords);
@@ -36,31 +57,38 @@ namespace se::graphics {
 			mTextureIds.push_back(vertices[i].textureId);
 		}
 
-		mVertexCount += vertexCount;
+		for (std::size_t i = 0; i < indexCount; ++i) {
+			mIndices.push_back(lastVertex + indices[i]);
+		}
 	}
 
 
 	void Renderer2D::Batch::draw()
 	{
-		mVBOPositions.setData(mPositions.data(), mVertexCount);
-		mVBOTexCoords.setData(mTexCoords.data(), mVertexCount);
-		mVBOColors.setData(mColors.data(), mVertexCount);
-		mVBOTextureIds.setData(mTextureIds.data(), mVertexCount);
+		std::size_t vertexCount = mPositions.size();
+		std::size_t indexCount = mIndices.size();
 
-		// Render instanced
+		// Update the buffers and draw
 		mVAO.bind();
-		GL_WRAP( glDrawArrays(GL_TRIANGLES, 0, mVertexCount) );
+
+		mVBOPositions.copy(mPositions.data(), vertexCount);
+		mVBOTexCoords.copy(mTexCoords.data(), vertexCount);
+		mVBOColors.copy(mColors.data(), vertexCount);
+		mVBOTextureIds.copy(mTextureIds.data(), vertexCount);
+		mIBO.resizeAndCopy(mIndices.data(), TypeId::UnsignedShort, indexCount);
+
+		Graphics::drawIndexed(PrimitiveType::Triangle, mIBO.getIndexCount(), mIBO.getIndexType());
 
 		// Clear the batch data
-		mVertexCount = 0;
 		mPositions.clear();
 		mTexCoords.clear();
 		mColors.clear();
 		mTextureIds.clear();
+		mIndices.clear();
 	}
 
 
-	Renderer2D::Renderer2D()
+	Renderer2D::Renderer2D() : mBatch(4 * kQuadsPerBatch, 6 * kQuadsPerBatch)
 	{
 		if (!mProgram.init()) {
 			SOMBRA_FATAL_LOG << "Failed to create the Program2D";
@@ -76,11 +104,10 @@ namespace se::graphics {
 
 	void Renderer2D::start(const glm::mat4& projectionMatrix)
 	{
-		GL_WRAP( glEnable(GL_BLEND) );
-		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-		GL_WRAP( glDisable(GL_DEPTH_TEST) );
+		Graphics::setBlending(true);
+		Graphics::setDepthTest(false);
 
-		mProgram.enable();
+		mProgram.bind();
 		mProgram.setProjectionMatrix(projectionMatrix);
 	}
 
@@ -91,19 +118,21 @@ namespace se::graphics {
 			// Add the texture
 			unsigned char textureId = renderable2D->getTexture()? addTexture(renderable2D->getTexture()) : -1;
 
+			// Draw if the Batch is full
+			if ((mBatch.getVerticesLeft() < 4) || (mBatch.getIndicesLeft() < 6)) {
+				drawBatch();
+			}
+
 			glm::vec2 position = renderable2D->getPosition();
 			glm::vec2 size = renderable2D->getSize();
 			glm::vec4 color = renderable2D->getColor();
 			BatchVertex vertices[] = {
 				{ { position.x, position.y }, { 0.0f, 0.0f }, color, textureId },
-				{ { position.x, position.y + size.y }, { 0.0f, 1.0f }, color, textureId },
-				{ { position.x + size.x, position.y }, { 1.0f, 0.0f }, color, textureId },
 				{ { position.x + size.x, position.y }, { 1.0f, 0.0f }, color, textureId },
 				{ { position.x, position.y + size.y }, { 0.0f, 1.0f }, color, textureId },
 				{ { position.x + size.x, position.y + size.y }, { 1.0f, 1.0f }, color, textureId }
 			};
-
-			mBatch.submit(vertices, 6);
+			mBatch.submit(vertices, 4, sQuadIndices, 6);
 		}
 	}
 
@@ -124,6 +153,11 @@ namespace se::graphics {
 			for (char c : renderableText->getText()) {
 				auto itCharacter = font->characters.find(c);
 				if (itCharacter != font->characters.end()) {
+					// Draw if the Batch is full
+					if ((mBatch.getVerticesLeft() < 4) || (mBatch.getIndicesLeft() < 6)) {
+						drawBatch();
+					}
+
 					const Character& character = itCharacter->second;
 
 					glm::vec2 offset = characterScale * glm::vec2(character.offset.x, font->maxCharacterSize.y - character.offset.y);
@@ -134,13 +168,11 @@ namespace se::graphics {
 
 					BatchVertex vertices[] = {
 						{ { position.x, position.y }, { uvPosition.x, uvPosition.y }, color, textureId },
-						{ { position.x, position.y + scale.y }, { uvPosition.x, uvPosition.y + uvScale.y }, color, textureId },
-						{ { position.x + scale.x, position.y }, { uvPosition.x + uvScale.x, uvPosition.y }, color, textureId },
 						{ { position.x + scale.x, position.y }, { uvPosition.x + uvScale.x, uvPosition.y }, color, textureId },
 						{ { position.x, position.y + scale.y }, { uvPosition.x, uvPosition.y + uvScale.y }, color, textureId },
 						{ { position.x + scale.x, position.y + scale.y }, { uvPosition.x + uvScale.x, uvPosition.y + uvScale.y }, color, textureId }
 					};
-					mBatch.submit(vertices, 6);
+					mBatch.submit(vertices, 4, sQuadIndices, 6);
 
 					advance += characterScale * glm::vec2(character.advance, 0.0f);
 				}
@@ -154,8 +186,8 @@ namespace se::graphics {
 		// Draw the last submitted Renderables
 		drawBatch();
 
-		GL_WRAP( glEnable(GL_DEPTH_TEST) );
-		GL_WRAP( glDisable(GL_BLEND) );
+		Graphics::setDepthTest(true);
+		Graphics::setBlending(false);
 	}
 
 // Private functions

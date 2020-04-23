@@ -31,6 +31,10 @@ namespace se::graphics {
 		UniformBuffer mPointLightsUBO;
 
 	public:		// Functions
+		/** Creates a new ProgramLight */
+		ProgramLight()
+		{ mPointLightsUBO.setBindingPoint(UniformBlockIndices::kPointLights); };
+
 		/** Class destructor */
 		virtual ~ProgramLight() = default;
 

@@ -2,7 +2,6 @@
 #define GRAPHICS_ENGINE_H
 
 #include <vector>
-#include <string>
 #include <memory>
 #include "ILayer.h"
 #include "core/Texture.h"
@@ -64,7 +63,7 @@ namespace se::graphics {
 		 * @throw	runtime_error if failed to initialize GLEW */
 		GraphicsEngine(const GraphicsData& config);
 
-		/** @return	the OpenGL version info */
+		/** @return	the Graphics API version info and other limits */
 		std::string getGLInfo() const;
 
 		/** Sets the viewport resolution

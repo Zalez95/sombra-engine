@@ -1,6 +1,7 @@
 #ifndef VERTEX_ARRAY_H
 #define VERTEX_ARRAY_H
 
+#include "Bindable.h"
 #include "Constants.h"
 
 namespace se::graphics {
@@ -15,7 +16,7 @@ namespace se::graphics {
 	 * A Vertex Array Object is an object that stores all the information
 	 * (the attribute data) for a complete Mesh
 	 */
-	class VertexArray
+	class VertexArray : public Bindable
 	{
 	private:	// Attributes
 		/** The id of the Vertex Array Object */
@@ -61,10 +62,10 @@ namespace se::graphics {
 		) const;
 
 		/** Binds the Vertex Array Object */
-		void bind() const;
+		void bind() const override;
 
 		/** Unbinds the Vertex Array Object */
-		void unbind() const;
+		void unbind() const override;
 	};
 
 }

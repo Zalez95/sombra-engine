@@ -1,7 +1,8 @@
 #include "se/graphics/3D/RendererTerrain.h"
 #include "se/graphics/3D/Camera.h"
 #include "se/graphics/3D/RenderableTerrain.h"
-#include "../core/GLWrapper.h"
+#include "se/graphics/core/Graphics.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
 
@@ -54,9 +55,9 @@ namespace se::graphics {
 	RendererTerrain::Patch::Patch(const float* vertices, std::size_t numVertices) :
 		mNumVertices(numVertices), mInstanceCount(0)
 	{
-		mVBOXZPositions.setData(vertices, numVertices);
-
 		mVAO.bind();
+
+		mVBOXZPositions.resizeAndCopy(vertices, numVertices);
 
 		mVBOXZPositions.bind();
 		mVAO.setVertexAttribute(0, TypeId::Float, false, 2, 0);
@@ -68,8 +69,6 @@ namespace se::graphics {
 		mVBOLods.bind();
 		mVAO.setVertexAttribute(2, TypeId::Int, false, 1, 0);
 		mVAO.setAttributeDivisor(2, 1);
-
-		mVAO.unbind();
 	}
 
 
@@ -84,12 +83,12 @@ namespace se::graphics {
 	void RendererTerrain::Patch::drawInstances()
 	{
 		// Set submitted instances data
-		mVBOXZLocations.setData(mXZLocations.data(), mInstanceCount);
-		mVBOLods.setData(mLods.data(), mInstanceCount);
+		mVBOXZLocations.resizeAndCopy(mXZLocations.data(), mInstanceCount);
+		mVBOLods.resizeAndCopy(mLods.data(), mInstanceCount);
 
 		// Render instanced
 		mVAO.bind();
-		GL_WRAP( glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, mNumVertices, mInstanceCount) );
+		Graphics::drawArraysInstanced(PrimitiveType::TriangleFan, mNumVertices, mInstanceCount);
 
 		// Clear submitted instances
 		mInstanceCount = 0;
@@ -128,13 +127,13 @@ namespace se::graphics {
 		auto material = terrain.getMaterial();
 
 		// Bind uniforms
-		mProgram.enable();
+		mProgram.bind();
 		mProgram.setViewMatrix(viewMatrix);
 		mProgram.setProjectionMatrix(projectionMatrix);
 		mProgram.setModelMatrix(terrain.getModelMatrix());
 		mProgram.setXZSize(terrain.getSize());
 		mProgram.setMaxHeight(terrain.getMaxHeight());
-		mProgram.setHeightMap(*terrain.getHeightMap());
+		mProgram.setHeightMap(terrain.getHeightMap());
 		mProgram.setLights(lights);
 
 		if (material) { mProgram.setMaterial(*material); }

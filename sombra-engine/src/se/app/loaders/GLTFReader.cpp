@@ -756,6 +756,8 @@ namespace se::app {
 		graphics::Material::Repository::Reference material = mDefaultMaterial;
 
 		graphics::VertexArray vao;
+		vao.bind();
+
 		std::vector<graphics::VertexBuffer> vbos;
 		auto itAttributes = jsonPrimitive.find("attributes");
 		if (itAttributes != jsonPrimitive.end()) {
@@ -772,16 +774,14 @@ namespace se::app {
 					const Buffer& b = mGLTFData.buffers[bv.bufferId];
 
 					auto& vbo = vbos.emplace_back();
-					vbo.setData(b.data() + bv.offset + a.byteOffset, bv.length);
+					vbo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length);
 
 					// Add the VBO to the VAO
-					vao.bind();
 					vbo.bind();
 					vao.setVertexAttribute(
 						static_cast<unsigned int>(meshAttribute),
 						a.componentTypeId, a.normalized, a.componentSize, bv.stride
 					);
-					vao.unbind();
 				}
 				else {
 					return Result(false, "Invalid attribute \"" + itAttribute.key() + "\"");
@@ -818,12 +818,11 @@ namespace se::app {
 				return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
 			}
 
-			graphics::IndexBuffer ibo(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
+			graphics::IndexBuffer ibo;
+			ibo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
 
 			// Bind the IBO to the VAO
-			vao.bind();
 			ibo.bind();
-			vao.unbind();
 
 			mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
 		}

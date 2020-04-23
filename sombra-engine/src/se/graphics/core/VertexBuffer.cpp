@@ -10,9 +10,8 @@ namespace se::graphics {
 	}
 
 
-	VertexBuffer::VertexBuffer(VertexBuffer&& other)
+	VertexBuffer::VertexBuffer(VertexBuffer&& other) : mBufferId(other.mBufferId)
 	{
-		mBufferId = other.mBufferId;
 		other.mBufferId = 0;
 	}
 
@@ -40,11 +39,17 @@ namespace se::graphics {
 	}
 
 
-	void VertexBuffer::setData(const void* data, std::size_t size)
+	void VertexBuffer::resizeAndCopy(const void* data, std::size_t size)
 	{
 		bind();
 		GL_WRAP( glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW) );
-		unbind();
+	}
+
+
+	void VertexBuffer::copy(const void* data, std::size_t size, std::size_t offset)
+	{
+		bind();
+		GL_WRAP( glBufferSubData(GL_ARRAY_BUFFER, offset, size, data) );
 	}
 
 

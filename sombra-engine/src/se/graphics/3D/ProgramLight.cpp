@@ -38,8 +38,8 @@ namespace se::graphics {
 		}
 
 		mProgram->setUniform("uNumPointLights", uNumPointLights);
-		mPointLightsUBO.setData(uPointLights.data(), uPointLights.size());
-		mPointLightsUBO.bind(UniformBlockIndices::kPointLights);
+		mPointLightsUBO.copy(uPointLights.data(), uPointLights.size());
+		mPointLightsUBO.bind();
 		mProgram->setUniformBlock("LightsBlock", UniformBlockIndices::kPointLights);
 		mProgram->setUniformV("uPointLightsPositions", uNumPointLights, uPointLightsPositions.data());
 	}

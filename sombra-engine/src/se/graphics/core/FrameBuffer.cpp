@@ -6,7 +6,7 @@
 
 namespace se::graphics {
 
-	FrameBuffer::FrameBuffer()
+	FrameBuffer::FrameBuffer() : mTarget(FrameBufferTarget::Both)
 	{
 		// Create the FBO
 		GL_WRAP( glGenFramebuffers(1, &mBufferId) );
@@ -24,9 +24,9 @@ namespace se::graphics {
 	}
 
 
-	FrameBuffer::FrameBuffer(FrameBuffer&& other)
+	FrameBuffer::FrameBuffer(FrameBuffer&& other) :
+		mBufferId(other.mBufferId), mTarget(other.mTarget)
 	{
-		mBufferId = other.mBufferId;
 		other.mBufferId = 0;
 	}
 
@@ -48,6 +48,7 @@ namespace se::graphics {
 		}
 
 		mBufferId = other.mBufferId;
+		mTarget = other.mTarget;
 		other.mBufferId = 0;
 
 		return *this;
@@ -73,10 +74,10 @@ namespace se::graphics {
 	}
 
 
-	void FrameBuffer::bind(FrameBufferTarget target) const
+	void FrameBuffer::bind() const
 	{
 		GLenum glTarget = GL_FRAMEBUFFER;
-		switch (target) {
+		switch (mTarget) {
 			case FrameBufferTarget::Read:	glTarget = GL_READ_FRAMEBUFFER;	break;
 			case FrameBufferTarget::Write:	glTarget = GL_DRAW_FRAMEBUFFER;	break;
 			case FrameBufferTarget::Both:	glTarget = GL_FRAMEBUFFER;		break;

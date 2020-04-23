@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "Bindable.h"
 
 namespace se::graphics {
 
@@ -13,9 +14,12 @@ namespace se::graphics {
 	 * Program Class, the program class is used to load the GLSL programs
 	 * and access to its uniform variables
 	 */
-	class Program
+	class Program : public Bindable
 	{
 	private:	// Nested types
+		friend class IUniformVariable;
+		friend class UniformBlock;
+
 		/** Maps an uniform name with its location */
 		struct NameLocation
 		{
@@ -95,10 +99,10 @@ namespace se::graphics {
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
-		void enable() const;
+		void bind() const override;
 
 		/** Resets the current shader object */
-		void disable() const;
+		void unbind() const override;
 	private:
 		/** Compares the given NameLocation with the given name
 		 *

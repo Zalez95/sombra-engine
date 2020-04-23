@@ -25,7 +25,8 @@ namespace se::graphics {
 				aStreambuf = {};
 				std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorTexture";
 				mProgram->setUniform(aStreambuf.data(), TextureUnits::kBaseColor0);
-				material.materials[i].pbrMetallicRoughness.baseColorTexture->bind(TextureUnits::kBaseColor0);
+				material.materials[i].pbrMetallicRoughness.baseColorTexture->setTextureUnit(TextureUnits::kBaseColor0);
+				material.materials[i].pbrMetallicRoughness.baseColorTexture->bind();
 			}
 
 			aStreambuf = {};
@@ -44,7 +45,8 @@ namespace se::graphics {
 				aStreambuf = {};
 				std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.metallicRoughnessTexture";
 				mProgram->setUniform(aStreambuf.data(), TextureUnits::kMetallicRoughness0);
-				material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness0);
+				material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture->setTextureUnit(TextureUnits::kMetallicRoughness0);
+				material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture->bind();
 			}
 
 			bool useNormalTexture = material.materials[i].normalTexture;
@@ -56,7 +58,8 @@ namespace se::graphics {
 				std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].normalTexture";
 				mProgram->setUniform(aStreambuf.data(), TextureUnits::kNormal0);
 
-				material.materials[i].normalTexture->bind(TextureUnits::kNormal0);
+				material.materials[i].normalTexture->setTextureUnit(TextureUnits::kNormal0);
+				material.materials[i].normalTexture->bind();
 
 				aStreambuf = {};
 				std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].normalScale";
@@ -65,7 +68,8 @@ namespace se::graphics {
 		}
 
 		mProgram->setUniform("uSMaterial.splatmapTexture", TextureUnits::kSplatmap);
-		material.splatmapTexture->bind(TextureUnits::kSplatmap);
+		material.splatmapTexture->setTextureUnit(TextureUnits::kSplatmap);
+		material.splatmapTexture->bind();
 	}
 
 // Private functions

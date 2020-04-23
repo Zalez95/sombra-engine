@@ -3,7 +3,8 @@
 #include "se/graphics/3D/Material.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/Program.h"
-#include "../core/GLWrapper.h"
+#include "se/graphics/core/Graphics.h"
+#include "se/utils/Log.h"
 
 namespace se::graphics {
 
@@ -11,14 +12,13 @@ namespace se::graphics {
 	{
 		// Set the material alphaMode
 		if (material.alphaMode == AlphaMode::Blend) {
-			GL_WRAP( glEnable(GL_BLEND) );
-			GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-			GL_WRAP( glDisable(GL_DEPTH_TEST) );
+			Graphics::setBlending(true);
+			Graphics::setDepthTest(false);
 		}
 
 		// Unset face culling
 		if (material.doubleSided) {
-			GL_WRAP( glDisable(GL_CULL_FACE) );
+			Graphics::setCulling(false);
 		}
 
 		// Set uniforms
@@ -28,7 +28,8 @@ namespace se::graphics {
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.useBaseColorTexture", useBaseColorTexture);
 		if (useBaseColorTexture) {
 			mProgram->setUniform("uMaterial.pbrMetallicRoughness.baseColorTexture", TextureUnits::kBaseColor);
-			material.pbrMetallicRoughness.baseColorTexture->bind(TextureUnits::kBaseColor);
+			material.pbrMetallicRoughness.baseColorTexture->setTextureUnit(TextureUnits::kBaseColor);
+			material.pbrMetallicRoughness.baseColorTexture->bind();
 		}
 
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.metallicFactor", material.pbrMetallicRoughness.metallicFactor);
@@ -38,14 +39,16 @@ namespace se::graphics {
 		mProgram->setUniform("uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture", useMetallicRoughnessTexture);
 		if (useMetallicRoughnessTexture) {
 			mProgram->setUniform("uMaterial.pbrMetallicRoughness.metallicRoughnessTexture", TextureUnits::kMetallicRoughness);
-			material.pbrMetallicRoughness.metallicRoughnessTexture->bind(TextureUnits::kMetallicRoughness);
+			material.pbrMetallicRoughness.metallicRoughnessTexture->setTextureUnit(TextureUnits::kMetallicRoughness);
+			material.pbrMetallicRoughness.metallicRoughnessTexture->bind();
 		}
 
 		bool useNormalTexture = material.normalTexture;
 		mProgram->setUniform("uMaterial.useNormalTexture", useNormalTexture);
 		if (useNormalTexture) {
 			mProgram->setUniform("uMaterial.normalTexture", TextureUnits::kNormal);
-			material.normalTexture->bind(TextureUnits::kNormal);
+			material.normalTexture->setTextureUnit(TextureUnits::kNormal);
+			material.normalTexture->bind();
 			mProgram->setUniform("uMaterial.normalScale", material.normalScale);
 		}
 
@@ -53,7 +56,8 @@ namespace se::graphics {
 		mProgram->setUniform("uMaterial.useOcclusionTexture", useOcclusionTexture);
 		if (useOcclusionTexture) {
 			mProgram->setUniform("uMaterial.occlusionTexture", TextureUnits::kOcclusion);
-			material.occlusionTexture->bind(TextureUnits::kOcclusion);
+			material.occlusionTexture->setTextureUnit(TextureUnits::kOcclusion);
+			material.occlusionTexture->bind();
 			mProgram->setUniform("uMaterial.occlusionStrength", material.occlusionStrength);
 		}
 
@@ -61,7 +65,8 @@ namespace se::graphics {
 		mProgram->setUniform("uMaterial.useEmissiveTexture", useEmissiveTexture);
 		if (useEmissiveTexture) {
 			mProgram->setUniform("uMaterial.emissiveTexture", TextureUnits::kEmissive);
-			material.emissiveTexture->bind(TextureUnits::kEmissive);
+			material.emissiveTexture->setTextureUnit(TextureUnits::kEmissive);
+			material.emissiveTexture->bind();
 		}
 
 		mProgram->setUniform("uMaterial.emissiveFactor", material.emissiveFactor);
@@ -78,13 +83,13 @@ namespace se::graphics {
 	{
 		// Set face culling
 		if (material.doubleSided) {
-			GL_WRAP( glEnable(GL_CULL_FACE) );
+			Graphics::setCulling(true);
 		}
 
 		// Set the material alphaMode
 		if (material.alphaMode == AlphaMode::Blend) {
-			GL_WRAP( glEnable(GL_DEPTH_TEST) );
-			GL_WRAP( glDisable(GL_BLEND) );
+			Graphics::setDepthTest(true);
+			Graphics::setBlending(false);
 		}
 	}
 

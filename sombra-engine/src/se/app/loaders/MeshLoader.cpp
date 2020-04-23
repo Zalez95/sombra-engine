@@ -1,5 +1,5 @@
 #include <array>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
 #include "se/app/loaders/MeshLoader.h"
 #include "se/app/RawMesh.h"
 #include "se/graphics/core/VertexBuffer.h"
@@ -18,72 +18,56 @@ namespace se::app {
 		using namespace graphics;
 
 		VertexArray vao;
-		std::vector<VertexBuffer> vbos;
+		vao.bind();
 
+		std::vector<VertexBuffer> vbos;
 		if (!rawMesh.positions.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.positions.front()), 3 * rawMesh.positions.size());
+			vbo.resizeAndCopy(rawMesh.positions.data(), rawMesh.positions.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::PositionAttribute), TypeId::Float, false, 3, 0);
-			vao.unbind();
 		}
-
 		if (!rawMesh.normals.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.normals.front()), 3 * rawMesh.normals.size());
+			vbo.resizeAndCopy(rawMesh.normals.data(), rawMesh.normals.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::NormalAttribute), TypeId::Float, false, 3, 0);
-			vao.unbind();
 		}
-
 		if (!rawMesh.tangents.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.tangents.front()), 3 * rawMesh.tangents.size());
+			vbo.resizeAndCopy(rawMesh.tangents.data(), rawMesh.tangents.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TangentAttribute), TypeId::Float, false, 3, 0);
-			vao.unbind();
 		}
-
 		if (!rawMesh.texCoords.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.texCoords.front()), 2 * rawMesh.texCoords.size());
+			vbo.resizeAndCopy(rawMesh.texCoords.data(), rawMesh.texCoords.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TexCoordAttribute0), TypeId::Float, false, 2, 0);
-			vao.unbind();
 		}
-
 		if (!rawMesh.jointIndices.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.jointIndices.front()), 4 * rawMesh.jointIndices.size());
+			vbo.resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointIndexAttribute), TypeId::UnsignedShort, false, 4, 0);
-			vao.unbind();
 		}
-
 		if (!rawMesh.jointWeights.empty()) {
 			auto& vbo = vbos.emplace_back();
-			vbo.setData(glm::value_ptr(rawMesh.jointWeights.front()), 4 * rawMesh.jointWeights.size());
+			vbo.resizeAndCopy(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
 
-			vao.bind();
 			vbo.bind();
 			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointWeightAttribute), TypeId::Float, false, 4, 0);
-			vao.unbind();
 		}
 
-		IndexBuffer ibo(rawMesh.faceIndices.data(), TypeId::UnsignedShort, rawMesh.faceIndices.size());
-		vao.bind();
+		IndexBuffer ibo;
+		ibo.resizeAndCopy(rawMesh.faceIndices.data(), TypeId::UnsignedShort, rawMesh.faceIndices.size());
+
 		ibo.bind();
-		vao.unbind();
 
 		return Mesh(std::move(vbos), std::move(ibo), std::move(vao));
 	}

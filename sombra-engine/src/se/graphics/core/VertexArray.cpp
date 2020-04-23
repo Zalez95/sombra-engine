@@ -10,9 +10,8 @@ namespace se::graphics {
 	}
 
 
-	VertexArray::VertexArray(VertexArray&& other)
+	VertexArray::VertexArray(VertexArray&& other) : mArrayId(other.mArrayId)
 	{
-		mArrayId = other.mArrayId;
 		other.mArrayId = 0;
 	}
 
