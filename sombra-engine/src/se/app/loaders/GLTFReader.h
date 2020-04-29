@@ -4,7 +4,7 @@
 #include <string>
 #include <nlohmann/json_fwd.hpp>
 #include "se/app/loaders/SceneReader.h"
-#include "se/app/Image.h"
+#include "se/app/graphics/Image.h"
 #include "se/animation/IAnimation.h"
 
 namespace se::app {
@@ -15,12 +15,13 @@ namespace se::app {
 	class GLTFReader : public SceneReader
 	{
 	private:	// Nested types
-		using MaterialRef = graphics::Material::Repository::Reference;
-		using TextureRef = graphics::Texture::Repository::Reference;
-		using Renderable3DUPtr = std::unique_ptr<graphics::Renderable3D>;
-		using LightUPtr = std::unique_ptr<graphics::ILight>;
-		using SkinUPtr = std::unique_ptr<app::Skin>;
-		using CameraUPtr = std::unique_ptr<graphics::Camera>;
+		using MaterialUPtr = std::unique_ptr<Material>;
+		using TextureSPtr = std::shared_ptr<graphics::Texture>;
+		using MeshUPtr = std::unique_ptr<graphics::Mesh>;
+		using Primitives = std::vector<Scenes::Primitive>;
+		using LightUPtr = std::unique_ptr<ILight>;
+		using SkinUPtr = std::unique_ptr<Skin>;
+		using CameraUPtr = std::unique_ptr<Camera>;
 		using SceneUPtr = std::unique_ptr<Scene>;
 		using Vec3Animation = animation::IAnimation<glm::vec3>;
 		using QuatAnimation = animation::IAnimation<glm::quat>;
@@ -28,7 +29,6 @@ namespace se::app {
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
 		using CAnimatorUPtr = std::unique_ptr<animation::CompositeAnimator>;
-		using MeshPrimitives = std::vector<std::size_t>;
 		using Buffer = std::vector<std::byte>;
 
 		/** Struct FileFormat, holds the version of a valid GLTF file format */
@@ -76,10 +76,10 @@ namespace se::app {
 			std::vector<BufferView> bufferViews;
 			std::vector<Sampler> samplers;
 			std::vector<Image> images;
-			std::vector<TextureRef> textures;
-			std::vector<MaterialRef> materials;
-			std::vector<Renderable3DUPtr> renderable3Ds;
-			std::vector<MeshPrimitives> meshPrimitives;
+			std::vector<TextureSPtr> textures;
+			std::vector<MaterialUPtr> materials;
+			std::vector<MeshUPtr> meshes;
+			std::vector<Primitives> primitives;
 			std::vector<LightUPtr> lights;
 			std::vector<SkinUPtr> skins;
 			std::vector<CameraUPtr> cameras;
@@ -92,18 +92,12 @@ namespace se::app {
 		/** The base path of the file to parse */
 		std::string mBasePath;
 
-		/** The default GLTF material */
-		MaterialRef mDefaultMaterial;
-
 		/** The temporarily read GLTF data */
 		GLTFData mGLTFData;
 
 	public:		// Functions
-		/** Creates a new GLTFReader
-		 *
-		 * @param	graphicsEngine the GraphicsEngine used for storing
-		 *			Textures and Materials */
-		GLTFReader(graphics::GraphicsEngine& graphicsEngine);
+		/** Creates a new GLTFReader */
+		GLTFReader();
 
 		/** Parses the given GLTF file and stores the result in the given
 		 * Scenes object
@@ -189,19 +183,24 @@ namespace se::app {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseMaterial(const nlohmann::json& jsonMaterial);
 
-		/** Creates a new Renderable3D from the given GLTF JSON primitive and
+		/** Creates a new Primitive from the given GLTF JSON primitive and
 		 * appends it to mGLTFData
 		 *
 		 * @param	jsonPrimitive the JSON object with the Primitive to parse
+		 * @param	out a reference to the pair where the indices of the new
+		 *			mesh and the material of the Primitive will be stored
 		 * @return	a Result object with the result of the parse operation */
-		Result parsePrimitive(const nlohmann::json& jsonPrimitive);
+		Result parsePrimitive(
+			const nlohmann::json& jsonPrimitive, Scenes::Primitive& out
+		);
 
-		/** Creates Renderable3Ds from the given GLTF JSON Mesh and appends
+		/** Creates new Primitives from the given GLTF JSON Mesh and appends
 		 * them to mGLTFData.
 		 *
 		 * @param	jsonMesh the JSON object with the Mesh to parse
 		 * @return	a Result object with the result of the parse operation
-		 * @note	Morph targets arent supported yet */
+		 * @note	Morph targets nor Meshes without indices arent supported
+		 *			yet */
 		Result parseMesh(const nlohmann::json& jsonMesh);
 
 		/** Creates a new Skin from the given GLTF JSON Skin and appends

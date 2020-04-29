@@ -3,25 +3,21 @@
 
 #include "ComponentDatabase.h"
 #include "TransformsComponent.h"
+#include "graphics/Camera.h"
+#include "graphics/Lights.h"
 #include "../utils/Repository.h"
-#include "../graphics/3d/Camera.h"
 #include "../graphics/3d/Renderable3D.h"
-#include "../graphics/3d/Lights.h"
 #include "../animation/AnimationNode.h"
 #include "../physics/RigidBody.h"
 
 namespace se::app {
 
 	using NameComponent = std::string;
-	using CameraRepository = utils::Repository<
-		graphics::Camera, unsigned short
-	>;
+	using CameraRepository = utils::Repository<Camera, unsigned short>;
 	using Renderable3DRepository = utils::Repository<
 		graphics::Renderable3D, unsigned short
 	>;
-	using PointLightRepository = utils::Repository<
-		graphics::PointLight, unsigned short
-	>;
+	using PointLightRepository = utils::Repository<PointLight, unsigned short>;
 	using AnimationNodeRepository = utils::Repository<
 		animation::AnimationNode, unsigned short
 	>;

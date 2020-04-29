@@ -1,29 +1,43 @@
 #include "se/app/gui/Button.h"
 #include "se/app/gui/Label.h"
+#include "se/app/gui/GUIManager.h"
+#include "se/app/GraphicsManager.h"
 #include "se/window/MouseButtonCodes.h"
 
 namespace se::app {
 
-	Button::Button(graphics::Layer2D* layer2D, IBoundsUPtr bounds) :
-		mLayer2D(layer2D), mBounds(std::move(bounds)), mRenderable2D(mPosition, mSize),
+	Button::Button(GUIManager* guiManager, IBoundsUPtr bounds) :
+		mGUIManager(guiManager), mBounds(std::move(bounds)), mSprite(mPosition, mSize),
 		mIsOver(false), mIsPressed(false), mLabel(nullptr), mLabelScale(1.0f)
 	{
 		mBounds->setPosition(mSize);
 		mBounds->setPosition(mPosition);
+
+		mSprite.setZIndex(mZIndex);
+		auto technique2D = mGUIManager->getGraphicsManager().getTechniqueRepository().find("technique2D");
+		if (technique2D) {
+			mSprite.addTechnique(technique2D);
+		}
+
+		mIsVisible = false;
 		setVisibility(true);
 	}
 
 
 	Button::Button(const Button& other) :
 		IComponent(other),
-		mLayer2D(other.mLayer2D),
+		mGUIManager(other.mGUIManager),
 		mBounds(IBoundsUPtr(other.mBounds->clone())),
-		mRenderable2D(other.mRenderable2D),
+		mSprite(other.mSprite),
 		mIsOver(other.mIsOver),
 		mIsPressed(other.mIsPressed),
 		mLabel(other.mLabel),
 		mLabelScale(other.mLabelScale),
-		mAction(other.mAction) {}
+		mAction(other.mAction)
+	{
+		mIsVisible = false;
+		setVisibility(other.mIsVisible);
+	}
 
 
 	Button::~Button()
@@ -35,14 +49,17 @@ namespace se::app {
 	Button& Button::operator=(const Button& other)
 	{
 		IComponent::operator=(other);
-		mLayer2D = other.mLayer2D;
+		mGUIManager = other.mGUIManager;
 		mBounds = IBoundsUPtr(other.mBounds->clone());
-		mRenderable2D = other.mRenderable2D;
+		mSprite = other.mSprite;
 		mIsOver = other.mIsOver;
 		mIsPressed = other.mIsPressed;
 		mLabel = other.mLabel;
 		mLabelScale = other.mLabelScale;
 		mAction = other.mAction;
+
+		mIsVisible = false;
+		setVisibility(other.mIsVisible);
 
 		return *this;
 	}
@@ -52,7 +69,7 @@ namespace se::app {
 	{
 		IComponent::setPosition(position);
 		mBounds->setPosition(mPosition + mSize / 2.0f);
-		mRenderable2D.setPosition(mPosition);
+		mSprite.setPosition(mPosition);
 
 		if (mLabel) {
 			mLabel->setPosition(mPosition + (mSize - mLabel->getSize()) / 2.0f);
@@ -64,7 +81,7 @@ namespace se::app {
 	{
 		IComponent::setSize(size);
 		mBounds->setSize(mSize);
-		mRenderable2D.setSize(mSize);
+		mSprite.setSize(mSize);
 
 		if (mLabel) {
 			mLabel->setSize(mLabelScale * mSize);
@@ -74,9 +91,8 @@ namespace se::app {
 
 	void Button::setZIndex(unsigned char zIndex)
 	{
-		mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
 		IComponent::setZIndex(zIndex);
-		mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+		mSprite.setZIndex(mZIndex);
 
 		if (mLabel) {
 			mLabel->setZIndex(mZIndex + 1);
@@ -90,10 +106,10 @@ namespace se::app {
 		IComponent::setVisibility(isVisible);
 
 		if (wasVisible && !mIsVisible) {
-			mLayer2D->removeRenderable2D(&mRenderable2D, mZIndex);
+			mGUIManager->getGraphicsManager().getGraphicsEngine().removeRenderable(&mSprite);
 		}
 		else if (!wasVisible && mIsVisible) {
-			mLayer2D->addRenderable2D(&mRenderable2D, mZIndex);
+			mGUIManager->getGraphicsManager().getGraphicsEngine().addRenderable(&mSprite);
 		}
 
 		if (mLabel) {
@@ -104,7 +120,7 @@ namespace se::app {
 
 	void Button::setColor(const glm::vec4& color)
 	{
-		mRenderable2D.setColor(color);
+		mSprite.setColor(color);
 	}
 
 

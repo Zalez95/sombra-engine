@@ -5,25 +5,8 @@
 #include "../core/VertexBuffer.h"
 #include "../core/IndexBuffer.h"
 #include "../core/VertexArray.h"
-#include "../core/Bindable.h"
 
 namespace se::graphics {
-
-	/**
-	 * The attribute indices of the VAO of a Mesh
-	 */
-	enum class MeshAttributes : unsigned int
-	{
-		PositionAttribute = 0,
-		NormalAttribute,
-		TangentAttribute,
-		TexCoordAttribute0,
-		TexCoordAttribute1,
-		ColorAttribute,
-		JointIndexAttribute,
-		JointWeightAttribute
-	};
-
 
 	/**
 	 * Class Mesh, it holds the buffers that creates a 3D mesh
@@ -59,10 +42,10 @@ namespace se::graphics {
 		const IndexBuffer& getIBO() const;
 
 		/** Binds the VAO of the Mesh */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the VAO of the Mesh */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 }

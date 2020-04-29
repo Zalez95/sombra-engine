@@ -3,155 +3,37 @@
 
 namespace se::utils {
 
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Repository(SizeType maxElements) : mMaxElements(maxElements)
+	template <typename KeyType, typename ValueType>
+	std::shared_ptr<ValueType> Repository<KeyType, ValueType>::add(const KeyType& key, std::unique_ptr<ValueType> value)
 	{
-		mData.reserve(mMaxElements);
-		mRefCounts.reserve(mMaxElements);
+		auto [it, inserted] = mData.emplace(key, std::move(value));
+		if (inserted) {
+			return it->second;
+		}
+
+		return nullptr;
 	}
 
 
-	template <typename T, typename SizeType>
-	template <typename... Args>
-	typename Repository<T, SizeType>::Reference Repository<T, SizeType>::add(Args&&... args)
+	template <typename KeyType, typename ValueType>
+	void Repository<KeyType, ValueType>::remove(const KeyType& key)
 	{
-		Reference ret(this);
-
-		for (std::size_t i = 0; i < mData.size(); ++i) {
-			if (mRefCounts[i] == 0) {
-				mData[i] = T(std::forward<Args>(args)...);
-				ret = Reference(this, static_cast<SizeType>(i));
-			}
-		}
-
-		if (!ret) {
-			SizeType currentSize = static_cast<SizeType>(mData.size());
-			if (currentSize < mMaxElements) {
-				mData.emplace_back(std::forward<Args>(args)...);
-				mRefCounts.emplace_back(0);
-				ret = Reference(this, currentSize);
-			}
-		}
-
-		return ret;
-	}
-
-
-	template <typename T, typename SizeType>
-	typename Repository<T, SizeType>::Reference Repository<T, SizeType>::find(const SearchCallback& callback)
-	{
-		Reference ret(this);
-
-		for (std::size_t i = 0; i < mData.size(); ++i) {
-			if ((mRefCounts[i] > 0) && callback(mData[i])) {
-				ret = Reference(this, static_cast<SizeType>(i));
-			}
-		}
-
-		return ret;
-	}
-
-
-	template <typename T, typename SizeType>
-	void Repository<T, SizeType>::incrementRefCount(SizeType index)
-	{
-		if (index < mMaxElements) {
-			mRefCounts[index]++;
+		auto it = mData.find(key);
+		if (it != mData.end()) {
+			mData.erase(it);
 		}
 	}
 
 
-	template <typename T, typename SizeType>
-	void Repository<T, SizeType>::decrementRefCount(SizeType index)
+	template <typename KeyType, typename ValueType>
+	std::shared_ptr<ValueType> Repository<KeyType, ValueType>::find(const KeyType& key)
 	{
-		if (index < mMaxElements) {
-			mRefCounts[index]--;
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Reference::Reference(Repository* repository) :
-		mRepository(repository), mIndex(0)
-	{
-		if (mRepository) {
-			mIndex = mRepository->mMaxElements;
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Reference::Reference(Repository* repository, SizeType index) :
-		mRepository(repository), mIndex(index)
-	{
-		if (mRepository) {
-			mRepository->incrementRefCount(mIndex);
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Reference::Reference(const Reference& other) :
-		mRepository(other.mRepository), mIndex(other.mIndex)
-	{
-		if (mRepository) {
-			mRepository->incrementRefCount(mIndex);
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Reference::Reference(Reference&& other) :
-		mRepository(other.mRepository), mIndex(other.mIndex)
-	{
-		if (mRepository) {
-			other.mIndex = mRepository->mMaxElements;
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	Repository<T, SizeType>::Reference::~Reference()
-	{
-		if (mRepository) {
-			mRepository->decrementRefCount(mIndex);
-		}
-	}
-
-
-	template <typename T, typename SizeType>
-	typename Repository<T, SizeType>::Reference& Repository<T, SizeType>::Reference::operator=(const Reference& other)
-	{
-		if (mRepository) {
-			mRepository->decrementRefCount(mIndex);
+		auto it = mData.find(key);
+		if (it != mData.end()) {
+			return it->second;
 		}
 
-		mRepository = other.mRepository;
-		mIndex = other.mIndex;
-
-		if (mRepository) {
-			mRepository->incrementRefCount(mIndex);
-		}
-
-		return *this;
-	}
-
-
-	template <typename T, typename SizeType>
-	typename Repository<T, SizeType>::Reference& Repository<T, SizeType>::Reference::operator=(Reference&& other)
-	{
-		if (mRepository) {
-			mRepository->decrementRefCount(mIndex);
-		}
-
-		mRepository = other.mRepository;
-		mIndex = other.mIndex;
-
-		if (mRepository) {
-			other.mIndex = mRepository->mMaxElements;
-		}
-
-		return *this;
+		return nullptr;
 	}
 
 }

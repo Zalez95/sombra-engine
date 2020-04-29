@@ -3,11 +3,10 @@
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
-#include <se/app/RawMesh.h>
+#include <se/app/graphics/RawMesh.h>
 #include <se/app/GraphicsManager.h>
 #include <se/app/loaders/MeshLoader.h>
-#include <se/graphics/3D/Mesh.h>
-#include <se/graphics/3D/Material.h>
+#include <se/app/loaders/TechniqueLoader.h>
 #include "PlayerController.h"
 #include "Game.h"
 
@@ -46,11 +45,20 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		mYellowMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-			"yellow_material",
-			se::graphics::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
-			{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-		});
+		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+		auto stepYellow = mGameData.graphicsManager->createStep3D(programPBR, true);
+		se::app::TechniqueLoader::addMaterialBindables(
+			stepYellow,
+			se::app::Material{
+				"yellow_material",
+				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
+				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+			},
+			programPBR
+		);
+
+		mYellowTechnique = std::make_shared<se::graphics::Technique>();
+		mYellowTechnique->addStep(stepYellow);
 	}
 
 
@@ -124,8 +132,9 @@ namespace game {
 				pointEntity->position = rayCast.contactPointWorld;
 				pointEntity->orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
 
-				auto r3d3 = std::make_unique<se::graphics::Renderable3D>(mTetrahedronMesh, mYellowMaterial);
-				mGameData.graphicsManager->addRenderableEntity(pointEntity, std::move(r3d3));
+				auto r3d3 = std::make_unique<se::graphics::RenderableMesh>(mTetrahedronMesh);
+				r3d3->addTechnique(mYellowTechnique);
+				mGameData.graphicsManager->addMeshEntity(pointEntity, std::move(r3d3));
 
 				names += entity->name + "; ";
 			}

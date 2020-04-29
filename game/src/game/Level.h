@@ -4,8 +4,7 @@
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 
-#include <se/graphics/2D/Layer2D.h>
-#include <se/graphics/2D/Renderable2D.h>
+#include <se/graphics/2D/RenderableSprite.h>
 #include <se/graphics/2D/RenderableText.h>
 
 #include <se/app/Entity.h>
@@ -40,7 +39,7 @@ namespace game {
 		std::vector<se::physics::Force*> mForces;
 		std::vector<se::physics::Constraint*> mConstraints;
 		std::vector<se::animation::IAnimator*> mAnimators;
-		se::graphics::Renderable2D *mLogoTexture, *mReticleTexture;
+		se::graphics::RenderableSprite *mLogoTexture, *mReticleTexture;
 		se::graphics::RenderableText* mPickText;
 
 	public:		// Functions

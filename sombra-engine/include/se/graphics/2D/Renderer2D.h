@@ -2,7 +2,7 @@
 #define RENDERER_2D_H
 
 #include <vector>
-#include "Program2D.h"
+#include <glm/glm.hpp>
 #include "../../utils/FixedVector.h"
 #include "../core/VertexArray.h"
 #include "../core/VertexBuffer.h"
@@ -11,27 +11,27 @@
 namespace se::graphics {
 
 	class Renderable2D;
-	class RenderableText;
+	class Step2D;
+	class Texture;
 
 
 	/**
 	 * Class Renderer2D, it's a Batch Renderer used for rendering 2D
-	 * graphics elements. The Renderer2D draws the elements in the given order.
+	 * graphics elements. The Renderer2D draws the submitted Renderable2Ds
+	 * ordered by their z-index.
 	 */
 	class Renderer2D
 	{
-	private:	// Nested types
-		using TextureRef = Texture::Repository::Reference;
-
+	public:		// Nested types
 		/** Holds the data of each of the vertices that the Batch can draw */
 		struct BatchVertex
 		{
-			glm::vec2 position;			///< 2D position of the vertex
-			glm::vec2 texCoords;		///< Texture coordinates of the vertex
-			glm::vec4 color;			///< RGBA Color of the vertex
-			unsigned char textureId;	///< Texture index of the vertex
+			glm::vec2 position;						///< 2D position
+			glm::vec2 texCoords;					///< Texture coordinates
+			glm::vec4 color;						///< RGBA Color
+			unsigned char textureId = kNoTexture;	///< Texture index
 		};
-
+	private:
 		/**
 		 * Struct Batch, holds all the needed data for rendering the 2D elements
 		 */
@@ -81,6 +81,14 @@ namespace se::graphics {
 			 *			stored into the Batch */
 			Batch(std::size_t maxVertices, std::size_t maxIndices);
 
+			/** @return	the number of vertices left until the Batch is full */
+			std::size_t getVerticesLeft() const
+			{ return mPositions.capacity() - mPositions.size(); };
+
+			/** @return	the number of indices left until the Batch is full */
+			std::size_t getIndicesLeft() const
+			{ return mPositions.capacity() - mPositions.size(); };
+
 			/** Submits the given vertices to the Batch
 			 *
 			 * @param	vertices a pointer to the vertices to submit
@@ -96,69 +104,62 @@ namespace se::graphics {
 			 *
 			 * @note	after the Batch is drawn, the batch will be empty */
 			void draw();
-
-			/** @return	the number of vertices left until the Batch is full */
-			std::size_t getVerticesLeft() const
-			{ return mPositions.capacity() - mPositions.size(); };
-
-			/** @return	the number of indices left until the Batch is full */
-			std::size_t getIndicesLeft() const
-			{ return mPositions.capacity() - mPositions.size(); };
 		};
 
-	private:	// Attributes
+		using RenderableStepPair = std::pair<Renderable2D*, Step2D*>;
+
+	public:		// Attributes
 		/** The maximum number of quads in each batch */
 		static constexpr unsigned int kQuadsPerBatch = 1024;
 
-		/** The Program of the renderer */
-		Program2D mProgram;
+		/** The maximum number of textures in each batch */
+		static constexpr unsigned int kMaxTextures = 16;
 
+		/** The value used for signaling that vertex doesn't use Textures */
+		static constexpr unsigned char kNoTexture
+			= static_cast<unsigned char>(-1);
+	private:
 		/** The Quad2D used for rendering all the renderables */
 		Batch mBatch;
 
 		/** The textures used for rendering the Batch */
-		utils::FixedVector<TextureRef, 16> mTextures;
+		utils::FixedVector<Texture*, 16> mTextures;
+
+		/** The Step2D used for rendering the Batch */
+		Step2D* mStep;
+
+		/** The submited Renderable2Ds that are going to be drawn */
+		std::vector<RenderableStepPair> mRenderQueue;
 
 	public:		// Functions
 		/** Creates a new Renderer2D */
-		Renderer2D();
+		Renderer2D() :
+			mBatch(4 * kQuadsPerBatch, 6 * kQuadsPerBatch), mStep(nullptr) {};
 
-		/** Class destructor */
-		~Renderer2D();
-
-		/** Prepares the Renderer2D for rendering
+		/** Submits the given Renderable2D for rendering
 		 *
-		 * @param	projectionMatrix the matrix to use as Projection matrix in
-		 *			the shaders */
-		void start(const glm::mat4& projectionMatrix);
+		 * @param	renderable the Renderable2D to submit for rendering
+		 * @param	step the Step2D with which the Renderable2D will be drawn */
+		void submit(Renderable2D& renderable, Step2D& step);
 
-		/** Submits the given Renderable2D to the renderer
-		 *
-		 * @param	renderable2D a pointer to the Renderable2D that we
-		 *			want to render */
-		void submit(const Renderable2D* renderable2D);
+		/** Renders all the submitted Renderable2Ds */
+		void render();
 
-		/** Submits the given RenderableText to the renderer
+		/** Submits the given vertices to the Renderer2D
 		 *
-		 * @param	renderableText a pointer to the RenderableText that we
-		 *			want to render */
-		void submit(const RenderableText* renderableText);
-
-		/** Renders the Renderables that are still in the batch
-		 *
-		 * @note	after calling this method the batch will be empty */
-		void end();
+		 * @param	vertices a pointer to the vertices to submit
+		 * @param	vertexCount the number of vertices to submit
+		 * @param	indices a pointer to the indices to submit
+		 * @param	indexCount the number of indices to submit
+		 * @param	texture a pointer to the texture to submit */
+		void submitVertices(
+			BatchVertex* vertices, std::size_t vertexCount,
+			const unsigned short* indices, std::size_t indexCount,
+			Texture* texture = nullptr
+		);
 	private:
-		/** Adds the given texture to the array of Texture uniforms (if isn't
-		 * already inside)
-		 *
-		 * @param	texture a pointer to the texture to add
-		 * @return	the index of the texture in the array of Texture uniforms
-		 * @note	if the array of Texture uniforms is full the Batch will be
-		 *			rendered */
-		unsigned char addTexture(TextureRef texture);
-
-		/** Draws the batch and clears the texture array of Texture uniforms */
+		/** Draws the batch with the current Step and clears the texture
+		 * array of Texture uniforms */
 		void drawBatch();
 	};
 

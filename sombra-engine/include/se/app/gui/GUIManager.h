@@ -4,6 +4,7 @@
 #include "../events/EventManager.h"
 #include "../events/ResizeEvent.h"
 #include "../events/MouseEvent.h"
+#include "../GraphicsManager.h"
 #include "ComposedComponent.h"
 
 namespace se::app {
@@ -18,6 +19,9 @@ namespace se::app {
 		/** The EventManager that will notify the events */
 		EventManager& mEventManager;
 
+		/** The GraphicsManager used for drawing the IComponents */
+		GraphicsManager& mGraphicsManager;
+
 		/** The ComposedComponent that will hold every IComponent added to the
 		 * GUIManager */
 		ComposedComponent mRootComponent;
@@ -27,14 +31,23 @@ namespace se::app {
 		 *
 		 * @param	eventManager a reference to the EventManager that the
 		 *			GUIManager will be subscribed to
-		 * @param	initialWindowSize the initial window size */
+		 * @param	graphicsManager a reference to the GraphicsManager used for
+		 *			drawing the IComponents
+		 * @param	initialWindowSize the initial window size
+		 * @note	it will create a program2D and a technique2D used for
+		 *			drawing the IComponents and store them in the
+		 *			GraphicsManager Repositories */
 		GUIManager(
 			EventManager& eventManager,
+			GraphicsManager& graphicsManager,
 			const glm::vec2& initialWindowSize
 		);
 
 		/** Class destructor */
 		~GUIManager();
+
+		/** @return	the GraphicsManager of the GUIManager */
+		GraphicsManager& getGraphicsManager() { return mGraphicsManager; };
 
 		/** Adds the given component to the GUIComponent
 		 *

@@ -2,7 +2,7 @@
 #define IMAGE_READER_H
 
 #include "Result.h"
-#include "../Image.h"
+#include "../graphics/Image.h"
 
 namespace se::app {
 

@@ -29,7 +29,7 @@ struct Material
 
 struct SplatmapMaterial
 {
-	uint numMaterials;
+	int numMaterials;
 	Material materials[4];
 	sampler2D splatmapTexture;
 };
@@ -168,13 +168,13 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 
 /** Calculates how much the material located at the given index affects the
  * final material */
-float getMaterialRate(vec4 splatmapColor, uint materialIndex)
+float getMaterialRate(vec4 splatmapColor, int materialIndex)
 {
 	switch (materialIndex) {
-		case 0u:	return splatmapColor.r;
-		case 1u:	return splatmapColor.g;
-		case 2u:	return splatmapColor.b;
-		case 3u:	return splatmapColor.a;
+		case 0:		return splatmapColor.r;
+		case 1:		return splatmapColor.g;
+		case 2:		return splatmapColor.b;
+		case 3:		return splatmapColor.a;
 		default:	return 0.0;
 	}
 }
@@ -187,7 +187,7 @@ void main()
 	vec4 splatmapColor = texture(uSMaterial.splatmapTexture, fsVertex.texCoord0);
 
 	vec3 color = vec3(0.0);
-	for (uint i = 0u; i < uSMaterial.numMaterials; ++i) {
+	for (int i = 0; i < uSMaterial.numMaterials; ++i) {
 		// Get the texture data of the material for the current fragment
 		vec4 surfaceColor = (uSMaterial.materials[i].pbrMetallicRoughness.useBaseColorTexture)?
 			pow(texture(uSMaterial.materials[i].pbrMetallicRoughness.baseColorTexture, fsVertex.texCoord0), vec4(2.2)) :

@@ -1,6 +1,5 @@
 #include <numeric>
 #include <se/utils/Log.h>
-#include <se/utils/Repository.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/app/GraphicsManager.h>
 #include <se/graphics/GraphicsEngine.h>
@@ -14,7 +13,7 @@ namespace game {
 
 	Game::Game() :
 		Application(
-			{ kTitle, kWidth, kHeight }, { { kWidth, kHeight }, 64, 1, 16, 2 },
+			{ kTitle, kWidth, kHeight }, { { kWidth, kHeight } },
 			{ kMinFDifference, kContactPrecision, kContactSeparation, kMaxManifolds, kMaxRayCasterIterations },
 			kUpdateTime
 		),
@@ -121,21 +120,22 @@ namespace game {
 
 		try {
 			// Font load
-			se::app::FontReader fontReader(*mGraphicsEngine);
-
+			auto arial = std::make_unique<se::graphics::Font>();
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), '\0');
-			se::graphics::Font::Repository::Reference arial;
-			if (!fontReader.read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, arial)) {
+			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
 				throw std::runtime_error("Error reading the font file");
 			}
 
-			mGameData.layer2D = new se::graphics::Layer2D();
-			mGameData.graphicsEngine->addLayer(mGameData.layer2D);
-			mGameData.graphicsManager->addLayer(mGameData.layer2D);
+			auto arialSPtr = mGraphicsManager->getFontRepository().add("arial", std::move(arial));
+			if (!arialSPtr) {
+				throw std::runtime_error("Arial Font couldn't be added to the Repository");
+			}
 
-			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
-			mGameData.layer2D->addRenderableText(mGameData.fpsText, 255);
+			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arialSPtr, { 0.0f, 1.0f, 0.0f, 1.0f });
+			mGameData.fpsText->addTechnique(mGraphicsManager->getTechniqueRepository().find("technique2D"));
+			mGameData.fpsText->setZIndex(255);
+			mGraphicsEngine->addRenderable(mGameData.fpsText);
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
@@ -164,14 +164,8 @@ namespace game {
 		}
 
 		if (mGameData.fpsText) {
-			mGameData.layer2D->removeRenderableText(mGameData.fpsText, 255);
+			mGameData.graphicsEngine->removeRenderable(mGameData.fpsText);
 			delete mGameData.fpsText;
-		}
-
-		if (mGameData.layer2D) {
-			mGameData.graphicsManager->removeLayer(mGameData.layer2D);
-			mGameData.graphicsEngine->removeLayer(mGameData.layer2D);
-			delete mGameData.layer2D;
 		}
 	}
 

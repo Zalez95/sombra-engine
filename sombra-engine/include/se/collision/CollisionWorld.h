@@ -2,6 +2,7 @@
 #define COLLISION_WORLD_H
 
 #include <map>
+#include <memory>
 #include "Manifold.h"
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
@@ -50,7 +51,7 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
-		using ManifoldRef = Manifold::Repository::Reference;
+		using ManifoldUPtr = std::unique_ptr<Manifold>;
 		using ManifoldCallback = std::function<void(const Manifold&)>;
 		using RayCastCallback = std::function<
 			void(const Collider&, const RayCast&)
@@ -66,9 +67,6 @@ namespace se::collision {
 		 * it to generate all the contact data */
 		FineCollisionDetector mFineCollisionDetector;
 
-		/** The repository that holds all the Manifolds of the CollisionWorld */
-		Manifold::Repository mManifoldRepository;
-
 		/** The GJKRayCaster used for checking ray hits */
 		GJKRayCaster mRayCaster;
 
@@ -76,7 +74,7 @@ namespace se::collision {
 		std::vector<Collider*> mColliders;
 
 		/** Maps a pair of Colliders with the Manifold of it's collision */
-		std::unordered_map<ColliderPair, ManifoldRef, utils::PairHash>
+		std::unordered_map<ColliderPair, ManifoldUPtr, utils::PairHash>
 			mCollidersManifoldMap;
 
 	public:		// Functions

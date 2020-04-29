@@ -1,9 +1,9 @@
 #include <cassert>
 #include "se/app/loaders/TerrainLoader.h"
-#include "se/app/Entity.h"
-#include "se/app/Image.h"
-#include "se/graphics/3D/Material.h"
+#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/graphics/Material.h"
 #include "se/graphics/3D/RenderableTerrain.h"
+#include "se/graphics/3D/Step3D.h"
 #include "se/physics/RigidBody.h"
 #include "se/collision/TerrainCollider.h"
 
@@ -12,7 +12,7 @@ namespace se::app {
 	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
 		const std::string& name, float size, float maxHeight,
 		const Image& heightMap, const std::vector<float>& lodDistances,
-		SplatmapMaterialRef terrainMaterial
+		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
 
@@ -21,7 +21,7 @@ namespace se::app {
 		entity->scale = scaleVector;
 
 		// Graphics data
-		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, terrainMaterial);
+		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, terrainMaterial, programName);
 		mGraphicsManager.addTerrainEntity(entity.get(), std::move(renderableTerrain));
 
 		// Physics data
@@ -41,20 +41,38 @@ namespace se::app {
 	TerrainLoader::RenderableTerrainUPtr TerrainLoader::createTerrainRenderable(
 		float size, float maxHeight,
 		const Image& heightMap, const std::vector<float>& lodDistances,
-		SplatmapMaterialRef terrainMaterial
+		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
-		auto heightMapTexture = mGraphicsEngine.getTextureRepository().add();
-		if (!heightMapTexture) {
-			return nullptr;
-		}
-
+		auto heightMapTexture = std::make_unique<graphics::Texture>();
+		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap);
 		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+		heightMapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
 		heightMapTexture->setImage(
 			heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red,
 			heightMap.width, heightMap.height
 		);
 
-		return std::make_unique<graphics::RenderableTerrain>(size, maxHeight, heightMapTexture, lodDistances, terrainMaterial);
+		auto program = mGraphicsManager.getProgramRepository().find(programName);
+		auto terrainStep = mGraphicsManager.createStep3D(program, true);
+		TechniqueLoader::addSplatmapMaterialBindables(terrainStep, terrainMaterial, program);
+		auto terrainTechnique = std::make_shared<se::graphics::Technique>();
+		terrainTechnique->addStep(terrainStep);
+
+		auto renderable = std::make_unique<graphics::RenderableTerrain>(size, lodDistances);
+		renderable->addBindable(std::move(heightMapTexture))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uHeightMap", *program, SplatmapMaterial::TextureUnits::kHeightMap
+			))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uXZSize", *program, size
+			))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uMaxHeight", *program, maxHeight
+			));
+
+		renderable->addTechnique(terrainTechnique);
+
+		return renderable;
 	}
 
 

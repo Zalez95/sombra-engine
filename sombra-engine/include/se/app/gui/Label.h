@@ -1,12 +1,13 @@
 #ifndef LABEL_H
 #define LABEL_H
 
-#include <memory>
-#include "IComponent.h"
 #include "../../graphics/2D/RenderableText.h"
-#include "../../graphics/2D/Layer2D.h"
+#include "IComponent.h"
 
 namespace se::app {
+
+	class GUIManager;
+
 
 	/**
 	 * Class Label, it's an IComponent used for drawing the texts of the GUI
@@ -20,19 +21,18 @@ namespace se::app {
 		/** The vertical alignment of the text lines inside the Label */
 		enum class VerticalAlignment { Top, Center, Bottom };
 	private:
-		using FontRef = graphics::Font::Repository::Reference;
+		using FontSPtr = std::shared_ptr<graphics::Font>;
 		using RenderableTextUPtr = std::unique_ptr<graphics::RenderableText>;
 
 	private:	// Attributes
-		/** A pointer to the Layer2D where @see RenderableText will be submitted
-		 * for drawing the Label */
-		graphics::Layer2D* mLayer2D;
+		/** A pointer to the GUIManager used for drawing the Label */
+		GUIManager* mGUIManager;
 
 		/** The RenderableText used for drawing each line of the Label */
 		std::vector<RenderableTextUPtr> mRenderableTexts;
 
 		/** The font of the Text */
-		FontRef mFont;
+		FontSPtr mFont;
 
 		/** The maximum character size to use with the Text */
 		glm::vec2 mCharacterSize;
@@ -53,9 +53,9 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new Label
 		 *
-		 * @param	layer2D a pointer to the Layer2D where the Label will be
-		 *			drawn */
-		Label(graphics::Layer2D* layer2D);
+		 * @param	guiManager a pointer to the GUIManager used for drawing
+		 *			the Label */
+		Label(GUIManager* guiManager);
 		Label(const Label& other);
 		Label(Label&& other) = default;
 
@@ -90,7 +90,7 @@ namespace se::app {
 		/** Sets the font of the Label
 		 *
 		 * @param	font a pointer to the Font of the Label */
-		void setFont(FontRef font);
+		void setFont(FontSPtr font);
 
 		/** Sets the size of each character in the Label text
 		 *

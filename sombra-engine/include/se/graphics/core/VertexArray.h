@@ -48,7 +48,7 @@ namespace se::graphics {
 		 * @note	the VAO must be bound before calling this function */
 		void setVertexAttribute(
 			unsigned int index,
-			TypeId type, bool normalized, int componentSize, int stride
+			TypeId type, bool normalized, int componentSize, std::size_t stride
 		) const;
 
 		/** Sets rate that a vertex attribute advance each time a instance is

@@ -6,9 +6,7 @@
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
-#include <se/graphics/2D/Layer2D.h>
-#include <se/graphics/GraphicsEngine.h>
-#include <se/utils/Repository.h>
+#include <se/app/GraphicsManager.h>
 #include "MainMenuController.h"
 
 namespace game {
@@ -20,12 +18,6 @@ namespace game {
 	class MainMenuView
 	{
 	private:	// Attributes
-		/** The Layer2D that will be used for drawing the GUI */
-		se::graphics::Layer2D& mLayer2D;
-
-		/** The GraphicsEngine that holds all the Fonts */
-		se::graphics::GraphicsEngine& mGraphicsEngine;
-
 		/** The GUIManager used for retrieving input events */
 		se::app::GUIManager& mGUIManager;
 
@@ -47,28 +39,24 @@ namespace game {
 	public:		// Functions
 		/** Creates a new MainMenuView
 		 *
-		 * @param	layer2D the Layer2D to use for rendering the GUI components
-		 * @param	graphicsEngine the GraphicsEngine that holds the Fonts
 		 * @param	guiManager the GUIManager to use for retrieving input
 		 *			events
 		 * @param	controller the MainMenuController that will handle the user
 		 *			input */
 		MainMenuView(
-			se::graphics::Layer2D& layer2D,
-			se::graphics::GraphicsEngine& graphicsEngine,
 			se::app::GUIManager& guiManager,
 			MainMenuController& controller
-		) : mLayer2D(layer2D), mGraphicsEngine(graphicsEngine),
-			mGUIManager(guiManager), mController(controller),
-			mPanel(&mLayer2D), mTitleLabel(&mLayer2D), mVersionLabel(&mLayer2D),
-			mStartButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
-			mConfigButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
-			mQuitButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
-			mStartLabel(&mLayer2D), mConfigLabel(&mLayer2D),
-			mQuitLabel(&mLayer2D)
+		) : mGUIManager(guiManager), mController(controller),
+			mPanel(&mGUIManager), mTitleLabel(&mGUIManager),
+			mVersionLabel(&mGUIManager),
+			mStartButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
+			mConfigButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
+			mQuitButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
+			mStartLabel(&mGUIManager), mConfigLabel(&mGUIManager),
+			mQuitLabel(&mGUIManager)
 		{
-			auto arial = mGraphicsEngine.getFontRepository()
-				.find([](const se::graphics::Font& font) { return font.name == "Arial"; });
+			auto arial = mGUIManager.getGraphicsManager().getFontRepository().find("arial");
+			if (!arial) { return; }
 
 			mTitleLabel.setText("SOMBRA");
 			mTitleLabel.setFont(arial);

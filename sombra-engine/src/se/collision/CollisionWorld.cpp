@@ -9,7 +9,6 @@ namespace se::collision {
 
 	CollisionWorld::CollisionWorld(const CollisionWorldData& config) :
 		mFineCollisionDetector(config.minFDifference, config.contactPrecision, config.contactSeparation),
-		mManifoldRepository( static_cast<Manifold::Repository::size_type>(config.maxManifolds) ),
 		mRayCaster(config.contactPrecision, config.maxRayCasterIterations)
 	{
 		mCollidersManifoldMap.reserve(config.maxManifolds);
@@ -71,7 +70,7 @@ namespace se::collision {
 			}
 			else {
 				// Create a new Manifold
-				ManifoldRef manifold = mManifoldRepository.add(pair.first, pair.second);
+				auto manifold = std::make_unique<Manifold>(pair.first, pair.second);
 				if (manifold) {
 					if (mFineCollisionDetector.collide(*manifold)) {
 						mCollidersManifoldMap.emplace(

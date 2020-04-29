@@ -5,7 +5,7 @@
 #include "GLTFReader.h"
 #include "se/utils/MathUtils.h"
 #include "se/app/loaders/ImageReader.h"
-#include "se/graphics/3D/Material.h"
+#include "se/app/graphics/RawMesh.h"
 #include "se/graphics/3D/Mesh.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
@@ -60,17 +60,17 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toMeshAttribute(const std::string& text, graphics::MeshAttributes& meshAttribute)
+	static bool toMeshAttribute(const std::string& text, unsigned int& meshAttribute)
 	{
 		bool ret = true;
-		if (text == "POSITION")			{ meshAttribute = graphics::MeshAttributes::PositionAttribute; }
-		else if (text == "NORMAL")		{ meshAttribute = graphics::MeshAttributes::NormalAttribute; }
-		else if (text == "TANGENT")		{ meshAttribute = graphics::MeshAttributes::TangentAttribute; }
-		else if (text == "TEXCOORD_0")	{ meshAttribute = graphics::MeshAttributes::TexCoordAttribute0; }
-		else if (text == "TEXCOORD_1")	{ meshAttribute = graphics::MeshAttributes::TexCoordAttribute1; }
-		else if (text == "COLOR_0")		{ meshAttribute = graphics::MeshAttributes::ColorAttribute; }
-		else if (text == "JOINTS_0")	{ meshAttribute = graphics::MeshAttributes::JointIndexAttribute; }
-		else if (text == "WEIGHTS_0")	{ meshAttribute = graphics::MeshAttributes::JointWeightAttribute; }
+		if (text == "POSITION")			{ meshAttribute = MeshAttributes::PositionAttribute; }
+		else if (text == "NORMAL")		{ meshAttribute = MeshAttributes::NormalAttribute; }
+		else if (text == "TANGENT")		{ meshAttribute = MeshAttributes::TangentAttribute; }
+		else if (text == "TEXCOORD_0")	{ meshAttribute = MeshAttributes::TexCoordAttribute0; }
+		else if (text == "TEXCOORD_1")	{ meshAttribute = MeshAttributes::TexCoordAttribute1; }
+		else if (text == "COLOR_0")		{ meshAttribute = MeshAttributes::ColorAttribute; }
+		else if (text == "JOINTS_0")	{ meshAttribute = MeshAttributes::JointIndexAttribute; }
+		else if (text == "WEIGHTS_0")	{ meshAttribute = MeshAttributes::JointWeightAttribute; }
 		else { ret = false; }
 		return ret;
 	}
@@ -120,13 +120,13 @@ namespace se::app {
 	}
 
 
-	GLTFReader::GLTFReader(graphics::GraphicsEngine& graphicsEngine) : SceneReader(graphicsEngine)
+	GLTFReader::GLTFReader()
 	{
-		mDefaultMaterial = mGraphicsEngine.getMaterialRepository().add(graphics::Material{
+		mGLTFData.materials.emplace_back(std::make_unique<Material>(Material{
 			"DefaultMaterial",
 			{ glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), {}, 1.0f, 1.0f, {} },
 			{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
-		});
+		}));
 	}
 
 
@@ -321,8 +321,8 @@ namespace se::app {
 				if (scene->entities[entityId].hasCamera && (scene->entities[entityId].cameraIndex >= mGLTFData.cameras.size())) {
 					return Result(false, "Entity " + std::to_string(entityId) + " with camera index out of bounds");
 				}
-				if (scene->entities[entityId].hasRenderable3Ds && (scene->entities[entityId].renderable3DsIndex >= mGLTFData.meshPrimitives.size())) {
-					return Result(false, "Entity " + std::to_string(entityId) + " with mesh index out of bounds");
+				if (scene->entities[entityId].hasPrimitives && (scene->entities[entityId].primitivesIndex >= mGLTFData.primitives.size())) {
+					return Result(false, "Entity " + std::to_string(entityId) + " with primitives index out of bounds");
 				}
 				if (scene->entities[entityId].hasSkin && (scene->entities[entityId].skinIndex >= mGLTFData.skins.size())) {
 					return Result(false, "Entity " + std::to_string(entityId) + " with skin index out of bounds");
@@ -333,8 +333,9 @@ namespace se::app {
 		// Copy the needed data to output
 		output.scenes				= std::move(mGLTFData.scenes);
 		output.cameras				= std::move(mGLTFData.cameras);
-		output.renderable3DIndices	= std::move(mGLTFData.meshPrimitives);
-		output.renderable3Ds		= std::move(mGLTFData.renderable3Ds);
+		output.meshes				= std::move(mGLTFData.meshes);
+		output.materials			= std::move(mGLTFData.materials);
+		output.primitives			= std::move(mGLTFData.primitives);
 		output.skins				= std::move(mGLTFData.skins);
 		output.animators			= std::move(mGLTFData.compositeAnimators);
 
@@ -542,7 +543,7 @@ namespace se::app {
 
 	Result GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
 	{
-		auto texture = mGraphicsEngine.getTextureRepository().add();
+		auto texture = std::make_shared<graphics::Texture>();
 		if (!texture) {
 			return Result(false, "Failed to create the texture");
 		}
@@ -598,7 +599,7 @@ namespace se::app {
 
 	Result GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
 	{
-		auto material = mGraphicsEngine.getMaterialRepository().add();
+		auto material = std::make_unique<Material>();
 
 		auto itName = jsonMaterial.find("name");
 		if (itName != jsonMaterial.end()) {
@@ -750,11 +751,8 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive)
+	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive, Scenes::Primitive& out)
 	{
-		std::shared_ptr<graphics::Mesh> mesh = nullptr;
-		graphics::Material::Repository::Reference material = mDefaultMaterial;
-
 		graphics::VertexArray vao;
 		vao.bind();
 
@@ -762,7 +760,7 @@ namespace se::app {
 		auto itAttributes = jsonPrimitive.find("attributes");
 		if (itAttributes != jsonPrimitive.end()) {
 			for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
-				graphics::MeshAttributes meshAttribute;
+				unsigned int meshAttribute;
 				if (toMeshAttribute(itAttribute.key(), meshAttribute)) {
 					std::size_t accessorId = *itAttribute;
 					if (accessorId >= mGLTFData.accessors.size()) {
@@ -778,10 +776,7 @@ namespace se::app {
 
 					// Add the VBO to the VAO
 					vbo.bind();
-					vao.setVertexAttribute(
-						static_cast<unsigned int>(meshAttribute),
-						a.componentTypeId, a.normalized, a.componentSize, bv.stride
-					);
+					vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.componentSize), bv.stride);
 				}
 				else {
 					return Result(false, "Invalid attribute \"" + itAttribute.key() + "\"");
@@ -824,20 +819,26 @@ namespace se::app {
 			// Bind the IBO to the VAO
 			ibo.bind();
 
-			mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+			mGLTFData.meshes.emplace_back(std::make_unique<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao)));
+			out.first = mGLTFData.meshes.size() - 1;
+		}
+		else {
+			return Result(false, "Meshes without indices aren't supported");
 		}
 
 		auto itMaterial = jsonPrimitive.find("material");
 		if (itMaterial != jsonPrimitive.end()) {
-			std::size_t materialId = *itMaterial;
-			if (materialId >= mGLTFData.materials.size()) {
-				return Result(false, "Material index " + std::to_string(materialId) + " out of range");
+			out.second = *itMaterial;
+			if (out.second >= mGLTFData.materials.size() - 1) {
+				return Result(false, "Material index " + std::to_string(out.second) + " out of range");
 			}
-
-			material = mGLTFData.materials[materialId];
+			out.second += 1;
+		}
+		else {
+			// Use the default material (always is the zero one)
+			out.second = 0;
 		}
 
-		mGLTFData.renderable3Ds.emplace_back( std::make_unique<graphics::Renderable3D>(mesh, material) );
 		return Result();
 	}
 
@@ -852,13 +853,10 @@ namespace se::app {
 			return Result(false, "A mesh must containt at least one primitive");
 		}
 
-		std::vector<std::size_t>& primitiveIndices = mGLTFData.meshPrimitives.emplace_back();
+		auto& primitives = mGLTFData.primitives.emplace_back();
 		for (std::size_t primitiveId = 0; primitiveId < itPrimitives->size(); ++primitiveId) {
-			Result result = parsePrimitive((*itPrimitives)[primitiveId]);
-			if (result) {
-				primitiveIndices.push_back(mGLTFData.renderable3Ds.size() - 1);
-			}
-			else {
+			Result result = parsePrimitive((*itPrimitives)[primitiveId], primitives.emplace_back());
+			if (!result) {
 				return Result(false, "Failed to read the primitives property at primitive " + std::to_string(primitiveId) + ": " + result.description());
 			}
 		}
@@ -926,7 +924,7 @@ namespace se::app {
 				if ((itAspectRatio != jsonCamera.end()) && (itYFov != jsonCamera.end())
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
 				) {
-					auto camera = std::make_unique<graphics::Camera>();
+					auto camera = std::make_unique<Camera>();
 					camera->setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
 					mGLTFData.cameras.emplace_back(std::move(camera));
 					return Result();
@@ -943,7 +941,7 @@ namespace se::app {
 				if ((itXMag != jsonCamera.end()) && (itYMag != jsonCamera.end())
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
 				) {
-					auto camera = std::make_unique<graphics::Camera>();
+					auto camera = std::make_unique<Camera>();
 					camera->setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
 					mGLTFData.cameras.emplace_back(std::move(camera));
 					return Result();
@@ -977,8 +975,8 @@ namespace se::app {
 
 		auto itMesh = jsonNode.find("mesh");
 		if (itMesh != jsonNode.end()) {
-			sceneEntity.hasRenderable3Ds = true;
-			sceneEntity.renderable3DsIndex = *itMesh;
+			sceneEntity.hasPrimitives = true;
+			sceneEntity.primitivesIndex = *itMesh;
 		}
 
 		auto itSkin = jsonNode.find("skin");
@@ -1335,17 +1333,17 @@ namespace se::app {
 
 	Result GLTFReader::parseLight(const nlohmann::json& jsonLight)
 	{
-		std::unique_ptr<graphics::ILight> light;
+		std::unique_ptr<ILight> light;
 
 		auto itType = jsonLight.find("type");
 		if (itType != jsonLight.end()) {
 			if (*itType == "directional") {
-				auto directionalLight = std::make_unique<graphics::DirectionalLight>();
+				auto directionalLight = std::make_unique<app::DirectionalLight>();
 				directionalLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
 				light = std::move(directionalLight);
 			}
 			else if (*itType == "point") {
-				auto pointLight = std::make_unique<graphics::PointLight>();
+				auto pointLight = std::make_unique<PointLight>();
 				pointLight->position = glm::vec3(0.0f);
 
 				auto itRange = jsonLight.find("range");
@@ -1354,7 +1352,7 @@ namespace se::app {
 				light = std::move(pointLight);
 			}
 			else if (*itType == "spot") {
-				auto spotLight = std::make_unique<graphics::SpotLight>();
+				auto spotLight = std::make_unique<SpotLight>();
 				spotLight->position = glm::vec3(0.0f);
 				spotLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
 

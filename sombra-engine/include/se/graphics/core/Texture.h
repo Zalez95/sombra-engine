@@ -3,18 +3,16 @@
 
 #include "Bindable.h"
 #include "Constants.h"
-#include "../../utils/Repository.h"
 
 namespace se::graphics {
 
 	/**
-	 * Texture Class, TODO:
+	 * Texture Class, it's a Bindable that hold data in an image format. It
+	 * could be a 1D, 2D or 3D image. Texture can be accesed as variables
+	 * from Shaders or as Render targets.
 	 */
 	class Texture : public Bindable
 	{
-	public:		// Nested Types
-		using Repository = utils::Repository<Texture, unsigned short>;
-
 	private:	// Attributes
 		/** The id of the texture object */
 		unsigned int mTextureId;

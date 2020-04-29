@@ -1,11 +1,13 @@
 #ifndef PANEL_H
 #define PANEL_H
 
+#include "../../graphics/2D/RenderableSprite.h"
 #include "ComposedComponent.h"
-#include "../../graphics/2D/Renderable2D.h"
-#include "../../graphics/2D/Layer2D.h"
 
 namespace se::app {
+
+	class GUIManager;
+
 
 	/**
 	 * Class Panel, it's a visible GUI element used to hold and notify the
@@ -14,24 +16,26 @@ namespace se::app {
 	class Panel : public ComposedComponent
 	{
 	private:	// Attributes
-		/** A pointer to the Layer2D where @see Renderable2D will be submitted
-		 * for drawing the Panel */
-		graphics::Layer2D* mLayer2D;
+		/** A pointer to the GUIManager used for drawing the Panel */
+		GUIManager* mGUIManager;
 
-		/** The Renderable2D used for drawing of the Panel */
-		graphics::Renderable2D mRenderable2D;
+		/** The RenderableSprite used for drawing of the Panel */
+		graphics::RenderableSprite mSprite;
 
 	public:		// Functions
-		/** Creates a new Panel */
-		Panel(graphics::Layer2D* layer2D);
-		Panel(const Panel& other) = default;
+		/** Creates a new Panel
+		 *
+		 * @param	guiManager a pointer to the GUIManager used for drawing
+		 *			the Panel */
+		Panel(GUIManager* guiManager);
+		Panel(const Panel& other);
 		Panel(Panel&& other) = default;
 
 		/** Class destructor */
 		virtual ~Panel();
 
 		/** Assignment operator */
-		Panel& operator=(const Panel& other) = default;
+		Panel& operator=(const Panel& other);
 		Panel& operator=(Panel&& other) = default;
 
 		/** Sets the position of the Panel

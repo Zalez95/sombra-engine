@@ -28,7 +28,6 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new IndexBuffer */
 		IndexBuffer();
-
 		IndexBuffer(const IndexBuffer& other) = delete;
 		IndexBuffer(IndexBuffer&& other);
 

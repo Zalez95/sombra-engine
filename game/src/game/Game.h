@@ -2,7 +2,6 @@
 #define GAME_H
 
 #include <se/app/Application.h>
-#include <se/graphics/2D/Layer2D.h>
 #include <se/graphics/2D/RenderableText.h>
 #include <se/utils/StateMachine.h>
 #include "IGameScreen.h"
@@ -40,7 +39,6 @@ namespace game {
 		se::app::GUIManager* guiManager;
 
 		se::utils::StateMachine* stateMachine;
-		se::graphics::Layer2D* layer2D;
 		se::graphics::RenderableText* fpsText;
 		std::vector<IGameScreen*> currentGameScreens;
 	};

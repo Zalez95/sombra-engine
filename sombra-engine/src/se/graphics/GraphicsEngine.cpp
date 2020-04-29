@@ -1,67 +1,74 @@
 #include <stdexcept>
 #include <algorithm>
+#include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/core/Graphics.h"
+#include "se/graphics/Renderable.h"
 
 namespace se::graphics {
 
 	GraphicsEngine::GraphicsEngine(const GraphicsData& config)
 	{
-		if (!Graphics::init()) {
+		if (!GraphicsOperations::init()) {
 			throw std::runtime_error("Failed to initialize the Graphics API");
 		}
 
-		Graphics::setCulling(true);
-		Graphics::setDepthTest(true);
-
-		// Create the Repositories
-		mTextureRepo = std::make_unique<Texture::Repository>(config.maxTextures);
-		mFontRepo = std::make_unique<Font::Repository>(config.maxFonts);
-		mMaterialRepo = std::make_unique<Material::Repository>(config.maxMaterials);
-		mSplatmapMaterialRepo = std::make_unique<SplatmapMaterial::Repository>(config.maxSplatmapMaterials);
-
 		// Set the initial viewport size
 		setViewportSize(config.viewportSize);
+
+		// Create the Renderers
+		mRenderer2D = std::make_unique<Renderer2D>();
+		mRenderer3D = std::make_unique<Renderer3D>();
 	}
 
 
-	std::string GraphicsEngine::getGLInfo() const
+	std::string GraphicsEngine::getGraphicsInfo() const
 	{
-		return Graphics::getGraphicsInfo();
+		return GraphicsOperations::getGraphicsInfo();
 	}
 
 
 	void GraphicsEngine::setViewportSize(const glm::uvec2& viewportSize)
 	{
+		std::unique_lock lck(mMutex);
+
 		mViewportSize = viewportSize;
-		Graphics::setViewport(0, 0, mViewportSize.x, mViewportSize.y);
+		GraphicsOperations::setViewport(0, 0, mViewportSize.x, mViewportSize.y);
 	}
 
 
-	void GraphicsEngine::addLayer(ILayer* layer)
+	void GraphicsEngine::addRenderable(Renderable* renderable)
 	{
-		if (layer) {
-			mLayers.push_back(layer);
+		std::unique_lock lck(mMutex);
+
+		if (renderable) {
+			mRenderables.push_back(renderable);
 		}
 	}
 
 
-	void GraphicsEngine::removeLayer(ILayer* layer)
+	void GraphicsEngine::removeRenderable(Renderable* renderable)
 	{
-		mLayers.erase(
-			std::remove(mLayers.begin(), mLayers.end(), layer),
-			mLayers.end()
+		std::unique_lock lck(mMutex);
+
+		mRenderables.erase(
+			std::remove(mRenderables.begin(), mRenderables.end(), renderable),
+			mRenderables.end()
 		);
 	}
 
 
 	void GraphicsEngine::render()
 	{
-		Graphics::clear(false, true);
+		std::unique_lock lck(mMutex);
 
-		for (ILayer* layer : mLayers) {
-			layer->render();
+		GraphicsOperations::clear(false, true);
+
+		for (Renderable* renderable : mRenderables) {
+			renderable->submit();
 		}
+
+		mRenderer3D->render();
+		mRenderer2D->render();
 	}
 
 }

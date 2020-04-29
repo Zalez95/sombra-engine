@@ -41,19 +41,19 @@ namespace se::graphics {
 
 	void VertexArray::setVertexAttribute(
 		unsigned int index,
-		TypeId type, bool normalized, int componentSize, int stride
+		TypeId type, bool normalized, int componentSize, std::size_t stride
 	) const
 	{
 		GL_WRAP( glEnableVertexAttribArray(index) );
 
 		if ((type == TypeId::Float) || (type == TypeId::HalfFloat)) {
-			GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, stride, 0) );
+			GL_WRAP( glVertexAttribPointer(index, componentSize, toGLType(type), normalized, static_cast<GLsizei>(stride), 0) );
 		}
 		else if (type == TypeId::Double) {
-			GL_WRAP( glVertexAttribLPointer(index, componentSize, toGLType(type), stride, 0) );
+			GL_WRAP( glVertexAttribLPointer(index, componentSize, toGLType(type), static_cast<GLsizei>(stride), 0) );
 		}
 		else {
-			GL_WRAP( glVertexAttribIPointer(index, componentSize, toGLType(type), stride, 0) );
+			GL_WRAP( glVertexAttribIPointer(index, componentSize, toGLType(type), static_cast<GLsizei>(stride), 0) );
 		}
 	}
 

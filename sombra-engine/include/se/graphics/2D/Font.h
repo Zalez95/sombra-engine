@@ -2,11 +2,14 @@
 #define FONT_H
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "../core/Texture.h"
 
 namespace se::graphics {
+
+	class Texture;
+
 
 	/**
 	 * Struct Character, it represents a Character in ASCII code used to
@@ -38,13 +41,11 @@ namespace se::graphics {
 	 */
 	struct Font
 	{
-		using Repository = utils::Repository<Font, unsigned short>;
-
 		/** The name of the font */
 		std::string name;
 
 		/** The atlas texture with the character glyphs */
-		Texture::Repository::Reference textureAtlas;
+		std::shared_ptr<Texture> textureAtlas;
 
 		/** The size of the texture atlas */
 		glm::uvec2 atlasSize;

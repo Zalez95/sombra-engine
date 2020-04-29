@@ -6,9 +6,7 @@
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
-#include <se/graphics/2D/Layer2D.h>
-#include <se/graphics/GraphicsEngine.h>
-#include <se/utils/Repository.h>
+#include <se/app/GraphicsManager.h>
 #include "GameMenuController.h"
 
 namespace game {
@@ -20,12 +18,6 @@ namespace game {
 	class GameMenuView
 	{
 	private:	// Attributes
-		/** The Layer2D that will be used for drawing the GUI */
-		se::graphics::Layer2D& mLayer2D;
-
-		/** The GraphicsEngine that holds all the Fonts */
-		se::graphics::GraphicsEngine& mGraphicsEngine;
-
 		/** The GUIManager used for retrieving input events */
 		se::app::GUIManager& mGUIManager;
 
@@ -47,26 +39,21 @@ namespace game {
 	public:		// Functions
 		/** Creates a new GameMenuView
 		 *
-		 * @param	layer2D the Layer2D to use for rendering the GUI components
-		 * @param	graphicsEngine the GraphicsEngine that holds the Fonts
 		 * @param	guiManager the GUIManager to use for retrieving input
 		 *			events
 		 * @param	controller the GameMenuController that will handle the user
 		 *			input */
 		GameMenuView(
-			se::graphics::Layer2D& layer2D,
-			se::graphics::GraphicsEngine& graphicsEngine,
 			se::app::GUIManager& guiManager,
 			GameMenuController& controller
-		) : mLayer2D(layer2D), mGraphicsEngine(graphicsEngine),
-			mGUIManager(guiManager), mController(controller),
-			mPanel(&mLayer2D), mTitleLabel(&mLayer2D),
-			mBackButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
-			mQuitButton(&mLayer2D, std::make_unique<se::app::Rectangle>()),
-			mBackLabel(&mLayer2D), mQuitLabel(&mLayer2D)
+		) : mGUIManager(guiManager), mController(controller),
+			mPanel(&mGUIManager), mTitleLabel(&mGUIManager),
+			mBackButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
+			mQuitButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
+			mBackLabel(&mGUIManager), mQuitLabel(&mGUIManager)
 		{
-			auto arial = mGraphicsEngine.getFontRepository()
-				.find([](const se::graphics::Font& font) { return font.name == "Arial"; });
+			auto arial = mGUIManager.getGraphicsManager().getFontRepository().find("arial");
+			if (!arial) { return; }
 
 			mTitleLabel.setFont(arial);
 			mTitleLabel.setCharacterSize({ 24, 24 });

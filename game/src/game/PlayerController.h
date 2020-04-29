@@ -7,7 +7,8 @@
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
-#include <se/graphics/3D/Renderable3D.h>
+#include <se/app/graphics/Material.h>
+#include <se/graphics/3D/Mesh.h>
 #include <se/graphics/2D/RenderableText.h>
 
 namespace game {
@@ -49,7 +50,7 @@ namespace game {
 		bool mClicked;
 
 		std::shared_ptr<se::graphics::Mesh> mTetrahedronMesh;
-		se::graphics::Material::Repository::Reference mYellowMaterial;
+		std::shared_ptr<se::graphics::Technique> mYellowTechnique;
 
 	public:		// Functions
 		/** Creates a new PlayerController

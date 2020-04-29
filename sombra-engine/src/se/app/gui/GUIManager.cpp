@@ -1,13 +1,25 @@
 #include "se/app/gui/GUIManager.h"
+#include "se/app/loaders/TechniqueLoader.h"
 
 namespace se::app {
 
-	GUIManager::GUIManager(EventManager& eventManager, const glm::vec2& initialWindowSize) :
-		mEventManager(eventManager)
+	GUIManager::GUIManager(
+		EventManager& eventManager, GraphicsManager& graphicsManager, const glm::vec2& initialWindowSize
+	) : mEventManager(eventManager), mGraphicsManager(graphicsManager)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 		mEventManager.subscribe(this, Topic::Mouse);
 		mRootComponent.setSize(initialWindowSize);
+
+		auto program = TechniqueLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
+		if (!program) {
+			throw std::runtime_error("program2D couldn't be created");
+		}
+		auto program2D = mGraphicsManager.getProgramRepository().add("program2D", std::move(program));
+
+		auto technique2D = std::make_unique<graphics::Technique>();
+		technique2D->addStep( mGraphicsManager.createStep2D(program2D) );
+		mGraphicsManager.getTechniqueRepository().add("technique2D", std::move(technique2D));
 	}
 
 

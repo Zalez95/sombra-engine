@@ -41,11 +41,17 @@ namespace se::graphics {
 	}
 
 
-	void UniformBuffer::copy(const void* data, std::size_t size)
+	void UniformBuffer::resizeAndCopy(const void* data, std::size_t size)
 	{
 		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, mBufferId) );
 		GL_WRAP( glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW) );
-		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, 0) );
+	}
+
+
+	void UniformBuffer::copy(const void* data, std::size_t size, std::size_t offset)
+	{
+		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, mBufferId) );
+		GL_WRAP( glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data) );
 	}
 
 

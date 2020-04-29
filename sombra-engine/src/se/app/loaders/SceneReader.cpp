@@ -3,14 +3,13 @@
 
 namespace se::app {
 
-	SceneReader::SceneReaderUPtr SceneReader::createSceneReader(
-		SceneFileType fileType, graphics::GraphicsEngine& graphicsEngine
-	) {
+	SceneReader::SceneReaderUPtr SceneReader::createSceneReader(SceneFileType fileType)
+	{
 		SceneReaderUPtr ret = nullptr;
 
 		switch (fileType) {
 			case SceneFileType::GLTF:
-				ret = std::make_unique<GLTFReader>(graphicsEngine);
+				ret = std::make_unique<GLTFReader>();
 				break;
 		}
 

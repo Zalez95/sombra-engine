@@ -1,3 +1,6 @@
+#ifndef QUAD_TREE_H
+#define QUAD_TREE_H
+
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
@@ -159,3 +162,5 @@ namespace se::graphics {
 	};
 
 }
+
+#endif		// QUAD_TREE_H

@@ -1,23 +1,26 @@
 #include <cctype>
 #include <algorithm>
 #include "se/app/gui/Label.h"
+#include "se/app/gui/GUIManager.h"
+#include "se/app/GraphicsManager.h"
 #include "se/utils/StringUtils.h"
 
 namespace se::app {
 
-	Label::Label(graphics::Layer2D* layer2D) :
-		mLayer2D(layer2D), mCharacterSize(0.0f),
+	Label::Label(GUIManager* guiManager) :
+		mGUIManager(guiManager), mCharacterSize(0.0f),
 		mHorizontalAlignment(HorizontalAlignment::Left),
 		mVerticalAlignment(VerticalAlignment::Top),
 		mColor(0.0f, 0.0f, 0.0f, 1.0f)
 	{
+		mIsVisible = false;
 		setVisibility(true);
 	}
 
 
 	Label::Label(const Label& other) :
 		IComponent(other),
-		mLayer2D(other.mLayer2D),
+		mGUIManager(other.mGUIManager),
 		mFont(other.mFont),
 		mCharacterSize(other.mCharacterSize),
 		mHorizontalAlignment(other.mHorizontalAlignment),
@@ -29,6 +32,9 @@ namespace se::app {
 		for (const auto& renderableText : other.mRenderableTexts) {
 			mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(*renderableText) );
 		}
+
+		mIsVisible = false;
+		setVisibility(other.mIsVisible);
 	}
 
 
@@ -41,7 +47,7 @@ namespace se::app {
 	Label& Label::operator=(const Label& other)
 	{
 		IComponent::operator=(other);
-		mLayer2D = other.mLayer2D;
+		mGUIManager = other.mGUIManager;
 		mFont = other.mFont;
 		mCharacterSize = other.mCharacterSize;
 		mHorizontalAlignment = other.mHorizontalAlignment;
@@ -53,6 +59,9 @@ namespace se::app {
 		for (const auto& renderableText : other.mRenderableTexts) {
 			mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(*renderableText) );
 		}
+
+		mIsVisible = false;
+		setVisibility(other.mIsVisible);
 
 		return *this;
 	}
@@ -74,14 +83,10 @@ namespace se::app {
 
 	void Label::setZIndex(unsigned char zIndex)
 	{
-		for (auto& renderable : mRenderableTexts) {
-			mLayer2D->removeRenderableText(renderable.get(), mZIndex);
-		}
-
 		IComponent::setZIndex(zIndex);
 
 		for (auto& renderable : mRenderableTexts) {
-			mLayer2D->addRenderableText(renderable.get(), mZIndex);
+			renderable->setZIndex(mZIndex);
 		}
 	}
 
@@ -93,18 +98,18 @@ namespace se::app {
 
 		if (wasVisible && !mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mLayer2D->removeRenderableText(renderable.get(), mZIndex);
+				mGUIManager->getGraphicsManager().getGraphicsEngine().removeRenderable(renderable.get());
 			}
 		}
 		else if (!wasVisible && mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mLayer2D->addRenderableText(renderable.get(), mZIndex);
+				mGUIManager->getGraphicsManager().getGraphicsEngine().addRenderable(renderable.get());
 			}
 		}
 	}
 
 
-	void Label::setFont(FontRef font)
+	void Label::setFont(FontSPtr font)
 	{
 		mFont = font;
 		updateRenderableTexts();
@@ -166,17 +171,24 @@ namespace se::app {
 		}
 
 		// Add more RenderableTexts
+		auto technique2D = mGUIManager->getGraphicsManager().getTechniqueRepository().find("technique2D");
 		while (mRenderableTexts.size() < lines.size()) {
-			mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
+			auto& renderable = mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
+
+			renderable->setZIndex(mZIndex);
+			if (technique2D) {
+				renderable->addTechnique(technique2D);
+			}
+
 			if (mIsVisible) {
-				mLayer2D->addRenderableText(mRenderableTexts.back().get(), mZIndex);
+				mGUIManager->getGraphicsManager().getGraphicsEngine().addRenderable(mRenderableTexts.back().get());
 			}
 		}
 
 		// Remove unneeded RenderableTexts
 		while (mRenderableTexts.size() > lines.size()) {
 			if (mIsVisible) {
-				mLayer2D->removeRenderableText(mRenderableTexts.back().get(), mZIndex);
+				mGUIManager->getGraphicsManager().getGraphicsEngine().removeRenderable(mRenderableTexts.back().get());
 			}
 			mRenderableTexts.pop_back();
 		}

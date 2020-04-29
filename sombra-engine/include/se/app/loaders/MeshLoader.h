@@ -1,8 +1,8 @@
 #ifndef MESH_LOADER_H
 #define MESH_LOADER_H
 
-#include "se/graphics/3D/Mesh.h"
-#include "se/collision/HalfEdgeMesh.h"
+#include "../../graphics/3D/Mesh.h"
+#include "../../collision/HalfEdgeMesh.h"
 
 namespace se::app {
 

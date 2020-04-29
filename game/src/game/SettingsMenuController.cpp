@@ -9,7 +9,7 @@ namespace game {
 	SettingsMenuController::SettingsMenuController(GameData& gameData) : IGameScreen(gameData), mView(nullptr)
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mView = new SettingsMenuView(*mGameData.layer2D, *mGameData.graphicsEngine, *mGameData.guiManager, *this);
+		mView = new SettingsMenuView(*mGameData.guiManager, *this);
 		SOMBRA_DEBUG_LOG << "end";
 	}
 

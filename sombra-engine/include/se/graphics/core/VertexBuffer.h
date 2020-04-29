@@ -22,7 +22,6 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new VertexBuffer */
 		VertexBuffer();
-
 		VertexBuffer(const VertexBuffer& other) = delete;
 		VertexBuffer(VertexBuffer&& other);
 

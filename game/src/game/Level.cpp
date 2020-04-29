@@ -5,24 +5,26 @@
 
 #include <se/window/KeyCodes.h>
 
-#include <se/app/Image.h>
-#include <se/app/RawMesh.h>
-#include <se/app/GraphicsManager.h>
-#include <se/app/PhysicsManager.h>
-#include <se/app/CollisionManager.h>
-#include <se/app/AnimationManager.h>
-#include <se/app/AudioManager.h>
+#include <se/app/graphics/Image.h>
+#include <se/app/graphics/RawMesh.h>
+#include <se/app/graphics/Camera.h>
+#include <se/app/graphics/Lights.h>
+#include <se/app/graphics/Material.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/ImageReader.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
 #include <se/app/loaders/SceneReader.h>
+#include <se/app/loaders/TechniqueLoader.h>
+#include <se/app/GraphicsManager.h>
+#include <se/app/PhysicsManager.h>
+#include <se/app/CollisionManager.h>
+#include <se/app/AnimationManager.h>
+#include <se/app/AudioManager.h>
 
-#include <se/graphics/3D/Camera.h>
-#include <se/graphics/3D/Lights.h>
 #include <se/graphics/3D/Mesh.h>
-#include <se/graphics/3D/Material.h>
-#include <se/graphics/3D/Renderable3D.h>
+#include <se/graphics/3D/RenderableMesh.h>
+#include <se/graphics/core/GraphicsOperations.h>
 
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
@@ -40,10 +42,9 @@
 #include <se/audio/Source.h>
 
 #include <se/utils/Log.h>
-#include <se/utils/Repository.h>
 
-#include "Level.h"
 #include "Game.h"
+#include "Level.h"
 
 namespace game {
 
@@ -168,23 +169,23 @@ namespace game {
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::app::TerrainLoader terrainLoader(*mGameData.graphicsManager, *mGameData.graphicsEngine, *mGameData.physicsManager, *mGameData.collisionManager);
+		se::app::TerrainLoader terrainLoader(*mGameData.graphicsManager, *mGameData.physicsManager, *mGameData.collisionManager);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
 		se::app::Image heightMap1, splatMap1, logo1, reticle1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		se::graphics::Texture::Repository::Reference logoTexture, reticleTexture, chessTexture;
-		std::unique_ptr<se::graphics::Camera> camera1 = nullptr;
-		std::unique_ptr<se::graphics::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
+		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture;
+		std::unique_ptr<se::app::Camera> camera1 = nullptr;
+		std::unique_ptr<se::app::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
-		se::graphics::Font::Repository::Reference arial;
+		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		se::app::Scenes loadedScenes;
 
 		try {
 			// Readers
 			AudioFile<float> audioFile;
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF, *mGameData.graphicsEngine);
+			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
 
 			// Meshes
 			se::app::RawMesh cubeRawMesh("Cube");
@@ -269,6 +270,37 @@ namespace game {
 			se::app::RawMesh domeRawMesh = se::app::MeshLoader::createDomeMesh("sky", 32, 16, kZFar / 2);
 			domeMesh = std::make_shared<se::graphics::Mesh>( se::app::MeshLoader::createGraphicsMesh(domeRawMesh) );
 
+			// Programs
+			auto programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl");
+			if (!programSky) {
+				throw std::runtime_error("programSky not found");
+			}
+			mGameData.graphicsManager->getProgramRepository().add("programSky", std::move(programSky));
+
+			auto programPBR = se::app::TechniqueLoader::createProgram("res/shaders/vertexLight.glsl", nullptr, "res/shaders/fragmentPBR.glsl");
+			if (!programPBR) {
+				throw std::runtime_error("programPBR not found");
+			}
+			mGameData.graphicsManager->getProgramRepository().add("programPBR", std::move(programPBR));
+
+			auto programPBRSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexLightSkinning.glsl", nullptr, "res/shaders/fragmentPBR.glsl");
+			if (!programPBRSkinning) {
+				throw std::runtime_error("programPBRSkinning not found");
+			}
+			mGameData.graphicsManager->getProgramRepository().add("programPBRSkinning", std::move(programPBRSkinning));
+
+			auto programSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentSplatmap.glsl");
+			if (!programSplatmap) {
+				throw std::runtime_error("programSplatmap not found");
+			}
+			mGameData.graphicsManager->getProgramRepository().add("programSplatmap", std::move(programSplatmap));
+
+			// Fonts
+			arial = mGameData.graphicsManager->getFontRepository().find("arial");
+			if (!arial) {
+				throw std::runtime_error("Arial font not found");
+			}
+
 			// GLTF scenes
 			se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
 			if (!result) {
@@ -297,7 +329,7 @@ namespace game {
 			}
 
 			// Textures
-			logoTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			logoTexture = std::make_shared<se::graphics::Texture>();
 			if (!logoTexture) {
 				throw std::runtime_error("Couldn't create the logo texture");
 			}
@@ -306,7 +338,7 @@ namespace game {
 				logo1.width, logo1.height
 			);
 
-			reticleTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			reticleTexture = std::make_shared<se::graphics::Texture>();
 			if (!reticleTexture) {
 				throw std::runtime_error("Couldn't create the reticle texture");
 			}
@@ -319,31 +351,28 @@ namespace game {
 				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
 				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
-			chessTexture = mGameData.graphicsEngine->getTextureRepository().add();
+			chessTexture = std::make_shared<se::graphics::Texture>();
 			if (!chessTexture) {
 				throw std::runtime_error("Couldn't create the chess texture");
 			}
 			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, 2, 2);
 
 			// Cameras
-			camera1 = std::make_unique<se::graphics::Camera>();
+			camera1 = std::make_unique<se::app::Camera>();
 			camera1->setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			pointLight1 = std::make_unique<se::graphics::PointLight>();
+			pointLight1 = std::make_unique<se::app::PointLight>();
 			pointLight1->name = "pointLight1";
 			pointLight1->intensity = 5.0f;
-			pointLight2 = std::make_unique<se::graphics::PointLight>();
+			pointLight2 = std::make_unique<se::app::PointLight>();
 			pointLight2->name = "pointLight2";
 			pointLight2->color = glm::vec3(0.5f, 1.0f, 0.5f);
 			pointLight2->intensity = 2.0f;
-			pointLight3 = std::make_unique<se::graphics::PointLight>();
+			pointLight3 = std::make_unique<se::app::PointLight>();
 			pointLight3->name = "pointLight3";
 			pointLight3->color = glm::vec3(1.0f, 0.5f, 0.5f);
 			pointLight3->intensity = 10.0f;
-
-			// Fonts
-			arial = mGameData.graphicsEngine->getFontRepository().find([](const se::graphics::Font& font) { return font.name == "Arial"; });
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
@@ -369,12 +398,19 @@ namespace game {
 		se::physics::Force* gravity = mForces.back();
 
 		// Renderable2Ds
-		mLogoTexture = new se::graphics::Renderable2D(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
-		mGameData.layer2D->addRenderable2D(mLogoTexture, 0);
-		mReticleTexture = new se::graphics::Renderable2D(glm::vec2(kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f), glm::vec2(20.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
-		mGameData.layer2D->addRenderable2D(mReticleTexture, 0);
+		auto technique2D = mGameData.graphicsManager->getTechniqueRepository().find("technique2D");
+		mLogoTexture = new se::graphics::RenderableSprite(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
+		mLogoTexture->addTechnique(technique2D);
+		mLogoTexture->setZIndex(255);
+		mGameData.graphicsEngine->addRenderable(mLogoTexture);
+		mReticleTexture = new se::graphics::RenderableSprite(glm::vec2(kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f), glm::vec2(20.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
+		mReticleTexture->addTechnique(technique2D);
+		mReticleTexture->setZIndex(255);
+		mGameData.graphicsEngine->addRenderable(mReticleTexture);
 		mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
-		mGameData.layer2D->addRenderableText(mPickText, 0);
+		mPickText->addTechnique(technique2D);
+		mPickText->setZIndex(255);
+		mGameData.graphicsEngine->addRenderable(mPickText);
 
 		/*********************************************************************
 		 * GAME DATA
@@ -402,40 +438,69 @@ namespace game {
 		mGameData.audioManager->setListener(mPlayerEntity);
 
 		// Sky
-		auto skyEntity = std::make_unique<se::app::Entity>("sky");
-		auto renderable3D = std::make_unique<se::graphics::Renderable3D>(domeMesh, nullptr);
-		mGameData.graphicsManager->addSkyEntity(skyEntity.get(), std::move(renderable3D));
-		mEntities.push_back(std::move(skyEntity));
+		{
+			auto skyEntity = std::make_unique<se::app::Entity>("sky");
+
+			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
+
+			auto stepSky = mGameData.graphicsManager->createStep3D(programSky, false);
+			stepSky->addBindable(std::make_shared<se::graphics::CullingOperation>(false));
+
+			auto techniqueSky = std::make_unique<se::graphics::Technique>();
+			techniqueSky->addStep(stepSky);
+
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(domeMesh);
+			renderableMesh->addTechnique(std::move(techniqueSky));
+
+			mGameData.graphicsManager->addMeshEntity(skyEntity.get(), std::move(renderableMesh));
+			mEntities.push_back(std::move(skyEntity));
+		}
 
 		// Terrain
-		auto splatmapTex = mGameData.graphicsEngine->getTextureRepository().add();
-		auto terrainMaterial = mGameData.graphicsEngine->getSplatmapMaterialRepository().add();
-		if (splatmapTex && terrainMaterial) {
+		{
+			auto splatmapTex = std::make_shared<se::graphics::Texture>();
+			splatmapTex->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
 			splatmapTex->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
 
-			terrainMaterial->splatmapTexture = std::move(splatmapTex);
-			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
-			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
-			terrainMaterial->materials.push_back({ se::graphics::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+			se::app::SplatmapMaterial terrainMaterial;
+			terrainMaterial.name = "terrainMaterial";
+			terrainMaterial.splatmapTexture = std::move(splatmapTex);
+			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
+			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
 			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial) );
+			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial, "programSplatmap") );
 		}
 
 		// Plane
-		auto plane = std::make_unique<se::app::Entity>("plane");
-		plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
+		{
+			auto plane = std::make_unique<se::app::Entity>("plane");
+			plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-		auto planeMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-			"plane_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
-			{}, 1.0f, {}, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
-		});
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-		auto renderable3D1 = std::make_unique<se::graphics::Renderable3D>(planeMesh, planeMaterial);
-		mGameData.graphicsManager->addRenderableEntity(plane.get(), std::move(renderable3D1));
+			auto stepPlane = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepPlane,
+				se::app::Material{
+					"plane_material",
+					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
+					{}, 1.0f, {}, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
+				},
+				programPBR
+			);
 
-		mEntities.push_back(std::move(plane));
+			auto techniquePlane = std::make_unique<se::graphics::Technique>();
+			techniquePlane->addStep(stepPlane);
+
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(planeMesh);
+			renderableMesh->addTechnique(std::move(techniquePlane));
+
+			mGameData.graphicsManager->addMeshEntity(plane.get(), std::move(renderableMesh));
+
+			mEntities.push_back(std::move(plane));
+		}
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = {
@@ -473,14 +538,26 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto tmpMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-				"tmp_material",
-				se::graphics::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
-				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-			});
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, tmpMaterial);
-			mGameData.graphicsManager->addRenderableEntity(cube.get(), std::move(renderable3D2));
+			auto stepCube = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepCube,
+				se::app::Material{
+					"tmp_material",
+					se::app::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
+					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				},
+				programPBR
+			);
+
+			auto techniqueCube = std::make_unique<se::graphics::Technique>();
+			techniqueCube->addStep(stepCube);
+
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(std::move(techniqueCube));
+
+			mGameData.graphicsManager->addMeshEntity(cube.get(), std::move(renderableMesh));
 
 			mEntities.push_back(std::move(cube));
 		}
@@ -489,11 +566,21 @@ namespace game {
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		{
-			auto redMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-				"tmp_material",
-				se::graphics::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
-				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-			});
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+
+			auto stepRed = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepRed,
+				se::app::Material{
+					"tmp_material",
+					se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
+					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				},
+				programPBR
+			);
+
+			auto techniqueRed = std::make_shared<se::graphics::Technique>();
+			techniqueRed->addStep(stepRed);
 
 			auto nonMovableCube = std::make_unique<se::app::Entity>("non-movable-cube");
 			nonMovableCube->position = glm::vec3(-50.0f, 0.0f, -40.0f);
@@ -506,8 +593,9 @@ namespace game {
 			mGameData.collisionManager->addEntity(nonMovableCube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(nonMovableCube.get(), std::move(rigidBody2));
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, redMaterial);
-			mGameData.graphicsManager->addRenderableEntity(nonMovableCube.get(), std::move(renderable3D2));
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(techniqueRed);
+			mGameData.graphicsManager->addMeshEntity(nonMovableCube.get(), std::move(renderableMesh));
 
 			mEntities.push_back(std::move(nonMovableCube));
 
@@ -526,8 +614,9 @@ namespace game {
 			mGameData.physicsManager->addEntity(gravityCube.get(), std::move(rigidBody3));
 			mGameData.physicsEngine->getForceManager().addRBForce(rb3Ptr, gravity);
 
-			auto renderable3D3 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, redMaterial);
-			mGameData.graphicsManager->addRenderableEntity(gravityCube.get(), std::move(renderable3D3));
+			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(techniqueRed);
+			mGameData.graphicsManager->addMeshEntity(gravityCube.get(), std::move(renderableMesh));
 
 			mEntities.push_back(std::move(gravityCube));
 		}
@@ -548,91 +637,154 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
-			auto tmpMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-				"tmp_material",
-				se::graphics::PBRMetallicRoughness{
-					glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
-				{}, 0.2f, 0.5f, {}
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+
+			auto stepSlice = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepSlice,
+				se::app::Material{
+					"tmp_material",
+					se::app::PBRMetallicRoughness{
+						glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
+						{}, 0.2f, 0.5f, {}
+					},
+					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-			});
+				programPBR
+			);
+
+			auto techniqueSlice = std::make_shared<se::graphics::Technique>();
+			techniqueSlice->addStep(stepSlice);
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh));
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(tmpGraphicsMesh, tmpMaterial);
-			mGameData.graphicsManager->addRenderableEntity(tubeSlice.get(), std::move(renderable3D2));
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(tmpGraphicsMesh);
+			renderableMesh->addTechnique(techniqueSlice);
+
+			mGameData.graphicsManager->addMeshEntity(tubeSlice.get(), std::move(renderableMesh));
 
 			mEntities.push_back(std::move(tubeSlice));
 		}
 
 		// Random cubes
-		for (std::size_t i = 0; i < kNumCubes; ++i) {
-			auto cube = std::make_unique<se::app::Entity>("random-cube-" + std::to_string(i));
-			cube->position = glm::ballRand(50.0f);
+		{
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
-			config2.linearDrag = 0.9f;
-			config2.angularDrag = 0.9f;
-			config2.frictionCoefficient = 0.5f;
-			auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
-			auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
-			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
-			mGameData.physicsEngine->getForceManager().addRBForce(rigidBody2.get(), gravity);
-			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
+			auto stepRandom = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepRandom,
+				se::app::Material{
+					"random",
+					se::app::PBRMetallicRoughness{ { 0.0f, 0.0f, 1.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
+					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+				},
+				programPBR
+			);
 
-			auto renderable3D2 = std::make_unique<se::graphics::Renderable3D>(cubeMesh, nullptr);
-			mGameData.graphicsManager->addRenderableEntity(cube.get(), std::move(renderable3D2));
+			auto techniqueRandom = std::make_shared<se::graphics::Technique>();
+			techniqueRandom->addStep(stepRandom);
 
-			mEntities.push_back(std::move(cube));
+			for (std::size_t i = 0; i < kNumCubes; ++i) {
+				auto cube = std::make_unique<se::app::Entity>("random-cube-" + std::to_string(i));
+				cube->position = glm::ballRand(50.0f);
+
+				se::physics::RigidBodyConfig config2(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
+				config2.linearDrag = 0.9f;
+				config2.angularDrag = 0.9f;
+				config2.frictionCoefficient = 0.5f;
+				auto rigidBody2 = std::make_unique<se::physics::RigidBody>(config2, se::physics::RigidBodyData());
+				auto collider2 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
+				mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
+				mGameData.physicsEngine->getForceManager().addRBForce(rigidBody2.get(), gravity);
+				mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
+
+				auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+				renderableMesh->addTechnique(techniqueRandom);
+
+				mGameData.graphicsManager->addMeshEntity(cube.get(), std::move(renderableMesh));
+
+				mEntities.push_back(std::move(cube));
+			}
 		}
 
 		// Lights
-		auto lightMaterial = mGameData.graphicsEngine->getMaterialRepository().add(se::graphics::Material{
-			"light_material",
-			se::graphics::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
-			{}, 1.0f, {}, 1.0f, {}, glm::vec3(5.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
-		});
+		{
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-		auto eL2 = std::make_unique<se::app::Entity>("point-light2");
-		eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
-		eL2->scale = glm::vec3(0.1f);
-		mGameData.graphicsManager->addLightEntity(eL2.get(), std::move(pointLight2));
-		mGameData.graphicsManager->addRenderableEntity(eL2.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
-		mEntities.push_back(std::move(eL2));
+			auto stepLight = mGameData.graphicsManager->createStep3D(programPBR, true);
+			se::app::TechniqueLoader::addMaterialBindables(
+				stepLight,
+				se::app::Material{
+					"light_material",
+					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
+					{}, 1.0f, {}, 1.0f, {}, glm::vec3(5.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
+				},
+				programPBR
+			);
 
-		auto eL3 = std::make_unique<se::app::Entity>("point-light3");
-		eL3->position = glm::vec3(2.0f, 10.0f, 5.0f);
-		eL3->scale = glm::vec3(0.1f);
-		mGameData.graphicsManager->addLightEntity(eL3.get(), std::move(pointLight3));
-		mGameData.graphicsManager->addRenderableEntity(eL3.get(), std::make_unique<se::graphics::Renderable3D>(cubeMesh, lightMaterial));
-		mEntities.push_back(std::move(eL3));
+			auto techniqueLight = std::make_shared<se::graphics::Technique>();
+			techniqueLight->addStep(stepLight);
+
+			auto eL2 = std::make_unique<se::app::Entity>("point-light2");
+			eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
+			eL2->scale = glm::vec3(0.1f);
+			mGameData.graphicsManager->addLightEntity(eL2.get(), std::move(pointLight2));
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(techniqueLight);
+			mGameData.graphicsManager->addMeshEntity(eL2.get(), std::move(renderableMesh));
+			mEntities.push_back(std::move(eL2));
+
+			auto eL3 = std::make_unique<se::app::Entity>("point-light3");
+			eL3->position = glm::vec3(2.0f, 10.0f, 5.0f);
+			eL3->scale = glm::vec3(0.1f);
+			mGameData.graphicsManager->addLightEntity(eL3.get(), std::move(pointLight3));
+			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(techniqueLight);
+			mGameData.graphicsManager->addMeshEntity(eL3.get(), std::move(renderableMesh));
+			mEntities.push_back(std::move(eL3));
+		}
 
 		// GLTF Scene
-		auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
-		mGameData.animationManager->addEntity(sceneEntity.get(), std::move(loadedScenes.scenes[0]->rootNode));
-		mEntities.push_back( std::move(sceneEntity) );
+		{
+			auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
+			mGameData.animationManager->addEntity(sceneEntity.get(), std::move(loadedScenes.scenes[0]->rootNode));
+			mEntities.push_back( std::move(sceneEntity) );
 
-		std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
-		std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
-		for (auto& e : loadedScenes.scenes[0]->entities) {
-			if (e.animationNode) {
-				auto entity = std::make_unique<se::app::Entity>(e.animationNode->getData().name);
-				mGameData.animationManager->addEntity(entity.get(), e.animationNode);
+			std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
+			std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
 
-				if (e.hasRenderable3Ds) {
-					if (e.hasSkin) {
-						for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
-							mGameData.graphicsManager->addRenderableEntity(entity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]), sharedSkins[e.skinIndex]);
+			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
+			for (auto& material : loadedScenes.materials) {
+				auto step3D = mGameData.graphicsManager->createStep3D(programPBR, true);
+				se::app::TechniqueLoader::addMaterialBindables(step3D, *material, programPBR);
+				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addStep(step3D);
+			}
+
+			for (auto& e : loadedScenes.scenes[0]->entities) {
+				if (e.animationNode) {
+					auto entity = std::make_unique<se::app::Entity>(e.animationNode->getData().name);
+					mGameData.animationManager->addEntity(entity.get(), e.animationNode);
+
+					if (e.hasPrimitives) {
+						if (e.hasSkin) {
+							for (auto [iMesh, iMaterial] : loadedScenes.primitives[e.primitivesIndex]) {
+								auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(std::move(loadedScenes.meshes[iMesh]));
+								renderableMesh->addTechnique(techniques[iMaterial]);
+								mGameData.graphicsManager->addMeshEntity(entity.get(), std::move(renderableMesh), sharedSkins[e.skinIndex]);
+							}
+						}
+						else {
+							for (auto [iMesh, iMaterial] : loadedScenes.primitives[e.primitivesIndex]) {
+								auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(std::move(loadedScenes.meshes[iMesh]));
+								renderableMesh->addTechnique(techniques[iMaterial]);
+								mGameData.graphicsManager->addMeshEntity(entity.get(), std::move(renderableMesh));
+							}
 						}
 					}
-					else {
-						for (std::size_t iRenderable3D : loadedScenes.renderable3DIndices[e.renderable3DsIndex]) {
-							mGameData.graphicsManager->addRenderableEntity(entity.get(), std::move(loadedScenes.renderable3Ds[iRenderable3D]));
-						}
-					}
+
+					mEntities.push_back( std::move(entity) );
 				}
-
-				mEntities.push_back( std::move(entity) );
 			}
 		}
 
@@ -667,11 +819,11 @@ namespace game {
 			mGameData.audioManager->removeEntity(entity.get());
 		}
 
-		mGameData.layer2D->removeRenderable2D(mLogoTexture, 0);
+		mGameData.graphicsEngine->removeRenderable(mLogoTexture);
 		delete mLogoTexture;
-		mGameData.layer2D->removeRenderable2D(mReticleTexture, 0);
+		mGameData.graphicsEngine->removeRenderable(mReticleTexture);
 		delete mReticleTexture;
-		mGameData.layer2D->removeRenderableText(mPickText, 0);
+		mGameData.graphicsEngine->removeRenderable(mPickText);
 		delete mPickText;
 
 		mGameData.eventManager->unsubscribe(this, se::app::Topic::Key);

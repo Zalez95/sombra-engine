@@ -1,78 +1,46 @@
 #ifndef RENDERABLE_2D_H
 #define RENDERABLE_2D_H
 
-#include <glm/glm.hpp>
-#include "../core/Texture.h"
+#include "../Renderable.h"
 
 namespace se::graphics {
 
+	class Renderer2D;
+
+
 	/**
-	 * Class Renderable2D, it's a 2D graphic entity that holds a position,
-	 * size and texture
+	 * Class Renderable2D, it's a 2D Renderable that can be drawn with a
+	 * Technique
 	 */
-	class Renderable2D
+	class Renderable2D : public Renderable
 	{
-	private:	// Nested types
-		using TextureRef = Texture::Repository::Reference;
-
 	private:	// Attributes
-		/** The position in pixels of the 2D element */
-		glm::vec2 mPosition;
-
-		/** The size in pixels of the 2D element */
-		glm::vec2 mSize;
-
-		/** The RGBA color of the 2D element */
-		glm::vec4 mColor;
-
-		/** The texture of the 2D element */
-		TextureRef mTexture;
+		/** The z-index used for drawing the Renderable2D on top of other
+		 * Renderable2Ds. The smaller the value the further back it will
+		 * appear. */
+		unsigned char mZIndex;
 
 	public:		// Functions
-		/** Creates a new Renderable2D
+		/** Creates a new Renderable2D */
+		Renderable2D() : mZIndex(0) {};
+
+		/** Class destructor */
+		virtual ~Renderable2D() = default;
+
+		/** @return	the z-index of the Renderable2D */
+		unsigned char getZIndex() const { return mZIndex; };
+
+		/** Sets the z-index of the Renderable2D
 		 *
-		 * @param	position the 2D position in pixels of the Renderable2D
-		 * @param	size the 2D size in pixels of the Renderable2D
-		 * @param	color the RGBA color of the Renderable2D
-		 * @param	texture a pointer to the texture of the Renderable2D */
-		Renderable2D(
-			const glm::vec2& position, const glm::vec2& size,
-			const glm::vec4& color = glm::vec4(1.0f),
-			const TextureRef texture = TextureRef()
-		) :	mPosition(position), mSize(size),
-			mColor(color), mTexture(texture) {};
+		 * @param	zIndex the new z-index of the Renderable2D */
+		virtual void setZIndex(unsigned char zIndex) { mZIndex = zIndex; };
 
-		/** @return	the position in pixels of the Renderable2D */
-		const glm::vec2& getPosition() const { return mPosition; };
-
-		/** @return	the size in pixels of the Renderable2D */
-		const glm::vec2& getSize() const { return mSize; };
-
-		/** @return	the RGBA color of the Renderable2D */
-		const glm::vec4& getColor() const { return mColor; };
-
-		/** @return	the texture of the Renderable 2D */
-		TextureRef getTexture() const { return mTexture; };
-
-		/** Sets the position of the Renderable2D
+		/** Submits the vertices of the current Renderable2D to the given
+		 * Renderer2D
 		 *
-		 * @param	position the new position in pixels of the Renderable2D */
-		void setPosition(const glm::vec2& position) { mPosition = position; };
-
-		/** Sets the size of the Renderable2D
-		 *
-		 * @param	size the new size in pixels of the Renderable2D */
-		void setSize(const glm::vec2& size) { mSize = size; };
-
-		/** Sets the color of the Renderable2D
-		 *
-		 * @param	color the new RGBA color of the Renderable2D */
-		void setColor(const glm::vec4& color) { mColor = color; };
-
-		/** Sets the texture of the Renderable2D
-		 *
-		 * @param	texture the new texture of the Renderable2D */
-		void setTexture(TextureRef texture) { mTexture = texture; };
+		 * @param	renderer the renderer where the Renderable2D vertices will
+		 *			be submitted */
+		virtual void submitVertices(Renderer2D& renderer) const = 0;
 	};
 
 }

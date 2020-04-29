@@ -12,6 +12,8 @@ namespace se::graphics {
 	class Shader
 	{
 	private:	// Attributes
+		friend class Program;
+
 		/** The id of the Shader */
 		unsigned int mShaderId;
 
@@ -32,9 +34,6 @@ namespace se::graphics {
 		/** Assignment operator */
 		Shader& operator=(const Shader& other) = delete;
 		Shader& operator=(Shader&& other);
-
-		/** @return the id of the Shader */
-		inline unsigned int getShaderId() const { return mShaderId; };
 	};
 
 }

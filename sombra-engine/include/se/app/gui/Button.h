@@ -1,16 +1,15 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-#include <memory>
 #include <functional>
+#include "../../graphics/2D/RenderableSprite.h"
 #include "IComponent.h"
 #include "IBounds.h"
-#include "../../graphics/2D/Renderable2D.h"
-#include "../../graphics/2D/Layer2D.h"
 
 namespace se::app {
 
 	class Label;
+	class GUIManager;
 
 
 	/**
@@ -23,15 +22,14 @@ namespace se::app {
 		using IBoundsUPtr = std::unique_ptr<IBounds>;
 
 	private:	// Attributes
-		/** A pointer to the Layer2D where @see Renderable2D will be submitted
-		 * for drawing the Button */
-		graphics::Layer2D* mLayer2D;
+		/** A pointer to the GUIManager used for drawing the Button */
+		GUIManager* mGUIManager;
 
 		/** The bounds of the Button for checking if the mouse is over it */
 		IBoundsUPtr mBounds;
 
-		/** The Renderable2D used for drawing of the Button */
-		graphics::Renderable2D mRenderable2D;
+		/** The RenderableSprite used for drawing of the Button */
+		graphics::RenderableSprite mSprite;
 
 		/** If the mouse is over or not */
 		bool mIsOver;
@@ -51,11 +49,11 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new Button
 		 *
-		 * @param	layer2D a pointer to the Layer2D where the button will be
-		 *			drawn
+		 * @param	guiManager a pointer to the GUIManager used for drawing
+		 *			the Button
 		 * @param	bounds a pointer to the Bounds object used for checking if
 		 *			the mouse is over the button or not */
-		Button(graphics::Layer2D* layer2D, IBoundsUPtr bounds);
+		Button(GUIManager* guiManager, IBoundsUPtr bounds);
 		Button(const Button& other);
 		Button(Button&& other) = default;
 

@@ -2,31 +2,32 @@
 #define RENDERABLE_TEXT_H
 
 #include "Font.h"
+#include "Renderable2D.h"
 
 namespace se::graphics {
 
 	/**
-	 * Class RenderableText, it's a 2D graphic entity used to render text.
+	 * Class RenderableText, it's a Renderable2D used for rendering text.
 	 * It that holds its position, size and Font
 	 */
-	class RenderableText
+	class RenderableText : public Renderable2D
 	{
 	private:	// Nested types
-		using FontRef = Font::Repository::Reference;
+		using FontSPtr = std::shared_ptr<Font>;
 
 	private:	// Attributes
-		/** The position in pixels of the Text */
+		/** The position in pixels of the RenderableText */
 		glm::vec2 mPosition;
 
-		/** The maximum size in pixels of each character in the Text
+		/** The maximum size in pixels of each character in the RenderableText
 		 * @note	this value will be used for calculating the scale to apply
 		 *			to each character depending on its own size in the Font */
 		glm::vec2 mSize;
 
-		/** The font of the Text */
-		FontRef mFont;
+		/** The font of the RenderableText */
+		FontSPtr mFont;
 
-		/** The RGBA color of the Text */
+		/** The RGBA color of the RenderableText */
 		glm::vec4 mColor;
 
 		/** The text to render */
@@ -43,27 +44,11 @@ namespace se::graphics {
 		 * @param	text the text to render of the RenderableText */
 		RenderableText(
 			const glm::vec2& position, const glm::vec2& size,
-			FontRef font = FontRef(),
+			FontSPtr font = nullptr,
 			const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f },
 			const std::string text = ""
 		) : mPosition(position), mSize(size),
 			mFont(font), mColor(color), mText(text) {};
-
-		/** @return	the position in pixels of the RenderableText */
-		const glm::vec2& getPosition() const { return mPosition; };
-
-		/** @return	the maximum size in pixels of each character in the
-		 *			RenderableText */
-		const glm::vec2& getSize() const { return mSize; };
-
-		/** @return	a pointer to the font of the RenderableText */
-		FontRef getFont() const { return mFont; };
-
-		/** @return	the RGBA color of the RenderableText */
-		const glm::vec4& getColor() const { return mColor; };
-
-		/** @return	the string text of the RenderableText */
-		const std::string& getText() const { return mText; };
 
 		/** Sets the position of the RenderableText
 		 *
@@ -79,7 +64,7 @@ namespace se::graphics {
 		/** Sets the font of the RenderableText
 		 *
 		 * @param	font a Reference to the Font of the RenderableText */
-		void setFont(FontRef font) { mFont = font; };
+		void setFont(FontSPtr font) { mFont = font; };
 
 		/** Sets the color of the RenderableText
 		 *
@@ -90,6 +75,13 @@ namespace se::graphics {
 		 *
 		 * @param	text the new text to render */
 		void setText(const std::string& text) { mText = text; };
+
+		/** Submits the vertices of the current RenderableText to the given
+		 * Renderer2D
+		 *
+		 * @param	renderer the renderer where the RenderableText vertices will
+		 *			be submitted */
+		virtual void submitVertices(Renderer2D& renderer) const override;
 	};
 
 }

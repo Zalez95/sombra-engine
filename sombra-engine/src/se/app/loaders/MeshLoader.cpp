@@ -1,7 +1,7 @@
 #include <array>
 #include <glm/gtc/constants.hpp>
 #include "se/app/loaders/MeshLoader.h"
-#include "se/app/RawMesh.h"
+#include "se/app/graphics/RawMesh.h"
 #include "se/graphics/core/VertexBuffer.h"
 #include "se/graphics/core/IndexBuffer.h"
 #include "se/graphics/core/VertexArray.h"
@@ -26,42 +26,42 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.positions.data(), rawMesh.positions.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::PositionAttribute), TypeId::Float, false, 3, 0);
+			vao.setVertexAttribute(MeshAttributes::PositionAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.normals.empty()) {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(rawMesh.normals.data(), rawMesh.normals.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::NormalAttribute), TypeId::Float, false, 3, 0);
+			vao.setVertexAttribute(MeshAttributes::NormalAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.tangents.empty()) {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(rawMesh.tangents.data(), rawMesh.tangents.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TangentAttribute), TypeId::Float, false, 3, 0);
+			vao.setVertexAttribute(MeshAttributes::TangentAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.texCoords.empty()) {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(rawMesh.texCoords.data(), rawMesh.texCoords.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::TexCoordAttribute0), TypeId::Float, false, 2, 0);
+			vao.setVertexAttribute(MeshAttributes::TexCoordAttribute0, TypeId::Float, false, 2, 0);
 		}
 		if (!rawMesh.jointIndices.empty()) {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointIndexAttribute), TypeId::UnsignedShort, false, 4, 0);
+			vao.setVertexAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, false, 4, 0);
 		}
 		if (!rawMesh.jointWeights.empty()) {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(static_cast<unsigned int>(MeshAttributes::JointWeightAttribute), TypeId::Float, false, 4, 0);
+			vao.setVertexAttribute(MeshAttributes::JointWeightAttribute, TypeId::Float, false, 4, 0);
 		}
 
 		IndexBuffer ibo;
@@ -117,7 +117,7 @@ namespace se::app {
 		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
 		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
 
-		std::unordered_map<int, int> vertexMap;
+		std::unordered_map<std::size_t, std::size_t> vertexMap;
 		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
 			glm::vec3 normal = collision::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
 
@@ -135,7 +135,7 @@ namespace se::app {
 			utils::FixedVector<int, 3> faceIndices;
 			collision::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
 			for (int iVertex : faceIndices) {
-				rawMesh.faceIndices.push_back(vertexMap[iVertex]);
+				rawMesh.faceIndices.push_back(static_cast<unsigned short>(vertexMap[iVertex]));
 			}
 		}
 

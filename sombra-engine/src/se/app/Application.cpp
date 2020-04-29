@@ -47,7 +47,7 @@ namespace se::app {
 			// Graphics
 			mGraphicsEngine = new graphics::GraphicsEngine(graphicsConfig);
 			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager);
-			mGUIManager = new GUIManager(*mEventManager, { windowConfig.width, windowConfig.height });
+			mGUIManager = new GUIManager(*mEventManager, *mGraphicsManager, { windowConfig.width, windowConfig.height });
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);
@@ -179,16 +179,16 @@ namespace se::app {
 		auto collisionTask = taskSet.createTask([&]() { mCollisionManager->update(deltaTime); });
 		auto constraintsTask = taskSet.createTask([&]() { mPhysicsManager->doConstraints(deltaTime); });
 		auto audioTask = taskSet.createTask([&]() { mAudioManager->update(); });
-		auto graphicsTask = taskSet.createTask([&]() { mGraphicsManager->update(); });
 
 		taskSet.depends(collisionTask, dynamicsTask);
 		taskSet.depends(constraintsTask, collisionTask);
 		taskSet.depends(audioTask, constraintsTask);
 		taskSet.depends(audioTask, animationTask);
-		taskSet.depends(graphicsTask, constraintsTask);
-		taskSet.depends(graphicsTask, animationTask);
 
 		taskSet.submitAndWait();
+
+		// The GraphicsManager update function must be called from thread 0
+		mGraphicsManager->update();
 
 		SOMBRA_DEBUG_LOG << "End";
 	}

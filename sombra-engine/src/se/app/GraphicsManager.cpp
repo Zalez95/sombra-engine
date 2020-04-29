@@ -1,24 +1,84 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
-#include "se/app/Entity.h"
 #include "se/app/events/ResizeEvent.h"
 #include "se/utils/Log.h"
+#include "se/graphics/2D/Step2D.h"
+#include "se/graphics/3D/Step3D.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/core/GraphicsOperations.h"
 
 namespace se::app {
+
+	struct ShaderPointLight
+	{
+		glm::vec3 color;
+		float intensity;
+		float inverseRange;
+		glm::vec3 padding = glm::vec3(0.0f);
+	};
+
+
+	struct GraphicsManager::Impl
+	{
+		struct RenderableMeshData
+		{
+			RenderableMeshUPtr renderable;
+			std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
+			SkinSPtr skin;
+			std::vector<std::shared_ptr<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>> jointMatrices;
+
+			RenderableMeshData(RenderableMeshUPtr renderable) :
+				renderable(std::move(renderable)), skin(nullptr) {};
+		};
+
+		struct RenderableTerrainData
+		{
+			RenderableTerrainUPtr renderable;
+			std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
+
+			RenderableTerrainData(RenderableTerrainUPtr renderable) :
+				renderable(std::move(renderable)) {};
+		};
+
+		struct StepData
+		{
+			std::shared_ptr<graphics::Step> step;
+			std::shared_ptr<graphics::Program> program;
+			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> viewMatrix;
+			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> projectionMatrix;
+			std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numPointLights;
+			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxPointLights>> pointLightsPositions;
+			std::shared_ptr<graphics::UniformBlock> lightsBlock;
+		};
+
+		std::map<Entity*, CameraUPtr> cameraEntities;
+		std::map<Entity*, LightUPtr> lightEntities;
+		std::multimap<Entity*, RenderableMeshData> renderableMeshEntities;
+		std::map<Entity*, RenderableTerrainData> renderableTerrainEntities;
+
+		Camera* activeCamera;
+		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
+		std::vector<StepData> stepsData;
+	};
+
 
 	GraphicsManager::GraphicsManager(graphics::GraphicsEngine& graphicsEngine, EventManager& eventManager) :
 		mGraphicsEngine(graphicsEngine), mEventManager(eventManager)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
-		mGraphicsEngine.addLayer(&mLayer3D);
-		addLayer(&mLayer3D);
+
+		mImpl = std::make_unique<Impl>();
+
+		// Reserve memory for the UniformBuffers
+		mImpl->lightsBuffer = std::make_shared<graphics::UniformBuffer>();
+		utils::FixedVector<ShaderPointLight, kMaxPointLights> lightsBufferData(kMaxPointLights);
+		mImpl->lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
 	}
 
 
 	GraphicsManager::~GraphicsManager()
 	{
-		mGraphicsEngine.removeLayer(&mLayer3D);
 		mEventManager.unsubscribe(this, Topic::Resize);
 	}
 
@@ -26,30 +86,6 @@ namespace se::app {
 	void GraphicsManager::notify(const IEvent& event)
 	{
 		tryCall(&GraphicsManager::onResizeEvent, event);
-	}
-
-
-	void GraphicsManager::addLayer(graphics::ILayer* layer)
-	{
-		if (!layer) {
-			SOMBRA_WARN_LOG << "ILayer " << layer << " couldn't be added";
-			return;
-		}
-
-		layer->setViewportSize( mGraphicsEngine.getViewportSize() );
-		mLayers.push_back(layer);
-		SOMBRA_INFO_LOG << "Layer " << layer << " added successfully";
-	}
-
-
-	void GraphicsManager::removeLayer(graphics::ILayer* layer)
-	{
-		auto itLayer = std::find(mLayers.begin(), mLayers.end(), layer);
-		if (itLayer != mLayers.end()) {
-			mLayer3D.setCamera(nullptr);
-			mLayers.erase(itLayer);
-			SOMBRA_INFO_LOG << "Layer " << layer << " removed successfully";
-		}
 	}
 
 
@@ -61,81 +97,15 @@ namespace se::app {
 		}
 
 		// The Camera initial data is overridden by the entity one
-		graphics::Camera* cPtr = camera.get();
-		cPtr->setPosition(entity->position);
-		cPtr->setTarget(entity->position + glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
-		cPtr->setUp({ 0.0f, 1.0f, 0.0f });
+		camera->setPosition(entity->position);
+		camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
+		camera->setUp({ 0.0f, 1.0f, 0.0f });
 
 		// Add the Camera
-		mLayer3D.setCamera(cPtr);
-		mCameraEntities.emplace(entity, std::move(camera));
+		Camera* cPtr = camera.get();
+		mImpl->cameraEntities.emplace(entity, std::move(camera));
+		mImpl->activeCamera = cPtr;
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << cPtr << " added successfully";
-	}
-
-
-	void GraphicsManager::addRenderableEntity(Entity* entity, Renderable3DUPtr renderable3D, SkinSPtr skin)
-	{
-		if (!entity || !renderable3D) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Renderable3D";
-			return;
-		}
-
-		// The Renderable3D initial data is overridden by the entity one
-		graphics::Renderable3D* rPtr = renderable3D.get();
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
-		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
-		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
-		rPtr->setModelMatrix(translation * rotation * scale);
-		if (skin) {
-			rPtr->setJointMatrices( calculateJointMatrices(*skin, rPtr->getModelMatrix()) );
-		}
-
-		// Add the Renderable3D
-		mLayer3D.addRenderable3D(rPtr);
-		mRenderable3DEntities.emplace(entity, std::move(renderable3D));
-		if (skin) {
-			mRenderable3DSkins.emplace(rPtr, skin);
-			SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " and skin " << skin.get() << " added successfully";
-		}
-		else {
-			SOMBRA_INFO_LOG << "Entity " << entity << " with Renderable3D " << rPtr << " added successfully";
-		}
-	}
-
-
-	void GraphicsManager::addSkyEntity(Entity* entity, Renderable3DUPtr renderable3D)
-	{
-		if (!entity || !renderable3D) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Sky Renderable3D";
-			return;
-		}
-
-		// The Renderable3D initial data is overridden by the entity one
-		graphics::Renderable3D* rPtr = renderable3D.get();
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
-		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
-		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
-		rPtr->setModelMatrix(translation * rotation * scale);
-
-		// Add the Renderable3D
-		mLayer3D.setSky(rPtr);
-		mSkyEntities.emplace(entity, std::move(renderable3D));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Sky Renderable3D " << rPtr << " added successfully";
-	}
-
-
-	void GraphicsManager::addTerrainEntity(Entity* entity, RenderableTerrainUPtr renderable)
-	{
-		if (!entity || !renderable) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RenderableTerrain";
-			return;
-		}
-
-		// Add the Renderable3D
-		graphics::RenderableTerrain* rPtr = renderable.get();
-		mLayer3D.setTerrain(rPtr);
-		mRenderableTerrainEntities.emplace(entity, std::move(renderable));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << rPtr << " added successfully";
 	}
 
 
@@ -147,60 +117,210 @@ namespace se::app {
 		}
 
 		// The PointLight initial data is overridden by the entity one
-		graphics::ILight* lPtr = light.get();
-		if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(lPtr))) {
+		ILight* lPtr = light.get();
+		if (auto dLight = dynamic_cast<DirectionalLight*>(lPtr)) {
 			dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 		}
-		else if (auto pLight = (dynamic_cast<graphics::PointLight*>(lPtr))) {
+		else if (auto pLight = dynamic_cast<PointLight*>(lPtr)) {
 			pLight->position = entity->position;
 		}
-		else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(lPtr))) {
+		else if (auto sLight = dynamic_cast<SpotLight*>(lPtr)) {
 			sLight->position = entity->position;
 			sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 		}
 
 		// Add the ILight
-		mLayer3D.addLight(lPtr);
-		mLightEntities.emplace(entity, std::move(light));
+		mImpl->lightEntities.emplace(entity, std::move(light));
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ILight " << lPtr << " added successfully";
+	}
+
+
+	GraphicsManager::StepSPtr GraphicsManager::createStep2D(ProgramSPtr program)
+	{
+		auto step = std::make_unique<graphics::Step2D>(mGraphicsEngine.getRenderer2D());
+
+		step->addBindable(program)
+			.addBindable(std::make_shared<graphics::BlendingOperation>(true))
+			.addBindable(std::make_shared<graphics::DepthTestOperation>(false));
+
+		for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
+			utils::ArrayStreambuf<char, 64> aStreambuf;
+			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
+		}
+
+		step->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
+			"uProjectionMatrix", *program,
+			[this]() {
+				auto viewportSize = mGraphicsEngine.getViewportSize();
+				return glm::ortho(0.0f, static_cast<float>(viewportSize.x), static_cast<float>(viewportSize.y), 0.0f, -1.0f, 1.0f);
+			}
+		));
+
+		return step;
+	}
+
+
+	GraphicsManager::StepSPtr GraphicsManager::createStep3D(ProgramSPtr program, bool hasLights)
+	{
+		auto step = std::make_shared<graphics::Step3D>(mGraphicsEngine.getRenderer3D());
+
+		auto& stepData = mImpl->stepsData.emplace_back();
+		stepData.step = step;
+		stepData.program = program;
+
+		stepData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
+		stepData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
+		if (mImpl->activeCamera) {
+			stepData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
+			stepData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+		}
+
+		step->addBindable(program)
+			.addBindable(stepData.viewMatrix)
+			.addBindable(stepData.projectionMatrix);
+
+		if (hasLights) {
+			stepData.numPointLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumPointLights", *program);
+			stepData.pointLightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, GraphicsManager::kMaxPointLights>>("uPointLightsPositions", *program);
+			stepData.lightsBlock = std::make_shared<graphics::UniformBlock>("LightsBlock", *program);
+
+			step->addBindable(mImpl->lightsBuffer)
+				.addBindable(stepData.numPointLights)
+				.addBindable(stepData.pointLightsPositions)
+				.addBindable(stepData.lightsBlock);
+		}
+
+		return step;
+	}
+
+
+	void GraphicsManager::addMeshEntity(Entity* entity, RenderableMeshUPtr renderable, SkinSPtr skin)
+	{
+		if (!entity || !renderable) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Mesh";
+			return;
+		}
+
+		graphics::RenderableMesh* rPtr = renderable.get();
+		auto& meshData = mImpl->renderableMeshEntities.emplace(entity, std::move(renderable))->second;
+
+		// Add the RenderableMesh model matrix uniform
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
+		glm::mat4 modelMatrix	= translation * rotation * scale;
+
+		rPtr->processTechniques([&](auto technique) { technique->processSteps([&](auto step) {
+			auto itStepData = std::find_if(mImpl->stepsData.begin(), mImpl->stepsData.end(), [&](const Impl::StepData& stepData) {
+				return stepData.step == step;
+			});
+			if (itStepData != mImpl->stepsData.end()) {
+				rPtr->addBindable(
+					meshData.modelMatrix.emplace_back(
+						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itStepData->program, modelMatrix)
+					)
+				);
+
+				if (skin) {
+					auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
+					std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(kMaxJoints));
+
+					rPtr->addBindable(
+						meshData.jointMatrices.emplace_back(
+							std::make_shared<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>(
+								"uJointMatrices", *itStepData->program, jointMatrices.data(), numJoints
+							)
+						)
+					);
+				}
+			}
+			else {
+				SOMBRA_WARN_LOG << "RenderableMesh has an Step " << step << " not added to the GraphicsManager";
+			}
+		}); });
+
+		mGraphicsEngine.addRenderable(rPtr);
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableMesh " << rPtr << " added successfully";
+	}
+
+
+	void GraphicsManager::addTerrainEntity(Entity* entity, RenderableTerrainUPtr renderable)
+	{
+		if (!entity || !renderable) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RenderableTerrain";
+			return;
+		}
+
+		graphics::RenderableTerrain* rPtr = renderable.get();
+		auto pair = mImpl->renderableTerrainEntities.emplace(entity, std::move(renderable));
+		if (!pair.second) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " already has a RenderableTerrain";
+			return;
+		}
+
+		auto& terrainData = pair.first->second;
+		if (mImpl->activeCamera) {
+			rPtr->setHighestLodLocation(mImpl->activeCamera->getPosition());
+		}
+
+		// Add the RenderableTerrain model matrix uniform
+		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+		glm::mat4 modelMatrix	= translation * rotation;
+
+		rPtr->processTechniques([&](auto technique) { technique->processSteps([&](auto step) {
+			auto itStepData = std::find_if(mImpl->stepsData.begin(), mImpl->stepsData.end(), [&](const Impl::StepData& stepData) {
+				return stepData.step == step;
+			});
+			if (itStepData != mImpl->stepsData.end()) {
+				rPtr->addBindable(
+					terrainData.modelMatrix.emplace_back(
+						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itStepData->program, modelMatrix)
+					)
+				);
+			}
+			else {
+				SOMBRA_WARN_LOG << "RenderableTerrain has an Step " << step << " not added to the GraphicsManager";
+			}
+		}); });
+
+		mGraphicsEngine.addRenderable(rPtr);
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << rPtr << " added successfully";
 	}
 
 
 	void GraphicsManager::removeEntity(Entity* entity)
 	{
-		auto itCamera = mCameraEntities.find(entity);
-		if (itCamera != mCameraEntities.end()) {
-			mLayer3D.setCamera(nullptr);
-			mCameraEntities.erase(itCamera);
+		auto itCamera = mImpl->cameraEntities.find(entity);
+		if (itCamera != mImpl->cameraEntities.end()) {
+			if (itCamera->second.get() == mImpl->activeCamera) {
+				mImpl->activeCamera = nullptr;
+			}
+			mImpl->cameraEntities.erase(itCamera);
 			SOMBRA_INFO_LOG << "Camera Entity " << entity << " removed successfully";
 		}
 
-		auto [itRenderable3DBegin, itRenderable3DEnd] = mRenderable3DEntities.equal_range(entity);
-		for (auto itRenderable3D = itRenderable3DBegin; itRenderable3D != itRenderable3DEnd;) {
-			mLayer3D.removeRenderable3D(itRenderable3D->second.get());
-			itRenderable3D = mRenderable3DEntities.erase(itRenderable3D);
-			SOMBRA_INFO_LOG << "Renderable3D Entity " << entity << " removed successfully";
-		}
-
-		auto itSky = mSkyEntities.find(entity);
-		if (itSky != mSkyEntities.end()) {
-			mLayer3D.setSky(nullptr);
-			mSkyEntities.erase(itSky);
-			SOMBRA_INFO_LOG << "Sky Renderable3D Entity " << entity << " removed successfully";
-		}
-
-		auto itRenderableTerrain = mRenderableTerrainEntities.find(entity);
-		if (itRenderableTerrain != mRenderableTerrainEntities.end()) {
-			mLayer3D.setTerrain(nullptr);
-			mRenderableTerrainEntities.erase(itRenderableTerrain);
-			SOMBRA_INFO_LOG << "RenderableTerrain Entity " << entity << " removed successfully";
-		}
-
-		auto itLight = mLightEntities.find(entity);
-		if (itLight != mLightEntities.end()) {
-			mLayer3D.removeLight(itLight->second.get());
-			mLightEntities.erase(itLight);
+		auto itLight = mImpl->lightEntities.find(entity);
+		if (itLight != mImpl->lightEntities.end()) {
+			mImpl->lightEntities.erase(itLight);
 			SOMBRA_INFO_LOG << "ILight Entity " << entity << " removed successfully";
+		}
+
+		auto [itRMeshBegin, itRMeshEnd] = mImpl->renderableMeshEntities.equal_range(entity);
+		for (auto itRMesh = itRMeshBegin; itRMesh != itRMeshEnd;) {
+			mGraphicsEngine.removeRenderable(itRMesh->second.renderable.get());
+			itRMesh = mImpl->renderableMeshEntities.erase(itRMesh);
+			SOMBRA_INFO_LOG << "Mesh Entity " << entity << " removed successfully";
+		}
+
+		auto itRenderableTerrain = mImpl->renderableTerrainEntities.find(entity);
+		if (itRenderableTerrain != mImpl->renderableTerrainEntities.end()) {
+			mGraphicsEngine.removeRenderable(itRenderableTerrain->second.renderable.get());
+			mImpl->renderableTerrainEntities.erase(itRenderableTerrain);
+			SOMBRA_INFO_LOG << "RenderableTerrain Entity " << entity << " removed successfully";
 		}
 	}
 
@@ -211,65 +331,106 @@ namespace se::app {
 
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 		bool activeCameraUpdated = false;
-		for (auto& pair : mCameraEntities) {
-			Entity* entity = pair.first;
-			graphics::Camera* camera = pair.second.get();
-
+		for (auto& [entity, camera] : mImpl->cameraEntities) {
 			if (entity->updated.any()) {
 				camera->setPosition(entity->position);
 				camera->setTarget(entity->position + glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
 				camera->setUp({ 0.0f, 1.0f, 0.0f });
 
-				if (camera == mLayer3D.getCamera()) {
+				if (camera.get() == mImpl->activeCamera) {
 					activeCameraUpdated = true;
 				}
 			}
 		}
 
-		SOMBRA_DEBUG_LOG << "Updating the Renderable3Ds";
-		for (auto& pair : mRenderable3DEntities) {
+		SOMBRA_DEBUG_LOG << "Updating the ILights";
+		bool pointLightsUpdated = false;
+		for (auto& pair : mImpl->lightEntities) {
 			Entity* entity = pair.first;
-			graphics::Renderable3D* renderable3D = pair.second.get();
+			ILight* light = pair.second.get();
 
+			if (entity->updated.any()) {
+				if (auto dLight = (dynamic_cast<DirectionalLight*>(light))) {
+					dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
+				}
+				else if (auto pLight = (dynamic_cast<PointLight*>(light))) {
+					pLight->position = entity->position;
+					pointLightsUpdated = true;
+				}
+				else if (auto sLight = (dynamic_cast<SpotLight*>(light))) {
+					sLight->position = entity->position;
+					sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
+				}
+			}
+		}
+
+		SOMBRA_DEBUG_LOG << "Updating the Meshes";
+		for (auto& [entity, meshData] : mImpl->renderableMeshEntities) {
 			if (entity->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
 				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
-				renderable3D->setModelMatrix(translation * rotation * scale);
-			}
+				glm::mat4 modelMatrix	= translation * rotation * scale;
 
-			// Set the joint matrices of the skeletal animation
-			auto itSkin = mRenderable3DSkins.find(renderable3D);
-			if (itSkin != mRenderable3DSkins.end()) {
-				const Skin& skin = *itSkin->second;
-				renderable3D->setJointMatrices( calculateJointMatrices(skin, renderable3D->getModelMatrix()) );
+				for(auto& uniform : meshData.modelMatrix) {
+					uniform->setValue(modelMatrix);
+				}
+
+				if (meshData.skin) {
+					auto jointMatrices = calculateJointMatrices(*meshData.skin, modelMatrix);
+					std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(kMaxJoints));
+
+					for(auto& uniform : meshData.jointMatrices) {
+						uniform->setValue(jointMatrices.data(), numJoints);
+					}
+				}
 			}
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the RenderableTerrains";
-		for (auto& pair : mRenderableTerrainEntities) {
-			graphics::RenderableTerrain* renderableTerrain = pair.second.get();
+		for (auto& [entity, terrainData] : mImpl->renderableTerrainEntities) {
+			if (entity->updated.any()) {
+				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), entity->position);
+				glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
+				glm::mat4 modelMatrix	= translation * rotation;
+
+				for(auto& uniform : terrainData.modelMatrix) {
+					uniform->setValue(modelMatrix);
+				}
+			}
 
 			if (activeCameraUpdated) {
-				renderableTerrain->update(*mLayer3D.getCamera());
+				terrainData.renderable->setHighestLodLocation(mImpl->activeCamera->getPosition());
 			}
 		}
 
-		SOMBRA_DEBUG_LOG << "Updating the ILights";
-		for (auto& pair : mLightEntities) {
-			Entity* entity = pair.first;
-			graphics::ILight* light = pair.second.get();
+		SOMBRA_DEBUG_LOG << "Updating the Steps";
+		if (activeCameraUpdated) {
+			for (auto& stepData : mImpl->stepsData) {
+				stepData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
+				stepData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+			}
+		}
 
-			if (entity->updated.any()) {
-				if (auto dLight = (dynamic_cast<graphics::DirectionalLight*>(light))) {
-					dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
+		if (pointLightsUpdated) {
+			unsigned int uNumPointLights = 0;
+			utils::FixedVector<ShaderPointLight, kMaxPointLights> uPointLights;
+			utils::FixedVector<glm::vec3, kMaxPointLights> uPointLightsPositions;
+
+			for (auto& pair : mImpl->lightEntities) {
+				const PointLight* pLight = dynamic_cast<const PointLight*>(pair.second.get());
+				if (pLight && (uNumPointLights < kMaxPointLights)) {
+					uPointLights.push_back({ pLight->color, pLight->intensity, pLight->inverseRange });
+					uPointLightsPositions.push_back(pLight->position);
+					uNumPointLights++;
 				}
-				else if (auto pLight = (dynamic_cast<graphics::PointLight*>(light))) {
-					pLight->position = entity->position;
-				}
-				else if (auto sLight = (dynamic_cast<graphics::SpotLight*>(light))) {
-					sLight->position = entity->position;
-					sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
+			}
+
+			mImpl->lightsBuffer->copy(uPointLights.data(), uPointLights.size());
+			for (auto& stepData : mImpl->stepsData) {
+				if (stepData.lightsBlock) {
+					stepData.numPointLights->setValue(uNumPointLights);
+					stepData.pointLightsPositions->setValue(uPointLightsPositions.data(), uPointLightsPositions.size());
 				}
 			}
 		}
@@ -292,9 +453,6 @@ namespace se::app {
 		auto height = static_cast<unsigned int>(event.getHeight());
 
 		mGraphicsEngine.setViewportSize({ width, height });
-		for (graphics::ILayer* layer : mLayers) {
-			layer->setViewportSize({ width, height });
-		}
 	}
 
 }

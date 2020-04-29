@@ -4,13 +4,14 @@
 #include <vector>
 #include <memory>
 #include "Result.h"
-#include "se/animation/CompositeAnimator.h"
-#include "se/animation/AnimationNode.h"
-#include "se/graphics/3D/Camera.h"
-#include "se/graphics/3D/Lights.h"
-#include "se/graphics/3D/Renderable3D.h"
-#include "se/graphics/GraphicsEngine.h"
-#include "../Skin.h"
+#include "../graphics/Skin.h"
+#include "../graphics/Camera.h"
+#include "../graphics/Lights.h"
+#include "../graphics/Material.h"
+#include "../../animation/CompositeAnimator.h"
+#include "../../animation/AnimationNode.h"
+#include "../../graphics/3D/Mesh.h"
+#include "../../graphics/GraphicsEngine.h"
 
 namespace se::app {
 
@@ -34,11 +35,11 @@ namespace se::app {
 			/** The index of the Camera of the Entity in a Cameras vector */
 			std::size_t cameraIndex;
 
-			/** If the Entity has a Renderable3Ds or not */
-			bool hasRenderable3Ds;
+			/** If the Entity has Primitives or not */
+			bool hasPrimitives;
 
-			/** The index to the Renderable3D indices of the Entity */
-			std::size_t renderable3DsIndex;
+			/** The index to the primitives of the Entity */
+			std::size_t primitivesIndex;
 
 			/** If the Entity has a Light or not */
 			bool hasLight;
@@ -69,24 +70,29 @@ namespace se::app {
 	 */
 	struct Scenes
 	{
+		/** Maps a Mesh with its respective Material */
+		using Primitive = std::pair<std::size_t, std::size_t>;
+
 		/** The Scenes loaded by a SceneReader */
 		std::vector<std::unique_ptr<Scene>> scenes;
 
 		/** The Cameras loaded by a SceneReader */
-		std::vector<std::unique_ptr<graphics::Camera>> cameras;
+		std::vector<std::unique_ptr<Camera>> cameras;
 
-		/** The indices of an Scene::Entity Renderable3Ds in the renderable3Ds
-		 * vector */
-		std::vector<std::vector<std::size_t>> renderable3DIndices;
+		/** The Meshes loaded by a SceneReader */
+		std::vector<std::unique_ptr<graphics::Mesh>> meshes;
 
-		/** The Renderable3Ds loaded by a SceneReader */
-		std::vector<std::unique_ptr<graphics::Renderable3D>> renderable3Ds;
+		/** The Meshes loaded by a SceneReader */
+		std::vector<std::unique_ptr<Material>> materials;
+
+		/** The Primitives of the Entities */
+		std::vector<std::vector<Primitive>> primitives;
 
 		/** The Lights loaded by a SceneReader */
-		std::vector<std::unique_ptr<graphics::ILight>> lights;
+		std::vector<std::unique_ptr<ILight>> lights;
 
 		/** The Skins loaded by a SceneReader */
-		std::vector<std::unique_ptr<app::Skin>> skins;
+		std::vector<std::unique_ptr<Skin>> skins;
 
 		/** The CompositeAnimator loaded by a SceneReader */
 		std::vector<std::unique_ptr<animation::CompositeAnimator>> animators;
@@ -109,31 +115,15 @@ namespace se::app {
 	protected:	// Nested types
 		using SceneReaderUPtr = std::unique_ptr<SceneReader>;
 
-	protected:	// Attributes
-		/** The GraphicsEngine used for storing Textures and Materials */
-		graphics::GraphicsEngine& mGraphicsEngine;
-
 	public:		// Functions
-		/** Creates a new SceneReader
-		 *
-		 * @param	graphicsEngine the GraphicsEngine used for storing
-		 *			Textures and Materials */
-		SceneReader(graphics::GraphicsEngine& graphicsEngine) :
-			mGraphicsEngine(graphicsEngine) {};
-
 		/** Class destructor */
 		virtual ~SceneReader() = default;
 
 		/** Creates a SceneReader capable of reading the given file format
 		 *
 		 * @param	fileType the FileType that we want to read
-		 * @param	graphicsEngine the GraphicsEngine used for storing
-		 *			Textures and Materials
 		 * @return	a pointer to the new SceneReader */
-		static SceneReaderUPtr createSceneReader(
-			SceneFileType fileType,
-			graphics::GraphicsEngine& graphicsEngine
-		);
+		static SceneReaderUPtr createSceneReader(SceneFileType fileType);
 
 		/** Parses the given file and stores the result in the given Scenes
 		 * object
