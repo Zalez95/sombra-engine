@@ -16,8 +16,7 @@ namespace se::graphics {
 		setViewportSize(config.viewportSize);
 
 		// Create the Renderers
-		mRenderer2D = std::make_unique<Renderer2D>();
-		mRenderer3D = std::make_unique<Renderer3D>();
+		mRenderGraph = std::make_unique<RenderGraph>();
 	}
 
 
@@ -61,14 +60,11 @@ namespace se::graphics {
 	{
 		std::unique_lock lck(mMutex);
 
-		GraphicsOperations::clear(false, true);
-
 		for (Renderable* renderable : mRenderables) {
 			renderable->submit();
 		}
 
-		mRenderer3D->render();
-		mRenderer2D->render();
+		mRenderGraph->execute();
 	}
 
 }

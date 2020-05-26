@@ -19,7 +19,7 @@ namespace se::graphics {
 	struct Font;
 	class Texture;
 	class Program;
-	class Step;
+	class Pass;
 	class Technique;
 }
 
@@ -49,7 +49,7 @@ namespace se::app {
 		using CameraUPtr = std::unique_ptr<Camera>;
 		using LightUPtr = std::unique_ptr<ILight>;
 		using SkinSPtr = std::shared_ptr<Skin>;
-		using StepSPtr = std::shared_ptr<graphics::Step>;
+		using PassSPtr = std::shared_ptr<graphics::Pass>;
 		using ProgramSPtr = std::shared_ptr<graphics::Program>;
 		using RenderableMeshUPtr =
 			std::unique_ptr<graphics::RenderableMesh>;
@@ -145,20 +145,20 @@ namespace se::app {
 		 *			one */
 		void addLightEntity(Entity* entity, LightUPtr light);
 
-		/** Creates a new Step2D and adds the uniform variables for the cameras
+		/** Creates a new Pass and adds the uniform variables for the cameras
 		 *
-		 * @param	program a pointer to the program of the new Step2D
-		 * @return	the new Step */
-		StepSPtr createStep2D(ProgramSPtr program);
+		 * @param	program a pointer to the program of the new Pass
+		 * @return	the new Pass */
+		PassSPtr createPass2D(ProgramSPtr program);
 
-		/** Creates a new Step3D and adds the uniform variables for the cameras
+		/** Creates a new Pass and adds the uniform variables for the cameras
 		 * and lightning
 		 *
-		 * @param	program a pointer to the program of the new Step3D
+		 * @param	program a pointer to the program of the new Pass
 		 * @param	addLights if we want the uniform variables for lightning or
 		 *			not
-		 * @return	the new Step */
-		StepSPtr createStep3D(ProgramSPtr program, bool addLights = true);
+		 * @return	the new Pass */
+		PassSPtr createPass3D(ProgramSPtr program, bool addLights = true);
 
 		/** Adds the given Entity and its Mesh (and skin) data to the
 		 * GraphicsManager

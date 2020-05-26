@@ -3,7 +3,6 @@
 #include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/graphics/Material.h"
 #include "se/graphics/3D/RenderableTerrain.h"
-#include "se/graphics/3D/Step3D.h"
 #include "se/physics/RigidBody.h"
 #include "se/collision/TerrainCollider.h"
 
@@ -53,10 +52,10 @@ namespace se::app {
 		);
 
 		auto program = mGraphicsManager.getProgramRepository().find(programName);
-		auto terrainStep = mGraphicsManager.createStep3D(program, true);
-		TechniqueLoader::addSplatmapMaterialBindables(terrainStep, terrainMaterial, program);
+		auto terrainPass = mGraphicsManager.createPass3D(program, true);
+		TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, program);
 		auto terrainTechnique = std::make_shared<se::graphics::Technique>();
-		terrainTechnique->addStep(terrainStep);
+		terrainTechnique->addPass(terrainPass);
 
 		auto renderable = std::make_unique<graphics::RenderableTerrain>(size, lodDistances);
 		renderable->addBindable(std::move(heightMapTexture))

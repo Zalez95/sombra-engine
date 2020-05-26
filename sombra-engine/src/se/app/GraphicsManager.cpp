@@ -3,9 +3,13 @@
 #include "se/app/GraphicsManager.h"
 #include "se/app/events/ResizeEvent.h"
 #include "se/utils/Log.h"
-#include "se/graphics/2D/Step2D.h"
-#include "se/graphics/3D/Step3D.h"
+#include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/FBClearNode.h"
+#include "se/graphics/2D/Renderer2D.h"
+#include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/core/Program.h"
+#include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/GraphicsOperations.h"
 
 namespace se::app {
@@ -41,9 +45,9 @@ namespace se::app {
 				renderable(std::move(renderable)) {};
 		};
 
-		struct StepData
+		struct PassData
 		{
-			std::shared_ptr<graphics::Step> step;
+			std::shared_ptr<graphics::Pass> pass;
 			std::shared_ptr<graphics::Program> program;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> viewMatrix;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> projectionMatrix;
@@ -59,7 +63,7 @@ namespace se::app {
 
 		Camera* activeCamera;
 		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
-		std::vector<StepData> stepsData;
+		std::vector<PassData> passesData;
 	};
 
 
@@ -69,6 +73,37 @@ namespace se::app {
 		mEventManager.subscribe(this, Topic::Resize);
 
 		mImpl = std::make_unique<Impl>();
+
+		{
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::FBClearNode>("defaultFBClear") );
+		}
+
+		{
+			auto renderer3D = std::make_unique<graphics::Renderer3D>("renderer3D");
+			auto targetIndex = renderer3D->addBindable();
+			renderer3D->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", renderer3D.get(), targetIndex) );
+			renderer3D->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", renderer3D.get(), targetIndex) );
+			mGraphicsEngine.getRenderGraph().addNode( std::move(renderer3D) );
+		}
+
+		{
+			auto renderer2D = std::make_unique<graphics::Renderer2D>("renderer2D");
+			auto targetIndex = renderer2D->addBindable();
+			renderer2D->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", renderer2D.get(), targetIndex) );
+			renderer2D->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", renderer2D.get(), targetIndex) );
+			mGraphicsEngine.getRenderGraph().addNode( std::move(renderer2D) );
+		}
+
+		{
+			auto resources = mGraphicsEngine.getRenderGraph().getNode("resources");
+			auto defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear");
+			auto renderer3D = mGraphicsEngine.getRenderGraph().getNode("renderer3D");
+			auto renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
+
+			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
+			renderer3D->findInput("target")->connect( defaultFBClear->findOutput("output") );
+			renderer2D->findInput("target")->connect( renderer3D->findOutput("target") );
+		}
 
 		// Reserve memory for the UniformBuffers
 		mImpl->lightsBuffer = std::make_shared<graphics::UniformBuffer>();
@@ -135,21 +170,25 @@ namespace se::app {
 	}
 
 
-	GraphicsManager::StepSPtr GraphicsManager::createStep2D(ProgramSPtr program)
+	GraphicsManager::PassSPtr GraphicsManager::createPass2D(ProgramSPtr program)
 	{
-		auto step = std::make_unique<graphics::Step2D>(mGraphicsEngine.getRenderer2D());
+		auto renderer2D = dynamic_cast<graphics::Renderer2D*>( mGraphicsEngine.getRenderGraph().getNode("renderer2D") );
+		if (!renderer2D) {
+			return nullptr;
+		}
 
-		step->addBindable(program)
+		auto pass = std::make_shared<graphics::Pass>(*renderer2D);
+		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::BlendingOperation>(true))
 			.addBindable(std::make_shared<graphics::DepthTestOperation>(false));
 
 		for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
 			utils::ArrayStreambuf<char, 64> aStreambuf;
 			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
-			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
+			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
 		}
 
-		step->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
+		pass->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
 			"uProjectionMatrix", *program,
 			[this]() {
 				auto viewportSize = mGraphicsEngine.getViewportSize();
@@ -157,41 +196,45 @@ namespace se::app {
 			}
 		));
 
-		return step;
+		return pass;
 	}
 
 
-	GraphicsManager::StepSPtr GraphicsManager::createStep3D(ProgramSPtr program, bool hasLights)
+	GraphicsManager::PassSPtr GraphicsManager::createPass3D(ProgramSPtr program, bool hasLights)
 	{
-		auto step = std::make_shared<graphics::Step3D>(mGraphicsEngine.getRenderer3D());
-
-		auto& stepData = mImpl->stepsData.emplace_back();
-		stepData.step = step;
-		stepData.program = program;
-
-		stepData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
-		stepData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
-		if (mImpl->activeCamera) {
-			stepData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
-			stepData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+		auto renderer3D = dynamic_cast<graphics::Renderer3D*>( mGraphicsEngine.getRenderGraph().getNode("renderer3D") );
+		if (!renderer3D) {
+			return nullptr;
 		}
 
-		step->addBindable(program)
-			.addBindable(stepData.viewMatrix)
-			.addBindable(stepData.projectionMatrix);
+		auto pass = std::make_shared<graphics::Pass>(*renderer3D);
+		auto& passData = mImpl->passesData.emplace_back();
+		passData.pass = pass;
+		passData.program = program;
+
+		passData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
+		passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
+		if (mImpl->activeCamera) {
+			passData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
+			passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+		}
+
+		pass->addBindable(program)
+			.addBindable(passData.viewMatrix)
+			.addBindable(passData.projectionMatrix);
 
 		if (hasLights) {
-			stepData.numPointLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumPointLights", *program);
-			stepData.pointLightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, GraphicsManager::kMaxPointLights>>("uPointLightsPositions", *program);
-			stepData.lightsBlock = std::make_shared<graphics::UniformBlock>("LightsBlock", *program);
+			passData.numPointLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumPointLights", *program);
+			passData.pointLightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, GraphicsManager::kMaxPointLights>>("uPointLightsPositions", *program);
+			passData.lightsBlock = std::make_shared<graphics::UniformBlock>("LightsBlock", *program);
 
-			step->addBindable(mImpl->lightsBuffer)
-				.addBindable(stepData.numPointLights)
-				.addBindable(stepData.pointLightsPositions)
-				.addBindable(stepData.lightsBlock);
+			pass->addBindable(mImpl->lightsBuffer)
+				.addBindable(passData.numPointLights)
+				.addBindable(passData.pointLightsPositions)
+				.addBindable(passData.lightsBlock);
 		}
 
-		return step;
+		return pass;
 	}
 
 
@@ -211,14 +254,14 @@ namespace se::app {
 		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), entity->scale);
 		glm::mat4 modelMatrix	= translation * rotation * scale;
 
-		rPtr->processTechniques([&](auto technique) { technique->processSteps([&](auto step) {
-			auto itStepData = std::find_if(mImpl->stepsData.begin(), mImpl->stepsData.end(), [&](const Impl::StepData& stepData) {
-				return stepData.step == step;
+		rPtr->processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
+			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const Impl::PassData& passData) {
+				return passData.pass == pass;
 			});
-			if (itStepData != mImpl->stepsData.end()) {
+			if (itPassData != mImpl->passesData.end()) {
 				rPtr->addBindable(
 					meshData.modelMatrix.emplace_back(
-						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itStepData->program, modelMatrix)
+						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itPassData->program, modelMatrix)
 					)
 				);
 
@@ -229,14 +272,14 @@ namespace se::app {
 					rPtr->addBindable(
 						meshData.jointMatrices.emplace_back(
 							std::make_shared<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>(
-								"uJointMatrices", *itStepData->program, jointMatrices.data(), numJoints
+								"uJointMatrices", *itPassData->program, jointMatrices.data(), numJoints
 							)
 						)
 					);
 				}
 			}
 			else {
-				SOMBRA_WARN_LOG << "RenderableMesh has an Step " << step << " not added to the GraphicsManager";
+				SOMBRA_WARN_LOG << "RenderableMesh has a Pass " << pass << " not added to the GraphicsManager";
 			}
 		}); });
 
@@ -270,19 +313,19 @@ namespace se::app {
 		glm::mat4 rotation		= glm::mat4_cast(entity->orientation);
 		glm::mat4 modelMatrix	= translation * rotation;
 
-		rPtr->processTechniques([&](auto technique) { technique->processSteps([&](auto step) {
-			auto itStepData = std::find_if(mImpl->stepsData.begin(), mImpl->stepsData.end(), [&](const Impl::StepData& stepData) {
-				return stepData.step == step;
+		rPtr->processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
+			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const Impl::PassData& passData) {
+				return passData.pass == pass;
 			});
-			if (itStepData != mImpl->stepsData.end()) {
+			if (itPassData != mImpl->passesData.end()) {
 				rPtr->addBindable(
 					terrainData.modelMatrix.emplace_back(
-						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itStepData->program, modelMatrix)
+						std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *itPassData->program, modelMatrix)
 					)
 				);
 			}
 			else {
-				SOMBRA_WARN_LOG << "RenderableTerrain has an Step " << step << " not added to the GraphicsManager";
+				SOMBRA_WARN_LOG << "RenderableTerrain has a Pass " << pass << " not added to the GraphicsManager";
 			}
 		}); });
 
@@ -404,11 +447,11 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_DEBUG_LOG << "Updating the Steps";
+		SOMBRA_DEBUG_LOG << "Updating the Passes";
 		if (activeCameraUpdated) {
-			for (auto& stepData : mImpl->stepsData) {
-				stepData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
-				stepData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+			for (auto& passData : mImpl->passesData) {
+				passData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
+				passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
 			}
 		}
 
@@ -427,10 +470,10 @@ namespace se::app {
 			}
 
 			mImpl->lightsBuffer->copy(uPointLights.data(), uPointLights.size());
-			for (auto& stepData : mImpl->stepsData) {
-				if (stepData.lightsBlock) {
-					stepData.numPointLights->setValue(uNumPointLights);
-					stepData.pointLightsPositions->setValue(uPointLightsPositions.data(), uPointLightsPositions.size());
+			for (auto& passData : mImpl->passesData) {
+				if (passData.lightsBlock) {
+					passData.numPointLights->setValue(uNumPointLights);
+					passData.pointLightsPositions->setValue(uPointLightsPositions.data(), uPointLightsPositions.size());
 				}
 			}
 		}

@@ -35,6 +35,9 @@ namespace se::graphics {
 		FrameBuffer& operator=(const FrameBuffer& other) = delete;
 		FrameBuffer& operator=(FrameBuffer&& other);
 
+		/** @return	the FrameBuffer where graphics API draws to by default */
+		static FrameBuffer& getDefaultFrameBuffer();
+
 		/** Set the target operation where the FrameBuffer will be bound
 		 *
 		 * @param	target the operation that we want to bind the FrameBuffer
@@ -60,6 +63,14 @@ namespace se::graphics {
 
 		/** Unbinds the Frame Buffer Object */
 		void unbind() const override;
+	private:
+		/** Creates a new FrameBuffer
+		 *
+		 * @param	bufferId the id of the Frame Buffer Object
+		 * @param	target the operation that we want to bind the FrameBuffer
+		 *			to */
+		FrameBuffer(unsigned int bufferId, FrameBufferTarget target) :
+			mBufferId(bufferId), mTarget(target) {};
 	};
 
 }

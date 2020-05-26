@@ -2,10 +2,8 @@
 #define GRAPHICS_ENGINE_H
 
 #include <mutex>
-#include <memory>
-#include <vector>
-#include "2D/Renderer2D.h"
-#include "3D/Renderer3D.h"
+#include <glm/glm.hpp>
+#include "RenderGraph.h"
 
 namespace se::graphics {
 
@@ -37,11 +35,8 @@ namespace se::graphics {
 		/** The Renderables that the GraphicsEngine will render */
 		std::vector<Renderable*> mRenderables;
 
-		/** The Renderer used for rendering Renderable2Ds */
-		std::unique_ptr<Renderer2D> mRenderer2D;
-
-		/** The Renderer used for rendering Renderable3Ds */
-		std::unique_ptr<Renderer3D> mRenderer3D;
+		/** The RenderGraph used for drawing the Renderables */
+		std::unique_ptr<RenderGraph> mRenderGraph;
 
 	public:		// Functions
 		/** Creates a new Graphics System
@@ -61,11 +56,8 @@ namespace se::graphics {
 		/** @return	the viewport resolution */
 		const glm::uvec2& getViewportSize() { return mViewportSize; };
 
-		/** @return	the Renderer2D of the GraphicsEngine */
-		Renderer2D& getRenderer2D() { return *mRenderer2D; };
-
-		/** @return	the Renderer3D of the GraphicsEngine */
-		Renderer3D& getRenderer3D() { return *mRenderer3D; };
+		/** @return	the RenderGraph of the GraphicsEngine */
+		RenderGraph& getRenderGraph() { return *mRenderGraph; };
 
 		/** Adds the given Renderable to the GraphicsEngine so it will be
 		 * rendered

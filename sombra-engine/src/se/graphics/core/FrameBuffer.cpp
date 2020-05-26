@@ -55,6 +55,13 @@ namespace se::graphics {
 	}
 
 
+	FrameBuffer& FrameBuffer::getDefaultFrameBuffer()
+	{
+		static FrameBuffer instance(0, FrameBufferTarget::Both);
+		return instance;
+	}
+
+
 	void FrameBuffer::attach(
 		const Texture& texture,
 		FrameBufferAttachment attachment, unsigned int colorIndex

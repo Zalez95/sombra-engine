@@ -1,6 +1,6 @@
 #include <algorithm>
+#include "se/graphics/Pass.h"
 #include "se/graphics/2D/Renderer2D.h"
-#include "se/graphics/2D/Step2D.h"
 #include "se/graphics/2D/Renderable2D.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/GraphicsOperations.h"
@@ -84,9 +84,12 @@ namespace se::graphics {
 	}
 
 
-	void Renderer2D::submit(Renderable2D& renderable, Step2D& step)
+	void Renderer2D::submit(Renderable& renderable, Pass& pass)
 	{
-		mRenderQueue.emplace_back(&renderable, &step);
+		auto renderable2D = dynamic_cast<Renderable2D*>(&renderable);
+		if (renderable2D) {
+			mRenderQueue.emplace_back(renderable2D, &pass);
+		}
 	}
 
 
@@ -94,21 +97,21 @@ namespace se::graphics {
 	{
 		if (mRenderQueue.empty()) { return; }
 
-		// Sort by the Renderable2Ds z-index and by their Step
+		// Sort by the Renderable2Ds z-index and by their Pass
 		std::sort(
 			mRenderQueue.begin(), mRenderQueue.end(),
-			[](const RenderableStepPair& lhs, const RenderableStepPair& rhs) {
+			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) {
 				return (lhs.first->getZIndex() < rhs.first->getZIndex())
 					|| ((lhs.first->getZIndex() == rhs.first->getZIndex()) && (lhs.second < rhs.second));
 			}
 		);
 
 		// Submit and draw the batches
-		mStep = mRenderQueue.front().second;
-		for (auto& [renderable, step] : mRenderQueue) {
-			if (step != mStep) {
+		mPass = mRenderQueue.front().second;
+		for (auto& [renderable, pass] : mRenderQueue) {
+			if (pass != mPass) {
 				drawBatch();
-				mStep = step;
+				mPass = pass;
 			}
 
 			renderable->submitVertices(*this);
@@ -158,7 +161,7 @@ namespace se::graphics {
 // Private functions
 	void Renderer2D::drawBatch()
 	{
-		mStep->bind();
+		mPass->bind();
 
 		unsigned int numTextures = std::min(kMaxTextures, static_cast<unsigned int>(mTextures.size()));
 		for (unsigned int i = 0; i < numTextures; ++i) {

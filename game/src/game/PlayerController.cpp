@@ -46,9 +46,9 @@ namespace game {
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
 		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-		auto stepYellow = mGameData.graphicsManager->createStep3D(programPBR, true);
+		auto passYellow = mGameData.graphicsManager->createPass3D(programPBR, true);
 		se::app::TechniqueLoader::addMaterialBindables(
-			stepYellow,
+			passYellow,
 			se::app::Material{
 				"yellow_material",
 				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
@@ -58,7 +58,7 @@ namespace game {
 		);
 
 		mYellowTechnique = std::make_shared<se::graphics::Technique>();
-		mYellowTechnique->addStep(stepYellow);
+		mYellowTechnique->addPass(passYellow);
 	}
 
 

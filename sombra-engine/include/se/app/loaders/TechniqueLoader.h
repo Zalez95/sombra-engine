@@ -2,6 +2,7 @@
 #define TECHNIQUE_LOADER_H
 
 #include <memory>
+#include "../../graphics/Pass.h"
 #include "../../graphics/Technique.h"
 #include "../../graphics/core/Program.h"
 #include "../graphics/Material.h"
@@ -13,16 +14,16 @@ namespace se::app {
 	private:	// Nested types
 		using ProgramUPtr = std::unique_ptr<graphics::Program>;
 		using ProgramSPtr = std::shared_ptr<graphics::Program>;
-		using StepSPtr = std::shared_ptr<graphics::Step>;
+		using PassSPtr = std::shared_ptr<graphics::Pass>;
 
 	public:		// Functions
 		static void addMaterialBindables(
-			StepSPtr step, const Material& material,
+			PassSPtr pass, const Material& material,
 			const ProgramSPtr program
 		);
 
 		static void addSplatmapMaterialBindables(
-			StepSPtr step, const SplatmapMaterial& material,
+			PassSPtr pass, const SplatmapMaterial& material,
 			const ProgramSPtr program
 		);
 

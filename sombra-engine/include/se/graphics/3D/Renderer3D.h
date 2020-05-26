@@ -1,36 +1,39 @@
 #ifndef RENDERER_3D_H
 #define RENDERER_3D_H
 
-#include <vector>
+#include "../Renderer.h"
 
 namespace se::graphics {
 
 	class Renderable3D;
-	class Step3D;
 
 
 	/**
-	 * Class Renderer3D, it's a Batch Renderer used for rendering 3D
-	 * graphics elements.
+	 * Class Renderer3D, it's a Renderer used for rendering 3D Renderables.
 	 */
-	class Renderer3D
+	class Renderer3D : public Renderer
 	{
 	private:	// Nested types
-		using RenderableStepPair = std::pair<Renderable3D*, Step3D*>;
+		using RenderablePassPair = std::pair<Renderable3D*, Pass*>;
 
 	private:	// Attributes
 		/** The submited Renderable3Des that are going to be drawn */
-		std::vector<RenderableStepPair> mRenderQueue;
+		std::vector<RenderablePassPair> mRenderQueue;
 
 	public:		// Functions
-		/** Submits the given Renderable3D for rendering
+		/** Creates a new Renderer3D
 		 *
-		 * @param	renderable the Renderable3D to submit for rendering
-		 * @param	step the Step3D with which the Renderable3D will be drawn */
-		void submit(Renderable3D& renderable, Step3D& step);
+		 * @param	name the name of the new Renderer3D */
+		Renderer3D(const std::string& name) : Renderer(name) {};
 
-		/** Renders the Renderable3Ds that are currently in the render queue */
-		void render();
+		/** Submits the given Renderable for rendering
+		 *
+		 * @param	renderable the Renderable to submit for rendering
+		 * @param	pass the Pass with which the Renderable will be drawn */
+		virtual void submit(Renderable& renderable, Pass& pass) override;
+
+		/** Renders all the submitted Renderables */
+		virtual void render() override;
 	};
 
 }

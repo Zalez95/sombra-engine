@@ -1,30 +1,33 @@
 #include <algorithm>
+#include "se/graphics/Pass.h"
 #include "se/graphics/3D/Renderer3D.h"
-#include "se/graphics/3D/Step3D.h"
 #include "se/graphics/3D/Renderable3D.h"
 
 namespace se::graphics {
 
-	void Renderer3D::submit(Renderable3D& renderable, Step3D& step)
+	void Renderer3D::submit(Renderable& renderable, Pass& pass)
 	{
-		mRenderQueue.emplace_back(&renderable, &step);
+		auto renderable3D = dynamic_cast<Renderable3D*>(&renderable);
+		if (renderable3D) {
+			mRenderQueue.emplace_back(renderable3D, &pass);
+		}
 	}
 
 
 	void Renderer3D::render()
 	{
-		// Sort the render queue by Step
+		// Sort the render queue by Pass
 		std::sort(
 			mRenderQueue.begin(), mRenderQueue.end(),
-			[](const RenderableStepPair& lhs, const RenderableStepPair& rhs) { return lhs.second < rhs.second; }
+			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) { return lhs.second < rhs.second; }
 		);
 
 		// Draw all the renderables
-		const Step3D* lastStep = nullptr;
-		for (auto& [renderable, step] : mRenderQueue) {
-			if (step != lastStep) {
-				lastStep = step;
-				step->bind();
+		const Pass* lastPass = nullptr;
+		for (auto& [renderable, pass] : mRenderQueue) {
+			if (pass != lastPass) {
+				lastPass = pass;
+				pass->bind();
 			}
 
 			renderable->bind();

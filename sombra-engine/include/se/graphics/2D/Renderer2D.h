@@ -7,11 +7,11 @@
 #include "../core/VertexArray.h"
 #include "../core/VertexBuffer.h"
 #include "../core/IndexBuffer.h"
+#include "../Renderer.h"
 
 namespace se::graphics {
 
 	class Renderable2D;
-	class Step2D;
 	class Texture;
 
 
@@ -20,7 +20,7 @@ namespace se::graphics {
 	 * graphics elements. The Renderer2D draws the submitted Renderable2Ds
 	 * ordered by their z-index.
 	 */
-	class Renderer2D
+	class Renderer2D : public Renderer
 	{
 	public:		// Nested types
 		/** Holds the data of each of the vertices that the Batch can draw */
@@ -106,7 +106,7 @@ namespace se::graphics {
 			void draw();
 		};
 
-		using RenderableStepPair = std::pair<Renderable2D*, Step2D*>;
+		using RenderablePassPair = std::pair<Renderable2D*, Pass*>;
 
 	public:		// Attributes
 		/** The maximum number of quads in each batch */
@@ -125,25 +125,28 @@ namespace se::graphics {
 		/** The textures used for rendering the Batch */
 		utils::FixedVector<Texture*, 16> mTextures;
 
-		/** The Step2D used for rendering the Batch */
-		Step2D* mStep;
+		/** The Pass used for rendering the Batch */
+		Pass* mPass;
 
 		/** The submited Renderable2Ds that are going to be drawn */
-		std::vector<RenderableStepPair> mRenderQueue;
+		std::vector<RenderablePassPair> mRenderQueue;
 
 	public:		// Functions
-		/** Creates a new Renderer2D */
-		Renderer2D() :
-			mBatch(4 * kQuadsPerBatch, 6 * kQuadsPerBatch), mStep(nullptr) {};
-
-		/** Submits the given Renderable2D for rendering
+		/** Creates a new Renderer2D
 		 *
-		 * @param	renderable the Renderable2D to submit for rendering
-		 * @param	step the Step2D with which the Renderable2D will be drawn */
-		void submit(Renderable2D& renderable, Step2D& step);
+		 * @param	name the name of the new Renderer2D */
+		Renderer2D(const std::string& name) :
+			Renderer(name),
+			mBatch(4 * kQuadsPerBatch, 6 * kQuadsPerBatch), mPass(nullptr) {};
 
-		/** Renders all the submitted Renderable2Ds */
-		void render();
+		/** Submits the given Renderable for rendering
+		 *
+		 * @param	renderable the Renderable to submit for rendering
+		 * @param	pass the Pass with which the Renderable will be drawn */
+		virtual void submit(Renderable& renderable, Pass& pass) override;
+
+		/** Renders all the submitted Renderables */
+		virtual void render() override;
 
 		/** Submits the given vertices to the Renderer2D
 		 *
@@ -158,7 +161,7 @@ namespace se::graphics {
 			Texture* texture = nullptr
 		);
 	private:
-		/** Draws the batch with the current Step and clears the texture
+		/** Draws the batch with the current Pass and clears the texture
 		 * array of Texture uniforms */
 		void drawBatch();
 	};

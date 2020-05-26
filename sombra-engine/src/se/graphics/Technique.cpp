@@ -1,60 +1,27 @@
 #include <algorithm>
 #include "se/graphics/Technique.h"
+#include "se/graphics/Pass.h"
 
 namespace se::graphics {
 
-	Step& Step::addBindable(BindableSPtr bindable)
+	Technique& Technique::addPass(PassSPtr pass)
 	{
-		if (bindable) {
-			mBindables.push_back(bindable);
-		}
-
+		mPasses.emplace_back(std::move(pass));
 		return *this;
 	}
 
 
-	Step& Step::removeBindable(BindableSPtr bindable)
+	void Technique::processPasses(const PassCallback& callback)
 	{
-		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());
-
-		return *this;
-	}
-
-
-	void Step::bind() const
-	{
-		for (auto& bindable : mBindables) {
-			bindable->bind();
+		for (auto& pass : mPasses) {
+			callback(pass);
 		}
 	}
 
 
-	void Step::unbind() const
+	Technique& Technique::removePass(PassSPtr pass)
 	{
-		for (auto itBindable = mBindables.rbegin(); itBindable != mBindables.rend(); ++itBindable) {
-			(*itBindable)->unbind();
-		}
-	}
-
-
-	Technique& Technique::addStep(StepSPtr step)
-	{
-		mSteps.emplace_back(std::move(step));
-		return *this;
-	}
-
-
-	void Technique::processSteps(const StepCallback& callback)
-	{
-		for (auto& step : mSteps) {
-			callback(step);
-		}
-	}
-
-
-	Technique& Technique::removeStep(StepSPtr step)
-	{
-		mSteps.erase(std::remove(mSteps.begin(), mSteps.end(), step), mSteps.end());
+		mPasses.erase(std::remove(mPasses.begin(), mPasses.end(), pass), mPasses.end());
 
 		return *this;
 	}
@@ -62,8 +29,8 @@ namespace se::graphics {
 
 	void Technique::submit(Renderable& renderable)
 	{
-		for (auto& step : mSteps) {
-			step->submit(renderable);
+		for (auto& pass : mPasses) {
+			pass->submit(renderable);
 		}
 	}
 

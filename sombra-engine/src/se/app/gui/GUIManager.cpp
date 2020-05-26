@@ -18,7 +18,7 @@ namespace se::app {
 		auto program2D = mGraphicsManager.getProgramRepository().add("program2D", std::move(program));
 
 		auto technique2D = std::make_unique<graphics::Technique>();
-		technique2D->addStep( mGraphicsManager.createStep2D(program2D) );
+		technique2D->addPass( mGraphicsManager.createPass2D(program2D) );
 		mGraphicsManager.getTechniqueRepository().add("technique2D", std::move(technique2D));
 	}
 

@@ -443,11 +443,11 @@ namespace game {
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
 
-			auto stepSky = mGameData.graphicsManager->createStep3D(programSky, false);
-			stepSky->addBindable(std::make_shared<se::graphics::CullingOperation>(false));
+			auto passSky = mGameData.graphicsManager->createPass3D(programSky, false);
+			passSky->addBindable(std::make_shared<se::graphics::CullingOperation>(false));
 
 			auto techniqueSky = std::make_unique<se::graphics::Technique>();
-			techniqueSky->addStep(stepSky);
+			techniqueSky->addPass(passSky);
 
 			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(domeMesh);
 			renderableMesh->addTechnique(std::move(techniqueSky));
@@ -480,9 +480,9 @@ namespace game {
 
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepPlane = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passPlane = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepPlane,
+				passPlane,
 				se::app::Material{
 					"plane_material",
 					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
@@ -492,7 +492,7 @@ namespace game {
 			);
 
 			auto techniquePlane = std::make_unique<se::graphics::Technique>();
-			techniquePlane->addStep(stepPlane);
+			techniquePlane->addPass(passPlane);
 
 			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(planeMesh);
 			renderableMesh->addTechnique(std::move(techniquePlane));
@@ -540,9 +540,9 @@ namespace game {
 
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepCube = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passCube = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepCube,
+				passCube,
 				se::app::Material{
 					"tmp_material",
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
@@ -552,7 +552,7 @@ namespace game {
 			);
 
 			auto techniqueCube = std::make_unique<se::graphics::Technique>();
-			techniqueCube->addStep(stepCube);
+			techniqueCube->addPass(passCube);
 
 			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
 			renderableMesh->addTechnique(std::move(techniqueCube));
@@ -568,9 +568,9 @@ namespace game {
 		{
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepRed = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passRed = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepRed,
+				passRed,
 				se::app::Material{
 					"tmp_material",
 					se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
@@ -580,7 +580,7 @@ namespace game {
 			);
 
 			auto techniqueRed = std::make_shared<se::graphics::Technique>();
-			techniqueRed->addStep(stepRed);
+			techniqueRed->addPass(passRed);
 
 			auto nonMovableCube = std::make_unique<se::app::Entity>("non-movable-cube");
 			nonMovableCube->position = glm::vec3(-50.0f, 0.0f, -40.0f);
@@ -639,9 +639,9 @@ namespace game {
 
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepSlice = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passSlice = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepSlice,
+				passSlice,
 				se::app::Material{
 					"tmp_material",
 					se::app::PBRMetallicRoughness{
@@ -654,7 +654,7 @@ namespace game {
 			);
 
 			auto techniqueSlice = std::make_shared<se::graphics::Technique>();
-			techniqueSlice->addStep(stepSlice);
+			techniqueSlice->addPass(passSlice);
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh));
@@ -670,9 +670,9 @@ namespace game {
 		{
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepRandom = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passRandom = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepRandom,
+				passRandom,
 				se::app::Material{
 					"random",
 					se::app::PBRMetallicRoughness{ { 0.0f, 0.0f, 1.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
@@ -682,7 +682,7 @@ namespace game {
 			);
 
 			auto techniqueRandom = std::make_shared<se::graphics::Technique>();
-			techniqueRandom->addStep(stepRandom);
+			techniqueRandom->addPass(passRandom);
 
 			for (std::size_t i = 0; i < kNumCubes; ++i) {
 				auto cube = std::make_unique<se::app::Entity>("random-cube-" + std::to_string(i));
@@ -711,9 +711,9 @@ namespace game {
 		{
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto stepLight = mGameData.graphicsManager->createStep3D(programPBR, true);
+			auto passLight = mGameData.graphicsManager->createPass3D(programPBR, true);
 			se::app::TechniqueLoader::addMaterialBindables(
-				stepLight,
+				passLight,
 				se::app::Material{
 					"light_material",
 					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
@@ -723,7 +723,7 @@ namespace game {
 			);
 
 			auto techniqueLight = std::make_shared<se::graphics::Technique>();
-			techniqueLight->addStep(stepLight);
+			techniqueLight->addPass(passLight);
 
 			auto eL2 = std::make_unique<se::app::Entity>("point-light2");
 			eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
@@ -756,9 +756,9 @@ namespace game {
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
 			for (auto& material : loadedScenes.materials) {
-				auto step3D = mGameData.graphicsManager->createStep3D(programPBR, true);
-				se::app::TechniqueLoader::addMaterialBindables(step3D, *material, programPBR);
-				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addStep(step3D);
+				auto pass3D = mGameData.graphicsManager->createPass3D(programPBR, true);
+				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programPBR);
+				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
 			}
 
 			for (auto& e : loadedScenes.scenes[0]->entities) {
