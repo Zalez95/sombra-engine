@@ -5,7 +5,7 @@ layout (triangle_strip, max_vertices = 3) out;
 
 
 // ____ CONSTANTS ____
-const uint MAX_POINT_LIGHTS = 4u;
+const uint MAX_LIGHTS = 4u;
 
 
 // ____ GLOBAL VARIABLES ____
@@ -16,11 +16,12 @@ in GeometryIn
 } gsVertex[];
 
 // Uniform variables
-uniform mat4 uViewMatrix;								// World space to View space Matrix
-uniform mat4 uProjectionMatrix;							// View space to NDC space Matrix
+uniform mat4 uViewMatrix;							// World space to View space Matrix
+uniform mat4 uProjectionMatrix;						// View space to NDC space Matrix
 
-uniform uint uNumPointLights;							// Number of lights to process
-uniform vec3 uPointLightsPositions[MAX_POINT_LIGHTS];	// PointLigths positions in world space
+uniform uint uNumLights;							// Number of lights to process
+uniform vec3 uLightsPositions[MAX_LIGHTS];			// Lights positions in world space
+uniform vec3 uLightsDirections[MAX_LIGHTS];			// Lights directions in world space
 
 // Output data in tangent space
 out FragmentIn
@@ -29,8 +30,9 @@ out FragmentIn
 	vec2 texCoord0;
 } fsVertex;
 
-flat out uint fsNumPointLights;
-out vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
+flat out uint fsNumLights;
+out vec3 fsLightsPositions[MAX_LIGHTS];
+out vec3 fsLightsDirections[MAX_LIGHTS];
 
 
 // ____ MAIN PROGRAM ____
@@ -49,10 +51,11 @@ void main() {
 
 	mat3 tbnMatrix = transpose(mat3(T, B, N));
 
-	// Calculate the PointLights coordinates in tangent space
-	fsNumPointLights = (uNumPointLights > MAX_POINT_LIGHTS)? MAX_POINT_LIGHTS : uNumPointLights;
-	for (uint i = 0u; i < fsNumPointLights; ++i) {
-		fsPointLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uPointLightsPositions[i], 1.0));
+	// Calculate the Lights coordinates in tangent space
+	fsNumLights = (uNumLights > MAX_LIGHTS)? MAX_LIGHTS : uNumLights;
+	for (uint i = 0u; i < fsNumLights; ++i) {
+		fsLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uLightsPositions[i], 1.0));
+		fsLightsDirections[i] = tbnMatrix * vec3(uViewMatrix * vec4(uLightsDirections[i], 0.0));
 	}
 
 	// Emit the vertices in tangent space

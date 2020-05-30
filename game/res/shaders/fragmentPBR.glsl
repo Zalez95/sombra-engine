@@ -3,7 +3,10 @@
 // ____ CONSTANTS ____
 const float PI					= 3.1415926535897932384626433832795;
 const vec3	BASE_REFLECTIVITY	= vec3(0.04);
-const uint	MAX_POINT_LIGHTS	= 4u;
+const uint	MAX_LIGHTS			= 4u;
+const uint	DIRECTIONAL_LIGHT	= 0u;
+const uint	POINT_LIGHT			= 1u;
+const uint	SPOT_LIGHT			= 2u;
 const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 
 
@@ -35,11 +38,14 @@ struct Material
 	float alphaCutoff;
 };
 
-struct PointLight
+struct BaseLight
 {
-	vec3 color;
+	uint type;
+	vec4 color;
 	float intensity;
 	float inverseRange;
+	float lightAngleScale;
+	float lightAngleOffset;
 };
 
 
@@ -51,13 +57,14 @@ in FragmentIn
 	vec2 texCoord0;
 } fsVertex;
 
-flat in uint fsNumPointLights;
-in vec3 fsPointLightsPositions[MAX_POINT_LIGHTS];
+flat in uint fsNumLights;
+in vec3 fsLightsPositions[MAX_LIGHTS];
+in vec3 fsLightsDirections[MAX_LIGHTS];
 
 // Uniform variables
 layout (std140) uniform LightsBlock
 {
-	PointLight uPointLights[MAX_POINT_LIGHTS];
+	BaseLight uBaseLights[MAX_LIGHTS];
 };
 
 uniform Material uMaterial;
@@ -112,19 +119,31 @@ vec3 fresnelSchlick(float cosTheta, vec3 reflectivity)
 }
 
 
-/* Calculates the radiance of the given point light */
-vec3 calculateRadiance(PointLight pointLight, float lightDistance)
+/* Calculates the radiance of the given light. If the light distance is
+ * negative then attenuation will not be applied */
+vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance)
 {
-	// Calculate the attenuation of the point light
-	float attenuation = clamp(1.0 - pow(lightDistance * pointLight.inverseRange, 4.0), 0.0, 1.0);
+	// Calculate the attenuation of the light
+	float attenuation = clamp(1.0 - pow(lightDistance * uBaseLights[lightIndex].inverseRange, 4.0), 0.0, 1.0);
 	attenuation /= lightDistance * lightDistance;
 
+	bool hasAttenuation = lightDistance >= 0.0;
+	attenuation = (attenuation * float(hasAttenuation)) + float(!hasAttenuation);
+
+	// Calculate the angular attenuation of the light (for spot lights)
+	float cd = dot(normalize(-fsLightsDirections[lightIndex]), lightDirection);
+	float angularAttenuation = clamp(cd * uBaseLights[lightIndex].lightAngleScale + uBaseLights[lightIndex].lightAngleOffset, 0.0, 1.0);
+	angularAttenuation *= angularAttenuation;
+
+	bool hasAngularAttenuation = uBaseLights[lightIndex].type == SPOT_LIGHT;
+	angularAttenuation = (angularAttenuation * float(hasAngularAttenuation)) + float(!hasAngularAttenuation);
+
 	// Calculate the light radiance
-	return attenuation * pointLight.color * pointLight.intensity;
+	return attenuation * angularAttenuation * vec3(uBaseLights[lightIndex].color) * uBaseLights[lightIndex].intensity;
 }
 
 
-/* Calculates the color of the current fragment point with all the PointLights
+/* Calculates the color of the current fragment point with all the lights
  * of the scene */
 vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 surfaceNormal)
 {
@@ -134,14 +153,21 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(surfaceNormal, viewDirection), 0.0);
 
-	for (uint i = 0u; i < fsNumPointLights; ++i) {
+	for (uint i = 0u; i < fsNumLights; ++i) {
 		// Calculate the light direction and distance from the current point
-		vec3 lightDirection	= fsPointLightsPositions[i] - fsVertex.position;
-		float lightDistance	= length(lightDirection);
-		lightDirection /= lightDistance;
+		vec3 lightDirection1 = normalize(-fsLightsDirections[i]);
+		float lightDistance1 = -1.0;
+
+		vec3 lightDirection2 = fsLightsPositions[i] - fsVertex.position;
+		float lightDistance2 = length(lightDirection2);
+		lightDirection2 /= lightDistance2;
+
+		bool isDirectional = uBaseLights[i].type == DIRECTIONAL_LIGHT;
+		vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
+		float lightDistance = (lightDistance1 * float(isDirectional)) + (lightDistance2 * float(!isDirectional));
 
 		// Calculate the light radiance
-		vec3 radiance = calculateRadiance(uPointLights[i], lightDistance);
+		vec3 radiance = calculateRadiance(i, lightDirection, lightDistance);
 
 		// Calculate the Lambertian diffuse color
 		vec3 diffuseColor = albedo / PI;

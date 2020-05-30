@@ -1,3 +1,4 @@
+#include <array>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
@@ -14,17 +15,20 @@
 
 namespace se::app {
 
-	struct ShaderPointLight
-	{
-		glm::vec3 color;
-		float intensity;
-		float inverseRange;
-		glm::vec3 padding = glm::vec3(0.0f);
-	};
-
-
 	struct GraphicsManager::Impl
 	{
+		struct ShaderBaseLight
+		{
+			enum class Type : unsigned int { DirectionalLight = 0, PointLight, SpotLight };
+
+			unsigned int type;		float padding1[3];
+			glm::vec4 color;
+			float intensity;
+			float inverseRange;
+			float lightAngleScale;
+			float lightAngleOffset;
+		};
+
 		struct RenderableMeshData
 		{
 			RenderableMeshUPtr renderable;
@@ -51,8 +55,9 @@ namespace se::app {
 			std::shared_ptr<graphics::Program> program;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> viewMatrix;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> projectionMatrix;
-			std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numPointLights;
-			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxPointLights>> pointLightsPositions;
+			std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numLights;
+			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>> lightsPositions;
+			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>> lightsDirections;
 			std::shared_ptr<graphics::UniformBlock> lightsBlock;
 		};
 
@@ -107,7 +112,7 @@ namespace se::app {
 
 		// Reserve memory for the UniformBuffers
 		mImpl->lightsBuffer = std::make_shared<graphics::UniformBuffer>();
-		utils::FixedVector<ShaderPointLight, kMaxPointLights> lightsBufferData(kMaxPointLights);
+		utils::FixedVector<Impl::ShaderBaseLight, kMaxLights> lightsBufferData(kMaxLights);
 		mImpl->lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
 	}
 
@@ -224,13 +229,15 @@ namespace se::app {
 			.addBindable(passData.projectionMatrix);
 
 		if (hasLights) {
-			passData.numPointLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumPointLights", *program);
-			passData.pointLightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, GraphicsManager::kMaxPointLights>>("uPointLightsPositions", *program);
+			passData.numLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program);
+			passData.lightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsPositions", *program);
+			passData.lightsDirections = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsDirections", *program);
 			passData.lightsBlock = std::make_shared<graphics::UniformBlock>("LightsBlock", *program);
 
 			pass->addBindable(mImpl->lightsBuffer)
-				.addBindable(passData.numPointLights)
-				.addBindable(passData.pointLightsPositions)
+				.addBindable(passData.numLights)
+				.addBindable(passData.lightsPositions)
+				.addBindable(passData.lightsDirections)
 				.addBindable(passData.lightsBlock);
 		}
 
@@ -387,18 +394,18 @@ namespace se::app {
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the ILights";
-		bool pointLightsUpdated = false;
+		bool lightsUpdated = false;
 		for (auto& pair : mImpl->lightEntities) {
 			Entity* entity = pair.first;
 			ILight* light = pair.second.get();
 
 			if (entity->updated.any()) {
+				lightsUpdated = true;
 				if (auto dLight = (dynamic_cast<DirectionalLight*>(light))) {
 					dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
 				}
 				else if (auto pLight = (dynamic_cast<PointLight*>(light))) {
 					pLight->position = entity->position;
-					pointLightsUpdated = true;
 				}
 				else if (auto sLight = (dynamic_cast<SpotLight*>(light))) {
 					sLight->position = entity->position;
@@ -455,25 +462,46 @@ namespace se::app {
 			}
 		}
 
-		if (pointLightsUpdated) {
-			unsigned int uNumPointLights = 0;
-			utils::FixedVector<ShaderPointLight, kMaxPointLights> uPointLights;
-			utils::FixedVector<glm::vec3, kMaxPointLights> uPointLightsPositions;
+		if (lightsUpdated) {
+			unsigned int uNumLights = std::min(static_cast<unsigned int>(mImpl->lightEntities.size()), kMaxLights);
+			std::array<Impl::ShaderBaseLight, kMaxLights> uBaseLights;
+			std::array<glm::vec3, kMaxLights> uLightsPositions;
+			std::array<glm::vec3, kMaxLights> uLightsDirections;
 
+			unsigned int i = 0;
 			for (auto& pair : mImpl->lightEntities) {
-				const PointLight* pLight = dynamic_cast<const PointLight*>(pair.second.get());
-				if (pLight && (uNumPointLights < kMaxPointLights)) {
-					uPointLights.push_back({ pLight->color, pLight->intensity, pLight->inverseRange });
-					uPointLightsPositions.push_back(pLight->position);
-					uNumPointLights++;
+				uBaseLights[i].color = { pair.second->color, 1.0f };
+				uBaseLights[i].intensity = pair.second->intensity;
+				if (auto dLight = dynamic_cast<const DirectionalLight*>(pair.second.get())) {
+					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::DirectionalLight);
+					uBaseLights[i].inverseRange = 0.0f;
+					uLightsPositions[i] = glm::vec3(0.0f);
+					uLightsDirections[i] = dLight->direction;
 				}
+				else if (auto pLight = dynamic_cast<const PointLight*>(pair.second.get())) {
+					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::PointLight);
+					uBaseLights[i].inverseRange = pLight->inverseRange;
+					uLightsPositions[i] = pLight->position;
+					uLightsDirections[i] = glm::vec3(0.0f);
+				}
+				else if (auto sLight = dynamic_cast<const SpotLight*>(pair.second.get())) {
+					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::SpotLight);
+					uBaseLights[i].inverseRange = sLight->inverseRange;
+					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(sLight->innerConeAngle) - std::cos(sLight->outerConeAngle));
+					uBaseLights[i].lightAngleOffset = -std::cos(sLight->outerConeAngle) * uBaseLights[i].lightAngleScale;
+					uLightsPositions[i] = sLight->position;
+					uLightsDirections[i] = sLight->direction;
+				}
+
+				if (++i >= uNumLights) { break; }
 			}
 
-			mImpl->lightsBuffer->copy(uPointLights.data(), uPointLights.size());
+			mImpl->lightsBuffer->copy(uBaseLights.data(), uBaseLights.size());
 			for (auto& passData : mImpl->passesData) {
 				if (passData.lightsBlock) {
-					passData.numPointLights->setValue(uNumPointLights);
-					passData.pointLightsPositions->setValue(uPointLightsPositions.data(), uPointLightsPositions.size());
+					passData.numLights->setValue(uNumLights);
+					passData.lightsPositions->setValue(uLightsPositions.data(), uLightsPositions.size());
+					passData.lightsDirections->setValue(uLightsDirections.data(), uLightsDirections.size());
 				}
 			}
 		}

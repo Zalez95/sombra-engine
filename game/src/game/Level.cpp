@@ -177,7 +177,9 @@ namespace game {
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
 		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture;
 		std::unique_ptr<se::app::Camera> camera1 = nullptr;
-		std::unique_ptr<se::app::PointLight> pointLight1 = nullptr, pointLight2 = nullptr, pointLight3 = nullptr;
+		std::unique_ptr<se::app::SpotLight> light1 = nullptr;
+		std::unique_ptr<se::app::PointLight> light2 = nullptr, light3 = nullptr;
+		std::unique_ptr<se::app::DirectionalLight> light4 = nullptr;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		se::app::Scenes loadedScenes;
@@ -362,17 +364,26 @@ namespace game {
 			camera1->setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			pointLight1 = std::make_unique<se::app::PointLight>();
-			pointLight1->name = "pointLight1";
-			pointLight1->intensity = 5.0f;
-			pointLight2 = std::make_unique<se::app::PointLight>();
-			pointLight2->name = "pointLight2";
-			pointLight2->color = glm::vec3(0.5f, 1.0f, 0.5f);
-			pointLight2->intensity = 2.0f;
-			pointLight3 = std::make_unique<se::app::PointLight>();
-			pointLight3->name = "pointLight3";
-			pointLight3->color = glm::vec3(1.0f, 0.5f, 0.5f);
-			pointLight3->intensity = 10.0f;
+			light1 = std::make_unique<se::app::SpotLight>();
+			light1->name = "spotLight1";
+			light1->intensity = 5.0f;
+			light1->inverseRange = 1.0f / 20.0f;
+			light1->innerConeAngle = glm::pi<float>() / 12.0f;
+			light1->outerConeAngle = glm::pi<float>() / 6.0f;
+			light2 = std::make_unique<se::app::PointLight>();
+			light2->name = "pointLight1";
+			light2->color = glm::vec3(0.5f, 1.0f, 0.5f);
+			light2->intensity = 2.0f;
+			light2->inverseRange = 1.0f / 5.0f;
+			light3 = std::make_unique<se::app::PointLight>();
+			light3->name = "pointLight2";
+			light3->color = glm::vec3(1.0f, 0.5f, 0.5f);
+			light3->intensity = 10.0f;
+			light3->inverseRange = 1.0f / 15.0f;
+			light4 = std::make_unique<se::app::DirectionalLight>();
+			light4->name = "directionalLight1";
+			light4->color = glm::vec3(1.0f, 0.82f, 0.25f);
+			light4->intensity = 0.025f;
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
@@ -434,7 +445,7 @@ namespace game {
 		mGameData.physicsManager->addEntity(mPlayerEntity, std::move(rigidBody1));
 
 		mGameData.graphicsManager->addCameraEntity(mPlayerEntity, std::move(camera1));
-		mGameData.graphicsManager->addLightEntity(mPlayerEntity, std::move(pointLight1));
+		mGameData.graphicsManager->addLightEntity(mPlayerEntity, std::move(light1));
 		mGameData.audioManager->setListener(mPlayerEntity);
 
 		// Sky
@@ -725,19 +736,29 @@ namespace game {
 			auto techniqueLight = std::make_shared<se::graphics::Technique>();
 			techniqueLight->addPass(passLight);
 
-			auto eL2 = std::make_unique<se::app::Entity>("point-light2");
+			auto eL1 = std::make_unique<se::app::Entity>("directional-light1");
+			eL1->position = glm::vec3(0.0f, -5.0f, 0.0f);
+			eL1->orientation = glm::quat(-0.888f, 0.396f, 0.170f,-0.149f);
+			eL1->scale = glm::vec3(0.1f);
+			mGameData.graphicsManager->addLightEntity(eL1.get(), std::move(light4));
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			renderableMesh->addTechnique(techniqueLight);
+			mGameData.graphicsManager->addMeshEntity(eL1.get(), std::move(renderableMesh));
+			mEntities.push_back(std::move(eL1));
+
+			auto eL2 = std::make_unique<se::app::Entity>("point-light1");
 			eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
 			eL2->scale = glm::vec3(0.1f);
-			mGameData.graphicsManager->addLightEntity(eL2.get(), std::move(pointLight2));
-			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
+			mGameData.graphicsManager->addLightEntity(eL2.get(), std::move(light2));
+			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
 			renderableMesh->addTechnique(techniqueLight);
 			mGameData.graphicsManager->addMeshEntity(eL2.get(), std::move(renderableMesh));
 			mEntities.push_back(std::move(eL2));
 
-			auto eL3 = std::make_unique<se::app::Entity>("point-light3");
+			auto eL3 = std::make_unique<se::app::Entity>("point-light2");
 			eL3->position = glm::vec3(2.0f, 10.0f, 5.0f);
 			eL3->scale = glm::vec3(0.1f);
-			mGameData.graphicsManager->addLightEntity(eL3.get(), std::move(pointLight3));
+			mGameData.graphicsManager->addLightEntity(eL3.get(), std::move(light3));
 			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
 			renderableMesh->addTechnique(techniqueLight);
 			mGameData.graphicsManager->addMeshEntity(eL3.get(), std::move(renderableMesh));

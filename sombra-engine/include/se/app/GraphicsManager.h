@@ -62,8 +62,8 @@ namespace se::app {
 		/** The maximum number of joints in the program */
 		static constexpr unsigned int kMaxJoints = 64;
 
-		/** The maximum number of point lights in the program */
-		static constexpr unsigned int kMaxPointLights = 4;
+		/** The maximum number of lights in the program */
+		static constexpr unsigned int kMaxLights = 4;
 
 		/** The GraphicsEngine used for rendering the data of the Entities */
 		graphics::GraphicsEngine& mGraphicsEngine;
