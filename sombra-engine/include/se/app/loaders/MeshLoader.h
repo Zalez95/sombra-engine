@@ -3,12 +3,9 @@
 
 #include "../../graphics/3D/Mesh.h"
 #include "../../collision/HalfEdgeMesh.h"
+#include "../graphics/RawMesh.h"
 
 namespace se::app {
-
-	struct Image;
-	struct RawMesh;
-
 
 	/**
 	 * Class MeshLoader, it's used to create meshes from raw meshes data

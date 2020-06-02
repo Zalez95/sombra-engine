@@ -2,7 +2,6 @@
 #define GRAPHICS_ENGINE_H
 
 #include <mutex>
-#include <glm/glm.hpp>
 #include "RenderGraph.h"
 
 namespace se::graphics {

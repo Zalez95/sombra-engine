@@ -6,20 +6,10 @@
 
 namespace se::graphics {
 
-	FrameBuffer::FrameBuffer() : mTarget(FrameBufferTarget::Both)
+	FrameBuffer::FrameBuffer(FrameBufferTarget target) : mTarget(target)
 	{
 		// Create the FBO
 		GL_WRAP( glGenFramebuffers(1, &mBufferId) );
-		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mBufferId) );
-
-		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
-		if (status != GL_FRAMEBUFFER_COMPLETE) {
-			throw std::runtime_error("FB error, status: 0x" + std::to_string(status));
-		}
-
-		// Restore the default FBO
-		GL_WRAP( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) );
-
 		SOMBRA_TRACE_LOG << "Created FBO " << mBufferId;
 	}
 
@@ -74,29 +64,29 @@ namespace se::graphics {
 			case FrameBufferAttachment::Color:		glAttachment = GL_COLOR_ATTACHMENT0 + colorIndex;	break;
 		}
 
+		bind();
 		GL_WRAP( glFramebufferTexture2D(
 			GL_FRAMEBUFFER, glAttachment,
 			GL_TEXTURE_2D, texture.getTextureId(), 0
 		) );
+
+		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			throw std::runtime_error("FrameBuffer error: status 0x" + std::to_string(status));
+		}
+		unbind();
 	}
 
 
 	void FrameBuffer::bind() const
 	{
-		GLenum glTarget = GL_FRAMEBUFFER;
-		switch (mTarget) {
-			case FrameBufferTarget::Read:	glTarget = GL_READ_FRAMEBUFFER;	break;
-			case FrameBufferTarget::Write:	glTarget = GL_DRAW_FRAMEBUFFER;	break;
-			case FrameBufferTarget::Both:	glTarget = GL_FRAMEBUFFER;		break;
-		}
-
-		GL_WRAP( glBindFramebuffer(glTarget, mBufferId) );
+		GL_WRAP( glBindFramebuffer(toGLFrameBufferTarget(mTarget), mBufferId) );
 	}
 
 
 	void FrameBuffer::unbind() const
 	{
-		GL_WRAP( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+		GL_WRAP( glBindFramebuffer(toGLFrameBufferTarget(mTarget), 0) );
 	}
 
 }

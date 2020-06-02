@@ -33,35 +33,55 @@ namespace se::graphics {
 			int x, int y, std::size_t width, std::size_t height
 		);
 
-		/** @return	the Viewport origin and its dimensions */
-		static std::pair<int[2], std::size_t[2]> getViewport();
+		/** Returns the Viewport origin and its dimensions
+		 *
+		 * @param	x a reference to the origin of the viewport in the X axis
+		 * @param	y a reference to the origin of the viewport in the Y axis
+		 * @param	width a reference to the width of the viewport
+		 * @param	height a reference to the height of the viewport */
+		static void getViewport(
+			int& x, int& y, std::size_t& width, std::size_t& height
+		);
 
 		/** Draws the VertexBuffers bound
+		 *
+		 * @param	primitive the type of primitive to draw
+		 * @param	vertexCount the number of vertices in the VertexBuffer
+		 *			bound */
+		static void drawArrays(
+			PrimitiveType primitive, std::size_t vertexCount
+		);
+
+		/** Draws the VertexBuffers bound using the IndexBuffer bound
 		 *
 		 * @param	primitive the type of primitive to draw
 		 * @param	indexCount the number of indices in the IndexBuffer bound
 		 * @param	indexType the type of indices in the IndexBuffer bound */
 		static void drawIndexed(
 			PrimitiveType primitive,
-			std::size_t indexCount, TypeId indexType);
-
-		/** Draws the VertexBuffers bound
-		 *
-		 * @param	primitive the type of primitive to draw
-		 * @param	indexCount the number of vertices in the VertexBuffer
-		 *			bound */
-		static void drawArrays(
-			PrimitiveType primitive, std::size_t vertexCount
+			std::size_t indexCount, TypeId indexType
 		);
 
 		/** Draws the VertexBuffers bound (instanced)
 		 *
 		 * @param	primitive the type of primitive to draw
-		 * @param	indexCount the number of vertices in the VertexBuffer bound
+		 * @param	vertexCount the number of vertices in the VertexBuffer bound
 		 * @param	instanceCount the number of instances to draw */
 		static void drawArraysInstanced(
 			PrimitiveType primitive, std::size_t vertexCount,
 			std::size_t instanceCount
+		);
+
+		/** Draws the VertexBuffers bound using the IndexBuffer bound
+		 * (instanced)
+		 *
+		 * @param	primitive the type of primitive to draw
+		 * @param	indexCount the number of indices in the IndexBuffer bound
+		 * @param	indexType the type of indices in the IndexBuffer bound
+		 * @param	instanceCount the number of instances to draw */
+		static void drawIndexedInstanced(
+			PrimitiveType primitive,
+			std::size_t indexCount, TypeId indexType, std::size_t instanceCount
 		);
 
 		/** Clears the given buffers
@@ -87,6 +107,18 @@ namespace se::graphics {
 		 *
 		 * @param	active if alpha-blending should be enabled or not */
 		static void setBlending(bool active);
+
+		/** Enables or disables color components so the next draw operations
+		 * won't write to the selected components
+		 *
+		 * @param	r if we want to write to the the red color component
+		 * @param	g if we want to write to the the green color component
+		 * @param	b if we want to write to the the blue color component
+		 * @param	a if we want to write to the the alpha color component */
+		static void setColorMask(bool r, bool g, bool b, bool a);
+
+		/** Adds a memory barrier for syncing image reads and writes */
+		static void imageMemoryBarrier();
 	};
 
 

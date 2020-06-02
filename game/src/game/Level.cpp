@@ -22,6 +22,7 @@
 #include <se/app/AnimationManager.h>
 #include <se/app/AudioManager.h>
 
+#include <se/graphics/Renderer.h>
 #include <se/graphics/3D/Mesh.h>
 #include <se/graphics/3D/RenderableMesh.h>
 #include <se/graphics/core/GraphicsOperations.h>
@@ -304,7 +305,7 @@ namespace game {
 			}
 
 			// GLTF scenes
-			se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
+			se::app::Result result = sceneReader->load("res/meshes/sponza/Sponza.gltf", loadedScenes);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -331,15 +332,15 @@ namespace game {
 			}
 
 			// Textures
-			logoTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
+			logoTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
 			logoTexture->setImage(
-				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
+				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
 				logo1.width, logo1.height
 			);
 
-			reticleTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
+			reticleTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
 			reticleTexture->setImage(
-				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
+				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
 				reticle1.width, reticle1.height
 			);
 
@@ -347,19 +348,22 @@ namespace game {
 				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
 				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
-			chessTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
-			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, 2, 2);
+			chessTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
+			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, se::graphics::ColorFormat::RGB, 2, 2);
 
-			splatmapTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
-			splatmapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
-			splatmapTexture->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
+			splatmapTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
+			splatmapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+				.setImage(
+					splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
+					se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height
+				);
 
 			// Cameras
 			camera1 = std::make_unique<se::app::Camera>();
 			camera1->setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			light1 = std::make_unique<se::app::SpotLight>();
+			/*light1 = std::make_unique<se::app::SpotLight>();
 			light1->name = "spotLight1";
 			light1->intensity = 5.0f;
 			light1->inverseRange = 1.0f / 20.0f;
@@ -392,7 +396,7 @@ namespace game {
 			source1 = std::make_unique<se::audio::Source>();
 			source1->bind(mBuffers.back());
 			source1->setLooping(true);
-			source1->play();
+			source1->play();*/
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
@@ -444,7 +448,7 @@ namespace game {
 		mGameData.audioManager->setListener(mPlayerEntity);
 
 		// Sky
-		{
+		if(false){
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
@@ -463,7 +467,7 @@ namespace game {
 		}
 
 		// Terrain
-		{
+		if(false){
 			se::app::SplatmapMaterial terrainMaterial;
 			terrainMaterial.name = "terrainMaterial";
 			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
@@ -476,7 +480,7 @@ namespace game {
 		}
 
 		// Plane
-		{
+		if(false){
 			auto plane = std::make_unique<se::app::Entity>("plane");
 			plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
@@ -540,9 +544,8 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-
-			auto passCube = mGameData.graphicsManager->createPass3D(programPBR, true);
+			auto program = mGameData.graphicsManager->getProgramRepository().find("programVoxelization");
+			auto passCube = mGameData.graphicsManager->createPass3D(program, false);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -550,7 +553,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				programPBR
+				program
 			);
 
 			auto techniqueCube = std::make_unique<se::graphics::Technique>();
@@ -567,7 +570,7 @@ namespace game {
 		mConstraints.push_back(new se::physics::DistanceConstraint({ rb1, rb2 }));
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
-		{
+		if(false){
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
 			auto passRed = mGameData.graphicsManager->createPass3D(programPBR, true);
@@ -622,7 +625,7 @@ namespace game {
 
 			mEntities.push_back(std::move(gravityCube));
 		}
-
+/*
 		// HACD Tube
 		se::collision::HalfEdgeMesh tube = createTestTube1();
 		glm::vec3 tubeCentroid = se::collision::calculateCentroid(tube);
@@ -667,9 +670,9 @@ namespace game {
 
 			mEntities.push_back(std::move(tubeSlice));
 		}
-
+*/
 		// Random cubes
-		{
+		if(false){
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
 			auto passRandom = mGameData.graphicsManager->createPass3D(programPBR, true);
@@ -710,7 +713,7 @@ namespace game {
 		}
 
 		// Lights
-		{
+		if(false){
 			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
 			auto passLight = mGameData.graphicsManager->createPass3D(programPBR, true);
@@ -765,11 +768,11 @@ namespace game {
 			std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
 			std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
 
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+			auto programVoxelization = mGameData.graphicsManager->getProgramRepository().find("programVoxelization");
 			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
 			for (auto& material : loadedScenes.materials) {
-				auto pass3D = mGameData.graphicsManager->createPass3D(programPBR, true);
-				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programPBR);
+				auto pass3D = mGameData.graphicsManager->createPass3D(programVoxelization, false);
+				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programVoxelization);
 				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
 			}
 

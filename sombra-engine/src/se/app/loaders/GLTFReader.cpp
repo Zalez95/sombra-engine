@@ -543,7 +543,7 @@ namespace se::app {
 
 	Result GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
 	{
-		auto texture = std::make_shared<graphics::Texture>(graphics::TextureType::Texture2D);
+		auto texture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		if (!texture) {
 			return Result(false, "Failed to create the texture");
 		}
@@ -560,12 +560,12 @@ namespace se::app {
 			graphics::ColorFormat format = graphics::ColorFormat::RGB;
 			switch (image.channels) {
 				case 1:	format = graphics::ColorFormat::Red;	break;
-				case 2:	format = graphics::ColorFormat::Alpha;	break;
+				case 2:	format = graphics::ColorFormat::RG;		break;
 				case 3:	format = graphics::ColorFormat::RGB;	break;
 				case 4:	format = graphics::ColorFormat::RGBA;	break;
 			}
 
-			texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, image.width, image.height);
+			texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, format, image.width, image.height);
 		}
 
 		auto itSampler = jsonTexture.find("sampler");

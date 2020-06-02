@@ -4,7 +4,8 @@
 
 namespace se::graphics {
 
-	FBClearNode::FBClearNode(const std::string& name) : BindableRenderNode(name)
+	FBClearNode::FBClearNode(const std::string& name, bool color, bool depth, bool stencil) :
+		BindableRenderNode(name), mColor(color), mDepth(depth), mStencil(stencil)
 	{
 		auto bindableIndex = addBindable();
 
@@ -16,7 +17,7 @@ namespace se::graphics {
 	void FBClearNode::execute()
 	{
 		bind();
-		GraphicsOperations::clear(false, true);
+		GraphicsOperations::clear(mColor, mDepth, mStencil);
 	}
 
 }

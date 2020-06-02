@@ -81,28 +81,48 @@ namespace se::graphics {
 	}
 
 
-	constexpr int toGLTexture(TextureType type)
+	constexpr GLenum toGLFrameBufferTarget(FrameBufferTarget target)
 	{
-		switch (type) {
-			case TextureType::Texture1D:	return GL_TEXTURE_1D;
-			case TextureType::Texture2D:	return GL_TEXTURE_2D;
-			case TextureType::Texture3D:	return GL_TEXTURE_3D;
-			case TextureType::CubeMap:		return GL_TEXTURE_CUBE_MAP;
+		switch (target) {
+			case FrameBufferTarget::Read:	return GL_READ_FRAMEBUFFER;	break;
+			case FrameBufferTarget::Write:	return GL_DRAW_FRAMEBUFFER;	break;
+			case FrameBufferTarget::Both:	return GL_FRAMEBUFFER;		break;
 			default:						return GL_NONE;
 		}
 	}
 
 
-	constexpr GLenum toGLColor(ColorFormat format)
+	constexpr int toGLTextureTarget(TextureTarget target)
+	{
+		switch (target) {
+			case TextureTarget::Texture1D:	return GL_TEXTURE_1D;
+			case TextureTarget::Texture2D:	return GL_TEXTURE_2D;
+			case TextureTarget::Texture3D:	return GL_TEXTURE_3D;
+			case TextureTarget::CubeMap:	return GL_TEXTURE_CUBE_MAP;
+			default:						return GL_NONE;
+		}
+	}
+
+
+	constexpr GLenum toGLColorFormat(ColorFormat format)
 	{
 		switch (format) {
-			case ColorFormat::Red:		return GL_RED;
-			case ColorFormat::Green:	return GL_GREEN;
-			case ColorFormat::Blue:		return GL_BLUE;
-			case ColorFormat::Alpha:	return GL_ALPHA;
-			case ColorFormat::RGB:		return GL_RGB;
-			case ColorFormat::RGBA:		return GL_RGBA;
-			default:					return GL_NONE;
+			case ColorFormat::Red:			return GL_RED;
+			case ColorFormat::RG:			return GL_RG;
+			case ColorFormat::RGB:			return GL_RGB;
+			case ColorFormat::RGBA:			return GL_RGBA;
+			case ColorFormat::Depth:		return GL_DEPTH_COMPONENT;
+			case ColorFormat::DepthStencil:	return GL_DEPTH_STENCIL;
+			case ColorFormat::RedInteger:	return GL_RED_INTEGER;
+			case ColorFormat::RGInteger:	return GL_RG_INTEGER;
+			case ColorFormat::RGBInteger:	return GL_RGB_INTEGER;
+			case ColorFormat::RGBAInteger:	return GL_RGBA_INTEGER;
+			case ColorFormat::RGBA8:		return GL_RGBA8;
+			case ColorFormat::Red32ui:		return GL_R32UI;
+			case ColorFormat::RG32ui:		return GL_RG32UI;
+			case ColorFormat::RGB32ui:		return GL_RGB32UI;
+			case ColorFormat::RGBA32ui:		return GL_RGBA32UI;
+			default:						return GL_NONE;
 		}
 	}
 

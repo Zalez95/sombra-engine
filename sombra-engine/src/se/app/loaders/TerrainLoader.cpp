@@ -42,14 +42,14 @@ namespace se::app {
 		const Image& heightMap, const std::vector<float>& lodDistances,
 		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
-		auto heightMapTexture = std::make_unique<graphics::Texture>(graphics::TextureType::Texture2D);
-		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap);
-		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
-		heightMapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
-		heightMapTexture->setImage(
-			heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red,
-			heightMap.width, heightMap.height
-		);
+		auto heightMapTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
+		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap)
+			.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
+			.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+			.setImage(
+				heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red, graphics::ColorFormat::Red,
+				heightMap.width, heightMap.height
+			);
 
 		auto program = mGraphicsManager.getProgramRepository().find(programName);
 		auto terrainPass = mGraphicsManager.createPass3D(program, true);

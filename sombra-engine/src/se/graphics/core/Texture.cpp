@@ -3,7 +3,7 @@
 
 namespace se::graphics {
 
-	Texture::Texture(TextureType type) : mType(type), mSlot(0)
+	Texture::Texture(TextureTarget target) : mTarget(target), mTextureUnit(-1), mImageUnit(-1)
 	{
 		GL_WRAP( glGenTextures(1, &mTextureId) );
 		SOMBRA_TRACE_LOG << "Created Texture " << mTextureId;
@@ -12,7 +12,9 @@ namespace se::graphics {
 	}
 
 
-	Texture::Texture(Texture&& other) : mType(other.mType), mTextureId(other.mTextureId), mSlot(other.mSlot)
+	Texture::Texture(Texture&& other) :
+		mTarget(other.mTarget), mTextureId(other.mTextureId),
+		mTextureUnit(other.mTextureUnit), mImageUnit(other.mImageUnit), mColorFormat(other.mColorFormat)
 	{
 		other.mTextureId = 0;
 	}
@@ -34,94 +36,127 @@ namespace se::graphics {
 			SOMBRA_TRACE_LOG << "Deleted Texture " << mTextureId;
 		}
 
-		mType = other.mType;
+		mTarget = other.mTarget;
 		mTextureId = other.mTextureId;
-		mSlot = other.mSlot;
+		mTextureUnit = other.mTextureUnit;
+		mImageUnit = other.mImageUnit;
+		mColorFormat = other.mColorFormat;
 		other.mTextureId = 0;
 
 		return *this;
 	}
 
 
-	void Texture::setFiltering(TextureFilter minification, TextureFilter magnification) const
+	Texture& Texture::setTextureUnit(int unit)
 	{
-		int glMinFilter = toGLFilter(minification);
-		int glMagFilter = toGLFilter(magnification);
-
-		GL_WRAP( glBindTexture(toGLTexture(mType), mTextureId) );
-		GL_WRAP( glTexParameteri(toGLTexture(mType), GL_TEXTURE_MIN_FILTER, glMinFilter) );
-		GL_WRAP( glTexParameteri(toGLTexture(mType), GL_TEXTURE_MAG_FILTER, glMagFilter) );
+		mTextureUnit = unit;
+		return *this;
 	}
 
 
-	void Texture::setWrapping(TextureWrap wrapS, TextureWrap wrapT, TextureWrap wrapR) const
+	Texture& Texture::setImageUnit(int unit)
 	{
+		mImageUnit = unit;
+		return *this;
+	}
+
+
+	Texture& Texture::setFiltering(TextureFilter minification, TextureFilter magnification)
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		int glMinFilter = toGLFilter(minification);
+		int glMagFilter = toGLFilter(magnification);
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, glMinFilter) );
+		GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, glMagFilter) );
+
+		return *this;
+	}
+
+
+	Texture& Texture::setWrapping(TextureWrap wrapS, TextureWrap wrapT, TextureWrap wrapR)
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
 		int glWrapS = toGLWrap(wrapS);
 		int glWrapT = toGLWrap(wrapT);
 		int glWrapR = toGLWrap(wrapR);
 
-		GL_WRAP( glBindTexture(toGLTexture(mType), mTextureId) );
-		GL_WRAP( glTexParameteri(toGLTexture(mType), GL_TEXTURE_WRAP_S, glWrapS) );
-		if (mType != TextureType::Texture1D) {
-			GL_WRAP( glTexParameteri(toGLTexture(mType), GL_TEXTURE_WRAP_T, glWrapT) );
-			if (mType != TextureType::Texture2D) {
-				GL_WRAP( glTexParameteri(toGLTexture(mType), GL_TEXTURE_WRAP_R, glWrapR) );
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_WRAP_S, glWrapS) );
+		if (mTarget != TextureTarget::Texture1D) {
+			GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_WRAP_T, glWrapT) );
+			if (mTarget != TextureTarget::Texture2D) {
+				GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_WRAP_R, glWrapR) );
 			}
 		}
+
+		return *this;
 	}
 
 
-	void Texture::setImage(
-		const void* pixels, TypeId type, ColorFormat format,
+	Texture& Texture::setImage(
+		const void* source, TypeId sourceType, ColorFormat sourceFormat,
+		ColorFormat textureFormat,
 		std::size_t width, std::size_t height, std::size_t depth
-	) const
-	{
-		GLenum glFormat = toGLColor(format);
-		GLenum glType = toGLType(type);
+	) {
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLenum glType = toGLType(sourceType);
+		GLenum glFormat = toGLColorFormat(sourceFormat);
+		GLint glInternalFormat = toGLColorFormat(mColorFormat = textureFormat);
 
-		GL_WRAP( glBindTexture(toGLTexture(mType), mTextureId) );
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
 
-		if (mType == TextureType::Texture1D) {
+		if (mTarget == TextureTarget::Texture1D) {
 			GL_WRAP( glTexImage1D(
-				toGLTexture(mType), 0,
-				glFormat, static_cast<GLsizei>(width), 0,
-				glFormat, glType, pixels
+				glTarget, 0, glInternalFormat,
+				static_cast<GLsizei>(width), 0,
+				glFormat, glType, source
 			) );
 		}
-		else if (mType == TextureType::Texture2D) {
+		else if (mTarget == TextureTarget::Texture2D) {
 			GL_WRAP( glTexImage2D(
-				toGLTexture(mType), 0,
-				glFormat, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
-				glFormat, glType, pixels
+				glTarget, 0, glInternalFormat,
+				static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
+				glFormat, glType, source
 			) );
 		}
-		if (mType == TextureType::Texture3D) {
+		if (mTarget == TextureTarget::Texture3D) {
 			GL_WRAP( glTexImage3D(
-				toGLTexture(mType), 0,
-				glFormat, static_cast<GLsizei>(width), static_cast<GLsizei>(height), static_cast<GLsizei>(depth), 0,
-				glFormat, glType, pixels
+				glTarget, 0, glInternalFormat,
+				static_cast<GLsizei>(width), static_cast<GLsizei>(height), static_cast<GLsizei>(depth), 0,
+				glFormat, glType, source
 			) );
 		}
+
+		return *this;
 	}
 
 
-	void Texture::generateMipMap() const
+	Texture& Texture::generateMipMap()
 	{
-		GL_WRAP( glBindTexture(toGLTexture(mType), mTextureId) );
-		GL_WRAP( glGenerateMipmap(toGLTexture(mType)) );
+		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), mTextureId) );
+		GL_WRAP( glGenerateMipmap(toGLTextureTarget(mTarget)) );
+
+		return *this;
 	}
 
 
 	void Texture::bind() const
 	{
-		GL_WRAP( glActiveTexture(GL_TEXTURE0 + mSlot) );
-		GL_WRAP( glBindTexture(toGLTexture(mType), mTextureId) );
+		if (mTextureUnit >= 0) {
+			GL_WRAP( glActiveTexture(GL_TEXTURE0 + mTextureUnit) );
+		}
+		if (mImageUnit >= 0) {
+			GL_WRAP( glBindImageTexture(mImageUnit, mTextureId, 0, GL_TRUE, 0, GL_READ_WRITE, toGLColorFormat(mColorFormat)); );
+		}
+		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), mTextureId) );
 	}
 
 
 	void Texture::unbind() const
 	{
-		GL_WRAP( glBindTexture(toGLTexture(mType), 0) );
+		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), 0) );
 	}
 
 }

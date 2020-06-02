@@ -11,8 +11,21 @@ namespace se::graphics {
 			return false;
 		}
 
+		if (!glewIsSupported("GL_VERSION_3_3")) {
+			SOMBRA_FATAL_LOG << "OpenGL 3.3 is not supported";
+			return false;
+		}
+
+		if (!glewIsSupported("GL_ARB_shader_image_load_store") && !glewIsSupported("GL_EXT_shader_image_load_store")) {
+			SOMBRA_FATAL_LOG << "OpenGL image_load_store extension is not supported";
+			return false;
+		}
+
 		// Allow non-aligned textures
 		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
+
+		// Set the clear color
+		GL_WRAP( glClearColor(1.0f, 1.0f, 1.0f, 1.0f) );
 
 		return true;
 	}
@@ -36,13 +49,21 @@ namespace se::graphics {
 		int maxTextureUnits = -1;
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
 
+		int maxTextureSize = -1;
+		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+
+		int max3DTextureSize = -1;
+		glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3DTextureSize);
+
 		return	std::string("OpenGL Renderer: ") + glRenderer + "\n"
 				+ "OpenGL version supported: " + glVersion + "\n"
 				+ "GLSL version supported: " + glslVersion + "\n"
 				+ "Max vertex uniforms: " + std::to_string(maxVertexUniforms) + "\n"
 				+ "Max geometry uniforms: " + std::to_string(maxGeometryUniforms) + "\n"
 				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n"
-				+ "Max texture units: " + std::to_string(maxTextureUnits) + "\n";
+				+ "Max texture units: " + std::to_string(maxTextureUnits) + "\n"
+				+ "Max texture size: " + std::to_string(maxTextureSize) + "\n"
+				+ "Max 3D texture size: " + std::to_string(max3DTextureSize) + "\n";
 	}
 
 
@@ -52,24 +73,15 @@ namespace se::graphics {
 	}
 
 
-	std::pair<int[2], std::size_t[2]> GraphicsOperations::getViewport()
+	void GraphicsOperations::getViewport(int& x, int& y, std::size_t& width, std::size_t& height)
 	{
 		int params[4];
 		GL_WRAP( glGetIntegerv( GL_VIEWPORT, params ) );
 
-		std::pair<int[2], std::size_t[2]> ret;
-		ret.first[0] = params[0];
-		ret.first[1] = params[1];
-		ret.second[0] = params[2];
-		ret.second[1] = params[3];
-
-		return ret;
-	}
-
-
-	void GraphicsOperations::drawIndexed(PrimitiveType primitive, std::size_t indexCount, TypeId indexType)
-	{
-		GL_WRAP( glDrawElements(toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr) );
+		x = params[0];
+		y = params[1];
+		width = params[2];
+		height = params[3];
 	}
 
 
@@ -79,9 +91,27 @@ namespace se::graphics {
 	}
 
 
+	void GraphicsOperations::drawIndexed(PrimitiveType primitive, std::size_t indexCount, TypeId indexType)
+	{
+		GL_WRAP( glDrawElements(toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr) );
+	}
+
+
 	void GraphicsOperations::drawArraysInstanced(PrimitiveType primitive, std::size_t vertexCount, std::size_t instanceCount)
 	{
-		GL_WRAP( glDrawArraysInstanced(toGLPrimitive(primitive), 0, static_cast<GLsizei>(vertexCount), static_cast<GLsizei>(instanceCount)) );
+		GL_WRAP( glDrawArraysInstanced(
+			toGLPrimitive(primitive), 0, static_cast<GLsizei>(vertexCount),
+			static_cast<GLsizei>(instanceCount)
+		) );
+	}
+
+
+	void GraphicsOperations::drawIndexedInstanced(PrimitiveType primitive, std::size_t indexCount, TypeId indexType, std::size_t instanceCount)
+	{
+		GL_WRAP( glDrawElementsInstanced(
+			toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr,
+			static_cast<GLsizei>(instanceCount)
+		) );
 	}
 
 
@@ -133,6 +163,18 @@ namespace se::graphics {
 		else {
 			GL_WRAP( glDisable(GL_BLEND) );
 		}
+	}
+
+
+	void GraphicsOperations::setColorMask(bool r, bool g, bool b, bool a)
+	{
+		GL_WRAP( glColorMask(r, g, b, a) );
+	}
+
+
+	void GraphicsOperations::imageMemoryBarrier()
+	{
+		GL_WRAP( glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT) );
 	}
 
 }

@@ -3,6 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
 #include "se/app/events/ResizeEvent.h"
+#include "se/app/graphics/VoxelizationNode.h"
+#include "se/app/graphics/Tex3DViewerNode.h"
+#include "se/app/graphics/Tex3DClearNode.h"
 #include "se/utils/Log.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
@@ -10,6 +13,7 @@
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/core/Program.h"
+#include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/GraphicsOperations.h"
 
@@ -77,10 +81,56 @@ namespace se::app {
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 
+		SOMBRA_INFO_LOG << graphics::GraphicsOperations::getGraphicsInfo();
+
 		mImpl = std::make_unique<Impl>();
 
+		static constexpr int numVoxels = 128;
+
 		{
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::FBClearNode>("defaultFBClear") );
+			auto resources = dynamic_cast<graphics::BindableRenderNode*>(mGraphicsEngine.getRenderGraph().getNode("resources"));
+
+			auto buffer = std::make_unique<unsigned int[]>(numVoxels * numVoxels * numVoxels);
+			auto texture3D = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture3D);
+			texture3D->setTextureUnit(Tex3DViewerNode::kTextureUnit)
+				.setImageUnit(VoxelizationNode::kVoxelImageUnit)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setImage(
+					buffer.get(), graphics::TypeId::UnsignedInt, graphics::ColorFormat::RedInteger,
+					graphics::ColorFormat::Red32ui, numVoxels, numVoxels, numVoxels
+				)
+				.generateMipMap();
+			auto texture3DIndex = resources->addBindable( std::move(texture3D) );
+			resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("texture3D", resources, texture3DIndex) );
+		}
+
+		{
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::FBClearNode>("defaultFBClear", true, true) );
+		}
+
+		{
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<Tex3DClearNode>("tex3DClear", *this, numVoxels) );
+		}
+
+		{
+			auto voxelization = std::make_unique<VoxelizationNode>("voxelization", *this, numVoxels);
+			voxelization->setSceneBounds(glm::vec3(-25.0f), glm::vec3(25.0f));
+			mGraphicsEngine.getRenderGraph().addNode( std::move(voxelization) );
+		}
+
+		{
+			auto tex3DViewer = std::make_unique<Tex3DViewerNode>("tex3DViewer", *this, numVoxels);
+			tex3DViewer->setSceneBounds(glm::vec3(-25.0f), glm::vec3(25.0f));
+
+			auto& passData = mImpl->passesData.emplace_back();
+			passData.program = mProgramRepository.find("programTex3DViewer");
+			passData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *passData.program);
+			passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *passData.program);
+
+			tex3DViewer->addBindable(passData.viewMatrix);
+			tex3DViewer->addBindable(passData.projectionMatrix);
+
+			mGraphicsEngine.getRenderGraph().addNode( std::move(tex3DViewer) );
 		}
 
 		{
@@ -104,10 +154,18 @@ namespace se::app {
 			auto defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear");
 			auto renderer3D = mGraphicsEngine.getRenderGraph().getNode("renderer3D");
 			auto renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
+			auto tex3DClear = mGraphicsEngine.getRenderGraph().getNode("tex3DClear");
+			auto voxelization = mGraphicsEngine.getRenderGraph().getNode("voxelization");
+			auto tex3DViewer = mGraphicsEngine.getRenderGraph().getNode("tex3DViewer");
 
 			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
 			renderer3D->findInput("target")->connect( defaultFBClear->findOutput("output") );
-			renderer2D->findInput("target")->connect( renderer3D->findOutput("target") );
+			tex3DViewer->findInput("target")->connect( renderer3D->findOutput("target") );
+			renderer2D->findInput("target")->connect( tex3DViewer->findOutput("target") );
+
+			tex3DClear->findInput("input")->connect( resources->findOutput("texture3D") );
+			voxelization->findInput("texture3D")->connect( tex3DClear->findOutput("output") );
+			tex3DViewer->findInput("texture3D")->connect( voxelization->findOutput("texture3D") );
 		}
 
 		// Reserve memory for the UniformBuffers
@@ -196,8 +254,10 @@ namespace se::app {
 		pass->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
 			"uProjectionMatrix", *program,
 			[]() {
-				auto viewportSize = graphics::GraphicsOperations::getViewport().second;
-				return glm::ortho(0.0f, static_cast<float>(viewportSize[0]), static_cast<float>(viewportSize[1]), 0.0f, -1.0f, 1.0f);
+				int x, y;
+				std::size_t width, height;
+				graphics::GraphicsOperations::getViewport(x, y, width, height);
+				return glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
 			}
 		));
 
@@ -207,7 +267,7 @@ namespace se::app {
 
 	GraphicsManager::PassSPtr GraphicsManager::createPass3D(ProgramSPtr program, bool hasLights)
 	{
-		auto renderer3D = dynamic_cast<graphics::Renderer3D*>( mGraphicsEngine.getRenderGraph().getNode("renderer3D") );
+		auto renderer3D = dynamic_cast<graphics::Renderer3D*>( mGraphicsEngine.getRenderGraph().getNode("voxelization") );
 		if (!renderer3D) {
 			return nullptr;
 		}

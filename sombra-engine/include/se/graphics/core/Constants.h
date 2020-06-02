@@ -36,8 +36,8 @@ namespace se::graphics {
 	};
 
 
-	/** The different types of textures available */
-	enum class TextureType
+	/** The different targets that a Texture can be bound to */
+	enum class TextureTarget
 	{
 		Texture1D,
 		Texture2D,
@@ -50,11 +50,20 @@ namespace se::graphics {
 	enum class ColorFormat
 	{
 		Red,
-		Green,
-		Blue,
-		Alpha,
+		RG,
 		RGB,
-		RGBA
+		RGBA,
+		Depth,
+		DepthStencil,
+		RedInteger,
+		RGInteger,
+		RGBInteger,
+		RGBAInteger,
+		RGBA8,
+		Red32ui,
+		RG32ui,
+		RGB32ui,
+		RGBA32ui
 	};
 
 
@@ -92,7 +101,7 @@ namespace se::graphics {
 	};
 
 
-	/** The different operations that a FrameBuffer can be bound to */
+	/** The different targets that a FrameBuffer can be bound to */
 	enum class FrameBufferTarget
 	{
 		Read,

@@ -139,6 +139,9 @@ namespace se::graphics {
 			Renderer(name),
 			mBatch(4 * kQuadsPerBatch, 6 * kQuadsPerBatch), mPass(nullptr) {};
 
+		/** Class destructor */
+		virtual ~Renderer2D() = default;
+
 		/** Submits the given Renderable for rendering
 		 *
 		 * @param	renderable the Renderable to submit for rendering

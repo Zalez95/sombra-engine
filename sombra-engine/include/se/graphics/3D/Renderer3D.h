@@ -26,6 +26,9 @@ namespace se::graphics {
 		 * @param	name the name of the new Renderer3D */
 		Renderer3D(const std::string& name) : Renderer(name) {};
 
+		/** Class destructor */
+		virtual ~Renderer3D() = default;
+
 		/** Submits the given Renderable for rendering
 		 *
 		 * @param	renderable the Renderable to submit for rendering

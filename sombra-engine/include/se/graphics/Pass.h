@@ -40,12 +40,14 @@ namespace se::graphics {
 
 		/** Adds the given Bindable to the Pass
 		 *
-		 * @param	bindable a pointer to the Bindable to add */
+		 * @param	bindable a pointer to the Bindable to add
+		 * @return	a reference to the current Pass object */
 		Pass& addBindable(BindableSPtr bindable);
 
 		/** Removes a Bindable from the current Pass
 		 *
-		 * @param	bindable a pointer to the Bindable to remove */
+		 * @param	bindable a pointer to the Bindable to remove
+		 * @return	a reference to the current Pass object */
 		Pass& removeBindable(BindableSPtr bindable);
 
 		/** Binds the current Pass for using it in the following operations

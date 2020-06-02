@@ -29,7 +29,7 @@ namespace se::app {
 		}
 
 		// Create the atlas texture
-		output.textureAtlas = std::make_shared<graphics::Texture>(graphics::TextureType::Texture2D);
+		output.textureAtlas = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		if (!output.textureAtlas) {
 			return Result(false, "Failed to create the Font atlas texture");
 		}
@@ -82,9 +82,12 @@ namespace se::app {
 		}
 
 		output.maxCharacterSize = characterSize;
-		output.textureAtlas->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
-		output.textureAtlas->setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge);
-		output.textureAtlas->setImage(pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y);
+		output.textureAtlas->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
+			.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+			.setImage(
+				pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA,
+				graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y
+			);
 		output.atlasSize = atlasSize;
 
 		// Clear

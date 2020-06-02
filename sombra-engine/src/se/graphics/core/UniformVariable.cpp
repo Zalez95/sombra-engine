@@ -88,6 +88,20 @@ namespace se::graphics {
 
 
 	template <>
+	void IUniformVariable::setUniform<glm::ivec2>(const glm::ivec2& value) const
+	{
+		GL_WRAP( glUniform2i(mUniformLocation, value.x, value.y) );
+	}
+
+
+	template <>
+	void IUniformVariable::setUniformV<glm::ivec2>(const glm::ivec2* valuePtr, std::size_t count) const
+	{
+		GL_WRAP( glUniform2iv(mUniformLocation, static_cast<GLsizei>(count), glm::value_ptr(*valuePtr)) );
+	}
+
+
+	template <>
 	void IUniformVariable::setUniform<glm::vec3>(const glm::vec3& value) const
 	{
 		GL_WRAP( glUniform3f(mUniformLocation, value.x, value.y, value.z) );
@@ -102,6 +116,20 @@ namespace se::graphics {
 
 
 	template <>
+	void IUniformVariable::setUniform<glm::ivec3>(const glm::ivec3& value) const
+	{
+		GL_WRAP( glUniform3i(mUniformLocation, value.x, value.y, value.z) );
+	}
+
+
+	template <>
+	void IUniformVariable::setUniformV<glm::ivec3>(const glm::ivec3* valuePtr, std::size_t count) const
+	{
+		GL_WRAP( glUniform3iv(mUniformLocation, static_cast<GLsizei>(count), glm::value_ptr(*valuePtr)) );
+	}
+
+
+	template <>
 	void IUniformVariable::setUniform<glm::vec4>(const glm::vec4& value) const
 	{
 		GL_WRAP( glUniform4f(mUniformLocation, value.x, value.y, value.z, value.w) );
@@ -112,6 +140,20 @@ namespace se::graphics {
 	void IUniformVariable::setUniformV<glm::vec4>(const glm::vec4* valuePtr, std::size_t count) const
 	{
 		GL_WRAP( glUniform4fv(mUniformLocation, static_cast<GLsizei>(count), glm::value_ptr(*valuePtr)) );
+	}
+
+
+	template <>
+	void IUniformVariable::setUniform<glm::ivec4>(const glm::ivec4& value) const
+	{
+		GL_WRAP( glUniform4i(mUniformLocation, value.x, value.y, value.z, value.w) );
+	}
+
+
+	template <>
+	void IUniformVariable::setUniformV<glm::ivec4>(const glm::ivec4* valuePtr, std::size_t count) const
+	{
+		GL_WRAP( glUniform4iv(mUniformLocation, static_cast<GLsizei>(count), glm::value_ptr(*valuePtr)) );
 	}
 
 

@@ -11,10 +11,10 @@ namespace se::graphics {
 	 * as the edges. The RenderGraph is needed for ensuring the order of
 	 * execution of the different RenderNodes. The RenderGraph is used for
 	 * implementing multi-pass Techiques.
-	 * Every RenderGraph by default has a "resources" RenderNode where all the
-	 * global Bindable resources can accessed from other RenderNodes. This
-	 * "resources" RenderNode also has a "defaultFB" output with the default
-	 * FrameBuffer to draw to.
+	 * Every RenderGraph by default has a "resources" BindableRenderNode where
+	 * all the global Bindable resources can be accessed from other RenderNodes.
+	 * This "resources" RenderNode also has a "defaultFB" output with the
+	 * default FrameBuffer to draw to.
 	 */
 	class RenderGraph
 	{

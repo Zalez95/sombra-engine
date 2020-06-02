@@ -14,22 +14,28 @@ namespace se::graphics {
 	class Texture : public Bindable
 	{
 	private:	// Attributes
-		/** The type of the Texture */
-		TextureType mType;
+		/** The target of the Texture */
+		TextureTarget mTarget;
 
 		/** The id of the texture object */
 		unsigned int mTextureId;
 
 		/** The texture unit where the texture will be bound */
-		unsigned int mSlot;
+		int mTextureUnit;
+
+		/** The image unit where the texture will be bound */
+		int mImageUnit;
+
+		/** The color format of the texture */
+		ColorFormat mColorFormat;
 
 	public:		// Functions
 		/** Creates a new Texture
 		 *
-		 * @param	type the Type of Texture to create
+		 * @param	target the target of Texture to create
 		 * @note	the generated Texture will have Nearest filtering enabled
 		 *			by default */
-		Texture(TextureType type);
+		Texture(TextureTarget target);
 		Texture(const Texture& other) = delete;
 		Texture(Texture&& other);
 
@@ -45,45 +51,59 @@ namespace se::graphics {
 
 		/** Sets the texture unit where the texture will be bound
 		 *
-		 * @param	slot the texture unit where we want to bind the texture */
-		void setTextureUnit(unsigned int slot) { mSlot = slot; };
+		 * @param	unit the texture unit where we want to bind the texture
+		 * @return	a reference to the current Texture object */
+		Texture& setTextureUnit(int unit);
+
+		/** Sets the image unit where the texture will be bound
+		 *
+		 * @param	unit the image unit where we want to bind the texture
+		 * @return	a reference to the current Texture object */
+		Texture& setImageUnit(int unit);
 
 		/** Sets the filtering method used by the texture
 		 *
 		 * @param	minification the method used in the minification process
 		 * @param	magnification the method used in the magnification
-		 *			process */
-		void setFiltering(
+		 *			process
+		 * @return	a reference to the current Texture object */
+		Texture& setFiltering(
 			TextureFilter minification, TextureFilter magnification
-		) const;
+		);
 
 		/** Sets the behavior of the texture in each axis when a requested
 		 * position falls out of the [0.0, 1.0] range.
 		 *
 		 * @param	wrapS the TextureWrap in the x axis
 		 * @param	wrapT the TextureWrap in the y axis
-		 * @param	wrapR the TextureWrap in the z axis */
-		void setWrapping(
+		 * @param	wrapR the TextureWrap in the z axis
+		 * @return	a reference to the current Texture object */
+		Texture& setWrapping(
 			TextureWrap wrapS = TextureWrap::Repeat,
 			TextureWrap wrapT = TextureWrap::Repeat,
 			TextureWrap wrapR = TextureWrap::Repeat
-		) const;
+		);
 
 		/** Sets the image data of the Texture
 		 *
-		 * @param	pixels the pixel data of the new Texture
-		 * @param	type the type of the pixel data of the new Texture
-		 * @param	format the ColorFormat of the new Texture
+		 * @param	source a pointer to the data to store in the Texture
+		 * @param	sourceType the type of the source data
+		 * @param	sourceFormat the ColorFormat of the source data
+		 * @param	textureFormat the ColorFormat of the texture
 		 * @param	width the width of the new Texture
 		 * @param	height the height of the new Texture
-		 * @param	depth the depth of the new Texture */
-		void setImage(
-			const void* pixels, TypeId type, ColorFormat format,
+		 * @param	depth the depth of the new Texture
+		 * @return	a reference to the current Texture object */
+		Texture& setImage(
+			const void* source, TypeId sourceType, ColorFormat sourceFormat,
+			ColorFormat textureFormat,
 			std::size_t width = 0, std::size_t height = 0, std::size_t depth = 0
-		) const;
+		);
 
-		/** Generate mipmaps for the current texture */
-		void generateMipMap() const;
+		/** Generate mipmaps for the current texture
+		 *
+		 * @return	a reference to the current Texture object */
+		Texture& generateMipMap();
 
 		/** Binds the Texture */
 		void bind() const override;

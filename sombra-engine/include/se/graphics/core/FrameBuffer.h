@@ -23,8 +23,10 @@ namespace se::graphics {
 		FrameBufferTarget mTarget;
 
 	public:		// Functions
-		/** Creates a new FrameBuffer */
-		FrameBuffer();
+		/** Creates a new FrameBuffer
+		 *
+		 * @param	target the target that we want to bind the FrameBuffer to */
+		FrameBuffer(FrameBufferTarget target = FrameBufferTarget::Both);
 		FrameBuffer(const FrameBuffer& other) = delete;
 		FrameBuffer(FrameBuffer&& other);
 
@@ -37,12 +39,6 @@ namespace se::graphics {
 
 		/** @return	the FrameBuffer where graphics API draws to by default */
 		static FrameBuffer& getDefaultFrameBuffer();
-
-		/** Set the target operation where the FrameBuffer will be bound
-		 *
-		 * @param	target the operation that we want to bind the FrameBuffer
-		 *			to */
-		void setTarget(FrameBufferTarget target) { mTarget = target; };
 
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
