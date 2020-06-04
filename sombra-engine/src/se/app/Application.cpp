@@ -3,6 +3,7 @@
 #include "se/utils/Log.h"
 #include "se/window/WindowSystem.h"
 #include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/core/GraphicsOperations.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/animation/AnimationSystem.h"
 #include "se/audio/AudioEngine.h"
@@ -21,7 +22,6 @@ namespace se::app {
 
 	Application::Application(
 		const window::WindowData& windowConfig,
-		const graphics::GraphicsData& graphicsConfig,
 		const collision::CollisionWorldData& collisionConfig,
 		float updateTime
 	) : mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
@@ -45,9 +45,10 @@ namespace se::app {
 			mInputManager = new InputManager(*mWindowSystem, *mEventManager);
 
 			// Graphics
-			mGraphicsEngine = new graphics::GraphicsEngine(graphicsConfig);
+			mGraphicsEngine = new graphics::GraphicsEngine();
 			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager);
 			mGUIManager = new GUIManager(*mEventManager, *mGraphicsManager, { windowConfig.width, windowConfig.height });
+			se::graphics::GraphicsOperations::setViewport(0, 0, windowConfig.width, windowConfig.height);
 
 			// Physics
 			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);

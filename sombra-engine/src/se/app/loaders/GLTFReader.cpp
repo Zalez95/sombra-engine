@@ -543,7 +543,7 @@ namespace se::app {
 
 	Result GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
 	{
-		auto texture = std::make_shared<graphics::Texture>();
+		auto texture = std::make_shared<graphics::Texture>(graphics::TextureType::Texture2D);
 		if (!texture) {
 			return Result(false, "Failed to create the texture");
 		}

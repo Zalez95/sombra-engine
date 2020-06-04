@@ -195,9 +195,9 @@ namespace se::app {
 
 		pass->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
 			"uProjectionMatrix", *program,
-			[this]() {
-				auto viewportSize = mGraphicsEngine.getViewportSize();
-				return glm::ortho(0.0f, static_cast<float>(viewportSize.x), static_cast<float>(viewportSize.y), 0.0f, -1.0f, 1.0f);
+			[]() {
+				auto viewportSize = graphics::GraphicsOperations::getViewport().second;
+				return glm::ortho(0.0f, static_cast<float>(viewportSize[0]), static_cast<float>(viewportSize[1]), 0.0f, -1.0f, 1.0f);
 			}
 		));
 
@@ -520,10 +520,10 @@ namespace se::app {
 // Private functions
 	void GraphicsManager::onResizeEvent(const ResizeEvent& event)
 	{
-		auto width = static_cast<unsigned int>(event.getWidth());
-		auto height = static_cast<unsigned int>(event.getHeight());
+		auto width = static_cast<std::size_t>(event.getWidth());
+		auto height = static_cast<std::size_t>(event.getHeight());
 
-		mGraphicsEngine.setViewportSize({ width, height });
+		graphics::GraphicsOperations::setViewport(0, 0, width, height);
 	}
 
 }

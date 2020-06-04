@@ -175,7 +175,7 @@ namespace game {
 
 		se::app::Image heightMap1, splatMap1, logo1, reticle1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture;
+		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture;
 		std::unique_ptr<se::app::Camera> camera1 = nullptr;
 		std::unique_ptr<se::app::SpotLight> light1 = nullptr;
 		std::unique_ptr<se::app::PointLight> light2 = nullptr, light3 = nullptr;
@@ -331,19 +331,13 @@ namespace game {
 			}
 
 			// Textures
-			logoTexture = std::make_shared<se::graphics::Texture>();
-			if (!logoTexture) {
-				throw std::runtime_error("Couldn't create the logo texture");
-			}
+			logoTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
 			logoTexture->setImage(
 				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 				logo1.width, logo1.height
 			);
 
-			reticleTexture = std::make_shared<se::graphics::Texture>();
-			if (!reticleTexture) {
-				throw std::runtime_error("Couldn't create the reticle texture");
-			}
+			reticleTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
 			reticleTexture->setImage(
 				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 				reticle1.width, reticle1.height
@@ -353,11 +347,12 @@ namespace game {
 				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
 				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
 			};
-			chessTexture = std::make_shared<se::graphics::Texture>();
-			if (!chessTexture) {
-				throw std::runtime_error("Couldn't create the chess texture");
-			}
+			chessTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
 			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, 2, 2);
+
+			splatmapTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureType::Texture2D);
+			splatmapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
+			splatmapTexture->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
 
 			// Cameras
 			camera1 = std::make_unique<se::app::Camera>();
@@ -469,13 +464,9 @@ namespace game {
 
 		// Terrain
 		{
-			auto splatmapTex = std::make_shared<se::graphics::Texture>();
-			splatmapTex->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);
-			splatmapTex->setImage(splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height);
-
 			se::app::SplatmapMaterial terrainMaterial;
 			terrainMaterial.name = "terrainMaterial";
-			terrainMaterial.splatmapTexture = std::move(splatmapTex);
+			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });

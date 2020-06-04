@@ -33,6 +33,9 @@ namespace se::graphics {
 			int x, int y, std::size_t width, std::size_t height
 		);
 
+		/** @return	the Viewport origin and its dimensions */
+		static std::pair<int[2], std::size_t[2]> getViewport();
+
 		/** Draws the VertexBuffers bound
 		 *
 		 * @param	primitive the type of primitive to draw
@@ -69,6 +72,21 @@ namespace se::graphics {
 		static void clear(
 			bool color = false, bool depth = false, bool stencil = false
 		);
+
+		/** Enables or disables face culling
+		 *
+		 * @param	active if face culling should be enabled or not */
+		static void setCulling(bool active);
+
+		/** Enables or disables depth-testing
+		 *
+		 * @param	active if depth-testing should be enabled or not */
+		static void setDepthTest(bool active);
+
+		/** Enables or disables alpha-blending
+		 *
+		 * @param	active if alpha-blending should be enabled or not */
+		static void setBlending(bool active);
 	};
 
 
@@ -89,15 +107,12 @@ namespace se::graphics {
 		CullingOperation(bool active = true) : mActive(active) {};
 
 		/** Enables face culling if mActive is true, disables it otherwise */
-		virtual void bind() const override { setCulling(mActive); };
+		virtual void bind() const override
+		{ GraphicsOperations::setCulling(mActive); };
 
 		/** Disables face culling if mActive is true, disables it otherwise */
-		virtual void unbind() const override { setCulling(!mActive); };
-	private:
-		/** Enables or disables face culling
-		 *
-		 * @param	active if face culling should be enabled or not */
-		static void setCulling(bool active);
+		virtual void unbind() const override
+		{ GraphicsOperations::setCulling(!mActive); };
 	};
 
 
@@ -118,15 +133,12 @@ namespace se::graphics {
 		DepthTestOperation(bool active = true) : mActive(active) {};
 
 		/** Enables depth-testing if mActive is true, disables it otherwise */
-		virtual void bind() const override { setDepthTest(mActive); };
+		virtual void bind() const override
+		{ GraphicsOperations::setDepthTest(mActive); };
 
 		/** Disables depth-testing if mActive is true, disables it otherwise */
-		virtual void unbind() const override { setDepthTest(!mActive); };
-	private:
-		/** Enables or disables depth-testing
-		 *
-		 * @param	active if depth-testing should be enabled or not */
-		static void setDepthTest(bool active);
+		virtual void unbind() const override
+		{ GraphicsOperations::setDepthTest(!mActive); };
 	};
 
 
@@ -147,15 +159,12 @@ namespace se::graphics {
 		BlendingOperation(bool active = true) : mActive(active) {};
 
 		/** Enables Blending if mActive is true, disables it otherwise */
-		virtual void bind() const override { setBlending(mActive); };
+		virtual void bind() const override
+		{ GraphicsOperations::setBlending(mActive); };
 
 		/** Disables Blending if mActive is true, enables it otherwise */
-		virtual void unbind() const override { setBlending(!mActive); };
-	private:
-		/** Enables or disables alpha-blending
-		 *
-		 * @param	active if alpha-blending should be enabled or not */
-		static void setBlending(bool active);
+		virtual void unbind() const override
+		{ GraphicsOperations::setBlending(!mActive); };
 	};
 
 }

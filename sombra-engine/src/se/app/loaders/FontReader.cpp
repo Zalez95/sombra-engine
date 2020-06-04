@@ -29,7 +29,7 @@ namespace se::app {
 		}
 
 		// Create the atlas texture
-		output.textureAtlas = std::make_shared<graphics::Texture>();
+		output.textureAtlas = std::make_shared<graphics::Texture>(graphics::TextureType::Texture2D);
 		if (!output.textureAtlas) {
 			return Result(false, "Failed to create the Font atlas texture");
 		}

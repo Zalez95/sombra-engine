@@ -14,6 +14,9 @@ namespace se::graphics {
 	class Texture : public Bindable
 	{
 	private:	// Attributes
+		/** The type of the Texture */
+		TextureType mType;
+
 		/** The id of the texture object */
 		unsigned int mTextureId;
 
@@ -22,9 +25,11 @@ namespace se::graphics {
 
 	public:		// Functions
 		/** Creates a new Texture
-		 * @note	the generated Texture will have Nearest filtering and
-		 *			Repeat wrapping enabled by default */
-		Texture();
+		 *
+		 * @param	type the Type of Texture to create
+		 * @note	the generated Texture will have Nearest filtering enabled
+		 *			by default */
+		Texture(TextureType type);
 		Texture(const Texture& other) = delete;
 		Texture(Texture&& other);
 
@@ -56,8 +61,13 @@ namespace se::graphics {
 		 * position falls out of the [0.0, 1.0] range.
 		 *
 		 * @param	wrapS the TextureWrap in the x axis
-		 * @param	wrapT the TextureWrap in the y axis */
-		void setWrapping(TextureWrap wrapS, TextureWrap wrapT) const;
+		 * @param	wrapT the TextureWrap in the y axis
+		 * @param	wrapR the TextureWrap in the z axis */
+		void setWrapping(
+			TextureWrap wrapS = TextureWrap::Repeat,
+			TextureWrap wrapT = TextureWrap::Repeat,
+			TextureWrap wrapR = TextureWrap::Repeat
+		) const;
 
 		/** Sets the image data of the Texture
 		 *
@@ -65,10 +75,11 @@ namespace se::graphics {
 		 * @param	type the type of the pixel data of the new Texture
 		 * @param	format the ColorFormat of the new Texture
 		 * @param	width the width of the new Texture
-		 * @param	height the height of the new Texture */
+		 * @param	height the height of the new Texture
+		 * @param	depth the depth of the new Texture */
 		void setImage(
 			const void* pixels, TypeId type, ColorFormat format,
-			std::size_t width, std::size_t height
+			std::size_t width = 0, std::size_t height = 0, std::size_t depth = 0
 		) const;
 
 		/** Generate mipmaps for the current texture */

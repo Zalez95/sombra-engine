@@ -36,6 +36,16 @@ namespace se::graphics {
 	};
 
 
+	/** The different types of textures available */
+	enum class TextureType
+	{
+		Texture1D,
+		Texture2D,
+		Texture3D,
+		CubeMap
+	};
+
+
 	/** The Color format for the Textures */
 	enum class ColorFormat
 	{

@@ -81,6 +81,18 @@ namespace se::graphics {
 	}
 
 
+	constexpr int toGLTexture(TextureType type)
+	{
+		switch (type) {
+			case TextureType::Texture1D:	return GL_TEXTURE_1D;
+			case TextureType::Texture2D:	return GL_TEXTURE_2D;
+			case TextureType::Texture3D:	return GL_TEXTURE_3D;
+			case TextureType::CubeMap:		return GL_TEXTURE_CUBE_MAP;
+			default:						return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLColor(ColorFormat format)
 	{
 		switch (format) {

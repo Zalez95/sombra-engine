@@ -6,32 +6,14 @@
 
 namespace se::graphics {
 
-	GraphicsEngine::GraphicsEngine(const GraphicsData& config)
+	GraphicsEngine::GraphicsEngine()
 	{
 		if (!GraphicsOperations::init()) {
 			throw std::runtime_error("Failed to initialize the Graphics API");
 		}
 
-		// Set the initial viewport size
-		setViewportSize(config.viewportSize);
-
 		// Create the Renderers
 		mRenderGraph = std::make_unique<RenderGraph>();
-	}
-
-
-	std::string GraphicsEngine::getGraphicsInfo() const
-	{
-		return GraphicsOperations::getGraphicsInfo();
-	}
-
-
-	void GraphicsEngine::setViewportSize(const glm::uvec2& viewportSize)
-	{
-		std::unique_lock lck(mMutex);
-
-		mViewportSize = viewportSize;
-		GraphicsOperations::setViewport(0, 0, mViewportSize.x, mViewportSize.y);
 	}
 
 

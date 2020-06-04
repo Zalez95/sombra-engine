@@ -42,7 +42,7 @@ namespace se::app {
 		const Image& heightMap, const std::vector<float>& lodDistances,
 		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
-		auto heightMapTexture = std::make_unique<graphics::Texture>();
+		auto heightMapTexture = std::make_unique<graphics::Texture>(graphics::TextureType::Texture2D);
 		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap);
 		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 		heightMapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge);

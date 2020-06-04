@@ -52,6 +52,21 @@ namespace se::graphics {
 	}
 
 
+	std::pair<int[2], std::size_t[2]> GraphicsOperations::getViewport()
+	{
+		int params[4];
+		GL_WRAP( glGetIntegerv( GL_VIEWPORT, params ) );
+
+		std::pair<int[2], std::size_t[2]> ret;
+		ret.first[0] = params[0];
+		ret.first[1] = params[1];
+		ret.second[0] = params[2];
+		ret.second[1] = params[3];
+
+		return ret;
+	}
+
+
 	void GraphicsOperations::drawIndexed(PrimitiveType primitive, std::size_t indexCount, TypeId indexType)
 	{
 		GL_WRAP( glDrawElements(toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr) );
@@ -87,7 +102,7 @@ namespace se::graphics {
 	}
 
 
-	void CullingOperation::setCulling(bool active)
+	void GraphicsOperations::setCulling(bool active)
 	{
 		if (active) {
 			GL_WRAP( glEnable(GL_CULL_FACE) );
@@ -98,7 +113,7 @@ namespace se::graphics {
 	}
 
 
-	void DepthTestOperation::setDepthTest(bool active)
+	void GraphicsOperations::setDepthTest(bool active)
 	{
 		if (active) {
 			GL_WRAP( glEnable(GL_DEPTH_TEST) );
@@ -109,7 +124,7 @@ namespace se::graphics {
 	}
 
 
-	void BlendingOperation::setBlending(bool active)
+	void GraphicsOperations::setBlending(bool active)
 	{
 		if (active) {
 			GL_WRAP( glEnable(GL_BLEND) );
