@@ -6,7 +6,7 @@
 #include "Result.h"
 #include "../graphics/Skin.h"
 #include "../graphics/Camera.h"
-#include "../graphics/Lights.h"
+#include "../graphics/LightSource.h"
 #include "../graphics/Material.h"
 #include "../../animation/CompositeAnimator.h"
 #include "../../animation/AnimationNode.h"
@@ -41,11 +41,11 @@ namespace se::app {
 			/** The index to the primitives of the Entity */
 			std::size_t primitivesIndex;
 
-			/** If the Entity has a Light or not */
-			bool hasLight;
+			/** If the Entity has a LightSource or not */
+			bool hasLightSource;
 
-			/** The index of the Light of the Entity in a Lights vector */
-			std::size_t lightIndex;
+			/** The index of the Light of the Entity in a LightSources vector */
+			std::size_t lightSourceIndex;
 
 			/** If the Entity has a Skin or not */
 			bool hasSkin;
@@ -88,8 +88,8 @@ namespace se::app {
 		/** The Primitives of the Entities */
 		std::vector<std::vector<Primitive>> primitives;
 
-		/** The Lights loaded by a SceneReader */
-		std::vector<std::unique_ptr<ILight>> lights;
+		/** The LightSources loaded by a SceneReader */
+		std::vector<std::unique_ptr<LightSource>> lightSources;
 
 		/** The Skins loaded by a SceneReader */
 		std::vector<std::unique_ptr<Skin>> skins;

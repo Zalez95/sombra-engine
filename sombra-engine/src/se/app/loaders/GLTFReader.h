@@ -19,7 +19,7 @@ namespace se::app {
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		using MeshUPtr = std::unique_ptr<graphics::Mesh>;
 		using Primitives = std::vector<Scenes::Primitive>;
-		using LightUPtr = std::unique_ptr<ILight>;
+		using LightSourceUPtr = std::unique_ptr<LightSource>;
 		using SkinUPtr = std::unique_ptr<Skin>;
 		using CameraUPtr = std::unique_ptr<Camera>;
 		using SceneUPtr = std::unique_ptr<Scene>;
@@ -80,7 +80,7 @@ namespace se::app {
 			std::vector<MaterialUPtr> materials;
 			std::vector<MeshUPtr> meshes;
 			std::vector<Primitives> primitives;
-			std::vector<LightUPtr> lights;
+			std::vector<LightSourceUPtr> lightSources;
 			std::vector<SkinUPtr> skins;
 			std::vector<CameraUPtr> cameras;
 			std::vector<Node> nodes;
@@ -276,10 +276,10 @@ namespace se::app {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseKHRLights(const nlohmann::json& jsonKHRLights);
 
-		/** Creates a new Light from the given GLTF JSON Light and appends
+		/** Creates a new LightSource from the given GLTF JSON Light and appends
 		 * it to the mGLTFData
 		 *
-		 * @param	jsonLight the JSON object with the Light to parse
+		 * @param	jsonLight the JSON object with the LightSource to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseLight(const nlohmann::json& jsonLight);
 	};

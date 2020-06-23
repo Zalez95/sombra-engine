@@ -16,10 +16,10 @@ namespace se::graphics {
 			return false;
 		}
 
-		if (!glewIsSupported("GL_ARB_shader_image_load_store") && !glewIsSupported("GL_EXT_shader_image_load_store")) {
+		/*if (!glewIsSupported("GL_ARB_shader_image_load_store") && !glewIsSupported("GL_EXT_shader_image_load_store")) {
 			SOMBRA_FATAL_LOG << "OpenGL image_load_store extension is not supported";
 			return false;
-		}
+		}*/
 
 		// Allow non-aligned textures
 		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );

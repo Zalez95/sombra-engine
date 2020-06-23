@@ -142,6 +142,52 @@ namespace se::app {
 	}
 
 
+	RawMesh MeshLoader::createBoxMesh(const std::string& name, glm::vec3 lengths)
+	{
+		se::app::RawMesh ret(name);
+		glm::vec3 halfL = 0.5f * lengths;
+
+		ret.positions = {
+			glm::vec3{ halfL.x, halfL.y,-halfL.z},		glm::vec3{ halfL.x,-halfL.y,-halfL.z},
+			glm::vec3{-halfL.x,-halfL.y,-halfL.z},		glm::vec3{-halfL.x, halfL.y,-halfL.z},
+			glm::vec3{ halfL.x, halfL.y, halfL.z},		glm::vec3{ halfL.x,-halfL.y, halfL.z},
+			glm::vec3{-halfL.x,-halfL.y, halfL.z},		glm::vec3{-halfL.x, halfL.y, halfL.z},
+			glm::vec3{ halfL.x, halfL.y,-halfL.z},		glm::vec3{ halfL.x,-halfL.y,-halfL.z},
+			glm::vec3{ halfL.x, halfL.y, halfL.z},		glm::vec3{ halfL.x,-halfL.y, halfL.z},
+			glm::vec3{ halfL.x, halfL.y, halfL.z},		glm::vec3{ halfL.x,-halfL.y, halfL.z},
+			glm::vec3{-halfL.x,-halfL.y, halfL.z},		glm::vec3{-halfL.x, halfL.y, halfL.z},
+			glm::vec3{ halfL.x, halfL.y,-halfL.z},		glm::vec3{ halfL.x,-halfL.y,-halfL.z},
+			glm::vec3{-halfL.x, halfL.y,-halfL.z},		glm::vec3{-halfL.x, halfL.y,-halfL.z},
+			glm::vec3{-halfL.x,-halfL.y,-halfL.z},		glm::vec3{-halfL.x,-halfL.y,-halfL.z},
+			glm::vec3{-halfL.x,-halfL.y, halfL.z},		glm::vec3{-halfL.x, halfL.y, halfL.z}
+		};
+		ret.texCoords = {
+			{0.666467010f, 0.666466951f},	{0.999800264f, 0.000199760f},
+			{0.333533257f, 0.333133578f},	{0.333533287f, 0.666466951f},
+			{0.666467010f, 0.333533167f},	{0.999800145f, 0.333133548f},
+			{0.333533197f, 0.000199760f},	{0.333533197f, 0.333533257f},
+			{0.333133667f, 0.333533167f},	{0.000199899f, 0.333533197f},
+			{0.333133548f, 0.666466951f},	{0.000199760f, 0.666466951f},
+			{0.333133697f, 0.333133548f},	{0.333133488f, 0.000199760f},
+			{0.000199760f, 0.000199909f},	{0.000199869f, 0.333133667f},
+			{0.333133548f, 0.999800264f},	{0.000199760f, 0.999800264f},
+			{0.333133548f, 0.666866540f},	{0.666467010f, 0.333133488f},
+			{0.000199770f, 0.666866540f},	{0.666866540f, 0.000199799f},
+			{0.666866540f, 0.333133578f},	{0.666466891f, 0.000199760f}
+		};
+		ret.faceIndices = {
+			16, 20, 18,		5, 21, 1,
+			2, 23, 19,		0, 7, 4,
+			10, 9, 8,		15, 13, 12,
+			16, 17, 20,		5, 22, 21,
+			2, 6, 23,		0, 3, 7,
+			10, 11, 9,		15, 14, 13
+		};
+
+		return ret;
+	}
+
+
 	RawMesh MeshLoader::createSphereMesh(
 		const std::string& name,
 		std::size_t segments, std::size_t rings, float radius

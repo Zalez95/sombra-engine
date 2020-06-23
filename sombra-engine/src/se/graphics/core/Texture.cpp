@@ -98,7 +98,7 @@ namespace se::graphics {
 	Texture& Texture::setImage(
 		const void* source, TypeId sourceType, ColorFormat sourceFormat,
 		ColorFormat textureFormat,
-		std::size_t width, std::size_t height, std::size_t depth
+		std::size_t width, std::size_t height, std::size_t depth, int orientation
 	) {
 		GLenum glTarget = toGLTextureTarget(mTarget);
 		GLenum glType = toGLType(sourceType);
@@ -106,27 +106,35 @@ namespace se::graphics {
 		GLint glInternalFormat = toGLColorFormat(mColorFormat = textureFormat);
 
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
-
-		if (mTarget == TextureTarget::Texture1D) {
-			GL_WRAP( glTexImage1D(
-				glTarget, 0, glInternalFormat,
-				static_cast<GLsizei>(width), 0,
-				glFormat, glType, source
-			) );
-		}
-		else if (mTarget == TextureTarget::Texture2D) {
-			GL_WRAP( glTexImage2D(
-				glTarget, 0, glInternalFormat,
-				static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
-				glFormat, glType, source
-			) );
-		}
-		if (mTarget == TextureTarget::Texture3D) {
-			GL_WRAP( glTexImage3D(
-				glTarget, 0, glInternalFormat,
-				static_cast<GLsizei>(width), static_cast<GLsizei>(height), static_cast<GLsizei>(depth), 0,
-				glFormat, glType, source
-			) );
+		switch (mTarget) {
+			case TextureTarget::Texture1D:
+				GL_WRAP( glTexImage1D(
+					glTarget, 0, glInternalFormat,
+					static_cast<GLsizei>(width), 0,
+					glFormat, glType, source
+				) );
+				break;
+			case TextureTarget::Texture2D:
+				GL_WRAP( glTexImage2D(
+					glTarget, 0, glInternalFormat,
+					static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
+					glFormat, glType, source
+				) );
+				break;
+			case TextureTarget::Texture3D:
+				GL_WRAP( glTexImage3D(
+					glTarget, 0, glInternalFormat,
+					static_cast<GLsizei>(width), static_cast<GLsizei>(height), static_cast<GLsizei>(depth), 0,
+					glFormat, glType, source
+				) );
+				break;
+			case TextureTarget::CubeMap:
+				GL_WRAP( glTexImage2D(
+					GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, 0, glInternalFormat,
+					static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
+					glFormat, glType, source
+				) );
+				break;
 		}
 
 		return *this;

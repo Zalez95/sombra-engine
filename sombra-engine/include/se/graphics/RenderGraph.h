@@ -8,9 +8,9 @@ namespace se::graphics {
 	/**
 	 * Class RenderGraph, it's a directed graph in which RenderNodes represents
 	 * each of the nodes of the graph and their Input and Output connectors act
-	 * as the edges. The RenderGraph is needed for ensuring the order of
-	 * execution of the different RenderNodes. The RenderGraph is used for
-	 * implementing multi-pass Techiques.
+	 * as the edges. The RenderGraph is needed for implementing multi-pass
+	 * Techiques because it ensures the order of execution of the different
+	 * RenderNodes.
 	 * Every RenderGraph by default has a "resources" BindableRenderNode where
 	 * all the global Bindable resources can be accessed from other RenderNodes.
 	 * This "resources" RenderNode also has a "defaultFB" output with the
@@ -41,6 +41,14 @@ namespace se::graphics {
 		 *			otherwise */
 		bool addNode(RenderNodeUPtr node);
 
+		/** Removes the RenderNode with the same name than the given from
+		 * the RenderGraph
+		 *
+		 * @param	nodeName the name of the RenderNode
+		 * @return	true if the RenderNode was removed successfully, false
+		 *			otherwise */
+		bool removeNode(const std::string& nodeName);
+
 		/** Searchs a RenderNode with the same name in the RenderGraph
 		 *
 		 * @param	nodeName the name of the RenderNode
@@ -48,8 +56,10 @@ namespace se::graphics {
 		RenderNode* getNode(const std::string& nodeName) const;
 
 		/** Prepares the Graph for executing it after adding all its
-		 * RenderNodes. This function must be called once before executing the
-		 * Graph */
+		 * RenderNodes
+		 *
+		 * @note this function must be called before calling @see execute
+		 * each time a node is added or removed from the RenderGraph */
 		void prepareGraph();
 
 		/** Executes the RenderNodes added to the RenderGraph */

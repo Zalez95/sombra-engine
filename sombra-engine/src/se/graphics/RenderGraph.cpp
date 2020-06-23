@@ -48,7 +48,7 @@ namespace se::graphics {
 
 	bool RenderGraph::addNode(RenderNodeUPtr node)
 	{
-		if (std::none_of(
+		if (node && std::none_of(
 			mRenderNodes.begin(), mRenderNodes.end(),
 			[&](const RenderNodeUPtr& node2) { return node2->getName() == node->getName(); }
 		)) {
@@ -62,22 +62,38 @@ namespace se::graphics {
 	}
 
 
-	RenderNode* RenderGraph::getNode(const std::string& nodeName) const
+	bool RenderGraph::removeNode(const std::string& nodeName)
 	{
-		for (auto& node : mRenderNodes) {
-			if (node->getName() == nodeName) {
-				return node.get();
-			}
+		auto itRenderNode = std::find_if(
+			mRenderNodes.begin(), mRenderNodes.end(),
+			[&](RenderNodeUPtr& node) { return node->getName() == nodeName; }
+		);
+		if (itRenderNode != mRenderNodes.end()) {
+			std::swap(*itRenderNode, mRenderNodes.back());
+			mRenderNodes.pop_back();
+
+			return true;
 		}
 
-		return nullptr;
+		SOMBRA_ERROR_LOG << "There isn't any RenderNode with the same name";
+		return false;
+	}
+
+
+	RenderNode* RenderGraph::getNode(const std::string& nodeName) const
+	{
+		auto itRenderNode = std::find_if(
+			mRenderNodes.begin(), mRenderNodes.end(),
+			[&](const RenderNodeUPtr& node) { return node->getName() == nodeName; }
+		);
+		return (itRenderNode != mRenderNodes.end())? itRenderNode->get() : nullptr;
 	}
 
 
 	void RenderGraph::prepareGraph()
 	{
 		// Search the leaf nodes of the graph
-		std::vector<bool> leafNodes(true, mRenderNodes.size());
+		std::vector<bool> leafNodes(mRenderNodes.size(), true);
 		for (const auto& node : mRenderNodes) {
 			node->iterateInputs([&](RNodeInput& input) {
 				RNodeOutput* connectedOutput = input.getConnectedOutput();
@@ -121,6 +137,7 @@ namespace se::graphics {
 							stack.push_back({ connectedOutput->getParentNode(), false });
 						}
 					});
+					top.parentsSubmitted = true;
 				}
 			}
 		} }

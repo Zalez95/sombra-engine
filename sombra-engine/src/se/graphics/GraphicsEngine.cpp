@@ -2,7 +2,6 @@
 #include <algorithm>
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/Renderable.h"
 
 namespace se::graphics {
 

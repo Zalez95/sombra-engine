@@ -3,9 +3,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
 #include "se/app/events/ResizeEvent.h"
-#include "se/app/graphics/VoxelizationNode.h"
-#include "se/app/graphics/Tex3DViewerNode.h"
-#include "se/app/graphics/Tex3DClearNode.h"
 #include "se/utils/Log.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
@@ -21,10 +18,8 @@ namespace se::app {
 
 	struct GraphicsManager::Impl
 	{
-		struct ShaderBaseLight
+		struct ShaderLightSource
 		{
-			enum class Type : unsigned int { DirectionalLight = 0, PointLight, SpotLight };
-
 			unsigned int type;		float padding1[3];
 			glm::vec4 color;
 			float intensity;
@@ -66,7 +61,7 @@ namespace se::app {
 		};
 
 		std::map<Entity*, CameraUPtr> cameraEntities;
-		std::map<Entity*, LightUPtr> lightEntities;
+		std::map<Entity*, LightSourceUPtr> lightEntities;
 		std::multimap<Entity*, RenderableMeshData> renderableMeshEntities;
 		std::map<Entity*, RenderableTerrainData> renderableTerrainEntities;
 
@@ -85,52 +80,8 @@ namespace se::app {
 
 		mImpl = std::make_unique<Impl>();
 
-		static constexpr int numVoxels = 128;
-
-		{
-			auto resources = dynamic_cast<graphics::BindableRenderNode*>(mGraphicsEngine.getRenderGraph().getNode("resources"));
-
-			auto buffer = std::make_unique<unsigned int[]>(numVoxels * numVoxels * numVoxels);
-			auto texture3D = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture3D);
-			texture3D->setTextureUnit(Tex3DViewerNode::kTextureUnit)
-				.setImageUnit(VoxelizationNode::kVoxelImageUnit)
-				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
-				.setImage(
-					buffer.get(), graphics::TypeId::UnsignedInt, graphics::ColorFormat::RedInteger,
-					graphics::ColorFormat::Red32ui, numVoxels, numVoxels, numVoxels
-				)
-				.generateMipMap();
-			auto texture3DIndex = resources->addBindable( std::move(texture3D) );
-			resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("texture3D", resources, texture3DIndex) );
-		}
-
 		{
 			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::FBClearNode>("defaultFBClear", true, true) );
-		}
-
-		{
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<Tex3DClearNode>("tex3DClear", *this, numVoxels) );
-		}
-
-		{
-			auto voxelization = std::make_unique<VoxelizationNode>("voxelization", *this, numVoxels);
-			voxelization->setSceneBounds(glm::vec3(-25.0f), glm::vec3(25.0f));
-			mGraphicsEngine.getRenderGraph().addNode( std::move(voxelization) );
-		}
-
-		{
-			auto tex3DViewer = std::make_unique<Tex3DViewerNode>("tex3DViewer", *this, numVoxels);
-			tex3DViewer->setSceneBounds(glm::vec3(-25.0f), glm::vec3(25.0f));
-
-			auto& passData = mImpl->passesData.emplace_back();
-			passData.program = mProgramRepository.find("programTex3DViewer");
-			passData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *passData.program);
-			passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *passData.program);
-
-			tex3DViewer->addBindable(passData.viewMatrix);
-			tex3DViewer->addBindable(passData.projectionMatrix);
-
-			mGraphicsEngine.getRenderGraph().addNode( std::move(tex3DViewer) );
 		}
 
 		{
@@ -150,27 +101,20 @@ namespace se::app {
 		}
 
 		{
-			auto resources = mGraphicsEngine.getRenderGraph().getNode("resources");
-			auto defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear");
-			auto renderer3D = mGraphicsEngine.getRenderGraph().getNode("renderer3D");
-			auto renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
-			auto tex3DClear = mGraphicsEngine.getRenderGraph().getNode("tex3DClear");
-			auto voxelization = mGraphicsEngine.getRenderGraph().getNode("voxelization");
-			auto tex3DViewer = mGraphicsEngine.getRenderGraph().getNode("tex3DViewer");
+			auto resources = mGraphicsEngine.getRenderGraph().getNode("resources"),
+				defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear"),
+				renderer3D = mGraphicsEngine.getRenderGraph().getNode("renderer3D"),
+				renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
 
 			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
 			renderer3D->findInput("target")->connect( defaultFBClear->findOutput("output") );
-			tex3DViewer->findInput("target")->connect( renderer3D->findOutput("target") );
-			renderer2D->findInput("target")->connect( tex3DViewer->findOutput("target") );
-
-			tex3DClear->findInput("input")->connect( resources->findOutput("texture3D") );
-			voxelization->findInput("texture3D")->connect( tex3DClear->findOutput("output") );
-			tex3DViewer->findInput("texture3D")->connect( voxelization->findOutput("texture3D") );
+			renderer2D->findInput("target")->connect( renderer3D->findOutput("target") );
+			mGraphicsEngine.getRenderGraph().prepareGraph();
 		}
 
 		// Reserve memory for the UniformBuffers
 		mImpl->lightsBuffer = std::make_shared<graphics::UniformBuffer>();
-		utils::FixedVector<Impl::ShaderBaseLight, kMaxLights> lightsBufferData(kMaxLights);
+		utils::FixedVector<Impl::ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
 		mImpl->lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
 	}
 
@@ -207,29 +151,17 @@ namespace se::app {
 	}
 
 
-	void GraphicsManager::addLightEntity(Entity* entity, LightUPtr light)
+	void GraphicsManager::addLightEntity(Entity* entity, LightSourceUPtr lightSource)
 	{
-		if (!entity || !light) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as ILight";
+		if (!entity || !lightSource) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as LightSource";
 			return;
 		}
 
-		// The PointLight initial data is overridden by the entity one
-		ILight* lPtr = light.get();
-		if (auto dLight = dynamic_cast<DirectionalLight*>(lPtr)) {
-			dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
-		}
-		else if (auto pLight = dynamic_cast<PointLight*>(lPtr)) {
-			pLight->position = entity->position;
-		}
-		else if (auto sLight = dynamic_cast<SpotLight*>(lPtr)) {
-			sLight->position = entity->position;
-			sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
-		}
-
 		// Add the ILight
-		mImpl->lightEntities.emplace(entity, std::move(light));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with ILight " << lPtr << " added successfully";
+		LightSource* lPtr = lightSource.get();
+		mImpl->lightEntities.emplace(entity, std::move(lightSource));
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightSource " << lPtr << " added successfully";
 	}
 
 
@@ -265,17 +197,17 @@ namespace se::app {
 	}
 
 
-	GraphicsManager::PassSPtr GraphicsManager::createPass3D(ProgramSPtr program, bool hasLights)
-	{
-		auto renderer3D = dynamic_cast<graphics::Renderer3D*>( mGraphicsEngine.getRenderGraph().getNode("voxelization") );
-		if (!renderer3D) {
-			return nullptr;
-		}
-
-		auto pass = std::make_shared<graphics::Pass>(*renderer3D);
+	GraphicsManager::PassSPtr GraphicsManager::createPass3D(
+		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights
+	) {
+		auto pass = std::make_shared<graphics::Pass>(*renderer);
 		auto& passData = mImpl->passesData.emplace_back();
 		passData.pass = pass;
 		passData.program = program;
+
+		if (addProgram) {
+			pass->addBindable(program);
+		}
 
 		passData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
 		passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
@@ -284,11 +216,10 @@ namespace se::app {
 			passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
 		}
 
-		pass->addBindable(program)
-			.addBindable(passData.viewMatrix)
+		pass->addBindable(passData.viewMatrix)
 			.addBindable(passData.projectionMatrix);
 
-		if (hasLights) {
+		if (addLights) {
 			passData.numLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program);
 			passData.lightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsPositions", *program);
 			passData.lightsDirections = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsDirections", *program);
@@ -453,24 +384,53 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_DEBUG_LOG << "Updating the ILights";
-		bool lightsUpdated = false;
-		for (auto& pair : mImpl->lightEntities) {
-			Entity* entity = pair.first;
-			ILight* light = pair.second.get();
+		if (activeCameraUpdated) {
+			for (auto& passData : mImpl->passesData) {
+				passData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
+				passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
+			}
+		}
 
-			if (entity->updated.any()) {
-				lightsUpdated = true;
-				if (auto dLight = (dynamic_cast<DirectionalLight*>(light))) {
-					dLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
-				}
-				else if (auto pLight = (dynamic_cast<PointLight*>(light))) {
-					pLight->position = entity->position;
-				}
-				else if (auto sLight = (dynamic_cast<SpotLight*>(light))) {
-					sLight->position = entity->position;
-					sLight->direction = glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation;
-				}
+		SOMBRA_DEBUG_LOG << "Updating the LightSources";
+		unsigned int uNumLights = std::min(static_cast<unsigned int>(mImpl->lightEntities.size()), kMaxLights);
+		std::array<Impl::ShaderLightSource, kMaxLights> uBaseLights;
+		std::array<glm::vec3, kMaxLights> uLightsPositions;
+		std::array<glm::vec3, kMaxLights> uLightsDirections;
+
+		unsigned int i = 0;
+		for (auto& pair : mImpl->lightEntities) {
+			uBaseLights[i].type = static_cast<unsigned int>(pair.second->type);
+			uBaseLights[i].color = { pair.second->color, 1.0f };
+			uBaseLights[i].intensity = pair.second->intensity;
+			switch (pair.second->type) {
+				case LightSource::Type::Directional: {
+					uBaseLights[i].inverseRange = 0.0f;
+					uLightsPositions[i] = glm::vec3(0.0f);
+					uLightsDirections[i] = glm::vec3(0.0f, 0.0f, 1.0f) * pair.first->orientation;
+				} break;
+				case LightSource::Type::Point: {
+					uBaseLights[i].inverseRange = pair.second->inverseRange;
+					uLightsPositions[i] = pair.first->position;
+					uLightsDirections[i] = glm::vec3(0.0f);
+				} break;
+				case LightSource::Type::Spot: {
+					uBaseLights[i].inverseRange = pair.second->inverseRange;
+					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(pair.second->innerConeAngle) - std::cos(pair.second->outerConeAngle));
+					uBaseLights[i].lightAngleOffset = -std::cos(pair.second->outerConeAngle) * uBaseLights[i].lightAngleScale;
+					uLightsPositions[i] = pair.first->position;
+					uLightsDirections[i] = glm::vec3(0.0f, 0.0f, 1.0f) * pair.first->orientation;
+				} break;
+			}
+
+			if (++i >= uNumLights) { break; }
+		}
+
+		mImpl->lightsBuffer->copy(uBaseLights.data(), uBaseLights.size());
+		for (auto& passData : mImpl->passesData) {
+			if (passData.lightsBlock) {
+				passData.numLights->setValue(uNumLights);
+				passData.lightsPositions->setValue(uLightsPositions.data(), uLightsPositions.size());
+				passData.lightsDirections->setValue(uLightsDirections.data(), uLightsDirections.size());
 			}
 		}
 
@@ -511,58 +471,6 @@ namespace se::app {
 
 			if (activeCameraUpdated) {
 				terrainData.renderable->setHighestLodLocation(mImpl->activeCamera->getPosition());
-			}
-		}
-
-		SOMBRA_DEBUG_LOG << "Updating the Passes";
-		if (activeCameraUpdated) {
-			for (auto& passData : mImpl->passesData) {
-				passData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
-				passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
-			}
-		}
-
-		if (lightsUpdated) {
-			unsigned int uNumLights = std::min(static_cast<unsigned int>(mImpl->lightEntities.size()), kMaxLights);
-			std::array<Impl::ShaderBaseLight, kMaxLights> uBaseLights;
-			std::array<glm::vec3, kMaxLights> uLightsPositions;
-			std::array<glm::vec3, kMaxLights> uLightsDirections;
-
-			unsigned int i = 0;
-			for (auto& pair : mImpl->lightEntities) {
-				uBaseLights[i].color = { pair.second->color, 1.0f };
-				uBaseLights[i].intensity = pair.second->intensity;
-				if (auto dLight = dynamic_cast<const DirectionalLight*>(pair.second.get())) {
-					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::DirectionalLight);
-					uBaseLights[i].inverseRange = 0.0f;
-					uLightsPositions[i] = glm::vec3(0.0f);
-					uLightsDirections[i] = dLight->direction;
-				}
-				else if (auto pLight = dynamic_cast<const PointLight*>(pair.second.get())) {
-					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::PointLight);
-					uBaseLights[i].inverseRange = pLight->inverseRange;
-					uLightsPositions[i] = pLight->position;
-					uLightsDirections[i] = glm::vec3(0.0f);
-				}
-				else if (auto sLight = dynamic_cast<const SpotLight*>(pair.second.get())) {
-					uBaseLights[i].type = static_cast<unsigned int>(Impl::ShaderBaseLight::Type::SpotLight);
-					uBaseLights[i].inverseRange = sLight->inverseRange;
-					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(sLight->innerConeAngle) - std::cos(sLight->outerConeAngle));
-					uBaseLights[i].lightAngleOffset = -std::cos(sLight->outerConeAngle) * uBaseLights[i].lightAngleScale;
-					uLightsPositions[i] = sLight->position;
-					uLightsDirections[i] = sLight->direction;
-				}
-
-				if (++i >= uNumLights) { break; }
-			}
-
-			mImpl->lightsBuffer->copy(uBaseLights.data(), uBaseLights.size());
-			for (auto& passData : mImpl->passesData) {
-				if (passData.lightsBlock) {
-					passData.numLights->setValue(uNumLights);
-					passData.lightsPositions->setValue(uLightsPositions.data(), uLightsPositions.size());
-					passData.lightsDirections->setValue(uLightsDirections.data(), uLightsDirections.size());
-				}
 			}
 		}
 

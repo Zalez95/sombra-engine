@@ -117,11 +117,17 @@ namespace se::graphics {
 			case ColorFormat::RGInteger:	return GL_RG_INTEGER;
 			case ColorFormat::RGBInteger:	return GL_RGB_INTEGER;
 			case ColorFormat::RGBAInteger:	return GL_RGBA_INTEGER;
-			case ColorFormat::RGBA8:		return GL_RGBA8;
 			case ColorFormat::Red32ui:		return GL_R32UI;
 			case ColorFormat::RG32ui:		return GL_RG32UI;
+			case ColorFormat::RGB16ui:		return GL_RGB16UI;
+			case ColorFormat::RGB16f:		return GL_RGB16F;
 			case ColorFormat::RGB32ui:		return GL_RGB32UI;
+			case ColorFormat::RGB32f:		return GL_RGB32F;
+			case ColorFormat::RGBA8:		return GL_RGBA8;
+			case ColorFormat::RGBA16ui:		return GL_RGBA16UI;
+			case ColorFormat::RGBA16f:		return GL_RGBA16F;
 			case ColorFormat::RGBA32ui:		return GL_RGBA32UI;
+			case ColorFormat::RGBA32f:		return GL_RGBA32F;
 			default:						return GL_NONE;
 		}
 	}

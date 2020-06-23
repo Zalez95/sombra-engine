@@ -54,9 +54,10 @@ namespace se::graphics {
 
 	void FrameBuffer::attach(
 		const Texture& texture,
-		FrameBufferAttachment attachment, unsigned int colorIndex
+		FrameBufferAttachment attachment, unsigned int colorIndex, int layer, int orientation
 	) const
 	{
+		GLenum glTarget = toGLTextureTarget(texture.getTarget());
 		GLenum glAttachment = GL_COLOR_ATTACHMENT0;
 		switch (attachment) {
 			case FrameBufferAttachment::Stencil:	glAttachment = GL_STENCIL_ATTACHMENT;				break;
@@ -65,15 +66,27 @@ namespace se::graphics {
 		}
 
 		bind();
-		GL_WRAP( glFramebufferTexture2D(
-			GL_FRAMEBUFFER, glAttachment,
-			GL_TEXTURE_2D, texture.getTextureId(), 0
-		) );
+
+		switch (texture.getTarget()) {
+			case TextureTarget::Texture1D:
+				GL_WRAP( glFramebufferTexture1D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0) );
+				break;
+			case TextureTarget::Texture2D:
+				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0) );
+				break;
+			case TextureTarget::Texture3D:
+				GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0, layer) );
+				break;
+			case TextureTarget::CubeMap:
+				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture.getTextureId(), 0) );
+				break;
+		}
 
 		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
 		if (status != GL_FRAMEBUFFER_COMPLETE) {
 			throw std::runtime_error("FrameBuffer error: status 0x" + std::to_string(status));
 		}
+
 		unbind();
 	}
 

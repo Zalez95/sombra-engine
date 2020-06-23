@@ -3,6 +3,8 @@
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
+#include <se/graphics/Renderer.h>
+#include <se/graphics/GraphicsEngine.h>
 #include <se/app/graphics/RawMesh.h>
 #include <se/app/GraphicsManager.h>
 #include <se/app/loaders/MeshLoader.h>
@@ -46,7 +48,8 @@ namespace game {
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
 		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-		auto passYellow = mGameData.graphicsManager->createPass3D(programPBR, true);
+		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
+		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{

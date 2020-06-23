@@ -59,11 +59,10 @@ namespace se::graphics {
 		RGInteger,
 		RGBInteger,
 		RGBAInteger,
-		RGBA8,
 		Red32ui,
 		RG32ui,
-		RGB32ui,
-		RGBA32ui
+		RGB8, RGB16ui, RGB16f, RGB32ui, RGB32f,
+		RGBA8, RGBA16ui, RGBA16f, RGBA32ui, RGBA32f
 	};
 
 

@@ -8,7 +8,7 @@
 #include <se/app/graphics/Image.h>
 #include <se/app/graphics/RawMesh.h>
 #include <se/app/graphics/Camera.h>
-#include <se/app/graphics/Lights.h>
+#include <se/app/graphics/LightSource.h>
 #include <se/app/graphics/Material.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/ImageReader.h>
@@ -16,6 +16,7 @@
 #include <se/app/loaders/TerrainLoader.h>
 #include <se/app/loaders/SceneReader.h>
 #include <se/app/loaders/TechniqueLoader.h>
+#include <se/app/loaders/TextureConverter.h>
 #include <se/app/GraphicsManager.h>
 #include <se/app/PhysicsManager.h>
 #include <se/app/CollisionManager.h>
@@ -178,9 +179,7 @@ namespace game {
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
 		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture;
 		std::unique_ptr<se::app::Camera> camera1 = nullptr;
-		std::unique_ptr<se::app::SpotLight> light1 = nullptr;
-		std::unique_ptr<se::app::PointLight> light2 = nullptr, light3 = nullptr;
-		std::unique_ptr<se::app::DirectionalLight> light4 = nullptr;
+		std::unique_ptr<se::app::LightSource> spotLight1;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
 		se::app::Scenes loadedScenes;
@@ -191,73 +190,7 @@ namespace game {
 			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
 
 			// Meshes
-			se::app::RawMesh cubeRawMesh("Cube");
-			cubeRawMesh.positions = {
-				{ 0.5f, 0.5f,-0.5f},
-				{ 0.5f,-0.5f,-0.5f},
-				{-0.5f,-0.5f,-0.5f},
-				{-0.5f, 0.5f,-0.5f},
-				{ 0.5f, 0.5f, 0.5f},
-				{ 0.5f,-0.5f, 0.5f},
-				{-0.5f,-0.5f, 0.5f},
-				{-0.5f, 0.5f, 0.5f},
-				{ 0.5f, 0.5f,-0.5f},
-				{ 0.5f,-0.5f,-0.5f},
-				{ 0.5f, 0.5f, 0.5f},
-				{ 0.5f,-0.5f, 0.5f},
-				{ 0.5f, 0.5f, 0.5f},
-				{ 0.5f,-0.5f, 0.5f},
-				{-0.5f,-0.5f, 0.5f},
-				{-0.5f, 0.5f, 0.5f},
-				{ 0.5f, 0.5f,-0.5f},
-				{ 0.5f,-0.5f,-0.5f},
-				{-0.5f, 0.5f,-0.5f},
-				{-0.5f, 0.5f,-0.5f},
-				{-0.5f,-0.5f,-0.5f},
-				{-0.5f,-0.5f,-0.5f},
-				{-0.5f,-0.5f, 0.5f},
-				{-0.5f, 0.5f, 0.5f}
-			};
-			cubeRawMesh.texCoords = {
-				{0.666467010f, 0.666466951f},
-				{0.999800264f, 0.000199760f},
-				{0.333533257f, 0.333133578f},
-				{0.333533287f, 0.666466951f},
-				{0.666467010f, 0.333533167f},
-				{0.999800145f, 0.333133548f},
-				{0.333533197f, 0.000199760f},
-				{0.333533197f, 0.333533257f},
-				{0.333133667f, 0.333533167f},
-				{0.000199899f, 0.333533197f},
-				{0.333133548f, 0.666466951f},
-				{0.000199760f, 0.666466951f},
-				{0.333133697f, 0.333133548f},
-				{0.333133488f, 0.000199760f},
-				{0.000199760f, 0.000199909f},
-				{0.000199869f, 0.333133667f},
-				{0.333133548f, 0.999800264f},
-				{0.000199760f, 0.999800264f},
-				{0.333133548f, 0.666866540f},
-				{0.666467010f, 0.333133488f},
-				{0.000199770f, 0.666866540f},
-				{0.666866540f, 0.000199799f},
-				{0.666866540f, 0.333133578f},
-				{0.666466891f, 0.000199760f}
-			};
-			cubeRawMesh.faceIndices = {
-				16, 20, 18,
-				5, 21, 1,
-				2, 23, 19,
-				0, 7, 4,
-				10, 9, 8,
-				15, 13, 12,
-				16, 17, 20,
-				5, 22, 21,
-				2, 6, 23,
-				0, 3, 7,
-				10, 11, 9,
-				15, 14, 13
-			};
+			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
 			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.faceIndices);
 			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.faceIndices);
 			cubeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(cubeRawMesh));
@@ -305,7 +238,7 @@ namespace game {
 			}
 
 			// GLTF scenes
-			se::app::Result result = sceneReader->load("res/meshes/sponza/Sponza.gltf", loadedScenes);
+			se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -363,26 +296,12 @@ namespace game {
 			camera1->setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 
 			// Lights
-			/*light1 = std::make_unique<se::app::SpotLight>();
-			light1->name = "spotLight1";
-			light1->intensity = 5.0f;
-			light1->inverseRange = 1.0f / 20.0f;
-			light1->innerConeAngle = glm::pi<float>() / 12.0f;
-			light1->outerConeAngle = glm::pi<float>() / 6.0f;
-			light2 = std::make_unique<se::app::PointLight>();
-			light2->name = "pointLight1";
-			light2->color = glm::vec3(0.5f, 1.0f, 0.5f);
-			light2->intensity = 2.0f;
-			light2->inverseRange = 1.0f / 5.0f;
-			light3 = std::make_unique<se::app::PointLight>();
-			light3->name = "pointLight2";
-			light3->color = glm::vec3(1.0f, 0.5f, 0.5f);
-			light3->intensity = 10.0f;
-			light3->inverseRange = 1.0f / 15.0f;
-			light4 = std::make_unique<se::app::DirectionalLight>();
-			light4->name = "directionalLight1";
-			light4->color = glm::vec3(1.0f, 0.82f, 0.25f);
-			light4->intensity = 0.025f;
+			spotLight1 = std::make_unique<se::app::LightSource>(se::app::LightSource::Type::Spot);
+			spotLight1->name = "spotLight1";
+			spotLight1->intensity = 5.0f;
+			spotLight1->inverseRange = 1.0f / 20.0f;
+			spotLight1->innerConeAngle = glm::pi<float>() / 12.0f;
+			spotLight1->outerConeAngle = glm::pi<float>() / 6.0f;
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
@@ -396,12 +315,15 @@ namespace game {
 			source1 = std::make_unique<se::audio::Source>();
 			source1->bind(mBuffers.back());
 			source1->setLooping(true);
-			source1->play();*/
+			source1->play();
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
 			return;
 		}
+
+		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("renderer3D"));
+		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
 		// Forces
 		mForces.push_back(new se::physics::Gravity({ 0.0f, -9.8f, 0.0f }));
@@ -444,16 +366,15 @@ namespace game {
 		mGameData.physicsManager->addEntity(mPlayerEntity, std::move(rigidBody1));
 
 		mGameData.graphicsManager->addCameraEntity(mPlayerEntity, std::move(camera1));
-		mGameData.graphicsManager->addLightEntity(mPlayerEntity, std::move(light1));
+		mGameData.graphicsManager->addLightEntity(mPlayerEntity, std::move(spotLight1));
 		mGameData.audioManager->setListener(mPlayerEntity);
 
 		// Sky
-		if(false){
+		{
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
-
-			auto passSky = mGameData.graphicsManager->createPass3D(programSky, false);
+			auto passSky = mGameData.graphicsManager->createPass3D(renderer3D, programSky, true, false);
 			passSky->addBindable(std::make_shared<se::graphics::CullingOperation>(false));
 
 			auto techniqueSky = std::make_unique<se::graphics::Technique>();
@@ -467,7 +388,7 @@ namespace game {
 		}
 
 		// Terrain
-		if(false){
+		{
 			se::app::SplatmapMaterial terrainMaterial;
 			terrainMaterial.name = "terrainMaterial";
 			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
@@ -480,13 +401,11 @@ namespace game {
 		}
 
 		// Plane
-		if(false){
+		{
 			auto plane = std::make_unique<se::app::Entity>("plane");
 			plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-
-			auto passPlane = mGameData.graphicsManager->createPass3D(programPBR, true);
+			auto passPlane = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -544,8 +463,7 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto program = mGameData.graphicsManager->getProgramRepository().find("programVoxelization");
-			auto passCube = mGameData.graphicsManager->createPass3D(program, false);
+			auto passCube = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -553,7 +471,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				program
+				programPBR
 			);
 
 			auto techniqueCube = std::make_unique<se::graphics::Technique>();
@@ -570,10 +488,8 @@ namespace game {
 		mConstraints.push_back(new se::physics::DistanceConstraint({ rb1, rb2 }));
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
-		if(false){
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-
-			auto passRed = mGameData.graphicsManager->createPass3D(programPBR, true);
+		{
+			auto passRed = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRed,
 				se::app::Material{
@@ -625,7 +541,7 @@ namespace game {
 
 			mEntities.push_back(std::move(gravityCube));
 		}
-/*
+
 		// HACD Tube
 		se::collision::HalfEdgeMesh tube = createTestTube1();
 		glm::vec3 tubeCentroid = se::collision::calculateCentroid(tube);
@@ -642,9 +558,7 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-
-			auto passSlice = mGameData.graphicsManager->createPass3D(programPBR, true);
+			auto passSlice = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -670,12 +584,10 @@ namespace game {
 
 			mEntities.push_back(std::move(tubeSlice));
 		}
-*/
-		// Random cubes
-		if(false){
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 
-			auto passRandom = mGameData.graphicsManager->createPass3D(programPBR, true);
+		// Random cubes
+		{
+			auto passRandom = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
@@ -712,53 +624,6 @@ namespace game {
 			}
 		}
 
-		// Lights
-		if(false){
-			auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
-
-			auto passLight = mGameData.graphicsManager->createPass3D(programPBR, true);
-			se::app::TechniqueLoader::addMaterialBindables(
-				passLight,
-				se::app::Material{
-					"light_material",
-					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
-					{}, 1.0f, {}, 1.0f, {}, glm::vec3(5.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
-				},
-				programPBR
-			);
-
-			auto techniqueLight = std::make_shared<se::graphics::Technique>();
-			techniqueLight->addPass(passLight);
-
-			auto eL1 = std::make_unique<se::app::Entity>("directional-light1");
-			eL1->position = glm::vec3(0.0f, -5.0f, 0.0f);
-			eL1->orientation = glm::quat(-0.888f, 0.396f, 0.170f,-0.149f);
-			eL1->scale = glm::vec3(0.1f);
-			mGameData.graphicsManager->addLightEntity(eL1.get(), std::move(light4));
-			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
-			renderableMesh->addTechnique(techniqueLight);
-			mGameData.graphicsManager->addMeshEntity(eL1.get(), std::move(renderableMesh));
-			mEntities.push_back(std::move(eL1));
-
-			auto eL2 = std::make_unique<se::app::Entity>("point-light1");
-			eL2->position = glm::vec3(-3.0f, 1.0f, 5.0f);
-			eL2->scale = glm::vec3(0.1f);
-			mGameData.graphicsManager->addLightEntity(eL2.get(), std::move(light2));
-			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
-			renderableMesh->addTechnique(techniqueLight);
-			mGameData.graphicsManager->addMeshEntity(eL2.get(), std::move(renderableMesh));
-			mEntities.push_back(std::move(eL2));
-
-			auto eL3 = std::make_unique<se::app::Entity>("point-light2");
-			eL3->position = glm::vec3(2.0f, 10.0f, 5.0f);
-			eL3->scale = glm::vec3(0.1f);
-			mGameData.graphicsManager->addLightEntity(eL3.get(), std::move(light3));
-			renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
-			renderableMesh->addTechnique(techniqueLight);
-			mGameData.graphicsManager->addMeshEntity(eL3.get(), std::move(renderableMesh));
-			mEntities.push_back(std::move(eL3));
-		}
-
 		// GLTF Scene
 		{
 			auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
@@ -768,11 +633,10 @@ namespace game {
 			std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
 			std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
 
-			auto programVoxelization = mGameData.graphicsManager->getProgramRepository().find("programVoxelization");
 			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
 			for (auto& material : loadedScenes.materials) {
-				auto pass3D = mGameData.graphicsManager->createPass3D(programVoxelization, false);
-				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programVoxelization);
+				auto pass3D = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programPBR);
 				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
 			}
 
@@ -781,6 +645,9 @@ namespace game {
 					auto entity = std::make_unique<se::app::Entity>(e.animationNode->getData().name);
 					mGameData.animationManager->addEntity(entity.get(), e.animationNode);
 
+					if (e.hasLightSource) {
+						mGameData.graphicsManager->addLightEntity(entity.get(), std::move(loadedScenes.lightSources[e.lightSourceIndex]));
+					}
 					if (e.hasPrimitives) {
 						if (e.hasSkin) {
 							for (auto [iMesh, iMaterial] : loadedScenes.primitives[e.primitivesIndex]) {

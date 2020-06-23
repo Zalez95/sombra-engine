@@ -120,15 +120,15 @@ vec3 fresnelSchlick(float cosTheta, vec3 reflectivity)
 
 
 /* Calculates the radiance of the given light. If the light distance is
- * negative then attenuation will not be applied */
+ * negative then distance attenuation will not be applied */
 vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance)
 {
-	// Calculate the attenuation of the light
-	float attenuation = clamp(1.0 - pow(lightDistance * uBaseLights[lightIndex].inverseRange, 4.0), 0.0, 1.0);
-	attenuation /= lightDistance * lightDistance;
+	// Calculate the attenuation of the light due to the distance
+	float distanceAttenuation = clamp(1.0 - pow(lightDistance * uBaseLights[lightIndex].inverseRange, 4.0), 0.0, 1.0);
+	distanceAttenuation /= lightDistance * lightDistance;
 
-	bool hasAttenuation = lightDistance >= 0.0;
-	attenuation = (attenuation * float(hasAttenuation)) + float(!hasAttenuation);
+	bool hasDistanceAttenuation = lightDistance >= 0.0;
+	distanceAttenuation = (distanceAttenuation * float(hasDistanceAttenuation)) + float(!hasDistanceAttenuation);
 
 	// Calculate the angular attenuation of the light (for spot lights)
 	float cd = dot(normalize(-fsLightsDirections[lightIndex]), lightDirection);
@@ -139,7 +139,7 @@ vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance
 	angularAttenuation = (angularAttenuation * float(hasAngularAttenuation)) + float(!hasAngularAttenuation);
 
 	// Calculate the light radiance
-	return attenuation * angularAttenuation * vec3(uBaseLights[lightIndex].color) * uBaseLights[lightIndex].intensity;
+	return distanceAttenuation * angularAttenuation * vec3(uBaseLights[lightIndex].color) * uBaseLights[lightIndex].intensity;
 }
 
 
@@ -155,7 +155,7 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 
 	for (uint i = 0u; i < fsNumLights; ++i) {
 		// Calculate the light direction and distance from the current point
-		vec3 lightDirection1 = normalize(-fsLightsDirections[i]);
+		vec3 lightDirection1 = -fsLightsDirections[i];
 		float lightDistance1 = -1.0;
 
 		vec3 lightDirection2 = fsLightsPositions[i] - fsVertex.position;

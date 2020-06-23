@@ -2,12 +2,10 @@
 #define GRAPHICS_ENGINE_H
 
 #include <mutex>
+#include "Renderable.h"
 #include "RenderGraph.h"
 
 namespace se::graphics {
-
-	class Renderable;
-
 
 	/**
 	 * Class GraphicsEngine. It prepares all the API context and provides the

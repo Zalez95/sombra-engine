@@ -336,6 +336,7 @@ namespace se::app {
 		output.meshes				= std::move(mGLTFData.meshes);
 		output.materials			= std::move(mGLTFData.materials);
 		output.primitives			= std::move(mGLTFData.primitives);
+		output.lightSources			= std::move(mGLTFData.lightSources);
 		output.skins				= std::move(mGLTFData.skins);
 		output.animators			= std::move(mGLTFData.compositeAnimators);
 
@@ -985,6 +986,18 @@ namespace se::app {
 			sceneEntity.skinIndex = *itSkin;
 		}
 
+		auto itExtensions = jsonNode.find("extensions");
+		if (itExtensions != jsonNode.end()) {
+			auto itLightsPunctual = itExtensions->find("KHR_lights_punctual");
+			if (itLightsPunctual != itExtensions->end()) {
+				auto itLight = itLightsPunctual->find("light");
+				if (itLight != itLightsPunctual->end()) {
+					sceneEntity.hasLightSource = true;
+					sceneEntity.lightSourceIndex = *itLight;
+				}
+			}
+		}
+
 		std::vector<std::size_t> children;
 		auto itChildren = jsonNode.find("children");
 		if (itChildren != jsonNode.end()) {
@@ -1315,7 +1328,7 @@ namespace se::app {
 	Result GLTFReader::parseKHRLights(const nlohmann::json& jsonKHRLights)
 	{
 		if (auto itLights = jsonKHRLights.find("lights"); itLights != jsonKHRLights.end()) {
-			mGLTFData.lights.reserve(itLights->size());
+			mGLTFData.lightSources.reserve(itLights->size());
 			for (std::size_t lightId = 0; lightId < itLights->size(); ++lightId) {
 				Result result = parseLight( (*itLights)[lightId] );
 				if (!result) {
@@ -1333,31 +1346,24 @@ namespace se::app {
 
 	Result GLTFReader::parseLight(const nlohmann::json& jsonLight)
 	{
-		std::unique_ptr<ILight> light;
+		std::unique_ptr<LightSource> lightSource;
 
 		auto itType = jsonLight.find("type");
 		if (itType != jsonLight.end()) {
 			if (*itType == "directional") {
-				auto directionalLight = std::make_unique<app::DirectionalLight>();
-				directionalLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
-				light = std::move(directionalLight);
+				lightSource = std::make_unique<app::LightSource>(app::LightSource::Type::Directional);
 			}
 			else if (*itType == "point") {
-				auto pointLight = std::make_unique<PointLight>();
-				pointLight->position = glm::vec3(0.0f);
+				lightSource = std::make_unique<app::LightSource>(app::LightSource::Type::Point);
 
 				auto itRange = jsonLight.find("range");
-				pointLight->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
-
-				light = std::move(pointLight);
+				lightSource->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
 			}
 			else if (*itType == "spot") {
-				auto spotLight = std::make_unique<SpotLight>();
-				spotLight->position = glm::vec3(0.0f);
-				spotLight->direction = glm::vec3(0.0f, 0.0f, 1.0f);
+				lightSource = std::make_unique<app::LightSource>(app::LightSource::Type::Spot);
 
 				auto itRange = jsonLight.find("range");
-				spotLight->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
+				lightSource->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
 
 				auto itSpot = jsonLight.find("spot");
 				if (itSpot == jsonLight.end()) {
@@ -1365,12 +1371,10 @@ namespace se::app {
 				}
 
 				auto itInnerConeAngle = itSpot->find("innerConeAngle");
-				spotLight->innerConeAngle = (itInnerConeAngle != itSpot->end())? itInnerConeAngle->get<float>() : 0.0f;
+				lightSource->innerConeAngle = (itInnerConeAngle != itSpot->end())? itInnerConeAngle->get<float>() : 0.0f;
 
 				auto itOuterConeAngle = itSpot->find("outerConeAngle");
-				spotLight->outerConeAngle = (itOuterConeAngle != itSpot->end())? itOuterConeAngle->get<float>() : glm::quarter_pi<float>();
-
-				light = std::move(spotLight);
+				lightSource->outerConeAngle = (itOuterConeAngle != itSpot->end())? itOuterConeAngle->get<float>() : glm::quarter_pi<float>();
 			}
 			else {
 				return Result(false, "Invalid type property \"" + itType->get<std::string>() + "\"");
@@ -1381,23 +1385,23 @@ namespace se::app {
 		}
 
 		auto itName = jsonLight.find("name");
-		light->name = (itName != jsonLight.end())? *itName : "";
+		lightSource->name = (itName != jsonLight.end())? *itName : "";
 
 		auto itColor = jsonLight.find("color");
 		if (itColor != jsonLight.end()) {
 			std::vector<float> fVector = *itColor;
 			if (fVector.size() >= 3) {
-				light->color = *reinterpret_cast<glm::vec3*>(fVector.data());
+				lightSource->color = *reinterpret_cast<glm::vec3*>(fVector.data());
 			}
 		}
 		else {
-			light->color = glm::vec3(1.0f);
+			lightSource->color = glm::vec3(1.0f);
 		}
 
 		auto itIntensity = jsonLight.find("intensity");
-		light->intensity = (itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f;
+		lightSource->intensity = (itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f;
 
-		mGLTFData.lights.emplace_back(std::move(light));
+		mGLTFData.lightSources.emplace_back(std::move(lightSource));
 		return Result();
 	}
 

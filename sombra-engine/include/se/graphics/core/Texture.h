@@ -46,6 +46,9 @@ namespace se::graphics {
 		Texture& operator=(const Texture& other) = delete;
 		Texture& operator=(Texture&& other);
 
+		/** @return the target of the Texture */
+		inline TextureTarget getTarget() const { return mTarget; };
+
 		/** @return the id of the Texture */
 		inline unsigned int getTextureId() const { return mTextureId; };
 
@@ -93,11 +96,15 @@ namespace se::graphics {
 		 * @param	width the width of the new Texture
 		 * @param	height the height of the new Texture
 		 * @param	depth the depth of the new Texture
+		 * @param	orientation which face of the CubeMap is going to be set
+		 *			(0 = positive X, 1 = negative X, 2 = positive Y,
+		 *			3 = negative Y, 4 = positive Z, 5 = negative Z)
 		 * @return	a reference to the current Texture object */
 		Texture& setImage(
 			const void* source, TypeId sourceType, ColorFormat sourceFormat,
 			ColorFormat textureFormat,
-			std::size_t width = 0, std::size_t height = 0, std::size_t depth = 0
+			std::size_t width = 0, std::size_t height = 0,
+			std::size_t depth = 0, int orientation = 0
 		);
 
 		/** Generate mipmaps for the current texture

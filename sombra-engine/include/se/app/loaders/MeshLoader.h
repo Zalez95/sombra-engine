@@ -40,6 +40,16 @@ namespace se::app {
 			const se::collision::ContiguousVector<glm::vec3>& normals
 		);
 
+		/** Creates a Box mesh from the given data. The generated RawMesh
+		 * will only have setted the positions, uvs and face indices.
+		 *
+		 * @param	name the name of the mesh
+		 * @param	lengths the length of each axis of the Box
+		 * @return	the new RawMesh */
+		static RawMesh createBoxMesh(
+			const std::string& name, glm::vec3 lengths
+		);
+
 		/** Creates a Sphere mesh from the given data. The generated RawMesh
 		 * will only have setted the positions and face indices.
 		 *

@@ -13,13 +13,14 @@
 #include "Entity.h"
 #include "graphics/Skin.h"
 #include "graphics/Camera.h"
-#include "graphics/Lights.h"
+#include "graphics/LightSource.h"
 
 namespace se::graphics {
 	struct Font;
 	class Texture;
 	class Program;
 	class Pass;
+	class Renderer;
 	class Technique;
 }
 
@@ -47,7 +48,7 @@ namespace se::app {
 			utils::Repository<std::string, graphics::Technique>;
 
 		using CameraUPtr = std::unique_ptr<Camera>;
-		using LightUPtr = std::unique_ptr<ILight>;
+		using LightSourceUPtr = std::unique_ptr<LightSource>;
 		using SkinSPtr = std::shared_ptr<Skin>;
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
 		using ProgramSPtr = std::shared_ptr<graphics::Program>;
@@ -137,13 +138,13 @@ namespace se::app {
 		 * @note	The Camera initial data is overridden by the Entity one */
 		void addCameraEntity(Entity* entity, CameraUPtr camera);
 
-		/** Adds the given Entity and its ILight data to the GraphicsManager
+		/** Adds the given Entity and its LightSource data to the
+		 * GraphicsManager
 		 *
 		 * @param	entity a pointer to the Entity to add to the GraphicsManager
-		 * @param	light a pointer to the ILight to add to the GraphicsManager
-		 * @note	The PointLight initial data is overridden by the Entity
-		 *			one */
-		void addLightEntity(Entity* entity, LightUPtr light);
+		 * @param	lightSource a pointer to the LightSource to add to the
+		 *			GraphicsManager */
+		void addLightEntity(Entity* entity, LightSourceUPtr lightSource);
 
 		/** Creates a new Pass and adds the uniform variables for the cameras
 		 *
@@ -154,11 +155,16 @@ namespace se::app {
 		/** Creates a new Pass and adds the uniform variables for the cameras
 		 * and lightning
 		 *
-		 * @param	program a pointer to the program of the new Pass
+		 * @param	renderer a pointer to the Renderer of the new Pass
+		 * @param	program a pointer to the Program of the new Pass
+		 * @param	addProgram if we want to add the program to the Pass or not
 		 * @param	addLights if we want the uniform variables for lightning or
 		 *			not
 		 * @return	the new Pass */
-		PassSPtr createPass3D(ProgramSPtr program, bool addLights = true);
+		PassSPtr createPass3D(
+			graphics::Renderer* renderer, ProgramSPtr program,
+			bool addProgram, bool addLights
+		);
 
 		/** Adds the given Entity and its Mesh (and skin) data to the
 		 * GraphicsManager

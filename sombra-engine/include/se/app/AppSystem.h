@@ -4,7 +4,7 @@
 #include "ComponentDatabase.h"
 #include "TransformsComponent.h"
 #include "graphics/Camera.h"
-#include "graphics/Lights.h"
+#include "graphics/LightSource.h"
 #include "../utils/Repository.h"
 #include "../graphics/3d/Renderable3D.h"
 #include "../animation/AnimationNode.h"
@@ -17,7 +17,6 @@ namespace se::app {
 	using Renderable3DRepository = utils::Repository<
 		graphics::Renderable3D, unsigned short
 	>;
-	using PointLightRepository = utils::Repository<PointLight, unsigned short>;
 	using AnimationNodeRepository = utils::Repository<
 		animation::AnimationNode, unsigned short
 	>;
@@ -35,7 +34,7 @@ namespace se::app {
 		TransformsComponent,
 		CameraRepository::Reference,
 		Renderable3DRepository::Reference,
-		PointLightRepository::Reference,
+		LightSource,
 		AnimationNodeRepository::Reference,
 		RigidBodyRepository::Reference
 	> {

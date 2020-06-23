@@ -44,14 +44,11 @@ namespace se::utils {
 		std::lock_guard<std::mutex> locker(mMutex);
 
 		putTime(mLogFile);
-		mLogFile << " [" << label << "]";
-		mLogFile << std::hex << " 0x" << std::this_thread::get_id() << std::dec;
-
-		if (stream.good()) {
-			mLogFile << " " << stream.c_str();
-		}
-
-		mLogFile << std::endl;
+		mLogFile
+			<< " [" << label << "]"
+			<< std::hex << " 0x" << std::this_thread::get_id() << std::dec
+			<< " " << stream.c_str()
+			<< std::endl;
 	}
 
 // Private functions
