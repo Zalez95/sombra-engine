@@ -10,8 +10,8 @@ namespace se::graphics {
 
 
 	/**
-	 * Program Class, the program class is used to load the GLSL programs
-	 * and access to its uniform variables
+	 * Program Class, it's used for loading the GLSL programs and accessing to
+	 * their uniform variables
 	 */
 	class Program : public Bindable
 	{

@@ -107,8 +107,8 @@ namespace se::app {
 
 
 	/**
-	 * Class SceneReader, it's used to load the full scenes stored in the given
-	 * files
+	 * Class SceneReader, it's used for loading the full scenes stored in the
+	 * given files
 	 */
 	class SceneReader
 	{

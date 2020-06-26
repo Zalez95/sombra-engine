@@ -16,8 +16,8 @@ namespace se::app {
 		/** Maps the AnimationNodes with their respective joint indices */
 		std::unordered_map<animation::AnimationNode*, std::size_t> jointIndices;
 
-		/** The inverse bind matrices of the joints, they're used to transform
-		 * the mesh to the local space of each joint */
+		/** The inverse bind matrices of the joints, they're used for
+		 * transforming the mesh to the local space of each joint */
 		std::vector<glm::mat4> inverseBindMatrices;
 	};
 

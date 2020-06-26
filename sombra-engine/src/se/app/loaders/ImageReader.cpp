@@ -1,4 +1,4 @@
-#include <SOIL/SOIL.h>
+#include <stb_image.h>
 #include "se/app/loaders/ImageReader.h"
 
 namespace se::app {
@@ -7,15 +7,15 @@ namespace se::app {
 	{
 		using namespace std::string_literals;
 
-		int soilForceChannels = forceNumChannels;
+		int stbForceChannels = forceNumChannels;
 		if (forceNumChannels <= 0) {
-			soilForceChannels = SOIL_LOAD_AUTO;
+			stbForceChannels = STBI_default;
 		}
 
 		int width, height, channels;
-		unsigned char* pixels = SOIL_load_image(path, &width, &height, &channels, soilForceChannels);
+		unsigned char* pixels = stbi_load(path, &width, &height, &channels, stbForceChannels);
 		if (!pixels) {
-			return Result(false, "Error loading the image located in \""s + path + "\": " + SOIL_last_result());
+			return Result(false, "Error loading the image located in \""s + path + "\": " + stbi_failure_reason());
 		}
 
 		output = Image{

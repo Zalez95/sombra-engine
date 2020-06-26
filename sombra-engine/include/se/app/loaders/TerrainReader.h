@@ -9,8 +9,8 @@ namespace se::utils { class FileReader; }
 namespace se::app {
 
 	/**
-	 * Class TerrainReader, it's used to create meshes from raw data or from the
-	 * given files
+	 * Class TerrainReader, it's used for creating meshes from raw data or from
+	 * the given files
 	 */
 	class TerrainReader
 	{

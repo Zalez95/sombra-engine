@@ -43,7 +43,7 @@ namespace se::app
 
 
 	/**
-	 * Class EventManager, it's used to notify the published IEvents to the
+	 * Class EventManager, it's used for notifying the published IEvents to the
 	 * IEventListeners subscribed to the Topic of the IEvent
 	 */
 	class EventManager

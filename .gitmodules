@@ -9,10 +9,6 @@
 	path = ext/glm
 	url = https://github.com/g-truc/glm.git
 	shallow = true
-[submodule "ext/soil"]
-	path = ext/soil
-	url = https://github.com/kbranigan/Simple-OpenGL-Image-Library.git
-	shallow = true
 [submodule "ext/openal"]
 	path = ext/openal
 	url = https://github.com/kcat/openal-soft.git
@@ -32,4 +28,8 @@
 [submodule "ext/freetype"]
 	path = ext/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
+	shallow = true
+[submodule "ext/stb"]
+	path = ext/stb
+	url = https://github.com/Zalez95/stb.git
 	shallow = true

@@ -10,8 +10,8 @@ namespace se::app {
 
 
 	/**
-	 * Class Panel, it's a visible GUI element used to hold and notify the
-	 * IComponents added to it when it's updated
+	 * Class Panel, it's a visible GUI element used for holding and notifying
+	 * the IComponents added to it when it's updated
 	 */
 	class Panel : public ComposedComponent
 	{

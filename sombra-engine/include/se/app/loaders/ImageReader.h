@@ -7,7 +7,7 @@
 namespace se::app {
 
 	/**
-	 * ImageReader Class. Its used to read and load images from files.
+	 * ImageReader Class. Its used for reading and loading images from files.
 	 */
 	class ImageReader
 	{

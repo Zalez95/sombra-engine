@@ -8,7 +8,7 @@
 namespace se::app {
 
 	/**
-	 * Class MeshLoader, it's used to create meshes from raw meshes data
+	 * Class MeshLoader, it's used for creating meshes from raw meshes data
 	 */
 	class MeshLoader
 	{

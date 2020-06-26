@@ -12,9 +12,9 @@ namespace se::graphics {
 
 
 	/**
-	 * Struct Character, it represents a Character in ASCII code used to
-	 * render text with OpenGL.
-	 * It stores all the coordinates and data used to render the character
+	 * Struct Character, it represents a Character in ASCII code used for
+	 * rendering text with OpenGL.
+	 * It stores all the coordinates and data used for rendering the characters
 	 */
 	struct Character
 	{

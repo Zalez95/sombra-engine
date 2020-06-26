@@ -35,7 +35,7 @@ namespace se::app {
 
 		/** Returns a pointer to the requested Entity
 		 *
-		 * @param	second the flag used to select the Entity to return
+		 * @param	second the flag used for selecting the Entity to return
 		 * @return	a pointer to the second Entity if the second flag is
 		 *			true, the first one otherwise */
 		Entity* getEntity(bool second) const

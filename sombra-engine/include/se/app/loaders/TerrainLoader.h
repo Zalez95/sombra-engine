@@ -17,7 +17,7 @@ namespace se::collision { class TerrainCollider; }
 namespace se::app {
 
 	/**
-	 * Class TerrainLoader, it's used to create terrain meshes from raw data
+	 * Class TerrainLoader, it's used for creating terrain meshes from raw data
 	 */
 	class TerrainLoader
 	{
@@ -31,15 +31,16 @@ namespace se::app {
 		/** The maximum color value that a pixel can have in the heightMaps */
 		static constexpr unsigned char kMaxColor = 255;
 
-		/** The GraphicsManager used to store the Renderable3Ds of the
+		/** The GraphicsManager used for storing the Renderable3Ds of the
 		 * Terrains */
 		app::GraphicsManager& mGraphicsManager;
 
-		/** The PhysicsManager used to store the PhysicsEntities of the
+		/** The PhysicsManager used for storing the PhysicsEntities of the
 		 * Terrains */
 		app::PhysicsManager& mPhysicsManager;
 
-		/** The CollisionManager used to store the Colliders of the Terrains */
+		/** The CollisionManager used for storing the Colliders of the
+		 * Terrains */
 		app::CollisionManager& mCollisionManager;
 
 	public:		// Functions
