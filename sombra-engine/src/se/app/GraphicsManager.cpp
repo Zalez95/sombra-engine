@@ -60,6 +60,8 @@ namespace se::app {
 			std::shared_ptr<graphics::UniformBlock> lightsBlock;
 		};
 
+		static constexpr int kIrradianceMap = 0;
+
 		std::map<Entity*, CameraUPtr> cameraEntities;
 		std::map<Entity*, LightSourceUPtr> lightEntities;
 		std::multimap<Entity*, RenderableMeshData> renderableMeshEntities;
@@ -67,6 +69,7 @@ namespace se::app {
 
 		Camera* activeCamera;
 		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
+		std::shared_ptr<graphics::Texture> irradianceMap;
 		std::vector<PassData> passesData;
 	};
 
@@ -165,6 +168,17 @@ namespace se::app {
 	}
 
 
+	void GraphicsManager::setIrradianceMap(TextureSPtr texture)
+	{
+		texture->setTextureUnit(Impl::kIrradianceMap);
+		for (auto& passData : mImpl->passesData) {
+			passData.pass->removeBindable(mImpl->irradianceMap);
+			passData.pass->addBindable(texture);
+		}
+		mImpl->irradianceMap = texture;
+	}
+
+
 	GraphicsManager::PassSPtr GraphicsManager::createPass2D(ProgramSPtr program)
 	{
 		auto renderer2D = dynamic_cast<graphics::Renderer2D*>( mGraphicsEngine.getRenderGraph().getNode("renderer2D") );
@@ -198,7 +212,7 @@ namespace se::app {
 
 
 	GraphicsManager::PassSPtr GraphicsManager::createPass3D(
-		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights
+		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights, bool addIrradianceMap
 	) {
 		auto pass = std::make_shared<graphics::Pass>(*renderer);
 		auto& passData = mImpl->passesData.emplace_back();
@@ -230,6 +244,13 @@ namespace se::app {
 				.addBindable(passData.lightsPositions)
 				.addBindable(passData.lightsDirections)
 				.addBindable(passData.lightsBlock);
+		}
+
+		if (addIrradianceMap && mImpl->irradianceMap) {
+			pass->addBindable(mImpl->irradianceMap)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+					"uIrradianceMap", *program, Impl::kIrradianceMap
+				));
 		}
 
 		return pass;

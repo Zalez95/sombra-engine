@@ -20,7 +20,19 @@ namespace se::app {
 		 *			load (automatically detected by default)
 		 * @return	a Result object with the result of the operation */
 		static Result read(
-			const char* path, Image& output, int forceNumChannels = 0
+			const char* path, Image<unsigned char>& output,
+			int forceNumChannels = 0
+		);
+
+		/** Reads the HDR image located at the given path
+		 *
+		 * @param	path the location of the HDR image
+		 * @param	output where the new Image will be stored
+		 * @param	forceNumChannels the number of channels of the image to
+		 *			load (automatically detected by default)
+		 * @return	a Result object with the result of the operation */
+		static Result readHDR(
+			const char* path, Image<float>& output, int forceNumChannels = 0
 		);
 	};
 

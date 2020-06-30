@@ -49,7 +49,7 @@ namespace game {
 
 		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
 		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
-		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{

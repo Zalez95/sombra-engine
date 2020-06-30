@@ -7,16 +7,16 @@ layout (location = 1) in vec2 aXZLocation;				// XZ patch location attribute
 layout (location = 2) in int aLod;						// XZ lod attribute
 
 // Uniform variables
-uniform mat4 uModelMatrix;								// Model space to World space Matrix
-
 uniform float uXZSize;
 uniform float uMaxHeight;
-uniform sampler2D uHeightMap;
+uniform sampler2D uHeightMap;	// Map in object space that contains the terrain heights
+uniform sampler2D uNormalMap;	// Map in object space that contains the terrain normals
 
-// Output data in world space
+// Output data in local space
 out GeometryIn
 {
 	vec2 texCoord0;
+	vec3 normal;
 } gsVertex;
 
 
@@ -28,7 +28,12 @@ void main()
 	vec2 texCoord0 = position2D / uXZSize + 0.5;
 	float height = (2.0 * texture(uHeightMap, texCoord0).r - 1.0) * uMaxHeight;
 
+	vec3 normal = 2.0 * texture(uNormalMap, texCoord0).rgb - vec3(1.0);
+	normal.y /= uMaxHeight;
+	normal = normalize(normal);
+
 	// Calculate the Vertex data for the geometry shader in world space
-	gl_Position = uModelMatrix * vec4(position2D.x, height, position2D.y, 1.0);
+	gl_Position = vec4(position2D.x, height, position2D.y, 1.0);
 	gsVertex.texCoord0 = texCoord0;
+	gsVertex.normal = normal;
 }

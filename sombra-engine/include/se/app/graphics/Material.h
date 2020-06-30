@@ -41,11 +41,11 @@ namespace se::app {
 		/** The TextureUnits of the Materials */
 		struct TextureUnits
 		{
-			static constexpr int kBaseColor			= 0;
-			static constexpr int kMetallicRoughness	= 1;
-			static constexpr int kNormal			= 2;
-			static constexpr int kOcclusion			= 3;
-			static constexpr int kEmissive			= 4;
+			static constexpr int kBaseColor			= 1;
+			static constexpr int kMetallicRoughness	= 2;
+			static constexpr int kNormal			= 3;
+			static constexpr int kOcclusion			= 4;
+			static constexpr int kEmissive			= 5;
 		};
 
 		/** The name of the Material */
@@ -115,10 +115,11 @@ namespace se::app {
 		/** The TextureUnits of the Materials */
 		struct TextureUnits {
 			static constexpr int kHeightMap				= 0;
-			static constexpr int kSplatmap				= 1;
-			static constexpr int kBaseColor0			= 2;
-			static constexpr int kMetallicRoughness0	= 3;
-			static constexpr int kNormal0				= 4;
+			static constexpr int kNormalMap				= 1;
+			static constexpr int kSplatmap				= 2;
+			static constexpr int kBaseColor0			= 3;
+			static constexpr int kMetallicRoughness0	= 4;
+			static constexpr int kNormal0				= 5;
 		};
 
 		/** The name of the SplatmapMaterial */

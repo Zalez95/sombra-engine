@@ -75,7 +75,7 @@ namespace se::app {
 			std::vector<Buffer> buffers;
 			std::vector<BufferView> bufferViews;
 			std::vector<Sampler> samplers;
-			std::vector<Image> images;
+			std::vector<Image<unsigned char>> images;
 			std::vector<TextureSPtr> textures;
 			std::vector<MaterialUPtr> materials;
 			std::vector<MeshUPtr> meshes;

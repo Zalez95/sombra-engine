@@ -67,6 +67,7 @@ layout (std140) uniform LightsBlock
 	BaseLight uBaseLights[MAX_LIGHTS];
 };
 
+uniform samplerCube uIrradianceMap;
 uniform Material uMaterial;
 
 // Output data
@@ -144,8 +145,8 @@ vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance
 
 
 /* Calculates the color of the current fragment point with all the lights
- * of the scene */
-vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 surfaceNormal)
+ * of the scene and irradiance map */
+vec3 calculateLighting(vec3 albedo, float metallic, float roughness, float ao, vec3 surfaceNormal)
 {
 	vec3 totalLightColor = vec3(0.0);
 
@@ -188,6 +189,13 @@ vec3 calculateDirectLighting(vec3 albedo, float metallic, float roughness, vec3 
 		totalLightColor += (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
 	}
 
+	// Add ambient lightning
+	vec3 f = fresnelSchlick(normalDotView, reflectivity);
+	vec3 diffuseRatio = (1.0 - f);
+	vec3 irradiance = texture(uIrradianceMap, surfaceNormal).rgb;
+	vec3 ambient = diffuseRatio * irradiance * albedo * ao;
+	totalLightColor += ambient;
+
 	return totalLightColor;
 }
 
@@ -217,7 +225,7 @@ void main()
 		vec3(0.0, 0.0, 1.0);
 
 	float surfaceAO = (uMaterial.useOcclusionTexture)?
-		texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r :
+		uMaterial.occlusionStrength * texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r :
 		0.0;
 
 	vec3 emissiveColor = (uMaterial.useEmissiveTexture)?
@@ -230,11 +238,8 @@ void main()
 		discard;
 	}
 	else {
-		// Calculate direct lighting
-		vec3 color = calculateDirectLighting(surfaceColor.rgb, metallic, roughness, surfaceNormal);
-
-		// Set ambient occlusion
-		color += uMaterial.occlusionStrength * surfaceAO * surfaceColor.rgb;
+		// Calculate lighting
+		vec3 color = calculateLighting(surfaceColor.rgb, metallic, roughness, surfaceAO, surfaceNormal);
 
 		// Add emissive color
 		color += emissiveColor;

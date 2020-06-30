@@ -6,6 +6,10 @@
 
 namespace se::utils {
 
+	Logger::Logger(const char* path) :
+		mLogFile(path), mMaxLogLevel(LogLevel::Debug) {}
+
+
 	Logger::Logger(Logger&& other) :
 		mLogFile(std::move(other.mLogFile)), mMaxLogLevel(other.mMaxLogLevel) {}
 

@@ -22,7 +22,6 @@ namespace se::app {
 		addBindable(programSPtr);
 
 		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *programSPtr, glm::mat4(0.0f)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", *programSPtr, static_cast<int>(mMaxSize)) );
 		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", *programSPtr, kTextureUnit) );
 		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", *programSPtr) );
 

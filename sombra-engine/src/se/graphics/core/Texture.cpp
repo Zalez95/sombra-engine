@@ -1,7 +1,12 @@
+#include <cassert>
 #include "se/graphics/core/Texture.h"
 #include "GLWrapper.h"
 
 namespace se::graphics {
+
+	static constexpr int kMaxTextures = 16;		// 16 is the minimum number of textures for OpenGL 3.X
+	static const Texture* sTextureUnits[kMaxTextures] = {};
+
 
 	Texture::Texture(TextureTarget target) : mTarget(target), mTextureUnit(-1), mImageUnit(-1)
 	{
@@ -22,6 +27,7 @@ namespace se::graphics {
 
 	Texture::~Texture()
 	{
+		unbind();
 		if (mTextureId != 0) {
 			GL_WRAP( glDeleteTextures(1, &mTextureId) );
 			SOMBRA_TRACE_LOG << "Deleted Texture " << mTextureId;
@@ -31,6 +37,7 @@ namespace se::graphics {
 
 	Texture& Texture::operator=(Texture&& other)
 	{
+		unbind();
 		if (mTextureId != 0) {
 			GL_WRAP( glDeleteTextures(1, &mTextureId) );
 			SOMBRA_TRACE_LOG << "Deleted Texture " << mTextureId;
@@ -49,6 +56,9 @@ namespace se::graphics {
 
 	Texture& Texture::setTextureUnit(int unit)
 	{
+		assert((unit >= 0) && (unit < kMaxTextures) && "Texture unit not valid");
+
+		unbind();
 		mTextureUnit = unit;
 		return *this;
 	}
@@ -154,6 +164,12 @@ namespace se::graphics {
 	{
 		if (mTextureUnit >= 0) {
 			GL_WRAP( glActiveTexture(GL_TEXTURE0 + mTextureUnit) );
+
+			// There can't be two textures with different targets bound to the same texture unit
+			if (sTextureUnits[mTextureUnit] && (sTextureUnits[mTextureUnit]->mTarget != mTarget)) {
+				sTextureUnits[mTextureUnit]->unbind();
+			}
+			sTextureUnits[mTextureUnit] = this;
 		}
 		if (mImageUnit >= 0) {
 			GL_WRAP( glBindImageTexture(mImageUnit, mTextureId, 0, GL_TRUE, 0, GL_READ_WRITE, toGLColorFormat(mColorFormat)); );
@@ -164,7 +180,10 @@ namespace se::graphics {
 
 	void Texture::unbind() const
 	{
-		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), 0) );
+		if (sTextureUnits[mTextureUnit] == this) {
+			sTextureUnits[mTextureUnit] = nullptr;
+			GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), 0) );
+		}
 	}
 
 }

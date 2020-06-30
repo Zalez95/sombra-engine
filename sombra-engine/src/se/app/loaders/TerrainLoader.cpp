@@ -2,6 +2,7 @@
 #include "se/app/loaders/TerrainLoader.h"
 #include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/graphics/Material.h"
+#include "se/app/graphics/TextureUtils.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Renderer.h"
 #include "se/graphics/3D/RenderableTerrain.h"
@@ -12,7 +13,7 @@ namespace se::app {
 
 	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
 		const std::string& name, float size, float maxHeight,
-		const Image& heightMap, const std::vector<float>& lodDistances,
+		const Image<unsigned char>& heightMap, const std::vector<float>& lodDistances,
 		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
@@ -41,29 +42,36 @@ namespace se::app {
 // Private functions
 	TerrainLoader::RenderableTerrainUPtr TerrainLoader::createTerrainRenderable(
 		float size, float maxHeight,
-		const Image& heightMap, const std::vector<float>& lodDistances,
+		const Image<unsigned char>& heightMap, const std::vector<float>& lodDistances,
 		const SplatmapMaterial& terrainMaterial, const char* programName
 	) {
-		auto heightMapTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
-		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap)
-			.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
+		auto heightMapTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
 			.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
 			.setImage(
 				heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red, graphics::ColorFormat::Red,
 				heightMap.width, heightMap.height
 			);
 
+		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMapTexture, heightMap.width, heightMap.height);
+
 		auto program = mGraphicsManager.getProgramRepository().find(programName);
 		auto renderer3D = static_cast<graphics::Renderer*>(mGraphicsManager.getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
-		auto terrainPass = mGraphicsManager.createPass3D(renderer3D, program, true, true);
+		auto terrainPass = mGraphicsManager.createPass3D(renderer3D, program, true, true, false);
 		TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, program);
 		auto terrainTechnique = std::make_shared<se::graphics::Technique>();
 		terrainTechnique->addPass(terrainPass);
 
 		auto renderable = std::make_unique<graphics::RenderableTerrain>(size, lodDistances);
+		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap);
+		normalMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap);
 		renderable->addBindable(std::move(heightMapTexture))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
 				"uHeightMap", *program, SplatmapMaterial::TextureUnits::kHeightMap
+			))
+			.addBindable(std::move(normalMapTexture))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uNormalMap", *program, SplatmapMaterial::TextureUnits::kNormalMap
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
 				"uXZSize", *program, size
@@ -78,8 +86,9 @@ namespace se::app {
 	}
 
 
-	TerrainLoader::TerrainColliderUPtr TerrainLoader::createTerrainCollider(const Image& heightMap, const glm::vec3& scaleVector)
-	{
+	TerrainLoader::TerrainColliderUPtr TerrainLoader::createTerrainCollider(
+		const Image<unsigned char>& heightMap, const glm::vec3& scaleVector
+	) {
 		const std::size_t xSize = heightMap.width;
 		const std::size_t zSize = heightMap.height;
 
@@ -99,15 +108,15 @@ namespace se::app {
 	}
 
 
-	float TerrainLoader::getHeight(const Image& heightMap, std::size_t x, std::size_t z)
+	float TerrainLoader::getHeight(const Image<unsigned char>& heightMap, std::size_t x, std::size_t z)
 	{
 		assert(x < heightMap.width && "x must be smaller than the image width");
 		assert(z < heightMap.height && "z must be smaller than the image height");
 
-		std::byte* heightMapPixels = heightMap.pixels.get();
-		std::byte h = heightMapPixels[z * heightMap.width + x];
+		unsigned char* heightMapPixels = static_cast<unsigned char*>(heightMap.pixels.get());
+		unsigned char h = heightMapPixels[z * heightMap.width + x];
 
-		return std::to_integer<unsigned char>(h) / static_cast<float>(kMaxColor) - 0.5f;
+		return h / static_cast<float>(kMaxColor) - 0.5f;
 	}
 
 }

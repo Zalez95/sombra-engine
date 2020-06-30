@@ -14,7 +14,6 @@ uniform float uMipMapLevel;
 // Output data in tangent space
 out FragmentIn
 {
-	vec3 position;
 	vec3 texCoords;
 } fsVertex;
 
@@ -30,7 +29,7 @@ void main()
 	voxelIndices.x = gl_InstanceID % maxSize;
 	voxelIndices.y = (gl_InstanceID / maxSize) % maxSize;
 	voxelIndices.z = gl_InstanceID / (maxSize * maxSize);
-	vec3 texCoords = vec3(voxelIndices) / float(maxSize - 1);
+	vec3 texCoords = vec3(voxelIndices) / float(maxSize);
 
 	// Calculate gl_Position
 	vec3 vertexLocal = texCoords + aVertexPosition / float(maxSize);
@@ -38,6 +37,5 @@ void main()
 	gl_Position = uProjectionMatrix * vertexView;
 
 	// Calculate the Vertex data for the fragment shader in tangent space
-	fsVertex.position = vec3(vertexView);
 	fsVertex.texCoords = texCoords;
 }

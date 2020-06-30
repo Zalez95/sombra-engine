@@ -11,8 +11,14 @@ namespace se::graphics {
 		GL_WRAP( mUniformLocation = glGetUniformLocation(program.mProgramId, name) );
 
 		if (mUniformLocation == -1) {
-			SOMBRA_WARN_LOG << "Uniform variable \"" << name << "\" wasn't found";
+			SOMBRA_WARN_LOG << "Uniform variable \"" << name << "\" wasn't found in Program " << program.mProgramId;
 		}
+	}
+
+
+	bool IUniformVariable::found() const
+	{
+		return mUniformLocation >= 0;
 	}
 
 

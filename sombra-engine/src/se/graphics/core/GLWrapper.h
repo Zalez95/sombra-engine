@@ -112,6 +112,9 @@ namespace se::graphics {
 			case ColorFormat::RGB:			return GL_RGB;
 			case ColorFormat::RGBA:			return GL_RGBA;
 			case ColorFormat::Depth:		return GL_DEPTH_COMPONENT;
+			case ColorFormat::Depth16:		return GL_DEPTH_COMPONENT16;
+			case ColorFormat::Depth24:		return GL_DEPTH_COMPONENT24;
+			case ColorFormat::Depth32:		return GL_DEPTH_COMPONENT32F;
 			case ColorFormat::DepthStencil:	return GL_DEPTH_STENCIL;
 			case ColorFormat::RedInteger:	return GL_RED_INTEGER;
 			case ColorFormat::RGInteger:	return GL_RG_INTEGER;

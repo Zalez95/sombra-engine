@@ -53,8 +53,8 @@ namespace se::graphics {
 
 
 	void FrameBuffer::attach(
-		const Texture& texture,
-		FrameBufferAttachment attachment, unsigned int colorIndex, int layer, int orientation
+		const Texture& texture, FrameBufferAttachment attachment,
+		unsigned int colorIndex, int level, int layer, int orientation
 	) const
 	{
 		GLenum glTarget = toGLTextureTarget(texture.getTarget());
@@ -69,16 +69,16 @@ namespace se::graphics {
 
 		switch (texture.getTarget()) {
 			case TextureTarget::Texture1D:
-				GL_WRAP( glFramebufferTexture1D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0) );
+				GL_WRAP( glFramebufferTexture1D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level) );
 				break;
 			case TextureTarget::Texture2D:
-				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0) );
+				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level) );
 				break;
 			case TextureTarget::Texture3D:
-				GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), 0, layer) );
+				GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level, layer) );
 				break;
 			case TextureTarget::CubeMap:
-				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture.getTextureId(), 0) );
+				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture.getTextureId(), level) );
 				break;
 		}
 

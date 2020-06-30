@@ -30,6 +30,10 @@ namespace se::graphics {
 
 		/** Class destructor */
 		virtual ~IUniformVariable() = default;
+
+		/** @return	true if the IUniformVariable was found inside the Program,
+		 *			false otherwise */
+		bool found() const;
 	protected:
 		/** Sets the value of the given uniform variable
 		 *

@@ -53,7 +53,7 @@ namespace se::graphics {
 		RG,
 		RGB,
 		RGBA,
-		Depth,
+		Depth, Depth16, Depth24, Depth32,
 		DepthStencil,
 		RedInteger,
 		RGInteger,

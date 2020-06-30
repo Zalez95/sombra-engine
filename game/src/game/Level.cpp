@@ -10,13 +10,13 @@
 #include <se/app/graphics/Camera.h>
 #include <se/app/graphics/LightSource.h>
 #include <se/app/graphics/Material.h>
+#include <se/app/graphics/TextureUtils.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/ImageReader.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
 #include <se/app/loaders/SceneReader.h>
 #include <se/app/loaders/TechniqueLoader.h>
-#include <se/app/loaders/TextureConverter.h>
 #include <se/app/GraphicsManager.h>
 #include <se/app/PhysicsManager.h>
 #include <se/app/CollisionManager.h>
@@ -175,9 +175,10 @@ namespace game {
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
-		se::app::Image heightMap1, splatMap1, logo1, reticle1;
-		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr, domeMesh = nullptr;
-		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture;
+		se::app::Image<unsigned char> heightMap1, splatMap1, logo1, reticle1;
+		se::app::Image<float> environment1;
+		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr;
+		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture, skyTexture, environmentTexture;
 		std::unique_ptr<se::app::Camera> camera1 = nullptr;
 		std::unique_ptr<se::app::LightSource> spotLight1;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
@@ -203,11 +204,8 @@ namespace game {
 			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.faceIndices);
 			planeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh));
 
-			se::app::RawMesh domeRawMesh = se::app::MeshLoader::createDomeMesh("sky", 32, 16, kZFar / 2);
-			domeMesh = std::make_shared<se::graphics::Mesh>( se::app::MeshLoader::createGraphicsMesh(domeRawMesh) );
-
 			// Programs
-			auto programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl");
+			auto programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCubeMap.glsl");
 			if (!programSky) {
 				throw std::runtime_error("programSky not found");
 			}
@@ -264,6 +262,11 @@ namespace game {
 				throw std::runtime_error(result.description());
 			}
 
+			result = se::app::ImageReader::readHDR("res/images/piazza_san_marco_2k.hdr", environment1);
+			if (!result) {
+				throw std::runtime_error(result.description());
+			}
+
 			// Textures
 			logoTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
 			logoTexture->setImage(
@@ -290,6 +293,17 @@ namespace game {
 					splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
 					se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height
 				);
+
+			auto environmentEquiTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
+			environmentEquiTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+				.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
+				.setImage(
+					environment1.pixels.get(), se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB,
+					se::graphics::ColorFormat::RGB, environment1.width, environment1.height
+				);
+			auto environmentCMTexture = se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512);
+			environmentTexture = se::app::TextureUtils::convoluteCubeMap(environmentCMTexture, 32);
+			skyTexture = se::app::TextureUtils::prefilterCubeMap(environmentCMTexture, 128);
 
 			// Cameras
 			camera1 = std::make_unique<se::app::Camera>();
@@ -369,18 +383,24 @@ namespace game {
 		mGameData.graphicsManager->addLightEntity(mPlayerEntity, std::move(spotLight1));
 		mGameData.audioManager->setListener(mPlayerEntity);
 
+		mGameData.graphicsManager->setIrradianceMap(environmentTexture);
+
 		// Sky
 		{
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
+			skyEntity->scale = glm::vec3(kZFar / 2.0f);
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
-			auto passSky = mGameData.graphicsManager->createPass3D(renderer3D, programSky, true, false);
-			passSky->addBindable(std::make_shared<se::graphics::CullingOperation>(false));
+			auto passSky = mGameData.graphicsManager->createPass3D(renderer3D, programSky, true, false, false);
+			skyTexture->setTextureUnit(0);
+			passSky->addBindable(skyTexture)
+				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
+				.addBindable(std::make_shared<se::graphics::CullingOperation>(false));
 
 			auto techniqueSky = std::make_unique<se::graphics::Technique>();
 			techniqueSky->addPass(passSky);
 
-			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(domeMesh);
+			auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(cubeMesh);
 			renderableMesh->addTechnique(std::move(techniqueSky));
 
 			mGameData.graphicsManager->addMeshEntity(skyEntity.get(), std::move(renderableMesh));
@@ -405,7 +425,7 @@ namespace game {
 			auto plane = std::make_unique<se::app::Entity>("plane");
 			plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-			auto passPlane = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+			auto passPlane = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -463,7 +483,7 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto passCube = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+			auto passCube = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -489,7 +509,7 @@ namespace game {
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		{
-			auto passRed = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+			auto passRed = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRed,
 				se::app::Material{
@@ -558,7 +578,7 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
-			auto passSlice = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+			auto passSlice = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -587,7 +607,7 @@ namespace game {
 
 		// Random cubes
 		{
-			auto passRandom = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+			auto passRandom = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
@@ -635,7 +655,7 @@ namespace game {
 
 			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
 			for (auto& material : loadedScenes.materials) {
-				auto pass3D = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true);
+				auto pass3D = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
 				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programPBR);
 				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
 			}

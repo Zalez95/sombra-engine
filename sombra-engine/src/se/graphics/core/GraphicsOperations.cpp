@@ -24,8 +24,11 @@ namespace se::graphics {
 		// Allow non-aligned textures
 		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
 
+		/** Enable interpolation between cubemap faces */
+		GL_WRAP( glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS) );
+
 		// Set the clear color
-		GL_WRAP( glClearColor(1.0f, 1.0f, 1.0f, 1.0f) );
+		GL_WRAP( glClearColor(0.0f, 0.0f, 0.0f, 1.0f) );
 
 		return true;
 	}

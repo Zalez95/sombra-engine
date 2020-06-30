@@ -49,6 +49,8 @@ namespace se::graphics {
 		 * @param	colorIndex when the attachment is of Color type, it
 		 *			specifies the color attachment index where the texture will
 		 *			be attached
+		 * @param	level specifies the mip map level of the texture to attach
+		 *			to the framebuffer
 		 * @param	layer specifies the layer of a 2-dimensional image within a
 		 *			Texture3D
 		 * @param	orientation which face of the CubeMap is going to be set
@@ -57,7 +59,7 @@ namespace se::graphics {
 		void attach(
 			const Texture& texture,
 			FrameBufferAttachment attachment, unsigned int colorIndex = 0,
-			int layer = 0, int orientation = 0
+			int level = 0, int layer = 0, int orientation = 0
 		) const;
 
 		/** Binds the Frame Buffer Object */

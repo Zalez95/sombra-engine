@@ -8,10 +8,10 @@ const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
 // Input data in tangent space from the vertex shader
 in FragmentIn
 {
-	vec3 position;
 	vec3 texCoords;
 } fsVertex;
 
+// Uniform variables
 uniform usampler3D uTexture3D;
 uniform float uMipMapLevel;
 

@@ -527,7 +527,7 @@ namespace se::app {
 		if (itUri != jsonImage.end()) {
 			std::string path = mBasePath + itUri->get<std::string>();
 
-			Image& image = mGLTFData.images.emplace_back();
+			Image<unsigned char>& image = mGLTFData.images.emplace_back();
 			Result result = ImageReader::read(path.c_str(), image);
 			if (result) {
 				return Result();
@@ -556,7 +556,7 @@ namespace se::app {
 				return Result(false, "Source index " + std::to_string(sourceId) + " out of range");
 			}
 
-			const Image& image = mGLTFData.images[sourceId];
+			const Image<unsigned char>& image = mGLTFData.images[sourceId];
 
 			graphics::ColorFormat format = graphics::ColorFormat::RGB;
 			switch (image.channels) {

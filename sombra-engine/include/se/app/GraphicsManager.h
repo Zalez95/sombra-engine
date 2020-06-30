@@ -52,6 +52,7 @@ namespace se::app {
 		using SkinSPtr = std::shared_ptr<Skin>;
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
 		using ProgramSPtr = std::shared_ptr<graphics::Program>;
+		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		using RenderableMeshUPtr =
 			std::unique_ptr<graphics::RenderableMesh>;
 		using RenderableTerrainUPtr =
@@ -146,6 +147,11 @@ namespace se::app {
 		 *			GraphicsManager */
 		void addLightEntity(Entity* entity, LightSourceUPtr lightSource);
 
+		/** Sets the irradiance texture of the GraphisManager
+		 *
+		 * @param	texture	the new irradiance texture */
+		void setIrradianceMap(TextureSPtr texture);
+
 		/** Creates a new Pass and adds the uniform variables for the cameras
 		 *
 		 * @param	program a pointer to the program of the new Pass
@@ -160,10 +166,12 @@ namespace se::app {
 		 * @param	addProgram if we want to add the program to the Pass or not
 		 * @param	addLights if we want the uniform variables for lightning or
 		 *			not
+		 * @param	addIrradianceMap if we want the uniform variables for
+		 *			irradiance map or not
 		 * @return	the new Pass */
 		PassSPtr createPass3D(
 			graphics::Renderer* renderer, ProgramSPtr program,
-			bool addProgram, bool addLights
+			bool addProgram, bool addLights, bool addIrradianceMap
 		);
 
 		/** Adds the given Entity and its Mesh (and skin) data to the

@@ -77,7 +77,8 @@ namespace se::app {
 		 * @return	a pointer to the new Terrain entity */
 		EntityUPtr createTerrain(
 			const std::string& name, float size, float maxHeight,
-			const Image& heightMap, const std::vector<float>& lodDistances,
+			const Image<unsigned char>& heightMap,
+			const std::vector<float>& lodDistances,
 			const SplatmapMaterial& terrainMaterial, const char* programName
 		);
 	private:
@@ -98,7 +99,8 @@ namespace se::app {
 		 *			failed */
 		RenderableTerrainUPtr createTerrainRenderable(
 			float size, float maxHeight,
-			const Image& heightMap, const std::vector<float>& lodDistances,
+			const Image<unsigned char>& heightMap,
+			const std::vector<float>& lodDistances,
 			const SplatmapMaterial& terrainMaterial, const char* programName
 		);
 
@@ -111,7 +113,7 @@ namespace se::app {
 		 *			in each axis
 		 * @return	a pointer to the new TerrainCollider */
 		static TerrainColliderUPtr createTerrainCollider(
-			const Image& heightMap, const glm::vec3& scaleVector
+			const Image<unsigned char>& heightMap, const glm::vec3& scaleVector
 		);
 
 		/** Return the height located in the height map at the given position
@@ -123,7 +125,7 @@ namespace se::app {
 		 * @param	z the position in the Z axis that we want to read
 		 * @return	the height at the given position in the range [-0.5, 0.5] */
 		static float getHeight(
-			const Image& heightMap, std::size_t x, std::size_t z
+			const Image<unsigned char>& heightMap, std::size_t x, std::size_t z
 		);
 	};
 
