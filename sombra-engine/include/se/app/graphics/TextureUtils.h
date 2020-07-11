@@ -45,6 +45,12 @@ namespace se::app {
 			TextureSPtr source, std::size_t size
 		);
 
+		/** Calculates the specular BRDF and stores it to a texture
+		 *
+		 * @param	size the width and height of the output texture
+		 * @return	the new precomputed BRDF Texture */
+		static TextureSPtr precomputeBRDF(std::size_t size);
+
 		/** Creates a normal map Texture from the given height map one with the
 		 * normal vectors stored in local space
 		 *

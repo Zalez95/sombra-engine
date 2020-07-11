@@ -152,6 +152,16 @@ namespace se::app {
 		 * @param	texture	the new irradiance texture */
 		void setIrradianceMap(TextureSPtr texture);
 
+		/** Sets the prefiltered environment map texture of the GraphisManager
+		 *
+		 * @param	texture	the new prefilter texture */
+		void setPrefilterMap(TextureSPtr texture);
+
+		/** Sets the convoluted BRDF texture of the GraphisManager
+		 *
+		 * @param	texture	the new BRDF texture */
+		void setBRDFMap(TextureSPtr texture);
+
 		/** Creates a new Pass and adds the uniform variables for the cameras
 		 *
 		 * @param	program a pointer to the program of the new Pass
@@ -166,12 +176,12 @@ namespace se::app {
 		 * @param	addProgram if we want to add the program to the Pass or not
 		 * @param	addLights if we want the uniform variables for lightning or
 		 *			not
-		 * @param	addIrradianceMap if we want the uniform variables for
-		 *			irradiance map or not
+		 * @param	addPBRMaps if we want to add the uniform variables for the
+		 *			irradiance, prefilter and BRDF maps or not
 		 * @return	the new Pass */
 		PassSPtr createPass3D(
 			graphics::Renderer* renderer, ProgramSPtr program,
-			bool addProgram, bool addLights, bool addIrradianceMap
+			bool addProgram, bool addLights, bool addPBRMaps
 		);
 
 		/** Adds the given Entity and its Mesh (and skin) data to the

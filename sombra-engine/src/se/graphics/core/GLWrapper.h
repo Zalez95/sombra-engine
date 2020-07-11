@@ -121,7 +121,12 @@ namespace se::graphics {
 			case ColorFormat::RGBInteger:	return GL_RGB_INTEGER;
 			case ColorFormat::RGBAInteger:	return GL_RGBA_INTEGER;
 			case ColorFormat::Red32ui:		return GL_R32UI;
+			case ColorFormat::RG8:			return GL_RG8;
+			case ColorFormat::RG16ui:		return GL_RG16UI;
+			case ColorFormat::RG16f:		return GL_RG16F;
 			case ColorFormat::RG32ui:		return GL_RG32UI;
+			case ColorFormat::RG32f:		return GL_RG32F;
+			case ColorFormat::RGB8:			return GL_RGB8;
 			case ColorFormat::RGB16ui:		return GL_RGB16UI;
 			case ColorFormat::RGB16f:		return GL_RGB16F;
 			case ColorFormat::RGB32ui:		return GL_RGB32UI;

@@ -3,12 +3,12 @@
 // ____ CONSTANTS ____
 const float PI					= 3.1415926535897932384626433832795;
 const vec3	BASE_REFLECTIVITY	= vec3(0.04);
+const float MAX_REFLECTION_LOD	= 4.0;	// Maximum LOD of the prefilter map
 const uint	MAX_LIGHTS			= 4u;
 const uint	DIRECTIONAL_LIGHT	= 0u;
 const uint	POINT_LIGHT			= 1u;
 const uint	SPOT_LIGHT			= 2u;
 const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
-
 
 // ____ DATATYPES ____
 struct PBRMetallicRoughness
@@ -68,6 +68,8 @@ layout (std140) uniform LightsBlock
 };
 
 uniform samplerCube uIrradianceMap;
+uniform samplerCube uPrefilterMap;
+uniform sampler2D uBRDFMap;
 uniform Material uMaterial;
 
 // Output data
@@ -154,6 +156,7 @@ vec3 calculateLighting(vec3 albedo, float metallic, float roughness, float ao, v
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(surfaceNormal, viewDirection), 0.0);
 
+	// ---- Calculate Direct lighting ----
 	for (uint i = 0u; i < fsNumLights; ++i) {
 		// Calculate the light direction and distance from the current point
 		vec3 lightDirection1 = -fsLightsDirections[i];
@@ -189,14 +192,25 @@ vec3 calculateLighting(vec3 albedo, float metallic, float roughness, float ao, v
 		totalLightColor += (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
 	}
 
-	// Add ambient lightning
+	// ---- Calculate Indirect lighting ----
 	vec3 f = fresnelSchlick(normalDotView, reflectivity);
-	vec3 diffuseRatio = (1.0 - f);
-	vec3 irradiance = texture(uIrradianceMap, surfaceNormal).rgb;
-	vec3 ambient = diffuseRatio * irradiance * albedo * ao;
-	totalLightColor += ambient;
 
-	return totalLightColor;
+	// Calculate the ambient lighting due to IBL
+	vec3 irradiance = texture(uIrradianceMap, surfaceNormal).rgb;
+	vec3 diffuse = irradiance * albedo;
+
+	// Calculate the specular lighting due to IBL
+	vec3 reflectDirection = reflect(-viewDirection, surfaceNormal);
+	vec3 prefilteredColor = textureLod(uPrefilterMap, reflectDirection, roughness * MAX_REFLECTION_LOD).rgb;
+
+	vec2 environmentBRDF = texture(uBRDFMap, vec2(normalDotView, roughness)).rg;
+	vec3 specular = prefilteredColor * (f * environmentBRDF.x + environmentBRDF.y);
+
+	// Add the IBL lighting
+	vec3 diffuseRatio = (1.0 - f);
+	vec3 ambient = (diffuseRatio * diffuse + specular) * ao;
+
+	return totalLightColor + ambient;
 }
 
 
@@ -225,8 +239,8 @@ void main()
 		vec3(0.0, 0.0, 1.0);
 
 	float surfaceAO = (uMaterial.useOcclusionTexture)?
-		uMaterial.occlusionStrength * texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r :
-		0.0;
+		mix(1.0, texture(uMaterial.occlusionTexture, fsVertex.texCoord0).r, uMaterial.occlusionStrength) :
+		1.0;
 
 	vec3 emissiveColor = (uMaterial.useEmissiveTexture)?
 		texture(uMaterial.emissiveTexture, fsVertex.texCoord0).rgb :

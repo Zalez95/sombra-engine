@@ -61,6 +61,8 @@ namespace se::app {
 		};
 
 		static constexpr int kIrradianceMap = 0;
+		static constexpr int kPrefilterMap = 1;
+		static constexpr int kBRDFMap = 2;
 
 		std::map<Entity*, CameraUPtr> cameraEntities;
 		std::map<Entity*, LightSourceUPtr> lightEntities;
@@ -69,7 +71,7 @@ namespace se::app {
 
 		Camera* activeCamera;
 		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
-		std::shared_ptr<graphics::Texture> irradianceMap;
+		std::shared_ptr<graphics::Texture> irradianceMap, prefilterMap, brdfMap;
 		std::vector<PassData> passesData;
 	};
 
@@ -179,6 +181,29 @@ namespace se::app {
 	}
 
 
+	void GraphicsManager::setPrefilterMap(TextureSPtr texture)
+	{
+		texture->setTextureUnit(Impl::kPrefilterMap);
+		for (auto& passData : mImpl->passesData) {
+			passData.pass->removeBindable(mImpl->irradianceMap);
+			passData.pass->addBindable(texture);
+		}
+		mImpl->prefilterMap = texture;
+
+	}
+
+
+	void GraphicsManager::setBRDFMap(TextureSPtr texture)
+	{
+		texture->setTextureUnit(Impl::kBRDFMap);
+		for (auto& passData : mImpl->passesData) {
+			passData.pass->removeBindable(mImpl->irradianceMap);
+			passData.pass->addBindable(texture);
+		}
+		mImpl->brdfMap = texture;
+	}
+
+
 	GraphicsManager::PassSPtr GraphicsManager::createPass2D(ProgramSPtr program)
 	{
 		auto renderer2D = dynamic_cast<graphics::Renderer2D*>( mGraphicsEngine.getRenderGraph().getNode("renderer2D") );
@@ -212,7 +237,7 @@ namespace se::app {
 
 
 	GraphicsManager::PassSPtr GraphicsManager::createPass3D(
-		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights, bool addIrradianceMap
+		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights, bool addPBRMaps
 	) {
 		auto pass = std::make_shared<graphics::Pass>(*renderer);
 		auto& passData = mImpl->passesData.emplace_back();
@@ -246,10 +271,18 @@ namespace se::app {
 				.addBindable(passData.lightsBlock);
 		}
 
-		if (addIrradianceMap && mImpl->irradianceMap) {
+		if (addPBRMaps && mImpl->irradianceMap && mImpl->prefilterMap && mImpl->brdfMap) {
 			pass->addBindable(mImpl->irradianceMap)
 				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
 					"uIrradianceMap", *program, Impl::kIrradianceMap
+				))
+				.addBindable(mImpl->prefilterMap)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+					"uPrefilterMap", *program, Impl::kPrefilterMap
+				))
+				.addBindable(mImpl->brdfMap)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+					"uBRDFMap", *program, Impl::kBRDFMap
 				));
 		}
 

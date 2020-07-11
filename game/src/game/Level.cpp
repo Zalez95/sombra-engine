@@ -178,7 +178,8 @@ namespace game {
 		se::app::Image<unsigned char> heightMap1, splatMap1, logo1, reticle1;
 		se::app::Image<float> environment1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr;
-		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture, skyTexture, environmentTexture;
+		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture,
+			skyTexture, environmentTexture, prefilterTexture, brdfTexture;
 		std::unique_ptr<se::app::Camera> camera1 = nullptr;
 		std::unique_ptr<se::app::LightSource> spotLight1;
 		std::unique_ptr<se::audio::Source> source1 = nullptr;
@@ -301,9 +302,10 @@ namespace game {
 					environment1.pixels.get(), se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB,
 					se::graphics::ColorFormat::RGB, environment1.width, environment1.height
 				);
-			auto environmentCMTexture = se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512);
-			environmentTexture = se::app::TextureUtils::convoluteCubeMap(environmentCMTexture, 32);
-			skyTexture = se::app::TextureUtils::prefilterCubeMap(environmentCMTexture, 128);
+			skyTexture = se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512);
+			environmentTexture = se::app::TextureUtils::convoluteCubeMap(skyTexture, 32);
+			prefilterTexture = se::app::TextureUtils::prefilterCubeMap(skyTexture, 128);
+			brdfTexture = se::app::TextureUtils::precomputeBRDF(512);
 
 			// Cameras
 			camera1 = std::make_unique<se::app::Camera>();
@@ -384,6 +386,8 @@ namespace game {
 		mGameData.audioManager->setListener(mPlayerEntity);
 
 		mGameData.graphicsManager->setIrradianceMap(environmentTexture);
+		mGameData.graphicsManager->setPrefilterMap(prefilterTexture);
+		mGameData.graphicsManager->setBRDFMap(brdfTexture);
 
 		// Sky
 		{
@@ -488,7 +492,7 @@ namespace game {
 				passCube,
 				se::app::Material{
 					"tmp_material",
-					se::app::PBRMetallicRoughness{ colors[i], {}, 0.2f, 0.5f, {} },
+					se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
 				programPBR
