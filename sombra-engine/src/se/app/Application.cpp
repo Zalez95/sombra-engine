@@ -46,7 +46,7 @@ namespace se::app {
 
 			// Graphics
 			mGraphicsEngine = new graphics::GraphicsEngine();
-			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager);
+			mGraphicsManager = new GraphicsManager(*mGraphicsEngine, *mEventManager, windowConfig.width, windowConfig.height);
 			mGUIManager = new GUIManager(*mEventManager, *mGraphicsManager, { windowConfig.width, windowConfig.height });
 			se::graphics::GraphicsOperations::setViewport(0, 0, windowConfig.width, windowConfig.height);
 

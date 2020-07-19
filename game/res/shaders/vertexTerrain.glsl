@@ -32,7 +32,7 @@ void main()
 	normal.y /= uMaxHeight;
 	normal = normalize(normal);
 
-	// Calculate the Vertex data for the geometry shader in world space
+	// Calculate the Vertex data for the geometry shader in local space
 	gl_Position = vec4(position2D.x, height, position2D.y, 1.0);
 	gsVertex.texCoord0 = texCoord0;
 	gsVertex.normal = normal;

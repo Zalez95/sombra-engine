@@ -1,6 +1,7 @@
 #ifndef FRAME_BUFFER_H
 #define FRAME_BUFFER_H
 
+#include <array>
 #include "Bindable.h"
 #include "Constants.h"
 
@@ -22,6 +23,11 @@ namespace se::graphics {
 		/** The operation that we want to bind the FrameBuffer to */
 		FrameBufferTarget mTarget;
 
+		/** The color attachments added to the FrameBuffer */
+		std::array<
+			bool, FrameBufferAttachment::kMaxColorAttachments
+		> mColorAttachments;
+
 	public:		// Functions
 		/** Creates a new FrameBuffer
 		 *
@@ -40,12 +46,16 @@ namespace se::graphics {
 		/** @return	the FrameBuffer where graphics API draws to by default */
 		static FrameBuffer& getDefaultFrameBuffer();
 
+		/** Sets the target of the FrameBuffer
+		 *
+		 * @param	target the target that we want to bind the FrameBuffer to */
+		FrameBuffer& setTarget(FrameBufferTarget target);
+
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
 		 *
 		 * @param	texture the Texture to Attach to the FrameBuffer
-		 * @param	attachment the attachment id of the texture (stencil,
-		 *			depth, color...)
+		 * @param	attachment the @see FrameBufferAttachment of the texture
 		 * @param	colorIndex when the attachment is of Color type, it
 		 *			specifies the color attachment index where the texture will
 		 *			be attached
@@ -56,11 +66,10 @@ namespace se::graphics {
 		 * @param	orientation which face of the CubeMap is going to be set
 		 *			(0 = positive X, 1 = negative X, 2 = positive Y,
 		 *			3 = negative Y, 4 = positive Z, 5 = negative Z) */
-		void attach(
-			const Texture& texture,
-			FrameBufferAttachment attachment, unsigned int colorIndex = 0,
+		FrameBuffer& attach(
+			const Texture& texture, unsigned int attachment,
 			int level = 0, int layer = 0, int orientation = 0
-		) const;
+		);
 
 		/** Binds the Frame Buffer Object */
 		void bind() const override;

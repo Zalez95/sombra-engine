@@ -1,7 +1,6 @@
 #version 330 core
 
 // ____ CONSTANTS ____
-const uint MAX_LIGHTS = 4u;
 const uint MAX_JOINTS = 64u;
 
 
@@ -21,23 +20,16 @@ uniform mat4 uProjectionMatrix;						// View space to NDC space Matrix
 
 uniform mat4 uJointMatrices[MAX_JOINTS];			// The joint matrices of the Skeleton
 
-uniform uint uNumLights;							// Number of lights to process
-uniform vec3 uLightsPositions[MAX_LIGHTS];			// Lights positions in world space
-uniform vec3 uLightsDirections[MAX_LIGHTS];			// Lights directions in world space
-
-// Output data in tangent space
+// Output data in world space
 out FragmentIn
 {
 	vec3 position;
 	vec2 texCoord0;
+	mat3 tbn;
 } fsVertex;
 
-flat out uint fsNumLights;
-out vec3 fsLightsPositions[MAX_LIGHTS];
-out vec3 fsLightsDirections[MAX_LIGHTS];
 
-
-// Functions
+// ____ MAIN PROGRAM ____
 void main()
 {
 	// Calculate the skeleton pose matrix
@@ -46,34 +38,28 @@ void main()
 					+ aVertexWeights.z * uJointMatrices[aVertexJoints.z]
 					+ aVertexWeights.w * uJointMatrices[aVertexJoints.w];
 
-	// Calculate the Model-View matrix with the pose
-	mat4 modelViewMatrix = uViewMatrix * uModelMatrix * poseMatrix;
+	// Calculate the model matrix with the pose
+	mat4 modelPoseMatrix = uModelMatrix * poseMatrix;
 
-	// Calculate the tangent and normal vectors in view space
-	vec3 T = normalize(vec3(modelViewMatrix * vec4(aVertexTangent, 0.0)));
-	vec3 N = normalize(vec3(modelViewMatrix * vec4(aVertexNormal, 0.0)));
+	// Calculate the tangent and normal vectors in world space
+	vec3 T = normalize(vec3(modelPoseMatrix * vec4(aVertexTangent, 0.0)));
+	vec3 N = normalize(vec3(modelPoseMatrix * vec4(aVertexNormal, 0.0)));
 
 	// Fix normalization issues so T and N are orthogonal
 	T = normalize(T - dot(T, N) * N);
 
-	// Calculate the bit-tangent vector in view space
+	// Calculate the bit-tangent vector in world space
 	vec3 B = cross(N, T);
 
 	// Calculate the TBN matrix
-	mat3 tbnMatrix = transpose(mat3(T, B, N));
+	mat3 tbnMatrix = mat3(T, B, N);
 
 	// Calculate gl_Position
-	vec4 vertexView	= modelViewMatrix * vec4(aVertexPosition, 1.0);
-	gl_Position		= uProjectionMatrix * vertexView;
+	vec4 vertexWorld = modelPoseMatrix * vec4(aVertexPosition, 1.0);
+	gl_Position = uProjectionMatrix * uViewMatrix * vertexWorld;
 
-	// Calculate the Vertex data for the fragment shader in tangent space
-	fsVertex.position	= tbnMatrix * vec3(vertexView);
+	// Calculate the Vertex data for the fragment shader in world space
+	fsVertex.position	= vec3(vertexWorld);
 	fsVertex.texCoord0	= aVertexTexCoord0;
-
-	// Calculate the Lights coordinates in tangent space
-	fsNumLights = (uNumLights > MAX_LIGHTS)? MAX_LIGHTS : uNumLights;
-	for (uint i = 0u; i < fsNumLights; ++i) {
-		fsLightsPositions[i] = tbnMatrix * vec3(uViewMatrix * vec4(uLightsPositions[i], 1.0));
-		fsLightsDirections[i] = tbnMatrix * vec3(uViewMatrix * vec4(uLightsDirections[i], 0.0));
-	}
+	fsVertex.tbn		= tbnMatrix;
 }

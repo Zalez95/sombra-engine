@@ -72,7 +72,7 @@ namespace se::app {
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
-		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::Depth);
+		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
 		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentEquiToCubeMap.glsl");
@@ -101,7 +101,7 @@ namespace se::app {
 		graphics::GraphicsOperations::setViewport(0, 0, size, size);
 
 		for (int i = 0; i < 6; ++i) {
-			frameBuffer->attach(*ret, graphics::FrameBufferAttachment::Color, 0, 0, 0, i);
+			frameBuffer->attach(*ret, graphics::FrameBufferAttachment::kColor0, 0, 0, i);
 			viewMatrixUniform->setValue(kCubeMapViewMatrices[i]);
 
 			cubeRenderable->submit();
@@ -132,7 +132,7 @@ namespace se::app {
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
-		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::Depth);
+		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
 		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentConvoluteCubeMap.glsl");
@@ -161,7 +161,7 @@ namespace se::app {
 		graphics::GraphicsOperations::setViewport(0, 0, size, size);
 
 		for (int i = 0; i < 6; ++i) {
-			frameBuffer->attach(*ret, graphics::FrameBufferAttachment::Color, 0, 0, 0, i);
+			frameBuffer->attach(*ret, graphics::FrameBufferAttachment::kColor0, 0, 0, i);
 			viewMatrixUniform->setValue(kCubeMapViewMatrices[i]);
 
 			cubeRenderable->submit();
@@ -226,13 +226,13 @@ namespace se::app {
 			std::size_t currentSize = static_cast<std::size_t>(size * std::pow(0.5, i));
 			graphics::GraphicsOperations::setViewport(0, 0, currentSize, currentSize);
 
-			frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::Depth, 0, i);
+			frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth, 0, i);
 
 			float roughness = i / static_cast<float>(kMaxMipPrefilterLevels - 1);
 			roughnessUniform->setValue(roughness);
 
 			for (int j = 0; j < 6; ++j) {
-				frameBuffer->attach(*ret, graphics::FrameBufferAttachment::Color, 0, i, 0, j);
+				frameBuffer->attach(*ret, graphics::FrameBufferAttachment::kColor0, i, 0, j);
 				viewMatrixUniform->setValue(kCubeMapViewMatrices[j]);
 
 				cubeRenderable->submit();
@@ -261,7 +261,7 @@ namespace se::app {
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
-		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::Depth);
+		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
 		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentPrecomputeBRDF.glsl");
@@ -287,7 +287,7 @@ namespace se::app {
 		graphics::GraphicsOperations::getViewport(originX, originY, dimensionsX, dimensionsY);
 		graphics::GraphicsOperations::setViewport(0, 0, size, size);
 
-		frameBuffer->attach(*ret, graphics::FrameBufferAttachment::Color);
+		frameBuffer->attach(*ret, graphics::FrameBufferAttachment::kColor0);
 		planeRenderable->submit();
 		graph.execute();
 
@@ -312,7 +312,7 @@ namespace se::app {
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, width, height);
-		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::Depth);
+		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
 		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentToNormalLocal.glsl");
@@ -342,7 +342,7 @@ namespace se::app {
 		graphics::GraphicsOperations::getViewport(originX, originY, dimensionsX, dimensionsY);
 		graphics::GraphicsOperations::setViewport(0, 0, width, height);
 
-		frameBuffer->attach(*ret, graphics::FrameBufferAttachment::Color);
+		frameBuffer->attach(*ret, graphics::FrameBufferAttachment::kColor0);
 		planeRenderable->submit();
 		graph.execute();
 

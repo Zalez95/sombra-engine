@@ -110,12 +110,13 @@ namespace se::graphics {
 
 
 	/** The different types of attachments of a texture to a FrameBuffer */
-	enum class FrameBufferAttachment
+	namespace FrameBufferAttachment
 	{
-		Stencil,
-		Depth,
-		Color
-	};
+		static constexpr unsigned int kStencil = 0;
+		static constexpr unsigned int kDepth = 1;
+		static constexpr unsigned int kColor0 = 2;
+		static constexpr unsigned int kMaxColorAttachments = 8;
+	}
 
 }
 

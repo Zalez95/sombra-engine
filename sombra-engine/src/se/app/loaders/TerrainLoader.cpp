@@ -56,8 +56,8 @@ namespace se::app {
 		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMapTexture, heightMap.width, heightMap.height);
 
 		auto program = mGraphicsManager.getProgramRepository().find(programName);
-		auto renderer3D = static_cast<graphics::Renderer*>(mGraphicsManager.getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
-		auto terrainPass = mGraphicsManager.createPass3D(renderer3D, program, true, true, false);
+		auto gBufferRenderer = static_cast<graphics::Renderer*>(mGraphicsManager.getGraphicsEngine().getRenderGraph().getNode("gBufferRenderer"));
+		auto terrainPass = mGraphicsManager.createPass3D(gBufferRenderer, program, true);
 		TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, program);
 		auto terrainTechnique = std::make_shared<se::graphics::Technique>();
 		terrainTechnique->addPass(terrainPass);

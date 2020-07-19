@@ -47,9 +47,9 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
 		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
-		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{

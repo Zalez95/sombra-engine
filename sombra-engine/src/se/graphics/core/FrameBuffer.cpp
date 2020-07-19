@@ -1,5 +1,6 @@
 #include <string>
 #include <stdexcept>
+#include "se/utils/FixedVector.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/Texture.h"
 #include "GLWrapper.h"
@@ -52,18 +53,19 @@ namespace se::graphics {
 	}
 
 
-	void FrameBuffer::attach(
-		const Texture& texture, FrameBufferAttachment attachment,
-		unsigned int colorIndex, int level, int layer, int orientation
-	) const
+	FrameBuffer& FrameBuffer::setTarget(FrameBufferTarget target)
 	{
+		mTarget = target;
+		return *this;
+	}
+
+
+	FrameBuffer& FrameBuffer::attach(
+		const Texture& texture, unsigned int attachment,
+		int level, int layer, int orientation
+	) {
 		GLenum glTarget = toGLTextureTarget(texture.getTarget());
-		GLenum glAttachment = GL_COLOR_ATTACHMENT0;
-		switch (attachment) {
-			case FrameBufferAttachment::Stencil:	glAttachment = GL_STENCIL_ATTACHMENT;				break;
-			case FrameBufferAttachment::Depth:		glAttachment = GL_DEPTH_ATTACHMENT;					break;
-			case FrameBufferAttachment::Color:		glAttachment = GL_COLOR_ATTACHMENT0 + colorIndex;	break;
-		}
+		GLenum glAttachment = toGLFrameBufferAttachment(attachment);
 
 		bind();
 
@@ -87,7 +89,23 @@ namespace se::graphics {
 			throw std::runtime_error("FrameBuffer error: status 0x" + std::to_string(status));
 		}
 
+		// Set the color attachments to render to
+		if (attachment >= FrameBufferAttachment::kColor0) {
+			unsigned int colorIndex = attachment - FrameBufferAttachment::kColor0;
+			mColorAttachments[colorIndex] = true;
+
+			utils::FixedVector<GLenum, FrameBufferAttachment::kMaxColorAttachments> glAttachments;
+			for (unsigned int i = 0; i < FrameBufferAttachment::kMaxColorAttachments; ++i) {
+				if (mColorAttachments[i]) {
+					glAttachments.push_back( toGLFrameBufferAttachment(FrameBufferAttachment::kColor0 + i) );
+				}
+			}
+			GL_WRAP( glDrawBuffers(glAttachments.size(), glAttachments.data()) );
+		}
+
 		unbind();
+
+		return *this;
 	}
 
 

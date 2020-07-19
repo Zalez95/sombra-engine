@@ -212,23 +212,23 @@ namespace game {
 			}
 			mGameData.graphicsManager->getProgramRepository().add("programSky", std::move(programSky));
 
-			auto programPBR = se::app::TechniqueLoader::createProgram("res/shaders/vertexLight.glsl", nullptr, "res/shaders/fragmentPBR.glsl");
-			if (!programPBR) {
-				throw std::runtime_error("programPBR not found");
+			auto programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			if (!programGBufMaterial) {
+				throw std::runtime_error("programGBufMaterial not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programPBR", std::move(programPBR));
+			mGameData.graphicsManager->getProgramRepository().add("programGBufMaterial", std::move(programGBufMaterial));
 
-			auto programPBRSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexLightSkinning.glsl", nullptr, "res/shaders/fragmentPBR.glsl");
-			if (!programPBRSkinning) {
-				throw std::runtime_error("programPBRSkinning not found");
+			auto programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			if (!programGBufMaterialSkinning) {
+				throw std::runtime_error("programGBufMaterialSkinning not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programPBRSkinning", std::move(programPBRSkinning));
+			mGameData.graphicsManager->getProgramRepository().add("programGBufMaterialSkinning", std::move(programGBufMaterialSkinning));
 
-			auto programSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentSplatmap.glsl");
-			if (!programSplatmap) {
-				throw std::runtime_error("programSplatmap not found");
+			auto programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
+			if (!programGBufSplatmap) {
+				throw std::runtime_error("programGBufSplatmap not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programSplatmap", std::move(programSplatmap));
+			mGameData.graphicsManager->getProgramRepository().add("programGBufSplatmap", std::move(programGBufSplatmap));
 
 			// Fonts
 			arial = mGameData.graphicsManager->getFontRepository().find("arial");
@@ -338,8 +338,8 @@ namespace game {
 			return;
 		}
 
-		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("renderer3D"));
-		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programPBR");
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto programGBufMaterial = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
 
 		// Forces
 		mForces.push_back(new se::physics::Gravity({ 0.0f, -9.8f, 0.0f }));
@@ -390,12 +390,12 @@ namespace game {
 		mGameData.graphicsManager->setBRDFMap(brdfTexture);
 
 		// Sky
-		{
+		if(false){
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
 			skyEntity->scale = glm::vec3(kZFar / 2.0f);
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
-			auto passSky = mGameData.graphicsManager->createPass3D(renderer3D, programSky, true, false, false);
+			auto passSky = mGameData.graphicsManager->createPass3D(gBufferRenderer, programSky, true);
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(skyTexture)
 				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
@@ -421,7 +421,7 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
 			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial, "programSplatmap") );
+			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, terrainMaterial, "programGBufSplatmap") );
 		}
 
 		// Plane
@@ -429,7 +429,7 @@ namespace game {
 			auto plane = std::make_unique<se::app::Entity>("plane");
 			plane->position = glm::vec3(-15.0f, 1.0f, -5.0f);
 
-			auto passPlane = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+			auto passPlane = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -437,7 +437,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
 				},
-				programPBR
+				programGBufMaterial
 			);
 
 			auto techniquePlane = std::make_unique<se::graphics::Technique>();
@@ -487,7 +487,7 @@ namespace game {
 			mGameData.collisionManager->addEntity(cube.get(), std::move(collider2));
 			mGameData.physicsManager->addEntity(cube.get(), std::move(rigidBody2));
 
-			auto passCube = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+			auto passCube = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -495,7 +495,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				programPBR
+				programGBufMaterial
 			);
 
 			auto techniqueCube = std::make_unique<se::graphics::Technique>();
@@ -513,7 +513,7 @@ namespace game {
 		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
 
 		{
-			auto passRed = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+			auto passRed = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRed,
 				se::app::Material{
@@ -521,7 +521,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				programPBR
+				programGBufMaterial
 			);
 
 			auto techniqueRed = std::make_shared<se::graphics::Technique>();
@@ -582,7 +582,7 @@ namespace game {
 			tubeSlice->orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			tubeSlice->position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 
-			auto passSlice = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+			auto passSlice = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -593,7 +593,7 @@ namespace game {
 					},
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				programPBR
+				programGBufMaterial
 			);
 
 			auto techniqueSlice = std::make_shared<se::graphics::Technique>();
@@ -611,7 +611,7 @@ namespace game {
 
 		// Random cubes
 		{
-			auto passRandom = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
+			auto passRandom = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
@@ -619,7 +619,7 @@ namespace game {
 					se::app::PBRMetallicRoughness{ { 0.0f, 0.0f, 1.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
-				programPBR
+				programGBufMaterial
 			);
 
 			auto techniqueRandom = std::make_shared<se::graphics::Technique>();
@@ -659,8 +659,8 @@ namespace game {
 
 			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
 			for (auto& material : loadedScenes.materials) {
-				auto pass3D = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true, true, true);
-				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programPBR);
+				auto pass3D = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
+				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programGBufMaterial);
 				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
 			}
 

@@ -58,6 +58,10 @@ namespace se::app {
 		using RenderableTerrainUPtr =
 			std::unique_ptr<graphics::RenderableTerrain>;
 
+		struct ShaderLightSource;
+		struct RenderableMeshData;
+		struct RenderableTerrainData;
+		struct PassData;
 		struct Impl;
 
 	private:	// Attributes
@@ -101,7 +105,8 @@ namespace se::app {
 		 *			GraphicsManager will be subscribed to */
 		GraphicsManager(
 			graphics::GraphicsEngine& graphicsEngine,
-			EventManager& eventManager
+			EventManager& eventManager,
+			std::size_t width, std::size_t height
 		);
 
 		/** Class destructor */
@@ -174,14 +179,9 @@ namespace se::app {
 		 * @param	renderer a pointer to the Renderer of the new Pass
 		 * @param	program a pointer to the Program of the new Pass
 		 * @param	addProgram if we want to add the program to the Pass or not
-		 * @param	addLights if we want the uniform variables for lightning or
-		 *			not
-		 * @param	addPBRMaps if we want to add the uniform variables for the
-		 *			irradiance, prefilter and BRDF maps or not
 		 * @return	the new Pass */
 		PassSPtr createPass3D(
-			graphics::Renderer* renderer, ProgramSPtr program,
-			bool addProgram, bool addLights, bool addPBRMaps
+			graphics::Renderer* renderer, ProgramSPtr program, bool addProgram
 		);
 
 		/** Adds the given Entity and its Mesh (and skin) data to the

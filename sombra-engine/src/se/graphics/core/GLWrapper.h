@@ -84,10 +84,22 @@ namespace se::graphics {
 	constexpr GLenum toGLFrameBufferTarget(FrameBufferTarget target)
 	{
 		switch (target) {
-			case FrameBufferTarget::Read:	return GL_READ_FRAMEBUFFER;	break;
-			case FrameBufferTarget::Write:	return GL_DRAW_FRAMEBUFFER;	break;
-			case FrameBufferTarget::Both:	return GL_FRAMEBUFFER;		break;
+			case FrameBufferTarget::Read:	return GL_READ_FRAMEBUFFER;
+			case FrameBufferTarget::Write:	return GL_DRAW_FRAMEBUFFER;
+			case FrameBufferTarget::Both:	return GL_FRAMEBUFFER;
 			default:						return GL_NONE;
+		}
+	}
+
+
+	constexpr GLenum toGLFrameBufferAttachment(unsigned int attachment)
+	{
+		switch (attachment) {
+			case FrameBufferAttachment::kStencil:	return GL_STENCIL_ATTACHMENT;
+			case FrameBufferAttachment::kDepth:		return GL_DEPTH_ATTACHMENT;
+			default:
+				unsigned int colorIndex = attachment - FrameBufferAttachment::kColor0;
+				return GL_COLOR_ATTACHMENT0 + colorIndex;
 		}
 	}
 

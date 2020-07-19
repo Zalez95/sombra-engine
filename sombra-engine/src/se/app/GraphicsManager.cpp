@@ -3,6 +3,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
 #include "se/app/events/ResizeEvent.h"
+#include "se/app/loaders/MeshLoader.h"
+#include "se/app/loaders/TechniqueLoader.h"
 #include "se/utils/Log.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
@@ -16,68 +18,91 @@
 
 namespace se::app {
 
+	struct GraphicsManager::ShaderLightSource
+	{
+		glm::vec3 position;
+		float padding[1];
+		glm::vec3 direction;
+		unsigned int type;
+		glm::vec4 color;
+		float intensity;
+		float inverseRange;
+		float lightAngleScale;
+		float lightAngleOffset;
+	};
+
+
+	struct GraphicsManager::RenderableMeshData
+	{
+		RenderableMeshUPtr renderable;
+		std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
+		SkinSPtr skin;
+		std::vector<std::shared_ptr<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>> jointMatrices;
+
+		RenderableMeshData(RenderableMeshUPtr renderable) :
+			renderable(std::move(renderable)), skin(nullptr) {};
+	};
+
+
+	struct GraphicsManager::RenderableTerrainData
+	{
+		RenderableTerrainUPtr renderable;
+		std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
+
+		RenderableTerrainData(RenderableTerrainUPtr renderable) :
+			renderable(std::move(renderable)) {};
+	};
+
+
+	struct GraphicsManager::PassData
+	{
+		std::shared_ptr<graphics::Pass> pass;
+		std::shared_ptr<graphics::Program> program;
+		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> viewMatrix;
+		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> projectionMatrix;
+	};
+
+
 	struct GraphicsManager::Impl
 	{
-		struct ShaderLightSource
-		{
-			unsigned int type;		float padding1[3];
-			glm::vec4 color;
-			float intensity;
-			float inverseRange;
-			float lightAngleScale;
-			float lightAngleOffset;
-		};
+		static constexpr int kDepth				= 0;
+		static constexpr int kPosition			= 1;
+		static constexpr int kNormal			= 2;
+		static constexpr int kAlbedo			= 3;
+		static constexpr int kMaterial			= 4;
+		static constexpr int kEmissive			= 5;
+		static constexpr int kIrradianceMap		= 6;
+		static constexpr int kPrefilterMap		= 7;
+		static constexpr int kBRDFMap			= 8;
 
-		struct RenderableMeshData
-		{
-			RenderableMeshUPtr renderable;
-			std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
-			SkinSPtr skin;
-			std::vector<std::shared_ptr<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>> jointMatrices;
+		Camera* activeCamera;
 
-			RenderableMeshData(RenderableMeshUPtr renderable) :
-				renderable(std::move(renderable)), skin(nullptr) {};
-		};
-
-		struct RenderableTerrainData
-		{
-			RenderableTerrainUPtr renderable;
-			std::vector<std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>> modelMatrix;
-
-			RenderableTerrainData(RenderableTerrainUPtr renderable) :
-				renderable(std::move(renderable)) {};
-		};
-
-		struct PassData
-		{
-			std::shared_ptr<graphics::Pass> pass;
-			std::shared_ptr<graphics::Program> program;
-			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> viewMatrix;
-			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> projectionMatrix;
-			std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numLights;
-			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>> lightsPositions;
-			std::shared_ptr<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>> lightsDirections;
-			std::shared_ptr<graphics::UniformBlock> lightsBlock;
-		};
-
-		static constexpr int kIrradianceMap = 0;
-		static constexpr int kPrefilterMap = 1;
-		static constexpr int kBRDFMap = 2;
+		// Defferred lighting data
+		std::shared_ptr<graphics::Pass> lightingPass;
+		std::shared_ptr<graphics::UniformVariableValue<glm::vec3>> viewPosition;
+		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numLights;
+		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
+		std::shared_ptr<graphics::Texture> irradianceMap, prefilterMap, brdfMap;
+		std::unique_ptr<graphics::RenderableMesh> planeRenderable;
 
 		std::map<Entity*, CameraUPtr> cameraEntities;
 		std::map<Entity*, LightSourceUPtr> lightEntities;
 		std::multimap<Entity*, RenderableMeshData> renderableMeshEntities;
 		std::map<Entity*, RenderableTerrainData> renderableTerrainEntities;
-
-		Camera* activeCamera;
-		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
-		std::shared_ptr<graphics::Texture> irradianceMap, prefilterMap, brdfMap;
 		std::vector<PassData> passesData;
+
+		Impl() : activeCamera(nullptr)
+		{
+			lightsBuffer = std::make_shared<graphics::UniformBuffer>();
+			utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
+			lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
+		};
 	};
 
 
-	GraphicsManager::GraphicsManager(graphics::GraphicsEngine& graphicsEngine, EventManager& eventManager) :
-		mGraphicsEngine(graphicsEngine), mEventManager(eventManager)
+	GraphicsManager::GraphicsManager(
+		graphics::GraphicsEngine& graphicsEngine, EventManager& eventManager, std::size_t width, std::size_t height
+	) : mGraphicsEngine(graphicsEngine), mEventManager(eventManager)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 
@@ -85,19 +110,135 @@ namespace se::app {
 
 		mImpl = std::make_unique<Impl>();
 
-		{
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::FBClearNode>("defaultFBClear", true, true) );
+		{	// Create the FBClearNodes
+			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("defaultFBClear", true, true));
+			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("gFBClear", true, true));
 		}
 
-		{
-			auto renderer3D = std::make_unique<graphics::Renderer3D>("renderer3D");
-			auto targetIndex = renderer3D->addBindable();
-			renderer3D->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", renderer3D.get(), targetIndex) );
-			renderer3D->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", renderer3D.get(), targetIndex) );
-			mGraphicsEngine.getRenderGraph().addNode( std::move(renderer3D) );
+		{	// Create the gBufferRenderer
+			auto resources = dynamic_cast<graphics::BindableRenderNode*>(mGraphicsEngine.getRenderGraph().getNode("resources"));
+
+			auto gBuffer = std::make_shared<graphics::FrameBuffer>();
+			auto iGBufferResource = resources->addBindable(gBuffer);
+			resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("gBuffer", resources, iGBufferResource) );
+
+			auto gBufferRenderer = std::make_unique<graphics::Renderer3D>("gBufferRenderer");
+			auto iGBufferBindable = gBufferRenderer->addBindable();
+			gBufferRenderer->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("gBuffer", gBufferRenderer.get(), iGBufferBindable) );
+
+			auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, width, height)
+				.setTextureUnit(Impl::kDepth)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
+			auto iDepthTexBindable = gBufferRenderer->addBindable(std::move(depthTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("zBuffer", gBufferRenderer.get(), iDepthTexBindable) );
+
+			auto positionTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			positionTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB16f, width, height)
+				.setTextureUnit(Impl::kPosition)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*positionTexture, graphics::FrameBufferAttachment::kColor0);
+			auto iPositionTexBindable = gBufferRenderer->addBindable(std::move(positionTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("position", gBufferRenderer.get(), iPositionTexBindable) );
+
+			auto normalTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			normalTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB16f, width, height)
+				.setTextureUnit(Impl::kNormal)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*normalTexture, graphics::FrameBufferAttachment::kColor0 + 1);
+			auto iNormalTexBindable = gBufferRenderer->addBindable(std::move(normalTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("normal", gBufferRenderer.get(), iNormalTexBindable) );
+
+			auto albedoTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			albedoTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
+				.setTextureUnit(Impl::kAlbedo)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*albedoTexture, graphics::FrameBufferAttachment::kColor0 + 2);
+			auto iAlbedoTexBindable = gBufferRenderer->addBindable(std::move(albedoTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("albedo", gBufferRenderer.get(), iAlbedoTexBindable) );
+
+			auto materialTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			materialTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
+				.setTextureUnit(Impl::kMaterial)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*materialTexture, graphics::FrameBufferAttachment::kColor0 + 3);
+			auto iMaterialTexBindable = gBufferRenderer->addBindable(std::move(materialTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("material", gBufferRenderer.get(), iMaterialTexBindable) );
+
+			auto emissiveTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			emissiveTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
+				.setTextureUnit(Impl::kEmissive)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			gBuffer->attach(*emissiveTexture, graphics::FrameBufferAttachment::kColor0 + 4);
+			auto iEmissiveTexBindable = gBufferRenderer->addBindable(std::move(emissiveTexture));
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("emissive", gBufferRenderer.get(), iEmissiveTexBindable) );
+
+			mGraphicsEngine.getRenderGraph().addNode(std::move(gBufferRenderer));
 		}
 
-		{
+		{	// Create the rendererDeferredLight
+			auto rendererDeferredLight = std::make_unique<graphics::Renderer3D>("rendererDeferredLight");
+			auto iTargetBindable = rendererDeferredLight->addBindable();
+			auto iPositionTexBindable = rendererDeferredLight->addBindable();
+			auto iNormalTexBindable = rendererDeferredLight->addBindable();
+			auto iAlbedoTexBindable = rendererDeferredLight->addBindable();
+			auto iMaterialTexBindable = rendererDeferredLight->addBindable();
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("position", rendererDeferredLight.get(), iPositionTexBindable) );
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("normal", rendererDeferredLight.get(), iNormalTexBindable) );
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("albedo", rendererDeferredLight.get(), iAlbedoTexBindable) );
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("material", rendererDeferredLight.get(), iMaterialTexBindable) );
+			rendererDeferredLight->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
+
+			// Create the program used by the lighting pass
+			auto programDeferredLighting = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+			if (!programDeferredLighting) {
+				throw std::runtime_error("programDeferredLighting not found");
+			}
+			auto program = mProgramRepository.add("programDeferredLighting", std::move(programDeferredLighting));
+
+			// Create the pass and technique used for the deferred lighting
+			mImpl->lightingPass	= std::make_shared<graphics::Pass>(*rendererDeferredLight);
+			mImpl->viewPosition	= std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
+			mImpl->numLights	= std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
+			mImpl->lightingPass->addBindable(program)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(mImpl->viewPosition)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", *program, Impl::kPosition))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", *program, Impl::kNormal))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", *program, Impl::kAlbedo))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", *program, Impl::kMaterial))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uIrradianceMap", *program, Impl::kIrradianceMap))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPrefilterMap", *program, Impl::kPrefilterMap))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uBRDFMap", *program, Impl::kBRDFMap))
+				.addBindable(mImpl->lightsBuffer)
+				.addBindable(mImpl->numLights)
+				.addBindable(std::make_shared<graphics::UniformBlock>("LightsBlock", *program));
+			auto lightingTechnique = std::make_unique<graphics::Technique>();
+			lightingTechnique->addPass(mImpl->lightingPass);
+
+			// Create the plane used for rendendering the framebuffers in the deferred lighting
+			RawMesh planeRawMesh;
+			planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
+			planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+			auto planeMesh = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
+			mImpl->planeRenderable = std::make_unique<graphics::RenderableMesh>(std::move(planeMesh));
+			mImpl->planeRenderable->addTechnique(std::move(lightingTechnique));
+			mGraphicsEngine.addRenderable(mImpl->planeRenderable.get());
+
+			mGraphicsEngine.getRenderGraph().addNode( std::move(rendererDeferredLight) );
+		}
+
+		{	// Create the renderer2D
 			auto renderer2D = std::make_unique<graphics::Renderer2D>("renderer2D");
 			auto targetIndex = renderer2D->addBindable();
 			renderer2D->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", renderer2D.get(), targetIndex) );
@@ -105,27 +246,48 @@ namespace se::app {
 			mGraphicsEngine.getRenderGraph().addNode( std::move(renderer2D) );
 		}
 
-		{
+		{	// Link the render graph nodes
 			auto resources = mGraphicsEngine.getRenderGraph().getNode("resources"),
 				defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear"),
-				renderer3D = mGraphicsEngine.getRenderGraph().getNode("renderer3D"),
+				gFBClear = mGraphicsEngine.getRenderGraph().getNode("gFBClear"),
+				gBufferRenderer = mGraphicsEngine.getRenderGraph().getNode("gBufferRenderer"),
+				rendererDeferredLight = mGraphicsEngine.getRenderGraph().getNode("rendererDeferredLight"),
 				renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
 
 			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
-			renderer3D->findInput("target")->connect( defaultFBClear->findOutput("output") );
-			renderer2D->findInput("target")->connect( renderer3D->findOutput("target") );
+			gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") );
+			gBufferRenderer->findInput("gBuffer")->connect( gFBClear->findOutput("output") );
+			rendererDeferredLight->findInput("target")->connect( defaultFBClear->findOutput("output") );
+			rendererDeferredLight->findInput("position")->connect( gBufferRenderer->findOutput("position") );
+			rendererDeferredLight->findInput("normal")->connect( gBufferRenderer->findOutput("normal") );
+			rendererDeferredLight->findInput("albedo")->connect( gBufferRenderer->findOutput("albedo") );
+			rendererDeferredLight->findInput("material")->connect( gBufferRenderer->findOutput("material") );
+			renderer2D->findInput("target")->connect( rendererDeferredLight->findOutput("target") );
+
 			mGraphicsEngine.getRenderGraph().prepareGraph();
 		}
-
-		// Reserve memory for the UniformBuffers
-		mImpl->lightsBuffer = std::make_shared<graphics::UniformBuffer>();
-		utils::FixedVector<Impl::ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
-		mImpl->lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
 	}
 
 
 	GraphicsManager::~GraphicsManager()
 	{
+		// Remove all entities
+		for (auto& pair : mImpl->cameraEntities) {
+			removeEntity(pair.first);
+		}
+		for (auto& pair : mImpl->lightEntities) {
+			removeEntity(pair.first);
+		}
+		for (auto& pair : mImpl->renderableMeshEntities) {
+			removeEntity(pair.first);
+		}
+		for (auto& pair : mImpl->renderableTerrainEntities) {
+			removeEntity(pair.first);
+		}
+
+		// Clear the GraphicsManager data
+		mGraphicsEngine.removeRenderable(mImpl->planeRenderable.get());
+
 		mEventManager.unsubscribe(this, Topic::Resize);
 	}
 
@@ -172,35 +334,31 @@ namespace se::app {
 
 	void GraphicsManager::setIrradianceMap(TextureSPtr texture)
 	{
-		texture->setTextureUnit(Impl::kIrradianceMap);
-		for (auto& passData : mImpl->passesData) {
-			passData.pass->removeBindable(mImpl->irradianceMap);
-			passData.pass->addBindable(texture);
-		}
+		mImpl->lightingPass->removeBindable(mImpl->irradianceMap);
+
 		mImpl->irradianceMap = texture;
+		mImpl->irradianceMap->setTextureUnit(Impl::kIrradianceMap);
+		mImpl->lightingPass->addBindable(mImpl->irradianceMap);
 	}
 
 
 	void GraphicsManager::setPrefilterMap(TextureSPtr texture)
 	{
-		texture->setTextureUnit(Impl::kPrefilterMap);
-		for (auto& passData : mImpl->passesData) {
-			passData.pass->removeBindable(mImpl->irradianceMap);
-			passData.pass->addBindable(texture);
-		}
-		mImpl->prefilterMap = texture;
+		mImpl->lightingPass->removeBindable(mImpl->prefilterMap);
 
+		mImpl->prefilterMap = texture;
+		mImpl->prefilterMap->setTextureUnit(Impl::kPrefilterMap);
+		mImpl->lightingPass->addBindable(texture);
 	}
 
 
 	void GraphicsManager::setBRDFMap(TextureSPtr texture)
 	{
-		texture->setTextureUnit(Impl::kBRDFMap);
-		for (auto& passData : mImpl->passesData) {
-			passData.pass->removeBindable(mImpl->irradianceMap);
-			passData.pass->addBindable(texture);
-		}
+		mImpl->lightingPass->removeBindable(mImpl->brdfMap);
+
 		mImpl->brdfMap = texture;
+		mImpl->brdfMap->setTextureUnit(Impl::kBRDFMap);
+		mImpl->lightingPass->addBindable(mImpl->brdfMap);
 	}
 
 
@@ -222,6 +380,7 @@ namespace se::app {
 			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
 		}
 
+		// FIXME: cache this
 		pass->addBindable(std::make_shared<graphics::UniformVariableCallback<glm::mat4>>(
 			"uProjectionMatrix", *program,
 			[]() {
@@ -236,9 +395,8 @@ namespace se::app {
 	}
 
 
-	GraphicsManager::PassSPtr GraphicsManager::createPass3D(
-		graphics::Renderer* renderer, ProgramSPtr program, bool addProgram, bool addLights, bool addPBRMaps
-	) {
+	GraphicsManager::PassSPtr GraphicsManager::createPass3D(graphics::Renderer* renderer, ProgramSPtr program, bool addProgram)
+	{
 		auto pass = std::make_shared<graphics::Pass>(*renderer);
 		auto& passData = mImpl->passesData.emplace_back();
 		passData.pass = pass;
@@ -257,34 +415,6 @@ namespace se::app {
 
 		pass->addBindable(passData.viewMatrix)
 			.addBindable(passData.projectionMatrix);
-
-		if (addLights) {
-			passData.numLights = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program);
-			passData.lightsPositions = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsPositions", *program);
-			passData.lightsDirections = std::make_shared<graphics::UniformVariableValueVector<glm::vec3, kMaxLights>>("uLightsDirections", *program);
-			passData.lightsBlock = std::make_shared<graphics::UniformBlock>("LightsBlock", *program);
-
-			pass->addBindable(mImpl->lightsBuffer)
-				.addBindable(passData.numLights)
-				.addBindable(passData.lightsPositions)
-				.addBindable(passData.lightsDirections)
-				.addBindable(passData.lightsBlock);
-		}
-
-		if (addPBRMaps && mImpl->irradianceMap && mImpl->prefilterMap && mImpl->brdfMap) {
-			pass->addBindable(mImpl->irradianceMap)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-					"uIrradianceMap", *program, Impl::kIrradianceMap
-				))
-				.addBindable(mImpl->prefilterMap)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-					"uPrefilterMap", *program, Impl::kPrefilterMap
-				))
-				.addBindable(mImpl->brdfMap)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-					"uBRDFMap", *program, Impl::kBRDFMap
-				));
-		}
 
 		return pass;
 	}
@@ -307,7 +437,7 @@ namespace se::app {
 		glm::mat4 modelMatrix	= translation * rotation * scale;
 
 		rPtr->processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
-			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const Impl::PassData& passData) {
+			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const PassData& passData) {
 				return passData.pass == pass;
 			});
 			if (itPassData != mImpl->passesData.end()) {
@@ -366,7 +496,7 @@ namespace se::app {
 		glm::mat4 modelMatrix	= translation * rotation;
 
 		rPtr->processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
-			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const Impl::PassData& passData) {
+			auto itPassData = std::find_if(mImpl->passesData.begin(), mImpl->passesData.end(), [&](const PassData& passData) {
 				return passData.pass == pass;
 			});
 			if (itPassData != mImpl->passesData.end()) {
@@ -439,6 +569,7 @@ namespace se::app {
 		}
 
 		if (activeCameraUpdated) {
+			mImpl->viewPosition->setValue( mImpl->activeCamera->getPosition() );
 			for (auto& passData : mImpl->passesData) {
 				passData.viewMatrix->setValue(mImpl->activeCamera->getViewMatrix());
 				passData.projectionMatrix->setValue(mImpl->activeCamera->getProjectionMatrix());
@@ -447,46 +578,34 @@ namespace se::app {
 
 		SOMBRA_DEBUG_LOG << "Updating the LightSources";
 		unsigned int uNumLights = std::min(static_cast<unsigned int>(mImpl->lightEntities.size()), kMaxLights);
-		std::array<Impl::ShaderLightSource, kMaxLights> uBaseLights;
-		std::array<glm::vec3, kMaxLights> uLightsPositions;
-		std::array<glm::vec3, kMaxLights> uLightsDirections;
+		std::array<ShaderLightSource, kMaxLights> uBaseLights;
 
 		unsigned int i = 0;
-		for (auto& pair : mImpl->lightEntities) {
-			uBaseLights[i].type = static_cast<unsigned int>(pair.second->type);
-			uBaseLights[i].color = { pair.second->color, 1.0f };
-			uBaseLights[i].intensity = pair.second->intensity;
-			switch (pair.second->type) {
+		for (auto& [entity, light] : mImpl->lightEntities) {
+			uBaseLights[i].type = static_cast<unsigned int>(light->type);
+			uBaseLights[i].position = entity->position;
+			uBaseLights[i].direction = glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f) * entity->orientation);
+			uBaseLights[i].color = { light->color, 1.0f };
+			uBaseLights[i].intensity = light->intensity;
+			switch (light->type) {
 				case LightSource::Type::Directional: {
 					uBaseLights[i].inverseRange = 0.0f;
-					uLightsPositions[i] = glm::vec3(0.0f);
-					uLightsDirections[i] = glm::vec3(0.0f, 0.0f, 1.0f) * pair.first->orientation;
 				} break;
 				case LightSource::Type::Point: {
-					uBaseLights[i].inverseRange = pair.second->inverseRange;
-					uLightsPositions[i] = pair.first->position;
-					uLightsDirections[i] = glm::vec3(0.0f);
+					uBaseLights[i].inverseRange = light->inverseRange;
 				} break;
 				case LightSource::Type::Spot: {
-					uBaseLights[i].inverseRange = pair.second->inverseRange;
-					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(pair.second->innerConeAngle) - std::cos(pair.second->outerConeAngle));
-					uBaseLights[i].lightAngleOffset = -std::cos(pair.second->outerConeAngle) * uBaseLights[i].lightAngleScale;
-					uLightsPositions[i] = pair.first->position;
-					uLightsDirections[i] = glm::vec3(0.0f, 0.0f, 1.0f) * pair.first->orientation;
+					uBaseLights[i].inverseRange = light->inverseRange;
+					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(light->innerConeAngle) - std::cos(light->outerConeAngle));
+					uBaseLights[i].lightAngleOffset = -std::cos(light->outerConeAngle) * uBaseLights[i].lightAngleScale;
 				} break;
 			}
 
 			if (++i >= uNumLights) { break; }
 		}
 
+		mImpl->numLights->setValue(uNumLights);
 		mImpl->lightsBuffer->copy(uBaseLights.data(), uBaseLights.size());
-		for (auto& passData : mImpl->passesData) {
-			if (passData.lightsBlock) {
-				passData.numLights->setValue(uNumLights);
-				passData.lightsPositions->setValue(uLightsPositions.data(), uLightsPositions.size());
-				passData.lightsDirections->setValue(uLightsDirections.data(), uLightsDirections.size());
-			}
-		}
 
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 		for (auto& [entity, meshData] : mImpl->renderableMeshEntities) {
