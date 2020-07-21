@@ -1357,13 +1357,13 @@ namespace se::app {
 				lightSource = std::make_unique<app::LightSource>(app::LightSource::Type::Point);
 
 				auto itRange = jsonLight.find("range");
-				lightSource->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
+				lightSource->range = (itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max();
 			}
 			else if (*itType == "spot") {
 				lightSource = std::make_unique<app::LightSource>(app::LightSource::Type::Spot);
 
 				auto itRange = jsonLight.find("range");
-				lightSource->inverseRange = (itRange != jsonLight.end())? 1.0f / itRange->get<float>() : 0.0f;
+				lightSource->range = (itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max();
 
 				auto itSpot = jsonLight.find("spot");
 				if (itSpot == jsonLight.end()) {

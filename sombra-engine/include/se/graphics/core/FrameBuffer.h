@@ -2,6 +2,7 @@
 #define FRAME_BUFFER_H
 
 #include <array>
+#include <bitset>
 #include "Bindable.h"
 #include "Constants.h"
 
@@ -46,9 +47,13 @@ namespace se::graphics {
 		/** @return	the FrameBuffer where graphics API draws to by default */
 		static FrameBuffer& getDefaultFrameBuffer();
 
+		/** @return	the current Target of the FrameBuffer */
+		FrameBufferTarget getTarget() const { return mTarget; };
+
 		/** Sets the target of the FrameBuffer
 		 *
-		 * @param	target the target that we want to bind the FrameBuffer to */
+		 * @param	target the target that we want to bind the FrameBuffer to
+		 * @return	a reference to the current FrameBuffer */
 		FrameBuffer& setTarget(FrameBufferTarget target);
 
 		/** Attachs the given Texture to the current FrameBuffer so the result
@@ -56,19 +61,42 @@ namespace se::graphics {
 		 *
 		 * @param	texture the Texture to Attach to the FrameBuffer
 		 * @param	attachment the @see FrameBufferAttachment of the texture
-		 * @param	colorIndex when the attachment is of Color type, it
-		 *			specifies the color attachment index where the texture will
-		 *			be attached
 		 * @param	level specifies the mip map level of the texture to attach
 		 *			to the framebuffer
 		 * @param	layer specifies the layer of a 2-dimensional image within a
 		 *			Texture3D
 		 * @param	orientation which face of the CubeMap is going to be set
 		 *			(0 = positive X, 1 = negative X, 2 = positive Y,
-		 *			3 = negative Y, 4 = positive Z, 5 = negative Z) */
+		 *			3 = negative Y, 4 = positive Z, 5 = negative Z)
+		 @return	a reference to the current FrameBuffer */
 		FrameBuffer& attach(
 			const Texture& texture, unsigned int attachment,
 			int level = 0, int layer = 0, int orientation = 0
+		);
+
+		/** Copies the data from the given FrameBuffer to the current one
+		 *
+		 * @param	other a reference to the FrameBuffer to copy from
+		 * @param	mask a bit mask with the FrameBuffer buffers to copy
+		 * @param	x0 the X position of the current FrameBuffer to start
+		 *			copying into
+		 * @param	y0 the Y position of the current FrameBuffer to start
+		 *			copying into
+		 * @param	w0 the width to copy into the FrameBuffer
+		 * @param	h0 the height to copy into the FrameBuffer
+		 * @param	x1 the X position of the given FrameBuffer to start
+		 *			copying from
+		 * @param	y1 the Y position of the given FrameBuffer to start
+		 *			copying from
+		 * @param	w1 the width to copy from the FrameBuffer
+		 * @param	h1 the height to copy from the FrameBuffer
+		 * @param	filter the filtering method to apply (linear or nearest)
+		 @return	a reference to the current FrameBuffer */
+		FrameBuffer& copy(
+			FrameBuffer& other, const FrameBufferMask::Mask& mask,
+			std::size_t x0, std::size_t y0, std::size_t w0, std::size_t h0,
+			std::size_t x1, std::size_t y1, std::size_t w1, std::size_t h1,
+			TextureFilter filter
 		);
 
 		/** Binds the Frame Buffer Object */

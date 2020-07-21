@@ -69,7 +69,7 @@ namespace se::app {
 		static constexpr unsigned int kMaxJoints = 64;
 
 		/** The maximum number of lights in the program */
-		static constexpr unsigned int kMaxLights = 4;
+		static constexpr unsigned int kMaxLights = 32;
 
 		/** The GraphicsEngine used for rendering the data of the Entities */
 		graphics::GraphicsEngine& mGraphicsEngine;
@@ -102,7 +102,9 @@ namespace se::app {
 		 * @param	graphicsEngine a reference to the GraphicsEngine used by
 		 * 			the GraphicsManager to render the entities
 		 * @param	eventManager a reference to the EventManager that the
-		 *			GraphicsManager will be subscribed to */
+		 *			GraphicsManager will be subscribed to
+		 * @param	width the width of the rendered framebuffers
+		 * @param	height the height of the rendered framebuffers */
 		GraphicsManager(
 			graphics::GraphicsEngine& graphicsEngine,
 			EventManager& eventManager,

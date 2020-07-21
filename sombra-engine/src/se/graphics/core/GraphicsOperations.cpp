@@ -118,20 +118,9 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsOperations::clear(bool color, bool depth, bool stencil)
+	void GraphicsOperations::clear(const FrameBufferMask::Mask& mask)
 	{
-		GLbitfield mask = 0;
-		if (color) {
-			mask |= GL_COLOR_BUFFER_BIT;
-		}
-		if (depth) {
-			mask |= GL_DEPTH_BUFFER_BIT;
-		}
-		if (stencil) {
-			mask |= GL_STENCIL_BUFFER_BIT;
-		}
-
-		GL_WRAP( glClear(mask) );
+		GL_WRAP( glClear(toGLFrameBufferMask(mask)) );
 	}
 
 
@@ -172,6 +161,12 @@ namespace se::graphics {
 	void GraphicsOperations::setColorMask(bool r, bool g, bool b, bool a)
 	{
 		GL_WRAP( glColorMask(r, g, b, a) );
+	}
+
+
+	void GraphicsOperations::setDepthMask(bool active)
+	{
+		GL_WRAP( glDepthMask(active) );
 	}
 
 

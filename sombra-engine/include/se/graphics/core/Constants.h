@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <cstddef>
+#include <bitset>
 
 namespace se::graphics {
 
@@ -107,6 +107,18 @@ namespace se::graphics {
 		Write,
 		Both
 	};
+
+
+	/** The different FrameBuffer buffers to operate with */
+	namespace FrameBufferMask
+	{
+		static constexpr std::size_t kStencil = 0;
+		static constexpr std::size_t kDepth = 1;
+		static constexpr std::size_t kColor = 2;
+		static constexpr std::size_t kNumMasks = 3;
+
+		using Mask = std::bitset<static_cast<int>(kNumMasks)>;
+	}
 
 
 	/** The different types of attachments of a texture to a FrameBuffer */

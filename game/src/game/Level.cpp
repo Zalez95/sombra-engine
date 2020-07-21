@@ -315,7 +315,7 @@ namespace game {
 			spotLight1 = std::make_unique<se::app::LightSource>(se::app::LightSource::Type::Spot);
 			spotLight1->name = "spotLight1";
 			spotLight1->intensity = 5.0f;
-			spotLight1->inverseRange = 1.0f / 20.0f;
+			spotLight1->range = 20.0f;
 			spotLight1->innerConeAngle = glm::pi<float>() / 12.0f;
 			spotLight1->outerConeAngle = glm::pi<float>() / 6.0f;
 
@@ -339,6 +339,7 @@ namespace game {
 		}
 
 		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
 		auto programGBufMaterial = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
 
 		// Forces
@@ -390,12 +391,12 @@ namespace game {
 		mGameData.graphicsManager->setBRDFMap(brdfTexture);
 
 		// Sky
-		if(false){
+		if (false) {
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
 			skyEntity->scale = glm::vec3(kZFar / 2.0f);
 
 			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
-			auto passSky = mGameData.graphicsManager->createPass3D(gBufferRenderer, programSky, true);
+			auto passSky = mGameData.graphicsManager->createPass3D(forwardRenderer, programSky, true);
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(skyTexture)
 				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))

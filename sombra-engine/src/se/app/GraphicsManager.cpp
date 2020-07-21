@@ -5,10 +5,13 @@
 #include "se/app/events/ResizeEvent.h"
 #include "se/app/loaders/MeshLoader.h"
 #include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/graphics/GaussianBlurNode.h"
 #include "se/utils/Log.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/FBClearNode.h"
+#include "se/graphics/FBCopyNode.h"
+#include "se/graphics/TextureUnitNode.h"
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/core/Program.h"
@@ -26,7 +29,7 @@ namespace se::app {
 		unsigned int type;
 		glm::vec4 color;
 		float intensity;
-		float inverseRange;
+		float range;
 		float lightAngleScale;
 		float lightAngleOffset;
 	};
@@ -65,15 +68,17 @@ namespace se::app {
 
 	struct GraphicsManager::Impl
 	{
-		static constexpr int kDepth				= 0;
-		static constexpr int kPosition			= 1;
-		static constexpr int kNormal			= 2;
-		static constexpr int kAlbedo			= 3;
-		static constexpr int kMaterial			= 4;
-		static constexpr int kEmissive			= 5;
-		static constexpr int kIrradianceMap		= 6;
-		static constexpr int kPrefilterMap		= 7;
-		static constexpr int kBRDFMap			= 8;
+		static constexpr int kPosition			= 0;
+		static constexpr int kNormal			= 1;
+		static constexpr int kAlbedo			= 2;
+		static constexpr int kMaterial			= 3;
+		static constexpr int kEmissive			= 4;
+		static constexpr int kIrradianceMap		= 5;
+		static constexpr int kPrefilterMap		= 6;
+		static constexpr int kBRDFMap			= 7;
+
+		static constexpr int kColor				= 0;
+		static constexpr int kBright			= 1;
 
 		Camera* activeCamera;
 
@@ -83,7 +88,7 @@ namespace se::app {
 		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> numLights;
 		std::shared_ptr<graphics::UniformBuffer> lightsBuffer;
 		std::shared_ptr<graphics::Texture> irradianceMap, prefilterMap, brdfMap;
-		std::unique_ptr<graphics::RenderableMesh> planeRenderable;
+		std::shared_ptr<graphics::RenderableMesh> planeRenderable;
 
 		std::map<Entity*, CameraUPtr> cameraEntities;
 		std::map<Entity*, LightSourceUPtr> lightEntities;
@@ -96,6 +101,13 @@ namespace se::app {
 			lightsBuffer = std::make_shared<graphics::UniformBuffer>();
 			utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
 			lightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
+
+			// Create the plane used for rendendering the framebuffers
+			RawMesh planeRawMesh;
+			planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
+			planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+			auto planeMesh = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
+			planeRenderable = std::make_shared<graphics::RenderableMesh>(std::move(planeMesh));
 		};
 	};
 
@@ -111,8 +123,10 @@ namespace se::app {
 		mImpl = std::make_unique<Impl>();
 
 		{	// Create the FBClearNodes
-			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("defaultFBClear", true, true));
-			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("gFBClear", true, true));
+			auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
+			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("defaultFBClear", clearMask));
+			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("gFBClear", clearMask));
+			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<graphics::FBClearNode>("deferredFBClear", clearMask));
 		}
 
 		{	// Create the gBufferRenderer
@@ -125,117 +139,161 @@ namespace se::app {
 			auto gBufferRenderer = std::make_unique<graphics::Renderer3D>("gBufferRenderer");
 			auto iGBufferBindable = gBufferRenderer->addBindable();
 			gBufferRenderer->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("gBuffer", gBufferRenderer.get(), iGBufferBindable) );
+			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("gBuffer", gBufferRenderer.get(), iGBufferBindable) );
 
-			auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto depthTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, width, height)
-				.setTextureUnit(Impl::kDepth)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
-			auto iDepthTexBindable = gBufferRenderer->addBindable(std::move(depthTexture));
+			auto iDepthTexBindable = gBufferRenderer->addBindable(std::move(depthTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("zBuffer", gBufferRenderer.get(), iDepthTexBindable) );
 
-			auto positionTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto positionTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			positionTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB16f, width, height)
-				.setTextureUnit(Impl::kPosition)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*positionTexture, graphics::FrameBufferAttachment::kColor0);
-			auto iPositionTexBindable = gBufferRenderer->addBindable(std::move(positionTexture));
+			auto iPositionTexBindable = gBufferRenderer->addBindable(std::move(positionTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("position", gBufferRenderer.get(), iPositionTexBindable) );
 
-			auto normalTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto normalTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			normalTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB16f, width, height)
-				.setTextureUnit(Impl::kNormal)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*normalTexture, graphics::FrameBufferAttachment::kColor0 + 1);
-			auto iNormalTexBindable = gBufferRenderer->addBindable(std::move(normalTexture));
+			auto iNormalTexBindable = gBufferRenderer->addBindable(std::move(normalTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("normal", gBufferRenderer.get(), iNormalTexBindable) );
 
-			auto albedoTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto albedoTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			albedoTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
-				.setTextureUnit(Impl::kAlbedo)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*albedoTexture, graphics::FrameBufferAttachment::kColor0 + 2);
-			auto iAlbedoTexBindable = gBufferRenderer->addBindable(std::move(albedoTexture));
+			auto iAlbedoTexBindable = gBufferRenderer->addBindable(std::move(albedoTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("albedo", gBufferRenderer.get(), iAlbedoTexBindable) );
 
-			auto materialTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto materialTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			materialTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
-				.setTextureUnit(Impl::kMaterial)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*materialTexture, graphics::FrameBufferAttachment::kColor0 + 3);
-			auto iMaterialTexBindable = gBufferRenderer->addBindable(std::move(materialTexture));
+			auto iMaterialTexBindable = gBufferRenderer->addBindable(std::move(materialTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("material", gBufferRenderer.get(), iMaterialTexBindable) );
 
-			auto emissiveTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			auto emissiveTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
 			emissiveTexture->setImage(nullptr, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGB, graphics::ColorFormat::RGB, width, height)
-				.setTextureUnit(Impl::kEmissive)
 				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
 				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
 			gBuffer->attach(*emissiveTexture, graphics::FrameBufferAttachment::kColor0 + 4);
-			auto iEmissiveTexBindable = gBufferRenderer->addBindable(std::move(emissiveTexture));
+			auto iEmissiveTexBindable = gBufferRenderer->addBindable(std::move(emissiveTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("emissive", gBufferRenderer.get(), iEmissiveTexBindable) );
 
 			mGraphicsEngine.getRenderGraph().addNode(std::move(gBufferRenderer));
 		}
 
 		{	// Create the rendererDeferredLight
+			auto resources = dynamic_cast<graphics::BindableRenderNode*>(mGraphicsEngine.getRenderGraph().getNode("resources"));
+
+			auto deferredBuffer = std::make_shared<graphics::FrameBuffer>();
+			auto iDeferredBufferResource = resources->addBindable(deferredBuffer);
+			resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("deferredBuffer", resources, iDeferredBufferResource) );
+
 			auto rendererDeferredLight = std::make_unique<graphics::Renderer3D>("rendererDeferredLight");
 			auto iTargetBindable = rendererDeferredLight->addBindable();
 			auto iPositionTexBindable = rendererDeferredLight->addBindable();
 			auto iNormalTexBindable = rendererDeferredLight->addBindable();
 			auto iAlbedoTexBindable = rendererDeferredLight->addBindable();
 			auto iMaterialTexBindable = rendererDeferredLight->addBindable();
+			auto iEmissiveTexBindable = rendererDeferredLight->addBindable();
 			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
 			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("position", rendererDeferredLight.get(), iPositionTexBindable) );
 			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("normal", rendererDeferredLight.get(), iNormalTexBindable) );
 			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("albedo", rendererDeferredLight.get(), iAlbedoTexBindable) );
 			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("material", rendererDeferredLight.get(), iMaterialTexBindable) );
-			rendererDeferredLight->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
+			rendererDeferredLight->addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("emissive", rendererDeferredLight.get(), iEmissiveTexBindable) );
 
-			// Create the program used by the lighting pass
-			auto programDeferredLighting = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
-			if (!programDeferredLighting) {
-				throw std::runtime_error("programDeferredLighting not found");
-			}
-			auto program = mProgramRepository.add("programDeferredLighting", std::move(programDeferredLighting));
+			auto depthTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, width, height)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			deferredBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
+			rendererDeferredLight->addBindable(std::move(depthTexture), false);
 
-			// Create the pass and technique used for the deferred lighting
-			mImpl->lightingPass	= std::make_shared<graphics::Pass>(*rendererDeferredLight);
-			mImpl->viewPosition	= std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
-			mImpl->numLights	= std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
-			mImpl->lightingPass->addBindable(program)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(mImpl->viewPosition)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", *program, Impl::kPosition))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", *program, Impl::kNormal))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", *program, Impl::kAlbedo))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", *program, Impl::kMaterial))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uIrradianceMap", *program, Impl::kIrradianceMap))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPrefilterMap", *program, Impl::kPrefilterMap))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uBRDFMap", *program, Impl::kBRDFMap))
-				.addBindable(mImpl->lightsBuffer)
-				.addBindable(mImpl->numLights)
-				.addBindable(std::make_shared<graphics::UniformBlock>("LightsBlock", *program));
-			auto lightingTechnique = std::make_unique<graphics::Technique>();
-			lightingTechnique->addPass(mImpl->lightingPass);
+			auto colorTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			colorTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGBA, graphics::ColorFormat::RGBA16f, width, height)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			deferredBuffer->attach(*colorTexture, graphics::FrameBufferAttachment::kColor0);
+			auto iColorTexBindable = rendererDeferredLight->addBindable(std::move(colorTexture), false);
+			rendererDeferredLight->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("color", rendererDeferredLight.get(), iColorTexBindable) );
 
-			// Create the plane used for rendendering the framebuffers in the deferred lighting
-			RawMesh planeRawMesh;
-			planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
-			planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
-			auto planeMesh = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
-			mImpl->planeRenderable = std::make_unique<graphics::RenderableMesh>(std::move(planeMesh));
-			mImpl->planeRenderable->addTechnique(std::move(lightingTechnique));
-			mGraphicsEngine.addRenderable(mImpl->planeRenderable.get());
+			auto brightTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
+			brightTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGBA, graphics::ColorFormat::RGBA16f, width, height)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
+			deferredBuffer->attach(*brightTexture, graphics::FrameBufferAttachment::kColor0 + 1);
+			auto iBrightTexBindable = rendererDeferredLight->addBindable(std::move(brightTexture), false);
+			rendererDeferredLight->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("bright", rendererDeferredLight.get(), iBrightTexBindable) );
 
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("defPositionTexUnitNode", Impl::kPosition) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("defNormalTexUnitNode", Impl::kNormal) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("defAlbedoTexUnitNode", Impl::kAlbedo) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("defMaterialTexUnitNode", Impl::kMaterial) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("defEmissiveTexUnitNode", Impl::kEmissive) );
 			mGraphicsEngine.getRenderGraph().addNode( std::move(rendererDeferredLight) );
+		}
+
+		{	// Nodes used for blurring the bright colors (bloom)
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("hBlurNode", *this, mImpl->planeRenderable, width, height, true) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("vBlurNode", *this, mImpl->planeRenderable, width, height, false) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
+		}
+
+		{	// Node used for combining the bloom and color
+			static constexpr int kColor0 = 0;
+			static constexpr int kColor1 = 1;
+
+			class CombineNode : public graphics::BindableRenderNode
+			{
+			private:
+				std::shared_ptr<graphics::RenderableMesh> mPlane;
+			public:
+				CombineNode(const std::string& name, GraphicsManager& graphicsManager, std::shared_ptr<graphics::RenderableMesh> plane) :
+					BindableRenderNode(name), mPlane(plane)
+				{
+					auto iTargetBindable = addBindable();
+					addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
+					addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("color0", this, addBindable()) );
+					addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("color1", this, addBindable()) );
+					addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
+
+					auto programCombineHDR = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
+					if (!programCombineHDR) {
+						throw std::runtime_error("programCombineHDR not found");
+					}
+					auto program = graphicsManager.getProgramRepository().add("programCombineHDR", std::move(programCombineHDR));
+
+					addBindable(program);
+					addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
+					addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
+					addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
+					addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor0", *program, kColor0));
+					addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor1", *program, kColor1));
+				};
+
+				virtual void execute() override
+				{
+					bind();
+					mPlane->bind();
+					mPlane->draw();
+				};
+			};
+
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("combine0TexUnitNode", kColor0) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<graphics::TextureUnitNode>("combine1TexUnitNode", kColor1) );
+			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<CombineNode>("combineBloomNode", *this, mImpl->planeRenderable) );
 		}
 
 		{	// Create the renderer2D
@@ -250,21 +308,87 @@ namespace se::app {
 			auto resources = mGraphicsEngine.getRenderGraph().getNode("resources"),
 				defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear"),
 				gFBClear = mGraphicsEngine.getRenderGraph().getNode("gFBClear"),
+				deferredFBClear = mGraphicsEngine.getRenderGraph().getNode("deferredFBClear"),
 				gBufferRenderer = mGraphicsEngine.getRenderGraph().getNode("gBufferRenderer"),
+				defPositionTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defPositionTexUnitNode"),
+				defNormalTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defNormalTexUnitNode"),
+				defAlbedoTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defAlbedoTexUnitNode"),
+				defMaterialTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defMaterialTexUnitNode"),
+				defEmissiveTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defEmissiveTexUnitNode"),
 				rendererDeferredLight = mGraphicsEngine.getRenderGraph().getNode("rendererDeferredLight"),
+				hBlurNode = mGraphicsEngine.getRenderGraph().getNode("hBlurNode"),
+				vBlurNode = mGraphicsEngine.getRenderGraph().getNode("vBlurNode"),
+				hBlurTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("hBlurTexUnitNode"),
+				vBlurTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("vBlurTexUnitNode"),
+				combine0TexUnitNode = mGraphicsEngine.getRenderGraph().getNode("combine0TexUnitNode"),
+				combine1TexUnitNode = mGraphicsEngine.getRenderGraph().getNode("combine1TexUnitNode"),
+				combineBloomNode = mGraphicsEngine.getRenderGraph().getNode("combineBloomNode"),
 				renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
 
 			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
 			gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") );
+			deferredFBClear->findInput("input")->connect( resources->findOutput("deferredBuffer") );
 			gBufferRenderer->findInput("gBuffer")->connect( gFBClear->findOutput("output") );
-			rendererDeferredLight->findInput("target")->connect( defaultFBClear->findOutput("output") );
-			rendererDeferredLight->findInput("position")->connect( gBufferRenderer->findOutput("position") );
-			rendererDeferredLight->findInput("normal")->connect( gBufferRenderer->findOutput("normal") );
-			rendererDeferredLight->findInput("albedo")->connect( gBufferRenderer->findOutput("albedo") );
-			rendererDeferredLight->findInput("material")->connect( gBufferRenderer->findOutput("material") );
-			renderer2D->findInput("target")->connect( rendererDeferredLight->findOutput("target") );
+			defPositionTexUnitNode->findInput("input")->connect( gBufferRenderer->findOutput("position") );
+			defNormalTexUnitNode->findInput("input")->connect( gBufferRenderer->findOutput("normal") );
+			defAlbedoTexUnitNode->findInput("input")->connect( gBufferRenderer->findOutput("albedo") );
+			defMaterialTexUnitNode->findInput("input")->connect( gBufferRenderer->findOutput("material") );
+			defEmissiveTexUnitNode->findInput("input")->connect( gBufferRenderer->findOutput("emissive") );
+			rendererDeferredLight->findInput("target")->connect( deferredFBClear->findOutput("output") );
+			rendererDeferredLight->findInput("position")->connect( defPositionTexUnitNode->findOutput("output") );
+			rendererDeferredLight->findInput("normal")->connect( defNormalTexUnitNode->findOutput("output") );
+			rendererDeferredLight->findInput("albedo")->connect( defAlbedoTexUnitNode->findOutput("output") );
+			rendererDeferredLight->findInput("material")->connect( defMaterialTexUnitNode->findOutput("output") );
+			rendererDeferredLight->findInput("emissive")->connect( defEmissiveTexUnitNode->findOutput("output") );
+			hBlurTexUnitNode->findInput("input")->connect( rendererDeferredLight->findOutput("bright") );
+			hBlurNode->findInput("input")->connect( hBlurTexUnitNode->findOutput("output") );
+			vBlurTexUnitNode->findInput("input")->connect( hBlurNode->findOutput("output") );
+			vBlurNode->findInput("input")->connect( vBlurTexUnitNode->findOutput("output") );
+			combine0TexUnitNode->findInput("input")->connect( rendererDeferredLight->findOutput("color") );
+			combine1TexUnitNode->findInput("input")->connect( vBlurNode->findOutput("output") );
+			combineBloomNode->findInput("target")->connect( defaultFBClear->findOutput("output") );
+			combineBloomNode->findInput("color0")->connect( combine0TexUnitNode->findOutput("output") );
+			combineBloomNode->findInput("color1")->connect( combine1TexUnitNode->findOutput("output") );
+			renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") );
 
 			mGraphicsEngine.getRenderGraph().prepareGraph();
+		}
+
+		{	// Create the Techniques used for rendering to the framebuffers
+			auto planeTechnique = std::make_unique<graphics::Technique>();
+
+			// Create the pass and technique used for the deferred lighting
+			auto rendererDeferredLight = dynamic_cast<graphics::Renderer3D*>(mGraphicsEngine.getRenderGraph().getNode("rendererDeferredLight"));
+
+			auto programDeferredLighting = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+			if (!programDeferredLighting) {
+				throw std::runtime_error("programDeferredLighting not found");
+			}
+			auto program = mProgramRepository.add("programDeferredLighting", std::move(programDeferredLighting));
+
+			mImpl->lightingPass	= std::make_shared<graphics::Pass>(*rendererDeferredLight);
+			mImpl->viewPosition	= std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
+			mImpl->numLights	= std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
+			mImpl->lightingPass->addBindable(program)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
+				.addBindable(mImpl->viewPosition)
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", *program, Impl::kPosition))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", *program, Impl::kNormal))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", *program, Impl::kAlbedo))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", *program, Impl::kMaterial))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uEmissive", *program, Impl::kEmissive))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uIrradianceMap", *program, Impl::kIrradianceMap))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPrefilterMap", *program, Impl::kPrefilterMap))
+				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uBRDFMap", *program, Impl::kBRDFMap))
+				.addBindable(mImpl->lightsBuffer)
+				.addBindable(mImpl->numLights)
+				.addBindable(std::make_shared<graphics::UniformBlock>("LightsBlock", *program));
+			planeTechnique->addPass(mImpl->lightingPass);
+
+			mImpl->planeRenderable->addTechnique(std::move(planeTechnique));
+			mGraphicsEngine.addRenderable(mImpl->planeRenderable.get());
 		}
 	}
 
@@ -589,13 +713,13 @@ namespace se::app {
 			uBaseLights[i].intensity = light->intensity;
 			switch (light->type) {
 				case LightSource::Type::Directional: {
-					uBaseLights[i].inverseRange = 0.0f;
+					uBaseLights[i].range = std::numeric_limits<float>::max();
 				} break;
 				case LightSource::Type::Point: {
-					uBaseLights[i].inverseRange = light->inverseRange;
+					uBaseLights[i].range = light->range;
 				} break;
 				case LightSource::Type::Spot: {
-					uBaseLights[i].inverseRange = light->inverseRange;
+					uBaseLights[i].range = light->range;
 					uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(light->innerConeAngle) - std::cos(light->outerConeAngle));
 					uBaseLights[i].lightAngleOffset = -std::cos(light->outerConeAngle) * uBaseLights[i].lightAngleScale;
 				} break;

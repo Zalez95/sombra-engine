@@ -106,6 +106,10 @@ namespace se::graphics {
 						leafNodes[std::distance(mRenderNodes.begin(), itNode)] = false;
 					}
 				}
+				else {
+					SOMBRA_WARN_LOG << "There isn't any RNodeOutput connected to the \""
+						<< input.getName() << "\" input of the \"" << node->getName() << "\" node";
+				}
 			});
 		}
 

@@ -1,6 +1,8 @@
 #ifndef FB_CLEAR_NODE_H
 #define FB_CLEAR_NODE_H
 
+#include <bitset>
+#include "core/Constants.h"
 #include "BindableRenderNode.h"
 
 namespace se::graphics {
@@ -14,26 +16,15 @@ namespace se::graphics {
 	class FBClearNode : public BindableRenderNode
 	{
 	private:	// Attributes
-		/** If the color buffer should be cleared or not */
-		bool mColor;
-
-		/** If the depth buffer should be cleared or not */
-		bool mDepth;
-
-		/** If the stencil buffer should be cleared or not */
-		bool mStencil;
+		/** The bit mask with the FrameBuffer buffers to clear */
+		FrameBufferMask::Mask mMask;
 
 	public:		// Functions
 		/** Creates a new FBClearNode
 		 *
 		 * @param	name the name of the new FBClearNode
-		 * @param	color if the color buffer should be cleared or not
-		 * @param	depth if the depth buffer should be cleared or not
-		 * @param	stencil if the stencil buffer should be cleared or not */
-		FBClearNode(
-			const std::string& name,
-			bool color = false, bool depth = false, bool stencil = false
-		);
+		 * @param	mask a bit mask with the FrameBuffer buffers to clear */
+		FBClearNode(const std::string& name, const FrameBufferMask::Mask& mask);
 
 		/** Class destructor */
 		virtual ~FBClearNode() = default;

@@ -2,6 +2,7 @@
 #define GRAPHICS_OPERATIONS_H
 
 #include <string>
+#include <bitset>
 #include <functional>
 #include "Bindable.h"
 #include "Constants.h"
@@ -86,12 +87,8 @@ namespace se::graphics {
 
 		/** Clears the given buffers
 		 *
-		 * @param	color if the color buffer should be cleared or not
-		 * @param	depth if the depth buffer should be cleared or not
-		 * @param	stencil if the stencil buffer should be cleared or not */
-		static void clear(
-			bool color = false, bool depth = false, bool stencil = false
-		);
+		 * @param	mask a bit mask with the FrameBuffer buffers to clear */
+		static void clear(const FrameBufferMask::Mask& mask);
 
 		/** Enables or disables face culling
 		 *
@@ -116,6 +113,11 @@ namespace se::graphics {
 		 * @param	b if we want to write to the the blue color component
 		 * @param	a if we want to write to the the alpha color component */
 		static void setColorMask(bool r, bool g, bool b, bool a);
+
+		/** Enables or disables writting to the depth buffer
+		 *
+		 * @param	active if the we should write to the depth buffer or not */
+		static void setDepthMask(bool active);
 
 		/** Adds a memory barrier for syncing image reads and writes */
 		static void imageMemoryBarrier();

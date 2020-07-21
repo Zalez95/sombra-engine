@@ -24,9 +24,7 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new RNodeConnector
 		 *
-		 * @param	name the name of the new RNodeConnector
-		 * @param	parenteNode a pointer to the parent RenderNode of the new
-		 *			RNodeConnector */
+		 * @param	name the name of the new RNodeConnector */
 		RNodeConnector(const std::string& name) : mName(name) {};
 
 		/** Class destructor */

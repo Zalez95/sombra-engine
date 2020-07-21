@@ -1,3 +1,4 @@
+#include <bitset>
 #include <GL/glew.h>
 #include "se/utils/Log.h"
 #include "se/graphics/core/Constants.h"
@@ -89,6 +90,16 @@ namespace se::graphics {
 			case FrameBufferTarget::Both:	return GL_FRAMEBUFFER;
 			default:						return GL_NONE;
 		}
+	}
+
+
+	constexpr GLbitfield toGLFrameBufferMask(const FrameBufferMask::Mask& mask)
+	{
+		GLbitfield ret = 0;
+		ret |= mask[FrameBufferMask::kStencil]? GL_STENCIL_BUFFER_BIT : 0;
+		ret |= mask[FrameBufferMask::kDepth]? GL_DEPTH_BUFFER_BIT : 0;
+		ret |= mask[FrameBufferMask::kColor]? GL_COLOR_BUFFER_BIT : 0;
+		return ret;
 	}
 
 

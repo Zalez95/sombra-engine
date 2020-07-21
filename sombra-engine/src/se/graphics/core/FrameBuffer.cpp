@@ -109,6 +109,35 @@ namespace se::graphics {
 	}
 
 
+	FrameBuffer& FrameBuffer::copy(
+		FrameBuffer& other, const FrameBufferMask::Mask& mask,
+		std::size_t x0, std::size_t y0, std::size_t w0, std::size_t h0,
+		std::size_t x1, std::size_t y1, std::size_t w1, std::size_t h1,
+		TextureFilter filter
+	) {
+		FrameBufferTarget oldTarget1 = mTarget;
+		FrameBufferTarget oldTarget2 = other.mTarget;
+
+		mTarget = FrameBufferTarget::Write;
+		other.mTarget = FrameBufferTarget::Read;
+
+		bind();
+		other.bind();
+		GL_WRAP( glBlitFramebuffer(
+			x0, y0, x0 + w0, y0 + h0,
+			x1, y1, x1 + w1, y1 + h1,
+			toGLFrameBufferMask(mask),
+			toGLFilter(filter)
+		) );
+		unbind();
+
+		mTarget = oldTarget1;
+		other.mTarget = oldTarget2;
+
+		return *this;
+	}
+
+
 	void FrameBuffer::bind() const
 	{
 		GL_WRAP( glBindFramebuffer(toGLFrameBufferTarget(mTarget), mBufferId) );

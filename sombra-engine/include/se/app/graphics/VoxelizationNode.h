@@ -35,7 +35,7 @@ namespace se::app {
 		std::size_t mVoxelImage;
 
 	public:		// Functions
-		/** Creates a new Renderer3D
+		/** Creates a new VoxelizationNode
 		 *
 		 * @param	name the name of the new VoxelizationNode
 		 * @param	graphicsManager the GraphicsManager that holds all the

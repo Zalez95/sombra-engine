@@ -36,13 +36,13 @@ namespace se::graphics {
 		 * rendered
 		 *
 		 * @param	renderable a pointer to the Renderable to add */
-		void addRenderable(Renderable* renderable2D);
+		void addRenderable(Renderable* renderable);
 
 		/** Removes the given Renderable from the GraphicsEngine so it will no
 		 * longer be rendered
 		 *
 		 * @param	renderable a pointer to the Renderable to remove */
-		void removeRenderable(Renderable* renderable2D);
+		void removeRenderable(Renderable* renderable);
 
 		/** Draws all the Renderables */
 		void render();

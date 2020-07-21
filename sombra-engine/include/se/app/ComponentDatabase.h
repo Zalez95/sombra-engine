@@ -81,7 +81,7 @@ namespace se::app {
 		/** Adds a Component to the given Entity
 		 *
 		 * @param	entityId the id of the Entity to add the Component
-		 * @return	args the constructor arguments for creating the Component */
+		 * @param	args the constructor arguments for creating the Component */
 		template <typename T, unsigned long componentId, typename... Args>
 		void addComponent(EntityId entityId, Args&&... args);
 

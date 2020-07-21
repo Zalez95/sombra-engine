@@ -47,9 +47,9 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		auto programPBR = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
-		auto renderer3D = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("renderer3D"));
-		auto passYellow = mGameData.graphicsManager->createPass3D(renderer3D, programPBR, true);
+		auto programGBufMaterial = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("gBufferRenderer"));
+		auto passYellow = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{
@@ -57,7 +57,7 @@ namespace game {
 				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			},
-			programPBR
+			programGBufMaterial
 		);
 
 		mYellowTechnique = std::make_shared<se::graphics::Technique>();

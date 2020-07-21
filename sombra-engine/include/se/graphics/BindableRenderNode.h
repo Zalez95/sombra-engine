@@ -32,7 +32,7 @@ namespace se::graphics {
 		/** Creates a new BindableRNodeOutput
 		 *
 		 * @param	name the name of the new BindableRNodeOutput
-		 * @param	parenteNode a pointer to the parent BindableRenderNode
+		 * @param	parentNode a pointer to the parent BindableRenderNode
 		 *			of the new BindableRNodeOutput
 		 * @param	bindableIndex the index of the Bindable resource inside
 		 *			@see parentNode */
@@ -75,7 +75,7 @@ namespace se::graphics {
 		/** Creates a new BindableRNodeInput
 		 *
 		 * @param	name the name of the new BindableRNodeInput
-		 * @param	parenteNode a pointer to the parent BindableRenderNode
+		 * @param	parentNode a pointer to the parent BindableRenderNode
 		 *			of the new BindableRNodeInput
 		 * @param	bindableIndex the index where the connected Bindable
 		 *			resource will be stored inside @see parentNode */
@@ -99,7 +99,7 @@ namespace se::graphics {
 		 * @param	output a pointer to the RNodeOutput to connect
 		 * @return	true if the RNodeOutput was connected succesfully, false
 		 *			otherwise
-		 * @note	you can't connect more than one time the same RNodeInput */
+		 * @note	you can't connect the same RNodeInput more than one time */
 		virtual bool connect(RNodeOutput* output) override;
 	};
 
@@ -112,10 +112,11 @@ namespace se::graphics {
 	{
 	protected:	// Nested types
 		using BindableSPtr = std::shared_ptr<Bindable>;
+		using BindableData = std::pair<BindableSPtr, bool>;
 
 	private:	// Attributes
 		/** All the Bindables added to the BindableRenderNode */
-		std::vector<BindableSPtr> mBindables;
+		std::vector<BindableData> mBindables;
 
 	public:		// Functions
 		/** Creates a new BindableRenderNode
@@ -130,9 +131,13 @@ namespace se::graphics {
 		 *
 		 * @param	bindable a pointer to the new Bindable of the
 		 *			BindableRenderNode
+		 * @param	mustBind if the Bindable must be bound when the
+		 *			BindableRenderNode @see bind function is called
 		 * @return	the index of the new Bindable inside the
 		 *			BindableRenderNode */
-		std::size_t addBindable(BindableSPtr bindable = nullptr);
+		std::size_t addBindable(
+			BindableSPtr bindable = nullptr, bool mustBind = true
+		);
 
 		/** Returns the requested Bindable
 		 *

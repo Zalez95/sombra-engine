@@ -47,7 +47,7 @@ namespace se::utils {
 		 *			creating and running the Tasks
 		 * @param	initialFunction the function to call in the initial task of
 		 *			the Set
-		 * @param	initialFunction the function to call in the final task of
+		 * @param	finalFunction the function to call in the final task of
 		 *			the Set
 		 * @param	join if the tasks added to the set must be executed prior
 		 *			to the final task or not */
@@ -69,6 +69,8 @@ namespace se::utils {
 		/** Creates and adds a new SubTaskSet to the current SubTaskSet
 		 *
 		 * @param	function the function to execute when SubTaskSet is created
+		 * @param	join if the tasks added to the new SubTaskSet must be
+		 *			executed prior to its final task or not
 		 * @return	a reference to the SubTaskSet */
 		SubTaskSet& createSubTaskSet(const FuncSTS& function, bool join = true);
 

@@ -1,12 +1,6 @@
 #version 330 core
 #extension GL_ARB_shader_image_load_store : enable
 
-// ____ CONSTANTS ____
-const float PI					= 3.1415926535897932384626433832795;
-const vec3	BASE_REFLECTIVITY	= vec3(0.04);
-const float	SCREEN_GAMMA		= 2.2;	// Monitor is in sRGB color space
-
-
 // ____ DATATYPES ____
 struct PBRMetallicRoughness
 {

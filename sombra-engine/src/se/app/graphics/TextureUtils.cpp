@@ -36,7 +36,8 @@ namespace se::app {
 			}
 
 			{
-				auto fbClearNode = std::make_unique<graphics::FBClearNode>("fbClearNode", true, true);
+				auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
+				auto fbClearNode = std::make_unique<graphics::FBClearNode>("fbClearNode", clearMask);
 				addNode(std::move(fbClearNode));
 			}
 

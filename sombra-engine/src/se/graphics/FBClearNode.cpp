@@ -4,8 +4,8 @@
 
 namespace se::graphics {
 
-	FBClearNode::FBClearNode(const std::string& name, bool color, bool depth, bool stencil) :
-		BindableRenderNode(name), mColor(color), mDepth(depth), mStencil(stencil)
+	FBClearNode::FBClearNode(const std::string& name, const FrameBufferMask::Mask& mask) :
+		BindableRenderNode(name), mMask(mask)
 	{
 		auto bindableIndex = addBindable();
 
@@ -17,7 +17,7 @@ namespace se::graphics {
 	void FBClearNode::execute()
 	{
 		bind();
-		GraphicsOperations::clear(mColor, mDepth, mStencil);
+		GraphicsOperations::clear(mMask);
 	}
 
 }
