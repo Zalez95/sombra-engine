@@ -17,7 +17,7 @@ namespace se::collision {
 		HalfEdgeMesh mMesh;
 
 		/** The HEVertices of the ConvexPolyhedron's in local space */
-		ContiguousVector<HEVertex> mLocalVertices;
+		utils::PackedVector<HEVertex> mLocalVertices;
 
 		/** The transformation matrix of the ConvexPolyhedron */
 		glm::mat4 mTransformsMatrix;

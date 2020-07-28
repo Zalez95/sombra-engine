@@ -103,7 +103,7 @@ namespace se::app {
 
 	std::pair<RawMesh, bool> MeshLoader::createRawMesh(
 		const collision::HalfEdgeMesh& heMesh,
-		const collision::ContiguousVector<glm::vec3>& normals
+		const utils::PackedVector<glm::vec3>& normals
 	) {
 		if (heMesh.faces.size() != normals.size()) { return std::pair(RawMesh(), false); }
 

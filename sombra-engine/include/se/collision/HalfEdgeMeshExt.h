@@ -41,7 +41,7 @@ namespace se::collision {
 	 * @return	the normal vector */
 	glm::vec3 calculateVertexNormal(
 		const HalfEdgeMesh& meshData,
-		const ContiguousVector<glm::vec3>& faceNormals,
+		const utils::PackedVector<glm::vec3>& faceNormals,
 		int iVertex
 	);
 
@@ -101,7 +101,7 @@ namespace se::collision {
 	 * @note	the meshData must be convex */
 	float calculateVolume(
 		const HalfEdgeMesh& meshData,
-		const ContiguousVector<glm::vec3>& faceNormals
+		const utils::PackedVector<glm::vec3>& faceNormals
 	);
 
 
@@ -134,7 +134,7 @@ namespace se::collision {
 	 *			visible from the eyePoint perspective */
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
 		const HalfEdgeMesh& meshData,
-		const ContiguousVector<glm::vec3>& faceNormals,
+		const utils::PackedVector<glm::vec3>& faceNormals,
 		const glm::vec3& eyePoint, int iInitialFace
 	);
 

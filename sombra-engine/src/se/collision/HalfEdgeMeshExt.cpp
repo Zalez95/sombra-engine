@@ -102,7 +102,7 @@ namespace se::collision {
 
 
 	glm::vec3 calculateVertexNormal(
-		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
+		const HalfEdgeMesh& meshData, const utils::PackedVector<glm::vec3>& faceNormals,
 		int iVertex
 	) {
 		glm::vec3 normal(0.0f);
@@ -271,7 +271,7 @@ namespace se::collision {
 
 	float calculateVolume(
 		const HalfEdgeMesh& meshData,
-		const ContiguousVector<glm::vec3>& faceNormals
+		const utils::PackedVector<glm::vec3>& faceNormals
 	) {
 		// Get the centroid of the mesh
 		glm::vec3 centroid = calculateCentroid(meshData);
@@ -348,7 +348,7 @@ namespace se::collision {
 
 
 	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
-		const HalfEdgeMesh& meshData, const ContiguousVector<glm::vec3>& faceNormals,
+		const HalfEdgeMesh& meshData, const utils::PackedVector<glm::vec3>& faceNormals,
 		const glm::vec3& eyePoint, int iInitialFace
 	) {
 		std::vector<int> horizonEdges, visibleFaces;

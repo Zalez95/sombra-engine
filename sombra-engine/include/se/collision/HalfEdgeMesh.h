@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "ContiguousVector.h"
+#include "../utils/PackedVector.h"
 #include "../utils/MathUtils.h"
 
 namespace se::collision {
@@ -74,13 +74,13 @@ namespace se::collision {
 	struct HalfEdgeMesh
 	{
 		/** The HEVertices of the HalfEdgeMesh */
-		ContiguousVector<HEVertex> vertices;
+		utils::PackedVector<HEVertex> vertices;
 
 		/** The HEEdges of the HalfEdgeMesh */
-		ContiguousVector<HEEdge> edges;
+		utils::PackedVector<HEEdge> edges;
 
 		/** The HEFaces of the HalfEdgeMesh */
-		ContiguousVector<HEFace> faces;
+		utils::PackedVector<HEFace> faces;
 
 		/** Maps two HEVertex indices with the HEEdge that references them */
 		std::unordered_map<std::pair<int, int>, int, utils::PairHash>
@@ -93,7 +93,7 @@ namespace se::collision {
 	 * @param	meshData the HalfEdgeMesh to add the HEVertex
 	 * @param	point the 3D coordintes of the new HEVertex
 	 * @return	the index of the new HEVertex in the HalfEdgeMesh vertices
-	 *			ContiguousVector (the HEVertex is added with the emplace
+	 *			PackedVector (the HEVertex is added with the emplace
 	 *			function) */
 	int addVertex(HalfEdgeMesh& meshData, const glm::vec3& point);
 
@@ -136,8 +136,8 @@ namespace se::collision {
 	 * @param	end an iterator to the past-the-end HEVertex index of the new
 	 *			HEFace
 	 * @return	the index of the new HEFace in the HalfEdgeMesh faces
-	 *			ContiguousVector (the HEFace is added with the emplace
-	 *			function), -1 if the number of HEVertices is less than 3 */
+	 *			PackedVector (the HEFace is added with the emplace function),
+	 *			-1 if the number of HEVertices is less than 3 */
 	template <class InputIterator>
 	int addFace(
 		HalfEdgeMesh& meshData,

@@ -98,7 +98,7 @@ TEST(MeshGeneration, calculateHACD1)
 	ASSERT_EQ(result.size(), expectedMeshes.size());
 	EXPECT_TRUE(std::all_of(
 		result.begin(), result.end(),
-		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
+		[&](const std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>>& pair) {
 			return std::any_of(
 				expectedMeshes.begin(), expectedMeshes.end(),
 				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }
@@ -119,7 +119,7 @@ TEST(MeshGeneration, calculateHACD2)
 	ASSERT_EQ(result.size(), expectedMeshes.size());
 	EXPECT_TRUE(std::all_of(
 		result.begin(), result.end(),
-		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
+		[&](const std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>>& pair) {
 			return std::any_of(
 				expectedMeshes.begin(), expectedMeshes.end(),
 				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }
@@ -140,7 +140,7 @@ TEST(MeshGeneration, calculateHACD3)
 	ASSERT_EQ(result.size(), expectedMeshes.size());
 	EXPECT_TRUE(std::all_of(
 		result.begin(), result.end(),
-		[&](const std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>>& pair) {
+		[&](const std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>>& pair) {
 			return std::any_of(
 				expectedMeshes.begin(), expectedMeshes.end(),
 				[&](const HalfEdgeMesh& mesh2) { return compareMeshes(pair.first, mesh2); }

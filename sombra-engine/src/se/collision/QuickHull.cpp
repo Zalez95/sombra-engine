@@ -59,8 +59,8 @@ namespace se::collision {
 	void QuickHull::resetData()
 	{
 		mConvexHullMesh = HalfEdgeMesh();
-		mConvexHullNormals = ContiguousVector<glm::vec3>();
-		mFaceOutsideVertices = ContiguousVector<std::vector<int>>();
+		mConvexHullNormals = utils::PackedVector<glm::vec3>();
+		mFaceOutsideVertices = utils::PackedVector<std::vector<int>>();
 		mVertexIndexMap = std::unordered_map<int, int>();
 	}
 
@@ -225,7 +225,7 @@ namespace se::collision {
 
 
 	int QuickHull::getFurthestVertexFromEdge(
-		const ContiguousVector<HEVertex>& vertices,
+		const utils::PackedVector<HEVertex>& vertices,
 		const std::vector<int>& vertexIndices, int iVertex1, int iVertex2
 	) const
 	{
@@ -246,7 +246,7 @@ namespace se::collision {
 
 
 	std::vector<int> QuickHull::filterOutsideVertices(
-		const ContiguousVector<HEVertex>& vertices, const std::vector<int>& vertexIndices,
+		const utils::PackedVector<HEVertex>& vertices, const std::vector<int>& vertexIndices,
 		const glm::vec3& planeNormal, int iVertex1, int iVertex2
 	) const
 	{

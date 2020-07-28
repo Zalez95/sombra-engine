@@ -17,7 +17,7 @@ namespace se::collision {
 	private:	// Nested types
 		using DualGraphVertex = GraphVertex< std::vector<int> >;
 		using DualGraph = Graph< std::vector<int> >;
-		using FaceNormals = ContiguousVector<glm::vec3>;
+		using FaceNormals = utils::PackedVector<glm::vec3>;
 		using HEMeshWithNormals = std::pair<HalfEdgeMesh, FaceNormals>;
 
 		/** Struct QHACDData, it holds the data that the HACD algorithm will

@@ -91,7 +91,7 @@ TEST(HalfEdgeMesh, calculateVertexNormal1)
 TEST(HalfEdgeMesh, calculateVertexNormal2)
 {
 	HalfEdgeMesh meshData;
-	ContiguousVector<glm::vec3> normals;
+	se::utils::PackedVector<glm::vec3> normals;
 
 	std::array<int, 5> vertexIndices = {
 		addVertex(meshData, glm::vec3(-5.035281181f, 2.496228456f, 2.278198242f)),

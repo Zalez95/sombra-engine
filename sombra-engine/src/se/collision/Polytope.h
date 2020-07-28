@@ -50,13 +50,13 @@ namespace se::collision {
 		HalfEdgeMesh mMesh;
 
 		/** The normal vectors of each HEFace */
-		ContiguousVector<glm::vec3> mFaceNormals;
+		utils::PackedVector<glm::vec3> mFaceNormals;
 
 		/** The distance data of eahc HEFace */
-		ContiguousVector<FaceDistanceData> mFaceDistances;
+		utils::PackedVector<FaceDistanceData> mFaceDistances;
 
 		/** The SupportPoint of each HEVertex */
-		ContiguousVector<SupportPoint> mVertexSupportPoints;
+		utils::PackedVector<SupportPoint> mVertexSupportPoints;
 
 	public:		//Functions
 		/** Creates a new Polytope from the given simplex points by expanding it
@@ -75,7 +75,7 @@ namespace se::collision {
 
 		/** @return	the normal vectors of the HEFaces of the Polytope's
 		 *			HalfEdgeMesh */
-		const ContiguousVector<glm::vec3>& getNormals() const
+		const utils::PackedVector<glm::vec3>& getNormals() const
 		{ return mFaceNormals; };
 
 		/** Returns the SupportPoint of the given Polytope HEVertex

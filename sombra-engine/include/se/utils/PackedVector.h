@@ -1,13 +1,13 @@
-#ifndef CONTIGUOUS_VECTOR_H
-#define CONTIGUOUS_VECTOR_H
+#ifndef PACKED_VECTOR_H
+#define PACKED_VECTOR_H
 
-#include <set>
 #include <vector>
+#include <unordered_set>
 
-namespace se::collision {
+namespace se::utils {
 
 	/**
-	 * Class ContiguousVector, it works as an usual vector but it also caches
+	 * Class PackedVector, it works as an usual vector but it also caches
 	 * the released elements instead of erasing them for preventing the old
 	 * indices pointing to the vector from being invalidated.
 	 *
@@ -16,23 +16,23 @@ namespace se::collision {
 	 *			released elements will be reused in the following allocations
 	 */
 	template <typename T>
-	class ContiguousVector
+	class PackedVector
 	{
 	public:		// Nested types
 		template <typename U>
-		friend class ContiguousVector;
+		friend class PackedVector;
 
-		/** Class CVIterator, it's the class used to iterate through the
-		 * elements of a ContiguousVector */
+		/** Class PVIterator, it's the class used to iterate through the
+		 * elements of a PackedVector */
 		template <bool isConst>
-		class CVIterator
+		class PVIterator
 		{
 		public:		// Nested types
 			template <bool isConst2>
-			friend class CVIterator;
+			friend class PVIterator;
 
 			using VectorType = std::conditional_t<isConst,
-				const ContiguousVector, ContiguousVector
+				const PackedVector, PackedVector
 			>;
 
 			using size_type			= typename VectorType::size_type;
@@ -50,25 +50,25 @@ namespace se::collision {
 			size_type mIndex;
 
 		public:		// Functions
-			/** Creates a new CVIterator located at the initial valid position
-			 * of the given ContiguousVector (begin)
+			/** Creates a new PVIterator located at the initial valid position
+			 * of the given PackedVector (begin)
 			 *
 			 * @param	vector a pointer to the vector to iterate */
-			CVIterator(VectorType* vector);
+			PVIterator(VectorType* vector);
 
-			/** Creates a new CVIterator
+			/** Creates a new PVIterator
 			 *
 			 * @param	vector a pointer to the vector to iterate
 			 * @param	index the inital index of the iterator */
-			CVIterator(VectorType* vector, size_type index) :
+			PVIterator(VectorType* vector, size_type index) :
 				mVector(vector), mIndex(index) {};
 
-			/** Implicit conversion operator between const CVIterator and non
-			 * const CVIterator
+			/** Implicit conversion operator between const PVIterator and non
+			 * const PVIterator
 			 *
-			 * @return	the new CVIterator with a different template const
+			 * @return	the new PVIterator with a different template const
 			 *			type */
-			operator CVIterator<!isConst>() const;
+			operator PVIterator<!isConst>() const;
 
 			/** @return	the index of the Element that the iterator is pointing
 			 *			to */
@@ -76,7 +76,7 @@ namespace se::collision {
 
 			/** @return	the index of the Element that the iterator is pointing
 			 *			to */
-			CVIterator& setIndex(size_type index);
+			PVIterator& setIndex(size_type index);
 
 			/** @return	a reference to the current Element that the iterator is
 			 *			pointing to */
@@ -86,122 +86,132 @@ namespace se::collision {
 			 *			pointing to */
 			pointer operator->() const { return &(*mVector)[mIndex]; };
 
-			/** Compares the given CVIterators
+			/** Compares the given PVIterators
 			 *
 			 * @param	it1 the first iterator to compare
 			 * @param	it2 the second iterator to compare
 			 * @return	true if both iterators are equal, false otherwise */
-			friend bool operator==(const CVIterator& it1, const CVIterator& it2)
+			friend bool operator==(const PVIterator& it1, const PVIterator& it2)
 			{ return it1.mVector == it2.mVector && it1.mIndex == it2.mIndex; };
 
-			/** Compares the given CVIterators
+			/** Compares the given PVIterators
 			 *
 			 * @param	it1 the first iterator to compare
 			 * @param	it2 the second iterator to compare
 			 * @return	true if both iterators are different, false otherwise */
-			friend bool operator!=(const CVIterator& it1, const CVIterator& it2)
+			friend bool operator!=(const PVIterator& it1, const PVIterator& it2)
 			{ return !(it1 == it2); };
 
 			/** Preincrement operator
 			 *
 			 * @return	a reference to the current iterator after its
 			 *			incrementation */
-			CVIterator& operator++();
+			PVIterator& operator++();
 
 			/** Postincrement operator
 			 *
 			 * @return	a copy of the current iterator with the previous value
 			 *			to the incrementation */
-			CVIterator operator++(int);
+			PVIterator operator++(int);
 
 			/** Predecrement operator
 			 *
 			 * @return	a reference to the current iterator after its
 			 *			decrementation */
-			CVIterator& operator--();
+			PVIterator& operator--();
 
 			/** Postdecrement operator
 			 *
 			 * @return	a copy of the current iterator with the previous value
 			 *			to the decrementation */
-			CVIterator operator--(int);
+			PVIterator operator--(int);
 		};
 
 		using size_type			= std::size_t;
 		using value_type		= T;
 		using pointer			= T*;
 		using reference			= T&;
-		using iterator			= CVIterator<false>;
-		using const_iterator	= CVIterator<true>;
+		using iterator			= PVIterator<false>;
+		using const_iterator	= PVIterator<true>;
 
 	private:	// Attributes
-		/** The raw data of the ContiguousVector */
+		/** The raw data of the PackedVector */
 		std::vector<T> mElements;
 
-		/** The number of non free Elements of the ContiguousVector */
+		/** The indices to the freed Elements of the PackedVector */
+		std::unordered_set<size_type> mFreeIndices;
+
+		/** The number of non free Elements of the PackedVector */
 		size_type mNumElements;
 
-		/** The indices to the freed Elements of the ContiguousVector */
-		std::set<size_type> mFreeIndices;
-
 	public:		// Functions
-		/** Creates a new ContiguousVector */
-		ContiguousVector() : mNumElements(0) {};
+		/** Creates a new PackedVector */
+		PackedVector() : mNumElements(0) {};
 
-		/** Returns the Element i of the ContiguousVector
+		/** Returns the Element i of the PackedVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a reference to the Element */
 		T& operator[](size_type i) { return mElements[i]; };
 
-		/** Returns the Element i of the ContiguousVector
+		/** Returns the Element i of the PackedVector
 		 *
 		 * @param	i the index of the Element
 		 * @return	a const reference to the Element */
 		const T& operator[](size_type i) const { return mElements[i]; };
 
-		/** Compares the given ContiguousVectors
+		/** Compares the given PackedVectors
 		 *
-		 * @param	cv1 the first ContiguousVector to compare
-		 * @param	cv2 the second ContiguousVector to compare
-		 * @return	true if both ContiguousVector are equal, false otherwise */
+		 * @param	cv1 the first PackedVector to compare
+		 * @param	cv2 the second PackedVector to compare
+		 * @return	true if both PackedVector are equal, false otherwise */
 		template <typename U>
 		friend bool operator==(
-			const ContiguousVector<U>& cv1, const ContiguousVector<U>& cv2
+			const PackedVector<U>& cv1, const PackedVector<U>& cv2
 		);
 
-		/** Compares the given ContiguousVectors
+		/** Compares the given PackedVectors
 		 *
-		 * @param	cv1 the first ContiguousVector to compare
-		 * @param	cv2 the second ContiguousVector to compare
-		 * @return	true if both ContiguousVector are different, false
+		 * @param	cv1 the first PackedVector to compare
+		 * @param	cv2 the second PackedVector to compare
+		 * @return	true if both PackedVector are different, false
 		 *			otherwise */
 		template <typename U>
 		friend bool operator!=(
-			const ContiguousVector<U>& cv1, const ContiguousVector<U>& cv2
+			const PackedVector<U>& cv1, const PackedVector<U>& cv2
 		);
 
-		/** @return	the initial iterator of the ContiguousVector */
+		/** @return	the initial iterator of the PackedVector */
 		iterator begin() { return iterator(this); };
 
-		/** @return	the initial iterator of the ContiguousVector */
+		/** @return	the initial iterator of the PackedVector */
 		const_iterator begin() const { return const_iterator(this); };
 
-		/** @return	the final iterator of the ContiguousVector */
+		/** @return	the final iterator of the PackedVector */
 		iterator end() { return iterator(this, mElements.size()); };
 
-		/** @return	the final iterator of the ContiguousVector */
+		/** @return	the final iterator of the PackedVector */
 		const_iterator end() const
 		{ return const_iterator(this, mElements.size()); };
 
-		/** @return	the number of Elements in the ContiguousVector */
+		/** @return	the number of Elements that can be added to the
+		 *			PackedVector without reallocating it */
+		size_type capacity() const { return mElements.capacity(); };
+
+		/** @return	the number of Elements in the PackedVector */
 		size_type size() const { return mNumElements; };
 
-		/** @return	true if the ContiguousVector has no Elements inside, false
+		/** @return	true if the PackedVector has no Elements inside, false
 		 *			otherwise */
 		bool empty() const { return (mNumElements == 0); };
 
-		/** Removes all the elements in the ContiguousVector */
+		/** Changes the PackedVector capacity so it can be added up to the
+		 * given elements without reallocating
+		 *
+		 * @param	n the new minimum capacity of the PackedVector */
+		void reserve(std::size_t n);
+
+		/** Removes all the elements in the PackedVector */
 		void clear();
 
 		/** Creates a new Element in the vector or reuses an already released
@@ -209,17 +219,18 @@ namespace se::collision {
 		 *
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
-		 * @return	an iterator to the element */
+		 * @return	an iterator to the Element */
 		template <typename... Args>
 		iterator emplace(Args&&... args);
 
 		/** Removes the element located at the given iterator from the
-		 * ContiguousVector
+		 * PackedVector
 		 *
 		 * @param	it an iterator to the Element
+		 * @return	an iterator to the next Element
 		 * @note	the element will be released instead of deleted so the
 		 *			indices to the other elements won't need to be updated */
-		void erase(const_iterator it);
+		iterator erase(const_iterator it);
 
 		/** Checks if the Element given located at the given index is valid and
 		 * active
@@ -229,18 +240,18 @@ namespace se::collision {
 		bool isActive(size_type i) const;
 
 		/** Replicates the size and released elements of the given
-		 * ContiguousVector into the current one, so they will have the same
+		 * PackedVector into the current one, so they will have the same
 		 * active indices
 		 *
-		 * @param	other the ContiguousVector to replicate
+		 * @param	other the PackedVector to replicate
 		 * @note	the elements currently stored in the vector will be removed
 		 *			and the new ones will be default initialized */
 		template <typename U>
-		void replicate(const ContiguousVector<U>& other);
+		void replicate(const PackedVector<U>& other);
 	};
 
 }
 
-#include "ContiguousVector.hpp"
+#include "PackedVector.hpp"
 
-#endif		// CONTIGUOUS_VECTOR_H
+#endif		// PACKED_VECTOR_H

@@ -74,7 +74,7 @@ namespace se::collision {
 	template <unsigned int maxHeight>
 	void HalfEdgeMeshRaycast<maxHeight>::buildKDTree(
 		const HalfEdgeMesh* mesh,
-		const ContiguousVector<glm::vec3>* faceNormals
+		const utils::PackedVector<glm::vec3>* faceNormals
 	) {
 		mMesh = mesh;
 		mFaceNormals = faceNormals;

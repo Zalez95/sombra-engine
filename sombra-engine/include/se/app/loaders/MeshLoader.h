@@ -36,8 +36,8 @@ namespace se::app {
 		 * @return	a pair with the created RawMesh and a bool that indicates
 		 *			if the HalfEdgeMesh was loaded correctly or not */
 		static std::pair<RawMesh, bool> createRawMesh(
-			const se::collision::HalfEdgeMesh& heMesh,
-			const se::collision::ContiguousVector<glm::vec3>& normals
+			const collision::HalfEdgeMesh& heMesh,
+			const utils::PackedVector<glm::vec3>& normals
 		);
 
 		/** Creates a Box mesh from the given data. The generated RawMesh

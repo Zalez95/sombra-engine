@@ -86,10 +86,10 @@ HalfEdgeMesh createTestPolyhedron3()
 }
 
 
-std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh1()
+std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>> createTestMesh1()
 {
 	HalfEdgeMesh meshData;
-	ContiguousVector<glm::vec3> normals;
+	se::utils::PackedVector<glm::vec3> normals;
 
 	std::array<int, 9> vertexIndices = {
 		addVertex(meshData, {  1.25f,  1.0f, -2.75f }),
@@ -127,10 +127,10 @@ std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh1()
 }
 
 
-std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh2()
+std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>> createTestMesh2()
 {
 	HalfEdgeMesh meshData;
-	ContiguousVector<glm::vec3> normals;
+	se::utils::PackedVector<glm::vec3> normals;
 
 	std::array<int, 8> vertexIndices = {
 		addVertex(meshData, { 1.25f,  1.0f, -2.75f }),
@@ -247,10 +247,10 @@ std::vector<HalfEdgeMesh> createTestMesh3()
 }
 
 
-std::pair<HalfEdgeMesh, ContiguousVector<glm::vec3>> createTestMesh4()
+std::pair<HalfEdgeMesh, se::utils::PackedVector<glm::vec3>> createTestMesh4()
 {
 	HalfEdgeMesh meshData;
-	ContiguousVector<glm::vec3> normals;
+	se::utils::PackedVector<glm::vec3> normals;
 
 	std::array<int, 22> vertexIndices = {
 		addVertex(meshData, { -3.208401441f,  2.893295764f,  0.028006464f }),

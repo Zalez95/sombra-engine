@@ -61,7 +61,7 @@ namespace se::collision {
 		const HalfEdgeMesh* mMesh;
 
 		/** The normal vectors of the HalfEdgeMesh HEFaces */
-		const ContiguousVector<glm::vec3>* mFaceNormals;
+		const utils::PackedVector<glm::vec3>* mFaceNormals;
 
 		/** The binary tree that will be used for splitting the mesh HEFaces
 		 * and store their respective bounding spheres */
@@ -87,7 +87,7 @@ namespace se::collision {
 		 *			HEFaces */
 		void buildKDTree(
 			const HalfEdgeMesh* mesh,
-			const ContiguousVector<glm::vec3>* faceNormals
+			const utils::PackedVector<glm::vec3>* faceNormals
 		);
 
 		/** Calculates the closest ray-mesh intersection iteratively

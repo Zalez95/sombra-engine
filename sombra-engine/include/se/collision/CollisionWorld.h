@@ -8,6 +8,7 @@
 #include "FineCollisionDetector.h"
 #include "GJKRayCaster.h"
 #include "../utils/MathUtils.h"
+#include "../utils/PackedVector.h"
 
 namespace se::collision {
 
@@ -70,11 +71,15 @@ namespace se::collision {
 		/** The GJKRayCaster used for checking ray hits */
 		GJKRayCaster mRayCaster;
 
+		/** All the Manifolds that the CollisionWorld can hold */
+		utils::PackedVector<Manifold> mManifolds;
+
 		/** All the Colliders to check */
 		std::vector<Collider*> mColliders;
 
-		/** Maps a pair of Colliders with the Manifold of it's collision */
-		std::unordered_map<ColliderPair, ManifoldUPtr, utils::PairHash>
+		/** Maps a pair of Colliders with the index of the Manifold of their
+		 * collision */
+		std::unordered_map<ColliderPair, std::size_t, utils::PairHash>
 			mCollidersManifoldMap;
 
 	public:		// Functions
