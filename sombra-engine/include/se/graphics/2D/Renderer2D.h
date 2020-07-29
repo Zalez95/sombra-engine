@@ -123,7 +123,7 @@ namespace se::graphics {
 		Batch mBatch;
 
 		/** The textures used for rendering the Batch */
-		utils::FixedVector<Texture*, 16> mTextures;
+		utils::FixedVector<Texture*, kMaxTextures> mTextures;
 
 		/** The Pass used for rendering the Batch */
 		Pass* mPass;

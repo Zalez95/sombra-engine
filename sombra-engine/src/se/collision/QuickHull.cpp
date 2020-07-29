@@ -419,7 +419,7 @@ namespace se::collision {
 		HEFace inputFace = mConvexHullMesh.faces[iFace];
 		glm::vec3 inputFaceNormal = mConvexHullNormals[iFace];
 
-		// Calculate the HEFaces to merge by testing all the opposite  HEFaces
+		// Calculate the HEFaces to merge by testing all the opposite HEFaces
 		// of the HEEdge loop of the current HEFace
 		std::vector<int> facesToMerge;
 		int iInitialEdge = inputFace.edge;

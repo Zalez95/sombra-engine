@@ -1,7 +1,7 @@
 #ifndef PACKED_VECTOR_H
 #define PACKED_VECTOR_H
 
-#include <vector>
+#include <memory>
 #include <unordered_set>
 
 namespace se::utils {
@@ -15,11 +15,11 @@ namespace se::utils {
 	 *			increment of the vector size with new allocations, also the
 	 *			released elements will be reused in the following allocations
 	 */
-	template <typename T>
+	template <typename T, typename A = std::allocator<T>>
 	class PackedVector
 	{
 	public:		// Nested types
-		template <typename U>
+		template <typename U, typename B>
 		friend class PackedVector;
 
 		/** Class PVIterator, it's the class used to iterate through the
@@ -135,18 +135,34 @@ namespace se::utils {
 		using const_iterator	= PVIterator<true>;
 
 	private:	// Attributes
-		/** The raw data of the PackedVector */
-		std::vector<T> mElements;
+		/** A pointer to the Elements of the PackedVector */
+		T* mElements;
 
-		/** The indices to the freed Elements of the PackedVector */
-		std::unordered_set<size_type> mFreeIndices;
+		/** The number of Elements reserved in the PackedVector */
+		size_type mCapacity;
 
-		/** The number of non free Elements of the PackedVector */
-		size_type mNumElements;
+		/** The number of Elements of the PackedVector that has been active
+		 * at some point */
+		size_type mUsedElements;
+
+		/** The indices to the released Elements of the PackedVector */
+		std::unordered_set<size_type> mReleasedIndices;
+
+		/** The allocator used for creating objects of type T */
+		A mAllocator;
 
 	public:		// Functions
 		/** Creates a new PackedVector */
-		PackedVector() : mNumElements(0) {};
+		PackedVector() : mElements(nullptr), mCapacity(0), mUsedElements(0) {};
+		PackedVector(const PackedVector& other);
+		PackedVector(PackedVector&& other);
+
+		/** Class destructor */
+		~PackedVector();
+
+		/** Assignment operator */
+		PackedVector& operator=(const PackedVector& other);
+		PackedVector& operator=(PackedVector&& other);
 
 		/** Returns the Element i of the PackedVector
 		 *
@@ -187,23 +203,25 @@ namespace se::utils {
 		/** @return	the initial iterator of the PackedVector */
 		const_iterator begin() const { return const_iterator(this); };
 
-		/** @return	the final iterator of the PackedVector */
-		iterator end() { return iterator(this, mElements.size()); };
+		/** @return	the past the end iterator of the PackedVector */
+		iterator end()
+		{ return iterator(this, mUsedElements); };
 
-		/** @return	the final iterator of the PackedVector */
+		/** @return	the past the end iterator of the PackedVector */
 		const_iterator end() const
-		{ return const_iterator(this, mElements.size()); };
+		{ return const_iterator(this, mUsedElements); };
 
 		/** @return	the number of Elements that can be added to the
 		 *			PackedVector without reallocating it */
-		size_type capacity() const { return mElements.capacity(); };
+		size_type capacity() const { return mCapacity; };
 
 		/** @return	the number of Elements in the PackedVector */
-		size_type size() const { return mNumElements; };
+		size_type size() const
+		{ return mUsedElements - mReleasedIndices.size(); };
 
 		/** @return	true if the PackedVector has no Elements inside, false
 		 *			otherwise */
-		bool empty() const { return (mNumElements == 0); };
+		bool empty() const { return (size() == 0); };
 
 		/** Changes the PackedVector capacity so it can be added up to the
 		 * given elements without reallocating

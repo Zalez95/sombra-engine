@@ -1,5 +1,5 @@
-#ifndef ANIMATION_SYSTEM_H
-#define ANIMATION_SYSTEM_H
+#ifndef ANIMATION_ENGINE_H
+#define ANIMATION_ENGINE_H
 
 #include <vector>
 #include "IAnimator.h"
@@ -7,22 +7,22 @@
 namespace se::animation {
 
 	/**
-	 * Class AnimationSystem, it's used to update the Animations
+	 * Class AnimationEngine, it's used to update the Animators
 	 */
-	class AnimationSystem
+	class AnimationEngine
 	{
 	private:	// Attributes
 		/** The Animators to update */
 		std::vector<IAnimator*> mAnimators;
 
 	public:		// Functions
-		/** Adds the given IAnimator to the AnimationSystem so it will be
+		/** Adds the given IAnimator to the AnimationEngine so it will be
 		 * updated in each @ref update(float) call
 		 *
 		 * @param	animator a pointer to the IAnimator to add */
 		void addAnimator(IAnimator* animator);
 
-		/** Removes the given IAnimator from the AnimationSystem so it won't
+		/** Removes the given IAnimator from the AnimationEngine so it won't
 		 * longer be updated
 		 *
 		 * @param	animator a pointer to the IAnimator to remove */
@@ -38,4 +38,4 @@ namespace se::animation {
 
 }
 
-#endif		// ANIMATION_SYSTEM_H
+#endif		// ANIMATION_ENGINE_H

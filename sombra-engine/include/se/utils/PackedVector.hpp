@@ -3,110 +3,195 @@
 
 namespace se::utils {
 
-	template <typename T>
-	bool operator==(const PackedVector<T>& cv1, const PackedVector<T>& cv2)
+	template <typename T, typename A>
+	PackedVector<T, A>::PackedVector(const PackedVector& other) :
+		mElements(nullptr), mCapacity(0),
+		mUsedElements(other.mUsedElements), mReleasedIndices(other.mReleasedIndices)
 	{
-		return (cv1.mElements == cv2.mElements)
-			&& (cv1.mFreeIndices == cv2.mFreeIndices)
-			&& (cv1.mNumElements == cv2.mNumElements);
+		reserve(other.mCapacity);
+		for (auto it = other.begin(); it != other.end(); ++it) {
+			new (&mElements[it.getIndex()]) T(*it);
+		}
 	}
 
 
-	template <typename T>
-	bool operator!=(const PackedVector<T>& cv1, const PackedVector<T>& cv2)
+	template <typename T, typename A>
+	PackedVector<T, A>::PackedVector(PackedVector&& other) :
+		mElements(other.mElements), mCapacity(other.mCapacity),
+		mUsedElements(other.mUsedElements), mReleasedIndices(std::move(other.mReleasedIndices))
+	{
+		other.mElements = nullptr;
+		other.mCapacity = 0;
+		other.mUsedElements = 0;
+	}
+
+
+	template <typename T, typename A>
+	PackedVector<T, A>::~PackedVector()
+	{
+		clear();
+		mAllocator.deallocate(mElements, mCapacity);
+	}
+
+
+	template <typename T, typename A>
+	PackedVector<T, A>& PackedVector<T, A>::operator=(const PackedVector& other)
+	{
+		clear();
+
+		mUsedElements = other.mUsedElements;
+		mReleasedIndices = other.mReleasedIndices;
+		reserve(other.mCapacity);
+		for (auto it = other.begin(); it != other.end(); ++it) {
+			new (&mElements[it.getIndex()]) T(*it);
+		}
+
+		return *this;
+	}
+
+
+	template <typename T, typename A>
+	PackedVector<T, A>& PackedVector<T, A>::operator=(PackedVector&& other)
+	{
+		clear();
+
+		mElements = other.mElements;
+		mCapacity = other.mCapacity;
+		mUsedElements = other.mUsedElements;
+		mReleasedIndices = std::move(other.mReleasedIndices);
+
+		other.mElements = nullptr;
+		other.mCapacity = 0;
+		other.mUsedElements = 0;
+
+		return *this;
+	}
+
+
+	template <typename T, typename A>
+	bool operator==(const PackedVector<T, A>& cv1, const PackedVector<T, A>& cv2)
+	{
+		return (cv1.mElements == cv2.mElements)
+			&& (cv1.mCapacity == cv2.mCapacity)
+			&& (cv1.mUsedElements == cv2.mUsedElements)
+			&& (cv1.mReleasedIndices == cv2.mReleasedIndices);
+	}
+
+
+	template <typename T, typename A>
+	bool operator!=(const PackedVector<T, A>& cv1, const PackedVector<T, A>& cv2)
 	{
 		return !(cv1 == cv2);
 	}
 
 
-	template <typename T>
-	void PackedVector<T>::reserve(std::size_t n)
+	template <typename T, typename A>
+	void PackedVector<T, A>::reserve(std::size_t n)
 	{
-		mElements.reserve(n);
-		mFreeIndices.reserve(n);
+		if (n > mCapacity) {
+			T* buffer = mAllocator.allocate(n);
+			if (mCapacity > 0) {
+				for (auto it = begin(); it != end(); ++it) {
+					new (&buffer[it.getIndex()]) T(std::move(*it));
+					it->~T();
+				}
+				mAllocator.deallocate(mElements, mCapacity);
+			}
+
+			mElements = buffer;
+			mCapacity = n;
+			mReleasedIndices.reserve(n);
+		}
 	}
 
 
-	template <typename T>
-	void PackedVector<T>::clear()
+	template <typename T, typename A>
+	void PackedVector<T, A>::clear()
 	{
-		mElements.clear();
-		mFreeIndices.clear();
-		mNumElements = 0;
+		for (auto it = begin(); it != end();) {
+			it = erase(it);
+		}
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <typename... Args>
-	typename PackedVector<T>::iterator PackedVector<T>::emplace(Args&&... args)
+	typename PackedVector<T, A>::iterator PackedVector<T, A>::emplace(Args&&... args)
 	{
 		size_type index;
-		if (mFreeIndices.empty()) {
-			mElements.emplace_back(std::forward<Args>(args)...);
-			index = mElements.size() - 1;
+		if (mReleasedIndices.empty()) {
+			if (mCapacity == 0) {
+				reserve(1);
+			}
+			else if (mUsedElements + 1 > mCapacity) {
+				reserve(2 * mCapacity);
+			}
+			index = mUsedElements++;
 		}
 		else {
-			auto it = mFreeIndices.begin();
+			auto it = mReleasedIndices.begin();
 			index = *it;
-			mFreeIndices.erase(it);
-
-			mElements[index].~T();
-			new (&mElements[index]) T(std::forward<Args>(args)...);
+			mReleasedIndices.erase(it);
 		}
-		mNumElements++;
 
+		new (&mElements[index]) T(std::forward<Args>(args)...);
 		return iterator(this, index);
 	}
 
 
-	template <typename T>
-	typename PackedVector<T>::iterator PackedVector<T>::erase(const_iterator it)
+	template <typename T, typename A>
+	typename PackedVector<T, A>::iterator PackedVector<T, A>::erase(const_iterator it)
 	{
 		iterator ret = it;
 		++ret;
 
 		size_type index = it.getIndex();
 		if (isActive(index)) {
-			mFreeIndices.insert(index);
-			mNumElements--;
+			mElements[index].~T();
+			mReleasedIndices.insert(index);
 		}
 
 		return ret;
 	}
 
 
-	template <typename T>
-	bool PackedVector<T>::isActive(size_type i) const
+	template <typename T, typename A>
+	bool PackedVector<T, A>::isActive(size_type i) const
 	{
-		return (i < mElements.size()) && (mFreeIndices.find(i) == mFreeIndices.end());
+		return (i < mUsedElements) && (mReleasedIndices.find(i) == mReleasedIndices.end());
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <typename U>
-	void PackedVector<T>::replicate(const PackedVector<U>& other)
+	void PackedVector<T, A>::replicate(const PackedVector<U>& other)
 	{
-		mElements = std::vector<T>(other.mElements.size());
-		mFreeIndices = other.mFreeIndices;
-		mNumElements = other.mNumElements;
+		clear();
+
+		reserve(other.mCapacity);
+		mUsedElements = other.mUsedElements;
+		mReleasedIndices = other.mReleasedIndices;
+		for (auto it = begin(); it != end(); ++it) {
+			new (&(*it)) T();
+		}
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>::PVIterator(VectorType* vector) :
+	PackedVector<T, A>::PVIterator<isConst>::PVIterator(VectorType* vector) :
 		mVector(vector), mIndex(0)
 	{
-		if (!mVector->isActive(mIndex) && (mVector->mNumElements > 0)) {
+		if (!mVector->isActive(mIndex) && (mVector->mUsedElements > 0)) {
 			operator++();
 		}
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>::operator
-		PackedVector<T>::PVIterator<!isConst>() const
+	PackedVector<T, A>::PVIterator<isConst>::operator
+		PackedVector<T, A>::PVIterator<!isConst>() const
 	{
 		PVIterator<!isConst> ret(nullptr, mIndex);
 
@@ -121,34 +206,34 @@ namespace se::utils {
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>&
-		PackedVector<T>::PVIterator<isConst>::setIndex(size_type index)
+	PackedVector<T, A>::PVIterator<isConst>&
+		PackedVector<T, A>::PVIterator<isConst>::setIndex(size_type index)
 	{
 		mIndex = index;
 		return *this;
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>&
-		PackedVector<T>::PVIterator<isConst>::operator++()
+	PackedVector<T, A>::PVIterator<isConst>&
+		PackedVector<T, A>::PVIterator<isConst>::operator++()
 	{
 		do {
 			++mIndex;
 		}
-		while (!mVector->isActive(mIndex) && (mIndex < mVector->mElements.size()));
+		while (!mVector->isActive(mIndex) && (mIndex < mVector->mUsedElements));
 
 		return *this;
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>
-		PackedVector<T>::PVIterator<isConst>::operator++(int)
+	PackedVector<T, A>::PVIterator<isConst>
+		PackedVector<T, A>::PVIterator<isConst>::operator++(int)
 	{
 		PVIterator ret(*this);
 		operator++();
@@ -156,24 +241,24 @@ namespace se::utils {
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>&
-		PackedVector<T>::PVIterator<isConst>::operator--()
+	PackedVector<T, A>::PVIterator<isConst>&
+		PackedVector<T, A>::PVIterator<isConst>::operator--()
 	{
 		do {
 			--mIndex;
 		}
-		while (!mVector->isActive(mIndex) && (mIndex < mVector->mElements.size()));
+		while (!mVector->isActive(mIndex) && (mIndex < mVector->mUsedElements));
 
 		return *this;
 	}
 
 
-	template <typename T>
+	template <typename T, typename A>
 	template <bool isConst>
-	PackedVector<T>::PVIterator<isConst>
-		PackedVector<T>::PVIterator<isConst>::operator--(int)
+	PackedVector<T, A>::PVIterator<isConst>
+		PackedVector<T, A>::PVIterator<isConst>::operator--(int)
 	{
 		PVIterator ret(*this);
 		operator--();

@@ -5,8 +5,8 @@
 
 namespace se::app {
 
-	AnimationManager::AnimationManager(animation::AnimationSystem& animationSystem) :
-		mAnimationSystem(animationSystem)
+	AnimationManager::AnimationManager(animation::AnimationEngine& animationEngine) :
+		mAnimationEngine(animationEngine)
 	{
 		mRootNode = std::make_unique<animation::AnimationNode>( animation::NodeData("AnimationManager") );
 	}
@@ -126,7 +126,7 @@ namespace se::app {
 			}
 		}*/
 
-		mAnimationSystem.update(delta);
+		mAnimationEngine.update(delta);
 
 		// Update the Entities with the changes made to the AnimationNode
 		for (auto& pair : mNodeEntities) {

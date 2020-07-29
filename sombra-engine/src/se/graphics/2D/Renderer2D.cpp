@@ -141,7 +141,7 @@ namespace se::graphics {
 			}
 			else {
 				// Draw if the Batch we can't add more textures
-				if (mTextures.full()) {
+				if (mTextures.size() == kMaxTextures) {
 					drawBatch();
 				}
 

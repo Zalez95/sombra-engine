@@ -189,7 +189,7 @@ namespace se::collision {
 	{
 		// Check if the Contact is far enough from the Manifold contacts
 		if (!isClose(contact, manifold.contacts.data(), manifold.contacts.size())) {
-			if (!manifold.contacts.full()) {
+			if (manifold.contacts.size() < Manifold::kMaxContacts) {
 				// Add the new contact to the manifold
 				manifold.contacts.push_back(contact);
 			}

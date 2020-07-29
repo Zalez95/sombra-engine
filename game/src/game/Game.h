@@ -26,7 +26,7 @@ namespace game {
 		se::graphics::GraphicsEngine* graphicsEngine;
 		se::physics::PhysicsEngine* physicsEngine;
 		se::collision::CollisionWorld* collisionWorld;
-		se::animation::AnimationSystem* animationSystem;
+		se::animation::AnimationEngine* animationEngine;
 		se::audio::AudioEngine* audioEngine;
 
 		se::app::EventManager* eventManager;

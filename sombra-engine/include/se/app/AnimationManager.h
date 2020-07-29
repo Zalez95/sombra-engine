@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include "../animation/AnimationNode.h"
-#include "../animation/AnimationSystem.h"
+#include "../animation/AnimationEngine.h"
 
 namespace se::app {
 
@@ -30,9 +30,9 @@ namespace se::app {
 		};
 
 	private:	// Attributes
-		/** The AnimationSystem used for updating the animation of the
+		/** The AnimationEngine used for updating the animation of the
 		 * Entities */
-		animation::AnimationSystem& mAnimationSystem;
+		animation::AnimationEngine& mAnimationEngine;
 
 		/** The root AnimationNode node of the hierarchy of AnimationNodes to
 		 * update */
@@ -44,9 +44,9 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new AnimationManager
 		 *
-		 * @param	animationSystem a reference to the AnimationSystem used by
+		 * @param	animationEngine a reference to the AnimationEngine used by
 		 *			the AnimationManager to update the entities' animations */
-		AnimationManager(animation::AnimationSystem& animationSystem);
+		AnimationManager(animation::AnimationEngine& animationEngine);
 
 		/** Adds the given Entity to the AnimationManager with the given
 		 * AnimationNode, so when the AnimationNode or any of its parents is

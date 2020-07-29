@@ -173,20 +173,6 @@ namespace se::utils {
 	};
 
 
-	template <typename T, bool isConst, Traversal t>
-	bool operator==(
-		const typename TreeNode<T>::template TNIterator<isConst, t>&,
-		const typename TreeNode<T>::template TNIterator<isConst, t>&
-	);
-
-
-	template <typename T, bool isConst, Traversal t>
-	bool operator!=(
-		const typename TreeNode<T>::template TNIterator<isConst, t>&,
-		const typename TreeNode<T>::template TNIterator<isConst, t>&
-	);
-
-
 	/**
 	 * Class TNIterator, the class used to iterate through the
 	 * descendant TreeNodes of a TreeNode

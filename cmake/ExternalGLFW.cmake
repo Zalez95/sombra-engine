@@ -33,13 +33,23 @@ endif()
 # Add the system dependencies of the library
 if(UNIX)
 	find_package(Threads REQUIRED)
-	find_package(
-		X11 REQUIRED
-		COMPONENTS X11_Xrandr X11_Xinerama X11_xf86vmode X11_Xi X11_Xcursor
-	)
+	find_package(X11 REQUIRED)
+
+	if (NOT X11_Xrandr_FOUND)
+		message(FATAL_ERROR "The RandR library wasn't found")
+	endif()
+	if (NOT X11_Xinerama_FOUND)
+		message(FATAL_ERROR "The Xinerama library wasn't found")
+	endif()
+	if (NOT X11_xf86vmode_FOUND)
+		message(FATAL_ERROR "The xf86vmode library wasn't found")
+	endif()
+	if (NOT X11_Xcursor_FOUND)
+		message(FATAL_ERROR "The Xcursor library wasn't found")
+	endif()
 
 	list(APPEND SYSTEM_LIBRARIES
-		${X11_LIBRARIES} ${X11_Xrandr_LIB} ${X11_Xinerama_LIB} ${X11_Xxf86vm_LIB} ${X11_Xi_LIB} ${X11_Xcursor_LIB}
+		${X11_X11_LIB} ${X11_Xrandr_LIB} ${X11_Xinerama_LIB} ${X11_Xxf86vm_LIB} ${X11_Xcursor_LIB}
 		${CMAKE_THREAD_LIBS_INIT}
 		${CMAKE_DL_LIBS}
 	)

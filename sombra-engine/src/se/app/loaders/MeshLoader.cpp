@@ -216,7 +216,7 @@ namespace se::app {
 			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
 		}
 
-		return std::move(rawMesh);
+		return rawMesh;
 	}
 
 
@@ -240,7 +240,7 @@ namespace se::app {
 			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
 		}
 
-		return std::move(rawMesh);
+		return rawMesh;
 	}
 
 

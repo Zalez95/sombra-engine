@@ -1,176 +1,98 @@
 #include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
-#include "se/app/Entity.h"
-#include "se/app/PhysicsManager.h"
-#include "se/app/events/CollisionEvent.h"
 #include "se/physics/RigidBody.h"
+#include "se/app/ConstraintsSystem.h"
+#include "se/app/EntityDatabase.h"
+#include "se/app/TransformsComponent.h"
+#include "se/app/events/CollisionEvent2.h"
 
 namespace se::app {
 
-	PhysicsManager::PhysicsManager(physics::PhysicsEngine& physicsEngine, EventManager& eventManager) :
-		mPhysicsEngine(physicsEngine), mEventManager(eventManager)
+	ConstraintsSystem::ConstraintsSystem(
+		EntityDatabase& entityDatabase, physics::PhysicsEngine& physicsEngine,
+		EventManager& eventManager
+	) : ISystem(entityDatabase), mPhysicsEngine(physicsEngine), mEventManager(eventManager)
 	{
+		// TODO: reserve max contact constraints
 		mEventManager.subscribe(this, Topic::Collision);
 	}
 
 
-	PhysicsManager::~PhysicsManager()
+	ConstraintsSystem::~ConstraintsSystem()
 	{
 		mEventManager.unsubscribe(this, Topic::Collision);
 	}
 
 
-	void PhysicsManager::notify(const IEvent& event)
+	void ConstraintsSystem::notify(const IEvent& event)
 	{
-		tryCall(&PhysicsManager::onCollisionEvent, event);
+		tryCall(&ConstraintsSystem::onCollisionEvent, event);
 	}
 
 
-	void PhysicsManager::addEntity(Entity* entity, RigidBodyUPtr rigidBody)
+	void ConstraintsSystem::update()
 	{
-		if (!entity || !rigidBody) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
-			return;
-		}
-
-		// The RigidBody initial data is overridden by the entity one
-		physics::RigidBody* rbPtr = rigidBody.get();
-		rbPtr->getData().position		= entity->position;
-		rbPtr->getData().linearVelocity	= entity->velocity;
-		rbPtr->getData().orientation	= entity->orientation;
-		rbPtr->synchWithData();
-
-		// Add the RigidBody
-		mPhysicsEngine.addRigidBody(rbPtr);
-		mEntityRBMap.emplace(entity, std::move(rigidBody));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rbPtr << " added successfully";
-	}
-
-
-	void PhysicsManager::removeEntity(Entity* entity)
-	{
-		auto itEntity = mEntityRBMap.find(entity);
-		if (itEntity != mEntityRBMap.end()) {
-			mPhysicsEngine.removeRigidBody(itEntity->second.get());
-			mEntityRBMap.erase(itEntity);
-			SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
-		}
-		else {
-			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
-		}
-	}
-
-
-	void PhysicsManager::doDynamics(float delta)
-	{
-		SOMBRA_INFO_LOG << "Start (" << delta << ")";
+		SOMBRA_INFO_LOG << "Start";
 
 		mPhysicsEngine.resetRigidBodiesState();
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
-		for (auto& pair : mEntityRBMap) {
-			Entity* entity = pair.first;
-			physics::RigidBody* rigidBody = pair.second.get();
-
-			// Reset the Entity physics update
-			entity->updated.reset( static_cast<int>(Entity::Update::Physics) );
-
-			if (entity->updated.any()) {
-				rigidBody->getData().position		= entity->position;
-				rigidBody->getData().linearVelocity	= entity->velocity;
-				rigidBody->getData().orientation	= entity->orientation;
-				rigidBody->synchWithData();
+		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
+			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
+				// Skip the Entity physics change in the doDynamics step
+				auto updatedWithoutPhysics = transforms->updated;
+				updatedWithoutPhysics.reset( static_cast<int>(TransformsComponent::Update::Physics) );
+				if (updatedWithoutPhysics.any()) {
+					rigidBody->getData().position		= transforms->position;
+					rigidBody->getData().linearVelocity	= transforms->velocity;
+					rigidBody->getData().orientation	= transforms->orientation;
+					rigidBody->synchWithData();
+				}
 			}
-		}
-
-		SOMBRA_DEBUG_LOG << "Integrating the RigidBodies";
-		mPhysicsEngine.integrate(delta);
-
-		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		for (auto& pair : mEntityRBMap) {
-			Entity* entity					= pair.first;
-			physics::RigidBody* rigidBody	= pair.second.get();
-
-			if (rigidBody->checkState(physics::RigidBodyState::Integrated)) {
-				entity->position	= rigidBody->getData().position;
-				entity->velocity	= rigidBody->getData().linearVelocity;
-				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated.set( static_cast<int>(Entity::Update::Physics) );
-			}
-		}
-
-		SOMBRA_INFO_LOG << "End";
-	}
-
-
-	void PhysicsManager::doConstraints(float delta)
-	{
-		SOMBRA_INFO_LOG << "Start (" << delta << ")";
-
-		mPhysicsEngine.resetRigidBodiesState();
-
-		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
-		for (auto& pair : mEntityRBMap) {
-			Entity* entity = pair.first;
-			physics::RigidBody* rigidBody = pair.second.get();
-
-			// Skip the Entity physics change in the doDynamics step
-			auto updatedWithoutPhysics = entity->updated;
-			updatedWithoutPhysics.reset( static_cast<int>(Entity::Update::Physics) );
-
-			if (updatedWithoutPhysics.any()) {
-				rigidBody->getData().position		= entity->position;
-				rigidBody->getData().linearVelocity	= entity->velocity;
-				rigidBody->getData().orientation	= entity->orientation;
-				rigidBody->synchWithData();
-			}
-		}
+		);
 
 		SOMBRA_DEBUG_LOG << "Updating the NormalConstraints time";
 		for (auto& pair : mManifoldConstraintsMap) {
 			for (ContactConstraints& contactConstraints : pair.second) {
-				contactConstraints.normalConstraint.setDeltaTime(delta);
+				contactConstraints.normalConstraint.setDeltaTime(mDeltaTime);
 			}
 		}
 
 		SOMBRA_DEBUG_LOG << "Solving the Constraints";
-		mPhysicsEngine.solveConstraints(delta);
+		mPhysicsEngine.solveConstraints(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		for (auto& pair : mEntityRBMap) {
-			Entity* entity = pair.first;
-			physics::RigidBody* rigidBody = pair.second.get();
-
-			if (rigidBody->checkState(physics::RigidBodyState::ConstraintsSolved)) {
-				entity->position	= rigidBody->getData().position;
-				entity->velocity	= rigidBody->getData().linearVelocity;
-				entity->orientation	= rigidBody->getData().orientation;
-				entity->updated.set( static_cast<int>(Entity::Update::Physics) );
+		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
+			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
+				if (rigidBody->checkState(physics::RigidBodyState::ConstraintsSolved)) {
+					transforms->position	= rigidBody->getData().position;
+					transforms->velocity	= rigidBody->getData().linearVelocity;
+					transforms->orientation	= rigidBody->getData().orientation;
+					transforms->updated.set( static_cast<int>(TransformsComponent::Update::Physics) );
+				}
 			}
-		}
+		);
 
 		SOMBRA_DEBUG_LOG << "Putting the RigidBodies to sleep";
-		mPhysicsEngine.checkSleepyRigidBodies(delta);
+		mPhysicsEngine.checkSleepyRigidBodies(mDeltaTime);
 
 		SOMBRA_INFO_LOG << "End";
 	}
 
 // Private functions
-	void PhysicsManager::onCollisionEvent(const CollisionEvent& event)
+	void ConstraintsSystem::onCollisionEvent(const CollisionEvent& event)
 	{
 		SOMBRA_TRACE_LOG << "Received CollisionEvent: " << event;
 
-		Entity* entity1 = event.getEntity(0);
-		Entity* entity2 = event.getEntity(1);
+		Entity entity1 = event.getEntity(0);
+		Entity entity2 = event.getEntity(1);
 		const collision::Manifold* manifold = event.getManifold();
 
-		if (entity1 && entity2 && manifold) {
-			auto itEntityRB1 = mEntityRBMap.find(entity1);
-			auto itEntityRB2 = mEntityRBMap.find(entity2);
-			if ((itEntityRB1 != mEntityRBMap.end()) && (itEntityRB2 != mEntityRBMap.end())) {
-				physics::RigidBody* rb1 = itEntityRB1->second.get();
-				physics::RigidBody* rb2 = itEntityRB2->second.get();
-				if ((rb1->getConfig().invertedMass != 0.0f) || (rb2->getConfig().invertedMass != 0.0f)) {
+		if ((entity1 != kNullEntity) && (entity2 != kNullEntity) && manifold) {
+			auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(entity1);
+			auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(entity2);
+			if (rb1 && rb2) {
+				if ((rb1->getConfig().invertedMass > 0.0f) || (rb2->getConfig().invertedMass > 0.0f)) {
 					SOMBRA_DEBUG_LOG << "Handling CollisionEvent between "
 						<< rb1 << " (p=" << glm::to_string(rb1->getData().position) << ", o=" << glm::to_string(rb1->getData().orientation) << ") and "
 						<< rb2 << " (p=" << glm::to_string(rb2->getData().position) << ", o=" << glm::to_string(rb2->getData().orientation) << ")";
@@ -196,7 +118,7 @@ namespace se::app {
 	}
 
 
-	void PhysicsManager::handleIntersectingManifold(
+	void ConstraintsSystem::handleIntersectingManifold(
 		physics::RigidBody* rb1, physics::RigidBody* rb2,
 		const collision::Manifold* manifold
 	) {
@@ -290,7 +212,7 @@ namespace se::app {
 	}
 
 
-	void PhysicsManager::handleDisjointManifold(const collision::Manifold* manifold)
+	void ConstraintsSystem::handleDisjointManifold(const collision::Manifold* manifold)
 	{
 		auto itPair = mManifoldConstraintsMap.find(manifold);
 		if (itPair != mManifoldConstraintsMap.end()) {

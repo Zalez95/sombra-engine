@@ -5,7 +5,7 @@ namespace se::window { struct WindowData; class WindowSystem; }
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { struct CollisionWorldData; class CollisionWorld; }
-namespace se::animation { class AnimationSystem; }
+namespace se::animation { class AnimationEngine; }
 namespace se::audio { class AudioEngine; }
 namespace se::utils { class TaskManager; }
 
@@ -57,7 +57,7 @@ namespace se::app {
 		graphics::GraphicsEngine* mGraphicsEngine;
 		physics::PhysicsEngine* mPhysicsEngine;
 		collision::CollisionWorld* mCollisionWorld;
-		animation::AnimationSystem* mAnimationSystem;
+		animation::AnimationEngine* mAnimationEngine;
 		audio::AudioEngine* mAudioEngine;
 		utils::TaskManager* mTaskManager;
 

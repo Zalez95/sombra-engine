@@ -1,9 +1,9 @@
 #include <algorithm>
-#include "se/animation/AnimationSystem.h"
+#include "se/animation/AnimationEngine.h"
 
 namespace se::animation {
 
-	void AnimationSystem::addAnimator(IAnimator* animator)
+	void AnimationEngine::addAnimator(IAnimator* animator)
 	{
 		if (animator) {
 			mAnimators.push_back(animator);
@@ -11,7 +11,7 @@ namespace se::animation {
 	}
 
 
-	void AnimationSystem::removeAnimator(IAnimator* animator)
+	void AnimationEngine::removeAnimator(IAnimator* animator)
 	{
 		animator->resetNodesAnimatedState();
 
@@ -22,7 +22,7 @@ namespace se::animation {
 	}
 
 
-	void AnimationSystem::update(float deltaTime)
+	void AnimationEngine::update(float deltaTime)
 	{
 		// Reset the animate state of all the nodes
 		for (IAnimator* animator : mAnimators) {

@@ -714,7 +714,7 @@ namespace game {
 		}
 
 		for (se::animation::IAnimator* animator : mAnimators) {
-			mGameData.animationSystem->removeAnimator(animator);
+			mGameData.animationEngine->removeAnimator(animator);
 			delete animator;
 		}
 

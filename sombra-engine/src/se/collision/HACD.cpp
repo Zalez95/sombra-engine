@@ -5,7 +5,6 @@
 #include "se/collision/HACD.h"
 #include "se/collision/QuickHull.h"
 #include "se/collision/HalfEdgeMeshExt.h"
-#include "se/utils/FixedVector.h"
 
 namespace se::collision {
 
