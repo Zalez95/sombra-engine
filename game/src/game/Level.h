@@ -23,17 +23,14 @@ namespace game {
 	 */
 	class Level : public IGameScreen, public se::app::IEventListener
 	{
-	private:	// Nested Types
-		using EntityUPtr = std::unique_ptr<se::app::Entity>;
-
 	private:	// Attributes
 		static constexpr unsigned int kNumCubes		= 50;
 		static constexpr float kFOV					= 60.0f;
 		static constexpr float kZNear				= 0.1f;
 		static constexpr float kZFar				= 2000.0f;
 
-		std::vector<EntityUPtr> mEntities;
-		se::app::Entity* mPlayerEntity;
+		std::vector<se::app::Entity> mEntities;
+		se::app::Entity mPlayerEntity;
 		PlayerController* mPlayerController;
 		std::vector<se::audio::Buffer> mBuffers;
 		std::vector<se::physics::Force*> mForces;

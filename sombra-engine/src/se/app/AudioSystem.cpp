@@ -6,18 +6,34 @@
 
 namespace se::app {
 
+	AudioSystem::AudioSystem(EntityDatabase& entityDatabase, audio::AudioEngine& audioEngine) :
+		ISystem(entityDatabase), mAudioEngine(audioEngine), mListener(kNullEntity)
+	{
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask(true));
+	}
+
+
+	AudioSystem::~AudioSystem()
+	{
+		mEntityDatabase.removeSystem(this);
+	}
+
+
 	void AudioSystem::onNewEntity(Entity entity)
 	{
 		auto [transforms, source] = mEntityDatabase.getComponents<TransformsComponent, audio::Source>(entity);
-		if (!transforms || !source) {
+		if (!source) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Source";
 			return;
 		}
 
-		// The Source initial data is overridden by the entity one
-		source->setPosition(transforms->position);
-		source->setOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation, glm::vec3(0.0f, 1.0f, 0.0));
-		source->setVelocity(transforms->velocity);
+		if (transforms) {
+			// The Source initial data is overridden by the entity one
+			source->setPosition(transforms->position);
+			source->setOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation, glm::vec3(0.0f, 1.0f, 0.0));
+			source->setVelocity(transforms->velocity);
+		}
+
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " added successfully";
 	}
 
@@ -34,16 +50,15 @@ namespace se::app {
 	void AudioSystem::setListener(Entity entity)
 	{
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity);
-		if (!transforms) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be setted as Listener";
-			return;
+
+		mListener = entity;
+		if (transforms) {
+			// The Listener initial data is overriden by the entity one
+			mAudioEngine.setListenerPosition(transforms->position);
+			mAudioEngine.setListenerOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation, glm::vec3(0.0f, 1.0f, 0.0));
+			mAudioEngine.setListenerVelocity(transforms->velocity);
 		}
 
-		// The Listener initial data is overridden by the entity one
-		mListener = entity;
-		mAudioEngine.setListenerPosition(transforms->position);
-		mAudioEngine.setListenerOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation, glm::vec3(0.0f, 1.0f, 0.0));
-		mAudioEngine.setListenerVelocity(transforms->velocity);
 		SOMBRA_INFO_LOG << "Entity " << entity << " was setted as Listener";
 	}
 

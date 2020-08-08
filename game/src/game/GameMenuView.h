@@ -6,7 +6,6 @@
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
-#include <se/app/GraphicsManager.h>
 #include "GameMenuController.h"
 
 namespace game {
@@ -52,8 +51,7 @@ namespace game {
 			mQuitButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
 			mBackLabel(&mGUIManager), mQuitLabel(&mGUIManager)
 		{
-			auto& repo = mGUIManager.getGraphicsManager().getRepository();
-			auto arial = repo.find<std::string, se::graphics::Font>("arial");
+			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mTitleLabel.setFont(arial);

@@ -3,11 +3,9 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/3D/Renderer3D.h"
+#include "../../utils/Repository.h"
 
 namespace se::app {
-
-	class GraphicsManager;
-
 
 	/**
 	 * Class VoxelizationNode , its a Renderer3D that instead of rasterizing
@@ -38,11 +36,10 @@ namespace se::app {
 		/** Creates a new VoxelizationNode
 		 *
 		 * @param	name the name of the new VoxelizationNode
-		 * @param	graphicsManager the GraphicsManager that holds all the
-		 *			Programs
+		 * @param	repository the Repository that holds all the Programs
 		 * @param	maxVoxels the maximum number of voxels in each dimension */
 		VoxelizationNode(
-			const std::string& name, GraphicsManager& graphicsManager,
+			const std::string& name, utils::Repository& repository,
 			std::size_t maxVoxels
 		);
 

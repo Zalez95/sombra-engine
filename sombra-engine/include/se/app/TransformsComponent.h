@@ -8,8 +8,8 @@
 namespace se::app {
 
 	/**
-	 * Struct Entity, a Entity is a game object that holds all the
-	 * common data shared by the game Managers
+	 * Struct TransformsComponent, it's a Component that holds all the
+	 * position, orientation and movement of an Entity
 	 */
 	struct TransformsComponent
 	{
@@ -17,9 +17,9 @@ namespace se::app {
 		 * in the updated bitset */
 		enum class Update : int
 		{
-			Input,		///< The Entity has changed due to the InputManager
-			Physics,	///< The Entity has changed due to the PhysicsManager
-			Animation,	///< The Entity has changed due to the AnimationManager
+			Input,		///< The Entity has changed due to the Input
+			Physics,	///< The Entity has changed due to the Physics
+			Animation,	///< The Entity has changed due to the Animation
 			Count		///< The number of indices
 		};
 

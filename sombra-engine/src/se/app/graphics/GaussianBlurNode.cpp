@@ -1,7 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/loaders/TechniqueLoader.h"
-#include "se/app/GraphicsManager.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -10,11 +9,11 @@
 namespace se::app {
 
 	GaussianBlurNode::GaussianBlurNode(
-		const std::string& name, GraphicsManager& graphicsManager, std::shared_ptr<graphics::RenderableMesh> plane,
+		const std::string& name, utils::Repository& repository,
+		std::shared_ptr<graphics::RenderableMesh> plane,
 		std::size_t width, std::size_t height, bool horizontal
 	) : BindableRenderNode(name), mPlane(plane)
 	{
-
 		auto iColorTexBindable = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, iColorTexBindable) );
 
@@ -27,10 +26,10 @@ namespace se::app {
 		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
 
-		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programGaussianBlur");
+		auto programSPtr = repository.find<std::string, graphics::Program>("programGaussianBlur");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
-			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programGaussianBlur", std::move(program));
+			programSPtr = repository.add(std::string("programGaussianBlur"), std::move(program));
 		}
 
 		addBindable(std::move(frameBuffer));

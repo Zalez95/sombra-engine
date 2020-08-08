@@ -3,10 +3,15 @@
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
+#include <se/utils/Repository.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
-#include <se/app/graphics/RawMesh.h>
-#include <se/app/GraphicsManager.h>
+#include <se/app/EntityDatabase.h>
+#include <se/app/TagComponent.h>
+#include <se/app/MeshComponent.h>
+#include <se/app/TransformsComponent.h>
+#include <se/app/CameraSystem.h>
+#include <se/app/CollisionSystem.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/TechniqueLoader.h>
 #include "PlayerController.h"
@@ -17,7 +22,7 @@ extern bool PRINT;
 namespace game {
 
 	PlayerController::PlayerController(
-		GameData& gameData, se::app::Entity& entity, se::graphics::RenderableText& pickText
+		GameData& gameData, se::app::Entity entity, se::graphics::RenderableText& pickText
 	) : mGameData(gameData), mEntity(entity), mPickText(pickText),
 		mYaw(0.0f), mPitch(0.0f), mMovement{}, mClicked(false)
 	{
@@ -47,9 +52,9 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		auto programGBufMaterial = mGameData.graphicsManager->getRepository().find<std::string, se::graphics::Program>("programGBufMaterial");
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsManager->getGraphicsEngine().getRenderGraph().getNode("gBufferRenderer"));
-		auto passYellow = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
+		auto programGBufMaterial = mGameData.repository->find<std::string, se::graphics::Program>("programGBufMaterial");
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto passYellow = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{
@@ -74,8 +79,9 @@ namespace game {
 
 	void PlayerController::update(float deltaTime)
 	{
-		mEntity.updated.reset( static_cast<int>(se::app::Entity::Update::Input) );
-		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * mEntity.orientation;
+		auto [transforms] = mGameData.entityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
+		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation;
 		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
 		glm::vec3 right		= glm::cross(forward, up);
 
@@ -95,8 +101,8 @@ namespace game {
 			// Apply the rotation
 			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-			mEntity.orientation = glm::normalize(qPitch * mEntity.orientation * qYaw);
-			mEntity.updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+			transforms->orientation = glm::normalize(qPitch * transforms->orientation * qYaw);
+			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
 		// Add WASD movement
@@ -107,9 +113,9 @@ namespace game {
 		if (mMovement[static_cast<int>(Direction::Left)]) { direction -= right; }
 		float length = glm::length(direction);
 		if (length > 0.0f) {
-			mEntity.velocity += kRunSpeed * direction / length;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " run velocity (" << glm::to_string(mEntity.velocity) << ")";
-			mEntity.updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+			transforms->velocity += kRunSpeed * direction / length;
+			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
+			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
 		// Add the world Y velocity
@@ -118,31 +124,35 @@ namespace game {
 		if (mMovement[static_cast<int>(Direction::Down)]) { direction -= up; }
 		length = glm::length(direction);
 		if (length > 0.0f) {
-			mEntity.velocity += kJumpSpeed * direction;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " jump velocity (" << glm::to_string(mEntity.velocity) << ")";
-			mEntity.updated.set( static_cast<int>(se::app::Entity::Update::Input) );
+			transforms->velocity += kJumpSpeed * direction;
+			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
+			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
 		if (mClicked) {
 			std::string names;
-			for (const auto& [entity, rayCast] : mGameData.collisionManager->getEntities(mEntity.position, forward)) {
+			for (const auto& [entity, rayCast] : mGameData.collisionSystem->getEntities(transforms->position, forward)) {
 				// Blue tetrahedron = separation direction from collider 1 to collider 0
 				glm::vec3 new_z = rayCast.contactNormal;
 				glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
 				glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
 
-				auto pointEntity = new se::app::Entity(entity->name + "_rayCast");
-				pointEntity->position = rayCast.contactPointWorld;
-				pointEntity->orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
+				auto pointEntity = mGameData.entityDatabase->addEntity();
 
-				auto r3d3 = std::make_unique<se::graphics::RenderableMesh>(mTetrahedronMesh);
-				r3d3->addTechnique(mYellowTechnique);
-				mGameData.graphicsManager->addMeshEntity(pointEntity, std::move(r3d3));
+				se::app::TransformsComponent transforms;
+				transforms.position = rayCast.contactPointWorld;
+				transforms.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
+				mGameData.entityDatabase->addComponent(pointEntity, std::move(transforms));
 
-				names += entity->name + "; ";
+				se::app::MeshComponent mesh;
+				mesh.rMeshes.emplace_back(mTetrahedronMesh).addTechnique(mYellowTechnique);
+				mGameData.entityDatabase->addComponent(pointEntity, std::move(mesh));
+
+				auto [tag] = mGameData.entityDatabase->getComponents<se::app::TagComponent>(entity);
+				names += std::string(tag->getName()) + "; ";
 			}
 
-			mPickText.setText(glm::to_string(mEntity.position) + " " + glm::to_string(forward) + " Selected entities: " + names);
+			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
 			mClicked = false;
 		}
 	}

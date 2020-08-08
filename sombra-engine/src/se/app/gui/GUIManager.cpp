@@ -4,22 +4,13 @@
 namespace se::app {
 
 	GUIManager::GUIManager(
-		EventManager& eventManager, GraphicsManager& graphicsManager, const glm::vec2& initialWindowSize
-	) : mEventManager(eventManager), mGraphicsManager(graphicsManager)
+		EventManager& eventManager, graphics::GraphicsEngine& graphicsEngine,
+		utils::Repository& repository, const glm::vec2& initialWindowSize
+	) : mEventManager(eventManager), mGraphicsEngine(graphicsEngine), mRepository(repository)
 	{
 		mEventManager.subscribe(this, Topic::Resize);
 		mEventManager.subscribe(this, Topic::Mouse);
 		mRootComponent.setSize(initialWindowSize);
-
-		auto program = TechniqueLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
-		if (!program) {
-			throw std::runtime_error("program2D couldn't be created");
-		}
-		auto program2D = mGraphicsManager.getRepository().add<std::string, graphics::Program>("program2D", std::move(program));
-
-		auto technique2D = std::make_unique<graphics::Technique>();
-		technique2D->addPass( mGraphicsManager.createPass2D(program2D) );
-		mGraphicsManager.getRepository().add<std::string, graphics::Technique>("technique2D", std::move(technique2D));
 	}
 
 

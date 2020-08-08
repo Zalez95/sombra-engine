@@ -28,6 +28,9 @@ namespace se::app {
 			physics::PhysicsEngine& physicsEngine
 		);
 
+		/** Class destructor */
+		~DynamicsSystem();
+
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added
 		 *

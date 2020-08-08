@@ -6,7 +6,6 @@
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
-#include <se/app/GraphicsManager.h>
 #include "MainMenuController.h"
 
 namespace game {
@@ -55,8 +54,7 @@ namespace game {
 			mStartLabel(&mGUIManager), mConfigLabel(&mGUIManager),
 			mQuitLabel(&mGUIManager)
 		{
-			auto& repo = mGUIManager.getGraphicsManager().getRepository();
-			auto arial = repo.find<std::string, se::graphics::Font>("arial");
+			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mTitleLabel.setText("SOMBRA");

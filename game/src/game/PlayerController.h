@@ -3,7 +3,6 @@
 
 #include <se/app/Entity.h>
 #include <se/window/WindowSystem.h>
-#include <se/app/CollisionManager.h>
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
@@ -27,7 +26,7 @@ namespace game {
 
 	private:	// Attributes
 		GameData& mGameData;
-		se::app::Entity& mEntity;
+		se::app::Entity mEntity;
 		se::graphics::RenderableText& mPickText;
 
 		static constexpr float kRunSpeed	= 2.5f;
@@ -56,11 +55,11 @@ namespace game {
 		/** Creates a new PlayerController
 		 *
 		 * @param	gameData a reference to the GameData
-		 * @param	entity a reference to the Entity to control as a player
+		 * @param	entity the Entity to control as a player
 		 * @param	pickText the text to write to */
 		PlayerController(
 			GameData& gameData,
-			se::app::Entity& entity,
+			se::app::Entity entity,
 			se::graphics::RenderableText& pickText
 		);
 

@@ -1,11 +1,10 @@
 #include "se/app/loaders/TerrainReader.h"
 #include "se/app/loaders/ImageReader.h"
 #include "se/utils/FileReader.h"
-#include "se/app/Entity.h"
 
 namespace se::app {
 
-	TerrainReader::EntityUPtr TerrainReader::read(utils::FileReader& fileReader)
+	Entity TerrainReader::read(utils::FileReader& fileReader)
 	{
 		try {
 			// 1. Get the input file
@@ -22,7 +21,7 @@ namespace se::app {
 	}
 
 // Private functions
-	TerrainReader::EntityUPtr TerrainReader::parseEntity(utils::FileReader& fileReader)
+	Entity TerrainReader::parseEntity(utils::FileReader& fileReader)
 	{
 		std::string name, heightMapPath;
 		float size = 0.0f, maxHeight = 0.0f;
@@ -55,7 +54,7 @@ namespace se::app {
 			throw std::runtime_error("Error while reading the heighMap \"" + heightMapPath + "\": " + result.description());
 		}
 
-		return mTerrainLoader.createTerrain(name, size, maxHeight, heightMap, {}, {}, nullptr);
+		return mTerrainLoader.createTerrain(name.c_str(), size, maxHeight, heightMap, {}, nullptr, nullptr);
 	}
 
 }

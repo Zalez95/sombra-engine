@@ -3,11 +3,9 @@
 
 #include "Event.h"
 #include "../../collision/Manifold.h"
+#include "../EntityDatabase.h"
 
 namespace se::app {
-
-	struct Entity;
-
 
 	/**
 	 * Class CollisionEvent, its an event used for notify of collision
@@ -17,7 +15,7 @@ namespace se::app {
 	{
 	private:	// Attributes
 		/** The Entities affected by the CollisionEvent */
-		Entity* mEntities[2];
+		Entity mEntities[2];
 
 		/** A pointer to the collision Manifold with the collision data */
 		const collision::Manifold* mManifold;
@@ -25,20 +23,20 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new CollisionEvent
 		 *
-		 * @param	entity1 a pointer to the first of the Collision
-		 * @param	entity2 a pointer to the second of the Collision
+		 * @param	entity1 the first Entity of the Collision
+		 * @param	entity2 the second Entity of the Collision
 		 * @param	manifold a pointer to the collision Manifold */
 		CollisionEvent(
-			Entity* entity1, Entity* entity2,
+			Entity entity1, Entity entity2,
 			const collision::Manifold* manifold
 		) : mEntities{ entity1, entity2 }, mManifold(manifold) {};
 
-		/** Returns a pointer to the requested Entity
+		/** Returns the requested Entity
 		 *
 		 * @param	second the flag used for selecting the Entity to return
-		 * @return	a pointer to the second Entity if the second flag is
-		 *			true, the first one otherwise */
-		Entity* getEntity(bool second) const
+		 * @return	the second Entity if the second flag is true, the first
+		 *			one otherwise */
+		Entity getEntity(bool second) const
 		{ return mEntities[second]; };
 
 		/** @return	a pointer to the collision Manifold */

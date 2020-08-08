@@ -1,11 +1,11 @@
 #ifndef ENTITY_DATABASE_H
 #define ENTITY_DATABASE_H
 
+#include <memory>
 #include <vector>
-#include <unordered_map>
 #include <unordered_set>
 #include "../utils/PackedVector.h"
-#include "Entity2.h"
+#include "Entity.h"
 #include "ISystem.h"
 
 namespace se::app {
@@ -19,66 +19,120 @@ namespace se::app {
 	class EntityDatabase
 	{
 	private:	// Nested types
-		struct ComponentTypes;
-		template <typename T> struct ComponentType;
 		class IComponentTable;
 		template <typename T> class ITComponentTable;
 		template <typename T> class ComponentTable;
-		template <typename T> class ComponentUPtrTable;
+		template <typename T> class ComponentTableUPtr;
 		using IComponentTableUPtr = std::unique_ptr<IComponentTable>;
+	public:
+		/** Class ComponentMask, it holds the bit mask with a state for each
+		 * Component type */
+		class ComponentMask
+		{
+		private:	// Attributes
+			/** The bit state for each Component */
+			std::vector<bool> mBitMask;
+
+		public:		// Functions
+			/** Creates a new ComponentMask
+			 *
+			 * @param	value the initial value of all the bits */
+			ComponentMask(bool value = false);
+
+			/** Returns the position of the bitmask located at the given index
+			 *
+			 * @param	index the position to check
+			 * @return	the value at the given position */
+			bool operator[](std::size_t index) const
+			{ return mBitMask[index]; };
+
+			/** Sets the value for the given @tparam T Component
+			 *
+			 * @param	value the new bit value */
+			template <typename T>
+			ComponentMask& set(bool value = true);
+
+			/** @return	the value for the given @tparam T Component */
+			template <typename T>
+			bool get() const;
+		};
 
 	private:	// Attributes
+		/** The number of different Component types */
+		static std::size_t sComponentTypeCount;
+
 		/** The maximum number of Entities that the EntityDatabase can hold */
 		std::size_t mMaxEntities;
+
+		/** The Entity with the highest identifier */
+		Entity mLastEntity;
 
 		/** The entities removed from the EntityDatabase. This entities are
 		 * stored here so they can be reused later */
 		std::unordered_set<Entity> mRemovedEntities;
 
-		/** The Entity with the highest identifier */
-		Entity mLastEntity;
+		/** The Components active for each Entity */
+		std::vector<bool> mActiveComponents;
 
-		/** Maps each Component type id with its respective ComponentTable */
-		std::unordered_map<std::size_t, IComponentTableUPtr> mComponentTables;
+		/** All the ComponentTables added to the EntityDatabase indexed by their
+		 * Component type Id */
+		std::vector<IComponentTableUPtr> mComponentTables;
 
 		/** The ISystems to notify of new Entities or Components */
-		std::vector<ISystem*> mSystems;
+		std::vector<std::pair<ISystem*, ComponentMask>> mSystems;
 
 	public:		// Functions
 		/** Creates a new EntityDatabase
 		 * @param	maxEntities the maximum number of Entities that the
 		 *			EntityDatabase can hold */
-		EntityDatabase(std::size_t maxEntities) :
-			mMaxEntities(maxEntities), mLastEntity(kNullEntity) {};
+		EntityDatabase(std::size_t maxEntities);
 
 		/** Class destructor */
 		~EntityDatabase();
 
 		/** Adds a new ComponentTable to the EntityDatabase so the Components
-		 * with the type @tparam T can be added to the Entities
+		 * with the type @tparam T can be added to the Entities. If
+		 * @tparam hasDerived is true, the derived types of @tparam T can also
+		 * be added to the same table
 		 *
 		 * @param	maxComponents the maximum number of Components of that type
 		 *			that can be stored in the table
-		 * @param	hasDerived if there are going to be stored derived types
-		 *			of @tparam T in the table or not
 		 * @note	this function must be called for each Component type
 		 *			before using any of the other functions */
-		template <typename T>
-		void addComponentTable(
-			std::size_t maxComponents, bool hasDerived = false
-		);
+		template <typename T, bool hasDerived = false>
+		void addComponentTable(std::size_t maxComponents);
 
 		/** Adds the given System so it can be notified of new Entities and
 		 * Components
 		 *
-		 * @param	system a pointer to the System to add */
-		void addSystem(ISystem* system);
+		 * @param	system a pointer to the System to add
+		 * @param	mask the changes in Components that must be notified to the
+		 *			ISystem */
+		void addSystem(ISystem* system, ComponentMask mask);
+
+		/** Removes the given System so it won't longer be notified of new
+		 * Entities and Components
+		 *
+		 * @param	system a pointer to the System to removed */
+		void removeSystem(ISystem* system);
 
 		/** Creates a new Entity
 		 *
 		 * @return	the new Entity, @see kNullEntity if it couldn't be
 		 *			created */
 		Entity addEntity();
+
+		/** Returns the Entity that owns the given Component
+		 *
+		 * @param	component a pointer to the Component
+		 * @return	the Entity that owns the Component, kNullEntity if it
+		 *			wasn't found */
+		template <typename T>
+		Entity getEntity(const T* component);
+
+		/** @return	the maximum number of Entities that can be stored in the
+		 *			EntityDatabase */
+		std::size_t getMaxEntities() const { return mMaxEntities; };
 
 		/** Iterates all the Entities added to the EntityDatabase
 		 *
@@ -98,12 +152,27 @@ namespace se::app {
 		template <typename T>
 		void addComponent(Entity entity, T&& component);
 
-		/** Iterates all the Entities that have all of the requested Components
-		 * calling the given callback function
+		/** Adds a Component with @tparam T to the given Entity
 		 *
-		 * @param	callback the callback function to call for each Entity */
-		template <typename... Args, typename F>
-		void iterateComponents(F&& callback);
+		 * @param	entity the Entity that will own the Component
+		 * @param	component a pointer to the Component to add */
+		template <typename T>
+		void addComponent(Entity entity, std::unique_ptr<T> component);
+
+		/** Checks if an Entity has all the given Components
+		 *
+		 * @param	entity the Entity that owns the Components
+		 * @return	true if the Entity has all the Components, false
+		 *			otherwise */
+		template <typename T1, typename T2, typename... Args>
+		bool hasComponents(Entity entity);
+
+		/** Checks if an Entity has a Component with type @tparam T
+		 *
+		 * @param	entity the Entity that owns the Component
+		 * @return	true if the Entity has the Component, false otherwise */
+		template <typename T>
+		bool hasComponents(Entity entity);
 
 		/** Returns all the Components with the given types owned by the given
 		 * Entity
@@ -126,21 +195,24 @@ namespace se::app {
 		template <typename T>
 		std::tuple<T*> getComponents(Entity entity);
 
+		/** Iterates all the Entities that have all of the requested Components
+		 * calling the given callback function
+		 *
+		 * @param	callback the callback function to call for each Entity */
+		template <typename... Args, typename F>
+		void iterateComponents(F&& callback);
+
 		/** Removes the Component with @tparam T from the given Entity
 		 *
 		 * @param	entity the Entity that owns the Component */
 		template <typename T>
 		void removeComponent(Entity entity);
-
-		/** Returns the Entity that owns the given Component
-		 *
-		 * @param	component a pointer to the Component
-		 * @return	the Entity that owns the Component, kNullEntity if it
-		 *			wasn't found */
-		template <typename T>
-		Entity getEntity(const T* component);
 	private:
-		/** @return	a reference to the ITComponentTable of the Component with
+		/** @return	the Component id of @tparam T */
+		template <typename T>
+		static std::size_t getComponentTypeId();
+
+		/** @return	a reference to the ComponentTable of the Component with
 		 *			type @tparam T */
 		template <typename T>
 		ITComponentTable<T>& getTable();

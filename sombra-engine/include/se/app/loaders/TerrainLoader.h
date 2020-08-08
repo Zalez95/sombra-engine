@@ -2,19 +2,20 @@
 #define TERRAIN_LOADER_H
 
 #include <memory>
-#include <string>
 #include <vector>
+#include <glm/glm.hpp>
 #include "../Entity.h"
-#include "../GraphicsManager.h"
-#include "../PhysicsManager.h"
-#include "../CollisionManager.h"
 #include "../graphics/Image.h"
-#include "../graphics/Material.h"
 
-namespace se::graphics { class RenderableTerrain; }
-namespace se::collision { class TerrainCollider; }
+namespace se::utils { class Repository; }
+namespace se::graphics { class GraphicsEngine; class RenderableTerrain; }
+namespace se::collision { class Collider; }
 
 namespace se::app {
+
+	class EntityDatabase;
+	class CameraSystem;
+
 
 	/**
 	 * Class TerrainLoader, it's used for creating terrain meshes from raw data
@@ -22,43 +23,38 @@ namespace se::app {
 	class TerrainLoader
 	{
 	private:	// Nested types
-		using EntityUPtr = std::unique_ptr<app::Entity>;
-		using TerrainColliderUPtr = std::unique_ptr<collision::TerrainCollider>;
-		using RenderableTerrainUPtr =
-			std::unique_ptr<graphics::RenderableTerrain>;
+		using ColliderUPtr = std::unique_ptr<collision::Collider>;
 
 	private:	// Attributes
 		/** The maximum color value that a pixel can have in the heightMaps */
 		static constexpr unsigned char kMaxColor = 255;
 
-		/** The GraphicsManager used for storing the Renderable3Ds of the
-		 * Terrains */
-		app::GraphicsManager& mGraphicsManager;
+		/** The EntityDatabase that holds the Terrain Entities and Components */
+		EntityDatabase& mEntityDatabase;
 
-		/** The PhysicsManager used for storing the PhysicsEntities of the
-		 * Terrains */
-		app::PhysicsManager& mPhysicsManager;
+		/** The GraphicsEngine used for rendering the Terrain */
+		graphics::GraphicsEngine& mGraphicsEngine;
 
-		/** The CollisionManager used for storing the Colliders of the
-		 * Terrains */
-		app::CollisionManager& mCollisionManager;
+		/** The CameraSystem that holds the passes */
+		CameraSystem& mCameraSystem;
+
+		/** The Repository that holds the graphics data */
+		utils::Repository& mRepository;
 
 	public:		// Functions
 		/** Creates a new TerrainLoader
 		 *
-		 * @param	graphicsManager the GraphicsManager that holds the graphics
-		 *			data of the Terrain Entities
-		 * @param	physicsManager the PhysicsManager that holds the physics
-		 *			data of the Terrain Entities
-		 * @param	collisionManager the CollisionManager that holds the
-		 *			collider data of the Terrain Entities */
+		 * @param	entityDatabase the EntityDatabase that holds the Terrain
+		 *			Entities and Components
+		 * @param	graphicsEngine the GraphicsEngine used for rendering the Terrain
+		 * @param	cameraSystem the CameraSystem that holds the passes
+		 * @param	repository the Repository that holds the graphics data */
 		TerrainLoader(
-			app::GraphicsManager& graphicsManager,
-			app::PhysicsManager& physicsManager,
-			app::CollisionManager& collisionManager
-		) : mGraphicsManager(graphicsManager),
-			mPhysicsManager(physicsManager),
-			mCollisionManager(collisionManager) {};
+			EntityDatabase& entityDatabase,
+			graphics::GraphicsEngine& graphicsEngine,
+			CameraSystem& cameraSystem, utils::Repository& repository
+		) : mEntityDatabase(entityDatabase), mGraphicsEngine(graphicsEngine),
+			mCameraSystem(cameraSystem), mRepository(repository) {};
 
 		/** Creates an Entity that represents a Terrain from the given data
 		 *
@@ -70,16 +66,16 @@ namespace se::app {
 		 * 			vertices of the Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	terrainMaterial the Material used for rendering the
+		 * @param	techniqueName the name of the program used for rendering the
 		 *			terrain
-		 * @param	program the name of the program used for the terrain
+		 * @param	programName the name of the program used for the terrain
 		 *			technique
-		 * @return	a pointer to the new Terrain entity */
-		EntityUPtr createTerrain(
-			const std::string& name, float size, float maxHeight,
+		 * @return	the new Terrain entity */
+		Entity createTerrain(
+			const char* name, float size, float maxHeight,
 			const Image<unsigned char>& heightMap,
 			const std::vector<float>& lodDistances,
-			const SplatmapMaterial& terrainMaterial, const char* programName
+			const char* techniqueName, const char* programName
 		);
 	private:
 		/** Creates a new RenderableTerrain from the given data
@@ -91,17 +87,17 @@ namespace se::app {
 		 * 			vertices of the Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	terrainMaterial the Material used for rendering the
+		 * @param	techniqueName the name of the program used for rendering the
 		 *			terrain
-		 * @param	program the name of the program used for the terrain
+		 * @param	programName the name of the program used for the terrain
 		 *			technique
 		 * @return	a pointer to the new RenderableTerrain, nullptr if it
 		 *			failed */
-		RenderableTerrainUPtr createTerrainRenderable(
+		graphics::RenderableTerrain createTerrainRenderable(
 			float size, float maxHeight,
 			const Image<unsigned char>& heightMap,
 			const std::vector<float>& lodDistances,
-			const SplatmapMaterial& terrainMaterial, const char* programName
+			const char* techniqueName, const char* programName
 		);
 
 		/** Creates a new TerrainCollider from the given height map
@@ -111,8 +107,8 @@ namespace se::app {
 		 *			of the Terrain.
 		 * @param	scaleVector a vector with the scale of the TerrainCollider
 		 *			in each axis
-		 * @return	a pointer to the new TerrainCollider */
-		static TerrainColliderUPtr createTerrainCollider(
+		 * @return	a pointer to the new Collider */
+		static ColliderUPtr createTerrainCollider(
 			const Image<unsigned char>& heightMap, const glm::vec3& scaleVector
 		);
 

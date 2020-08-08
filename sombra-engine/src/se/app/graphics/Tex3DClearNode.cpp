@@ -1,21 +1,21 @@
 #include "se/app/graphics/Tex3DClearNode.h"
 #include "se/app/loaders/TechniqueLoader.h"
-#include "se/app/GraphicsManager.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
 
 namespace se::app {
 
-	Tex3DClearNode::Tex3DClearNode(const std::string& name, GraphicsManager& graphicsManager, std::size_t maxSize) :
-		BindableRenderNode(name), mMaxSize(maxSize)
+	Tex3DClearNode::Tex3DClearNode(
+		const std::string& name, utils::Repository& repository, std::size_t maxSize
+	) : BindableRenderNode(name), mMaxSize(maxSize)
 	{
-		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programTex3DClear");
+		auto programSPtr = repository.find<std::string, graphics::Program>("programTex3DClear");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram(
 				"res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl"
 			);
-			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programTex3DClear", std::move(program));
+			programSPtr = repository.add(std::string("programTex3DClear"), std::move(program));
 		}
 		addBindable(programSPtr);
 

@@ -1,7 +1,6 @@
 #include "se/app/graphics/Tex3DViewerNode.h"
 #include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/loaders/MeshLoader.h"
-#include "se/app/GraphicsManager.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -9,15 +8,15 @@
 
 namespace se::app {
 
-	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, GraphicsManager& graphicsManager, std::size_t maxSize) :
+	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, utils::Repository& repository, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize), mMinPosition(0.0f), mMaxPosition(0.0f), mNumInstances(0)
 	{
-		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programTex3DViewer");
+		auto programSPtr = repository.find<std::string, graphics::Program>("programTex3DViewer");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram(
 				"res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl"
 			);
-			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programTex3DViewer", std::move(program));
+			programSPtr = repository.add(std::string("programTex3DViewer"), std::move(program));
 		}
 		addBindable(programSPtr);
 

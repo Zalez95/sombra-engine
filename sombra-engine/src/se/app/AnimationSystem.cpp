@@ -9,22 +9,32 @@ namespace se::app {
 		ISystem(entityDatabase), mAnimationEngine(animationEngine)
 	{
 		mRootNode = std::make_unique<animation::AnimationNode>( animation::NodeData("AnimationSystem") );
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<animation::AnimationNode>());
+	}
+
+
+	AnimationSystem::~AnimationSystem()
+	{
+		mEntityDatabase.removeSystem(this);
 	}
 
 
 	void AnimationSystem::onNewEntity(Entity entity)
 	{
 		auto [transforms, node] = mEntityDatabase.getComponents<TransformsComponent, animation::AnimationNode>(entity);
-		if (!transforms || !node) {
+		if (!node) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
 			return;
 		}
 
-		// The Entity initial data is overridden by the AnimationNode one
-		transforms->position = node->getData().worldTransforms.position;
-		transforms->orientation = node->getData().worldTransforms.orientation;
-		transforms->scale = node->getData().worldTransforms.scale;
-		transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
+		if (transforms) {
+			// The Entity initial data is overridden by the AnimationNode one
+			transforms->position = node->getData().worldTransforms.position;
+			transforms->orientation = node->getData().worldTransforms.orientation;
+			transforms->scale = node->getData().worldTransforms.scale;
+			transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
+		}
+
 		//TODO:mRootNode->insert(mRootNode->cbegin(), std::move(node));
 		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << node << " added successfully";
 	}

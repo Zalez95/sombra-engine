@@ -35,6 +35,9 @@ namespace se::app {
 			animation::AnimationEngine& animationEngine
 		);
 
+		/** Class destructor */
+		~AnimationSystem();
+
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added
 		 *

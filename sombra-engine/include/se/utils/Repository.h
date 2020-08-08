@@ -2,7 +2,7 @@
 #define REPOSITORY_H
 
 #include <memory>
-#include <unordered_map>
+#include <vector>
 
 namespace se::utils {
 
@@ -13,15 +13,17 @@ namespace se::utils {
 	class Repository
 	{
 	private:	// Nested types
-		struct RepoTableTypes;
-		template <typename KeyType, typename ValueType> struct RepoTableType;
 		struct IRepoTable;
 		template <typename KeyType, typename ValueType> struct RepoTable;
 		using IRepoTableUPtr = std::unique_ptr<IRepoTable>;
 
 	private:	// Attributes
-		/** Maps each RepoTable type id with its respective RepoTable */
-		std::unordered_map<std::size_t, IRepoTableUPtr> mRepoTables;
+		/** The number of different RepoTable types */
+		static std::size_t sRepoTableTypeCount;
+
+		/** All the RepoTables added to the Repository indexed by their
+		 * RepoTable type Id */
+		std::vector<IRepoTableUPtr> mRepoTables;
 
 	public:		// Functions
 		/** Initializes the Repo so it can hold elements of @tparam ValueType
@@ -58,6 +60,11 @@ namespace se::utils {
 		template <typename KeyType, typename ValueType>
 		std::shared_ptr<ValueType> find(const KeyType& key);
 	private:
+		/** @return	the type id of the RepoTable with @tparam KeyType and
+		 *			@param ValueType */
+		template <typename KeyType, typename ValueType>
+		static std::size_t getRepoTableTypeId();
+
 		/** @return	a reference to the RepoTable with the given @tparam KeyType
 		 *			and @tparam ValueType */
 		template <typename KeyType, typename ValueType>

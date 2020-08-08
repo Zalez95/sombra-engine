@@ -22,6 +22,11 @@ namespace game {
 	/** Holds all the game systems and data */
 	struct GameData
 	{
+		se::utils::TaskManager* taskManager;
+		se::app::EventManager* eventManager;
+		se::app::EntityDatabase* entityDatabase;
+		se::utils::Repository* repository;
+
 		se::window::WindowSystem* windowSystem;
 		se::graphics::GraphicsEngine* graphicsEngine;
 		se::physics::PhysicsEngine* physicsEngine;
@@ -29,13 +34,16 @@ namespace game {
 		se::animation::AnimationEngine* animationEngine;
 		se::audio::AudioEngine* audioEngine;
 
-		se::app::EventManager* eventManager;
-		se::app::InputManager* inputManager;
-		se::app::GraphicsManager* graphicsManager;
-		se::app::PhysicsManager* physicsManager;
-		se::app::CollisionManager* collisionManager;
-		se::app::AnimationManager* animationManager;
-		se::app::AudioManager* audioManager;
+		se::app::InputSystem* inputSystem;
+		se::app::CameraSystem* cameraSystem;
+		se::app::AppRenderer* appRenderer;
+		se::app::RMeshSystem* rMeshSystem;
+		se::app::RTerrainSystem* rTerrainSystem;
+		se::app::DynamicsSystem* dynamicsSystem;
+		se::app::ConstraintsSystem* constraintsSystem;
+		se::app::CollisionSystem* collisionSystem;
+		se::app::AnimationSystem* animationSystem;
+		se::app::AudioSystem* audioSystem;
 		se::app::GUIManager* guiManager;
 
 		se::utils::StateMachine* stateMachine;

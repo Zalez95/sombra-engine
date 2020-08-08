@@ -4,11 +4,9 @@
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/3D/Mesh.h"
+#include "../../utils/Repository.h"
 
 namespace se::app {
-
-	class GraphicsManager;
-
 
 	/**
 	 * Class Tex3DViewerNode, it's a RenderNode used for visualizing the
@@ -47,13 +45,12 @@ namespace se::app {
 		/** Creates a new Tex3DViewerNode
 		 *
 		 * @param	name the name of the new Tex3DViewerNode
-		 * @param	graphicsManager the GraphicsManager that holds all the
-		 *			Programs
+		 * @param	repository the Repository that holds all the Programs
 		 * @param	maxSize the resolution of the 3D texture in each axis
 		 * @note	the initial mipmap level to draw will be the maximum
 		 *			available */
 		Tex3DViewerNode(
-			const std::string& name, GraphicsManager& graphicsManager,
+			const std::string& name, utils::Repository& repository,
 			std::size_t maxSize
 		);
 

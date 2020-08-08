@@ -1,7 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/VoxelizationNode.h"
 #include "se/app/loaders/TechniqueLoader.h"
-#include "se/app/GraphicsManager.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -9,16 +8,16 @@
 
 namespace se::app {
 
-	VoxelizationNode::VoxelizationNode(const std::string& name, GraphicsManager& graphicsManager, std::size_t maxVoxels) :
+	VoxelizationNode::VoxelizationNode(const std::string& name, utils::Repository& repository, std::size_t maxVoxels) :
 		Renderer3D(name), mMaxVoxels(maxVoxels), mMinPosition(0.0f), mMaxPosition(0.0f)
 	{
-		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programVoxelization");
+		auto programSPtr = repository.find<std::string, graphics::Program>("programVoxelization");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram(
 				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
 				"res/shaders/fragmentVoxelization.glsl"
 			);
-			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programVoxelization", std::move(program));
+			programSPtr = repository.add(std::string("programVoxelization"), std::move(program));
 		}
 		addBindable(programSPtr);
 

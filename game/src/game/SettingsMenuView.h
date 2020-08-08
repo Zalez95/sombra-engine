@@ -7,7 +7,6 @@
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
-#include <se/app/GraphicsManager.h>
 #include "SettingsMenuController.h"
 
 namespace game {
@@ -55,8 +54,7 @@ namespace game {
 			mSelectedWindowLabel(nullptr), mSelectedVSyncLabel(nullptr),
 			mPanel(&mGUIManager)
 		{
-			auto& repo = mGUIManager.getGraphicsManager().getRepository();
-			auto arial = repo.find<std::string, se::graphics::Font>("arial");
+			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mLabels.reserve(2 + 2 * 4);
@@ -147,8 +145,7 @@ namespace game {
 			const std::function<void()>& actionL,
 			const std::function<void()>& actionR
 		) {
-			auto& repo = mGUIManager.getGraphicsManager().getRepository();
-			auto arial = repo.find<std::string, se::graphics::Font>("arial");
+			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			auto& parameterLabel = mLabels.emplace_back(&mGUIManager);

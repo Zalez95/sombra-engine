@@ -2,30 +2,43 @@
 #include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
 #include "se/collision/Collider.h"
+#include "se/app/EntityDatabase.h"
 #include "se/app/CollisionSystem.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/events/CollisionEvent2.h"
+#include "se/app/events/CollisionEvent.h"
 
 namespace se::app {
 
 	CollisionSystem::CollisionSystem(
 		EntityDatabase& entityDatabase, EventManager& eventManager, collision::CollisionWorld& collisionWorld
-	) : ISystem(entityDatabase), mEventManager(eventManager), mCollisionWorld(collisionWorld) {}
+	) : ISystem(entityDatabase), mEventManager(eventManager), mCollisionWorld(collisionWorld)
+	{
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<collision::Collider>());
+	}
+
+
+	CollisionSystem::~CollisionSystem()
+	{
+		mEntityDatabase.removeSystem(this);
+	}
 
 
 	void CollisionSystem::onNewEntity(Entity entity)
 	{
 		auto [transforms, collider] = mEntityDatabase.getComponents<TransformsComponent, collision::Collider>(entity);
-		if (!transforms || !collider) {
+		if (!collider) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Collider";
 			return;
 		}
 
-		// The Collider initial data is overridden by the entity one
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-		glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-		glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
-		collider->setTransforms(translation * rotation * scale);
+		if (transforms) {
+			// The Collider initial data is overridden by the entity one
+			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
+			glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
+			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
+			collider->setTransforms(translation * rotation * scale);
+		}
+
 		mCollisionWorld.addCollider(collider);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Collider " << collider << " added successfully";
 	}

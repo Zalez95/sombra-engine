@@ -7,17 +7,22 @@ namespace se::physics { class PhysicsEngine; }
 namespace se::collision { struct CollisionWorldData; class CollisionWorld; }
 namespace se::animation { class AnimationEngine; }
 namespace se::audio { class AudioEngine; }
-namespace se::utils { class TaskManager; }
+namespace se::utils { class TaskManager; class Repository; }
 
 namespace se::app {
 
+	class EntityDatabase;
 	class EventManager;
-	class InputManager;
-	class GraphicsManager;
-	class PhysicsManager;
-	class CollisionManager;
-	class AnimationManager;
-	class AudioManager;
+	class InputSystem;
+	class CameraSystem;
+	class AppRenderer;
+	class RMeshSystem;
+	class RTerrainSystem;
+	class DynamicsSystem;
+	class ConstraintsSystem;
+	class CollisionSystem;
+	class AnimationSystem;
+	class AudioSystem;
 	class GUIManager;
 
 
@@ -38,6 +43,9 @@ namespace se::app {
 		};
 
 	protected:	// Attributes
+		static constexpr int kMaxEntities			= 1024;
+		static constexpr int kMaxTerrains			= 4;
+		static constexpr int kMaxCameras			= 4;
 		static constexpr int kMaxTasks				= 1024;
 		static constexpr float kBaseBias			= 0.1f;
 		static constexpr float kMinFDifference		= 0.00001f;
@@ -53,22 +61,29 @@ namespace se::app {
 		/** The vairable used for stopping the main loop */
 		bool mStopRunning;
 
+		utils::TaskManager* mTaskManager;
+		EventManager* mEventManager;
+		EntityDatabase* mEntityDatabase;
+		utils::Repository* mRepository;
+
 		window::WindowSystem* mWindowSystem;
 		graphics::GraphicsEngine* mGraphicsEngine;
 		physics::PhysicsEngine* mPhysicsEngine;
 		collision::CollisionWorld* mCollisionWorld;
 		animation::AnimationEngine* mAnimationEngine;
 		audio::AudioEngine* mAudioEngine;
-		utils::TaskManager* mTaskManager;
 
-		/** The managers that hold the data of the entities */
-		EventManager* mEventManager;
-		InputManager* mInputManager;
-		GraphicsManager* mGraphicsManager;
-		PhysicsManager* mPhysicsManager;
-		CollisionManager* mCollisionManager;
-		AnimationManager* mAnimationManager;
-		AudioManager* mAudioManager;
+		/** The Systems that hold and update the data of the entities */
+		InputSystem* mInputSystem;
+		CameraSystem* mCameraSystem;
+		AppRenderer* mAppRenderer;
+		RMeshSystem* mRMeshSystem;
+		RTerrainSystem* mRTerrainSystem;
+		DynamicsSystem* mDynamicsSystem;
+		ConstraintsSystem* mConstraintsSystem;
+		CollisionSystem* mCollisionSystem;
+		AnimationSystem* mAnimationSystem;
+		AudioSystem* mAudioSystem;
 		GUIManager* mGUIManager;
 
 	public:		// Functions
@@ -88,6 +103,15 @@ namespace se::app {
 
 		/** Class destructor */
 		virtual ~Application();
+
+		/** @return	a reference to the EventManager of the Application */
+		EventManager& getEventManager() { return *mEventManager; };
+
+		/** @return	a reference to the EntityDatabase of the Application */
+		EntityDatabase& getEntityDatabase() { return *mEntityDatabase; };
+
+		/** @return	a reference to the Repository of the Application */
+		utils::Repository& getRepository() { return *mRepository; };
 
 		/** Function used for starting the Application
 		 * @note	the current thread will be used by the Application until

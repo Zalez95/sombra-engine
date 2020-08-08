@@ -4,11 +4,9 @@
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/3D/Mesh.h"
+#include "../../utils/Repository.h"
 
 namespace se::app {
-
-	class GraphicsManager;
-
 
 	/**
 	 * Class Tex3DClearNode, it's a RenderNode used for clearing the
@@ -31,11 +29,10 @@ namespace se::app {
 		/** Creates a new Tex3DClearNode
 		 *
 		 * @param	name the name of the new Tex3DClearNode
-		 * @param	graphicsManager the GraphicsManager that holds all the
-		 *			Programs
+		 * @param	repository the Repository that holds all the Programs
 		 * @param	maxSize the resolution of the 3D texture in each axis */
 		Tex3DClearNode(
-			const std::string& name, GraphicsManager& graphicsManager,
+			const std::string& name, utils::Repository& repository,
 			std::size_t maxSize
 		);
 

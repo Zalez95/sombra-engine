@@ -4,22 +4,24 @@
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/events/CollisionEvent2.h"
+#include "se/app/events/CollisionEvent.h"
 
 namespace se::app {
 
 	ConstraintsSystem::ConstraintsSystem(
-		EntityDatabase& entityDatabase, physics::PhysicsEngine& physicsEngine,
-		EventManager& eventManager
-	) : ISystem(entityDatabase), mPhysicsEngine(physicsEngine), mEventManager(eventManager)
+		EntityDatabase& entityDatabase, EventManager& eventManager,
+		physics::PhysicsEngine& physicsEngine
+	) : ISystem(entityDatabase), mEventManager(eventManager), mPhysicsEngine(physicsEngine)
 	{
 		// TODO: reserve max contact constraints
 		mEventManager.subscribe(this, Topic::Collision);
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
 	}
 
 
 	ConstraintsSystem::~ConstraintsSystem()
 	{
+		mEntityDatabase.removeSystem(this);
 		mEventManager.unsubscribe(this, Topic::Collision);
 	}
 
@@ -27,6 +29,49 @@ namespace se::app {
 	void ConstraintsSystem::notify(const IEvent& event)
 	{
 		tryCall(&ConstraintsSystem::onCollisionEvent, event);
+	}
+
+
+	void ConstraintsSystem::onNewEntity(Entity entity)
+	{
+		auto [transforms, rb] = mEntityDatabase.getComponents<TransformsComponent, physics::RigidBody>(entity);
+		if (!rb) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RigidBody";
+			return;
+		}
+
+		if (transforms) {
+			// The RigidBody initial data is overridden by the entity one
+			rb->getData().position			= transforms->position;
+			rb->getData().linearVelocity	= transforms->velocity;
+			rb->getData().orientation		= transforms->orientation;
+			rb->synchWithData();
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
+	}
+
+
+	void ConstraintsSystem::onRemoveEntity(Entity entity)
+	{
+		auto [rb] = mEntityDatabase.getComponents<physics::RigidBody>(entity);
+		if (!rb) {
+			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
+			return;
+		}
+
+		for (auto it = mManifoldConstraintsMap.begin(); it != mManifoldConstraintsMap.end();) {
+			if ((it->second[0].normalConstraint.getRigidBody(0) == rb)
+				|| (it->second[0].normalConstraint.getRigidBody(1) == rb)
+			) {
+				it = mManifoldConstraintsMap.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
 
 

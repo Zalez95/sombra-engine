@@ -1,49 +1,60 @@
 #include <cassert>
-#include "se/app/loaders/TerrainLoader.h"
-#include "se/app/loaders/TechniqueLoader.h"
-#include "se/app/graphics/Material.h"
-#include "se/app/graphics/TextureUtils.h"
+#include "se/utils/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Renderer.h"
 #include "se/graphics/3D/RenderableTerrain.h"
 #include "se/physics/RigidBody.h"
 #include "se/collision/TerrainCollider.h"
+#include "se/app/EntityDatabase.h"
+#include "se/app/CameraSystem.h"
+#include "se/app/TagComponent.h"
+#include "se/app/TransformsComponent.h"
+#include "se/app/loaders/TerrainLoader.h"
+#include "se/app/graphics/Material.h"
+#include "se/app/graphics/TextureUtils.h"
 
 namespace se::app {
 
-	TerrainLoader::EntityUPtr TerrainLoader::createTerrain(
-		const std::string& name, float size, float maxHeight,
-		const Image<unsigned char>& heightMap, const std::vector<float>& lodDistances,
-		const SplatmapMaterial& terrainMaterial, const char* programName
+	Entity TerrainLoader::createTerrain(
+		const char* name, float size, float maxHeight, const Image<unsigned char>& heightMap,
+		const std::vector<float>& lodDistances, const char* techniqueName, const char* programName
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
 
 		// Entity
-		auto entity = std::make_unique<app::Entity>(name);
-		entity->scale = scaleVector;
+		auto entity = mEntityDatabase.addEntity();
+
+		// Name
+		TagComponent tag(name);
+		mEntityDatabase.addComponent(entity, std::move(tag));
+
+		// Transforms
+		TransformsComponent transforms;
+		transforms.scale = scaleVector;
+		mEntityDatabase.addComponent(entity, std::move(transforms));
 
 		// Graphics data
-		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, terrainMaterial, programName);
-		mGraphicsManager.addTerrainEntity(entity.get(), std::move(renderableTerrain));
+		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, techniqueName, programName);
+		mEntityDatabase.addComponent(entity, std::move(renderableTerrain));
 
 		// Physics data
 		physics::RigidBodyConfig config(0.2f);
 		config.frictionCoefficient = 1.0f;
-		auto rb = std::make_unique<physics::RigidBody>(config, physics::RigidBodyData());
-		mPhysicsManager.addEntity(entity.get(), std::move(rb));
+		physics::RigidBody rb(config, physics::RigidBodyData());
+		mEntityDatabase.addComponent(entity, std::move(rb));
 
 		// Collider data
 		auto terrainCollider = createTerrainCollider(heightMap, scaleVector);
-		mCollisionManager.addEntity(entity.get(), std::move(terrainCollider));
+		mEntityDatabase.addComponent(entity, std::move(terrainCollider));
 
 		return entity;
 	}
 
 // Private functions
-	TerrainLoader::RenderableTerrainUPtr TerrainLoader::createTerrainRenderable(
+	graphics::RenderableTerrain TerrainLoader::createTerrainRenderable(
 		float size, float maxHeight,
 		const Image<unsigned char>& heightMap, const std::vector<float>& lodDistances,
-		const SplatmapMaterial& terrainMaterial, const char* programName
+		const char* techniqueName, const char* programName
 	) {
 		auto heightMapTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		heightMapTexture->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
@@ -55,17 +66,13 @@ namespace se::app {
 
 		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMapTexture, heightMap.width, heightMap.height);
 
-		auto program = mGraphicsManager.getRepository().find<std::string, graphics::Program>(programName);
-		auto gBufferRenderer = static_cast<graphics::Renderer*>(mGraphicsManager.getGraphicsEngine().getRenderGraph().getNode("gBufferRenderer"));
-		auto terrainPass = mGraphicsManager.createPass3D(gBufferRenderer, program, true);
-		TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, program);
-		auto terrainTechnique = std::make_shared<se::graphics::Technique>();
-		terrainTechnique->addPass(terrainPass);
+		auto program = mRepository.find<std::string, graphics::Program>(programName);
+		auto technique = mRepository.find<std::string, graphics::Technique>(techniqueName);
 
-		auto renderable = std::make_unique<graphics::RenderableTerrain>(size, lodDistances);
+		graphics::RenderableTerrain renderable(size, lodDistances);
 		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap);
 		normalMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap);
-		renderable->addBindable(std::move(heightMapTexture))
+		renderable.addBindable(std::move(heightMapTexture))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
 				"uHeightMap", *program, SplatmapMaterial::TextureUnits::kHeightMap
 			))
@@ -80,13 +87,13 @@ namespace se::app {
 				"uMaxHeight", *program, maxHeight
 			));
 
-		renderable->addTechnique(terrainTechnique);
+		renderable.addTechnique(technique);
 
 		return renderable;
 	}
 
 
-	TerrainLoader::TerrainColliderUPtr TerrainLoader::createTerrainCollider(
+	TerrainLoader::ColliderUPtr TerrainLoader::createTerrainCollider(
 		const Image<unsigned char>& heightMap, const glm::vec3& scaleVector
 	) {
 		const std::size_t xSize = heightMap.width;

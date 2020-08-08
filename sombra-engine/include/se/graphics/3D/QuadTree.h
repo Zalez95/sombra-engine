@@ -3,6 +3,7 @@
 
 #include <array>
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 
 namespace se::graphics {
@@ -21,7 +22,7 @@ namespace se::graphics {
 			/** Pointers to the 4 child nodes of the current one in the
 			 * following order: top-left, top-right, bottom-left,
 			 * bottom-right */
-			std::array<Node*, 4> children;
+			std::array<std::unique_ptr<Node>, 4> children;
 
 			/** If the Node is a leaf Node or not */
 			bool isLeaf;
@@ -45,9 +46,6 @@ namespace se::graphics {
 
 			/** Creates a new Node */
 			Node();
-
-			/** Class destructor */
-			~Node();
 		};
 
 		/** Each of the directions of a Node */
@@ -64,7 +62,7 @@ namespace se::graphics {
 		const std::vector<float> mLodDistances;
 
 		/** The root node of the QuadTree */
-		Node mRootNode;
+		std::unique_ptr<Node> mRootNode;
 
 	public:		// Functions
 		/** Creates a new QuadTree
@@ -72,11 +70,10 @@ namespace se::graphics {
 		 * @param	size the size of the QuadTree in the XZ plane
 		 * @param	lodDistances the minimum distance to the highestLodLocation
 		 *			at each level of detail */
-		QuadTree(float size, const std::vector<float>& lodDistances) :
-			mSize(size), mLodDistances(lodDistances) {};
+		QuadTree(float size, const std::vector<float>& lodDistances);
 
 		/** @return	the root Node of the QuadTree */
-		const Node& getRootNode() const { return mRootNode; };
+		const Node& getRootNode() const { return *mRootNode; };
 
 		/** Updates the QuadTree nodes depending on the distance to the
 		 * highestLodLocation and the level of details

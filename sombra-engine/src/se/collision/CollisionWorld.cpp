@@ -73,14 +73,15 @@ namespace se::collision {
 			else {
 				// Create a new Manifold
 				if (mManifolds.size() < mManifolds.capacity()) {
-					auto manifoldIndex = mManifolds.emplace(pair.first, pair.second).getIndex();
-					mCollidersManifoldMap.emplace(
-						std::piecewise_construct,
-						std::forward_as_tuple(pair.first, pair.second),
-						std::forward_as_tuple(manifoldIndex)
-					);
-
-					mFineCollisionDetector.collide(mManifolds[manifoldIndex]);
+					Manifold manifold(pair.first, pair.second);
+					if (mFineCollisionDetector.collide(manifold)) {
+						auto manifoldIndex = mManifolds.emplace(std::move(manifold)).getIndex();
+						mCollidersManifoldMap.emplace(
+							std::piecewise_construct,
+							std::forward_as_tuple(pair.first, pair.second),
+							std::forward_as_tuple(manifoldIndex)
+						);
+					}
 				}
 				else {
 					SOMBRA_ERROR_LOG << "Can't create more Manifolds";

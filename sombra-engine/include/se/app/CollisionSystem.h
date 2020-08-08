@@ -13,7 +13,6 @@ namespace se::app {
 	class CollisionSystem : public ISystem
 	{
 	private:	// Nested types
-		using ColliderUPtr = std::unique_ptr<collision::Collider>;
 		using EntityRayCastPair = std::pair<Entity, collision::RayCast>;
 
 	private:	// Attributes
@@ -38,6 +37,9 @@ namespace se::app {
 			EntityDatabase& entityDatabase, EventManager& eventManager,
 			collision::CollisionWorld& collisionWorld
 		);
+
+		/** Class destructor */
+		~CollisionSystem();
 
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added

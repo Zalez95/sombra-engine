@@ -1,10 +1,11 @@
 #ifndef GUI_MANAGER_H
 #define GUI_MANAGER_H
 
+#include "../../graphics/GraphicsEngine.h"
+#include "../../utils/Repository.h"
 #include "../events/EventManager.h"
 #include "../events/ResizeEvent.h"
 #include "../events/MouseEvent.h"
-#include "../GraphicsManager.h"
 #include "ComposedComponent.h"
 
 namespace se::app {
@@ -19,8 +20,11 @@ namespace se::app {
 		/** The EventManager that will notify the events */
 		EventManager& mEventManager;
 
-		/** The GraphicsManager used for drawing the IComponents */
-		GraphicsManager& mGraphicsManager;
+		/** The GraphicsEngine used for rendering the GUI IComponents */
+		graphics::GraphicsEngine& mGraphicsEngine;
+
+		/** The Repository that holds the graphics data */
+		utils::Repository& mRepository;
 
 		/** The ComposedComponent that will hold every IComponent added to the
 		 * GUIManager */
@@ -31,23 +35,30 @@ namespace se::app {
 		 *
 		 * @param	eventManager a reference to the EventManager that the
 		 *			GUIManager will be subscribed to
-		 * @param	graphicsManager a reference to the GraphicsManager used for
-		 *			drawing the IComponents
+		 * @param	graphicsEngine a reference to the GraphicsEngine used for
+		 *			rendering the GUI IComponents
+		 * @param	repository a reference to the Repository that holds the
+		 *			graphics data
 		 * @param	initialWindowSize the initial window size
 		 * @note	it will create a program2D and a technique2D used for
 		 *			drawing the IComponents and store them in the
 		 *			GraphicsManager Repositories */
 		GUIManager(
 			EventManager& eventManager,
-			GraphicsManager& graphicsManager,
-			const glm::vec2& initialWindowSize
+			graphics::GraphicsEngine& graphicsEngine,
+			utils::Repository& repository, const glm::vec2& initialWindowSize
 		);
 
 		/** Class destructor */
 		~GUIManager();
 
-		/** @return	the GraphicsManager of the GUIManager */
-		GraphicsManager& getGraphicsManager() { return mGraphicsManager; };
+		/** @return	the GraphicsEngine of the GUIManager */
+		graphics::GraphicsEngine& getGraphicsEngine()
+		{ return mGraphicsEngine; };
+
+		/** @return	the Repository of the GUIManager */
+		utils::Repository& getRepository()
+		{ return mRepository; };
 
 		/** Adds the given component to the GUIComponent
 		 *

@@ -2,7 +2,6 @@
 #include <algorithm>
 #include "se/app/gui/Label.h"
 #include "se/app/gui/GUIManager.h"
-#include "se/app/GraphicsManager.h"
 #include "se/utils/StringUtils.h"
 
 namespace se::app {
@@ -98,12 +97,12 @@ namespace se::app {
 
 		if (wasVisible && !mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mGUIManager->getGraphicsManager().getGraphicsEngine().removeRenderable(renderable.get());
+				mGUIManager->getGraphicsEngine().removeRenderable(renderable.get());
 			}
 		}
 		else if (!wasVisible && mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mGUIManager->getGraphicsManager().getGraphicsEngine().addRenderable(renderable.get());
+				mGUIManager->getGraphicsEngine().addRenderable(renderable.get());
 			}
 		}
 	}
@@ -171,7 +170,7 @@ namespace se::app {
 		}
 
 		// Add more RenderableTexts
-		auto technique2D = mGUIManager->getGraphicsManager().getRepository().find<std::string, graphics::Technique>("technique2D");
+		auto technique2D = mGUIManager->getRepository().find<std::string, graphics::Technique>("technique2D");
 		while (mRenderableTexts.size() < lines.size()) {
 			auto& renderable = mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
 
@@ -181,14 +180,14 @@ namespace se::app {
 			}
 
 			if (mIsVisible) {
-				mGUIManager->getGraphicsManager().getGraphicsEngine().addRenderable(mRenderableTexts.back().get());
+				mGUIManager->getGraphicsEngine().addRenderable(mRenderableTexts.back().get());
 			}
 		}
 
 		// Remove unneeded RenderableTexts
 		while (mRenderableTexts.size() > lines.size()) {
 			if (mIsVisible) {
-				mGUIManager->getGraphicsManager().getGraphicsEngine().removeRenderable(mRenderableTexts.back().get());
+				mGUIManager->getGraphicsEngine().removeRenderable(mRenderableTexts.back().get());
 			}
 			mRenderableTexts.pop_back();
 		}

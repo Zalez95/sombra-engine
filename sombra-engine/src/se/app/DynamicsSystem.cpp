@@ -7,22 +7,34 @@
 namespace se::app {
 
 	DynamicsSystem::DynamicsSystem(EntityDatabase& entityDatabase, physics::PhysicsEngine& physicsEngine) :
-		ISystem(entityDatabase), mPhysicsEngine(physicsEngine) {}
+		ISystem(entityDatabase), mPhysicsEngine(physicsEngine)
+	{
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
+	}
+
+
+	DynamicsSystem::~DynamicsSystem()
+	{
+		mEntityDatabase.removeSystem(this);
+	}
 
 
 	void DynamicsSystem::onNewEntity(Entity entity)
 	{
 		auto [transforms, rb] = mEntityDatabase.getComponents<TransformsComponent, physics::RigidBody>(entity);
-		if (!transforms || !rb) {
+		if (!rb) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RigidBody";
 			return;
 		}
 
-		// The RigidBody initial data is overridden by the entity one
-		rb->getData().position			= transforms->position;
-		rb->getData().linearVelocity	= transforms->velocity;
-		rb->getData().orientation		= transforms->orientation;
-		rb->synchWithData();
+		if (transforms) {
+			// The RigidBody initial data is overridden by the entity one
+			rb->getData().position			= transforms->position;
+			rb->getData().linearVelocity	= transforms->velocity;
+			rb->getData().orientation		= transforms->orientation;
+			rb->synchWithData();
+		}
+
 		mPhysicsEngine.addRigidBody(rb);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
 	}

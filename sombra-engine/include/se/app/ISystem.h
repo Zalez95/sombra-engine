@@ -2,7 +2,7 @@
 #define I_SYSTEM_H
 
 #include "events/EventManager.h"
-#include "Entity2.h"
+#include "Entity.h"
 
 namespace se::app {
 

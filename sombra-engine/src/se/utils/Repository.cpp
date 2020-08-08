@@ -2,6 +2,6 @@
 
 namespace se::utils {
 
-	std::size_t Repository::RepoTableTypes::sCount = 0;
+	std::size_t Repository::sRepoTableTypeCount = 0;
 
 }

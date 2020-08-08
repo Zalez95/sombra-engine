@@ -1,8 +1,10 @@
 #include <numeric>
 #include <se/utils/Log.h>
+#include <se/utils/Repository.h>
 #include <se/app/loaders/FontReader.h>
-#include <se/app/GraphicsManager.h>
 #include <se/graphics/GraphicsEngine.h>
+#include <se/window/WindowSystem.h>
+#include <se/collision/CollisionWorld.h>
 #include "Game.h"
 #include "Level.h"
 #include "MainMenuController.h"
@@ -19,6 +21,11 @@ namespace game {
 		),
 		mGameData{}
 	{
+		mGameData.taskManager = mTaskManager;
+		mGameData.eventManager = mEventManager;
+		mGameData.entityDatabase = mEntityDatabase;
+		mGameData.repository = mRepository;
+
 		mGameData.windowSystem = mWindowSystem;
 		mGameData.graphicsEngine = mGraphicsEngine;
 		mGameData.physicsEngine = mPhysicsEngine;
@@ -26,13 +33,16 @@ namespace game {
 		mGameData.animationEngine = mAnimationEngine;
 		mGameData.audioEngine = mAudioEngine;
 
-		mGameData.eventManager = mEventManager;
-		mGameData.inputManager = mInputManager;
-		mGameData.graphicsManager = mGraphicsManager;
-		mGameData.physicsManager = mPhysicsManager;
-		mGameData.collisionManager = mCollisionManager;
-		mGameData.animationManager = mAnimationManager;
-		mGameData.audioManager = mAudioManager;
+		mGameData.inputSystem = mInputSystem;
+		mGameData.cameraSystem = mCameraSystem;
+		mGameData.appRenderer = mAppRenderer;
+		mGameData.rMeshSystem = mRMeshSystem;
+		mGameData.rTerrainSystem = mRTerrainSystem;
+		mGameData.dynamicsSystem = mDynamicsSystem;
+		mGameData.constraintsSystem = mConstraintsSystem;
+		mGameData.collisionSystem = mCollisionSystem;
+		mGameData.animationSystem = mAnimationSystem;
+		mGameData.audioSystem = mAudioSystem;
 		mGameData.guiManager = mGUIManager;
 
 		// State Machine
@@ -127,13 +137,13 @@ namespace game {
 				throw std::runtime_error("Error reading the font file");
 			}
 
-			auto arialSPtr = mGraphicsManager->getRepository().add<std::string, se::graphics::Font>("arial", std::move(arial));
+			auto arialSPtr = mRepository->add(std::string("arial"), std::move(arial));
 			if (!arialSPtr) {
 				throw std::runtime_error("Arial Font couldn't be added to the Repository");
 			}
 
 			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arialSPtr, { 0.0f, 1.0f, 0.0f, 1.0f });
-			mGameData.fpsText->addTechnique(mGraphicsManager->getRepository().find<std::string, se::graphics::Technique>("technique2D"));
+			mGameData.fpsText->addTechnique(mRepository->find<std::string, se::graphics::Technique>("technique2D"));
 			mGameData.fpsText->setZIndex(255);
 			mGraphicsEngine->addRenderable(mGameData.fpsText);
 		}

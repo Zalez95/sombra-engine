@@ -28,8 +28,10 @@ namespace se::app {
 		 * 			the AudioSystem to play the sound sources */
 		AudioSystem(
 			EntityDatabase& entityDatabase, audio::AudioEngine& audioEngine
-		) : ISystem(entityDatabase), mAudioEngine(audioEngine),
-			mListener(kNullEntity) {};
+		);
+
+		/** Class destructor */
+		~AudioSystem();
 
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added
