@@ -27,10 +27,10 @@ namespace se::app {
 		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
 
-		auto programSPtr = graphicsManager.getProgramRepository().find("programGaussianBlur");
+		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programGaussianBlur");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
-			programSPtr = graphicsManager.getProgramRepository().add("programGaussianBlur", std::move(program));
+			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programGaussianBlur", std::move(program));
 		}
 
 		addBindable(std::move(frameBuffer));

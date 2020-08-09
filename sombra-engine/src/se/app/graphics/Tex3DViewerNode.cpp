@@ -12,12 +12,12 @@ namespace se::app {
 	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, GraphicsManager& graphicsManager, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize), mMinPosition(0.0f), mMaxPosition(0.0f), mNumInstances(0)
 	{
-		auto programSPtr = graphicsManager.getProgramRepository().find("programTex3DViewer");
+		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programTex3DViewer");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram(
 				"res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl"
 			);
-			programSPtr = graphicsManager.getProgramRepository().add("programTex3DViewer", std::move(program));
+			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programTex3DViewer", std::move(program));
 		}
 		addBindable(programSPtr);
 

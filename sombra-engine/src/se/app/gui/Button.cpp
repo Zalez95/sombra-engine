@@ -14,7 +14,7 @@ namespace se::app {
 		mBounds->setPosition(mPosition);
 
 		mSprite.setZIndex(mZIndex);
-		auto technique2D = mGUIManager->getGraphicsManager().getTechniqueRepository().find("technique2D");
+		auto technique2D = mGUIManager->getGraphicsManager().getRepository().find<std::string, graphics::Technique>("technique2D");
 		if (technique2D) {
 			mSprite.addTechnique(technique2D);
 		}

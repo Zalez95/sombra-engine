@@ -10,12 +10,12 @@ namespace se::app {
 	Tex3DClearNode::Tex3DClearNode(const std::string& name, GraphicsManager& graphicsManager, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize)
 	{
-		auto programSPtr = graphicsManager.getProgramRepository().find("programTex3DClear");
+		auto programSPtr = graphicsManager.getRepository().find<std::string, graphics::Program>("programTex3DClear");
 		if (!programSPtr) {
 			auto program = TechniqueLoader::createProgram(
 				"res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl"
 			);
-			programSPtr = graphicsManager.getProgramRepository().add("programTex3DClear", std::move(program));
+			programSPtr = graphicsManager.getRepository().add<std::string, graphics::Program>("programTex3DClear", std::move(program));
 		}
 		addBindable(programSPtr);
 

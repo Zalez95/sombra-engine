@@ -1,4 +1,5 @@
 #include <array>
+#include <string>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/GraphicsManager.h"
@@ -121,6 +122,12 @@ namespace se::app {
 		SOMBRA_INFO_LOG << graphics::GraphicsOperations::getGraphicsInfo();
 
 		mImpl = std::make_unique<Impl>();
+
+		// Initialize the Repository
+		mRepository.init<std::string, graphics::Technique>();
+		mRepository.init<std::string, graphics::Program>();
+		mRepository.init<std::string, graphics::Texture>();
+		mRepository.init<std::string, graphics::Font>();
 
 		{	// Create the FBClearNodes
 			auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
@@ -273,7 +280,7 @@ namespace se::app {
 					if (!programCombineHDR) {
 						throw std::runtime_error("programCombineHDR not found");
 					}
-					auto program = graphicsManager.getProgramRepository().add("programCombineHDR", std::move(programCombineHDR));
+					auto program = graphicsManager.getRepository().add<std::string, graphics::Program>("programCombineHDR", std::move(programCombineHDR));
 
 					addBindable(program);
 					addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
@@ -364,7 +371,7 @@ namespace se::app {
 			if (!programDeferredLighting) {
 				throw std::runtime_error("programDeferredLighting not found");
 			}
-			auto program = mProgramRepository.add("programDeferredLighting", std::move(programDeferredLighting));
+			auto program = mRepository.add<std::string, graphics::Program>("programDeferredLighting", std::move(programDeferredLighting));
 
 			mImpl->lightingPass	= std::make_shared<graphics::Pass>(*rendererDeferredLight);
 			mImpl->viewPosition	= std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));

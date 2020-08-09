@@ -171,7 +171,7 @@ namespace se::app {
 		}
 
 		// Add more RenderableTexts
-		auto technique2D = mGUIManager->getGraphicsManager().getTechniqueRepository().find("technique2D");
+		auto technique2D = mGUIManager->getGraphicsManager().getRepository().find<std::string, graphics::Technique>("technique2D");
 		while (mRenderableTexts.size() < lines.size()) {
 			auto& renderable = mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
 

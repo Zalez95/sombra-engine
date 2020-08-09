@@ -38,15 +38,6 @@ namespace se::app {
 	private:	// Nested types
 		friend class TechniqueLoader;
 
-		using FontRepository =
-			utils::Repository<std::string, graphics::Font>;
-		using TextureRepository =
-			utils::Repository<std::string, graphics::Texture>;
-		using ProgramRepository =
-			utils::Repository<std::string, graphics::Program>;
-		using TechniqueRepository =
-			utils::Repository<std::string, graphics::Technique>;
-
 		using CameraUPtr = std::unique_ptr<Camera>;
 		using LightSourceUPtr = std::unique_ptr<LightSource>;
 		using SkinSPtr = std::shared_ptr<Skin>;
@@ -77,21 +68,9 @@ namespace se::app {
 		/** The EventManager that will notify the events */
 		EventManager& mEventManager;
 
-		/** The repository that holds all the Fonts of the
+		/** The repository that holds all the graphics data of the
 		 * GraphicsManager */
-		FontRepository mFontRepository;
-
-		/** The repository that holds all the Textures of the
-		 * GraphicsManager */
-		TextureRepository mTextureRepository;
-
-		/** The repository that holds all the Programs of the
-		 * GraphicsManager */
-		ProgramRepository mProgramRepository;
-
-		/** The repository that holds all the Techniques of the
-		 * GraphicsManager */
-		TechniqueRepository mTechniqueRepository;
+		utils::Repository mRepository;
 
 		/** Holds all the implementation details of the GraphicsManager */
 		std::unique_ptr<Impl> mImpl;
@@ -118,21 +97,8 @@ namespace se::app {
 		graphics::GraphicsEngine& getGraphicsEngine()
 		{ return mGraphicsEngine; };
 
-		/** @return	the FontRepository of the GraphicsManager */
-		FontRepository& getFontRepository()
-		{ return mFontRepository; };
-
-		/** @return	the TextureRepository of the GraphicsManager */
-		TextureRepository& getTextureRepository()
-		{ return mTextureRepository; };
-
-		/** @return	the ProgramRepository of the GraphicsManager */
-		ProgramRepository& getProgramRepository()
-		{ return mProgramRepository; };
-
-		/** @return	the TechniqueRepository of the GraphicsManager */
-		TechniqueRepository& getTechniqueRepository()
-		{ return mTechniqueRepository; };
+		/** @return	the Repository of the GraphicsManager */
+		utils::Repository& getRepository() { return mRepository; };
 
 		/** Notifies the GraphicsManager of the given event
 		 *

@@ -210,28 +210,28 @@ namespace game {
 			if (!programSky) {
 				throw std::runtime_error("programSky not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programSky", std::move(programSky));
+			mGameData.graphicsManager->getRepository().add<std::string, se::graphics::Program>("programSky", std::move(programSky));
 
 			auto programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterial) {
 				throw std::runtime_error("programGBufMaterial not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programGBufMaterial", std::move(programGBufMaterial));
+			mGameData.graphicsManager->getRepository().add<std::string, se::graphics::Program>("programGBufMaterial", std::move(programGBufMaterial));
 
 			auto programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterialSkinning) {
 				throw std::runtime_error("programGBufMaterialSkinning not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programGBufMaterialSkinning", std::move(programGBufMaterialSkinning));
+			mGameData.graphicsManager->getRepository().add<std::string, se::graphics::Program>("programGBufMaterialSkinning", std::move(programGBufMaterialSkinning));
 
 			auto programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
 			if (!programGBufSplatmap) {
 				throw std::runtime_error("programGBufSplatmap not found");
 			}
-			mGameData.graphicsManager->getProgramRepository().add("programGBufSplatmap", std::move(programGBufSplatmap));
+			mGameData.graphicsManager->getRepository().add<std::string, se::graphics::Program>("programGBufSplatmap", std::move(programGBufSplatmap));
 
 			// Fonts
-			arial = mGameData.graphicsManager->getFontRepository().find("arial");
+			arial = mGameData.graphicsManager->getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) {
 				throw std::runtime_error("Arial font not found");
 			}
@@ -340,14 +340,14 @@ namespace game {
 
 		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
 		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
-		auto programGBufMaterial = mGameData.graphicsManager->getProgramRepository().find("programGBufMaterial");
+		auto programGBufMaterial = mGameData.graphicsManager->getRepository().find<std::string, se::graphics::Program>("programGBufMaterial");
 
 		// Forces
 		mForces.push_back(new se::physics::Gravity({ 0.0f, -9.8f, 0.0f }));
 		se::physics::Force* gravity = mForces.back();
 
 		// Renderable2Ds
-		auto technique2D = mGameData.graphicsManager->getTechniqueRepository().find("technique2D");
+		auto technique2D = mGameData.graphicsManager->getRepository().find<std::string, se::graphics::Technique>("technique2D");
 		mLogoTexture = new se::graphics::RenderableSprite(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
 		mLogoTexture->addTechnique(technique2D);
 		mLogoTexture->setZIndex(255);
@@ -395,7 +395,7 @@ namespace game {
 			auto skyEntity = std::make_unique<se::app::Entity>("sky");
 			skyEntity->scale = glm::vec3(kZFar / 2.0f);
 
-			auto programSky = mGameData.graphicsManager->getProgramRepository().find("programSky");
+			auto programSky = mGameData.graphicsManager->getRepository().find<std::string, se::graphics::Program>("programSky");
 			auto passSky = mGameData.graphicsManager->createPass3D(forwardRenderer, programSky, true);
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(skyTexture)

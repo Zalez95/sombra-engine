@@ -127,13 +127,13 @@ namespace game {
 				throw std::runtime_error("Error reading the font file");
 			}
 
-			auto arialSPtr = mGraphicsManager->getFontRepository().add("arial", std::move(arial));
+			auto arialSPtr = mGraphicsManager->getRepository().add<std::string, se::graphics::Font>("arial", std::move(arial));
 			if (!arialSPtr) {
 				throw std::runtime_error("Arial Font couldn't be added to the Repository");
 			}
 
 			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arialSPtr, { 0.0f, 1.0f, 0.0f, 1.0f });
-			mGameData.fpsText->addTechnique(mGraphicsManager->getTechniqueRepository().find("technique2D"));
+			mGameData.fpsText->addTechnique(mGraphicsManager->getRepository().find<std::string, se::graphics::Technique>("technique2D"));
 			mGameData.fpsText->setZIndex(255);
 			mGraphicsEngine->addRenderable(mGameData.fpsText);
 		}

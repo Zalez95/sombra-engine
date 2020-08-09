@@ -55,7 +55,8 @@ namespace game {
 			mSelectedWindowLabel(nullptr), mSelectedVSyncLabel(nullptr),
 			mPanel(&mGUIManager)
 		{
-			auto arial = mGUIManager.getGraphicsManager().getFontRepository().find("arial");
+			auto& repo = mGUIManager.getGraphicsManager().getRepository();
+			auto arial = repo.find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mLabels.reserve(2 + 2 * 4);
@@ -146,7 +147,8 @@ namespace game {
 			const std::function<void()>& actionL,
 			const std::function<void()>& actionR
 		) {
-			auto arial = mGUIManager.getGraphicsManager().getFontRepository().find("arial");
+			auto& repo = mGUIManager.getGraphicsManager().getRepository();
+			auto arial = repo.find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			auto& parameterLabel = mLabels.emplace_back(&mGUIManager);

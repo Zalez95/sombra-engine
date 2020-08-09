@@ -15,11 +15,11 @@ namespace se::app {
 		if (!program) {
 			throw std::runtime_error("program2D couldn't be created");
 		}
-		auto program2D = mGraphicsManager.getProgramRepository().add("program2D", std::move(program));
+		auto program2D = mGraphicsManager.getRepository().add<std::string, graphics::Program>("program2D", std::move(program));
 
 		auto technique2D = std::make_unique<graphics::Technique>();
 		technique2D->addPass( mGraphicsManager.createPass2D(program2D) );
-		mGraphicsManager.getTechniqueRepository().add("technique2D", std::move(technique2D));
+		mGraphicsManager.getRepository().add<std::string, graphics::Technique>("technique2D", std::move(technique2D));
 	}
 
 
