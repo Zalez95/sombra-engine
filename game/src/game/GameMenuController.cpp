@@ -5,10 +5,10 @@
 
 namespace game {
 
-	GameMenuController::GameMenuController(GameData& gameData) : IGameScreen(gameData), mView(nullptr)
+	GameMenuController::GameMenuController(Game& game) : IGameScreen(game), mView(nullptr)
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mView = new GameMenuView(*mGameData.guiManager, *this);
+		mView = new GameMenuView(mGame, *this);
 		SOMBRA_DEBUG_LOG << "end";
 	}
 
@@ -27,7 +27,7 @@ namespace game {
 	void GameMenuController::onBack()
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::RemoveGameMenu));
+		mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::RemoveGameMenu));
 		SOMBRA_DEBUG_LOG << "end";
 	}
 
@@ -35,7 +35,7 @@ namespace game {
 	void GameMenuController::onQuit()
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
+		mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
 		SOMBRA_DEBUG_LOG << "end";
 	}
 

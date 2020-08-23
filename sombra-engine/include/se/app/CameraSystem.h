@@ -2,104 +2,68 @@
 #define CAMERA_SYSTEM_H
 
 #include <memory>
-#include <vector>
-#include <glm/glm.hpp>
+#include <unordered_map>
+#include "../utils/PackedVector.h"
 #include "../graphics/Pass.h"
-#include "../graphics/core/Program.h"
 #include "../graphics/core/UniformVariable.h"
+#include "../graphics/3D/Renderable3D.h"
 #include "ISystem.h"
+#include "events/ContainerEvent.h"
 
 namespace se::app {
 
-	class Camera;
-	class ResizeEvent;
+	class Application;
 
 
 	/**
 	 * Class CameraSystem, it's the System used for updating the Entities
-	 * Cameras
+	 * Cameras, and the view and projection matrices on their shaders
 	 */
 	class CameraSystem : public ISystem
 	{
 	private:	// Nested types
-		friend class RMeshSystem;
-		friend class RTerrainSystem;
-		friend class LightSourceSystem;
-
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
-		using ProgramSPtr = std::shared_ptr<graphics::Program>;
 		using Mat4Uniform = std::shared_ptr<
 			graphics::UniformVariableValue<glm::mat4>
 		>;
 
+		/** Struct PassData, holds the shared uniform variables between the
+		 * Renderables */
 		struct PassData
 		{
-			bool is2D;
+			std::size_t userCount = 0;
 			PassSPtr pass;
-			ProgramSPtr program;
 			Mat4Uniform viewMatrix;
 			Mat4Uniform projectionMatrix;
-
-			PassData(bool is2D) : is2D(is2D) {};
 		};
 
 	private:	// Attributes
-		/** The passes added to the CameraSystem */
-		std::vector<PassData> mPassesData;
+		/** The Application that holds the Scene with the Repository with the
+		 * Passes and Programs */
+		Application& mApplication;
 
-		/** The width of the window */
-		std::size_t mWidth;
-
-		/** The height of the window */
-		std::size_t mHeight;
-
-		/** A pointer to the current active camera with which the scene will
-		 * be rendered */
-		Camera* mActiveCamera;
+		/** The Entity that holds the current active camera with which the
+		 * scene will be rendered */
+		Entity mCameraEntity;
 
 		/** If the active camera has been updated or not */
-		bool mActiveCameraUpdated;
+		bool mCameraUpdated;
+
+		/** The shared uniform variables of the Passes */
+		utils::PackedVector<PassData> mPassesData;
+
+		/** Maps each Entity with its respective PassData indices */
+		std::unordered_map<Entity, std::vector<std::size_t>> mEntityPasses;
 
 	public:		// Functions
 		/** Creates a new CameraSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	width the initial width of the window
-		 * @param	height the initial height of the window */
-		CameraSystem(
-			EntityDatabase& entityDatabase,
-			std::size_t width, std::size_t height
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		CameraSystem(Application& application);
 
 		/** Class destructor */
 		~CameraSystem();
-
-		/** @return	a pointer to the active Camera */
-		Camera* getActiveCamera() { return mActiveCamera; };
-
-		/** @return	true if the active Camera position was updated in the
-		 *			last frame */
-		bool wasCameraUpdated() { return mActiveCameraUpdated; };
-
-		/** Creates a new Pass and adds the uniform variables for the cameras
-		 *
-		 * @param	renderer a pointer to the Renderer of the new Pass
-		 * @param	program a pointer to the program of the new Pass
-		 * @return	the new Pass */
-		PassSPtr createPass2D(
-			graphics::Renderer* renderer, ProgramSPtr program
-		);
-
-		/** Creates a new Pass and adds the uniform variables for the cameras
-		 * and lightning
-		 *
-		 * @param	renderer a pointer to the Renderer of the new Pass
-		 * @param	program a pointer to the Program of the new Pass
-		 * @return	the new Pass */
-		PassSPtr createPass3D(
-			graphics::Renderer* renderer, ProgramSPtr program
-		);
 
 		/** Notifies the CameraSystem of the given event
 		 *
@@ -121,11 +85,21 @@ namespace se::app {
 		/** Updates the Cameras sources with the Entities */
 		virtual void update() override;
 	private:
-		/** Handles the given ResizeEvent by notifying the GraphicsEngine of
-		 * the window resize
+		/** Handles the given ContainerEvent by updating the Camera Entity with
+		 * which the Scene will be rendered
 		 *
-		 * @param	event the ResizeEvent to handle */
-		void onResizeEvent(const ResizeEvent& event);
+		 * @param	event the ContainerEvent to handle */
+		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
+
+		/** Processes the passes of the given renderable adding them their
+		 * respective shared uniforms
+		 *
+		 * @param	renderable the Renderable3D to process
+		 * @param	output the vector where the indices of the passes in
+		 *			@see mPassesData will be appended */
+		void processPasses(
+			graphics::Renderable3D& renderable, std::vector<std::size_t>& output
+		);
 	};
 
 }

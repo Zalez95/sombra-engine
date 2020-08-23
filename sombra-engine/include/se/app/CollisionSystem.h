@@ -1,10 +1,13 @@
 #ifndef COLLISION_SYSTEM_H
 #define COLLISION_SYSTEM_H
 
-#include "../collision/CollisionWorld.h"
+#include "../collision/RayCast.h"
 #include "ISystem.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class CollisionSystem, it's a System used for updating the Entities'
@@ -16,27 +19,17 @@ namespace se::app {
 		using EntityRayCastPair = std::pair<Entity, collision::RayCast>;
 
 	private:	// Attributes
-		/** The EventManager used for notifying events */
-		EventManager& mEventManager;
-
-		/** The CollisionWorld used for detecting the collisions the data of
-		 * the Colliders */
-		collision::CollisionWorld& mCollisionWorld;
+		/** The Application that holds the CollisionWorld and the EventManager
+		 * used for detecting the collisions between the Entities' Colliders
+		 * and notifying them */
+		Application& mApplication;
 
 	public:		// Functions
 		/** Creates a new CollisionSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	eventManager a reference to the EventManager that the
-		 *			CollisionSystem will use to notify the detected
-		 *			collisions
-		 * @param	collisionWorld a reference to the CollisionWorld used
-		 *			by the CollisionSystem */
-		CollisionSystem(
-			EntityDatabase& entityDatabase, EventManager& eventManager,
-			collision::CollisionWorld& collisionWorld
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		CollisionSystem(Application& application);
 
 		/** Class destructor */
 		~CollisionSystem();

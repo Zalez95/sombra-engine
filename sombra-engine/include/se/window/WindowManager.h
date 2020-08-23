@@ -1,5 +1,5 @@
-#ifndef WINDOW_SYSTEM_H
-#define WINDOW_SYSTEM_H
+#ifndef WINDOW_MANAGER_H
+#define WINDOW_MANAGER_H
 
 #include <string>
 #include <functional>
@@ -37,10 +37,10 @@ namespace se::window {
 
 
 	/**
-	 * Class WindowSystem, It's used to create and manage windows and checking
+	 * Class WindowManager, It's used to create and manage windows and checking
 	 * the user input data (polling)
 	 */
-	class WindowSystem
+	class WindowManager
 	{
 	private:	// Attributes
 		/** The config of the window */
@@ -70,12 +70,12 @@ namespace se::window {
 		 *
 		 * @param	windowData the window data used to create the Window
 		 * @throw	runtime_error if the window couldn't be created */
-		WindowSystem(const WindowData& windowData);
+		WindowManager(const WindowData& windowData);
 
 		/** Class destructor, destroys the window and stops GLFW */
-		~WindowSystem();
+		~WindowManager();
 
-		/** @return	the current window data of the WindowSystem */
+		/** @return	the current window data of the WindowManager */
 		const WindowData& getWindowData() const { return mWindowData; };
 
 		/** @return	true if the window is closed */
@@ -161,4 +161,4 @@ namespace se::window {
 
 }
 
-#endif		// WINDOW_SYSTEM_H
+#endif		// WINDOW_MANAGER_H

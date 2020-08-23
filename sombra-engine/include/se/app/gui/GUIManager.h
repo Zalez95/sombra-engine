@@ -1,14 +1,17 @@
 #ifndef GUI_MANAGER_H
 #define GUI_MANAGER_H
 
-#include "../../graphics/GraphicsEngine.h"
-#include "../../utils/Repository.h"
+#include <memory>
 #include "../events/EventManager.h"
 #include "../events/ResizeEvent.h"
 #include "../events/MouseEvent.h"
 #include "ComposedComponent.h"
+#include "../../graphics/core/UniformVariable.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class GUIManager, it's the manager used for notifying of the user input
@@ -17,48 +20,36 @@ namespace se::app {
 	class GUIManager : public IEventListener
 	{
 	private:	// Attributes
-		/** The EventManager that will notify the events */
-		EventManager& mEventManager;
-
-		/** The GraphicsEngine used for rendering the GUI IComponents */
-		graphics::GraphicsEngine& mGraphicsEngine;
-
-		/** The Repository that holds the graphics data */
-		utils::Repository& mRepository;
+		/** The Application that holds the EventManager that will notify the
+		 * GUI events and the GraphicsEngine used for rendering the GUI */
+		Application& mApplication;
 
 		/** The ComposedComponent that will hold every IComponent added to the
 		 * GUIManager */
 		ComposedComponent mRootComponent;
 
+		/** The projection matrix used for rendering the 2D IComponents */
+		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
+			mProjectionMatrix;
+
 	public:		// Functions
 		/** Creates a new GUIManager
 		 *
-		 * @param	eventManager a reference to the EventManager that the
-		 *			GUIManager will be subscribed to
-		 * @param	graphicsEngine a reference to the GraphicsEngine used for
-		 *			rendering the GUI IComponents
-		 * @param	repository a reference to the Repository that holds the
-		 *			graphics data
+		 * @param	application a reference to the Application that holds the
+		 *			GUIManager
 		 * @param	initialWindowSize the initial window size
 		 * @note	it will create a program2D and a technique2D used for
 		 *			drawing the IComponents and store them in the
 		 *			GraphicsManager Repositories */
 		GUIManager(
-			EventManager& eventManager,
-			graphics::GraphicsEngine& graphicsEngine,
-			utils::Repository& repository, const glm::vec2& initialWindowSize
+			Application& application, const glm::vec2& initialWindowSize
 		);
 
 		/** Class destructor */
 		~GUIManager();
 
-		/** @return	the GraphicsEngine of the GUIManager */
-		graphics::GraphicsEngine& getGraphicsEngine()
-		{ return mGraphicsEngine; };
-
-		/** @return	the Repository of the GUIManager */
-		utils::Repository& getRepository()
-		{ return mRepository; };
+		/** @return	a reference to the Application that holds the GUIManager */
+		Application& getApplication() { return mApplication; };
 
 		/** Adds the given component to the GUIComponent
 		 *

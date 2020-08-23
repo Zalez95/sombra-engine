@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include "core/Bindable.h"
 
 namespace se::graphics {
@@ -19,6 +20,7 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using BindableSPtr = std::shared_ptr<Bindable>;
+		using BindableCallback = std::function<void(const BindableSPtr&)>;
 
 	private:	// Attributes
 		/** The Renderer where the Renderables will be submitted */
@@ -43,6 +45,12 @@ namespace se::graphics {
 		 * @param	bindable a pointer to the Bindable to add
 		 * @return	a reference to the current Pass object */
 		Pass& addBindable(BindableSPtr bindable);
+
+		/** Iterates through all the Bindables of the Pass calling the given
+		 * callback function
+		 *
+		 * @param	callback the function to call for each Bindable */
+		void processBindables(const BindableCallback& callback);
 
 		/** Removes a Bindable from the current Pass
 		 *

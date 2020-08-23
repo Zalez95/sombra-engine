@@ -20,6 +20,14 @@ namespace se::graphics {
 	}
 
 
+	void Pass::processBindables(const BindableCallback& callback)
+	{
+		for (auto& bindable : mBindables) {
+			callback(bindable);
+		}
+	}
+
+
 	Pass& Pass::removeBindable(BindableSPtr bindable)
 	{
 		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());

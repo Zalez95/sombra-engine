@@ -18,7 +18,7 @@ namespace se::graphics {
 	{
 	protected:	// Nested types
 		using TechniqueSPtr = std::shared_ptr<Technique>;
-		using TechniqueCallback = std::function<void(TechniqueSPtr)>;
+		using TechniqueCallback = std::function<void(const TechniqueSPtr&)>;
 
 	protected:	// Attributes
 		/** All the Techniques of the Renderable */
@@ -30,8 +30,9 @@ namespace se::graphics {
 
 		/** Adds a Technique to the current Renderable
 		 *
-		 * @param	technique a pointer to the Technique to add */
-		void addTechnique(TechniqueSPtr technique);
+		 * @param	technique a pointer to the Technique to add
+		 * @return	a reference to the current Renderable object */
+		Renderable& addTechnique(TechniqueSPtr technique);
 
 		/** Iterates through all the technique of the Renderable calling the
 		 * given callback function
@@ -41,8 +42,9 @@ namespace se::graphics {
 
 		/** Removes a Technique from the current Renderable
 		 *
-		 * @param	technique a pointer to the Technique to remove */
-		void removeTechnique(TechniqueSPtr technique);
+		 * @param	technique a pointer to the Technique to remove
+		 * @return	a reference to the current Renderable object */
+		Renderable& removeTechnique(TechniqueSPtr technique);
 
 		/** Submits the Renderable to its Techniques */
 		void submit();

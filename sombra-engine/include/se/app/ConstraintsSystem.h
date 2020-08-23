@@ -2,17 +2,15 @@
 #define CONSTRAINTS_SYSTEM_H
 
 #include <map>
-#include <memory>
-#include "../physics/PhysicsEngine.h"
 #include "../physics/constraints/NormalConstraint.h"
 #include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
 #include "../utils/FixedVector.h"
-#include "events/EventManager.h"
 #include "ISystem.h"
 
 namespace se::app {
 
+	class Application;
 	class CollisionEvent;
 
 
@@ -51,11 +49,10 @@ namespace se::app {
 		/** The gravity acceleration value of all the FrictionConstraints */
 		static constexpr float kFrictionGravityAcceleration = 9.8f;
 
-		/** The EventManager that will notify the events */
-		EventManager& mEventManager;
-
-		/** The Engine used for updating the data of the PhysicsEntities */
-		physics::PhysicsEngine& mPhysicsEngine;
+		/** The Application that holds the PhysicsEngine and the EventManager
+		 * used for updating Entities' RigidBodies and being notified of the
+		 * Collisions */
+		Application& mApplication;
 
 		/** The NormalConstraints generated as a consecuence of the
 		 * PhysicsEntities collisions */
@@ -65,16 +62,9 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new ConstraintsSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	eventManager a reference to the EventManager that the
-		 *			ConstraintsSystem will be subscribed to
-		 * @param	physicsEngine a reference to the PhysicsEngine used
-		 *			by the ConstraintsSystem */
-		ConstraintsSystem(
-			EntityDatabase& entityDatabase, EventManager& eventManager,
-			physics::PhysicsEngine& physicsEngine
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		ConstraintsSystem(Application& application);
 
 		/** Class destructor */
 		~ConstraintsSystem();

@@ -19,7 +19,7 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using PassSPtr = std::shared_ptr<Pass>;
-		using PassCallback = std::function<void(PassSPtr)>;
+		using PassCallback = std::function<void(const PassSPtr&)>;
 
 	private:	// Attributes
 		/** All the Passes of the Technique */
@@ -28,7 +28,8 @@ namespace se::graphics {
 	public:		// Functions
 		/** Adds the given Pass to the Technique
 		 *
-		 * @param	pass a pointer to the Pass to add to the Technique */
+		 * @param	pass a pointer to the Pass to add to the Technique
+		 * @return	a reference to the current Technique object */
 		Technique& addPass(PassSPtr pass);
 
 		/** Iterates through all the Passes of the Technique calling the given
@@ -39,7 +40,8 @@ namespace se::graphics {
 
 		/** Removes a Pass from the current Technique
 		 *
-		 * @param	pass a pointer to the Pass to remove */
+		 * @param	pass a pointer to the Pass to remove
+		 * @return	a reference to the current Technique object */
 		Technique& removePass(PassSPtr pass);
 
 		/** Submits the given Renderable for rendering with the current

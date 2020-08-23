@@ -54,7 +54,7 @@ namespace se::app {
 			throw std::runtime_error("Error while reading the heighMap \"" + heightMapPath + "\": " + result.description());
 		}
 
-		return mTerrainLoader.createTerrain(name.c_str(), size, maxHeight, heightMap, {}, nullptr, nullptr);
+		return mTerrainLoader.createTerrain(name.c_str(), size, maxHeight, heightMap, {}, nullptr);
 	}
 
 }

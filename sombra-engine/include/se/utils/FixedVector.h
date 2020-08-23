@@ -185,7 +185,7 @@ namespace se::utils {
 		 * @param	numElements the new number of elements stored inside the
 		 *			FixedVector
 		 * @note	the new number of elements will be set to @tparam N if
-		 *			@param numElements is larger */
+		 *			numElements is larger */
 		void resize(size_type numElements);
 
 		/** Adds a new Element at the back of the FixedVector

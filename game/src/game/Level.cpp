@@ -4,18 +4,21 @@
 #include <AudioFile.h>
 
 #include <se/window/KeyCodes.h>
+#include <se/window/WindowManager.h>
 
 #include <se/app/graphics/Image.h>
 #include <se/app/graphics/RawMesh.h>
 #include <se/app/graphics/Camera.h>
 #include <se/app/graphics/LightSource.h>
+#include <se/app/graphics/LightProbe.h>
 #include <se/app/graphics/Material.h>
 #include <se/app/graphics/TextureUtils.h>
+#include <se/app/events/ContainerEvent.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/ImageReader.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
-#include <se/app/loaders/SceneReader.h>
+//#include <se/app/loaders/SceneReader.h>
 #include <se/app/loaders/TechniqueLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/CameraSystem.h>
@@ -24,6 +27,7 @@
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
+#include <se/app/Scene.h>
 
 #include <se/graphics/Renderer.h>
 #include <se/graphics/3D/Mesh.h>
@@ -167,16 +171,16 @@ namespace game {
 	}
 
 // Public functions
-	Level::Level(GameData& gameData) :
-		IGameScreen(gameData), mPlayerEntity(se::app::kNullEntity), mPlayerController(nullptr),
+	Level::Level(Game& game) :
+		IGameScreen(game), mGame(game), mPlayerEntity(se::app::kNullEntity), mPlayerController(nullptr),
 		mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
 	{
-		mGameData.eventManager->subscribe(this, se::app::Topic::Key);
+		mGame.getEventManager().subscribe(this, se::app::Topic::Key);
 
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::app::TerrainLoader terrainLoader(*mGameData.entityDatabase, *mGameData.graphicsEngine, *mGameData.cameraSystem, *mGameData.repository);
+		se::app::TerrainLoader terrainLoader(mGame.getEntityDatabase(), mScene);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
@@ -184,14 +188,14 @@ namespace game {
 		se::app::Image<float> environment1;
 		std::shared_ptr<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr;
 		std::shared_ptr<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture,
-			skyTexture, environmentTexture, prefilterTexture, brdfTexture;
+			skyTexture, environmentTexture, prefilterTexture;
 		std::shared_ptr<se::graphics::Font> arial = nullptr;
-		se::app::Scenes loadedScenes;
+		//se::app::Scenes loadedScenes;
 
 		try {
 			// Readers
 			AudioFile<float> audioFile;
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
+			//auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
 
 			// Meshes
 			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
@@ -208,44 +212,48 @@ namespace game {
 			planeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh));
 
 			// Programs
-			auto programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCubeMap.glsl");
+			std::shared_ptr<se::graphics::Program> programSky;
+			programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCubeMap.glsl");
 			if (!programSky) {
 				throw std::runtime_error("programSky not found");
 			}
-			mGameData.repository->add(std::string("programSky"), std::move(programSky));
+			mScene.repository.add(std::string("programSky"), programSky);
 
-			auto programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			std::shared_ptr<se::graphics::Program> programGBufMaterial;
+			programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterial) {
 				throw std::runtime_error("programGBufMaterial not found");
 			}
-			mGameData.repository->add(std::string("programGBufMaterial"), std::move(programGBufMaterial));
+			mScene.repository.add(std::string("programGBufMaterial"), programGBufMaterial);
 
-			auto programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			std::shared_ptr<se::graphics::Program> programGBufMaterialSkinning;
+			programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterialSkinning) {
 				throw std::runtime_error("programGBufMaterialSkinning not found");
 			}
-			mGameData.repository->add(std::string("programGBufMaterialSkinning"), std::move(programGBufMaterialSkinning));
+			mScene.repository.add(std::string("programGBufMaterialSkinning"), std::move(programGBufMaterialSkinning));
 
-			auto programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
+			std::shared_ptr<se::graphics::Program> programGBufSplatmap;
+			programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
 			if (!programGBufSplatmap) {
 				throw std::runtime_error("programGBufSplatmap not found");
 			}
-			mGameData.repository->add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
+			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
 			// Fonts
-			arial = mGameData.repository->find<std::string, se::graphics::Font>("arial");
+			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) {
 				throw std::runtime_error("Arial font not found");
 			}
 
 			// GLTF scenes
-			se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
+			/*se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
 			if (!result) {
 				throw std::runtime_error(result.description());
-			}
+			}*/
 
 			// Images
-			result = se::app::ImageReader::read("res/images/logo.png", logo1);
+			auto result = se::app::ImageReader::read("res/images/logo.png", logo1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -307,64 +315,62 @@ namespace game {
 			skyTexture = se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512);
 			environmentTexture = se::app::TextureUtils::convoluteCubeMap(skyTexture, 32);
 			prefilterTexture = se::app::TextureUtils::prefilterCubeMap(skyTexture, 128);
-			brdfTexture = se::app::TextureUtils::precomputeBRDF(512);
 
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
 				throw std::runtime_error("Error reading the audio file");
 			}
 
-			mBuffers.emplace_back(
+			mScene.repository.add(std::string("sound"), std::make_shared<se::audio::Buffer>(
 				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 				se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
-			);
+			));
+
+			// Forces
+			mScene.repository.add<std::string, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(glm::vec3(0.0f, -9.8f, 0.0f)));
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
 			return;
 		}
 
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
-		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
-		auto programGBufMaterial = mGameData.repository->find<std::string, se::graphics::Program>("programGBufMaterial");
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
+		auto programSky = mScene.repository.find<std::string, se::graphics::Program>("programSky");
+		auto programGBufMaterial = mScene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
+		auto programGBufSplatmap = mScene.repository.find<std::string, se::graphics::Program>("programGBufSplatmap");
 
-		// Forces
-		mForces.push_back(new se::physics::Gravity({ 0.0f, -9.8f, 0.0f }));
-		se::physics::Force* gravity = mForces.back();
+		auto gravity = mScene.repository.find<std::string, se::physics::Force>("gravity");
 
 		// Renderable2Ds
-		auto technique2D = mGameData.repository->find<std::string, se::graphics::Technique>("technique2D");
-		mLogoTexture = new se::graphics::RenderableSprite(glm::vec2(1060.0f, 20.0f), glm::vec2(200.0f, 200.0f), glm::vec4(1.0f), logoTexture);
+		auto technique2D = mGame.getRepository().find<std::string, se::graphics::Technique>("technique2D");
+		mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), logoTexture);
 		mLogoTexture->addTechnique(technique2D);
 		mLogoTexture->setZIndex(255);
-		mGameData.graphicsEngine->addRenderable(mLogoTexture);
-		mReticleTexture = new se::graphics::RenderableSprite(glm::vec2(kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f), glm::vec2(20.0f, 20.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
+		mGame.getExternalTools().graphicsEngine->addRenderable(mLogoTexture);
+		mReticleTexture = new se::graphics::RenderableSprite({ kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture);
 		mReticleTexture->addTechnique(technique2D);
 		mReticleTexture->setZIndex(255);
-		mGameData.graphicsEngine->addRenderable(mReticleTexture);
-		mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
+		mGame.getExternalTools().graphicsEngine->addRenderable(mReticleTexture);
+		mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, { 16.0f, 16.0f }, arial, { 0.0f, 1.0f, 0.0f, 1.0f });
 		mPickText->addTechnique(technique2D);
 		mPickText->setZIndex(255);
-		mGameData.graphicsEngine->addRenderable(mPickText);
+		mGame.getExternalTools().graphicsEngine->addRenderable(mPickText);
 
 		/*********************************************************************
 		 * GAME DATA
 		 *********************************************************************/
-		mGameData.appRenderer->setIrradianceMap(environmentTexture);
-		mGameData.appRenderer->setPrefilterMap(prefilterTexture);
-		mGameData.appRenderer->setBRDFMap(brdfTexture);
-
 		// Player
 		{
-			mPlayerEntity = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(mPlayerEntity);
+			mPlayerEntity = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(mPlayerEntity);
 
-			mGameData.entityDatabase->addComponent(mPlayerEntity, se::app::TagComponent("player"));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, se::app::TagComponent("player"));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(0.0f, 1.0f, 10.0f);
 			transforms.orientation = glm::quat(glm::vec3(0.0f, glm::pi<float>(), 0.0f));
-			mGameData.entityDatabase->addComponent(mPlayerEntity, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
 
 			se::physics::RigidBodyConfig config(0.001f);
 			config.invertedMass = 1.0f / 40.0f;	// No inertia tensor so the player can't rotate due to collisions
@@ -372,14 +378,14 @@ namespace game {
 			config.angularDrag = 0.01f;
 			config.frictionCoefficient = 1.16f;
 			se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
-			mGameData.entityDatabase->addComponent(mPlayerEntity, std::move(rigidBody));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(rigidBody));
 
 			auto collider = std::make_unique<se::collision::BoundingSphere>(0.5f);
-			mGameData.entityDatabase->addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
+			mGame.getEntityDatabase().addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
 
 			se::app::Camera camera;
 			camera.setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
-			mGameData.entityDatabase->addComponent(mPlayerEntity, std::move(camera));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
 
 			se::app::LightSource spotLight(se::app::LightSource::Type::Spot);
 			spotLight.name = "spotLight";
@@ -387,26 +393,27 @@ namespace game {
 			spotLight.range = 20.0f;
 			spotLight.innerConeAngle = glm::pi<float>() / 12.0f;
 			spotLight.outerConeAngle = glm::pi<float>() / 6.0f;
-			mGameData.entityDatabase->addComponent(mPlayerEntity, std::move(spotLight));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(spotLight));
 
-			mGameData.audioSystem->setListener(mPlayerEntity);
+			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
 		}
 
 		// Sky
-		if (false) {
-			auto skyEntity = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(skyEntity);
+		{
+			auto skyEntity = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(skyEntity);
 
-			mGameData.entityDatabase->addComponent(mPlayerEntity, se::app::TagComponent("sky"));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, se::app::TagComponent("sky"));
 
 			se::app::TransformsComponent transforms;
 			transforms.scale = glm::vec3(kZFar / 2.0f);
-			mGameData.entityDatabase->addComponent(mPlayerEntity, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
 
-			auto programSky = mGameData.repository->find<std::string, se::graphics::Program>("programSky");
-			auto passSky = mGameData.cameraSystem->createPass3D(forwardRenderer, programSky);
+			/*auto passSky = std::make_shared<se::graphics::Pass>(*forwardRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passSky.get(), programSky);
 			skyTexture->setTextureUnit(0);
-			passSky->addBindable(skyTexture)
+			passSky->addBindable(programSky)
+				.addBindable(skyTexture)
 				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
 				.addBindable(std::make_shared<se::graphics::CullingOperation>(false));
 
@@ -415,7 +422,10 @@ namespace game {
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueSky));
-			mGameData.entityDatabase->addComponent(skyEntity, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(skyEntity, std::move(mesh));*/
+
+			se::app::LightProbe lightProbe = { environmentTexture, prefilterTexture };
+			mGame.getEntityDatabase().addComponent(skyEntity, std::move(lightProbe));
 		}
 
 		// Terrain
@@ -427,30 +437,31 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
-			auto programGBufSplatmap = mGameData.repository->find<std::string, se::graphics::Program>("programGBufSplatmap");
-			auto terrainPass = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufSplatmap);
+			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(terrainPass.get(), programGBufSplatmap);
 			se::app::TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
 
-			auto terrainTechnique = std::make_unique<se::graphics::Technique>();
+			auto terrainTechnique = std::make_shared<se::graphics::Technique>();
 			terrainTechnique->addPass(terrainPass);
-			mGameData.repository->add(std::string("techniqueSplatmap"), std::move(terrainTechnique));
+			mScene.repository.add(std::string("techniqueSplatmap"), terrainTechnique);
 
 			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			mEntities.push_back( terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, "techniqueSplatmap", "programGBufSplatmap") );
+			terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, "techniqueSplatmap");
 		}
 
 		// Plane
 		{
-			auto plane = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(plane);
+			auto plane = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(plane);
 
-			mGameData.entityDatabase->addComponent(plane, se::app::TagComponent("plane"));
+			mGame.getEntityDatabase().addComponent(plane, se::app::TagComponent("plane"));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(-15.0f, 1.0f, -5.0f);
-			mGameData.entityDatabase->addComponent(plane, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
 
-			auto passPlane = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passPlane.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -466,7 +477,7 @@ namespace game {
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(planeMesh).addTechnique(std::move(techniquePlane));
-			mGameData.entityDatabase->addComponent(plane, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(plane, std::move(mesh));
 		}
 
 		// Fixed cubes
@@ -480,10 +491,10 @@ namespace game {
 		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
 		se::app::Entity e1, e2;
 		for (std::size_t i = 0; i < 5; ++i) {
-			auto cube = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(cube);
+			auto cube = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(cube);
 
-			mGameData.entityDatabase->addComponent(cube, se::app::TagComponent("non-random-cube-" + std::to_string(i)));
+			mGame.getEntityDatabase().addComponent(cube, se::app::TagComponent("non-random-cube-" + std::to_string(i)));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = cubePositions[i];
@@ -498,10 +509,10 @@ namespace game {
 			}
 			if (i == 2) {
 				se::audio::Source source1;
-				source1.bind(mBuffers.back());
+				source1.bind(*mScene.repository.find<std::string, se::audio::Buffer>("sound"));
 				source1.setLooping(true);
 				source1.play();
-				mGameData.entityDatabase->addComponent(cube, std::move(source1));
+				mGame.getEntityDatabase().addComponent(cube, std::move(source1));
 			}
 			if (i == 3) {
 				rigidBody.getData().angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
@@ -511,13 +522,14 @@ namespace game {
 				transforms.velocity += glm::vec3(-1, 0, 0);
 			}
 
-			mGameData.entityDatabase->addComponent(cube, std::move(transforms));
-			mGameData.entityDatabase->addComponent(cube, std::move(rigidBody));
+			mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(cube, std::move(rigidBody));
 
 			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
-			mGameData.entityDatabase->addComponent<se::collision::Collider>(cube, std::move(collider));
+			mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
-			auto passCube = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passCube.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -533,15 +545,17 @@ namespace game {
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueCube));
-			mGameData.entityDatabase->addComponent(cube, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(cube, std::move(mesh));
 		}
 
-		auto [rb1] = mGameData.entityDatabase->getComponents<se::physics::RigidBody>(e1);
-		auto [rb2] = mGameData.entityDatabase->getComponents<se::physics::RigidBody>(e2);
-		mConstraints.push_back(new se::physics::DistanceConstraint({ rb1, rb2 }));
-		mGameData.physicsEngine->getConstraintManager().addConstraint(mConstraints.back());
+		auto [rb1] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(e1);
+		auto [rb2] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(e2);
+		std::shared_ptr<se::physics::Constraint> constraint(new se::physics::DistanceConstraint({ rb1, rb2 }));
+		mScene.repository.add(std::string("distance"), constraint);
+		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(constraint.get());
 
-		auto passRed = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+		mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passRed.get(), programGBufMaterial);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passRed,
 			se::app::Material{
@@ -556,54 +570,54 @@ namespace game {
 		techniqueRed->addPass(passRed);
 
 		{
-			auto nonMovableCube = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(nonMovableCube);
+			auto nonMovableCube = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(nonMovableCube);
 
-			mGameData.entityDatabase->addComponent(nonMovableCube, se::app::TagComponent("non-movable-cube"));
+			mGame.getEntityDatabase().addComponent(nonMovableCube, se::app::TagComponent("non-movable-cube"));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(-50.0f, 0.0f, -40.0f);
 			transforms.scale = glm::vec3(10.0f, 1.0f, 10.0f);
-			mGameData.entityDatabase->addComponent(nonMovableCube, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(transforms));
 
 			se::physics::RigidBodyConfig config(0.001f);
 			config.frictionCoefficient = 0.75f;
 			se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
-			mGameData.entityDatabase->addComponent(nonMovableCube, std::move(rigidBody));
+			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(rigidBody));
 
 			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
-			mGameData.entityDatabase->addComponent<se::collision::Collider>(nonMovableCube, std::move(collider));
+			mGame.getEntityDatabase().addComponent<se::collision::Collider>(nonMovableCube, std::move(collider));
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRed);
-			mGameData.entityDatabase->addComponent(nonMovableCube, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(mesh));
 		}
 
 		{
-			auto gravityCube = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(gravityCube);
+			auto gravityCube = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(gravityCube);
 
-			mGameData.entityDatabase->addComponent(gravityCube, se::app::TagComponent("gravity-cube"));
+			mGame.getEntityDatabase().addComponent(gravityCube, se::app::TagComponent("gravity-cube"));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(-50.0f, 2.0f, -40.0f);
-			mGameData.entityDatabase->addComponent(gravityCube, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(gravityCube, std::move(transforms));
 
 			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 			config.linearDrag = 0.95f;
 			config.angularDrag = 0.95f;
 			config.frictionCoefficient = 0.65f;
 			se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
-			mGameData.entityDatabase->addComponent(gravityCube, std::move(rigidBody));
-			auto [rb] = mGameData.entityDatabase->getComponents<se::physics::RigidBody>(gravityCube);
-			mGameData.physicsEngine->getForceManager().addRBForce(rb, gravity);
+			mGame.getEntityDatabase().addComponent(gravityCube, std::move(rigidBody));
+			auto [rb] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(gravityCube);
+			mGame.getExternalTools().physicsEngine->getForceManager().addRBForce(rb, gravity.get());
 
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
-			mGameData.entityDatabase->addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
+			mGame.getEntityDatabase().addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRed);
-			mGameData.entityDatabase->addComponent(gravityCube, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(gravityCube, std::move(mesh));
 		}
 
 		// HACD Tube
@@ -618,17 +632,18 @@ namespace game {
 			}
 			displacement *= 0.1f;
 
-			auto tubeSlice = mGameData.entityDatabase->addEntity();
-			mEntities.push_back(tubeSlice);
+			auto tubeSlice = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(tubeSlice);
 
-			mGameData.entityDatabase->addComponent(tubeSlice, se::app::TagComponent("tubeSlice"));
+			mGame.getEntityDatabase().addComponent(tubeSlice, se::app::TagComponent("tubeSlice"));
 
 			se::app::TransformsComponent transforms;
 			transforms.orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
 			transforms.position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
-			mGameData.entityDatabase->addComponent(tubeSlice, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(transforms));
 
-			auto passSlice = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passSlice.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -649,12 +664,13 @@ namespace game {
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh));
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(tmpGraphicsMesh).addTechnique(techniqueSlice);
-			mGameData.entityDatabase->addComponent(tubeSlice, std::move(mesh));
+			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(mesh));
 		}
 
 		// Random cubes
 		{
-			auto passRandom = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passRandom.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
@@ -669,30 +685,30 @@ namespace game {
 			techniqueRandom->addPass(passRandom);
 
 			for (std::size_t i = 0; i < kNumCubes; ++i) {
-				auto cube = mGameData.entityDatabase->addEntity();
-				mEntities.push_back(cube);
+				auto cube = mGame.getEntityDatabase().addEntity();
+				mScene.entities.push_back(cube);
 
-				mGameData.entityDatabase->addComponent(cube, se::app::TagComponent("random-cube-" + std::to_string(i)));
+				mGame.getEntityDatabase().addComponent(cube, se::app::TagComponent("random-cube-" + std::to_string(i)));
 
 				se::app::TransformsComponent transforms;
 				transforms.position = glm::ballRand(50.0f);
-				mGameData.entityDatabase->addComponent(cube, std::move(transforms));
+				mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
 
 				se::physics::RigidBodyConfig config(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
 				config.linearDrag = 0.9f;
 				config.angularDrag = 0.9f;
 				config.frictionCoefficient = 0.5f;
 				se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
-				mGameData.entityDatabase->addComponent(cube, std::move(rigidBody));
-				auto [rb] = mGameData.entityDatabase->getComponents<se::physics::RigidBody>(cube);
-				mGameData.physicsEngine->getForceManager().addRBForce(rb, gravity);
+				mGame.getEntityDatabase().addComponent(cube, std::move(rigidBody));
+				auto [rb] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(cube);
+				mGame.getExternalTools().physicsEngine->getForceManager().addRBForce(rb, gravity.get());
 
 				auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
-				mGameData.entityDatabase->addComponent<se::collision::Collider>(cube, std::move(collider));
+				mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
 				se::app::MeshComponent mesh;
 				mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRandom);
-				mGameData.entityDatabase->addComponent(cube, std::move(mesh));
+				mGame.getEntityDatabase().addComponent(cube, std::move(mesh));
 			}
 		}
 
@@ -700,7 +716,7 @@ namespace game {
 		/*{ FIXME:
 			auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
 			mGameData.animationManager->addEntity(sceneEntity.get(), std::move(loadedScenes.scenes[0]->rootNode));
-			mEntities.push_back( std::move(sceneEntity) );
+			mScene.entities.push_back( std::move(sceneEntity) );
 
 			std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
 			std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
@@ -737,7 +753,7 @@ namespace game {
 						}
 					}
 
-					mEntities.push_back( std::move(entity) );
+					mScene.entities.push_back( std::move(entity) );
 				}
 			}
 		}*/
@@ -750,33 +766,18 @@ namespace game {
 	{
 		setHandleInput(false);
 
-		for (se::physics::Force* force : mForces) {
-			mGameData.physicsEngine->getForceManager().removeForce(force);
-			delete force;
+		for (auto entity : mScene.entities) {
+			mGame.getEntityDatabase().removeEntity(entity);
 		}
 
-		for (se::physics::Constraint* constraint : mConstraints) {
-			mGameData.physicsEngine->getConstraintManager().removeConstraint(constraint);
-			delete constraint;
-		}
-
-		for (se::animation::IAnimator* animator : mAnimators) {
-			mGameData.animationEngine->removeAnimator(animator);
-			delete animator;
-		}
-
-		for (auto entity : mEntities) {
-			mGameData.entityDatabase->removeEntity(entity);
-		}
-
-		mGameData.graphicsEngine->removeRenderable(mLogoTexture);
+		mGame.getExternalTools().graphicsEngine->removeRenderable(mLogoTexture);
 		delete mLogoTexture;
-		mGameData.graphicsEngine->removeRenderable(mReticleTexture);
+		mGame.getExternalTools().graphicsEngine->removeRenderable(mReticleTexture);
 		delete mReticleTexture;
-		mGameData.graphicsEngine->removeRenderable(mPickText);
+		mGame.getExternalTools().graphicsEngine->removeRenderable(mPickText);
 		delete mPickText;
 
-		mGameData.eventManager->unsubscribe(this, se::app::Topic::Key);
+		mGame.getEventManager().unsubscribe(this, se::app::Topic::Key);
 	}
 
 
@@ -800,9 +801,9 @@ namespace game {
 	void Level::setHandleInput(bool handle)
 	{
 		if (handle && !mPlayerController) {
-			mPlayerController = new PlayerController(mGameData, mPlayerEntity, *mPickText);
+			mPlayerController = new PlayerController(*this, *mPickText);
 			mPlayerController->resetMousePosition();
-			mGameData.windowSystem->setCursorVisibility(false);
+			mGame.getExternalTools().windowManager->setCursorVisibility(false);
 		}
 
 		if (!handle && mPlayerController) {
@@ -810,7 +811,7 @@ namespace game {
 			delete mPlayerController;
 			mPlayerController = nullptr;
 
-			mGameData.windowSystem->setCursorVisibility(true);
+			mGame.getExternalTools().windowManager->setCursorVisibility(true);
 		}
 	}
 
@@ -818,7 +819,7 @@ namespace game {
 	void Level::onKeyEvent(const se::app::KeyEvent& event)
 	{
 		if ((event.getKeyCode() == SE_KEY_ESCAPE) && (event.getState() != se::app::KeyEvent::State::Released)) {
-			mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::AddGameMenu));
+			mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::AddGameMenu));
 		}
 	}
 

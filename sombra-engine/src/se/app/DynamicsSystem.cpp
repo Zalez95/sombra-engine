@@ -1,13 +1,15 @@
 #include "se/utils/Log.h"
 #include "se/physics/RigidBody.h"
+#include "se/physics/PhysicsEngine.h"
 #include "se/app/DynamicsSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {
 
-	DynamicsSystem::DynamicsSystem(EntityDatabase& entityDatabase, physics::PhysicsEngine& physicsEngine) :
-		ISystem(entityDatabase), mPhysicsEngine(physicsEngine)
+	DynamicsSystem::DynamicsSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
 	}
@@ -35,7 +37,7 @@ namespace se::app {
 			rb->synchWithData();
 		}
 
-		mPhysicsEngine.addRigidBody(rb);
+		mApplication.getExternalTools().physicsEngine->addRigidBody(rb);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
 	}
 
@@ -48,7 +50,7 @@ namespace se::app {
 			return;
 		}
 
-		mPhysicsEngine.removeRigidBody(rb);
+		mApplication.getExternalTools().physicsEngine->removeRigidBody(rb);
 		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
 
@@ -57,7 +59,7 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Start";
 
-		mPhysicsEngine.resetRigidBodiesState();
+		mApplication.getExternalTools().physicsEngine->resetRigidBodiesState();
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
@@ -73,7 +75,7 @@ namespace se::app {
 		);
 
 		SOMBRA_DEBUG_LOG << "Integrating the RigidBodies";
-		mPhysicsEngine.integrate(mDeltaTime);
+		mApplication.getExternalTools().physicsEngine->integrate(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
 		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(

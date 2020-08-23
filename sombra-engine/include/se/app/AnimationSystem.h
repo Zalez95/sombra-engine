@@ -3,10 +3,12 @@
 
 #include <memory>
 #include "../animation/AnimationNode.h"
-#include "../animation/AnimationEngine.h"
 #include "ISystem.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class AnimationSystem, it's a System used for updating the
@@ -15,25 +17,16 @@ namespace se::app {
 	class AnimationSystem : public ISystem
 	{
 	private:	// Attributes
-		/** The AnimationEngine used for updating the animation of the
-		 * Entities */
-		animation::AnimationEngine& mAnimationEngine;
-
-		/** The root AnimationNode node of the hierarchy of AnimationNodes to
-		 * update */
-		std::unique_ptr<animation::AnimationNode> mRootNode;
+		/** The Application that holds the AnimationEngine used for updating
+		 * Entities' animations */
+		Application& mApplication;
 
 	public:		// Functions
 		/** Creates a new AnimationSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	animationEngine a reference to the AnimationEngine used by
-		 *			the AnimationSystem to update the entities' animations */
-		AnimationSystem(
-			EntityDatabase& entityDatabase,
-			animation::AnimationEngine& animationEngine
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		AnimationSystem(Application& application);
 
 		/** Class destructor */
 		~AnimationSystem();

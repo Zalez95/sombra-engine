@@ -26,19 +26,19 @@ namespace se::app {
 		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
 
-		auto programSPtr = repository.find<std::string, graphics::Program>("programGaussianBlur");
-		if (!programSPtr) {
-			auto program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
-			programSPtr = repository.add(std::string("programGaussianBlur"), std::move(program));
+		auto program = repository.find<std::string, graphics::Program>("programGaussianBlur");
+		if (!program) {
+			program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
+			repository.add(std::string("programGaussianBlur"), program);
 		}
 
 		addBindable(std::move(frameBuffer));
-		addBindable(programSPtr);
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *programSPtr, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *programSPtr, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *programSPtr, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<bool>>("uHorizontal", *programSPtr, horizontal));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", *programSPtr, kColorTextureUnit));
+		addBindable(program);
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<bool>>("uHorizontal", *program, horizontal));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", *program, kColorTextureUnit));
 	}
 
 

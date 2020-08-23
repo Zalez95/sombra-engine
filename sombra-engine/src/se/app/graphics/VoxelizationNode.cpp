@@ -11,24 +11,24 @@ namespace se::app {
 	VoxelizationNode::VoxelizationNode(const std::string& name, utils::Repository& repository, std::size_t maxVoxels) :
 		Renderer3D(name), mMaxVoxels(maxVoxels), mMinPosition(0.0f), mMaxPosition(0.0f)
 	{
-		auto programSPtr = repository.find<std::string, graphics::Program>("programVoxelization");
-		if (!programSPtr) {
-			auto program = TechniqueLoader::createProgram(
+		auto program = repository.find<std::string, graphics::Program>("programVoxelization");
+		if (!program) {
+			program = TechniqueLoader::createProgram(
 				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
 				"res/shaders/fragmentVoxelization.glsl"
 			);
-			programSPtr = repository.add(std::string("programVoxelization"), std::move(program));
+			repository.add(std::string("programVoxelization"), program);
 		}
-		addBindable(programSPtr);
+		addBindable(program);
 
 		for (std::size_t i = 0; i < 3; ++i) {
 			mProjectionMatrices[i] = addBindable(
-				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), *programSPtr)
+				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), *program)
 			);
 		}
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", *programSPtr, static_cast<int>(mMaxVoxels)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", *programSPtr, kVoxelImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", *program, static_cast<int>(mMaxVoxels)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", *program, kVoxelImageUnit) );
 
 		mVoxelImage = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, mVoxelImage) );

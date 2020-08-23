@@ -87,6 +87,12 @@ namespace se::animation {
 		 * @param	node a pointer to the AnimatioNode to apply the
 		 *			transforms */
 		void addNode(TransformationType type, AnimationNode* node);
+
+		/** Removes a Node from the TransformationAnimator
+		 *
+		 * @param	node a pointer to the AnimatioNode to remove from the
+		 *			TransformationAnimator */
+		void removeNode(AnimationNode* node);
 	};
 
 

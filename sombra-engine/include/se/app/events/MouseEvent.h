@@ -91,7 +91,7 @@ namespace se::app {
 		 *
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current MouseMoveEvent */
-		virtual void printTo(std::ostream& os) const
+		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic << ", type : " << getType()
 				<< ", mX : " << mX << ", mY : " << mY << " }";
@@ -143,7 +143,7 @@ namespace se::app {
 		 *
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current MouseScrollEvent */
-		virtual void printTo(std::ostream& os) const
+		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic << ", type : " << getType()
 				<< ", mX : " << mX << ", mY : " << mY << " }";
@@ -183,7 +183,7 @@ namespace se::app {
 		 *
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current MouseButtonEvent */
-		virtual void printTo(std::ostream& os) const
+		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic << ", type : " << getType()
 				<< ", mButtonCode : " << mButtonCode

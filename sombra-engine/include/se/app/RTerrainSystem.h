@@ -3,13 +3,15 @@
 
 #include <memory>
 #include <unordered_map>
-#include "../graphics/GraphicsEngine.h"
 #include "../graphics/3D/RenderableTerrain.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
-#include "CameraSystem.h"
+#include "events/ContainerEvent.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class RTerrainSystem, it's a System used for updating the Entities'
@@ -18,7 +20,9 @@ namespace se::app {
 	class RTerrainSystem : public ISystem
 	{
 	private:	// Nested types
-		struct RenderableTerrainData
+		/** Struct RenderableTerrainUniforms, holds the uniform variables to
+		 * update of a RenderableTerrain */
+		struct RenderableTerrainUniforms
 		{
 			std::shared_ptr<
 				graphics::UniformVariableValue<glm::mat4>
@@ -26,34 +30,34 @@ namespace se::app {
 		};
 
 	private:	// Attributes
-		/** The GraphicsEngine used for rendering the RenderableTerrains */
-		graphics::GraphicsEngine& mGraphicsEngine;
+		/** The Application that holds the GraphicsEngine used for rendering
+		 * the RenderableTerrains */
+		Application& mApplication;
 
-		/** The CameraSystem that holds the Passes data */
-		CameraSystem& mCameraSystem;
+		/** The RenderableTerrain uniform variables mapped by the Entity */
+		std::unordered_map<Entity, std::vector<RenderableTerrainUniforms>>
+			mEntityUniforms;
 
-		/** Maps each Entity with its respective RenderableTerrain uniform
-		 * data */
-		std::unordered_map<
-			Entity, RenderableTerrainData
-		> mRenderableTerrainEntities;
+		/** The camera Entity used for rendering */
+		Entity mCameraEntity;
+
+		/** If the camera was updated or not */
+		bool mCameraUpdated;
 
 	public:		// Functions
 		/** Creates a new RTerrainSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	graphicsEngine the GraphicsEngine used for rendering the
-		 *			RenderableTerrains
-		 * @param	cameraSystem the CameraSystem that holds the Passes data */
-		RTerrainSystem(
-			EntityDatabase& entityDatabase,
-			graphics::GraphicsEngine& graphicsEngine,
-			CameraSystem& cameraSystem
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		RTerrainSystem(Application& application);
 
 		/** Class destructor */
 		~RTerrainSystem();
+
+		/** Notifies the RTerrainSystem of the given event
+		 *
+		 * @param	event the IEvent to notify */
+		virtual void notify(const IEvent& event) override;
 
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added
@@ -69,6 +73,12 @@ namespace se::app {
 
 		/** Updates the RenderableTerrains with the Entities */
 		virtual void update() override;
+	private:
+		/** Handles the given ContainerEvent by updating the Camera Entity with
+		 * which the Scene will be rendered
+		 *
+		 * @param	event the ContainerEvent to handle */
+		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
 	};
 
 }

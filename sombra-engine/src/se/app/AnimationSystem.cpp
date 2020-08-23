@@ -1,14 +1,15 @@
 #include "se/utils/Log.h"
+#include "se/animation/AnimationEngine.h"
 #include "se/app/AnimationSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {
 
-	AnimationSystem::AnimationSystem(EntityDatabase& entityDatabase, animation::AnimationEngine& animationEngine) :
-		ISystem(entityDatabase), mAnimationEngine(animationEngine)
+	AnimationSystem::AnimationSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mRootNode = std::make_unique<animation::AnimationNode>( animation::NodeData("AnimationSystem") );
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<animation::AnimationNode>());
 	}
 
@@ -91,7 +92,7 @@ namespace se::app {
 			}
 		}*/
 
-		mAnimationEngine.update(mDeltaTime);
+		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
 
 		// Update the Entities with the changes made to the AnimationNode
 		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode>(

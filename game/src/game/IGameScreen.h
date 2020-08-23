@@ -3,28 +3,28 @@
 
 namespace game {
 
-	struct GameData;
+	class Game;
 
 
 	/**
 	 * class IGameScreen, it's the interface that every game screen should
-	 * implement to be loaded or unloaded from the GameData
+	 * implement to be loaded or unloaded from the Game
 	 */
 	class IGameScreen
 	{
 	protected:	// Attributes
-		/** A reference to the GameData where we want to load the data */
-		GameData& mGameData;
+		/** A reference to the Game where we want to load the data */
+		Game& mGame;
 
 	public:		// Functions
 		/** Creates a new IGameScreen, loading all its needed resources into
-		 * the GameData
+		 * the Game
 		 *
-		 * @param	gameData a reference to the GameData where we want to load
+		 * @param	game a reference to the Game where we want to load
 		 *			the data */
-		IGameScreen(GameData& gameData) : mGameData(gameData) {};
+		IGameScreen(Game& game) : mGame(game) {};
 
-		/** Class destructor, it clears all the resources from the GameData*/
+		/** Class destructor, it clears all the resources from the Game */
 		virtual ~IGameScreen() = default;
 
 		/** Used for updating the GameScreen at the same time than the Game does

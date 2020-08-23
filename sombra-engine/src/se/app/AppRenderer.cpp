@@ -12,15 +12,18 @@
 #include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformBlock.h"
-#include "se/app/Application.h"
+#include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/AppRenderer.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/Camera.h"
 #include "se/app/graphics/LightSource.h"
+#include "se/app/graphics/LightProbe.h"
 #include "se/app/graphics/GaussianBlurNode.h"
+#include "se/app/graphics/TextureUtils.h"
 #include "se/app/loaders/MeshLoader.h"
 #include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/events/ContainerEvent.h"
 
 using namespace se::graphics;
 using namespace std::string_literals;
@@ -41,11 +44,13 @@ namespace se::app {
 	};
 
 
-	AppRenderer::AppRenderer(
-		Application& application, GraphicsEngine& graphicsEngine, CameraSystem& cameraSystem,
-		std::size_t width, std::size_t height
-	) : ISystem(application.getEntityDatabase()), mGraphicsEngine(graphicsEngine), mCameraSystem(cameraSystem)
+	AppRenderer::AppRenderer(Application& application, std::size_t width, std::size_t height) :
+		ISystem(application.getEntityDatabase()), mApplication(application), mCameraEntity(kNullEntity), mCameraUpdated(false)
 	{
+		mApplication.getEventManager().subscribe(this, Topic::Camera);
+		mApplication.getEventManager().subscribe(this, Topic::Resize);
+		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightProbe>());
+
 		// Create the buffer used for storing the light sources data
 		mLightsBuffer = std::make_shared<UniformBuffer>();
 		utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
@@ -58,13 +63,14 @@ namespace se::app {
 		auto planeMesh = std::make_unique<Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
 		mPlaneRenderable = std::make_shared<RenderableMesh>(std::move(planeMesh));
 
-		auto resources = dynamic_cast<BindableRenderNode*>(mGraphicsEngine.getRenderGraph().getNode("resources"));
+		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
+		auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
 
 		{	// Create the FBClearNodes
 			auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
-			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("defaultFBClear", clearMask));
-			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("gFBClear", clearMask));
-			mGraphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("deferredFBClear", clearMask));
+			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("defaultFBClear", clearMask));
+			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("gFBClear", clearMask));
+			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("deferredFBClear", clearMask));
 		}
 
 		{	// Create the gBufferRenderer
@@ -125,7 +131,7 @@ namespace se::app {
 			auto iEmissiveTexBindable = gBufferRenderer->addBindable(std::move(emissiveTexture), false);
 			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("emissive", gBufferRenderer.get(), iEmissiveTexBindable) );
 
-			mGraphicsEngine.getRenderGraph().addNode(std::move(gBufferRenderer));
+			graphicsEngine.getRenderGraph().addNode(std::move(gBufferRenderer));
 		}
 
 		{	// Create the rendererDeferredLight
@@ -170,19 +176,19 @@ namespace se::app {
 			auto iBrightTexBindable = rendererDeferredLight->addBindable(std::move(brightTexture), false);
 			rendererDeferredLight->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("bright", rendererDeferredLight.get(), iBrightTexBindable) );
 
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defPositionTexUnitNode", kPosition) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defNormalTexUnitNode", kNormal) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defAlbedoTexUnitNode", kAlbedo) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defMaterialTexUnitNode", kMaterial) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defEmissiveTexUnitNode", kEmissive) );
-			mGraphicsEngine.getRenderGraph().addNode( std::move(rendererDeferredLight) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defPositionTexUnitNode", kPosition) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defNormalTexUnitNode", kNormal) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defAlbedoTexUnitNode", kAlbedo) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defMaterialTexUnitNode", kMaterial) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("defEmissiveTexUnitNode", kEmissive) );
+			graphicsEngine.getRenderGraph().addNode( std::move(rendererDeferredLight) );
 		}
 
 		{	// Nodes used for blurring the bright colors (bloom)
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("hBlurNode", application.getRepository(), mPlaneRenderable, width, height, true) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("vBlurNode", application.getRepository(), mPlaneRenderable, width, height, false) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("hBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, true) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("vBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, false) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
 		}
 
 		{	// Node used for combining the bloom and color
@@ -205,11 +211,11 @@ namespace se::app {
 					addInput( std::make_unique<BindableRNodeInput<Texture>>("color1", this, addBindable()) );
 					addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
 
-					auto programCombineHDR = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
-					if (!programCombineHDR) {
-						throw std::runtime_error("programCombineHDR not found");
+					auto program = repository.find<std::string, graphics::Program>("fragmentCombineHDR");
+					if (!program) {
+						program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
+						repository.add("programCombineHDR"s, program);
 					}
-					auto program = repository.add("programCombineHDR"s, std::move(programCombineHDR));
 
 					addBindable(program);
 					addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
@@ -227,9 +233,9 @@ namespace se::app {
 				};
 			};
 
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine0TexUnitNode", kColor0) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine1TexUnitNode", kColor1) );
-			mGraphicsEngine.getRenderGraph().addNode( std::make_unique<CombineNode>("combineBloomNode", application.getRepository(), mPlaneRenderable) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine0TexUnitNode", kColor0) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine1TexUnitNode", kColor1) );
+			graphicsEngine.getRenderGraph().addNode( std::make_unique<CombineNode>("combineBloomNode", mApplication.getRepository(), mPlaneRenderable) );
 		}
 
 		{	// Create the renderer2D
@@ -237,28 +243,28 @@ namespace se::app {
 			auto targetIndex = renderer2D->addBindable();
 			renderer2D->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", renderer2D.get(), targetIndex) );
 			renderer2D->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", renderer2D.get(), targetIndex) );
-			mGraphicsEngine.getRenderGraph().addNode( std::move(renderer2D) );
+			graphicsEngine.getRenderGraph().addNode( std::move(renderer2D) );
 		}
 
 		{	// Link the render graph nodes
-			auto defaultFBClear = mGraphicsEngine.getRenderGraph().getNode("defaultFBClear"),
-				gFBClear = mGraphicsEngine.getRenderGraph().getNode("gFBClear"),
-				deferredFBClear = mGraphicsEngine.getRenderGraph().getNode("deferredFBClear"),
-				gBufferRenderer = mGraphicsEngine.getRenderGraph().getNode("gBufferRenderer"),
-				defPositionTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defPositionTexUnitNode"),
-				defNormalTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defNormalTexUnitNode"),
-				defAlbedoTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defAlbedoTexUnitNode"),
-				defMaterialTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defMaterialTexUnitNode"),
-				defEmissiveTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("defEmissiveTexUnitNode"),
-				rendererDeferredLight = mGraphicsEngine.getRenderGraph().getNode("rendererDeferredLight"),
-				hBlurNode = mGraphicsEngine.getRenderGraph().getNode("hBlurNode"),
-				vBlurNode = mGraphicsEngine.getRenderGraph().getNode("vBlurNode"),
-				hBlurTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("hBlurTexUnitNode"),
-				vBlurTexUnitNode = mGraphicsEngine.getRenderGraph().getNode("vBlurTexUnitNode"),
-				combine0TexUnitNode = mGraphicsEngine.getRenderGraph().getNode("combine0TexUnitNode"),
-				combine1TexUnitNode = mGraphicsEngine.getRenderGraph().getNode("combine1TexUnitNode"),
-				combineBloomNode = mGraphicsEngine.getRenderGraph().getNode("combineBloomNode"),
-				renderer2D = mGraphicsEngine.getRenderGraph().getNode("renderer2D");
+			auto defaultFBClear = graphicsEngine.getRenderGraph().getNode("defaultFBClear"),
+				gFBClear = graphicsEngine.getRenderGraph().getNode("gFBClear"),
+				deferredFBClear = graphicsEngine.getRenderGraph().getNode("deferredFBClear"),
+				gBufferRenderer = graphicsEngine.getRenderGraph().getNode("gBufferRenderer"),
+				defPositionTexUnitNode = graphicsEngine.getRenderGraph().getNode("defPositionTexUnitNode"),
+				defNormalTexUnitNode = graphicsEngine.getRenderGraph().getNode("defNormalTexUnitNode"),
+				defAlbedoTexUnitNode = graphicsEngine.getRenderGraph().getNode("defAlbedoTexUnitNode"),
+				defMaterialTexUnitNode = graphicsEngine.getRenderGraph().getNode("defMaterialTexUnitNode"),
+				defEmissiveTexUnitNode = graphicsEngine.getRenderGraph().getNode("defEmissiveTexUnitNode"),
+				rendererDeferredLight = graphicsEngine.getRenderGraph().getNode("rendererDeferredLight"),
+				hBlurNode = graphicsEngine.getRenderGraph().getNode("hBlurNode"),
+				vBlurNode = graphicsEngine.getRenderGraph().getNode("vBlurNode"),
+				hBlurTexUnitNode = graphicsEngine.getRenderGraph().getNode("hBlurTexUnitNode"),
+				vBlurTexUnitNode = graphicsEngine.getRenderGraph().getNode("vBlurTexUnitNode"),
+				combine0TexUnitNode = graphicsEngine.getRenderGraph().getNode("combine0TexUnitNode"),
+				combine1TexUnitNode = graphicsEngine.getRenderGraph().getNode("combine1TexUnitNode"),
+				combineBloomNode = graphicsEngine.getRenderGraph().getNode("combineBloomNode"),
+				renderer2D = graphicsEngine.getRenderGraph().getNode("renderer2D");
 
 			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
 			gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") );
@@ -286,89 +292,103 @@ namespace se::app {
 			combineBloomNode->findInput("color1")->connect( combine1TexUnitNode->findOutput("output") );
 			renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") );
 
-			mGraphicsEngine.getRenderGraph().prepareGraph();
+			graphicsEngine.getRenderGraph().prepareGraph();
 		}
 
-		{	// Create the Techniques used for rendering to the framebuffers
-			auto planeTechnique = std::make_unique<Technique>();
+		{	// Create the pass and technique used for the deferred lighting
+			auto planeTechnique = mApplication.getRepository().find<std::string, graphics::Technique>("techniqueDeferredLighting");
+			if (!planeTechnique) {
+				planeTechnique = std::make_shared<Technique>();
+				mApplication.getRepository().add("techniqueDeferredLighting"s, planeTechnique);
 
-			// Create the pass and technique used for the deferred lighting
-			auto rendererDeferredLight = dynamic_cast<Renderer3D*>(mGraphicsEngine.getRenderGraph().getNode("rendererDeferredLight"));
+				std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+				mApplication.getRepository().add("programDeferredLighting"s, program);
 
-			auto programDeferredLighting = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
-			if (!programDeferredLighting) {
-				throw std::runtime_error("programDeferredLighting not found");
+				auto rendererDeferredLight = dynamic_cast<Renderer3D*>(graphicsEngine.getRenderGraph().getNode("rendererDeferredLight"));
+				auto lightingPass = std::make_shared<Pass>(*rendererDeferredLight);
+				mApplication.getRepository().add("passDeferredLighting"s, lightingPass);
+
+				auto brdfTexture = TextureUtils::precomputeBRDF(512);
+				brdfTexture->setTextureUnit(kBRDFMap);
+				mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
+				mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
+				lightingPass->addBindable(program)
+					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
+					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
+					.addBindable(mViewPosition)
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", *program, kPosition))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", *program, kNormal))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", *program, kAlbedo))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", *program, kMaterial))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", *program, kEmissive))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", *program, kIrradianceMap))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", *program, kPrefilterMap))
+					.addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", *program, kBRDFMap))
+					.addBindable(brdfTexture)
+					.addBindable(mLightsBuffer)
+					.addBindable(mNumLights)
+					.addBindable(std::make_shared<UniformBlock>("LightsBlock", *program));
+				planeTechnique->addPass(lightingPass);
+
+				mPlaneRenderable->addTechnique(std::move(planeTechnique));
+				graphicsEngine.addRenderable(mPlaneRenderable.get());
 			}
-			auto program = application.getRepository().add("programDeferredLighting"s, std::move(programDeferredLighting));
-
-			mLightingPass	= std::make_shared<Pass>(*rendererDeferredLight);
-			mViewPosition	= std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
-			mNumLights	= std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
-			mLightingPass->addBindable(program)
-				.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
-				.addBindable(mViewPosition)
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", *program, kPosition))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", *program, kNormal))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", *program, kAlbedo))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", *program, kMaterial))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", *program, kEmissive))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", *program, kIrradianceMap))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", *program, kPrefilterMap))
-				.addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", *program, kBRDFMap))
-				.addBindable(mLightsBuffer)
-				.addBindable(mNumLights)
-				.addBindable(std::make_shared<UniformBlock>("LightsBlock", *program));
-			planeTechnique->addPass(mLightingPass);
-
-			mPlaneRenderable->addTechnique(std::move(planeTechnique));
-			mGraphicsEngine.addRenderable(mPlaneRenderable.get());
 		}
+	}
 
-		{
-			auto renderer2D = dynamic_cast<Renderer2D*>(mGraphicsEngine.getRenderGraph().getNode("renderer2D"));
 
-			auto program = TechniqueLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
-			if (!program) {
-				throw std::runtime_error("program2D couldn't be created");
+	AppRenderer::~AppRenderer()
+	{
+		mApplication.getEntityDatabase().removeSystem(this);
+		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
+		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
+	}
+
+
+	void AppRenderer::notify(const IEvent& event)
+	{
+		tryCall(&AppRenderer::onCameraEvent, event);
+		tryCall(&AppRenderer::onResizeEvent, event);
+	}
+
+
+	void AppRenderer::onNewEntity(Entity entity)
+	{
+		if (auto lightProbe = std::get<0>(mEntityDatabase.getComponents<LightProbe>(entity))) {
+			auto lightingPass = mApplication.getRepository().find<std::string, graphics::Pass>("passDeferredLighting");
+			if (lightProbe->irradianceMap) {
+				mIrradianceMap = lightProbe->irradianceMap;
+				mIrradianceMap->setTextureUnit(kIrradianceMap);
+				lightingPass->addBindable(mIrradianceMap);
 			}
-			auto program2D = application.getRepository().add("program2D"s, std::move(program));
+			if (lightProbe->prefilterMap) {
+				mPrefilterMap = lightProbe->prefilterMap;
+				mPrefilterMap->setTextureUnit(kPrefilterMap);
+				lightingPass->addBindable(mPrefilterMap);
+			}
 
-			auto technique2D = std::make_unique<graphics::Technique>();
-			technique2D->addPass( mCameraSystem.createPass2D(renderer2D, program2D) );
-			application.getRepository().add("technique2D"s, std::move(technique2D));
+			SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
+		}
+		else {
+			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as LightProbe";
 		}
 	}
 
 
-	void AppRenderer::setIrradianceMap(TextureSPtr texture)
+	void AppRenderer::onRemoveEntity(Entity entity)
 	{
-		mLightingPass->removeBindable(mIrradianceMap);
+		auto lightingPass = mApplication.getRepository().find<std::string, graphics::Pass>("passDeferredLighting");
+		if (mPrefilterMap) {
+			lightingPass->removeBindable(mPrefilterMap);
+			mPrefilterMap = nullptr;
+		}
+		if (mIrradianceMap) {
+			lightingPass->removeBindable(mIrradianceMap);
+			mIrradianceMap = nullptr;
+		}
 
-		mIrradianceMap = texture;
-		mIrradianceMap->setTextureUnit(kIrradianceMap);
-		mLightingPass->addBindable(mIrradianceMap);
-	}
-
-
-	void AppRenderer::setPrefilterMap(TextureSPtr texture)
-	{
-		mLightingPass->removeBindable(mPrefilterMap);
-
-		mPrefilterMap = texture;
-		mPrefilterMap->setTextureUnit(kPrefilterMap);
-		mLightingPass->addBindable(mPrefilterMap);
-	}
-
-
-	void AppRenderer::setBRDFMap(TextureSPtr texture)
-	{
-		mLightingPass->removeBindable(mBrdfMap);
-
-		mBrdfMap = texture;
-		mBrdfMap->setTextureUnit(kBRDFMap);
-		mLightingPass->addBindable(mBrdfMap);
+		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
 
 
@@ -407,9 +427,11 @@ namespace se::app {
 		mNumLights->setValue(i);
 		mLightsBuffer->copy(uBaseLights.data(), i);
 
-		if (mCameraSystem.getActiveCamera() && mCameraSystem.wasCameraUpdated()) {
-			mViewPosition->setValue(mCameraSystem.getActiveCamera()->getPosition());
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
+		if (transforms && (transforms->updated.any() || mCameraUpdated)) {
+			mViewPosition->setValue(transforms->position);
 		}
+		mCameraUpdated = false;
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
@@ -418,8 +440,23 @@ namespace se::app {
 	void AppRenderer::render()
 	{
 		SOMBRA_INFO_LOG << "Render start";
-		mGraphicsEngine.render();
+		mApplication.getExternalTools().graphicsEngine->render();
 		SOMBRA_INFO_LOG << "Render end";
+	}
+
+// Private functions
+	void AppRenderer::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
+	{
+		mCameraEntity = event.getValue();
+		mCameraUpdated = true;
+	}
+
+
+	void AppRenderer::onResizeEvent(const ResizeEvent& event)
+	{
+		auto mWidth = static_cast<std::size_t>(event.getWidth());
+		auto mHeight = static_cast<std::size_t>(event.getHeight());
+		graphics::GraphicsOperations::setViewport(0, 0, mWidth, mHeight);
 	}
 
 }

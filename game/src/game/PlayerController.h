@@ -2,7 +2,6 @@
 #define PLAYER_CONTROLLER_H
 
 #include <se/app/Entity.h>
-#include <se/window/WindowSystem.h>
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvent.h>
@@ -12,7 +11,7 @@
 
 namespace game {
 
-	struct GameData;
+	class Level;
 
 
 	/**
@@ -25,8 +24,7 @@ namespace game {
 		{ Front = 0, Back, Right, Left, Up, Down, NumDirections };
 
 	private:	// Attributes
-		GameData& mGameData;
-		se::app::Entity mEntity;
+		Level& mLevel;
 		se::graphics::RenderableText& mPickText;
 
 		static constexpr float kRunSpeed	= 2.5f;
@@ -54,14 +52,9 @@ namespace game {
 	public:		// Functions
 		/** Creates a new PlayerController
 		 *
-		 * @param	gameData a reference to the GameData
-		 * @param	entity the Entity to control as a player
+		 * @param	level the Level that holds the player Entity
 		 * @param	pickText the text to write to */
-		PlayerController(
-			GameData& gameData,
-			se::app::Entity entity,
-			se::graphics::RenderableText& pickText
-		);
+		PlayerController(Level& level, se::graphics::RenderableText& pickText);
 
 		/** Class destructor */
 		~PlayerController();

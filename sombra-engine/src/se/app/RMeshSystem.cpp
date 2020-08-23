@@ -1,7 +1,10 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Technique.h"
 #include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/core/Program.h"
 #include "se/app/RMeshSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
@@ -9,8 +12,8 @@
 
 namespace se::app {
 
-	RMeshSystem::RMeshSystem(EntityDatabase& entityDatabase, graphics::GraphicsEngine& graphicsEngine, CameraSystem& cameraSystem) :
-		ISystem(entityDatabase), mGraphicsEngine(graphicsEngine), mCameraSystem(cameraSystem)
+	RMeshSystem::RMeshSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>());
 	}
@@ -38,34 +41,36 @@ namespace se::app {
 			modelMatrix = translation * rotation * scale;
 		}
 
-		for (std::size_t i = 0; i < mesh->rMeshes.size(); ++i) {
-			auto& rMesh = mesh->rMeshes[i];
-			auto& meshUniforms = mRMeshUniforms[std::make_pair(entity, i)];
-
+		auto& entityUniforms = mEntityUniforms[entity];
+		for (auto& rMesh : mesh->rMeshes) {
 			rMesh.processTechniques([&, skin = skin](auto technique) { technique->processPasses([&](auto pass) {
-				auto it = std::find_if(
-					mCameraSystem.mPassesData.begin(), mCameraSystem.mPassesData.end(),
-					[&](const auto& passData) { return passData.pass == pass; }
-				);
-				if (it != mCameraSystem.mPassesData.end()) {
-					meshUniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *it->program, modelMatrix);
+				std::shared_ptr<graphics::Program> program;
+				pass->processBindables([&](const auto& bindable) {
+					if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
+						program = tmp;
+					}
+				});
+
+				if (program) {
+					auto& meshUniforms = entityUniforms.emplace_back();
+					meshUniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, modelMatrix);
 					rMesh.addBindable(meshUniforms.modelMatrix);
 
 					if (skin) {
 						auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
-						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(kMaxJoints));
-						meshUniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>>(
-							"uJointMatrices", *it->program, jointMatrices.data(), numJoints
+						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
+						meshUniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4, Skin::kMaxJoints>>(
+							"uJointMatrices", *program, jointMatrices.data(), numJoints
 						);
 						rMesh.addBindable(meshUniforms.jointMatrices);
 					}
 				}
 				else {
-					SOMBRA_WARN_LOG << "RenderableMesh has a Pass " << pass << " not added to the CameraSystem";
+					SOMBRA_WARN_LOG << "RenderableMesh has a Pass " << pass << " with no program";
 				}
 			}); });
 
-			mGraphicsEngine.addRenderable(&rMesh);
+			mApplication.getExternalTools().graphicsEngine->addRenderable(&rMesh);
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
@@ -80,13 +85,13 @@ namespace se::app {
 			return;
 		}
 
-		for (std::size_t i = 0; i < mesh->rMeshes.size(); ++i) {
-			auto it = mRMeshUniforms.find(std::make_pair(entity, i));
-			if (it != mRMeshUniforms.end()) {
-				mRMeshUniforms.erase(it);
-			}
+		for (auto& rMesh : mesh->rMeshes) {
+			mApplication.getExternalTools().graphicsEngine->removeRenderable(&rMesh);
+		}
 
-			mGraphicsEngine.removeRenderable(&mesh->rMeshes[i]);
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
 		}
 
 		SOMBRA_INFO_LOG << "Mesh Entity " << entity << " removed successfully";
@@ -97,19 +102,21 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 
-		for (auto [key, uniforms] : mRMeshUniforms) {
-			auto [transforms, skin] = mEntityDatabase.getComponents<TransformsComponent, Skin>(key.first);
+		for (auto [entity, entityUniforms] : mEntityUniforms) {
+			auto [transforms, skin] = mEntityDatabase.getComponents<TransformsComponent, Skin>(entity);
 			if (transforms && transforms->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
 				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
 				glm::mat4 modelMatrix	= translation * rotation * scale;
 
-				uniforms.modelMatrix->setValue(modelMatrix);
-				if (skin) {
-					auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
-					std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(kMaxJoints));
-					uniforms.jointMatrices->setValue(jointMatrices.data(), numJoints);
+				for (auto& meshUniforms : entityUniforms) {
+					meshUniforms.modelMatrix->setValue(modelMatrix);
+					if (skin) {
+						auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
+						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
+						meshUniforms.jointMatrices->setValue(jointMatrices.data(), numJoints);
+					}
 				}
 			}
 		}

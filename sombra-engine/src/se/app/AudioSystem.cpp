@@ -1,14 +1,18 @@
 #include "se/utils/Log.h"
 #include "se/audio/Source.h"
+#include "se/audio/AudioEngine.h"
 #include "se/app/AudioSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {
 
-	AudioSystem::AudioSystem(EntityDatabase& entityDatabase, audio::AudioEngine& audioEngine) :
-		ISystem(entityDatabase), mAudioEngine(audioEngine), mListener(kNullEntity)
+	AudioSystem::AudioSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application),
+		mListenerEntity(kNullEntity), mListenerUpdated(false)
 	{
+		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask(true));
 	}
 
@@ -16,6 +20,13 @@ namespace se::app {
 	AudioSystem::~AudioSystem()
 	{
 		mEntityDatabase.removeSystem(this);
+		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
+	}
+
+
+	void AudioSystem::notify(const IEvent& event)
+	{
+		tryCall(&AudioSystem::onCameraEvent, event);
 	}
 
 
@@ -40,26 +51,11 @@ namespace se::app {
 
 	void AudioSystem::onRemoveEntity(Entity entity)
 	{
-		if (mListener == entity) {
-			mListener = kNullEntity;
+		if (mListenerEntity == entity) {
+			mListenerEntity = kNullEntity;
+			mListenerUpdated = true;
 			SOMBRA_INFO_LOG << "Listener Entity " << entity << " removed successfully";
 		}
-	}
-
-
-	void AudioSystem::setListener(Entity entity)
-	{
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity);
-
-		mListener = entity;
-		if (transforms) {
-			// The Listener initial data is overriden by the entity one
-			mAudioEngine.setListenerPosition(transforms->position);
-			mAudioEngine.setListenerOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation, glm::vec3(0.0f, 1.0f, 0.0));
-			mAudioEngine.setListenerVelocity(transforms->velocity);
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " was setted as Listener";
 	}
 
 
@@ -68,17 +64,17 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Updating the AudioSystem";
 
 		SOMBRA_DEBUG_LOG << "Updating the Listener";
-		if (mListener != kNullEntity) {
-			auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListener);
-			if (transforms && transforms->updated.any()) {
-				mAudioEngine.setListenerPosition(transforms->position);
-				mAudioEngine.setListenerOrientation(
-					glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
-					glm::vec3(0.0f, 1.0f, 0.0)
-				);
-				mAudioEngine.setListenerVelocity(transforms->velocity);
-			}
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListenerEntity);
+		if (transforms && (transforms->updated.any() || mListenerUpdated)) {
+			auto& audioEngine = *mApplication.getExternalTools().audioEngine;
+			audioEngine.setListenerPosition(transforms->position);
+			audioEngine.setListenerOrientation(
+				glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
+				glm::vec3(0.0f, 1.0f, 0.0)
+			);
+			audioEngine.setListenerVelocity(transforms->velocity);
 		}
+		mListenerUpdated = false;
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
 		mEntityDatabase.iterateComponents<TransformsComponent, audio::Source>(
@@ -95,6 +91,13 @@ namespace se::app {
 		);
 
 		SOMBRA_INFO_LOG << "AudioSystem updated";
+	}
+
+// Private functions
+	void AudioSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
+	{
+		mListenerEntity = event.getValue();
+		mListenerUpdated = true;
 	}
 
 }

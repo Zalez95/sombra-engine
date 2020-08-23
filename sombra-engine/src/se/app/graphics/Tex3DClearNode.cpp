@@ -10,17 +10,17 @@ namespace se::app {
 		const std::string& name, utils::Repository& repository, std::size_t maxSize
 	) : BindableRenderNode(name), mMaxSize(maxSize)
 	{
-		auto programSPtr = repository.find<std::string, graphics::Program>("programTex3DClear");
-		if (!programSPtr) {
-			auto program = TechniqueLoader::createProgram(
+		auto program = repository.find<std::string, graphics::Program>("programTex3DClear");
+		if (!program) {
+			program = TechniqueLoader::createProgram(
 				"res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl"
 			);
-			programSPtr = repository.add(std::string("programTex3DClear"), std::move(program));
+			repository.add(std::string("programTex3DClear"), program);
 		}
-		addBindable(programSPtr);
+		addBindable(program);
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", *programSPtr, static_cast<int>(mMaxSize)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", *programSPtr, kImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", *program, static_cast<int>(mMaxSize)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", *program, kImageUnit) );
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, tex3DIndex) );

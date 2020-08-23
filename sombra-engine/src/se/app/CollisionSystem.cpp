@@ -2,16 +2,17 @@
 #include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
 #include "se/collision/Collider.h"
+#include "se/collision/CollisionWorld.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/CollisionSystem.h"
+#include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/events/CollisionEvent.h"
 
 namespace se::app {
 
-	CollisionSystem::CollisionSystem(
-		EntityDatabase& entityDatabase, EventManager& eventManager, collision::CollisionWorld& collisionWorld
-	) : ISystem(entityDatabase), mEventManager(eventManager), mCollisionWorld(collisionWorld)
+	CollisionSystem::CollisionSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<collision::Collider>());
 	}
@@ -39,7 +40,7 @@ namespace se::app {
 			collider->setTransforms(translation * rotation * scale);
 		}
 
-		mCollisionWorld.addCollider(collider);
+		mApplication.getExternalTools().collisionWorld->addCollider(collider);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Collider " << collider << " added successfully";
 	}
 
@@ -52,7 +53,7 @@ namespace se::app {
 			return;
 		}
 
-		mCollisionWorld.removeCollider(collider);
+		mApplication.getExternalTools().collisionWorld->removeCollider(collider);
 		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
 
@@ -60,6 +61,7 @@ namespace se::app {
 	void CollisionSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Updating the CollisionSystem";
+		auto& collisionWorld = *mApplication.getExternalTools().collisionWorld;
 
 		SOMBRA_DEBUG_LOG << "Updating Colliders";
 		mEntityDatabase.iterateComponents<TransformsComponent, collision::Collider>(
@@ -74,10 +76,10 @@ namespace se::app {
 		);
 
 		SOMBRA_DEBUG_LOG << "Detecting collisions between the colliders";
-		mCollisionWorld.update();
+		collisionWorld.update();
 
 		SOMBRA_DEBUG_LOG << "Notifying contact manifolds";
-		mCollisionWorld.processCollisionManifolds([this](const collision::Manifold& manifold) {
+		collisionWorld.processCollisionManifolds([this](const collision::Manifold& manifold) {
 			auto entity1 = mEntityDatabase.getEntity(manifold.colliders[0]);
 			auto entity2 = mEntityDatabase.getEntity(manifold.colliders[1]);
 			if ((entity1 != kNullEntity) && (entity2 != kNullEntity)
@@ -85,7 +87,7 @@ namespace se::app {
 			) {
 				auto event = new CollisionEvent(entity1, entity2, &manifold);
 				SOMBRA_DEBUG_LOG << "Notifying new CollisionEvent " << *event;
-				mEventManager.publish(event);
+				mApplication.getEventManager().publish(event);
 			}
 		});
 
@@ -102,7 +104,7 @@ namespace se::app {
 
 		std::vector<EntityRayCastPair> ret;
 
-		mCollisionWorld.processRayCast(
+		mApplication.getExternalTools().collisionWorld->processRayCast(
 			rayOrigin, rayDirection,
 			[&](const collision::Collider& collider, const collision::RayCast& rayCast) {
 				auto entity = mEntityDatabase.getEntity(&collider);

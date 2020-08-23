@@ -1,30 +1,33 @@
 #include <algorithm>
 #include "se/utils/Log.h"
+#include "se/window/WindowManager.h"
 #include "se/app/InputSystem.h"
+#include "se/app/Application.h"
 #include "se/app/events/KeyEvent.h"
 #include "se/app/events/ResizeEvent.h"
 #include "se/app/events/MouseEvent.h"
 
 namespace se::app {
 
-	InputSystem::InputSystem(
-		EntityDatabase& entityDatabase, window::WindowSystem& windowSystem, EventManager& eventManager
-	) : ISystem(entityDatabase), mWindowSystem(windowSystem), mEventManager(eventManager)
+	InputSystem::InputSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mWindowSystem.onKey([&](int keyCode, window::ButtonState state) {
+		auto& windowManager = *mApplication.getExternalTools().windowManager;
+
+		windowManager.onKey([&](int keyCode, window::ButtonState state) {
 			KeyEvent::State keyState = (state == window::ButtonState::Pressed)? KeyEvent::State::Pressed :
 				(state == window::ButtonState::Repeated)? KeyEvent::State::Repeated :
 				KeyEvent::State::Released;
 			mEventQueue.push_back(new KeyEvent(keyCode, keyState));
 		});
 
-		mWindowSystem.onMouseButton([&](int buttonCode, window::ButtonState state) {
+		windowManager.onMouseButton([&](int buttonCode, window::ButtonState state) {
 			MouseEvent::Type type = (state == window::ButtonState::Pressed)? MouseEvent::Type::ButtonPressed :
 				MouseEvent::Type::ButtonReleased;
 			mEventQueue.push_back(new MouseButtonEvent(buttonCode, type));
 		});
 
-		mWindowSystem.onMouseMove([&](double x, double y) {
+		windowManager.onMouseMove([&](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const IEvent* event) {
@@ -42,7 +45,7 @@ namespace se::app {
 			}
 		});
 
-		mWindowSystem.onScroll([&](double x, double y) {
+		windowManager.onScroll([&](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const IEvent* event) {
@@ -60,7 +63,7 @@ namespace se::app {
 			}
 		});
 
-		mWindowSystem.onResize([&](double x, double y) {
+		windowManager.onResize([&](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const IEvent* event) { return event->getTopic() == Topic::Resize; }
@@ -81,11 +84,12 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Updating the InputSystem. EventQueue size = " << mEventQueue.size();
 
+		auto& eventManager = mApplication.getEventManager();
 		while (!mEventQueue.empty()) {
 			IEvent* currentEvent = mEventQueue.front();
 			mEventQueue.pop_front();
 
-			mEventManager.publish(currentEvent);
+			eventManager.publish(currentEvent);
 		}
 
 		SOMBRA_INFO_LOG << "InputSystem updated";

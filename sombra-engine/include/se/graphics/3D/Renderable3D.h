@@ -14,6 +14,7 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using BindableSPtr = std::shared_ptr<Bindable>;
+		using BindableCallback = std::function<void(const BindableSPtr&)>;
 
 	private:	// Attributes
 		/** All the Bindables of the Renderable3D */
@@ -25,12 +26,20 @@ namespace se::graphics {
 
 		/** Adds a Bindable to the current Renderable3D
 		 *
-		 * @param	bindable a pointer to the Bindable to add */
+		 * @param	bindable a pointer to the Bindable to add
+		 * @return	a reference to the current Renderable3D object */
 		Renderable3D& addBindable(BindableSPtr bindable);
+
+		/** Iterates through all the Bindables of the Renderable calling the
+		 * given callback function
+		 *
+		 * @param	callback the function to call for each Bindable */
+		void processBindables(const BindableCallback& callback);
 
 		/** Removes a Bindable from the current Renderable3D
 		 *
-		 * @param	bindable a pointer to the Bindable to remove */
+		 * @param	bindable a pointer to the Bindable to remove
+		 * @return	a reference to the current Renderable3D object */
 		Renderable3D& removeBindable(BindableSPtr bindable);
 
 		/** Draws the current Renderable3D (drawcall) */

@@ -7,14 +7,13 @@
 #include "../Entity.h"
 #include "../graphics/Image.h"
 
-namespace se::utils { class Repository; }
-namespace se::graphics { class GraphicsEngine; class RenderableTerrain; }
+namespace se::graphics { class RenderableTerrain; }
 namespace se::collision { class Collider; }
 
 namespace se::app {
 
 	class EntityDatabase;
-	class CameraSystem;
+	class Scene;
 
 
 	/**
@@ -32,31 +31,21 @@ namespace se::app {
 		/** The EntityDatabase that holds the Terrain Entities and Components */
 		EntityDatabase& mEntityDatabase;
 
-		/** The GraphicsEngine used for rendering the Terrain */
-		graphics::GraphicsEngine& mGraphicsEngine;
-
-		/** The CameraSystem that holds the passes */
-		CameraSystem& mCameraSystem;
-
-		/** The Repository that holds the graphics data */
-		utils::Repository& mRepository;
+		/** The Scene where the terrain Entity is going to be added */
+		Scene& mScene;
 
 	public:		// Functions
 		/** Creates a new TerrainLoader
 		 *
 		 * @param	entityDatabase the EntityDatabase that holds the Terrain
 		 *			Entities and Components
-		 * @param	graphicsEngine the GraphicsEngine used for rendering the Terrain
-		 * @param	cameraSystem the CameraSystem that holds the passes
-		 * @param	repository the Repository that holds the graphics data */
-		TerrainLoader(
-			EntityDatabase& entityDatabase,
-			graphics::GraphicsEngine& graphicsEngine,
-			CameraSystem& cameraSystem, utils::Repository& repository
-		) : mEntityDatabase(entityDatabase), mGraphicsEngine(graphicsEngine),
-			mCameraSystem(cameraSystem), mRepository(repository) {};
+		 * @param	scene the Scene where the terrain Entity is going to be
+		 *			added */
+		TerrainLoader(EntityDatabase& entityDatabase, Scene& scene) :
+			mEntityDatabase(entityDatabase), mScene(scene) {};
 
-		/** Creates an Entity that represents a Terrain from the given data
+		/** Creates an Entity that represents a Terrain from the given data and
+		 * adds it to the Scene
 		 *
 		 * @param	name the name of the new Entity
 		 * @param	size the length in the X and Z axis of the Terrain
@@ -68,14 +57,12 @@ namespace se::app {
 		 *			level of detail
 		 * @param	techniqueName the name of the program used for rendering the
 		 *			terrain
-		 * @param	programName the name of the program used for the terrain
-		 *			technique
 		 * @return	the new Terrain entity */
 		Entity createTerrain(
 			const char* name, float size, float maxHeight,
 			const Image<unsigned char>& heightMap,
 			const std::vector<float>& lodDistances,
-			const char* techniqueName, const char* programName
+			const char* techniqueName
 		);
 	private:
 		/** Creates a new RenderableTerrain from the given data
@@ -89,15 +76,13 @@ namespace se::app {
 		 *			level of detail
 		 * @param	techniqueName the name of the program used for rendering the
 		 *			terrain
-		 * @param	programName the name of the program used for the terrain
-		 *			technique
 		 * @return	a pointer to the new RenderableTerrain, nullptr if it
 		 *			failed */
 		graphics::RenderableTerrain createTerrainRenderable(
 			float size, float maxHeight,
 			const Image<unsigned char>& heightMap,
 			const std::vector<float>& lodDistances,
-			const char* techniqueName, const char* programName
+			const char* techniqueName
 		);
 
 		/** Creates a new TerrainCollider from the given height map

@@ -2,12 +2,14 @@
 #define SETTINGS_MENU_VIEW_H
 
 #include <vector>
+#include <se/utils/Repository.h>
 #include <se/app/gui/Panel.h>
 #include <se/app/gui/Label.h>
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
 #include "SettingsMenuController.h"
+#include "Game.h"
 
 namespace game {
 
@@ -22,8 +24,9 @@ namespace game {
 		enum class SelectionLabel { Yes, No, Windowed, FullScreen };
 
 	private:	// Attributes
-		/** The GUIManager used for retrieving input events */
-		se::app::GUIManager& mGUIManager;
+		/** The the Game that holds the GUIManager used for retrieving input
+		 * events */
+		Game& mGame;
 
 		/** The controller that will handle the user input */
 		SettingsMenuController& mController;
@@ -43,24 +46,21 @@ namespace game {
 	public:		// Functions
 		/** Creates a new SettingsMenuView
 		 *
-		 * @param	guiManager the GUIManager to use for retrieving input
-		 *			events
+		 * @param	game the Game that holds the GUIManager
 		 * @param	controller the SettingsMenuController that will handle the
 		 *			user input */
-		SettingsMenuView(
-			se::app::GUIManager& guiManager,
-			SettingsMenuController& controller
-		) : mGUIManager(guiManager), mController(controller),
+		SettingsMenuView(Game& game, SettingsMenuController& controller) :
+			mGame(game), mController(controller),
 			mSelectedWindowLabel(nullptr), mSelectedVSyncLabel(nullptr),
-			mPanel(&mGUIManager)
+			mPanel(&game.getGUIManager())
 		{
-			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
+			auto arial = game.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mLabels.reserve(2 + 2 * 4);
 			mButtons.reserve(1 + 2 * 2);
 
-			auto& titleLabel = mLabels.emplace_back(&mGUIManager);
+			auto& titleLabel = mLabels.emplace_back(&game.getGUIManager());
 			titleLabel.setFont(arial);
 			titleLabel.setCharacterSize({ 32, 32 });
 			titleLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Center);
@@ -86,7 +86,7 @@ namespace game {
 			);
 			mSelectedVSyncLabel = &mLabels.back();
 
-			auto& backLabel = mLabels.emplace_back(&mGUIManager);
+			auto& backLabel = mLabels.emplace_back(&game.getGUIManager());
 			backLabel.setFont(arial);
 			backLabel.setCharacterSize({ 24, 24 });
 			backLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Center);
@@ -94,7 +94,7 @@ namespace game {
 			backLabel.setColor(glm::vec4(1.0f));
 			backLabel.setText("Back");
 
-			auto& backButton = mButtons.emplace_back(&mGUIManager, std::make_unique<se::app::Rectangle>());
+			auto& backButton = mButtons.emplace_back(&game.getGUIManager(), std::make_unique<se::app::Rectangle>());
 			backButton.setColor({ 1.0f, 0.5f, 0.5f, 1.0f });
 			backButton.setLabel(&backLabel);
 			backButton.setAction([this]() { mController.onBack(); });
@@ -105,13 +105,13 @@ namespace game {
 			mPanel.add(&backButton, backButtonAnchor, backButtonProportions);
 
 			mPanel.setColor({ 0.153f, 0.275f, 0.392f, 1.0f });
-			mGUIManager.add(&mPanel, se::app::Anchor(), se::app::Proportions());
+			mGame.getGUIManager().add(&mPanel, se::app::Anchor(), se::app::Proportions());
 		};
 
 		/** Class destructor */
 		~SettingsMenuView()
 		{
-			mGUIManager.remove(&mPanel);
+			mGame.getGUIManager().remove(&mPanel);
 		};
 
 		/** Sets the Windowed selection Label
@@ -145,10 +145,10 @@ namespace game {
 			const std::function<void()>& actionL,
 			const std::function<void()>& actionR
 		) {
-			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
+			auto arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
-			auto& parameterLabel = mLabels.emplace_back(&mGUIManager);
+			auto& parameterLabel = mLabels.emplace_back(&mGame.getGUIManager());
 			parameterLabel.setFont(arial);
 			parameterLabel.setCharacterSize({ 24, 24 });
 			parameterLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Left);
@@ -162,7 +162,7 @@ namespace game {
 			parameterLabelProportions.relativeSize = { 0.25f, 0.1f };
 			mPanel.add(&parameterLabel, parameterLabelAnchor, parameterLabelProportions);
 
-			auto& buttonLLabel = mLabels.emplace_back(&mGUIManager);
+			auto& buttonLLabel = mLabels.emplace_back(&mGame.getGUIManager());
 			buttonLLabel.setFont(arial);
 			buttonLLabel.setCharacterSize({ 24, 70 });
 			buttonLLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Left);
@@ -170,7 +170,7 @@ namespace game {
 			buttonLLabel.setColor(glm::vec4(1.0f));
 			buttonLLabel.setText("<");
 
-			auto& buttonRLabel = mLabels.emplace_back(&mGUIManager);
+			auto& buttonRLabel = mLabels.emplace_back(&mGame.getGUIManager());
 			buttonRLabel.setFont(arial);
 			buttonRLabel.setCharacterSize({ 24, 70 });
 			buttonRLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Right);
@@ -178,7 +178,7 @@ namespace game {
 			buttonRLabel.setColor(glm::vec4(1.0f));
 			buttonRLabel.setText(">");
 
-			auto& valueLabel = mLabels.emplace_back(&mGUIManager);
+			auto& valueLabel = mLabels.emplace_back(&mGame.getGUIManager());
 			valueLabel.setFont(arial);
 			valueLabel.setCharacterSize({ 24, 24 });
 			valueLabel.setHorizontalAlignment(se::app::Label::HorizontalAlignment::Center);
@@ -193,7 +193,7 @@ namespace game {
 			se::app::Proportions buttonLRProportions;
 			buttonLRProportions.relativeSize = { 0.15f, 0.1f };
 
-			auto& buttonL = mButtons.emplace_back(&mGUIManager, std::make_unique<se::app::Rectangle>());
+			auto& buttonL = mButtons.emplace_back(&mGame.getGUIManager(), std::make_unique<se::app::Rectangle>());
 			buttonL.setColor({ 0.0f, 1.0f, 0.0f, 0.75f });
 			buttonL.setLabel(&buttonLLabel, { 0.9f, 1.0f });
 			buttonL.setAction(actionL);
@@ -202,7 +202,7 @@ namespace game {
 			buttonLAnchor.relativePosition = { 0.5f, yOffset };
 			mPanel.add(&buttonL, buttonLAnchor, buttonLRProportions);
 
-			auto& buttonR = mButtons.emplace_back(&mGUIManager, std::make_unique<se::app::Rectangle>());
+			auto& buttonR = mButtons.emplace_back(&mGame.getGUIManager(), std::make_unique<se::app::Rectangle>());
 			buttonR.setColor({ 1.0f, 0.0f, 0.0f, 0.75f });
 			buttonR.setLabel(&buttonRLabel, { 0.9f, 1.0f });
 			buttonR.setAction(actionR);

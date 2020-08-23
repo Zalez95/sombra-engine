@@ -1,8 +1,11 @@
 #include <cctype>
 #include <algorithm>
+#include "se/utils/StringUtils.h"
+#include "se/utils/Repository.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "se/app/gui/Label.h"
 #include "se/app/gui/GUIManager.h"
-#include "se/utils/StringUtils.h"
+#include "se/app/Application.h"
 
 namespace se::app {
 
@@ -95,14 +98,15 @@ namespace se::app {
 		bool wasVisible = mIsVisible;
 		IComponent::setVisibility(isVisible);
 
+		auto& application = mGUIManager->getApplication();
 		if (wasVisible && !mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mGUIManager->getGraphicsEngine().removeRenderable(renderable.get());
+				application.getExternalTools().graphicsEngine->removeRenderable(renderable.get());
 			}
 		}
 		else if (!wasVisible && mIsVisible) {
 			for (auto& renderable : mRenderableTexts) {
-				mGUIManager->getGraphicsEngine().addRenderable(renderable.get());
+				application.getExternalTools().graphicsEngine->addRenderable(renderable.get());
 			}
 		}
 	}
@@ -170,7 +174,8 @@ namespace se::app {
 		}
 
 		// Add more RenderableTexts
-		auto technique2D = mGUIManager->getRepository().find<std::string, graphics::Technique>("technique2D");
+		auto& application = mGUIManager->getApplication();
+		auto technique2D = application.getRepository().find<std::string, graphics::Technique>("technique2D");
 		while (mRenderableTexts.size() < lines.size()) {
 			auto& renderable = mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
 
@@ -180,14 +185,14 @@ namespace se::app {
 			}
 
 			if (mIsVisible) {
-				mGUIManager->getGraphicsEngine().addRenderable(mRenderableTexts.back().get());
+				application.getExternalTools().graphicsEngine->addRenderable(mRenderableTexts.back().get());
 			}
 		}
 
 		// Remove unneeded RenderableTexts
 		while (mRenderableTexts.size() > lines.size()) {
 			if (mIsVisible) {
-				mGUIManager->getGraphicsEngine().removeRenderable(mRenderableTexts.back().get());
+				application.getExternalTools().graphicsEngine->removeRenderable(mRenderableTexts.back().get());
 			}
 			mRenderableTexts.pop_back();
 		}

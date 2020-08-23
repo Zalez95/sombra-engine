@@ -1,23 +1,60 @@
+#include <glm/gtc/matrix_transform.hpp>
+#include "se/utils/Repository.h"
+#include "se/utils/StringUtils.h"
+#include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/core/GraphicsOperations.h"
+#include "se/graphics/2D/Renderer2D.h"
 #include "se/app/gui/GUIManager.h"
+#include "se/app/Application.h"
 #include "se/app/loaders/TechniqueLoader.h"
 
 namespace se::app {
 
-	GUIManager::GUIManager(
-		EventManager& eventManager, graphics::GraphicsEngine& graphicsEngine,
-		utils::Repository& repository, const glm::vec2& initialWindowSize
-	) : mEventManager(eventManager), mGraphicsEngine(graphicsEngine), mRepository(repository)
+	GUIManager::GUIManager(Application& application, const glm::vec2& initialWindowSize) : mApplication(application)
 	{
-		mEventManager.subscribe(this, Topic::Resize);
-		mEventManager.subscribe(this, Topic::Mouse);
+		mApplication.getEventManager().subscribe(this, Topic::Resize);
+		mApplication.getEventManager().subscribe(this, Topic::Mouse);
+
+		if (!mApplication.getRepository().find<std::string, graphics::Program>("technique2D")) {
+			auto renderer = dynamic_cast<graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("renderer2D"));
+
+			auto program = mApplication.getRepository().find<std::string, graphics::Program>("program2D");
+			if (!program) {
+				program = TechniqueLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
+				mApplication.getRepository().add(std::string("program2D"), program);
+			}
+
+			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program,
+				glm::ortho(0.0f, initialWindowSize.x, initialWindowSize.y, 0.0f, -1.0f, 1.0f)
+			);
+
+			auto pass = std::make_shared<graphics::Pass>(*renderer);
+			pass->addBindable(program)
+				.addBindable(std::make_shared<graphics::BlendingOperation>(true))
+				.addBindable(std::make_shared<graphics::DepthTestOperation>(false))
+				.addBindable(mProjectionMatrix);
+
+			for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
+				utils::ArrayStreambuf<char, 64> aStreambuf;
+				std::ostream(&aStreambuf) << "uTextures[" << i << "]";
+				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
+			}
+
+			auto technique2D = std::make_shared<graphics::Technique>();
+			technique2D->addPass(pass);
+			mApplication.getRepository().add(std::string("technique2D"), std::move(technique2D));
+		}
+
 		mRootComponent.setSize(initialWindowSize);
 	}
 
 
 	GUIManager::~GUIManager()
 	{
-		mEventManager.unsubscribe(this, Topic::Mouse);
-		mEventManager.unsubscribe(this, Topic::Resize);
+		mApplication.getEventManager().unsubscribe(this, Topic::Mouse);
+		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
 	}
 
 
@@ -42,7 +79,14 @@ namespace se::app {
 // Private functions
 	void GUIManager::onResizeEvent(const ResizeEvent& event)
 	{
-		mRootComponent.setSize({ static_cast<float>(event.getWidth()), static_cast<float>(event.getHeight()) });
+		float width = static_cast<float>(event.getWidth()),
+			height = static_cast<float>(event.getHeight());
+
+		if (mProjectionMatrix) {
+			mProjectionMatrix->setValue(glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f));
+		}
+
+		mRootComponent.setSize({ width, height });
 	}
 
 

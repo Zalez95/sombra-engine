@@ -76,7 +76,9 @@ namespace se::app {
 			}
 		}
 
-		mRemovedEntities.emplace(entity);
+		if (entity != kNullEntity) {
+			mRemovedEntities.emplace(entity);
+		}
 	}
 
 }

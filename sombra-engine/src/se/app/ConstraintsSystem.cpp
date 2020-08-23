@@ -1,20 +1,20 @@
 #include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
 #include "se/physics/RigidBody.h"
+#include "se/physics/PhysicsEngine.h"
 #include "se/app/ConstraintsSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/events/CollisionEvent.h"
 
 namespace se::app {
 
-	ConstraintsSystem::ConstraintsSystem(
-		EntityDatabase& entityDatabase, EventManager& eventManager,
-		physics::PhysicsEngine& physicsEngine
-	) : ISystem(entityDatabase), mEventManager(eventManager), mPhysicsEngine(physicsEngine)
+	ConstraintsSystem::ConstraintsSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
 		// TODO: reserve max contact constraints
-		mEventManager.subscribe(this, Topic::Collision);
+		mApplication.getEventManager().subscribe(this, Topic::Collision);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
 	}
 
@@ -22,7 +22,7 @@ namespace se::app {
 	ConstraintsSystem::~ConstraintsSystem()
 	{
 		mEntityDatabase.removeSystem(this);
-		mEventManager.unsubscribe(this, Topic::Collision);
+		mApplication.getEventManager().unsubscribe(this, Topic::Collision);
 	}
 
 
@@ -78,8 +78,9 @@ namespace se::app {
 	void ConstraintsSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Start";
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
 
-		mPhysicsEngine.resetRigidBodiesState();
+		physicsEngine.resetRigidBodiesState();
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
@@ -104,7 +105,7 @@ namespace se::app {
 		}
 
 		SOMBRA_DEBUG_LOG << "Solving the Constraints";
-		mPhysicsEngine.solveConstraints(mDeltaTime);
+		physicsEngine.solveConstraints(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
 		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
@@ -119,7 +120,7 @@ namespace se::app {
 		);
 
 		SOMBRA_DEBUG_LOG << "Putting the RigidBodies to sleep";
-		mPhysicsEngine.checkSleepyRigidBodies(mDeltaTime);
+		physicsEngine.checkSleepyRigidBodies(mDeltaTime);
 
 		SOMBRA_INFO_LOG << "End";
 	}
@@ -129,32 +130,25 @@ namespace se::app {
 	{
 		SOMBRA_TRACE_LOG << "Received CollisionEvent: " << event;
 
-		Entity entity1 = event.getEntity(0);
-		Entity entity2 = event.getEntity(1);
+		auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(0));
+		auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(1));
 		const collision::Manifold* manifold = event.getManifold();
 
-		if ((entity1 != kNullEntity) && (entity2 != kNullEntity) && manifold) {
-			auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(entity1);
-			auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(entity2);
-			if (rb1 && rb2) {
-				if ((rb1->getConfig().invertedMass > 0.0f) || (rb2->getConfig().invertedMass > 0.0f)) {
-					SOMBRA_DEBUG_LOG << "Handling CollisionEvent between "
-						<< rb1 << " (p=" << glm::to_string(rb1->getData().position) << ", o=" << glm::to_string(rb1->getData().orientation) << ") and "
-						<< rb2 << " (p=" << glm::to_string(rb2->getData().position) << ", o=" << glm::to_string(rb2->getData().orientation) << ")";
+		if (rb1 && rb2 && manifold) {
+			if ((rb1->getConfig().invertedMass > 0.0f) || (rb2->getConfig().invertedMass > 0.0f)) {
+				SOMBRA_DEBUG_LOG << "Handling CollisionEvent between "
+					<< rb1 << " (p=" << glm::to_string(rb1->getData().position) << ", o=" << glm::to_string(rb1->getData().orientation) << ") and "
+					<< rb2 << " (p=" << glm::to_string(rb2->getData().position) << ", o=" << glm::to_string(rb2->getData().orientation) << ")";
 
-					if (manifold->state[collision::Manifold::State::Intersecting]) {
-						handleIntersectingManifold(rb1, rb2, manifold);
-					}
-					else {
-						handleDisjointManifold(manifold);
-					}
+				if (manifold->state[collision::Manifold::State::Intersecting]) {
+					handleIntersectingManifold(rb1, rb2, manifold);
 				}
 				else {
-					SOMBRA_TRACE_LOG << "Skipping CollisionEvent between infinite mass RigidBodies " << rb1 << " and " << rb2;
+					handleDisjointManifold(manifold);
 				}
 			}
 			else {
-				SOMBRA_WARN_LOG << "CollisionEvent Entities hasn't been added: " << event;
+				SOMBRA_TRACE_LOG << "Skipping CollisionEvent between infinite mass RigidBodies " << rb1 << " and " << rb2;
 			}
 		}
 		else {
@@ -167,7 +161,8 @@ namespace se::app {
 		physics::RigidBody* rb1, physics::RigidBody* rb2,
 		const collision::Manifold* manifold
 	) {
-		ManifoldConstraints& manifoldConstraints = mManifoldConstraintsMap[manifold];
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+		auto& manifoldConstraints = mManifoldConstraintsMap[manifold];
 
 		bool updateFrictionMasses = true;
 		if (manifold->contacts.size() > manifoldConstraints.size()) {
@@ -188,9 +183,9 @@ namespace se::app {
 					}
 				});
 
-				mPhysicsEngine.getConstraintManager().addConstraint(&constraints.normalConstraint);
-				mPhysicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[0]);
-				mPhysicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[1]);
+				physicsEngine.getConstraintManager().addConstraint(&constraints.normalConstraint);
+				physicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[0]);
+				physicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[1]);
 
 				SOMBRA_DEBUG_LOG << "Added ContactConstraint[" << i << "]";
 			}
@@ -199,9 +194,9 @@ namespace se::app {
 			// Decrease the number of constraints down to the number of contacts
 			for (std::size_t i = manifoldConstraints.size(); i > manifold->contacts.size(); --i) {
 				ContactConstraints& lastConstraints = manifoldConstraints.back();
-				mPhysicsEngine.getConstraintManager().removeConstraint(&lastConstraints.normalConstraint);
-				mPhysicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[0]);
-				mPhysicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[1]);
+				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.normalConstraint);
+				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[0]);
+				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[1]);
 				manifoldConstraints.pop_back();
 
 				SOMBRA_DEBUG_LOG << "Removed ContactConstraint[" << i-1 << "]";
@@ -262,9 +257,10 @@ namespace se::app {
 		auto itPair = mManifoldConstraintsMap.find(manifold);
 		if (itPair != mManifoldConstraintsMap.end()) {
 			for (ContactConstraints& constraints : itPair->second) {
-				mPhysicsEngine.getConstraintManager().removeConstraint(&constraints.normalConstraint);
-				mPhysicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[0]);
-				mPhysicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[1]);
+				auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+				physicsEngine.getConstraintManager().removeConstraint(&constraints.normalConstraint);
+				physicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[0]);
+				physicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[1]);
 			}
 
 			SOMBRA_DEBUG_LOG << "Removed all the ContactConstraints (" << itPair->second.size() << ")";

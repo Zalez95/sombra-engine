@@ -356,12 +356,14 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::addComponent(Entity entity, T&& component)
 	{
-		getTable<T>().addComponent(entity, std::move(component));
-		mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
+		if (entity != kNullEntity) {
+			getTable<T>().addComponent(entity, std::move(component));
+			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
-		for (auto& pair : mSystems) {
-			if (pair.second.get<T>()) {
-				pair.first->onNewEntity(entity);
+			for (auto& pair : mSystems) {
+				if (pair.second.get<T>()) {
+					pair.first->onNewEntity(entity);
+				}
 			}
 		}
 	}
@@ -370,12 +372,14 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::addComponent(Entity entity, std::unique_ptr<T> component)
 	{
-		getTable<T>().addComponent(entity, std::move(component));
-		mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
+		if (entity != kNullEntity) {
+			getTable<T>().addComponent(entity, std::move(component));
+			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
-		for (auto& pair : mSystems) {
-			if (pair.second.get<T>()) {
-				pair.first->onNewEntity(entity);
+			for (auto& pair : mSystems) {
+				if (pair.second.get<T>()) {
+					pair.first->onNewEntity(entity);
+				}
 			}
 		}
 	}
@@ -428,14 +432,16 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::removeComponent(Entity entity)
 	{
-		for (auto& pair : mSystems) {
-			if (pair.second.get<T>()) {
-				pair.first->onRemoveEntity(entity);
+		if (mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()]) {
+			for (auto& pair : mSystems) {
+				if (pair.second.get<T>()) {
+					pair.first->onRemoveEntity(entity);
+				}
 			}
-		}
 
-		mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = false;
-		getTable<T>().removeComponent(entity);
+			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = false;
+			getTable<T>().removeComponent(entity);
+		}
 	}
 
 // Private functions

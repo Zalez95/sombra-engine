@@ -897,7 +897,7 @@ namespace se::app {
 			const Buffer& b = mGLTFData.buffers[bv.bufferId];
 
 			const glm::mat4* mat4Ptr = reinterpret_cast<const glm::mat4*>(b.data() + bv.offset + a.byteOffset);
-			skin->inverseBindMatrices = std::vector<glm::mat4>(mat4Ptr, mat4Ptr + a.count);
+			skin->inverseBindMatrices = utils::FixedVector<glm::mat4, Skin::kMaxJoints>(mat4Ptr, mat4Ptr + a.count);
 
 			if (itJoints->size() != skin->inverseBindMatrices.size()) {
 				return Result(false, "The size of the inverseBindMatrices " + std::to_string(skin->inverseBindMatrices.size())

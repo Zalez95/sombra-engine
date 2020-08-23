@@ -1,10 +1,12 @@
 #ifndef DYNAMICS_SYSTEM_H
 #define DYNAMICS_SYSTEM_H
 
-#include "../physics/PhysicsEngine.h"
 #include "ISystem.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class DynamicsSystem, it's a System for updating the Entities' physics
@@ -13,20 +15,16 @@ namespace se::app {
 	class DynamicsSystem : public ISystem
 	{
 	private:	// Attributes
-		/** The Engine used for updating the data of the PhysicsEntities */
-		physics::PhysicsEngine& mPhysicsEngine;
+		/** The Application that holds the PhysicsEngine used for updating
+		 * Entities */
+		Application& mApplication;
 
 	public:		// Functions
 		/** Creates a new DynamicsSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	physicsEngine a reference to the PhysicsEngine used
-		 *			by the DynamicsSystem */
-		DynamicsSystem(
-			EntityDatabase& entityDatabase,
-			physics::PhysicsEngine& physicsEngine
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		DynamicsSystem(Application& application);
 
 		/** Class destructor */
 		~DynamicsSystem();

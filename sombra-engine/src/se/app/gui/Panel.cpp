@@ -1,5 +1,8 @@
+#include "se/utils/Repository.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "se/app/gui/Panel.h"
 #include "se/app/gui/GUIManager.h"
+#include "se/app/Application.h"
 
 namespace se::app {
 
@@ -7,7 +10,8 @@ namespace se::app {
 		mGUIManager(guiManager), mSprite(mPosition, mSize)
 	{
 		mSprite.setZIndex(mZIndex);
-		auto technique2D = mGUIManager->getRepository().find<std::string, graphics::Technique>("technique2D");
+		auto& application = mGUIManager->getApplication();
+		auto technique2D = application.getRepository().find<std::string, graphics::Technique>("technique2D");
 		if (technique2D) {
 			mSprite.addTechnique(technique2D);
 		}
@@ -72,11 +76,12 @@ namespace se::app {
 		bool wasVisible = mIsVisible;
 		ComposedComponent::setVisibility(isVisible);
 
+		auto& application = mGUIManager->getApplication();
 		if (wasVisible && !mIsVisible) {
-			mGUIManager->getGraphicsEngine().removeRenderable(&mSprite);
+			application.getExternalTools().graphicsEngine->removeRenderable(&mSprite);
 		}
 		else if (!wasVisible && mIsVisible) {
-			mGUIManager->getGraphicsEngine().addRenderable(&mSprite);
+			application.getExternalTools().graphicsEngine->addRenderable(&mSprite);
 		}
 	}
 

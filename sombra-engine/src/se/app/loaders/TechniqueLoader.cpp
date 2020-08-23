@@ -12,6 +12,8 @@ namespace se::app {
 
 	void TechniqueLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
 	{
+		pass->addBindable(program);
+
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::BlendingOperation>(material.alphaMode == graphics::AlphaMode::Blend))
 			.addBindable(std::make_shared<graphics::DepthTestOperation>(material.alphaMode != graphics::AlphaMode::Blend));
@@ -114,6 +116,8 @@ namespace se::app {
 
 	void TechniqueLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
 	{
+		pass->addBindable(program);
+
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::BlendingOperation>(false))
 			.addBindable(std::make_shared<graphics::DepthTestOperation>(true));

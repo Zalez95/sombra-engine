@@ -4,12 +4,14 @@
 #include <memory>
 #include <unordered_map>
 #include "../utils/MathUtils.h"
-#include "../graphics/GraphicsEngine.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
-#include "CameraSystem.h"
+#include "graphics/Skin.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class RMeshSystem, it's a System used for updating the Entities'
@@ -18,49 +20,33 @@ namespace se::app {
 	class RMeshSystem : public ISystem
 	{
 	private:	// Nested types
-		/** The maximum number of joints in the program */
-		static constexpr unsigned int kMaxJoints = 64;
-
 		/** Struct RenderableMeshUniforms, holds the uniform variables to
 		 * update of a RenderableMesh */
 		struct RenderableMeshUniforms
 		{
-			std::shared_ptr<
-				graphics::UniformVariableValue<glm::mat4>
-			> modelMatrix;
-			std::shared_ptr<
-				graphics::UniformVariableValueVector<glm::mat4, kMaxJoints>
-			> jointMatrices;
+			std::shared_ptr<graphics::UniformVariableValue<
+				glm::mat4
+			>> modelMatrix;
+			std::shared_ptr<graphics::UniformVariableValueVector<
+				glm::mat4, Skin::kMaxJoints
+			>> jointMatrices;
 		};
 
 	private:	// Attributes
-		/** The GraphicsEngine used for rendering the RenderableMeshes */
-		graphics::GraphicsEngine& mGraphicsEngine;
+		/** The Application that holds the GraphicsEngine used for rendering
+		 * the RenderableMeshes */
+		Application& mApplication;
 
-		/** The CameraSystem that holds the Passes data */
-		CameraSystem& mCameraSystem;
-
-		/** The RenderableMesh uniform variables mapped by the Entity and
-		 * the RenderableMesh index in its MeshComponent */
-		std::unordered_map<
-			std::pair<Entity, std::size_t>,
-			RenderableMeshUniforms,
-			utils::PairHash
-		> mRMeshUniforms;
+		/** The RenderableMesh uniform variables mapped by the Entity */
+		std::unordered_map<Entity, std::vector<RenderableMeshUniforms>>
+			mEntityUniforms;
 
 	public:		// Functions
 		/** Creates a new RMeshSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	graphicsEngine the GraphicsEngine used for rendering the
-		 *			RenderableMeshes
-		 * @param	cameraSystem the CameraSystem that holds the Passes data */
-		RMeshSystem(
-			EntityDatabase& entityDatabase,
-			graphics::GraphicsEngine& graphicsEngine,
-			CameraSystem& cameraSystem
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		RMeshSystem(Application& application);
 
 		/** Class destructor */
 		~RMeshSystem();

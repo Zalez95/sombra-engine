@@ -39,7 +39,7 @@ namespace se::utils {
 
 
 	template <typename KeyType, typename ValueType>
-	std::shared_ptr<ValueType> Repository::add(const KeyType& key, std::unique_ptr<ValueType> value)
+	std::shared_ptr<ValueType> Repository::add(const KeyType& key, std::shared_ptr<ValueType> value)
 	{
 		auto [it, inserted] = getRepoTable<KeyType, ValueType>().data.emplace(key, std::move(value));
 		if (inserted) {
@@ -47,17 +47,6 @@ namespace se::utils {
 		}
 
 		return nullptr;
-	}
-
-
-	template <typename KeyType, typename ValueType>
-	void Repository::remove(const KeyType& key)
-	{
-		auto& table = getRepoTable<KeyType, ValueType>();
-		auto it = table.data.find(key);
-		if (it != table.data.end()) {
-			table.data.erase(it);
-		}
 	}
 
 
@@ -71,6 +60,27 @@ namespace se::utils {
 		}
 
 		return nullptr;
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	void Repository::iterate(const std::function<void(KeyType&, ValueType&)>& callback)
+	{
+		auto& table = getRepoTable<KeyType, ValueType>();
+		for (auto& [key, value] : table) {
+			callback(key, value);
+		}
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	void Repository::remove(const KeyType& key)
+	{
+		auto& table = getRepoTable<KeyType, ValueType>();
+		auto it = table.data.find(key);
+		if (it != table.data.end()) {
+			table.data.erase(it);
+		}
 	}
 
 // Private functions

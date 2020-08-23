@@ -4,6 +4,7 @@
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
 #include <se/utils/Repository.h>
+#include <se/window/WindowManager.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
 #include <se/app/EntityDatabase.h>
@@ -12,22 +13,23 @@
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/CollisionSystem.h>
+#include <se/app/Scene.h>
 #include <se/app/loaders/MeshLoader.h>
 #include <se/app/loaders/TechniqueLoader.h>
 #include "PlayerController.h"
 #include "Game.h"
+#include "Level.h"
 
 extern bool PRINT;
 
 namespace game {
 
-	PlayerController::PlayerController(
-		GameData& gameData, se::app::Entity entity, se::graphics::RenderableText& pickText
-	) : mGameData(gameData), mEntity(entity), mPickText(pickText),
+	PlayerController::PlayerController(Level& level, se::graphics::RenderableText& pickText) :
+		mLevel(level), mPickText(pickText),
 		mYaw(0.0f), mPitch(0.0f), mMovement{}, mClicked(false)
 	{
-		mGameData.eventManager->subscribe(this, se::app::Topic::Key);
-		mGameData.eventManager->subscribe(this, se::app::Topic::Mouse);
+		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::Key);
+		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::Mouse);
 
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
@@ -52,9 +54,14 @@ namespace game {
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
-		auto programGBufMaterial = mGameData.repository->find<std::string, se::graphics::Program>("programGBufMaterial");
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGameData.graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
-		auto passYellow = mGameData.cameraSystem->createPass3D(gBufferRenderer, programGBufMaterial);
+		auto& scene = mLevel.getScene();
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+
+		auto programGBufMaterial = scene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
+		auto passYellow = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+		scene.repository.add(std::string("passYellow"), passYellow);
+		scene.repository.add(passYellow.get(), programGBufMaterial);
+
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{
@@ -72,14 +79,14 @@ namespace game {
 
 	PlayerController::~PlayerController()
 	{
-		mGameData.eventManager->unsubscribe(this, se::app::Topic::Mouse);
-		mGameData.eventManager->unsubscribe(this, se::app::Topic::Key);
+		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::Mouse);
+		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::Key);
 	}
 
 
 	void PlayerController::update(float deltaTime)
 	{
-		auto [transforms] = mGameData.entityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
+		auto [transforms] = mLevel.getGame().getEntityDatabase().getComponents<se::app::TransformsComponent>(mLevel.getPlayer());
 		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation;
 		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
@@ -96,7 +103,7 @@ namespace game {
 			float nextPitch = currentPitch + pitch;
 			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
 			pitch = nextPitch - currentPitch;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " orientation (" << pitch << ", " << yaw << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " orientation (" << pitch << ", " << yaw << ")";
 
 			// Apply the rotation
 			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -114,7 +121,7 @@ namespace game {
 		float length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kRunSpeed * direction / length;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " run velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
@@ -125,36 +132,36 @@ namespace game {
 		length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kJumpSpeed * direction;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << &mEntity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
-		if (mClicked) {
+		/*if (mClicked) {
 			std::string names;
-			for (const auto& [entity, rayCast] : mGameData.collisionSystem->getEntities(transforms->position, forward)) {
+			for (const auto& [entity, rayCast] : mGame.getExternalTools(). collisionSystem->getEntities(transforms->position, forward)) {
 				// Blue tetrahedron = separation direction from collider 1 to collider 0
 				glm::vec3 new_z = rayCast.contactNormal;
 				glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
 				glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
 
-				auto pointEntity = mGameData.entityDatabase->addEntity();
+				auto pointEntity = mGame.getEntityDatabase().addEntity();
 
 				se::app::TransformsComponent transforms;
 				transforms.position = rayCast.contactPointWorld;
 				transforms.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
-				mGameData.entityDatabase->addComponent(pointEntity, std::move(transforms));
+				mGame.getEntityDatabase().addComponent(pointEntity, std::move(transforms));
 
 				se::app::MeshComponent mesh;
 				mesh.rMeshes.emplace_back(mTetrahedronMesh).addTechnique(mYellowTechnique);
-				mGameData.entityDatabase->addComponent(pointEntity, std::move(mesh));
+				mGame.getEntityDatabase().addComponent(pointEntity, std::move(mesh));
 
-				auto [tag] = mGameData.entityDatabase->getComponents<se::app::TagComponent>(entity);
+				auto [tag] = mGame.getEntityDatabase().getComponents<se::app::TagComponent>(entity);
 				names += std::string(tag->getName()) + "; ";
 			}
 
 			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
 			mClicked = false;
-		}
+		}*/
 	}
 
 
@@ -162,8 +169,9 @@ namespace game {
 	{
 		SOMBRA_DEBUG_LOG << "Changing the mouse position to the center of the window";
 
-		const se::window::WindowData& data = mGameData.windowSystem->getWindowData();
-		mGameData.windowSystem->setMousePosition(data.width / 2.0, data.height / 2.0);
+		auto windowManager = mLevel.getGame().getExternalTools().windowManager;
+		const se::window::WindowData& data = windowManager->getWindowData();
+		windowManager->setMousePosition(data.width / 2.0, data.height / 2.0);
 	}
 
 
@@ -212,7 +220,7 @@ namespace game {
 			auto moveEvent = static_cast<const se::app::MouseMoveEvent&>(event);
 
 			// Get the mouse movement from the center of the screen in the range [-1, 1]
-			const se::window::WindowData& data = mGameData.windowSystem->getWindowData();
+			const se::window::WindowData& data = mLevel.getGame().getExternalTools().windowManager->getWindowData();
 			double mouseDeltaX = 2.0 * moveEvent.getX() / data.width - 1.0;
 			double mouseDeltaY = 1.0 - 2.0 * moveEvent.getY() / data.height;	// note that the Y position is upsidedown
 

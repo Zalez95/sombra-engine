@@ -1,9 +1,13 @@
+#ifndef STRING_UTILS_H
+#define STRING_UTILS_H
+
 #include <array>
 #include <vector>
 #include <string>
 #include <streambuf>
 
 namespace se::utils {
+
 	/**
 	 * Class ArrayStreambuf, it's an streambuf with a compile-time
 	 * fixed size
@@ -78,3 +82,5 @@ namespace se::utils {
 	std::vector<std::string> splitBy(const std::string& str, char c);
 
 }
+
+#endif		// STRING_UTILS_H

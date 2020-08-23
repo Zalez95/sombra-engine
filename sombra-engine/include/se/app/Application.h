@@ -1,7 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-namespace se::window { struct WindowData; class WindowSystem; }
+namespace se::window { struct WindowData; class WindowManager; }
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::collision { struct CollisionWorldData; class CollisionWorld; }
@@ -33,7 +33,7 @@ namespace se::app {
 	 */
 	class Application
 	{
-	protected:	// Nested Types
+	public:		// Nested Types
 		/** The different states in which the Application could be */
 		enum class AppState
 		{
@@ -42,10 +42,23 @@ namespace se::app {
 			Stopped
 		};
 
+		/** Struct ExternalTools, holds the External tools used for running the
+		 * Application */
+		struct ExternalTools
+		{
+			window::WindowManager* windowManager		= nullptr;
+			graphics::GraphicsEngine* graphicsEngine	= nullptr;
+			physics::PhysicsEngine* physicsEngine		= nullptr;
+			collision::CollisionWorld* collisionWorld	= nullptr;
+			animation::AnimationEngine* animationEngine	= nullptr;
+			audio::AudioEngine* audioEngine				= nullptr;
+		};
+
 	protected:	// Attributes
 		static constexpr int kMaxEntities			= 1024;
 		static constexpr int kMaxTerrains			= 4;
 		static constexpr int kMaxCameras			= 4;
+		static constexpr int kMaxLightProbes		= 1;
 		static constexpr int kMaxTasks				= 1024;
 		static constexpr float kBaseBias			= 0.1f;
 		static constexpr float kMinFDifference		= 0.00001f;
@@ -55,23 +68,30 @@ namespace se::app {
 		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;
 
+		/** The variable used for stopping the main loop */
+		bool mStopRunning;
+
 		/** The state of the Application */
 		AppState mState;
 
-		/** The vairable used for stopping the main loop */
-		bool mStopRunning;
-
+		/** The TaskManager used for used for multithreading */
 		utils::TaskManager* mTaskManager;
+
+		/** The external tools/engines */
+		ExternalTools* mExternalTools;
+
+		/** The EventManager used for the communication between the Application
+		 * Systems */
 		EventManager* mEventManager;
-		EntityDatabase* mEntityDatabase;
+
+		/** The Repository that holds all the shared data of the Application.
+		 * All the data added to this Repository will remain until the
+		 * Application ends */
 		utils::Repository* mRepository;
 
-		window::WindowSystem* mWindowSystem;
-		graphics::GraphicsEngine* mGraphicsEngine;
-		physics::PhysicsEngine* mPhysicsEngine;
-		collision::CollisionWorld* mCollisionWorld;
-		animation::AnimationEngine* mAnimationEngine;
-		audio::AudioEngine* mAudioEngine;
+		/** The EntityDatabase that holds all the Application Entities and
+		 * their Components */
+		EntityDatabase* mEntityDatabase;
 
 		/** The Systems that hold and update the data of the entities */
 		InputSystem* mInputSystem;
@@ -84,6 +104,8 @@ namespace se::app {
 		CollisionSystem* mCollisionSystem;
 		AnimationSystem* mAnimationSystem;
 		AudioSystem* mAudioSystem;
+
+		/** The GUIManager used for drawing and updating the GUI */
 		GUIManager* mGUIManager;
 
 	public:		// Functions
@@ -104,6 +126,12 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~Application();
 
+		/** @return	the current state of the Application */
+		AppState getState() const { return mState; };
+
+		/** @return	a reference to the ExternalTools of the Application */
+		ExternalTools& getExternalTools() { return *mExternalTools; };
+
 		/** @return	a reference to the EventManager of the Application */
 		EventManager& getEventManager() { return *mEventManager; };
 
@@ -112,6 +140,9 @@ namespace se::app {
 
 		/** @return	a reference to the Repository of the Application */
 		utils::Repository& getRepository() { return *mRepository; };
+
+		/** @return	a reference to the GUIManager of the Application */
+		GUIManager& getGUIManager() { return *mGUIManager; };
 
 		/** Function used for starting the Application
 		 * @note	the current thread will be used by the Application until

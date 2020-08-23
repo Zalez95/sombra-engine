@@ -1,15 +1,15 @@
 #include <se/utils/Log.h>
-#include <se/window/WindowSystem.h>
+#include <se/window/WindowManager.h>
 #include "SettingsMenuController.h"
 #include "SettingsMenuView.h"
 #include "Game.h"
 
 namespace game {
 
-	SettingsMenuController::SettingsMenuController(GameData& gameData) : IGameScreen(gameData), mView(nullptr)
+	SettingsMenuController::SettingsMenuController(Game& game) : IGameScreen(game), mView(nullptr)
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mView = new SettingsMenuView(*mGameData.guiManager, *this);
+		mView = new SettingsMenuView(mGame, *this);
 		SOMBRA_DEBUG_LOG << "end";
 	}
 
@@ -28,7 +28,7 @@ namespace game {
 	void SettingsMenuController::onBack()
 	{
 		SOMBRA_DEBUG_LOG << "start";
-		mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
+		mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
 		SOMBRA_DEBUG_LOG << "end";
 	}
 
@@ -37,11 +37,11 @@ namespace game {
 	{
 		if (option == ButtonOption::Left) {
 			mView->setWindowed(SettingsMenuView::SelectionLabel::Windowed);
-			mGameData.windowSystem->setFullscreen(false);
+			mGame.getExternalTools().windowManager->setFullscreen(false);
 		}
 		else {
 			mView->setWindowed(SettingsMenuView::SelectionLabel::FullScreen);
-			mGameData.windowSystem->setFullscreen(true);
+			mGame.getExternalTools().windowManager->setFullscreen(true);
 		}
 	}
 
@@ -50,11 +50,11 @@ namespace game {
 	{
 		if (option == ButtonOption::Left) {
 			mView->setVSync(SettingsMenuView::SelectionLabel::No);
-			mGameData.windowSystem->setVSync(false);
+			mGame.getExternalTools().windowManager->setVSync(false);
 		}
 		else {
 			mView->setVSync(SettingsMenuView::SelectionLabel::Yes);
-			mGameData.windowSystem->setVSync(true);
+			mGame.getExternalTools().windowManager->setVSync(true);
 		}
 	}
 

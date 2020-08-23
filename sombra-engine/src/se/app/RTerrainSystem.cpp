@@ -1,17 +1,20 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Technique.h"
 #include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/core/Program.h"
 #include "se/app/RTerrainSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/Camera.h"
 
 namespace se::app {
 
-	RTerrainSystem::RTerrainSystem(
-		EntityDatabase& entityDatabase, graphics::GraphicsEngine& graphicsEngine, CameraSystem& cameraSystem
-	) : ISystem(entityDatabase), mGraphicsEngine(graphicsEngine), mCameraSystem(cameraSystem)
+	RTerrainSystem::RTerrainSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application),
+		mCameraEntity(kNullEntity), mCameraUpdated(false)
 	{
+		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<graphics::RenderableTerrain>());
 	}
 
@@ -19,6 +22,13 @@ namespace se::app {
 	RTerrainSystem::~RTerrainSystem()
 	{
 		mEntityDatabase.removeSystem(this);
+		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
+	}
+
+
+	void RTerrainSystem::notify(const IEvent& event)
+	{
+		tryCall(&RTerrainSystem::onCameraEvent, event);
 	}
 
 
@@ -37,26 +47,29 @@ namespace se::app {
 			modelMatrix = translation * rotation;
 		}
 
-		auto& meshData = mRenderableTerrainEntities[entity];
+		auto& entityUniforms = mEntityUniforms[entity];
 		rTerrain->processTechniques([&, rTerrain = rTerrain](auto technique) { technique->processPasses([&](auto pass) {
-			auto it = std::find_if(
-				mCameraSystem.mPassesData.begin(), mCameraSystem.mPassesData.end(),
-				[&](const auto& passData) { return passData.pass == pass; }
-			);
-			if (it != mCameraSystem.mPassesData.end()) {
-				meshData.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *it->program, modelMatrix);
-				rTerrain->addBindable(meshData.modelMatrix);
+			std::shared_ptr<graphics::Program> program;
+			pass->processBindables([&](const auto& bindable) {
+				if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
+					program = tmp;
+				}
+			});
+
+			if (program) {
+				auto& terrainUniforms = entityUniforms.emplace_back();
+				terrainUniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, modelMatrix);
+				rTerrain->addBindable(terrainUniforms.modelMatrix);
 			}
 			else {
-				SOMBRA_WARN_LOG << "RenderableTerrain has a Pass " << pass << " not added to the CameraSystem";
+				SOMBRA_WARN_LOG << "RenderableTerrain has a Pass " << pass << " with no program";
 			}
 		}); });
 
-		if (mCameraSystem.getActiveCamera()) {
-			rTerrain->setHighestLodLocation(mCameraSystem.getActiveCamera()->getPosition());
-		}
+		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
+		rTerrain->setHighestLodLocation(camTransforms? camTransforms->position : glm::vec3(0.0f));
 
-		mGraphicsEngine.addRenderable(rTerrain);
+		mApplication.getExternalTools().graphicsEngine->addRenderable(rTerrain);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << rTerrain << " added successfully";
 	}
 
@@ -69,12 +82,13 @@ namespace se::app {
 			return;
 		}
 
-		auto it = mRenderableTerrainEntities.find(entity);
-		if (it != mRenderableTerrainEntities.end()) {
-			mRenderableTerrainEntities.erase(it);
+		mApplication.getExternalTools().graphicsEngine->removeRenderable(rTerrain);
+
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
 		}
 
-		mGraphicsEngine.removeRenderable(rTerrain);
 		SOMBRA_INFO_LOG << "Terrain Entity " << entity << " removed successfully";
 	}
 
@@ -83,25 +97,40 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Terrains";
 
-		mEntityDatabase.iterateComponents<TransformsComponent, graphics::RenderableTerrain>(
-			[&](Entity entity, TransformsComponent* transforms, graphics::RenderableTerrain* rTerrain) {
-				if (transforms->updated.any()) {
-					auto& terrainData = mRenderableTerrainEntities[entity];
+		glm::vec3 camPosition(0.0f);
+		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
+		if (camTransforms && (camTransforms->updated.any() || mCameraUpdated)) {
+			mCameraUpdated = true;
+			camPosition = camTransforms->position;
+		}
 
-					glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-					glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-					glm::mat4 modelMatrix	= translation * rotation;
+		for (auto [entity, entityUniforms] : mEntityUniforms) {
+			auto [transforms, rTerrain] = mEntityDatabase.getComponents<TransformsComponent, graphics::RenderableTerrain>(entity);
+			if (transforms && transforms->updated.any()) {
+				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
+				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
+				glm::mat4 modelMatrix	= translation * rotation;
 
-					terrainData.modelMatrix->setValue(modelMatrix);
-				}
-
-				if (mCameraSystem.getActiveCamera() && mCameraSystem.wasCameraUpdated()) {
-					rTerrain->setHighestLodLocation(mCameraSystem.getActiveCamera()->getPosition());
+				for (auto& terrainUniforms : entityUniforms) {
+					terrainUniforms.modelMatrix->setValue(modelMatrix);
 				}
 			}
-		);
+
+			if (mCameraUpdated) {
+				rTerrain->setHighestLodLocation(camPosition);
+			}
+		}
+
+		mCameraUpdated = false;
 
 		SOMBRA_INFO_LOG << "Update end";
+	}
+
+// Private functions
+	void RTerrainSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
+	{
+		mCameraEntity = event.getValue();
+		mCameraUpdated = true;
 	}
 
 }

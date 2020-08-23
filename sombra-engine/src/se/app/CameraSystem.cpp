@@ -1,110 +1,93 @@
 #include "se/utils/Log.h"
-#include "se/graphics/core/GraphicsOperations.h"
-#include "se/graphics/2D/Renderer2D.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/app/CameraSystem.h"
+#include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
+#include "se/app/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/graphics/Camera.h"
-#include "se/app/events/ResizeEvent.h"
 
 namespace se::app {
 
-	CameraSystem::CameraSystem(EntityDatabase& entityDatabase, std::size_t width, std::size_t height) :
-		ISystem(entityDatabase), mWidth(width), mHeight(height),
-		mActiveCamera(nullptr), mActiveCameraUpdated(false)
+	CameraSystem::CameraSystem(Application& application) :
+		ISystem(application.getEntityDatabase()), mApplication(application),
+		mCameraEntity(kNullEntity), mCameraUpdated(false)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<Camera>());
+		mApplication.getEventManager().subscribe(this, Topic::Camera);
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<Camera>()
+			.set<MeshComponent>()
+			.set<graphics::RenderableTerrain>()
+		);
 	}
 
 
 	CameraSystem::~CameraSystem()
 	{
 		mEntityDatabase.removeSystem(this);
-	}
-
-
-	CameraSystem::PassSPtr CameraSystem::createPass2D(graphics::Renderer* renderer, ProgramSPtr program)
-	{
-		auto& passData = mPassesData.emplace_back(true);
-		passData.pass = std::make_shared<graphics::Pass>(*renderer);
-		passData.program = program;
-		passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-			"uProjectionMatrix", *program,
-			glm::ortho(0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, -1.0f, 1.0f)
-		);
-
-		passData.pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::BlendingOperation>(true))
-			.addBindable(std::make_shared<graphics::DepthTestOperation>(false))
-			.addBindable(passData.projectionMatrix);
-		for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
-			utils::ArrayStreambuf<char, 64> aStreambuf;
-			std::ostream(&aStreambuf) << "uTextures[" << i << "]";
-			passData.pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
-		}
-
-		return passData.pass;
-	}
-
-
-	CameraSystem::PassSPtr CameraSystem::createPass3D(graphics::Renderer* renderer, ProgramSPtr program)
-	{
-		auto& passData = mPassesData.emplace_back(false);
-		passData.pass = std::make_shared<graphics::Pass>(*renderer);
-		passData.program = program;
-		passData.viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
-		passData.projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
-		if (mActiveCamera) {
-			passData.viewMatrix->setValue(mActiveCamera->getViewMatrix());
-			passData.projectionMatrix->setValue(mActiveCamera->getProjectionMatrix());
-		}
-
-		passData.pass->addBindable(program)
-			.addBindable(passData.viewMatrix)
-			.addBindable(passData.projectionMatrix);
-
-		return passData.pass;
+		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
 	}
 
 
 	void CameraSystem::notify(const IEvent& event)
 	{
-		tryCall(&CameraSystem::onResizeEvent, event);
+		tryCall(&CameraSystem::onCameraEvent, event);
 	}
 
 
 	void CameraSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, camera] = mEntityDatabase.getComponents<TransformsComponent, Camera>(entity);
-		if (!camera) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Camera";
-			return;
+		auto [transforms, camera, mesh, rTerrain] = mEntityDatabase.getComponents<
+			TransformsComponent, Camera, MeshComponent, graphics::RenderableTerrain
+		>(entity);
+
+		if (camera) {
+			if (transforms) {
+				// The Camera initial data is overridden by the entity one
+				camera->setPosition(transforms->position);
+				camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
+				camera->setUp({ 0.0f, 1.0f, 0.0f });
+			}
+
+			SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
 		}
 
-		if (transforms) {
-			// The Camera initial data is overridden by the entity one
-			camera->setPosition(transforms->position);
-			camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-			camera->setUp({ 0.0f, 1.0f, 0.0f });
+		std::vector<std::size_t> passDataIndices;
+		if (mesh) {
+			for (auto& rMesh : mesh->rMeshes) {
+				processPasses(rMesh, passDataIndices);
+			}
 		}
-
-		// Add the Camera
-		if (!mActiveCamera) {
-			mActiveCamera = camera;
+		if (rTerrain) {
+			processPasses(*rTerrain, passDataIndices);
 		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
+		mEntityPasses.emplace(entity, std::move(passDataIndices));
 	}
 
 
 	void CameraSystem::onRemoveEntity(Entity entity)
 	{
-		auto [camera] = mEntityDatabase.getComponents<Camera>(entity);
-		if (camera == mActiveCamera) {
-			mActiveCamera = nullptr;
+		if (mCameraEntity == entity) {
+			mCameraEntity = kNullEntity;
+			mCameraUpdated = true;
+			SOMBRA_INFO_LOG << "Active Camera Entity " << entity << " removed";
 		}
 
-		SOMBRA_INFO_LOG << "Camera Entity " << entity << " removed successfully";
+		auto it = mEntityPasses.find(entity);
+		if (it != mEntityPasses.end()) {
+			for (auto iPass : it->second) {
+				mPassesData[iPass].userCount--;
+				if (mPassesData[iPass].userCount == 0) {
+					mPassesData.erase(mPassesData.begin().setIndex(iPass));
+				}
+			}
+
+			mEntityPasses.erase(it);
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
 
 
@@ -112,43 +95,81 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 
-		mActiveCameraUpdated = false;
 		mEntityDatabase.iterateComponents<TransformsComponent, Camera>(
-			[&](Entity, TransformsComponent* transforms, Camera* camera) {
+			[&](Entity entity, TransformsComponent* transforms, Camera* camera) {
 				if (transforms->updated.any()) {
 					camera->setPosition(transforms->position);
 					camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
 					camera->setUp({ 0.0f, 1.0f, 0.0f });
 
-					if (camera == mActiveCamera) {
-						mActiveCameraUpdated = true;
+					if (mCameraEntity == entity) {
+						mCameraUpdated = true;
 					}
 				}
 			}
 		);
 
-		if (mActiveCameraUpdated) {
-			for (auto& passData : mPassesData) if (!passData.is2D) {
-				passData.viewMatrix->setValue(mActiveCamera->getViewMatrix());
-				passData.projectionMatrix->setValue(mActiveCamera->getProjectionMatrix());
+		if (mCameraUpdated) {
+			auto [camera] = mEntityDatabase.getComponents<Camera>(mCameraEntity);
+			if (camera) {
+				for (auto& passData : mPassesData) {
+					passData.viewMatrix->setValue(camera->getViewMatrix());
+					passData.projectionMatrix->setValue(camera->getProjectionMatrix());
+				}
 			}
+
+			mCameraUpdated = false;
 		}
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
 
 // Private functions
-	void CameraSystem::onResizeEvent(const ResizeEvent& event)
+	void CameraSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
-		mWidth = static_cast<std::size_t>(event.getWidth());
-		mHeight = static_cast<std::size_t>(event.getHeight());
+		mCameraEntity = event.getValue();
+		mCameraUpdated = true;
+	}
 
-		graphics::GraphicsOperations::setViewport(0, 0, mWidth, mHeight);
-		for (auto& passData : mPassesData) if (passData.is2D) {
-			passData.projectionMatrix->setValue(
-				glm::ortho(0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, -1.0f, 1.0f)
-			);
-		}
+
+	void CameraSystem::processPasses(graphics::Renderable3D& renderable, std::vector<std::size_t>& output)
+	{
+		Camera* activeCamera = std::get<0>(mEntityDatabase.getComponents<Camera>(mCameraEntity));
+
+		renderable.processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
+			auto it = std::find_if(mPassesData.begin(), mPassesData.end(), [&](const auto& passData) { return passData.pass == pass; });
+			if (it == mPassesData.end()) {
+				std::shared_ptr<graphics::Program> program;
+				pass->processBindables([&](const auto& bindable) {
+					if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
+						program = tmp;
+					}
+				});
+
+				if (program) {
+					it = mPassesData.emplace();
+					it->userCount++;
+					it->pass = pass;
+					it->viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
+					it->projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program);
+					if (activeCamera) {
+						it->viewMatrix->setValue(activeCamera->getViewMatrix());
+						it->projectionMatrix->setValue(activeCamera->getProjectionMatrix());
+					}
+
+					pass->addBindable(it->viewMatrix)
+						.addBindable(it->projectionMatrix);
+					output.push_back(it.getIndex());
+				}
+				else {
+					SOMBRA_WARN_LOG << "Renderable3D has a Pass " << pass << " with no program";
+				}
+			}
+			else {
+				it->userCount++;
+				output.push_back(it.getIndex());
+			}
+		}); });
 	}
 
 }

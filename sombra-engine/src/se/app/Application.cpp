@@ -1,14 +1,27 @@
 #include <chrono>
 #include <thread>
 #include "se/utils/Log.h"
-#include "se/window/WindowSystem.h"
-#include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/core/GraphicsOperations.h"
-#include "se/physics/PhysicsEngine.h"
-#include "se/animation/AnimationEngine.h"
-#include "se/audio/AudioEngine.h"
 #include "se/utils/TaskSet.h"
+#include "se/utils/Repository.h"
+#include "se/window/WindowManager.h"
+#include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/core/Texture.h"
+#include "se/graphics/core/GraphicsOperations.h"
+#include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
+#include "se/graphics/2D/Font.h"
+#include "se/graphics/3D/RenderableTerrain.h"
+#include "se/physics/RigidBody.h"
+#include "se/physics/PhysicsEngine.h"
+#include "se/collision/Collider.h"
+#include "se/collision/CollisionWorld.h"
+#include "se/animation/AnimationNode.h"
+#include "se/animation/AnimationEngine.h"
+#include "se/audio/Source.h"
+#include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
+#include "se/app/events/EventManager.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/InputSystem.h"
 #include "se/app/CameraSystem.h"
@@ -20,7 +33,6 @@
 #include "se/app/CollisionSystem.h"
 #include "se/app/AnimationSystem.h"
 #include "se/app/AudioSystem.h"
-#include "se/app/events/EventManager.h"
 #include "se/app/gui/GUIManager.h"
 #include "se/app/TagComponent.h"
 #include "se/app/MeshComponent.h"
@@ -28,16 +40,7 @@
 #include "se/app/graphics/Camera.h"
 #include "se/app/graphics/Skin.h"
 #include "se/app/graphics/LightSource.h"
-#include "se/graphics/3D/RenderableTerrain.h"
-#include "se/physics/RigidBody.h"
-#include "se/collision/Collider.h"
-#include "se/animation/AnimationNode.h"
-#include "se/audio/Source.h"
-#include "se/graphics/Pass.h"
-#include "se/graphics/Technique.h"
-#include "se/graphics/core/Program.h"
-#include "se/graphics/core/Texture.h"
-#include "se/graphics/2D/Font.h"
+#include "se/app/graphics/LightProbe.h"
 
 namespace se::app {
 
@@ -45,81 +48,72 @@ namespace se::app {
 		const window::WindowData& windowConfig,
 		const collision::CollisionWorldData& collisionConfig,
 		float updateTime
-	) : mUpdateTime(updateTime), mState(AppState::Stopped), mStopRunning(false),
-		mTaskManager(nullptr), mEventManager(nullptr), mEntityDatabase(nullptr), mRepository(nullptr),
-		mWindowSystem(nullptr), mGraphicsEngine(nullptr), mPhysicsEngine(nullptr),
-		mCollisionWorld(nullptr), mAnimationEngine(nullptr), mAudioEngine(nullptr),
-		mInputSystem(nullptr),
-		mCameraSystem(nullptr), mAppRenderer(nullptr), mRMeshSystem(nullptr), mRTerrainSystem(nullptr),
-		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
+	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
+		mTaskManager(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
+		mRepository(nullptr), mEntityDatabase(nullptr),
+		mInputSystem(nullptr), mCameraSystem(nullptr), mAppRenderer(nullptr),
+		mRMeshSystem(nullptr), mRTerrainSystem(nullptr), mDynamicsSystem(nullptr),
+		mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
 		mAnimationSystem(nullptr), mAudioSystem(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
+
+		mTaskManager = new utils::TaskManager(kMaxTasks);
+		mExternalTools = new ExternalTools();
+		mEventManager = new EventManager();
+
+		// Repository
+		mRepository = new utils::Repository();
+		mRepository->init<std::string, graphics::Pass>();
+		mRepository->init<std::string, graphics::Technique>();
+		mRepository->init<std::string, graphics::Program>();
+		mRepository->init<std::string, graphics::Texture>();
+		mRepository->init<std::string, graphics::Font>();
+
+		// Entities
+		mEntityDatabase = new EntityDatabase(kMaxEntities);
+		mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
+		mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
+		mEntityDatabase->addComponentTable<Skin>(kMaxEntities);
+		mEntityDatabase->addComponentTable<Camera>(kMaxCameras);
+		mEntityDatabase->addComponentTable<LightSource>(kMaxEntities);
+		mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
+		mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
+		mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
+		mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
+		mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
+		mEntityDatabase->addComponentTable<animation::AnimationNode>(kMaxEntities);
+		mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
+
 		try {
-			// Tasks
-			mTaskManager = new utils::TaskManager(kMaxTasks);
+			// External tools
+			mExternalTools->windowManager = new window::WindowManager(windowConfig);
+			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
+			mExternalTools->physicsEngine = new physics::PhysicsEngine(kBaseBias);
+			mExternalTools->collisionWorld = new collision::CollisionWorld(collisionConfig);
+			mExternalTools->animationEngine = new animation::AnimationEngine();
+			mExternalTools->audioEngine = new audio::AudioEngine();
 
-			// Events
-			mEventManager = new EventManager();
-
-			// Entities
-			mEntityDatabase = new EntityDatabase(kMaxEntities);
-			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<Skin>(kMaxEntities);
-			mEntityDatabase->addComponentTable<Camera>(kMaxCameras);
-			mEntityDatabase->addComponentTable<LightSource>(kMaxEntities);
-			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
-			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
-			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
-			mEntityDatabase->addComponentTable<animation::AnimationNode>(kMaxEntities);
-			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
-
-			// Repository
-			mRepository = new utils::Repository();
-			mRepository->init<std::string, graphics::Pass>();
-			mRepository->init<std::string, graphics::Technique>();
-			mRepository->init<std::string, graphics::Program>();
-			mRepository->init<std::string, graphics::Texture>();
-			mRepository->init<std::string, graphics::Font>();
-
-			// Window
-			mWindowSystem = new window::WindowSystem(windowConfig);
-
-			// Input
-			mInputSystem = new InputSystem(*mEntityDatabase, *mWindowSystem, *mEventManager);
-
-			// Graphics
-			mGraphicsEngine = new graphics::GraphicsEngine();
-			mCameraSystem = new CameraSystem(*mEntityDatabase, windowConfig.width, windowConfig.height);
-			mAppRenderer = new AppRenderer(*this, *mGraphicsEngine, *mCameraSystem, windowConfig.width, windowConfig.height);
-			mRMeshSystem = new RMeshSystem(*mEntityDatabase, *mGraphicsEngine, *mCameraSystem);
-			mRTerrainSystem = new RTerrainSystem(*mEntityDatabase, *mGraphicsEngine, *mCameraSystem);
-			mGUIManager = new GUIManager(*mEventManager, *mGraphicsEngine, *mRepository, { windowConfig.width, windowConfig.height });
 			se::graphics::GraphicsOperations::setViewport(0, 0, windowConfig.width, windowConfig.height);
 
-			// Physics
-			mPhysicsEngine = new physics::PhysicsEngine(kBaseBias);
-			mDynamicsSystem = new DynamicsSystem(*mEntityDatabase, *mPhysicsEngine);
-			mConstraintsSystem = new ConstraintsSystem(*mEntityDatabase, *mEventManager, *mPhysicsEngine);
-
-			// Collision
-			mCollisionWorld = new collision::CollisionWorld(collisionConfig);
-			mCollisionSystem = new CollisionSystem(*mEntityDatabase, *mEventManager, *mCollisionWorld);
-
-			// Animation
-			mAnimationEngine = new animation::AnimationEngine();
-			mAnimationSystem = new AnimationSystem(*mEntityDatabase, *mAnimationEngine);
-
-			// Audio
-			mAudioEngine = new audio::AudioEngine();
-			mAudioSystem = new AudioSystem(*mEntityDatabase, *mAudioEngine);
+			// Systems
+			mInputSystem = new InputSystem(*this);
+			mCameraSystem = new CameraSystem(*this);
+			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
+			mRMeshSystem = new RMeshSystem(*this);
+			mRTerrainSystem = new RTerrainSystem(*this);
+			mDynamicsSystem = new DynamicsSystem(*this);
+			mConstraintsSystem = new ConstraintsSystem(*this);
+			mCollisionSystem = new CollisionSystem(*this);
+			mAnimationSystem = new AnimationSystem(*this);
+			mAudioSystem = new AudioSystem(*this);
+			mGUIManager = new GUIManager(*this, { windowConfig.width, windowConfig.height });
 		}
 		catch (std::exception& e) {
 			mState = AppState::Error;
 			SOMBRA_ERROR_LOG << " Error while creating the Application: " << e.what();
 		}
+
 		SOMBRA_INFO_LOG << "Application created";
 	}
 
@@ -127,25 +121,28 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
+		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioSystem) { delete mAudioSystem; }
-		if (mAudioEngine) { delete mAudioEngine; }
 		if (mAnimationSystem) { delete mAnimationSystem; }
-		if (mAnimationEngine) { delete mAnimationEngine; }
 		if (mCollisionSystem) { delete mCollisionSystem; }
-		if (mCollisionWorld) { delete mCollisionWorld; }
 		if (mConstraintsSystem) { delete mConstraintsSystem; }
 		if (mDynamicsSystem) { delete mDynamicsSystem; }
-		if (mPhysicsEngine) { delete mPhysicsEngine; }
-		if (mGUIManager) { delete mGUIManager; }
 		if (mRTerrainSystem) { delete mRTerrainSystem; }
 		if (mRMeshSystem) { delete mRMeshSystem; }
 		if (mAppRenderer) { delete mAppRenderer; }
 		if (mCameraSystem) { delete mCameraSystem; }
-		if (mGraphicsEngine) { delete mGraphicsEngine; }
 		if (mInputSystem) { delete mInputSystem; }
-		if (mWindowSystem) { delete mWindowSystem; }
+		if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
+		if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
+		if (mExternalTools->collisionWorld) { delete mExternalTools->collisionWorld; }
+		if (mExternalTools->physicsEngine) { delete mExternalTools->physicsEngine; }
+		if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
+		if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
+		if (mEntityDatabase) { delete mTaskManager; }
+		if (mRepository) { delete mExternalTools; }
 		if (mEventManager) { delete mEventManager; }
-		if (mTaskManager) { delete mTaskManager; }
+		if (mExternalTools) { delete mRepository; }
+		if (mTaskManager) { delete mEntityDatabase; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
@@ -218,7 +215,7 @@ namespace se::app {
 	void Application::onInput()
 	{
 		SOMBRA_DEBUG_LOG << "Init";
-		mWindowSystem->update();
+		mExternalTools->windowManager->update();
 		mInputSystem->update();
 		SOMBRA_DEBUG_LOG << "End";
 	}
@@ -268,7 +265,7 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Init";
 		mAppRenderer->render();
-		mWindowSystem->swapBuffers();
+		mExternalTools->windowManager->swapBuffers();
 		SOMBRA_DEBUG_LOG << "End";
 	}
 

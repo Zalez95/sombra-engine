@@ -4,11 +4,13 @@
 
 namespace se::graphics {
 
-	void Renderable::addTechnique(TechniqueSPtr technique)
+	Renderable& Renderable::addTechnique(TechniqueSPtr technique)
 	{
 		if (technique) {
 			mTechniques.push_back(technique);
 		}
+
+		return *this;
 	}
 
 
@@ -20,12 +22,14 @@ namespace se::graphics {
 	}
 
 
-	void Renderable::removeTechnique(TechniqueSPtr technique)
+	Renderable& Renderable::removeTechnique(TechniqueSPtr technique)
 	{
 		mTechniques.erase(
 			std::remove(mTechniques.begin(), mTechniques.end(), technique),
 			mTechniques.end()
 		);
+
+		return *this;
 	}
 
 

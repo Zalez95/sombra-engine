@@ -13,6 +13,14 @@ namespace se::graphics {
 	}
 
 
+	void Renderable3D::processBindables(const BindableCallback& callback)
+	{
+		for (auto& bindable : mBindables) {
+			callback(bindable);
+		}
+	}
+
+
 	Renderable3D& Renderable3D::removeBindable(BindableSPtr bindable)
 	{
 		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());

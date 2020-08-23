@@ -44,6 +44,17 @@ namespace se::animation {
 	}
 
 
+	void TransformationAnimator::removeNode(AnimationNode* node)
+	{
+		mNodes.erase(
+			std::remove_if(mNodes.begin(), mNodes.end(), [&](const AnimatedNode& aNode) {
+				return aNode.node == node;
+			}),
+			mNodes.end()
+		);
+	}
+
+
 	Vec3Animator::Vec3Animator(Vec3AnimationSPtr animation) : mAnimation(animation)
 	{
 		setLoopTime(mAnimation->getLength());

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 
 namespace se::utils {
 
@@ -42,15 +43,8 @@ namespace se::utils {
 		 *			inserted */
 		template <typename KeyType, typename ValueType>
 		std::shared_ptr<ValueType> add(
-			const KeyType& key, std::unique_ptr<ValueType> value
+			const KeyType& key, std::shared_ptr<ValueType> value
 		);
-
-		/** Removes an element with the given key from the Repository
-		 *
-		 * @param	key the Key with which the element was added to the
-		 *			Repository */
-		template <typename KeyType, typename ValueType>
-		void remove(const KeyType& key);
 
 		/** Searchs an element with the given key value
 		 *
@@ -59,6 +53,21 @@ namespace se::utils {
 		 *			found */
 		template <typename KeyType, typename ValueType>
 		std::shared_ptr<ValueType> find(const KeyType& key);
+
+		/** Iterates through all the elements of the Repository with the given
+		 * @tparam KeyType and @tparam ValueType calling the given
+		 * callback function
+		 *
+		 * @param	callback the function to call for each element */
+		template <typename KeyType, typename ValueType>
+		void iterate(const std::function<void(KeyType&, ValueType&)>& callback);
+
+		/** Removes an element with the given key from the Repository
+		 *
+		 * @param	key the Key with which the element was added to the
+		 *			Repository */
+		template <typename KeyType, typename ValueType>
+		void remove(const KeyType& key);
 	private:
 		/** @return	the type id of the RepoTable with @tparam KeyType and
 		 *			@param ValueType */

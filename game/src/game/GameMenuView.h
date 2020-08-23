@@ -1,12 +1,14 @@
 #ifndef GAME_MENU_VIEW_H
 #define GAME_MENU_VIEW_H
 
+#include <se/utils/Repository.h>
 #include <se/app/gui/Panel.h>
 #include <se/app/gui/Label.h>
 #include <se/app/gui/Button.h>
 #include <se/app/gui/Rectangle.h>
 #include <se/app/gui/GUIManager.h>
 #include "GameMenuController.h"
+#include "Game.h"
 
 namespace game {
 
@@ -38,20 +40,17 @@ namespace game {
 	public:		// Functions
 		/** Creates a new GameMenuView
 		 *
-		 * @param	guiManager the GUIManager to use for retrieving input
-		 *			events
+		 * @param	game the Game that holds the GUIManager
 		 * @param	controller the GameMenuController that will handle the user
 		 *			input */
-		GameMenuView(
-			se::app::GUIManager& guiManager,
-			GameMenuController& controller
-		) : mGUIManager(guiManager), mController(controller),
+		GameMenuView(Game& game, GameMenuController& controller) :
+			mGUIManager(game.getGUIManager()), mController(controller),
 			mPanel(&mGUIManager), mTitleLabel(&mGUIManager),
 			mBackButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
 			mQuitButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
 			mBackLabel(&mGUIManager), mQuitLabel(&mGUIManager)
 		{
-			auto arial = mGUIManager.getRepository().find<std::string, se::graphics::Font>("arial");
+			auto arial = game.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) { return; }
 
 			mTitleLabel.setFont(arial);

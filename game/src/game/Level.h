@@ -7,7 +7,7 @@
 #include <se/graphics/2D/RenderableSprite.h>
 #include <se/graphics/2D/RenderableText.h>
 
-#include <se/app/Entity.h>
+#include <se/app/Scene.h>
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Force.h>
 #include <se/physics/constraints/Constraint.h>
@@ -29,13 +29,10 @@ namespace game {
 		static constexpr float kZNear				= 0.1f;
 		static constexpr float kZFar				= 2000.0f;
 
-		std::vector<se::app::Entity> mEntities;
+		Game& mGame;
+		se::app::Scene mScene;
 		se::app::Entity mPlayerEntity;
 		PlayerController* mPlayerController;
-		std::vector<se::audio::Buffer> mBuffers;
-		std::vector<se::physics::Force*> mForces;
-		std::vector<se::physics::Constraint*> mConstraints;
-		std::vector<se::animation::IAnimator*> mAnimators;
 		se::graphics::RenderableSprite *mLogoTexture, *mReticleTexture;
 		se::graphics::RenderableText* mPickText;
 
@@ -43,13 +40,22 @@ namespace game {
 		/** Creates a new Level and loads all the needed resources into
 		 * the GameData
 		 *
-		 * @param	gameData a reference to the GameData where we are going to
+		 * @param	game a reference to the Game where we are going to
 		 *			load the Level menu */
-		Level(GameData& gameData);
+		Level(Game& game);
 
 		/** Class destructor, it clears all the used resources from the
 		 * GameData */
 		virtual ~Level();
+
+		/** @return	the Game that holds the Level */
+		Game& getGame() { return mGame; };
+
+		/** @return	the Scene of the Level */
+		se::app::Scene& getScene() { return mScene; };
+
+		/** @return	the player Entity of the Level */
+		se::app::Entity getPlayer() const { return mPlayerEntity; };
 
 		/** Used for updating the Level at the same time than the Game does
 		 * it

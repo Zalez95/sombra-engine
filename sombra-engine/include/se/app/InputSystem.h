@@ -2,10 +2,12 @@
 #define INPUT_SYSTEM_H
 
 #include <deque>
-#include "../window/WindowSystem.h"
 #include "ISystem.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class InputSystem, it's a System used for handling the user input at a
@@ -14,12 +16,9 @@ namespace se::app {
 	class InputSystem : public ISystem
 	{
 	private:	// Attributes
-		/** A reference to the WindowSystem used for checking the player's
-		 * input data */
-		window::WindowSystem& mWindowSystem;
-
-		/** The EventManager used for notifying the input events */
-		EventManager& mEventManager;
+		/** A reference to the Application that holds WindowManager and
+		 * EventManager needed for retrieving and notifying the user input */
+		Application& mApplication;
 
 		/** A queue that holds all the events that must be submitted in the
 		 * next update call due to the user input from oldest to newest */
@@ -28,16 +27,9 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new InputSystem
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities
-		 * @param	windowSystem the WindowSystem used for Checking the
-		 *			input of the player
-		 * @param	eventManager a reference to the EventManager where the
-		 *			InputSystem will submit its events */
-		InputSystem(
-			EntityDatabase& entityDatabase, window::WindowSystem& windowSystem,
-			EventManager& eventManager
-		);
+		 * @param	application a reference to the Application that holds the
+		 *			current System */
+		InputSystem(Application& application);
 
 		/** Submits all the user input events */
 		virtual void update() override;

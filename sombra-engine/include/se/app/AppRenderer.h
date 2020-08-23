@@ -3,16 +3,18 @@
 
 #include <glm/glm.hpp>
 #include "../graphics/Pass.h"
-#include "../graphics/GraphicsEngine.h"
 #include "../graphics/core/Texture.h"
 #include "../graphics/core/UniformBuffer.h"
 #include "../graphics/core/UniformVariable.h"
 #include "../graphics/3D/RenderableMesh.h"
 #include "ISystem.h"
-#include "Application.h"
-#include "CameraSystem.h"
+#include "events/ContainerEvent.h"
+#include "events/ResizeEvent.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class AppRenderer, It's a System used for creating the RenderGraph and
@@ -42,14 +44,9 @@ namespace se::app {
 		static constexpr int kColor			= 0;
 		static constexpr int kBright		= 1;
 
-		/** The GraphicsEngine used for rendering the Scene */
-		graphics::GraphicsEngine& mGraphicsEngine;
-
-		/** The CameraSystem that holds the Passes data */
-		CameraSystem& mCameraSystem;
-
-		/** The lighting pass used for rendering */
-		std::shared_ptr<graphics::Pass> mLightingPass;
+		/** The Application that holds the GraphicsEngine used for rendering
+		 * the Entities */
+		Application& mApplication;
 
 		/** The UniformBuffer where the lights data will be stored */
 		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
@@ -67,42 +64,47 @@ namespace se::app {
 		/** The prefilter Texture to render with */
 		TextureSPtr mPrefilterMap;
 
-		/** The BRDF Texture to render with */
-		TextureSPtr mBrdfMap;
-
 		/** The plane RenderableMesh used for rendering */
 		std::shared_ptr<graphics::RenderableMesh> mPlaneRenderable;
+
+		/** The camera Entity used for rendering */
+		Entity mCameraEntity;
+
+		/** If the camera was updated or not */
+		bool mCameraUpdated;
 
 	public:		// Functions
 		/** Creates a new AppRenderer
 		 *
-		 * @param	application the Application that holds all the data
-		 * @param	graphicsEngine the GraphicsEngine used for rendering the
-		 *			Scene
-		 * @param	cameraSystem the CameraSystem that holds the Passes data
+		 * @param	application a reference to the Application that holds the
+		 *			current System
 		 * @param	width the initial width of the FrameBuffer where the
-		 *			Scene is going to be rendered
+		 *			Entities are going to be rendered
 		 * @param	height the initial height of the FrameBuffer where the
-		 *			Scene is going to be rendered */
+		 *			Entities are going to be rendered */
 		AppRenderer(
-			Application& application, graphics::GraphicsEngine& graphicsEngine,
-			CameraSystem& cameraSystem, std::size_t width, std::size_t height
+			Application& application, std::size_t width, std::size_t height
 		);
 
-		/** Sets the irradiance texture of the AppRenderer
-		 *
-		 * @param	texture	the new irradiance texture */
-		void setIrradianceMap(TextureSPtr texture);
+		/** Class destructor */
+		~AppRenderer();
 
-		/** Sets the prefiltered environment map texture of the AppRenderer
+		/** Notifies the AppRenderer of the given event
 		 *
-		 * @param	texture	the new prefilter texture */
-		void setPrefilterMap(TextureSPtr texture);
+		 * @param	event the IEvent to notify */
+		virtual void notify(const IEvent& event) override;
 
-		/** Sets the convoluted BRDF texture of the AppRenderer
+		/** Function that the EntityDatabase will call when an Entity is
+		 * added
 		 *
-		 * @param	texture	the new BRDF texture */
-		void setBRDFMap(TextureSPtr texture);
+		 * @param	entity the new Entity */
+		virtual void onNewEntity(Entity entity);
+
+		/** Function that the EntityDatabase will call when an Entity is
+		 * removed
+		 *
+		 * @param	entity the Entity to remove */
+		virtual void onRemoveEntity(Entity entity);
 
 		/** Updates the light sources with the Entities
 		 *
@@ -115,6 +117,18 @@ namespace se::app {
 		 * @note	this function must be called from the thread with the
 		 *			Graphics API context (probably thread 0) */
 		void render();
+	private:
+		/** Handles the given ContainerEvent by updating the Camera Entity with
+		 * which the Entities will be rendered
+		 *
+		 * @param	event the ContainerEvent to handle */
+		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
+
+		/** Handles the given ResizeEvent by notifying the GraphicsEngine of
+		 * the window resize
+		 *
+		 * @param	event the ResizeEvent to handle */
+		void onResizeEvent(const ResizeEvent& event);
 	};
 
 }

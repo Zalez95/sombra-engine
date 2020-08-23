@@ -1,8 +1,8 @@
 #ifndef SKIN_H
 #define SKIN_H
 
-#include <vector>
 #include <unordered_map>
+#include "../../utils/FixedVector.h"
 #include "../../animation/AnimationNode.h"
 
 namespace se::app {
@@ -13,12 +13,15 @@ namespace se::app {
 	 */
 	struct Skin
 	{
+		/** The maximum number of joints in the skin */
+		static constexpr unsigned int kMaxJoints = 64;
+
 		/** Maps the AnimationNodes with their respective joint indices */
 		std::unordered_map<animation::AnimationNode*, std::size_t> jointIndices;
 
 		/** The inverse bind matrices of the joints, they're used for
 		 * transforming the mesh to the local space of each joint */
-		std::vector<glm::mat4> inverseBindMatrices;
+		utils::FixedVector<glm::mat4, kMaxJoints> inverseBindMatrices;
 	};
 
 
@@ -28,7 +31,7 @@ namespace se::app {
 	 * @param	modelMatrix the model matrix that transforms from the local
 	 *			space of a Renderable3D to the global space
 	 * @return	a vector with the joint matrices of the Skin */
-	std::vector<glm::mat4> calculateJointMatrices(
+	utils::FixedVector<glm::mat4, Skin::kMaxJoints> calculateJointMatrices(
 		const Skin& skin, const glm::mat4& modelMatrix
 	);
 

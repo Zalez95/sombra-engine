@@ -22,9 +22,9 @@ namespace game {
 		/** Creates a new GameMenuController and loads all the needed
 		 * resources into the GameData
 		 *
-		 * @param	game a reference to the GameData where we are going to add
+		 * @param	game a reference to the Game where we are going to add
 		 *			the Main menu */
-		GameMenuController(GameData& gameData);
+		GameMenuController(Game& game);
 
 		/** Class destructor, it clears all the used resources from the
 		 * GameData */

@@ -12,6 +12,7 @@ namespace se::app {
 		Resize,			// Notifies Window resize input events
 		Key,			// Notifies Keyboard input events
 		Collision,		// Notifies collision detection events
+		Camera,			// Camera change events
 		Application,	// Reserved for client code events
 		NumTopics		// Total number of events
 	};
@@ -29,6 +30,7 @@ namespace se::app {
 			case Topic::Resize:			return os << "Topic::Resize";
 			case Topic::Key:			return os << "Topic::Key";
 			case Topic::Collision:		return os << "Topic::Collision";
+			case Topic::Camera:			return os << "Topic::Camera";
 			case Topic::Application:	return os << "Topic::Application";
 			default:					return os;
 		}
@@ -61,7 +63,7 @@ namespace se::app {
 		 *
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current IEvent */
-		virtual void printTo(std::ostream& os) const = 0 ;
+		virtual void printTo(std::ostream& os) const = 0;
 	};
 
 
@@ -82,6 +84,13 @@ namespace se::app {
 
 		/** @return	the Topic of the IEvent */
 		virtual Topic getTopic() const { return kTopic; };
+	protected:
+		/** Appends the current Event formated as text to the given ostream
+		 *
+		 * @param	os a reference to the ostream where we want to print the
+		 *			current ContainerEvent */
+		virtual void printTo(std::ostream& os) const override
+		{ os << "{ kTopic : " << this->kTopic << " }"; };
 	};
 
 }

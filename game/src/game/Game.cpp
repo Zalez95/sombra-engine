@@ -3,7 +3,7 @@
 #include <se/utils/Repository.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/graphics/GraphicsEngine.h>
-#include <se/window/WindowSystem.h>
+#include <se/window/WindowManager.h>
 #include <se/collision/CollisionWorld.h>
 #include "Game.h"
 #include "Level.h"
@@ -18,61 +18,36 @@ namespace game {
 			{ kTitle, kWidth, kHeight },
 			{ kMinFDifference, kContactPrecision, kContactSeparation, kMaxManifolds, kMaxRayCasterIterations },
 			kUpdateTime
-		),
-		mGameData{}
+		)
 	{
-		mGameData.taskManager = mTaskManager;
-		mGameData.eventManager = mEventManager;
-		mGameData.entityDatabase = mEntityDatabase;
-		mGameData.repository = mRepository;
-
-		mGameData.windowSystem = mWindowSystem;
-		mGameData.graphicsEngine = mGraphicsEngine;
-		mGameData.physicsEngine = mPhysicsEngine;
-		mGameData.collisionWorld = mCollisionWorld;
-		mGameData.animationEngine = mAnimationEngine;
-		mGameData.audioEngine = mAudioEngine;
-
-		mGameData.inputSystem = mInputSystem;
-		mGameData.cameraSystem = mCameraSystem;
-		mGameData.appRenderer = mAppRenderer;
-		mGameData.rMeshSystem = mRMeshSystem;
-		mGameData.rTerrainSystem = mRTerrainSystem;
-		mGameData.dynamicsSystem = mDynamicsSystem;
-		mGameData.constraintsSystem = mConstraintsSystem;
-		mGameData.collisionSystem = mCollisionSystem;
-		mGameData.animationSystem = mAnimationSystem;
-		mGameData.audioSystem = mAudioSystem;
-		mGameData.guiManager = mGUIManager;
-
 		// State Machine
 		auto fClearAllScreens = [this]() {
-			for (auto& screen : mGameData.currentGameScreens) {
+			for (auto& screen : mCurrentGameScreens) {
 				delete screen;
 			}
-			mGameData.currentGameScreens.clear();
+			mCurrentGameScreens.clear();
 		};
 
 		auto fLoadMainMenu = [this, fClearAllScreens]() {
 			fClearAllScreens();
-			mGameData.currentGameScreens.push_back( new MainMenuController(mGameData) );
+			mCurrentGameScreens.push_back( new MainMenuController(*this) );
 		};
 		auto fLoadLevel = [this, fClearAllScreens]() {
 			fClearAllScreens();
-			mGameData.currentGameScreens.push_back( new Level(mGameData) );
+			mCurrentGameScreens.push_back( new Level(*this) );
 		};
 		auto fLoadSettings = [this, fClearAllScreens]() {
 			fClearAllScreens();
-			mGameData.currentGameScreens.push_back( new SettingsMenuController(mGameData) );
+			mCurrentGameScreens.push_back( new SettingsMenuController(*this) );
 		};
 		auto fAddGameMenu = [this]() {
-			dynamic_cast<Level*>(mGameData.currentGameScreens.back())->setHandleInput(false);
-			mGameData.currentGameScreens.push_back( new GameMenuController(mGameData) );
+			dynamic_cast<Level*>(mCurrentGameScreens.back())->setHandleInput(false);
+			mCurrentGameScreens.push_back( new GameMenuController(*this) );
 		};
 		auto fRemoveGameMenu = [this]() {
-			delete mGameData.currentGameScreens.back();
-			mGameData.currentGameScreens.pop_back();
-			dynamic_cast<Level*>(mGameData.currentGameScreens.back())->setHandleInput(true);
+			delete mCurrentGameScreens.back();
+			mCurrentGameScreens.pop_back();
+			dynamic_cast<Level*>(mCurrentGameScreens.back())->setHandleInput(true);
 		};
 		auto fStop = [this, fClearAllScreens]() {
 			fClearAllScreens();
@@ -123,29 +98,25 @@ namespace game {
 			}
 		};
 
-		mGameData.stateMachine = new se::utils::StateMachine(
+		mStateMachine = new se::utils::StateMachine(
 			mGameTransitions.data(), mGameTransitions.size(),
 			static_cast<se::utils::StateMachine::State>(GameState::Start)
 		);
 
 		try {
 			// Font load
-			auto arial = std::make_unique<se::graphics::Font>();
+			auto arial = std::make_shared<se::graphics::Font>();
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), '\0');
 			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
 				throw std::runtime_error("Error reading the font file");
 			}
+			mRepository->add(std::string("arial"), arial);
 
-			auto arialSPtr = mRepository->add(std::string("arial"), std::move(arial));
-			if (!arialSPtr) {
-				throw std::runtime_error("Arial Font couldn't be added to the Repository");
-			}
-
-			mGameData.fpsText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arialSPtr, { 0.0f, 1.0f, 0.0f, 1.0f });
-			mGameData.fpsText->addTechnique(mRepository->find<std::string, se::graphics::Technique>("technique2D"));
-			mGameData.fpsText->setZIndex(255);
-			mGraphicsEngine->addRenderable(mGameData.fpsText);
+			mFPSText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
+			mFPSText->addTechnique(mRepository->find<std::string, se::graphics::Technique>("technique2D"));
+			mFPSText->setZIndex(255);
+			mExternalTools->graphicsEngine->addRenderable(mFPSText);
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
@@ -155,7 +126,7 @@ namespace game {
 		// Check if the game was loaded succesfully
 		if (mState != AppState::Error) {
 			// Load main menu
-			mGameData.stateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
+			mStateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
 		}
 
 		mAccumulatedTime = 0.0f;
@@ -165,17 +136,17 @@ namespace game {
 
 	Game::~Game()
 	{
-		if (mGameData.stateMachine) {
-			delete mGameData.stateMachine;
+		if (mStateMachine) {
+			delete mStateMachine;
 		}
 
-		for (auto& screen : mGameData.currentGameScreens) {
+		for (auto& screen : mCurrentGameScreens) {
 			delete screen;
 		}
 
-		if (mGameData.fpsText) {
-			mGameData.graphicsEngine->removeRenderable(mGameData.fpsText);
-			delete mGameData.fpsText;
+		if (mFPSText) {
+			mExternalTools->graphicsEngine->removeRenderable(mFPSText);
+			delete mFPSText;
 		}
 	}
 
@@ -187,13 +158,13 @@ namespace game {
 		mAccumulatedTime += deltaTime;
 		mNumFrames++;
 		if (mAccumulatedTime > 1.0f) {
-			mGameData.fpsText->setText(std::to_string(mNumFrames));
+			mFPSText->setText(std::to_string(mNumFrames));
 			mAccumulatedTime = 0.0f;
 			mNumFrames = 0;
 		}
 
-		mGameData.stateMachine->handleEvents();
-		for (auto& screen : mGameData.currentGameScreens) {
+		mStateMachine->handleEvents();
+		for (auto& screen : mCurrentGameScreens) {
 			screen->update(deltaTime);
 		}
 

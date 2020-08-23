@@ -47,7 +47,7 @@ namespace se::app {
 		 *
 		 * @param	os a reference to the ostream where we want to print the
 		 *			current ResizeEvent */
-		virtual void printTo(std::ostream& os) const
+		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic
 				<< ", mWidth : " << mWidth << ", mHeight : " << mHeight << " }";

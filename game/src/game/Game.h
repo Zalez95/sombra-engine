@@ -18,40 +18,6 @@ namespace game {
 	static constexpr int kMaxRayCasterIterations	= 32;
 	static constexpr float kUpdateTime				= 0.016f;
 
-
-	/** Holds all the game systems and data */
-	struct GameData
-	{
-		se::utils::TaskManager* taskManager;
-		se::app::EventManager* eventManager;
-		se::app::EntityDatabase* entityDatabase;
-		se::utils::Repository* repository;
-
-		se::window::WindowSystem* windowSystem;
-		se::graphics::GraphicsEngine* graphicsEngine;
-		se::physics::PhysicsEngine* physicsEngine;
-		se::collision::CollisionWorld* collisionWorld;
-		se::animation::AnimationEngine* animationEngine;
-		se::audio::AudioEngine* audioEngine;
-
-		se::app::InputSystem* inputSystem;
-		se::app::CameraSystem* cameraSystem;
-		se::app::AppRenderer* appRenderer;
-		se::app::RMeshSystem* rMeshSystem;
-		se::app::RTerrainSystem* rTerrainSystem;
-		se::app::DynamicsSystem* dynamicsSystem;
-		se::app::ConstraintsSystem* constraintsSystem;
-		se::app::CollisionSystem* collisionSystem;
-		se::app::AnimationSystem* animationSystem;
-		se::app::AudioSystem* audioSystem;
-		se::app::GUIManager* guiManager;
-
-		se::utils::StateMachine* stateMachine;
-		se::graphics::RenderableText* fpsText;
-		std::vector<IGameScreen*> currentGameScreens;
-	};
-
-
 	enum class GameState : se::utils::StateMachine::State
 	{
 		Start,
@@ -80,8 +46,9 @@ namespace game {
 	class Game : public se::app::Application
 	{
 	private:	// Attributes
-		/** All the game systems and data */
-		GameData mGameData;
+		se::utils::StateMachine* mStateMachine;
+		se::graphics::RenderableText* mFPSText;
+		std::vector<IGameScreen*> mCurrentGameScreens;
 
 		/** The transition table of the StateMachine of the Game*/
 		std::vector<se::utils::StateMachine::Transition> mGameTransitions;
@@ -95,6 +62,9 @@ namespace game {
 
 		/** Class destructor */
 		~Game();
+
+		/** @return	the State Machine of the Game */
+		se::utils::StateMachine& getStateMachine() { return *mStateMachine; };
 	protected:
 		/** Updates the Game managers and systems each main loop
 		 * iteration
