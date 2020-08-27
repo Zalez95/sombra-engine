@@ -6,16 +6,15 @@
 #include "se/app/RMeshSystem.h"
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
-#include "se/app/MeshComponent.h"
+#include "se/app/graphics/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/Skin.h"
 
 namespace se::app {
 
 	RMeshSystem::RMeshSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>().set<SkinComponent>());
 	}
 
 
@@ -27,7 +26,7 @@ namespace se::app {
 
 	void RMeshSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, Skin>(entity);
+		auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
 		if (!mesh) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Mesh";
 			return;
@@ -42,6 +41,7 @@ namespace se::app {
 		}
 
 		auto& entityUniforms = mEntityUniforms[entity];
+		entityUniforms.clear();
 		for (auto& rMesh : mesh->rMeshes) {
 			rMesh.processTechniques([&, skin = skin](auto technique) { technique->processPasses([&](auto pass) {
 				std::shared_ptr<graphics::Program> program;
@@ -57,7 +57,7 @@ namespace se::app {
 					rMesh.addBindable(meshUniforms.modelMatrix);
 
 					if (skin) {
-						auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
+						auto jointMatrices = skin->calculateJointMatrices(modelMatrix);
 						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
 						meshUniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4, Skin::kMaxJoints>>(
 							"uJointMatrices", *program, jointMatrices.data(), numJoints
@@ -103,7 +103,7 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 
 		for (auto [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, skin] = mEntityDatabase.getComponents<TransformsComponent, Skin>(entity);
+			auto [transforms, skin] = mEntityDatabase.getComponents<TransformsComponent, SkinComponent>(entity);
 			if (transforms && transforms->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
 				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
@@ -113,7 +113,7 @@ namespace se::app {
 				for (auto& meshUniforms : entityUniforms) {
 					meshUniforms.modelMatrix->setValue(modelMatrix);
 					if (skin) {
-						auto jointMatrices = calculateJointMatrices(*skin, modelMatrix);
+						auto jointMatrices = skin->calculateJointMatrices(modelMatrix);
 						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
 						meshUniforms.jointMatrices->setValue(jointMatrices.data(), numJoints);
 					}

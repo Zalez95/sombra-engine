@@ -46,7 +46,7 @@ namespace se::app {
 		 * scene will be rendered */
 		Entity mCameraEntity;
 
-		/** If the active camera has been updated or not */
+		/** If the active CameraComponent.has been updated or not */
 		bool mCameraUpdated;
 
 		/** The shared uniform variables of the Passes */

@@ -3,33 +3,38 @@
 
 #include <string>
 #include <nlohmann/json_fwd.hpp>
+#include "se/graphics/3D/RenderableMesh.h"
+#include "se/animation/IAnimation.h"
+#include "se/animation/CompositeAnimator.h"
+#include "se/animation/AnimationNode.h"
 #include "se/app/loaders/SceneReader.h"
 #include "se/app/graphics/Image.h"
-#include "se/animation/IAnimation.h"
+#include "se/app/graphics/Material.h"
+#include "se/app/graphics/MeshComponent.h"
+#include "se/app/graphics/SkinComponent.h"
+#include "se/app/graphics/CameraComponent.h"
+#include "se/app/graphics/LightComponent.h"
 
 namespace se::app {
 
 	/**
-	 * Class GLTFReader, it's used to create meshes from the given texts
+	 * Class GLTFReader, TODO:
 	 */
 	class GLTFReader : public SceneReader
 	{
 	private:	// Nested types
-		using MaterialUPtr = std::unique_ptr<Material>;
+		using Buffer = std::vector<std::byte>;
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
-		using MeshUPtr = std::unique_ptr<graphics::Mesh>;
-		using Primitives = std::vector<Scenes::Primitive>;
-		using LightSourceUPtr = std::unique_ptr<LightSource>;
-		using SkinUPtr = std::unique_ptr<Skin>;
-		using CameraUPtr = std::unique_ptr<Camera>;
+		using LightSourceSPtr = std::shared_ptr<LightSource>;
+		using SkinSPtr = std::shared_ptr<Skin>;
 		using SceneUPtr = std::unique_ptr<Scene>;
 		using Vec3Animation = animation::IAnimation<glm::vec3>;
 		using QuatAnimation = animation::IAnimation<glm::quat>;
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
-		using CAnimatorUPtr = std::unique_ptr<animation::CompositeAnimator>;
-		using Buffer = std::vector<std::byte>;
+		using CAnimatorSPtr = std::shared_ptr<animation::CompositeAnimator>;
+		using IndexVector = std::vector<std::size_t>;
 
 		/** Struct FileFormat, holds the version of a valid GLTF file format */
 		struct FileFormat
@@ -60,52 +65,69 @@ namespace se::app {
 			graphics::TextureWrap wraps[2];
 		};
 
+		/** Struct MaterialTechnique holds the data related to a Material */
+		struct MaterialTechnique
+		{
+			std::string name;
+			Material material;
+			TechniqueSPtr technique;
+			TechniqueSPtr techniqueSkin;
+		};
+
 		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
 		struct Node
 		{
-			Scene::Entity sceneEntity;
-			std::vector<std::size_t> children;
 			animation::NodeData nodeData;
+			std::vector<std::size_t> children;
+			Entity entity = kNullEntity;
+			bool hasSkin = false;
+			std::size_t skinIndex = 0;
+			animation::AnimationNode* animationNode = nullptr;
 		};
 
-		/** Struct GLTFData, it holds validated GLTF data */
+		/** Struct GLTFData, it holds temporaly loaded data from a GLTF file */
 		struct GLTFData
 		{
+			std::string fileName;
+			std::string basePath;
+			Scene& scene;
+
 			std::vector<Accessor> accessors;
 			std::vector<Buffer> buffers;
 			std::vector<BufferView> bufferViews;
 			std::vector<Sampler> samplers;
 			std::vector<Image<unsigned char>> images;
 			std::vector<TextureSPtr> textures;
-			std::vector<MaterialUPtr> materials;
-			std::vector<MeshUPtr> meshes;
-			std::vector<Primitives> primitives;
-			std::vector<LightSourceUPtr> lightSources;
-			std::vector<SkinUPtr> skins;
-			std::vector<CameraUPtr> cameras;
+			std::vector<MaterialTechnique> materials;
+			std::vector<MeshComponent> meshComponents;
+			std::vector<LightSourceSPtr> lightSources;
+			std::vector<SkinSPtr> skins;
+			std::vector<IndexVector> jointIndices;
+			std::vector<CameraComponent> cameraComponents;
 			std::vector<Node> nodes;
 			std::vector<SceneUPtr> scenes;
-			std::vector<CAnimatorUPtr> compositeAnimators;
+			std::vector<CAnimatorSPtr> compositeAnimators;
+
+			GLTFData(Scene& scene) : scene(scene) {};
 		};
 
 	private:	// Attributes
-		/** The base path of the file to parse */
-		std::string mBasePath;
-
 		/** The temporarily read GLTF data */
-		GLTFData mGLTFData;
+		std::unique_ptr<GLTFData> mGLTFData;
 
 	public:		// Functions
-		/** Creates a new GLTFReader */
-		GLTFReader();
+		/** @copydoc SceneReader::SceneReader(Application&,TechniqueBuilder&) */
+		GLTFReader(
+			Application& application, TechniqueBuilder& techniqueBuilder
+		) : SceneReader(application, techniqueBuilder) {};
 
 		/** Parses the given GLTF file and stores the result in the given
 		 * Scenes object
 		 *
 		 * @param	path the path to the GLTF file to parse
-		 * @param	output the Scenes object where the file data will be stored
+		 * @param	output the Scene object where the file data will be stored
 		 * @return	a Result object with the result of the load operation */
-		Result load(const std::string& path, Scenes& output) override;
+		Result load(const std::string& path, Scene& output) override;
 	private:
 		/** Reads the JSON file located at the given path
 		 *
@@ -117,10 +139,8 @@ namespace se::app {
 		/** Parses the given JSON object to the given Scenes object
 		 *
 		 * @param	jsonGLTF the JSON object where the source data is stored
-		 * @param	output the Scenes object where the loaded data will be
-		 *			stored
 		 * @return	a Result object with the result of the parse operation */
-		Result parseGLTF(const nlohmann::json& jsonGLTF, Scenes& output);
+		Result parseGLTF(const nlohmann::json& jsonGLTF);
 
 		/** Checks the version of the given GLTF JSON asset
 		 *
@@ -176,25 +196,25 @@ namespace se::app {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseTexture(const nlohmann::json& jsonTexture);
 
-		/** Creates a new Material from the given GLTF JSON Material and appends
-		 * it to mGLTFData
+		/** Creates a new Material from the given GLTF JSON Material and
+		 * appends it to mGLTFData
 		 *
 		 * @param	jsonMaterial the JSON object with the Material to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseMaterial(const nlohmann::json& jsonMaterial);
 
-		/** Creates a new Primitive from the given GLTF JSON primitive and
-		 * appends it to mGLTFData
+		/** Creates a new RenderableMesh from the given GLTF JSON primitive and
+		 * returns it in the given parameter
 		 *
 		 * @param	jsonPrimitive the JSON object with the Primitive to parse
-		 * @param	out a reference to the pair where the indices of the new
-		 *			mesh and the material of the Primitive will be stored
+		 * @param	out a reference to the RenderableMesh where the Primitive
+		 *			data will be stored
 		 * @return	a Result object with the result of the parse operation */
 		Result parsePrimitive(
-			const nlohmann::json& jsonPrimitive, Scenes::Primitive& out
+			const nlohmann::json& jsonPrimitive, graphics::RenderableMesh& out
 		);
 
-		/** Creates new Primitives from the given GLTF JSON Mesh and appends
+		/** Creates new MeshComponents from the given GLTF JSON Mesh and appends
 		 * them to mGLTFData.
 		 *
 		 * @param	jsonMesh the JSON object with the Mesh to parse
@@ -217,20 +237,6 @@ namespace se::app {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseCamera(const nlohmann::json& jsonCamera);
 
-		/** Creates a new Node from the given GLTF JSON Node and appends it to
-		 * mGLTFData
-		 *
-		 * @param	jsonNode the JSON object with the Node to parse
-		 * @return	a Result object with the result of the parse operation */
-		Result parseNode(const nlohmann::json& jsonNode);
-
-		/** Creates a new Scene from the given GLTF JSON Scene and appends it to
-		 * mGLTFData
-		 *
-		 * @param	jsonScene the JSON object with the Scene to parse
-		 * @return	a Result object with the result of the parse operation */
-		Result parseScene(const nlohmann::json& jsonScene);
-
 		/** Creates a new IAnimation from the given GLTF JSON Animation Sampler
 		 * and returns it in one of the given output parameters
 		 *
@@ -238,7 +244,8 @@ namespace se::app {
 		 *			parse
 		 * @param	out1 the pointer used for returning Vec3 IAnimations
 		 * @param	out2 the pointer used for returning Quat IAnimations
-		 * @return	a Result object with the result of the parse operation */
+		 * @return	a Result object with the result of the parse operation
+		 * @note	AnimationNodes must have been already loaded */
 		Result parseAnimationSampler(
 			const nlohmann::json& jsonSampler,
 			std::unique_ptr<Vec3Animation>& out1,
@@ -266,7 +273,8 @@ namespace se::app {
 		 * appends it to mGLTFData
 		 *
 		 * @param	jsonAnimation the JSON object with the Animation to parse
-		 * @return	a Result object with the result of the parse operation */
+		 * @return	a Result object with the result of the parse operation
+		 * @note	AnimationNodes must have been already loaded */
 		Result parseAnimation(const nlohmann::json& jsonAnimation);
 
 		/** Used to parse the KHR_lights_punctual extension
@@ -282,6 +290,20 @@ namespace se::app {
 		 * @param	jsonLight the JSON object with the LightSource to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseLight(const nlohmann::json& jsonLight);
+
+		/** Creates a new Node from the given GLTF JSON Node and appends it to
+		 * mGLTFData
+		 *
+		 * @param	jsonNode the JSON object with the Node to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseNode(const nlohmann::json& jsonNode);
+
+		/** Creates a new Scene from the given GLTF JSON Scene and appends it to
+		 * mGLTFData
+		 *
+		 * @param	jsonScene the JSON object with the Scene to parse
+		 * @return	a Result object with the result of the parse operation */
+		Result parseScene(const nlohmann::json& jsonScene);
 	};
 
 }

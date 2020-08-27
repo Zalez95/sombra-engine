@@ -1,11 +1,10 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <memory>
+#include <string>
 #include <vector>
-#include "se/utils/Repository.h"
+#include "../utils/Repository.h"
 #include "../animation/AnimationNode.h"
-#include "../graphics/core/Texture.h"
 #include "Entity.h"
 
 namespace se::app {
@@ -16,11 +15,14 @@ namespace se::app {
 	 */
 	struct Scene
 	{
+		/** The name of the Scene */
+		std::string name;
+
 		/** The Entities of the Scene */
 		std::vector<Entity> entities;
 
 		/** The root AnimationNode node of the Scene hierarchy */
-		std::unique_ptr<animation::AnimationNode> rootNode;
+		animation::AnimationNode rootNode;
 
 		/** The repository that holds all the shared data of the Scene */
 		utils::Repository repository;

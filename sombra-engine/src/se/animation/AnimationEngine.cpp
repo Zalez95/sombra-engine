@@ -5,14 +5,16 @@ namespace se::animation {
 
 	void AnimationEngine::addAnimator(IAnimator* animator)
 	{
-		if (animator) {
-			mAnimators.push_back(animator);
-		}
+		if (!animator) { return; }
+
+		mAnimators.push_back(animator);
 	}
 
 
 	void AnimationEngine::removeAnimator(IAnimator* animator)
 	{
+		if (!animator) { return; }
+
 		animator->resetNodesAnimatedState();
 
 		mAnimators.erase(

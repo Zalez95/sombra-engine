@@ -13,7 +13,7 @@ namespace se::collision { class Collider; }
 namespace se::app {
 
 	class EntityDatabase;
-	class Scene;
+	struct Scene;
 
 
 	/**

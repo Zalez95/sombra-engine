@@ -14,12 +14,6 @@ namespace se::animation {
 	}
 
 
-	void TransformationAnimator::restartAnimation()
-	{
-		mAccumulatedTime = 0.0f;
-	}
-
-
 	void TransformationAnimator::resetNodesAnimatedState()
 	{
 		for (AnimatedNode& animatedNode : mNodes) {
@@ -40,7 +34,15 @@ namespace se::animation {
 
 	void TransformationAnimator::addNode(TransformationType type, AnimationNode* node)
 	{
-		mNodes.push_back({ type, node });
+		mNodes.push_back({ type, node, 0.0f });
+	}
+
+
+	void TransformationAnimator::processNodes(const NodeCallback& callback)
+	{
+		for (AnimatedNode& animatedNode : mNodes) {
+			callback(animatedNode.node);
+		}
 	}
 
 
@@ -63,10 +65,10 @@ namespace se::animation {
 
 	void Vec3Animator::animate(float elapsedTime)
 	{
-		mAccumulatedTime = std::fmod(mAccumulatedTime + elapsedTime, getLoopTime());
-		glm::vec3 transformation = mAnimation->interpolate(mAccumulatedTime);
-
 		for (auto& animationNode : mNodes) {
+			animationNode.accumulatedTime = std::fmod(animationNode.accumulatedTime + elapsedTime, getLoopTime());
+			glm::vec3 transformation = mAnimation->interpolate(animationNode.accumulatedTime);
+
 			switch (animationNode.type) {
 				case TransformationType::Translation:
 					animationNode.node->getData().localTransforms.position = transformation;
@@ -93,10 +95,10 @@ namespace se::animation {
 
 	void QuatAnimator::animate(float elapsedTime)
 	{
-		mAccumulatedTime = std::fmod(mAccumulatedTime + elapsedTime, getLoopTime());
-		glm::quat transformation = mAnimation->interpolate(mAccumulatedTime);
-
 		for (auto& animationNode : mNodes) {
+			animationNode.accumulatedTime = std::fmod(animationNode.accumulatedTime + elapsedTime, getLoopTime());
+			glm::quat transformation = mAnimation->interpolate(animationNode.accumulatedTime);
+
 			switch (animationNode.type) {
 				case TransformationType::Rotation:
 					animationNode.node->getData().localTransforms.orientation = transformation;

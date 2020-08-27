@@ -10,7 +10,7 @@ namespace se::app {
 	AnimationSystem::AnimationSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<animation::AnimationNode>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<animation::AnimationNode*>());
 	}
 
 
@@ -22,7 +22,7 @@ namespace se::app {
 
 	void AnimationSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, node] = mEntityDatabase.getComponents<TransformsComponent, animation::AnimationNode>(entity);
+		auto [transforms, node] = mEntityDatabase.getComponents<TransformsComponent, animation::AnimationNode*>(entity);
 		if (!node) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
 			return;
@@ -30,33 +30,40 @@ namespace se::app {
 
 		if (transforms) {
 			// The Entity initial data is overridden by the AnimationNode one
-			transforms->position = node->getData().worldTransforms.position;
-			transforms->orientation = node->getData().worldTransforms.orientation;
-			transforms->scale = node->getData().worldTransforms.scale;
+			transforms->position = (*node)->getData().worldTransforms.position;
+			transforms->orientation = (*node)->getData().worldTransforms.orientation;
+			transforms->scale = (*node)->getData().worldTransforms.scale;
 			transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
 		}
 
-		//TODO:mRootNode->insert(mRootNode->cbegin(), std::move(node));
-		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << node << " added successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << *node << " added successfully";
 	}
 
 
 	void AnimationSystem::onRemoveEntity(Entity entity)
 	{
-		auto [node] = mEntityDatabase.getComponents<animation::AnimationNode>(entity);
+		auto [node] = mEntityDatabase.getComponents<animation::AnimationNode*>(entity);
 		if (!node) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be removed";
 			return;
 		}
 
-		// Remove the nodes
-		/*TODO: auto itNode = std::find(mRootNode->begin(), mRootNode->end(), *node);
-		if (itNode != mRootNode->end()) {
-			SOMBRA_INFO_LOG << "Node " << &(*itNode) << " of Entity " << entity << " removed successfully";
-			mRootNode->erase(itNode);
-		}*/
+		// Remove the descendant entities and nodes first
+		for (auto itNode = ++((*node)->begin()); itNode != (*node)->end(); ++itNode) {
+			animation::AnimationNode* node2 = &(*itNode);
+			Entity descendantEntity = mEntityDatabase.getEntity(&node2);
+			if (descendantEntity != kNullEntity) {
+				mEntityDatabase.removeEntity(descendantEntity);
+			}
+		}
 
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		// Remove the AnimationNode
+		auto parentNode = (*node)->getParent();
+		auto itNode = std::find(parentNode->begin(), parentNode->end(), **node);
+		if (itNode != parentNode->end()) {
+			SOMBRA_INFO_LOG << "Node " << *node << " of Entity " << entity << " removed successfully";
+			parentNode->erase(itNode);
+		}
 	}
 
 
@@ -65,39 +72,37 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		/*for (auto itNode = mRootNode->begin(); itNode != mRootNode->end(); ++itNode) {
-			auto itNodeEntity = mNodeEntities.find( &(*itNode) );
-			if (itNodeEntity != mNodeEntities.end()) {
-				Entity* entity = itNodeEntity->second.entity;
-
+		/* FIXME: first update changes arent't notified
+		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode*>(
+			[this](Entity, TransformsComponent* transforms, animation::AnimationNode** node) {
 				// Reset the Entity animation update
-				entity->updated.reset( static_cast<int>(Entity::Update::Animation) );
+				transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Animation) );
 
-				if (entity->updated.any()) {
-					animation::NodeData& nodeData = itNode->getData();
-					animation::AnimationNode* parentNode = itNode->getParent();
+				if (transforms->updated.any()) {
+					animation::NodeData& nodeData = (*node)->getData();
+					animation::AnimationNode* parentNode = (*node)->getParent();
 					if (parentNode) {
 						animation::NodeData& parentData = parentNode->getData();
-						nodeData.localTransforms.position = entity->position - parentData.worldTransforms.position;
-						nodeData.localTransforms.orientation = glm::inverse(parentData.worldTransforms.orientation) * entity->orientation;
-						nodeData.localTransforms.scale = (1.0f / parentData.worldTransforms.scale) * entity->scale;
+						nodeData.localTransforms.position = transforms->position - parentData.worldTransforms.position;
+						nodeData.localTransforms.orientation = glm::inverse(parentData.worldTransforms.orientation) * transforms->orientation;
+						nodeData.localTransforms.scale = (1.0f / parentData.worldTransforms.scale) * transforms->scale;
 					}
 					else {
-						nodeData.localTransforms.position = entity->position;
-						nodeData.localTransforms.orientation = entity->orientation;
-						nodeData.localTransforms.scale = entity->scale;
+						nodeData.localTransforms.position = transforms->position;
+						nodeData.localTransforms.orientation = transforms->orientation;
+						nodeData.localTransforms.scale = transforms->scale;
 					}
-					animation::updateWorldTransforms(*itNode);
+					animation::updateWorldTransforms(**node);
 				}
 			}
-		}*/
+		);*/
 
 		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
 
 		// Update the Entities with the changes made to the AnimationNode
-		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode>(
-			[this](Entity, TransformsComponent* transforms, animation::AnimationNode* node) {
-				animation::NodeData& nodeData = node->getData();
+		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode*>(
+			[this](Entity, TransformsComponent* transforms, animation::AnimationNode** node) {
+				animation::NodeData& nodeData = (*node)->getData();
 				if (nodeData.animated) {
 					transforms->position = nodeData.worldTransforms.position;
 					transforms->orientation = nodeData.worldTransforms.orientation;

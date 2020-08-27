@@ -6,7 +6,10 @@ namespace se::graphics {
 
 	Technique& Technique::addPass(PassSPtr pass)
 	{
-		mPasses.emplace_back(std::move(pass));
+		if (pass) {
+			mPasses.emplace_back(std::move(pass));
+		}
+
 		return *this;
 	}
 

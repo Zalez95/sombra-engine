@@ -15,7 +15,7 @@ TEST(CompositeAnimator, loopTime1)
 
 	auto atrT1 = std::make_unique<Vec3Animator>(at1);
 	Vec3Animator* atrT1Ptr = atrT1.get();
-	CompositeAnimator atrComposite("anim");
+	CompositeAnimator atrComposite;
 
 	EXPECT_NEAR(atrComposite.getLoopTime(), 0.0f, kTolerance);
 
@@ -33,11 +33,11 @@ TEST(CompositeAnimator, loopTime1)
 
 TEST(CompositeAnimator, animate1)
 {
-	std::vector<AnimationNode> expectedNodes = { {{"b0"}}, {{"b1"}}, {{"b2"}} };
+	std::vector<AnimationNode> expectedNodes(3);
 	expectedNodes[0].getData().localTransforms = { {-3.182263720f, 8.633092795f, 8.014790691f }, { 0.863763153f, 0.388888984f,-0.300208389f, 0.112042762f }, { 1.227616805f,-5.254432319f, 8.096772882f } };
 	expectedNodes[1].getData().localTransforms = { { 0.279904574f,-0.034162148f,-0.959419786f }, {-0.684891402f,-0.166260287f, 0.639585793f, 0.306938827f }, { 0.681886255f, 0.491552144f, 0.541671037f } };
 	expectedNodes[2].getData().localTransforms = { {-0.260901302f, 0.090373396f, 0.462806969f }, { 0.479462414f, 0.526573240f, 0.605637669f,-0.355020254f }, {-0.370700001f, 0.073719248f,-0.448903560f } };
-	std::vector<AnimationNode> originalNodes = { {{"b0"}}, {{"b1"}}, {{"b2"}} };
+	std::vector<AnimationNode> originalNodes(3);
 	originalNodes[0].getData().localTransforms = { {-0.616233110f, 0.166248172f,-0.367524087f }, { 0.634908735f, 0.734051764f, 0.169194266f,-0.171558305f }, { 4.445192337f,-4.281722545f, 2.230783700f } };
 	originalNodes[1].getData().localTransforms = { { 0.332452088f,-0.111552506f, 1.410963535f }, { 0.860006511f,-0.472376585f, 0.024241564f, 0.191472634f }, { 0.905142105f, 1.988715789f, 0.0f } };
 	originalNodes[2].getData().localTransforms = { { 0.332452088f,-0.111552506f, 1.410963535f }, { 0.074382677f,-0.287267595f, 0.806229293f, 0.511799693f }, { 0.841695f, 0.296882f,-0.450525f } };
@@ -84,7 +84,7 @@ TEST(CompositeAnimator, animate1)
 	atrS2->addNode(TransformationAnimator::TransformationType::Scale, &originalNodes[1]);
 	atrS3->addNode(TransformationAnimator::TransformationType::Scale, &originalNodes[2]);
 
-	CompositeAnimator atrComposite("", 4.0f);
+	CompositeAnimator atrComposite(4.0f);
 	atrComposite.addAnimator(std::move(atrT1));
 	atrComposite.addAnimator(std::move(atrT2));
 	atrComposite.addAnimator(std::move(atrT3));
@@ -98,7 +98,6 @@ TEST(CompositeAnimator, animate1)
 	atrComposite.animate(2.909664586f);
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
-		EXPECT_EQ(originalNodes[i].getData().name, expectedNodes[i].getData().name);
 		EXPECT_TRUE(originalNodes[i].getData().animated);
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(originalNodes[i].getData().localTransforms.position[j], expectedNodes[i].getData().localTransforms.position[j], kTolerance);
@@ -115,7 +114,7 @@ TEST(CompositeAnimator, animate1)
 
 TEST(CompositeAnimator, resetNodesAnimatedState1)
 {
-	std::vector<AnimationNode> originalNodes = { {{"b0"}}, {{"b1"}}, {{"b2"}} };
+	std::vector<AnimationNode> originalNodes(3);
 
 	auto at1 = std::make_shared<AnimationVec3Linear>();
 	auto atrT1 = std::make_unique<Vec3Animator>(at1);
@@ -123,7 +122,7 @@ TEST(CompositeAnimator, resetNodesAnimatedState1)
 	atrT1->addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[1]);
 	auto atrT2 = std::make_unique<Vec3Animator>(at1);
 	atrT2->addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[2]);
-	CompositeAnimator atrComposite("");
+	CompositeAnimator atrComposite;
 	atrComposite.addAnimator(std::move(atrT1));
 	atrComposite.addAnimator(std::move(atrT2));
 
@@ -145,23 +144,22 @@ TEST(CompositeAnimator, resetNodesAnimatedState1)
 
 TEST(CompositeAnimator, updateNodesWorldTransforms1)
 {
-	std::vector<AnimationNode> expectedNodes = { {{"b0"}} };
+	std::vector<AnimationNode> expectedNodes(1);
 	expectedNodes[0].getData().worldTransforms = { {-3.182263720f, 8.633092795f, 8.014790691f }, { 0.634908735f, 0.734051764f, 0.169194266f,-0.171558305f }, { 4.445192337f,-4.281722545f, 2.230783700f } };
-	std::vector<AnimationNode> originalNodes = { {{"b0"}} };
+	std::vector<AnimationNode> originalNodes(1);
 	originalNodes[0].getData().localTransforms = { {-0.616233110f, 0.166248172f,-0.367524087f }, { 0.634908735f, 0.734051764f, 0.169194266f,-0.171558305f }, { 4.445192337f,-4.281722545f, 2.230783700f } };
 
 	auto at1 = std::make_shared<AnimationVec3Linear>();
 	at1->addKeyFrame({ {-3.182263720f, 8.633092795f, 8.014790691f }, 0.650173135f });
 	auto atrT1 = std::make_unique<Vec3Animator>(at1);
 	atrT1->addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[0]);
-	CompositeAnimator atrComposite("", 4.0f);
+	CompositeAnimator atrComposite(4.0f);
 	atrComposite.addAnimator(std::move(atrT1));
 
 	atrComposite.animate(3.2f);
 	atrComposite.updateNodesWorldTransforms();
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
-		EXPECT_EQ(originalNodes[i].getData().name, expectedNodes[i].getData().name);
 		EXPECT_TRUE(originalNodes[i].getData().worldTransformsUpdated);
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(originalNodes[i].getData().worldTransforms.position[j], expectedNodes[i].getData().worldTransforms.position[j], kTolerance);

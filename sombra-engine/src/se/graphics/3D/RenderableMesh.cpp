@@ -1,5 +1,4 @@
 #include "se/graphics/3D/RenderableMesh.h"
-#include "se/graphics/3D/Mesh.h"
 #include "se/graphics/core/GraphicsOperations.h"
 
 namespace se::graphics {

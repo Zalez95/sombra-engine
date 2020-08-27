@@ -6,7 +6,7 @@
 #include "../utils/MathUtils.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
-#include "graphics/Skin.h"
+#include "graphics/SkinComponent.h"
 
 namespace se::app {
 

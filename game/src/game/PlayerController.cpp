@@ -9,7 +9,7 @@
 #include <se/graphics/GraphicsEngine.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/TagComponent.h>
-#include <se/app/MeshComponent.h>
+#include <se/app/graphics/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/CollisionSystem.h>
@@ -65,7 +65,6 @@ namespace game {
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{
-				"yellow_material",
 				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			},

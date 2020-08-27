@@ -18,14 +18,6 @@ namespace se::animation {
 	}
 
 
-	void CompositeAnimator::restartAnimation()
-	{
-		for (auto& animator : mAnimators) {
-			animator->restartAnimation();
-		}
-	}
-
-
 	void CompositeAnimator::resetNodesAnimatedState()
 	{
 		for (auto& animator : mAnimators) {

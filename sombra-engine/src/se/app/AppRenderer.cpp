@@ -17,7 +17,7 @@
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/LightSource.h"
+#include "se/app/graphics/LightComponent.h"
 #include "se/app/graphics/LightProbe.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
@@ -394,29 +394,31 @@ namespace se::app {
 
 	void AppRenderer::update()
 	{
-		SOMBRA_DEBUG_LOG << "Updating the LightSources";
+		SOMBRA_DEBUG_LOG << "Updating the LightComponents";
 
 		unsigned int i = 0;
 		std::array<ShaderLightSource, kMaxLights> uBaseLights;
-		mEntityDatabase.iterateComponents<TransformsComponent, LightSource>(
-			[&](Entity, TransformsComponent* transforms, LightSource* light) {
+		mEntityDatabase.iterateComponents<TransformsComponent, LightComponent>(
+			[&](Entity, TransformsComponent* transforms, LightComponent* light) {
 				if (i < kMaxLights) {
-					uBaseLights[i].type = static_cast<unsigned int>(light->type);
+					uBaseLights[i].type = static_cast<unsigned int>(light->source->type);
 					uBaseLights[i].position = transforms->position;
 					uBaseLights[i].direction = glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-					uBaseLights[i].color = { light->color, 1.0f };
-					uBaseLights[i].intensity = light->intensity;
-					switch (light->type) {
+					uBaseLights[i].color = { light->source->color, 1.0f };
+					uBaseLights[i].intensity = light->source->intensity;
+					switch (light->source->type) {
 						case LightSource::Type::Directional: {
 							uBaseLights[i].range = std::numeric_limits<float>::max();
 						} break;
 						case LightSource::Type::Point: {
-							uBaseLights[i].range = light->range;
+							uBaseLights[i].range = light->source->range;
 						} break;
 						case LightSource::Type::Spot: {
-							uBaseLights[i].range = light->range;
-							uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, std::cos(light->innerConeAngle) - std::cos(light->outerConeAngle));
-							uBaseLights[i].lightAngleOffset = -std::cos(light->outerConeAngle) * uBaseLights[i].lightAngleScale;
+							float cosInner = std::cos(light->source->innerConeAngle);
+							float cosOuter = std::cos(light->source->outerConeAngle);
+							uBaseLights[i].range = light->source->range;
+							uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, cosInner - cosOuter);
+							uBaseLights[i].lightAngleOffset = -cosOuter * uBaseLights[i].lightAngleScale;
 						} break;
 					}
 					++i;

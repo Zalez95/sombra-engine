@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <string>
 #include "IAnimator.h"
 
 namespace se::animation {
@@ -18,9 +17,6 @@ namespace se::animation {
 		using IAnimatorUPtr = std::unique_ptr<IAnimator>;
 
 	private:	// Attributes
-		/** The name of the CompositeAnimator */
-		std::string mName;
-
 		/** The IAnimators of the CompositeAnimator */
 		std::vector<IAnimatorUPtr> mAnimators;
 
@@ -31,14 +27,9 @@ namespace se::animation {
 	public:		// Functions
 		/** Creates a new CompositeAnimator
 		 *
-		 * @param	name the name of the CompositeAnimator
 		 * @param	loopTime the loop time of the CompositeAnimator, 0 by
 		 *			default */
-		CompositeAnimator(const std::string& name, float loopTime = 0.0f) :
-			mName(name), mLoopTime(loopTime) {};
-
-		/** @return	the name of the CompositeAnimator */
-		const std::string& getName() const { return mName; };
+		CompositeAnimator(float loopTime = 0.0f) : mLoopTime(loopTime) {};
 
 		/** @return	the elapsed time in seconds since the start of the animation
 		 *			before all the IAnimators' animations start from the
@@ -57,9 +48,6 @@ namespace se::animation {
 		 * @param	elapsedTime the time elapsed since the last call to the
 		 *			function */
 		virtual void animate(float elapsedTime) override;
-
-		/** Restarts the IAnimators' animations to its original state */
-		virtual void restartAnimation() override;
 
 		/** Resets the animate state of every IAnimators' node */
 		virtual void resetNodesAnimatedState() override;

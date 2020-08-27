@@ -35,11 +35,11 @@
 #include "se/app/AudioSystem.h"
 #include "se/app/gui/GUIManager.h"
 #include "se/app/TagComponent.h"
-#include "se/app/MeshComponent.h"
+#include "se/app/graphics/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/Camera.h"
-#include "se/app/graphics/Skin.h"
-#include "se/app/graphics/LightSource.h"
+#include "se/app/graphics/CameraComponent.h"
+#include "se/app/graphics/SkinComponent.h"
+#include "se/app/graphics/LightComponent.h"
 #include "se/app/graphics/LightProbe.h"
 
 namespace se::app {
@@ -58,43 +58,43 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 
-		mTaskManager = new utils::TaskManager(kMaxTasks);
-		mExternalTools = new ExternalTools();
-		mEventManager = new EventManager();
-
-		// Repository
-		mRepository = new utils::Repository();
-		mRepository->init<std::string, graphics::Pass>();
-		mRepository->init<std::string, graphics::Technique>();
-		mRepository->init<std::string, graphics::Program>();
-		mRepository->init<std::string, graphics::Texture>();
-		mRepository->init<std::string, graphics::Font>();
-
-		// Entities
-		mEntityDatabase = new EntityDatabase(kMaxEntities);
-		mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
-		mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
-		mEntityDatabase->addComponentTable<Skin>(kMaxEntities);
-		mEntityDatabase->addComponentTable<Camera>(kMaxCameras);
-		mEntityDatabase->addComponentTable<LightSource>(kMaxEntities);
-		mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
-		mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
-		mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
-		mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
-		mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
-		mEntityDatabase->addComponentTable<animation::AnimationNode>(kMaxEntities);
-		mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
-
 		try {
+			mTaskManager = new utils::TaskManager(kMaxTasks);
+
 			// External tools
+			mExternalTools = new ExternalTools();
 			mExternalTools->windowManager = new window::WindowManager(windowConfig);
 			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
 			mExternalTools->physicsEngine = new physics::PhysicsEngine(kBaseBias);
 			mExternalTools->collisionWorld = new collision::CollisionWorld(collisionConfig);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
 			mExternalTools->audioEngine = new audio::AudioEngine();
-
 			se::graphics::GraphicsOperations::setViewport(0, 0, windowConfig.width, windowConfig.height);
+
+			mEventManager = new EventManager();
+
+			// Repository
+			mRepository = new utils::Repository();
+			mRepository->init<std::string, graphics::Pass>();
+			mRepository->init<std::string, graphics::Technique>();
+			mRepository->init<std::string, graphics::Program>();
+			mRepository->init<std::string, graphics::Texture>();
+			mRepository->init<std::string, graphics::Font>();
+
+			// Entities
+			mEntityDatabase = new EntityDatabase(kMaxEntities);
+			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras);
+			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
+			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
+			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
+			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
+			mEntityDatabase->addComponentTable<animation::AnimationNode*>(kMaxEntities);
+			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
 
 			// Systems
 			mInputSystem = new InputSystem(*this);
@@ -132,16 +132,16 @@ namespace se::app {
 		if (mAppRenderer) { delete mAppRenderer; }
 		if (mCameraSystem) { delete mCameraSystem; }
 		if (mInputSystem) { delete mInputSystem; }
+		if (mEntityDatabase) { delete mTaskManager; }
+		if (mRepository) { delete mRepository; }
+		if (mEventManager) { delete mEventManager; }
 		if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
 		if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
 		if (mExternalTools->collisionWorld) { delete mExternalTools->collisionWorld; }
 		if (mExternalTools->physicsEngine) { delete mExternalTools->physicsEngine; }
 		if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
 		if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
-		if (mEntityDatabase) { delete mTaskManager; }
-		if (mRepository) { delete mExternalTools; }
-		if (mEventManager) { delete mEventManager; }
-		if (mExternalTools) { delete mRepository; }
+		if (mExternalTools) { delete mExternalTools; }
 		if (mTaskManager) { delete mEntityDatabase; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}

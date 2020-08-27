@@ -48,21 +48,14 @@ namespace se::animation {
 		NodeTransforms worldTransforms;
 
 		/** The node transforms matrix in world space */
-		glm::mat4 worldMatrix;
+		glm::mat4 worldMatrix = glm::mat4(1.0f);
 
 		/** If the node has been updated by the AnimationSystem or not */
-		bool animated;
+		bool animated = false;
 
 		/** If the world transform of the node has been updated by the
 		 * AnimationSystem or not */
-		bool worldTransformsUpdated;
-
-		/** Creates a new NodeData
-		 *
-		 * @param	name the name of the NodeData, empty by default */
-		NodeData(const std::string& name = "") :
-			name(name), worldMatrix(1.0f),
-			animated(false), worldTransformsUpdated(false) {};
+		bool worldTransformsUpdated = false;
 	};
 
 

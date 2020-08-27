@@ -5,9 +5,9 @@
 #include "se/app/CameraSystem.h"
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
-#include "se/app/MeshComponent.h"
+#include "se/app/graphics/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/Camera.h"
+#include "se/app/graphics/CameraComponent.h"
 
 namespace se::app {
 
@@ -17,7 +17,7 @@ namespace se::app {
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
-			.set<Camera>()
+			.set<CameraComponent>()
 			.set<MeshComponent>()
 			.set<graphics::RenderableTerrain>()
 		);
@@ -40,7 +40,7 @@ namespace se::app {
 	void CameraSystem::onNewEntity(Entity entity)
 	{
 		auto [transforms, camera, mesh, rTerrain] = mEntityDatabase.getComponents<
-			TransformsComponent, Camera, MeshComponent, graphics::RenderableTerrain
+			TransformsComponent, CameraComponent, MeshComponent, graphics::RenderableTerrain
 		>(entity);
 
 		if (camera) {
@@ -95,8 +95,8 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 
-		mEntityDatabase.iterateComponents<TransformsComponent, Camera>(
-			[&](Entity entity, TransformsComponent* transforms, Camera* camera) {
+		mEntityDatabase.iterateComponents<TransformsComponent, CameraComponent>(
+			[&](Entity entity, TransformsComponent* transforms, CameraComponent* camera) {
 				if (transforms->updated.any()) {
 					camera->setPosition(transforms->position);
 					camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
@@ -110,7 +110,7 @@ namespace se::app {
 		);
 
 		if (mCameraUpdated) {
-			auto [camera] = mEntityDatabase.getComponents<Camera>(mCameraEntity);
+			auto [camera] = mEntityDatabase.getComponents<CameraComponent>(mCameraEntity);
 			if (camera) {
 				for (auto& passData : mPassesData) {
 					passData.viewMatrix->setValue(camera->getViewMatrix());
@@ -134,7 +134,7 @@ namespace se::app {
 
 	void CameraSystem::processPasses(graphics::Renderable3D& renderable, std::vector<std::size_t>& output)
 	{
-		Camera* activeCamera = std::get<0>(mEntityDatabase.getComponents<Camera>(mCameraEntity));
+		CameraComponent* activeCamera = std::get<0>(mEntityDatabase.getComponents<CameraComponent>(mCameraEntity));
 
 		renderable.processTechniques([&](auto technique) { technique->processPasses([&](auto pass) {
 			auto it = std::find_if(mPassesData.begin(), mPassesData.end(), [&](const auto& passData) { return passData.pass == pass; });

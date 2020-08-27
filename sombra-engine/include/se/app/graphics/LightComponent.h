@@ -1,6 +1,7 @@
-#ifndef LIGHT_SOURCE_H
-#define LIGHT_SOURCE_H
+#ifndef LIGHT_COMPONENT_H
+#define LIGHT_COMPONENT_H
 
+#include <memory>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -16,9 +17,6 @@ namespace se::app {
 		/** The different types that a LightSource can have */
 		enum class Type : unsigned int
 		{ Directional = 0, Point, Spot };
-
-		/** The name of the LightSource */
-		std::string name;
 
 		/** The type of the LightSource */
 		Type type;
@@ -47,6 +45,15 @@ namespace se::app {
 		LightSource(Type type) : type(type) {};
 	};
 
+
+	/** Struct LightComponent, holds a pointer to the LightSource that is
+	 * going to be used by the Entity */
+	struct LightComponent
+	{
+		/** A pointer to the LightSource that is going to be used */
+		std::shared_ptr<LightSource> source;
+	};
+
 }
 
-#endif		// LIGHT_SOURCE_H
+#endif		// LIGHT_COMPONENT_H

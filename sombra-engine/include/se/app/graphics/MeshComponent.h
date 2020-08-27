@@ -1,8 +1,8 @@
 #ifndef MESH_COMPONENT_H
 #define MESH_COMPONENT_H
 
-#include "../utils/FixedVector.h"
-#include "../graphics/3D/RenderableMesh.h"
+#include "../../utils/FixedVector.h"
+#include "../../graphics/3D/RenderableMesh.h"
 
 namespace se::app {
 
@@ -14,7 +14,7 @@ namespace se::app {
 	{
 		/** The maximum number of RenderableMeshes that the MeshComponent can
 		 * hold */
-		static constexpr std::size_t kMaxMeshes = 8;
+		static constexpr std::size_t kMaxMeshes = 128;
 
 		/** All the RenderableMeshes added to the MeshComponent */
 		utils::FixedVector<graphics::RenderableMesh, kMaxMeshes> rMeshes;

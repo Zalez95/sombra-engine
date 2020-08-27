@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "IAnimator.h"
@@ -24,6 +25,8 @@ namespace se::animation {
 			Translation, Rotation, Scale
 		};
 	protected:
+		using NodeCallback = std::function<void(AnimationNode*)>;
+
 		/** Maps the AnimationNodes with the type of transformation to apply to
 		 * them */
 		struct AnimatedNode
@@ -33,6 +36,9 @@ namespace se::animation {
 
 			/** The node to apply the transforms */
 			AnimationNode* node;
+
+			/** The elapsed time in seconds since the start of the Animation */
+			float accumulatedTime;
 		};
 
 	protected:	// Attributes
@@ -43,12 +49,9 @@ namespace se::animation {
 		/** The nodes to apply the animation transformations */
 		std::vector<AnimatedNode> mNodes;
 
-		/** The elapsed time in seconds since the start of the Animation */
-		float mAccumulatedTime;
-
 	public:		// Functions
 		/** Creates a new TransformationAnimator */
-		TransformationAnimator() : mLoopTime(0.0f), mAccumulatedTime(0.0f) {};
+		TransformationAnimator() : mLoopTime(0.0f) {};
 
 		/** Class destructor */
 		virtual ~TransformationAnimator() = default;
@@ -71,9 +74,6 @@ namespace se::animation {
 		 *			updated. */
 		virtual void animate(float elapsedTime) = 0;
 
-		/** Restarts the animation to its original state */
-		virtual void restartAnimation() override;
-
 		/** Resets the animate state of every added node */
 		virtual void resetNodesAnimatedState() override;
 
@@ -87,6 +87,12 @@ namespace se::animation {
 		 * @param	node a pointer to the AnimatioNode to apply the
 		 *			transforms */
 		void addNode(TransformationType type, AnimationNode* node);
+
+		/** Iterates through all the Nodes of the TransformationAnimator
+		 * calling the given callback function
+		 *
+		 * @param	callback the function to call for each AnimationNode */
+		void processNodes(const NodeCallback& callback);
 
 		/** Removes a Node from the TransformationAnimator
 		 *

@@ -93,7 +93,7 @@ namespace se::utils {
 			if (mCapacity > 0) {
 				for (auto it = begin(); it != end(); ++it) {
 					new (&buffer[it.getIndex()]) T(std::move(*it));
-					it->~T();
+					(*it).~T();
 				}
 				mAllocator.deallocate(mElements, mCapacity);
 			}

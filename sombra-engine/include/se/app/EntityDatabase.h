@@ -148,16 +148,20 @@ namespace se::app {
 		/** Adds a Component with @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
-		 * @param	component the Component to add */
+		 * @param	component the Component to add
+		 * @return	a pointer to tha Component if it was added successfully,
+		 *			nullptr otherwise */
 		template <typename T>
-		void addComponent(Entity entity, T&& component);
+		T* addComponent(Entity entity, T&& component);
 
 		/** Adds a Component with @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
-		 * @param	component a pointer to the Component to add */
+		 * @param	component a pointer to the Component to add
+		 * @return	a pointer to tha Component if it was added successfully,
+		 *			nullptr otherwise */
 		template <typename T>
-		void addComponent(Entity entity, std::unique_ptr<T> component);
+		T* addComponent(Entity entity, std::unique_ptr<T> component);
 
 		/** Checks if an Entity has all the given Components
 		 *

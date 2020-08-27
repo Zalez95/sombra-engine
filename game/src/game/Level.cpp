@@ -8,8 +8,8 @@
 
 #include <se/app/graphics/Image.h>
 #include <se/app/graphics/RawMesh.h>
-#include <se/app/graphics/Camera.h>
-#include <se/app/graphics/LightSource.h>
+#include <se/app/graphics/CameraComponent.h>
+#include <se/app/graphics/LightComponent.h>
 #include <se/app/graphics/LightProbe.h>
 #include <se/app/graphics/Material.h>
 #include <se/app/graphics/TextureUtils.h>
@@ -18,19 +18,19 @@
 #include <se/app/loaders/ImageReader.h>
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
-//#include <se/app/loaders/SceneReader.h>
+#include <se/app/loaders/SceneReader.h>
 #include <se/app/loaders/TechniqueLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/AudioSystem.h>
 #include <se/app/AppRenderer.h>
 #include <se/app/TagComponent.h>
-#include <se/app/MeshComponent.h>
+#include <se/app/graphics/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/Scene.h>
 
 #include <se/graphics/Renderer.h>
-#include <se/graphics/3D/Mesh.h>
+#include <se/graphics/3D/RenderableMesh.h>
 #include <se/graphics/core/GraphicsOperations.h>
 
 #include <se/collision/BoundingBox.h>
@@ -47,6 +47,7 @@
 #include <se/physics/constraints/DistanceConstraint.h>
 
 #include <se/animation/AnimationEngine.h>
+#include <se/animation/CompositeAnimator.h>
 
 #include <se/audio/Buffer.h>
 #include <se/audio/Source.h>
@@ -193,10 +194,6 @@ namespace game {
 		//se::app::Scenes loadedScenes;
 
 		try {
-			// Readers
-			AudioFile<float> audioFile;
-			//auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneFileType::GLTF);
-
 			// Meshes
 			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
 			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.faceIndices);
@@ -240,6 +237,38 @@ namespace game {
 			}
 			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
+			// Readers
+			class MyTechniqueBuilder : public se::app::SceneReader::TechniqueBuilder
+			{
+			private:	// Attributes
+				se::app::Application& mApplication;
+				se::app::Scene& mScene;
+
+			public:		// Functions
+				MyTechniqueBuilder(se::app::Application& application, se::app::Scene& scene) :
+					mApplication(application), mScene(scene) {};
+
+				virtual se::app::SceneReader::TechniqueSPtr createTechnique(const se::app::Material& material, bool hasSkin) override
+				{
+					auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+					std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
+					auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
+
+					auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+					mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(pass.get(), program);
+					se::app::TechniqueLoader::addMaterialBindables(pass, material, program);
+
+					auto technique = std::make_unique<se::graphics::Technique>();
+					technique->addPass(pass);
+
+					return technique;
+				};
+			};
+
+			AudioFile<float> audioFile;
+			MyTechniqueBuilder techniqueBuilder(mGame, mScene);
+			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, mGame, techniqueBuilder);
+
 			// Fonts
 			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
 			if (!arial) {
@@ -247,13 +276,13 @@ namespace game {
 			}
 
 			// GLTF scenes
-			/*se::app::Result result = sceneReader->load("res/meshes/test.gltf", loadedScenes);
+			se::app::Result result = sceneReader->load("res/meshes/test.gltf", mScene);
 			if (!result) {
 				throw std::runtime_error(result.description());
-			}*/
+			}
 
 			// Images
-			auto result = se::app::ImageReader::read("res/images/logo.png", logo1);
+			result = se::app::ImageReader::read("res/images/logo.png", logo1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -383,17 +412,17 @@ namespace game {
 			auto collider = std::make_unique<se::collision::BoundingSphere>(0.5f);
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
 
-			se::app::Camera camera;
+			se::app::CameraComponent camera;
 			camera.setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
 
-			se::app::LightSource spotLight(se::app::LightSource::Type::Spot);
-			spotLight.name = "spotLight";
-			spotLight.intensity = 5.0f;
-			spotLight.range = 20.0f;
-			spotLight.innerConeAngle = glm::pi<float>() / 12.0f;
-			spotLight.outerConeAngle = glm::pi<float>() / 6.0f;
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(spotLight));
+			auto spotLight = std::make_shared<se::app::LightSource>(se::app::LightSource::Type::Spot);
+			spotLight->intensity = 5.0f;
+			spotLight->range = 20.0f;
+			spotLight->innerConeAngle = glm::pi<float>() / 12.0f;
+			spotLight->outerConeAngle = glm::pi<float>() / 6.0f;
+			mScene.repository.add(std::string("spotLight"), spotLight);
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, se::app::LightComponent{ spotLight });
 
 			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
 		}
@@ -431,7 +460,6 @@ namespace game {
 		// Terrain
 		{
 			se::app::SplatmapMaterial terrainMaterial;
-			terrainMaterial.name = "terrainMaterial";
 			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
@@ -465,7 +493,6 @@ namespace game {
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
-					"plane_material",
 					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, chessTexture, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, true
 				},
@@ -533,7 +560,6 @@ namespace game {
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
-					"tmp_material",
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
@@ -559,7 +585,6 @@ namespace game {
 		se::app::TechniqueLoader::addMaterialBindables(
 			passRed,
 			se::app::Material{
-				"tmp_material",
 				se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 			},
@@ -647,7 +672,6 @@ namespace game {
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
-					"tmp_material",
 					se::app::PBRMetallicRoughness{
 						glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
 						{}, 0.2f, 0.5f, {}
@@ -674,7 +698,6 @@ namespace game {
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
-					"random",
 					se::app::PBRMetallicRoughness{ { 0.0f, 0.0f, 1.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 				},
@@ -711,52 +734,6 @@ namespace game {
 				mGame.getEntityDatabase().addComponent(cube, std::move(mesh));
 			}
 		}
-
-		// GLTF Scene
-		/*{ FIXME:
-			auto sceneEntity = std::make_unique<se::app::Entity>("Scene");
-			mGameData.animationManager->addEntity(sceneEntity.get(), std::move(loadedScenes.scenes[0]->rootNode));
-			mScene.entities.push_back( std::move(sceneEntity) );
-
-			std::vector<std::shared_ptr<se::app::Skin>> sharedSkins;
-			std::move(loadedScenes.skins.begin(), loadedScenes.skins.end(), std::back_inserter(sharedSkins));
-
-			std::vector<std::shared_ptr<se::graphics::Technique>> techniques;
-			for (auto& material : loadedScenes.materials) {
-				auto pass3D = mGameData.graphicsManager->createPass3D(gBufferRenderer, programGBufMaterial, true);
-				se::app::TechniqueLoader::addMaterialBindables(pass3D, *material, programGBufMaterial);
-				techniques.emplace_back(std::make_shared<se::graphics::Technique>())->addPass(pass3D);
-			}
-
-			for (auto& e : loadedScenes.scenes[0]->entities) {
-				if (e.animationNode) {
-					auto entity = std::make_unique<se::app::Entity>(e.animationNode->getData().name);
-					mGameData.animationManager->addEntity(entity.get(), e.animationNode);
-
-					if (e.hasLightSource) {
-						mGameData.graphicsManager->addLightEntity(entity.get(), std::move(loadedScenes.lightSources[e.lightSourceIndex]));
-					}
-					if (e.hasPrimitives) {
-						if (e.hasSkin) {
-							for (auto [iMesh, iMaterial] : loadedScenes.primitives[e.primitivesIndex]) {
-								auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(std::move(loadedScenes.meshes[iMesh]));
-								renderableMesh->addTechnique(techniques[iMaterial]);
-								mGameData.graphicsManager->addMeshEntity(entity.get(), std::move(renderableMesh), sharedSkins[e.skinIndex]);
-							}
-						}
-						else {
-							for (auto [iMesh, iMaterial] : loadedScenes.primitives[e.primitivesIndex]) {
-								auto renderableMesh = std::make_unique<se::graphics::RenderableMesh>(std::move(loadedScenes.meshes[iMesh]));
-								renderableMesh->addTechnique(techniques[iMaterial]);
-								mGameData.graphicsManager->addMeshEntity(entity.get(), std::move(renderableMesh));
-							}
-						}
-					}
-
-					mScene.entities.push_back( std::move(entity) );
-				}
-			}
-		}*/
 
 		setHandleInput(true);
 	}

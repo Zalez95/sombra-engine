@@ -31,7 +31,7 @@ namespace se::utils {
 
 	private:	// Attributes
 		/** A pointer to the parent TreeNode of the current one */
-		TreeNode* mParent;
+		TreeNode* mParent = nullptr;
 
 		/** A pointer to the child TreeNode of the current one */
 		std::unique_ptr<TreeNode> mChild;
@@ -43,15 +43,18 @@ namespace se::utils {
 		T mData;
 
 	public:		// Functions
-		/** Creates a new TreeNode
-		 *
-		 * @param	data the data of the TreeNode */
-		TreeNode(const T& data) : mParent(nullptr), mData(data) {};
+		/** Creates a new TreeNode */
+		TreeNode() = default;
 
 		/** Creates a new TreeNode
 		 *
 		 * @param	data the data of the TreeNode */
-		TreeNode(T&& data) : mParent(nullptr), mData(std::move(data)) {};
+		TreeNode(const T& data) : mData(data) {};
+
+		/** Creates a new TreeNode
+		 *
+		 * @param	data the data of the TreeNode */
+		TreeNode(T&& data) : mData(std::move(data)) {};
 
 		/** Copy constructor
 		 *

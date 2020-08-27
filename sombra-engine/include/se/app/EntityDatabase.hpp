@@ -45,15 +45,19 @@ namespace se::app {
 		 * its owner
 		 *
 		 * @param	entity the Entity that will own the Component
-		 * @param	component the Component to add */
-		virtual void addComponent(Entity entity, T&& component) = 0;
+		 * @param	component the Component to add
+		 * @return	a pointer to tha Component if it was added successfully,
+		 *			nullptr otherwise */
+		virtual T* addComponent(Entity entity, T&& component) = 0;
 
 		/** Adds a Component to the ITComponentTable and makes the given Entity
 		 * its owner
 		 *
 		 * @param	entity the Entity that will own the Component
-		 * @param	component a pointer to the Component to add */
-		virtual void addComponent(Entity entity, std::unique_ptr<T> component) = 0;
+		 * @param	component a pointer to the Component to add
+		 * @return	a pointer to tha Component if it was added successfully,
+		 *			nullptr otherwise */
+		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) = 0;
 
 		/** Returns the Component of the given Entity
 		 *
@@ -113,23 +117,27 @@ namespace se::app {
 		};
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
-		virtual void addComponent(Entity entity, T&& component) override
+		virtual T* addComponent(Entity entity, T&& component) override
 		{
 			if (mComponents.size() < mComponents.capacity()) {
-				auto it = mComponents.emplace(std::move(component));
+				auto it = mComponents.emplace(std::forward<T>(component));
 				mEntityComponentMap.emplace(entity, it.getIndex());
 				mComponentEntityMap.emplace(&(*it), entity);
+				return &(*it);
 			}
+			return nullptr;
 		};
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, std::unique_ptr<T>) */
-		virtual void addComponent(Entity entity, std::unique_ptr<T> component) override
+		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) override
 		{
 			if (mComponents.size() < mComponents.capacity()) {
 				auto it = mComponents.emplace(std::move(*component));
 				mEntityComponentMap.emplace(entity, it.getIndex());
 				mComponentEntityMap.emplace(&(*it), entity);
+				return &(*it);
 			}
+			return nullptr;
 		};
 
 		/** @copydoc IComponentTable::hasComponent(Entity) */
@@ -226,19 +234,22 @@ namespace se::app {
 		};
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
-		virtual void addComponent(Entity, T&&) override
+		virtual T* addComponent(Entity, T&&) override
 		{
 			assert(false && "This function can't be used with virtual classes");
+			return nullptr;
 		};
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, std::unique_ptr<T>) */
-		virtual void addComponent(Entity entity, std::unique_ptr<T> component) override
+		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) override
 		{
 			if (mComponents.size() < mComponents.capacity()) {
 				auto it = mComponents.emplace(std::move(component));
 				mEntityComponentMap.emplace(entity, it.getIndex());
 				mComponentEntityMap.emplace(it->get(), entity);
+				return it->get();
 			}
+			return nullptr;
 		};
 
 		/** @copydoc IComponentTable::hasComponent(Entity) */
@@ -354,10 +365,11 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::addComponent(Entity entity, T&& component)
+	T* EntityDatabase::addComponent(Entity entity, T&& component)
 	{
+		T* ret = nullptr;
 		if (entity != kNullEntity) {
-			getTable<T>().addComponent(entity, std::move(component));
+			ret = getTable<T>().addComponent(entity, std::forward<T>(component));
 			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
 			for (auto& pair : mSystems) {
@@ -366,14 +378,16 @@ namespace se::app {
 				}
 			}
 		}
+		return ret;
 	}
 
 
 	template <typename T>
-	void EntityDatabase::addComponent(Entity entity, std::unique_ptr<T> component)
+	T* EntityDatabase::addComponent(Entity entity, std::unique_ptr<T> component)
 	{
+		T* ret = nullptr;
 		if (entity != kNullEntity) {
-			getTable<T>().addComponent(entity, std::move(component));
+			ret = getTable<T>().addComponent(entity, std::move(component));
 			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
 			for (auto& pair : mSystems) {
@@ -382,6 +396,7 @@ namespace se::app {
 				}
 			}
 		}
+		return ret;
 	}
 
 

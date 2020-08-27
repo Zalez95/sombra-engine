@@ -30,9 +30,6 @@ namespace se::animation {
 		 *			updated. */
 		virtual void animate(float elapsedTime) = 0;
 
-		/** Restarts the IAnimator's animations to their original state */
-		virtual void restartAnimation() = 0;
-
 		/** Resets the animate state of every node */
 		virtual void resetNodesAnimatedState() = 0;
 

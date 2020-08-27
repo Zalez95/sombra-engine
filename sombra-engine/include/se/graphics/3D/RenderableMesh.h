@@ -2,12 +2,10 @@
 #define RENDERABLE_MESH_H
 
 #include <memory>
+#include "Mesh.h"
 #include "Renderable3D.h"
 
 namespace se::graphics {
-
-	class Mesh;
-
 
 	/**
 	 * Class RenderableMesh, its a Renderable3D that holds a 3D mesh

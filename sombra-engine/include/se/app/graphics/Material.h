@@ -1,7 +1,6 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include <string>
 #include <memory>
 #include <glm/glm.hpp>
 #include "../../utils/FixedVector.h"
@@ -16,16 +15,16 @@ namespace se::app {
 	struct PBRMetallicRoughness
 	{
 		/** The base color factor */
-		glm::vec4 baseColorFactor;
+		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
 		/** The base color texture */
 		std::shared_ptr<graphics::Texture> baseColorTexture;
 
 		/** The metalness of the material */
-		float metallicFactor;
+		float metallicFactor = 1.0f;
 
 		/** The roughness of the material */
-		float roughnessFactor;
+		float roughnessFactor = 1.0f;
 
 		/** The metallic-roughness texture */
 		std::shared_ptr<graphics::Texture> metallicRoughnessTexture;
@@ -48,9 +47,6 @@ namespace se::app {
 			static constexpr int kEmissive			= 7;
 		};
 
-		/** The name of the Material */
-		std::string name;
-
 		/** The PBRMetallicRoughness data of the Material */
 		PBRMetallicRoughness pbrMetallicRoughness;
 
@@ -58,30 +54,30 @@ namespace se::app {
 		std::shared_ptr<graphics::Texture> normalTexture;
 
 		/** The scale applied to the normal map texture */
-		float normalScale;
+		float normalScale = 1.0f;
 
 		/** The occlusion map texture */
 		std::shared_ptr<graphics::Texture> occlusionTexture;
 
 		/** The amount of occlusion applied */
-		float occlusionStrength;
+		float occlusionStrength = 1.0f;
 
 		/** The emissive map texture */
 		std::shared_ptr<graphics::Texture> emissiveTexture;
 
 		/** The RGB components of the emissive color of the material */
-		glm::vec3 emissiveFactor;
+		glm::vec3 emissiveFactor = glm::vec3(0.0f);
 
 		/** Indicates how the renderer should interpret the alpha value of the
 		 * baseColorFactor property of the PBRMetallicRoughness */
-		graphics::AlphaMode alphaMode;
+		graphics::AlphaMode alphaMode = graphics::AlphaMode::Opaque;
 
 		/** When the AlphaMode is set to Mask specifies the cutoff threshold */
-		float alphaCutoff;
+		float alphaCutoff = 0.5f;
 
 		/** Indicates if each face of the Mesh should be rendered by both
 		 * sides */
-		bool doubleSided;
+		bool doubleSided = false;
 	};
 
 
@@ -121,9 +117,6 @@ namespace se::app {
 			static constexpr int kMetallicRoughness0	= 4;
 			static constexpr int kNormal0				= 5;
 		};
-
-		/** The name of the SplatmapMaterial */
-		std::string name;
 
 		/** The different BasicMaterials that can be combined */
 		utils::FixedVector<BasicMaterial, 4> materials;
