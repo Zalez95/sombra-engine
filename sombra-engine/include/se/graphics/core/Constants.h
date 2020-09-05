@@ -100,6 +100,15 @@ namespace se::graphics {
 	};
 
 
+	/** Used for indicate face properties */
+	enum class FaceMode
+	{
+		Front,
+		Back,
+		FrontAndBack
+	};
+
+
 	/** The different targets that a FrameBuffer can be bound to */
 	enum class FrameBufferTarget
 	{

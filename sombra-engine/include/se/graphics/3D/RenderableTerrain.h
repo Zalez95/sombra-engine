@@ -96,7 +96,7 @@ namespace se::graphics {
 		 *			location in local space */
 		void setHighestLodLocation(const glm::vec3& location);
 
-		/** Draws the current RenderableTerrain (drawcall) */
+		/** @copydoc Renderable3D::draw() */
 		virtual void draw() override;
 	private:
 		/** Set the given leaf node or its descendants as instances of a patch

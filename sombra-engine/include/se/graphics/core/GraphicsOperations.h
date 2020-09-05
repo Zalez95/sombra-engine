@@ -95,6 +95,11 @@ namespace se::graphics {
 		 * @param	active if face culling should be enabled or not */
 		static void setCulling(bool active);
 
+		/** Sets the faces to cull
+		 *
+		 * @param	mode the faces to cull */
+		static void setCullingMode(FaceMode mode);
+
 		/** Enables or disables depth-testing
 		 *
 		 * @param	active if depth-testing should be enabled or not */

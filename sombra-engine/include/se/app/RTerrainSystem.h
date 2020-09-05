@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
-#include "../graphics/3D/RenderableTerrain.h"
+#include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
 #include "events/ContainerEvent.h"
@@ -24,9 +24,9 @@ namespace se::app {
 		 * update of a RenderableTerrain */
 		struct RenderableTerrainUniforms
 		{
-			std::shared_ptr<
-				graphics::UniformVariableValue<glm::mat4>
-			> modelMatrix;
+			std::shared_ptr<graphics::Pass> pass;
+			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
+				modelMatrix;
 		};
 
 	private:	// Attributes

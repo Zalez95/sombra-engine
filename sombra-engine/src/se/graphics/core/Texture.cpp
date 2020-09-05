@@ -105,6 +105,18 @@ namespace se::graphics {
 	}
 
 
+	Texture& Texture::setBorderColor(float r, float g, float b, float a)
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		float color[4] = { r, g, b, a };
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glTexParameterfv(glTarget, GL_TEXTURE_BORDER_COLOR, color) );
+
+		return *this;
+	}
+
+
 	Texture& Texture::setImage(
 		const void* source, TypeId sourceType, ColorFormat sourceFormat,
 		ColorFormat textureFormat,

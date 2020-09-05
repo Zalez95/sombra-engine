@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <memory>
-#include <functional>
 
 namespace se::graphics {
 
@@ -11,14 +10,13 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Renderable, it's any Object that can be drawn with the usage of
-	 * a Technique
+	 * Class Renderable, it's the interface that every Object that can be
+	 * drawn must implement
 	 */
 	class Renderable
 	{
 	protected:	// Nested types
 		using TechniqueSPtr = std::shared_ptr<Technique>;
-		using TechniqueCallback = std::function<void(const TechniqueSPtr&)>;
 
 	protected:	// Attributes
 		/** All the Techniques of the Renderable */
@@ -38,7 +36,8 @@ namespace se::graphics {
 		 * given callback function
 		 *
 		 * @param	callback the function to call for each Technique */
-		void processTechniques(const TechniqueCallback& callback);
+		template <typename F>
+		void processTechniques(F callback);
 
 		/** Removes a Technique from the current Renderable
 		 *
@@ -49,6 +48,15 @@ namespace se::graphics {
 		/** Submits the Renderable to its Techniques */
 		void submit();
 	};
+
+
+	template <typename F>
+	void Renderable::processTechniques(F callback)
+	{
+		for (auto& technique : mTechniques) {
+			callback(technique);
+		}
+	}
 
 }
 

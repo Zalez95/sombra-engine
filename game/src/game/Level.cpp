@@ -60,6 +60,37 @@
 
 namespace game {
 
+	class MyTechniqueBuilder : public se::app::SceneReader::TechniqueBuilder
+	{
+	private:	// Attributes
+		se::app::Application& mApplication;
+		se::app::Scene& mScene;
+
+	public:		// Functions
+		MyTechniqueBuilder(se::app::Application& application, se::app::Scene& scene) :
+			mApplication(application), mScene(scene) {};
+
+		virtual se::app::SceneReader::TechniqueSPtr createTechnique(const se::app::Material& material, bool hasSkin) override
+		{
+			std::string shadowPassKey = hasSkin? "passShadowSkinning" : "passShadow";
+			auto shadowPass = mScene.repository.find<std::string, se::graphics::Pass>(shadowPassKey);
+
+			auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+			std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
+			auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
+			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			pass->addBindable(program);
+			se::app::TechniqueLoader::addMaterialBindables(pass, material, program);
+
+			auto technique = std::make_unique<se::graphics::Technique>();
+			technique->addPass(shadowPass)
+				.addPass(pass);
+
+			return technique;
+		};
+	};
+
+
 	se::collision::HalfEdgeMesh createTestTube1()
 	{
 		se::collision::HalfEdgeMesh meshData;
@@ -173,8 +204,9 @@ namespace game {
 
 // Public functions
 	Level::Level(Game& game) :
-		IGameScreen(game), mGame(game), mPlayerEntity(se::app::kNullEntity), mPlayerController(nullptr),
-		mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
+		IGameScreen(game),
+		mGame(game), mScene("Level", game), mPlayerEntity(se::app::kNullEntity),
+		mPlayerController(nullptr), mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
 	{
 		mGame.getEventManager().subscribe(this, se::app::Topic::Key);
 
@@ -209,8 +241,29 @@ namespace game {
 			planeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh));
 
 			// Programs
+			std::shared_ptr<se::graphics::Program> programShadow;
+			programShadow = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
+			if (!programShadow) {
+				throw std::runtime_error("programShadow not found");
+			}
+			mScene.repository.add(std::string("programShadow"), programShadow);
+
+			std::shared_ptr<se::graphics::Program> programShadowSkinning;
+			programShadowSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
+			if (!programShadowSkinning) {
+				throw std::runtime_error("programShadowSkinning not found");
+			}
+			mScene.repository.add(std::string("programShadow"), programShadowSkinning);
+
+			std::shared_ptr<se::graphics::Program> programShadowTerrain;
+			programShadowTerrain = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
+			if (!programShadowTerrain) {
+				throw std::runtime_error("programShadowTerrain not found");
+			}
+			mScene.repository.add(std::string("programShadowTerrain"), std::move(programShadowTerrain));
+
 			std::shared_ptr<se::graphics::Program> programSky;
-			programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCubeMap.glsl");
+			programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
 			if (!programSky) {
 				throw std::runtime_error("programSky not found");
 			}
@@ -237,33 +290,16 @@ namespace game {
 			}
 			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
+			auto shadowRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRenderer"));
+			auto passShadow = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			passShadow->addBindable(programShadow);
+			mScene.repository.add(std::string("passShadow"), std::move(passShadow));
+
+			auto passShadowSkinning = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			passShadowSkinning->addBindable(programShadowSkinning);
+			mScene.repository.add(std::string("passShadowSkinning"), std::move(passShadowSkinning));
+
 			// Readers
-			class MyTechniqueBuilder : public se::app::SceneReader::TechniqueBuilder
-			{
-			private:	// Attributes
-				se::app::Application& mApplication;
-				se::app::Scene& mScene;
-
-			public:		// Functions
-				MyTechniqueBuilder(se::app::Application& application, se::app::Scene& scene) :
-					mApplication(application), mScene(scene) {};
-
-				virtual se::app::SceneReader::TechniqueSPtr createTechnique(const se::app::Material& material, bool hasSkin) override
-				{
-					auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
-					std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
-					auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
-
-					auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-					se::app::TechniqueLoader::addMaterialBindables(pass, material, program);
-
-					auto technique = std::make_unique<se::graphics::Technique>();
-					technique->addPass(pass);
-
-					return technique;
-				};
-			};
-
 			AudioFile<float> audioFile;
 			MyTechniqueBuilder techniqueBuilder(mGame, mScene);
 			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, mGame, techniqueBuilder);
@@ -301,7 +337,7 @@ namespace game {
 				throw std::runtime_error(result.description());
 			}
 
-			result = se::app::ImageReader::readHDR("res/images/piazza_san_marco_2k.hdr", environment1);
+			result = se::app::ImageReader::readHDR("res/images/satara_night_2k.hdr", environment1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -364,9 +400,16 @@ namespace game {
 
 		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
 		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
+		auto shadowRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRenderer"));
 		auto programSky = mScene.repository.find<std::string, se::graphics::Program>("programSky");
+		auto programShadow = mScene.repository.find<std::string, se::graphics::Program>("programShadow");
+		auto programShadowSkinning = mScene.repository.find<std::string, se::graphics::Program>("programShadowSkinning");
+		auto programShadowTerrain = mScene.repository.find<std::string, se::graphics::Program>("programShadowTerrain");
 		auto programGBufMaterial = mScene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
 		auto programGBufSplatmap = mScene.repository.find<std::string, se::graphics::Program>("programGBufSplatmap");
+
+		auto passShadow = mScene.repository.find<std::string, se::graphics::Pass>("passShadow");
+		auto passShadowSkinning = mScene.repository.find<std::string, se::graphics::Pass>("passShadowSkinning");
 
 		auto gravity = mScene.repository.find<std::string, se::physics::Force>("gravity");
 
@@ -457,21 +500,30 @@ namespace game {
 
 		// Terrain
 		{
+			float size = 500.0f, maxHeight = 10.0f;
+			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
+
 			se::app::SplatmapMaterial terrainMaterial;
 			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
+			auto terrainShadowPass = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			terrainShadowPass->addBindable(programShadowTerrain);
+			se::app::TechniqueLoader::addHeightMapBindables(terrainShadowPass, heightMap1, size, maxHeight, programShadowTerrain);
+
 			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			terrainPass->addBindable(programGBufSplatmap);
+			se::app::TechniqueLoader::addHeightMapBindables(terrainPass, heightMap1, size, maxHeight, programGBufSplatmap);
 			se::app::TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
 
 			auto terrainTechnique = std::make_shared<se::graphics::Technique>();
-			terrainTechnique->addPass(terrainPass);
+			terrainTechnique->addPass(terrainShadowPass)
+				.addPass(terrainPass);
 			mScene.repository.add(std::string("techniqueSplatmap"), terrainTechnique);
 
-			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			terrainLoader.createTerrain("terrain", 500.0f, 10.0f, heightMap1, lodDistances, "techniqueSplatmap");
+			terrainLoader.createTerrain("terrain", size, maxHeight, heightMap1, lodDistances, "techniqueSplatmap");
 		}
 
 		// Plane
@@ -486,6 +538,7 @@ namespace game {
 			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
 
 			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			passPlane->addBindable(programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -496,7 +549,8 @@ namespace game {
 			);
 
 			auto techniquePlane = std::make_unique<se::graphics::Technique>();
-			techniquePlane->addPass(passPlane);
+			techniquePlane->addPass(passShadow)
+				.addPass(passPlane);
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(planeMesh).addTechnique(std::move(techniquePlane));
@@ -552,6 +606,7 @@ namespace game {
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
 			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			passCube->addBindable(programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -562,7 +617,8 @@ namespace game {
 			);
 
 			auto techniqueCube = std::make_unique<se::graphics::Technique>();
-			techniqueCube->addPass(passCube);
+			techniqueCube->addPass(passShadow)
+				.addPass(passCube);
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueCube));
@@ -576,6 +632,7 @@ namespace game {
 		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(constraint.get());
 
 		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+		passRed->addBindable(programGBufMaterial);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passRed,
 			se::app::Material{
@@ -586,7 +643,8 @@ namespace game {
 		);
 
 		auto techniqueRed = std::make_shared<se::graphics::Technique>();
-		techniqueRed->addPass(passRed);
+		techniqueRed->addPass(passShadow)
+			.addPass(passRed);
 
 		{
 			auto nonMovableCube = mGame.getEntityDatabase().addEntity();
@@ -662,6 +720,7 @@ namespace game {
 			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(transforms));
 
 			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			passSlice->addBindable(programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -675,7 +734,8 @@ namespace game {
 			);
 
 			auto techniqueSlice = std::make_shared<se::graphics::Technique>();
-			techniqueSlice->addPass(passSlice);
+			techniqueSlice->addPass(passShadow)
+				.addPass(passSlice);
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh));
@@ -687,6 +747,7 @@ namespace game {
 		// Random cubes
 		{
 			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			passRandom->addBindable(programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
@@ -697,7 +758,8 @@ namespace game {
 			);
 
 			auto techniqueRandom = std::make_shared<se::graphics::Technique>();
-			techniqueRandom->addPass(passRandom);
+			techniqueRandom->addPass(passShadow)
+				.addPass(passRandom);
 
 			for (std::size_t i = 0; i < kNumCubes; ++i) {
 				auto cube = mGame.getEntityDatabase().addEntity();
@@ -734,10 +796,6 @@ namespace game {
 	Level::~Level()
 	{
 		setHandleInput(false);
-
-		for (auto entity : mScene.entities) {
-			mGame.getEntityDatabase().removeEntity(entity);
-		}
 
 		mGame.getExternalTools().graphicsEngine->removeRenderable(mLogoTexture);
 		delete mLogoTexture;

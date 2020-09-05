@@ -60,6 +60,16 @@ namespace se::graphics {
 	}
 
 
+	FrameBuffer& FrameBuffer::setColorBuffer(bool active)
+	{
+		GLenum buf = active? GL_FRONT : GL_NONE;
+
+		bind();
+		GL_WRAP( glDrawBuffer(buf) );
+		return *this;
+	}
+
+
 	FrameBuffer& FrameBuffer::attach(
 		const Texture& texture, unsigned int attachment,
 		int level, int layer, int orientation

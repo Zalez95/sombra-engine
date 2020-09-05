@@ -5,6 +5,7 @@
 #include "../../graphics/Pass.h"
 #include "../../graphics/Technique.h"
 #include "../../graphics/core/Program.h"
+#include "../graphics/Image.h"
 #include "../graphics/Material.h"
 
 namespace se::app {
@@ -24,6 +25,12 @@ namespace se::app {
 
 		static void addSplatmapMaterialBindables(
 			PassSPtr pass, const SplatmapMaterial& material,
+			const ProgramSPtr program
+		);
+
+		static void addHeightMapBindables(
+			PassSPtr pass,
+			const Image<unsigned char>& heightMap, float size, float maxHeight,
 			const ProgramSPtr program
 		);
 

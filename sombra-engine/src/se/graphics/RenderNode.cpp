@@ -20,14 +20,6 @@ namespace se::graphics {
 	}
 
 
-	void RenderNode::iterateInputs(const InputCallback& callback)
-	{
-		for (auto& input : mInputs) {
-			callback(*input);
-		}
-	}
-
-
 	RNodeInput* RenderNode::findInput(const std::string& name) const
 	{
 		auto itInput = std::find_if(
@@ -53,14 +45,6 @@ namespace se::graphics {
 		else {
 			SOMBRA_ERROR_LOG << "Output found with the same name";
 			return false;
-		}
-	}
-
-
-	void RenderNode::iterateOutputs(const OutputCallback& callback)
-	{
-		for (auto& output : mOutputs) {
-			callback(*output);
 		}
 	}
 

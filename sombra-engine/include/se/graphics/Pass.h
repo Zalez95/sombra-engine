@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 #include "core/Bindable.h"
 
 namespace se::graphics {
@@ -20,7 +19,6 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using BindableSPtr = std::shared_ptr<Bindable>;
-		using BindableCallback = std::function<void(const BindableSPtr&)>;
 
 	private:	// Attributes
 		/** The Renderer where the Renderables will be submitted */
@@ -34,6 +32,9 @@ namespace se::graphics {
 		 *
 		 * @param	renderer the Renderer of the Pass */
 		Pass(Renderer& renderer) : mRenderer(renderer) {};
+
+		/** @return	the Renderer used by the Pass for submitting the meshes */
+		Renderer& getRenderer() { return mRenderer; };
 
 		/** Submits the given Renderable for rendering with the current Pass
 		 *
@@ -50,7 +51,8 @@ namespace se::graphics {
 		 * callback function
 		 *
 		 * @param	callback the function to call for each Bindable */
-		void processBindables(const BindableCallback& callback);
+		template <typename F>
+		void processBindables(F callback);
 
 		/** Removes a Bindable from the current Pass
 		 *
@@ -69,6 +71,15 @@ namespace se::graphics {
 		 *			reverse order in which they where added to the Pass */
 		void unbind() const override;
 	};
+
+
+	template <typename F>
+	void Pass::processBindables(F callback)
+	{
+		for (auto& bindable : mBindables) {
+			callback(bindable);
+		}
+	}
 
 }
 

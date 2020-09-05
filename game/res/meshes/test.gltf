@@ -40,7 +40,7 @@
                         0.8199999928474426,
                         0.25
                     ],
-                    "intensity" : 0.025,
+                    "intensity" : 7.5,
                     "type" : "directional",
                     "name" : "Sun"
                 }
@@ -226,14 +226,20 @@
             "extensions" : {
                 "KHR_lights_punctual" : {
                     "light" : 2
-                }
+                },
+                "project_shadows" : true
             },
             "name" : "directionalLight1_Orientation",
             "rotation" : [
+                0,
+                0,
                 -0.7071067690849304,
-                0,
-                0,
                 0.7071067690849304
+            ],
+            "translation" : [
+                0,
+                20,
+                0
             ]
         },
         {

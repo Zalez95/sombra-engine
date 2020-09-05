@@ -1,46 +1,51 @@
 #include <algorithm>
+#include "se/graphics/core/Bindable.h"
 #include "se/graphics/3D/Renderable3D.h"
 
 namespace se::graphics {
 
-	Renderable3D& Renderable3D::addBindable(BindableSPtr bindable)
+	Renderable3D& Renderable3D::addPassBindable(Pass* pass, BindableSPtr bindable)
 	{
-		if (bindable) {
-			mBindables.push_back(bindable);
+		if (pass && bindable) {
+			mPassBindables[pass].push_back(bindable);
 		}
 
 		return *this;
 	}
 
 
-	void Renderable3D::processBindables(const BindableCallback& callback)
+	Renderable3D& Renderable3D::removePassBindable(Pass* pass, BindableSPtr bindable)
 	{
-		for (auto& bindable : mBindables) {
-			callback(bindable);
+		auto it = mPassBindables.find(pass);
+		if (it != mPassBindables.end()) {
+			it->second.erase(std::remove(it->second.begin(), it->second.end(), bindable), it->second.end());
+			if (it->second.empty()) {
+				mPassBindables.erase(it);
+			}
 		}
-	}
-
-
-	Renderable3D& Renderable3D::removeBindable(BindableSPtr bindable)
-	{
-		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());
 
 		return *this;
 	}
 
 
-	void Renderable3D::bind() const
+	void Renderable3D::bind(Pass* pass) const
 	{
-		for (auto& bindable : mBindables) {
-			bindable->bind();
+		auto it = mPassBindables.find(pass);
+		if (it != mPassBindables.end()) {
+			for (auto& bindable : it->second) {
+				bindable->bind();
+			}
 		}
 	}
 
 
-	void Renderable3D::unbind() const
+	void Renderable3D::unbind(Pass* pass) const
 	{
-		for (auto itBindable = mBindables.rbegin(); itBindable != mBindables.rend(); ++itBindable) {
-			(*itBindable)->unbind();
+		auto it = mPassBindables.find(pass);
+		if (it != mPassBindables.end()) {
+			for (auto itBindable = it->second.rbegin(); itBindable != it->second.rend(); ++itBindable) {
+				(*itBindable)->unbind();
+			}
 		}
 	}
 

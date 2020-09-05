@@ -38,14 +38,6 @@ namespace se::animation {
 	}
 
 
-	void TransformationAnimator::processNodes(const NodeCallback& callback)
-	{
-		for (AnimatedNode& animatedNode : mNodes) {
-			callback(animatedNode.node);
-		}
-	}
-
-
 	void TransformationAnimator::removeNode(AnimationNode* node)
 	{
 		mNodes.erase(

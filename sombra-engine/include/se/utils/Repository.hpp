@@ -63,8 +63,8 @@ namespace se::utils {
 	}
 
 
-	template <typename KeyType, typename ValueType>
-	void Repository::iterate(const std::function<void(KeyType&, ValueType&)>& callback)
+	template <typename F, typename KeyType, typename ValueType>
+	void Repository::iterate(F callback)
 	{
 		auto& table = getRepoTable<KeyType, ValueType>();
 		for (auto& [key, value] : table) {

@@ -13,6 +13,7 @@ namespace se::app {
 		Key,			// Notifies Keyboard input events
 		Collision,		// Notifies collision detection events
 		Camera,			// Camera change events
+		Shadow,			// Shadow LightSource change events
 		Application,	// Reserved for client code events
 		NumTopics		// Total number of events
 	};

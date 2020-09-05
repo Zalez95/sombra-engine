@@ -1,8 +1,8 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
+#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/app/RTerrainSystem.h"
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
@@ -58,8 +58,9 @@ namespace se::app {
 
 			if (program) {
 				auto& terrainUniforms = entityUniforms.emplace_back();
+				terrainUniforms.pass = pass;
 				terrainUniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, modelMatrix);
-				rTerrain->addBindable(terrainUniforms.modelMatrix);
+				rTerrain->addPassBindable(pass.get(), terrainUniforms.modelMatrix);
 			}
 			else {
 				SOMBRA_WARN_LOG << "RenderableTerrain has a Pass " << pass << " with no program";
@@ -86,6 +87,9 @@ namespace se::app {
 
 		auto it = mEntityUniforms.find(entity);
 		if (it != mEntityUniforms.end()) {
+			for (auto& uniforms : it->second) {
+				rTerrain->removePassBindable(uniforms.pass.get(), uniforms.modelMatrix);
+			}
 			mEntityUniforms.erase(it);
 		}
 

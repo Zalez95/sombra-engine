@@ -10,6 +10,8 @@
 #include "ISystem.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
+#include "graphics/CameraComponent.h"
+#include "graphics/LightComponent.h"
 
 namespace se::app {
 
@@ -19,34 +21,37 @@ namespace se::app {
 	/**
 	 * Class AppRenderer, It's a System used for creating the RenderGraph and
 	 * rendering the Entities
-	 */
+	 * @note	the Passes can use either the "forwardRenderer" or the
+	 *			"gBufferRenderer" of the RenderGraph for submitting the
+	 *			Renderable3Ds. The "gBufferRenderer" is used for rendering
+	 *			geometry in a deferred pipeline, the passes that uses this it
+	 *			must output position, normal, albedo, material and emissive
+	 *			textures in that order, later this textures will be used for
+	 *			rendering in a PBR pipeline. The "forwardRenderer" is reserved
+	 *			for special cases that can't be rendered this way */
 	class AppRenderer : public ISystem
 	{
 	private:	// Nested types
 		struct ShaderLightSource;
+		struct EnvironmentTexUnits;
+		struct DeferredTexUnits;
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 		template <typename T>
 		using UniformVariableSPtr
 			= std::shared_ptr<graphics::UniformVariableValue<T>>;
+		class ShadowRenderer;
+		class CombineNode;
 
 	private:	// Attributes
 		/** The maximum number of lights in the program */
 		static constexpr unsigned int kMaxLights = 32;
 
-		static constexpr int kPosition		= 0;
-		static constexpr int kNormal		= 1;
-		static constexpr int kAlbedo		= 2;
-		static constexpr int kMaterial		= 3;
-		static constexpr int kEmissive		= 4;
-		static constexpr int kIrradianceMap	= 5;
-		static constexpr int kPrefilterMap	= 6;
-		static constexpr int kBRDFMap		= 7;
-		static constexpr int kColor			= 0;
-		static constexpr int kBright		= 1;
-
 		/** The Application that holds the GraphicsEngine used for rendering
 		 * the Entities */
 		Application& mApplication;
+
+		/** The configuration used for rendering the shadows */
+		ShadowData mShadowData;
 
 		/** The UniformBuffer where the lights data will be stored */
 		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
@@ -55,14 +60,25 @@ namespace se::app {
 		 * render */
 		UniformVariableSPtr<unsigned int> mNumLights;
 
+		/** The uniform variable that holds the index of the LightSource used
+		 * for rendering the Shadows */
+		UniformVariableSPtr<unsigned int> mShadowLightIndex;
+
 		/** The uniform variable that the Camera location in world space */
 		UniformVariableSPtr<glm::vec3> mViewPosition;
 
-		/** The irradiance Texture to render with */
-		TextureSPtr mIrradianceMap;
+		/** The uniform variable with the view matrix of the shadow mapping */
+		UniformVariableSPtr<glm::mat4> mShadowViewMatrix;
 
-		/** The prefilter Texture to render with */
-		TextureSPtr mPrefilterMap;
+		/** The uniform variable with the projection matrix of the shadow
+		 * mapping */
+		UniformVariableSPtr<glm::mat4> mShadowProjectionMatrix;
+
+		/** The bindable index of the irradiance Texture to render with */
+		std::size_t mIrradianceTextureResource;
+
+		/** The bindable index of the prefilter Texture to render with */
+		std::size_t mPrefilterTextureResource;
 
 		/** The plane RenderableMesh used for rendering */
 		std::shared_ptr<graphics::RenderableMesh> mPlaneRenderable;
@@ -70,20 +86,25 @@ namespace se::app {
 		/** The camera Entity used for rendering */
 		Entity mCameraEntity;
 
-		/** If the camera was updated or not */
-		bool mCameraUpdated;
+		/** The light source Entity used for shadow mapping */
+		Entity mShadowEntity;
+
+		/** The CameraComponent used for rendering the shadows */
+		CameraComponent mShadowCamera;
 
 	public:		// Functions
 		/** Creates a new AppRenderer
 		 *
 		 * @param	application a reference to the Application that holds the
 		 *			current System
+		 * @param	shadowData the configuration used for rendering the shadows
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
 		 * @param	height the initial height of the FrameBuffer where the
 		 *			Entities are going to be rendered */
 		AppRenderer(
-			Application& application, std::size_t width, std::size_t height
+			Application& application, const ShadowData& shadowData,
+			std::size_t width, std::size_t height
 		);
 
 		/** Class destructor */
@@ -123,6 +144,12 @@ namespace se::app {
 		 *
 		 * @param	event the ContainerEvent to handle */
 		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
+
+		/** Handles the given ContainerEvent by updating the Shadow Entity with
+		 * which the shadow will be rendered
+		 *
+		 * @param	event the ContainerEvent to handle */
+		void onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event);
 
 		/** Handles the given ResizeEvent by notifying the GraphicsEngine of
 		 * the window resize

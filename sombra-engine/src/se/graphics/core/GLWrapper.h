@@ -82,6 +82,17 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLFaceMode(FaceMode mode)
+	{
+		switch (mode) {
+			case FaceMode::Front:			return GL_FRONT;
+			case FaceMode::Back:			return GL_BACK;
+			case FaceMode::FrontAndBack:	return GL_FRONT_AND_BACK;
+			default:						return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLFrameBufferTarget(FrameBufferTarget target)
 	{
 		switch (target) {

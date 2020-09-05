@@ -15,6 +15,7 @@ namespace se::app {
 	class EventManager;
 	class InputSystem;
 	class CameraSystem;
+	class ShadowSystem;
 	class AppRenderer;
 	class RMeshSystem;
 	class RTerrainSystem;
@@ -60,6 +61,7 @@ namespace se::app {
 		static constexpr int kMaxCameras			= 4;
 		static constexpr int kMaxLightProbes		= 1;
 		static constexpr int kMaxTasks				= 1024;
+		static constexpr int kShadowResolution		= 1024;
 		static constexpr float kBaseBias			= 0.1f;
 		static constexpr float kMinFDifference		= 0.00001f;
 		static constexpr float kContactPrecision	= 0.0000001f;
@@ -96,6 +98,7 @@ namespace se::app {
 		/** The Systems that hold and update the data of the entities */
 		InputSystem* mInputSystem;
 		CameraSystem* mCameraSystem;
+		ShadowSystem* mShadowSystem;
 		AppRenderer* mAppRenderer;
 		RMeshSystem* mRMeshSystem;
 		RTerrainSystem* mRTerrainSystem;

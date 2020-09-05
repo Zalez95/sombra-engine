@@ -14,14 +14,6 @@ namespace se::graphics {
 	}
 
 
-	void Technique::processPasses(const PassCallback& callback)
-	{
-		for (auto& pass : mPasses) {
-			callback(pass);
-		}
-	}
-
-
 	Technique& Technique::removePass(PassSPtr pass)
 	{
 		mPasses.erase(std::remove(mPasses.begin(), mPasses.end(), pass), mPasses.end());

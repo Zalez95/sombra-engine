@@ -23,9 +23,9 @@ namespace se::graphics {
 		/** Creates a new RenderableMesh
 		 *
 		 * @param	mesh a pointer to the Mesh of the RenderableMesh */
-		RenderableMesh(MeshSPtr mesh);
+		RenderableMesh(MeshSPtr mesh) : mMesh(mesh) {};
 
-		/** Draws the current RenderableMesh (drawcall) */
+		/** @copydoc Renderable3D::draw() */
 		virtual void draw() override;
 	};
 

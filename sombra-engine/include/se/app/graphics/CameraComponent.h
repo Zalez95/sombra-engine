@@ -33,12 +33,15 @@ namespace se::app {
 
 		/** Sets the projection matrix of the CameraComponent
 		 *
-		 * @param	xMagnification the horizontal magnification of the view
-		 * @param	yMagnification the vertical magnification of the view
+		 * @param	left the left coordinate of the screen
+		 * @param	right the right coordinate of the screen
+		 * @param	bottom the bottom coordinate of the screen
+		 * @param	top the top coordinate of the screen
 		 * @param	zNear the distance to the near clipping plane
 		 * @param	zFar the distance to the far clipping plane */
 		void setOrthographicProjectionMatrix(
-			float xMagnification, float yMagnification, float zNear, float zFar
+			float left, float right, float bottom, float top,
+			float zNear, float zFar
 		);
 
 		/** Sets the projection matrix of the CameraComponent

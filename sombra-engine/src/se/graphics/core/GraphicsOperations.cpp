@@ -135,6 +135,12 @@ namespace se::graphics {
 	}
 
 
+	void GraphicsOperations::setCullingMode(FaceMode mode)
+	{
+		GL_WRAP( glCullFace(toGLFaceMode(mode)) );
+	}
+
+
 	void GraphicsOperations::setDepthTest(bool active)
 	{
 		if (active) {

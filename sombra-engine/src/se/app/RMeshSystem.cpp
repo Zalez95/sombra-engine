@@ -1,5 +1,4 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
@@ -53,8 +52,9 @@ namespace se::app {
 
 				if (program) {
 					auto& meshUniforms = entityUniforms.emplace_back();
+					meshUniforms.pass = pass;
 					meshUniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, modelMatrix);
-					rMesh.addBindable(meshUniforms.modelMatrix);
+					rMesh.addPassBindable(pass.get(), meshUniforms.modelMatrix);
 
 					if (skin) {
 						auto jointMatrices = skin->calculateJointMatrices(modelMatrix);
@@ -62,7 +62,7 @@ namespace se::app {
 						meshUniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4, Skin::kMaxJoints>>(
 							"uJointMatrices", *program, jointMatrices.data(), numJoints
 						);
-						rMesh.addBindable(meshUniforms.jointMatrices);
+						rMesh.addPassBindable(pass.get(), meshUniforms.jointMatrices);
 					}
 				}
 				else {
@@ -85,12 +85,17 @@ namespace se::app {
 			return;
 		}
 
-		for (auto& rMesh : mesh->rMeshes) {
-			mApplication.getExternalTools().graphicsEngine->removeRenderable(&rMesh);
-		}
-
 		auto it = mEntityUniforms.find(entity);
 		if (it != mEntityUniforms.end()) {
+			for (auto& rMesh : mesh->rMeshes) {
+				mApplication.getExternalTools().graphicsEngine->removeRenderable(&rMesh);
+
+				for (auto& uniforms : it->second) {
+					rMesh.removePassBindable(uniforms.pass.get(), uniforms.modelMatrix);
+					rMesh.removePassBindable(uniforms.pass.get(), uniforms.jointMatrices);
+				}
+			}
+
 			mEntityUniforms.erase(it);
 		}
 

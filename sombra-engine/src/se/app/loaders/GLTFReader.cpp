@@ -10,6 +10,7 @@
 #include "se/app/loaders/ImageReader.h"
 #include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/graphics/RawMesh.h"
+#include "se/app/events/ContainerEvent.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
 #include "se/animation/CubicSplineAnimations.h"
@@ -969,7 +970,8 @@ namespace se::app {
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
 				) {
 					auto& camera = mGLTFData->cameraComponents.emplace_back();
-					camera.setOrthographicProjectionMatrix(*itXMag, *itYMag, *itZNear, *itZFar);
+					float halfWidth = *itXMag, halfHeight = *itYMag;
+					camera.setOrthographicProjectionMatrix(-halfWidth, halfWidth, -halfHeight, halfHeight, *itZNear, *itZFar);
 					return Result();
 				}
 				else {
@@ -1431,6 +1433,16 @@ namespace se::app {
 							return Result(false, "Light index " + std::to_string(lightIndex) + " out of range");
 						}
 					}
+				}
+
+				auto itActiveCamera = itExtensions->find("active_camera");
+				if ((itActiveCamera != itExtensions->end()) && (*itActiveCamera == true)) {
+					mApplication.getEventManager().publish(new ContainerEvent<Topic::Camera, Entity>(node.entity));
+				}
+
+				auto itProjectShadows = itExtensions->find("project_shadows");
+				if ((itProjectShadows != itExtensions->end()) && (*itProjectShadows == true)) {
+					mApplication.getEventManager().publish(new ContainerEvent<Topic::Shadow, Entity>(node.entity));
 				}
 			}
 		}

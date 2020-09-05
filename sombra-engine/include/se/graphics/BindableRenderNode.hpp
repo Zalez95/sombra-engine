@@ -13,9 +13,18 @@ namespace se::graphics {
 
 
 	template <typename T>
-	typename BindableRNodeOutput<T>::BindableSPtr BindableRNodeOutput<T>::getBindable() const
+	void BindableRNodeOutput<T>::onBindableUpdate()
 	{
-		return mParentNode->getBindable(mBindableIndex);
+		for (auto input : mConnectedInputs) {
+			input->onBindableUpdate();
+		}
+	}
+
+
+	template <typename T>
+	void BindableRNodeOutput<T>::addInput(BindableRNodeInput<T>* input)
+	{
+		mConnectedInputs.push_back(input);
 	}
 
 
@@ -43,6 +52,7 @@ namespace se::graphics {
 			}
 
 			mConnectedOutput = tmp;
+			mConnectedOutput->addInput(this);
 			mParentNode->setBindable(mBindableIndex, mConnectedOutput->getBindable());
 			return true;
 		}
@@ -50,6 +60,13 @@ namespace se::graphics {
 			SOMBRA_ERROR_LOG << "Invalid type";
 			return false;
 		}
+	}
+
+
+	template <typename T>
+	void BindableRNodeInput<T>::onBindableUpdate()
+	{
+		mParentNode->setBindable(mBindableIndex, mConnectedOutput->getBindable());
 	}
 
 }

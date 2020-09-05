@@ -14,14 +14,6 @@ namespace se::graphics {
 	}
 
 
-	void Renderable::processTechniques(const TechniqueCallback& callback)
-	{
-		for (auto& technique : mTechniques) {
-			callback(technique);
-		}
-	}
-
-
 	Renderable& Renderable::removeTechnique(TechniqueSPtr technique)
 	{
 		mTechniques.erase(

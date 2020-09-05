@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 
 namespace se::utils {
 
@@ -59,8 +58,8 @@ namespace se::utils {
 		 * callback function
 		 *
 		 * @param	callback the function to call for each element */
-		template <typename KeyType, typename ValueType>
-		void iterate(const std::function<void(KeyType&, ValueType&)>& callback);
+		template <typename F, typename KeyType, typename ValueType>
+		void iterate(F callback);
 
 		/** Removes an element with the given key from the Repository
 		 *

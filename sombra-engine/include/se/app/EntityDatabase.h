@@ -107,8 +107,15 @@ namespace se::app {
 		 *
 		 * @param	system a pointer to the System to add
 		 * @param	mask the changes in Components that must be notified to the
-		 *			ISystem */
+		 *			ISystem
+		 * @note	if the system has been added it will just update the mask */
 		void addSystem(ISystem* system, ComponentMask mask);
+
+		/** Returns the ComponentMask of the given ISystem
+		 *
+		 * @param	system a pointer to the ISystem to check
+		 * @return	the ComponentMask */
+		ComponentMask getSystemMask(ISystem* system) const;
 
 		/** Removes the given System so it won't longer be notified of new
 		 * Entities and Components

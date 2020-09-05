@@ -7,7 +7,6 @@
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
 #include "se/graphics/core/Texture.h"
-#include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/2D/Font.h"
@@ -25,6 +24,7 @@
 #include "se/app/EntityDatabase.h"
 #include "se/app/InputSystem.h"
 #include "se/app/CameraSystem.h"
+#include "se/app/ShadowSystem.h"
 #include "se/app/AppRenderer.h"
 #include "se/app/RMeshSystem.h"
 #include "se/app/RTerrainSystem.h"
@@ -69,7 +69,6 @@ namespace se::app {
 			mExternalTools->collisionWorld = new collision::CollisionWorld(collisionConfig);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
 			mExternalTools->audioEngine = new audio::AudioEngine();
-			se::graphics::GraphicsOperations::setViewport(0, 0, windowConfig.width, windowConfig.height);
 
 			mEventManager = new EventManager();
 
@@ -97,9 +96,15 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
 
 			// Systems
+			ShadowData shadowData;
+			shadowData.resolution = kShadowResolution;
+			shadowData.zNear = 0.1f;
+			shadowData.zFar = 100.0f;
+
 			mInputSystem = new InputSystem(*this);
+			mAppRenderer = new AppRenderer(*this, shadowData, windowConfig.width, windowConfig.height);
 			mCameraSystem = new CameraSystem(*this);
-			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
+			mShadowSystem = new ShadowSystem(*this, shadowData);
 			mRMeshSystem = new RMeshSystem(*this);
 			mRTerrainSystem = new RTerrainSystem(*this);
 			mDynamicsSystem = new DynamicsSystem(*this);
@@ -129,8 +134,9 @@ namespace se::app {
 		if (mDynamicsSystem) { delete mDynamicsSystem; }
 		if (mRTerrainSystem) { delete mRTerrainSystem; }
 		if (mRMeshSystem) { delete mRMeshSystem; }
-		if (mAppRenderer) { delete mAppRenderer; }
+		if (mShadowSystem) { delete mShadowSystem; }
 		if (mCameraSystem) { delete mCameraSystem; }
+		if (mAppRenderer) { delete mAppRenderer; }
 		if (mInputSystem) { delete mInputSystem; }
 		if (mEntityDatabase) { delete mTaskManager; }
 		if (mRepository) { delete mRepository; }
@@ -241,6 +247,7 @@ namespace se::app {
 		});
 		auto audioTask = taskSet.createTask([&]() { mAudioSystem->update(); });
 		auto cameraTask = taskSet.createTask([&]() { mCameraSystem->update(); });
+		auto shadowTask = taskSet.createTask([&]() { mShadowSystem->update(); });
 		auto rmeshTask = taskSet.createTask([&]() { mRMeshSystem->update(); });
 		auto rterrainTask = taskSet.createTask([&]() { mRTerrainSystem->update(); });
 
@@ -249,6 +256,7 @@ namespace se::app {
 		taskSet.depends(audioTask, constraintsTask);
 		taskSet.depends(audioTask, animationTask);
 		taskSet.depends(cameraTask, constraintsTask);
+		taskSet.depends(shadowTask, constraintsTask);
 		taskSet.depends(rmeshTask, constraintsTask);
 		taskSet.depends(rterrainTask, cameraTask);
 

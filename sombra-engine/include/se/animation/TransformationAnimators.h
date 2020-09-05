@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "IAnimator.h"
@@ -25,8 +24,6 @@ namespace se::animation {
 			Translation, Rotation, Scale
 		};
 	protected:
-		using NodeCallback = std::function<void(AnimationNode*)>;
-
 		/** Maps the AnimationNodes with the type of transformation to apply to
 		 * them */
 		struct AnimatedNode
@@ -92,7 +89,8 @@ namespace se::animation {
 		 * calling the given callback function
 		 *
 		 * @param	callback the function to call for each AnimationNode */
-		void processNodes(const NodeCallback& callback);
+		template <typename F>
+		void processNodes(F callback);
 
 		/** Removes a Node from the TransformationAnimator
 		 *
@@ -162,6 +160,15 @@ namespace se::animation {
 		 *			added with a Rotation transformation */
 		virtual void animate(float elapsedTime) override;
 	};
+
+
+	template <typename F>
+	void TransformationAnimator::processNodes(F callback)
+	{
+		for (AnimatedNode& animatedNode : mNodes) {
+			callback(animatedNode.node);
+		}
+	}
 
 }
 

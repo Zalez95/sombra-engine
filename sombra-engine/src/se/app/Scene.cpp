@@ -1,4 +1,3 @@
-#include <string>
 #include "se/animation/CompositeAnimator.h"
 #include "se/audio/Buffer.h"
 #include "se/physics/forces/Force.h"
@@ -10,10 +9,11 @@
 #include "se/app/graphics/SkinComponent.h"
 #include "se/app/graphics/LightComponent.h"
 #include "se/app/Scene.h"
+#include "se/app/EntityDatabase.h"
 
 namespace se::app {
 
-	Scene::Scene()
+	Scene::Scene(const char* name, Application& application) : name(name), application(application)
 	{
 		repository.init<std::string, Skin>();
 		repository.init<std::string, LightSource>();
@@ -26,6 +26,16 @@ namespace se::app {
 		repository.init<std::string, graphics::Texture>();
 		repository.init<std::string, graphics::Technique>();
 		repository.init<graphics::Pass*, graphics::Program>();
+
+		entities.reserve(application.getEntityDatabase().getMaxEntities());
+	}
+
+
+	Scene::~Scene()
+	{
+		for (auto entity : entities) {
+			application.getEntityDatabase().removeEntity(entity);
+		}
 	}
 
 }

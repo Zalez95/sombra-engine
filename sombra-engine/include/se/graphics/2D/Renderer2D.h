@@ -142,13 +142,10 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~Renderer2D() = default;
 
-		/** Submits the given Renderable for rendering
-		 *
-		 * @param	renderable the Renderable to submit for rendering
-		 * @param	pass the Pass with which the Renderable will be drawn */
+		/** @copydoc Renderer::submit(Renderable&, Pass&) */
 		virtual void submit(Renderable& renderable, Pass& pass) override;
 
-		/** Renders all the submitted Renderables */
+		/** @copydoc Renderer::render() */
 		virtual void render() override;
 
 		/** Submits the given vertices to the Renderer2D

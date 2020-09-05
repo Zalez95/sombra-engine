@@ -56,6 +56,12 @@ namespace se::graphics {
 		 * @return	a reference to the current FrameBuffer */
 		FrameBuffer& setTarget(FrameBufferTarget target);
 
+		/** Enables or disables writting to the color buffer
+		 * (Enabled by default)
+		 *
+		 * @param	active if the color buffer should be enabled or not */
+		FrameBuffer& setColorBuffer(bool active);
+
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
 		 *

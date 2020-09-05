@@ -6,6 +6,7 @@
 #include "../utils/Repository.h"
 #include "../animation/AnimationNode.h"
 #include "Entity.h"
+#include "Application.h"
 
 namespace se::app {
 
@@ -18,7 +19,11 @@ namespace se::app {
 		/** The name of the Scene */
 		std::string name;
 
-		/** The Entities of the Scene */
+		/** The application that holds the @see entities data */
+		Application& application;
+
+		/** The Entities of the Scene, they will get automatically cleared when
+		 * the Scene is destroyed */
 		std::vector<Entity> entities;
 
 		/** The root AnimationNode node of the Scene hierarchy */
@@ -28,7 +33,16 @@ namespace se::app {
 		utils::Repository repository;
 
 		/** Creates a new Scene */
-		Scene();
+		Scene(const char* name, Application& application);
+		Scene(const Scene& other) = delete;
+		Scene(Scene&& other) = default;
+
+		/** Class destructor */
+		~Scene();
+
+		/** Assignment operator */
+		Scene& operator=(const Scene& other) = delete;
+		Scene& operator=(Scene&& other) = default;
 	};
 
 }

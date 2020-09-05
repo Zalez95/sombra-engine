@@ -2,15 +2,15 @@
 
 // ____ GLOBAL VARIABLES ____
 // Input data
-layout (location = 0) in vec3 aVertexPosition;			// Position attribute
+layout (location = 0) in vec3 aVertexPosition;		// Position attribute
 
 // Uniform variables
-uniform mat4 uModelMatrix;								// Model space to World space Matrix
-uniform mat4 uViewMatrix;								// World space to View space Matrix
-uniform mat4 uProjectionMatrix;							// View space to NDC space Matrix
+uniform mat4 uModelMatrix;							// Model space to World space Matrix
+uniform mat4 uViewMatrix;							// World space to View space Matrix
+uniform mat4 uProjectionMatrix;						// View space to NDC space Matrix
 
 // Output data
-out vec3 vsPosition;									// Global Vertex position for the Fragment Shader
+out vec3 vsPosition;								// Global Vertex position for the Fragment Shader
 
 
 // Functions

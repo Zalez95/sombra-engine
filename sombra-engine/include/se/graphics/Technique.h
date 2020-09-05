@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 #include "core/Bindable.h"
 
 namespace se::graphics {
@@ -19,7 +18,6 @@ namespace se::graphics {
 	{
 	private:	// Nested types
 		using PassSPtr = std::shared_ptr<Pass>;
-		using PassCallback = std::function<void(const PassSPtr&)>;
 
 	private:	// Attributes
 		/** All the Passes of the Technique */
@@ -36,7 +34,8 @@ namespace se::graphics {
 		 * callback function
 		 *
 		 * @param	callback the function to call for each Pass */
-		void processPasses(const PassCallback& callback);
+		template <typename F>
+		void processPasses(F callback);
 
 		/** Removes a Pass from the current Technique
 		 *
@@ -52,6 +51,15 @@ namespace se::graphics {
 		 *			order in which they where added to the Technique */
 		void submit(Renderable& renderable);
 	};
+
+
+	template <typename F>
+	void Technique::processPasses(F callback)
+	{
+		for (auto& pass : mPasses) {
+			callback(pass);
+		}
+	}
 
 }
 

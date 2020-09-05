@@ -4,7 +4,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <functional>
 
 namespace se::graphics {
 
@@ -95,8 +94,6 @@ namespace se::graphics {
 	protected:	// Nested types
 		using InputUPtr = std::unique_ptr<RNodeInput>;
 		using OutputUPtr = std::unique_ptr<RNodeOutput>;
-		using InputCallback = std::function<void(RNodeInput& input)>;
-		using OutputCallback = std::function<void(RNodeOutput& output)>;
 
 	private:	// Attributes
 		/** The name used for identifying the current RenderNode */
@@ -133,7 +130,8 @@ namespace se::graphics {
 		/** Calls the given function for each RNodeInput of the RenderNode
 		 *
 		 * @param	callback the function to call */
-		void iterateInputs(const InputCallback& callback);
+		template <typename F>
+		void iterateInputs(F callback);
 
 		/** Searchs a RNodeInput with the same name than the given one
 		 *
@@ -151,7 +149,8 @@ namespace se::graphics {
 		/** Calls the given function for each RNodeOutput of the RenderNode
 		 *
 		 * @param	callback the function to call */
-		void iterateOutputs(const OutputCallback& callback);
+		template <typename F>
+		void iterateOutputs(F callback);
 
 		/** Searchs a RNodeOutput with the same name than the given one
 		 *
@@ -159,6 +158,24 @@ namespace se::graphics {
 		 * @return	a pointer to the RNodeOutput, nullptr if it wasn't found */
 		RNodeOutput* findOutput(const std::string& name) const;
 	};
+
+
+	template <typename F>
+	void RenderNode::iterateInputs(F callback)
+	{
+		for (auto& input : mInputs) {
+			callback(*input);
+		}
+	}
+
+
+	template <typename F>
+	void RenderNode::iterateOutputs(F callback)
+	{
+		for (auto& output : mOutputs) {
+			callback(*output);
+		}
+	}
 
 }
 

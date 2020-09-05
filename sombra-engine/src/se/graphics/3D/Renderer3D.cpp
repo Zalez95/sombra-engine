@@ -30,7 +30,7 @@ namespace se::graphics {
 				pass->bind();
 			}
 
-			renderable->bind();
+			renderable->bind(pass);
 			renderable->draw();
 		}
 		mRenderQueue.clear();

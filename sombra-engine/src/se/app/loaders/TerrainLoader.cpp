@@ -38,7 +38,7 @@ namespace se::app {
 		mEntityDatabase.addComponent(entity, std::move(transforms));
 
 		// Graphics data
-		auto renderableTerrain = createTerrainRenderable(size, maxHeight, heightMap, lodDistances, techniqueName);
+		auto renderableTerrain = createTerrainRenderable(size, lodDistances, techniqueName);
 		mEntityDatabase.addComponent(entity, std::move(renderableTerrain));
 
 		// Physics data
@@ -57,50 +57,13 @@ namespace se::app {
 
 // Private functions
 	graphics::RenderableTerrain TerrainLoader::createTerrainRenderable(
-		float size, float maxHeight,
-		const Image<unsigned char>& heightMap, const std::vector<float>& lodDistances,
-		const char* techniqueName
+		float size, const std::vector<float>& lodDistances, const char* techniqueName
 	) {
 		graphics::RenderableTerrain renderable(size, lodDistances);
 
-		auto heightMapTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
-		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap)
-			.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
-			.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
-			.setImage(
-				heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red, graphics::ColorFormat::Red,
-				heightMap.width, heightMap.height
-			);
-
-		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMapTexture, heightMap.width, heightMap.height);
-		normalMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap);
-
 		auto technique = mScene.repository.find<std::string, graphics::Technique>(techniqueName);
 		if (technique) {
-			std::shared_ptr<graphics::Program> program;
-			technique->processPasses([&](auto& pass) {
-				pass->processBindables([&](const auto& bindable) {
-					if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
-						program = tmp;
-					}
-				});
-			});
-
-			renderable.addBindable(std::move(heightMapTexture))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-					"uHeightMap", *program, SplatmapMaterial::TextureUnits::kHeightMap
-				))
-				.addBindable(std::move(normalMapTexture))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-					"uNormalMap", *program, SplatmapMaterial::TextureUnits::kNormalMap
-				))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-					"uXZSize", *program, size
-				))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-					"uMaxHeight", *program, maxHeight
-				))
-				.addTechnique(technique);
+			renderable.addTechnique(technique);
 		}
 
 		return renderable;

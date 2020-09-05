@@ -3,9 +3,11 @@
 
 namespace se::app {
 
-	void CameraComponent::setOrthographicProjectionMatrix(float xMagnification, float yMagnification, float zNear, float zFar)
-	{
-		mProjectionMatrix = glm::ortho(0.0f, xMagnification, 0.0f, yMagnification, zNear, zFar);
+	void CameraComponent::setOrthographicProjectionMatrix(
+		float left, float right, float bottom, float top,
+		float zNear, float zFar
+	) {
+		mProjectionMatrix = glm::ortho(left, right, bottom, top, zNear, zFar);
 	}
 
 

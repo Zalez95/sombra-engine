@@ -1,59 +1,35 @@
 #ifndef CAMERA_SYSTEM_H
 #define CAMERA_SYSTEM_H
 
-#include <memory>
-#include <unordered_map>
-#include "../utils/PackedVector.h"
-#include "../graphics/Pass.h"
-#include "../graphics/core/UniformVariable.h"
-#include "../graphics/3D/Renderable3D.h"
-#include "ISystem.h"
+#include "IVPSystem.h"
+#include "../graphics/RenderNode.h"
 #include "events/ContainerEvent.h"
+#include "graphics/CameraComponent.h"
+#include "IVPSystem.h"
 
 namespace se::app {
 
-	class Application;
-
-
 	/**
 	 * Class CameraSystem, it's the System used for updating the Entities
-	 * Cameras, and the view and projection matrices on their shaders
+	 * Cameras, and the view and projection matrices on their shaders.
+	 * @note	it will only update the cameras of the Passes that use the
+	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */
-	class CameraSystem : public ISystem
+	class CameraSystem : public IVPSystem
 	{
-	private:	// Nested types
-		using PassSPtr = std::shared_ptr<graphics::Pass>;
-		using Mat4Uniform = std::shared_ptr<
-			graphics::UniformVariableValue<glm::mat4>
-		>;
-
-		/** Struct PassData, holds the shared uniform variables between the
-		 * Renderables */
-		struct PassData
-		{
-			std::size_t userCount = 0;
-			PassSPtr pass;
-			Mat4Uniform viewMatrix;
-			Mat4Uniform projectionMatrix;
-		};
-
 	private:	// Attributes
-		/** The Application that holds the Scene with the Repository with the
-		 * Passes and Programs */
-		Application& mApplication;
-
 		/** The Entity that holds the current active camera with which the
 		 * scene will be rendered */
 		Entity mCameraEntity;
 
-		/** If the active CameraComponent.has been updated or not */
-		bool mCameraUpdated;
+		/** The active CameraComponent of the Entity */
+		CameraComponent* mCamera;
 
-		/** The shared uniform variables of the Passes */
-		utils::PackedVector<PassData> mPassesData;
+		/** A pointer to the forward renderer used for rendering Entities */
+		graphics::RenderNode* mForwardRenderer;
 
-		/** Maps each Entity with its respective PassData indices */
-		std::unordered_map<Entity, std::vector<std::size_t>> mEntityPasses;
+		/** A pointer to the g-buffer renderer used for rendering Entities */
+		graphics::RenderNode* mGBufferRenderer;
 
 	public:		// Functions
 		/** Creates a new CameraSystem
@@ -70,36 +46,29 @@ namespace se::app {
 		 * @param	event the IEvent to notify */
 		virtual void notify(const IEvent& event) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc IVPSystem::onNewEntity(Entity) */
+		virtual void onNewEntity(Entity entity) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc IVPSystem::onRemoveEntity(Entity) */
+		virtual void onRemoveEntity(Entity entity) override;
 
 		/** Updates the Cameras sources with the Entities */
 		virtual void update() override;
 	private:
+		/** @copydoc IVPSystem::getViewMatrix() */
+		virtual glm::mat4 getViewMatrix() const override;
+
+		/** @copydoc IVPSystem::getProjectionMatrix() */
+		virtual glm::mat4 getProjectionMatrix() const override;
+
+		/** @copydoc IVPSystem::shouldAddUniforms(PassSPtr) */
+		virtual bool shouldAddUniforms(PassSPtr pass) const override;
+
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered
 		 *
 		 * @param	event the ContainerEvent to handle */
 		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
-
-		/** Processes the passes of the given renderable adding them their
-		 * respective shared uniforms
-		 *
-		 * @param	renderable the Renderable3D to process
-		 * @param	output the vector where the indices of the passes in
-		 *			@see mPassesData will be appended */
-		void processPasses(
-			graphics::Renderable3D& renderable, std::vector<std::size_t>& output
-		);
 	};
 
 }

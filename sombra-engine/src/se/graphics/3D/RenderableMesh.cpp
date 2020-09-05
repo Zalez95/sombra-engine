@@ -3,14 +3,9 @@
 
 namespace se::graphics {
 
-	RenderableMesh::RenderableMesh(MeshSPtr mesh) : mMesh(mesh)
-	{
-		addBindable(mMesh);
-	}
-
-
 	void RenderableMesh::draw()
 	{
+		mMesh->bind();
 		GraphicsOperations::drawIndexed(
 			PrimitiveType::Triangle,
 			mMesh->getIBO().getIndexCount(), mMesh->getIBO().getIndexType()

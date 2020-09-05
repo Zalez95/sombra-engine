@@ -87,6 +87,15 @@ namespace se::graphics {
 			TextureWrap wrapR = TextureWrap::Repeat
 		);
 
+		/** Sets the border color of the Texture
+		 *
+		 * @param	r the red value of the new color
+		 * @param	g the green value of the new color
+		 * @param	b the blue value of the new color
+		 * @param	a the alpha value of the new color
+		 * @return	a reference to the current Texture object */
+		Texture& setBorderColor(float r, float g, float b, float a);
+
 		/** Sets the image data of the Texture
 		 *
 		 * @param	source a pointer to the data to store in the Texture

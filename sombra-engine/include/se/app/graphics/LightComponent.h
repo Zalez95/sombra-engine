@@ -46,6 +46,28 @@ namespace se::app {
 	};
 
 
+	/**
+	 * Struct ShadowData, holds the configuration used for renfering the shadows
+	 */
+	struct ShadowData
+	{
+		/** The resolution of each side of the the Texture where the Shadows
+		 * are going to be rendered */
+		std::size_t resolution = 1024;
+
+		/** The length of the square that is going to be covered by shadows */
+		float size = 50.0f;
+
+		/** The distance to the near plane of the camera used for rendering the
+		 * shadows */
+		float zNear = 0.1f;
+
+		/** The distance to the far plane of the camera used for rendering the
+		 * shadows */
+		float zFar = 10.0f;
+	};
+
+
 	/** Struct LightComponent, holds a pointer to the LightSource that is
 	 * going to be used by the Entity */
 	struct LightComponent

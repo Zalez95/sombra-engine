@@ -1,19 +1,18 @@
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "se/app/loaders/TechniqueLoader.h"
 #include "se/utils/Log.h"
 #include "se/utils/FixedVector.h"
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
+#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/graphics/TextureUtils.h"
 
 namespace se::app {
 
 	void TechniqueLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
 	{
-		pass->addBindable(program);
-
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::BlendingOperation>(material.alphaMode == graphics::AlphaMode::Blend))
 			.addBindable(std::make_shared<graphics::DepthTestOperation>(material.alphaMode != graphics::AlphaMode::Blend));
@@ -116,8 +115,6 @@ namespace se::app {
 
 	void TechniqueLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
 	{
-		pass->addBindable(program);
-
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::BlendingOperation>(false))
 			.addBindable(std::make_shared<graphics::DepthTestOperation>(true));
@@ -221,6 +218,38 @@ namespace se::app {
 		pass->addBindable(material.splatmapTexture)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
 				"uSMaterial.splatmapTexture", *program, SplatmapMaterial::TextureUnits::kSplatmap
+			));
+	}
+
+
+	void TechniqueLoader::addHeightMapBindables(
+		PassSPtr pass, const Image<unsigned char>& heightMap, float size, float maxHeight, const ProgramSPtr program
+	) {
+		auto heightMapTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+		heightMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap)
+			.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
+			.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+			.setImage(
+				heightMap.pixels.get(), graphics::TypeId::UnsignedByte, graphics::ColorFormat::Red, graphics::ColorFormat::Red,
+				heightMap.width, heightMap.height
+			);
+
+		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMapTexture, heightMap.width, heightMap.height);
+		normalMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap);
+
+		pass->addBindable(std::move(heightMapTexture))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uHeightMap", *program, SplatmapMaterial::TextureUnits::kHeightMap
+			))
+			.addBindable(std::move(normalMapTexture))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uNormalMap", *program, SplatmapMaterial::TextureUnits::kNormalMap
+			))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uXZSize", *program, size
+			))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uMaxHeight", *program, maxHeight
 			));
 	}
 

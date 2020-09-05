@@ -7,6 +7,50 @@
 namespace se::graphics {
 
 	class BindableRenderNode;
+	template <typename T> class BindableRNodeInput;
+
+
+	/**
+	 * Class BindableRNodeConnector, it's the interface that an RNodeConnector
+	 * must implement for accessing the Bindables inside a BindableRenderNode
+	 */
+	class BindableRNodeConnector
+	{
+	protected:	// Nested types
+		using BindableSPtr = std::shared_ptr<Bindable>;
+
+	protected:	// Attributes
+		/** A pointer to the BindableRenderNode where the BindableRNodeConnector
+		 * is located */
+		BindableRenderNode* mParentNode;
+
+		/** The index of the Bindable resource inside @see mParentNode */
+		std::size_t mBindableIndex;
+
+	public:		// Functions
+		/** Creates a new BindableRNodeConnector
+		 *
+		 * @param	parentNode a pointer to the parent BindableRenderNode that
+		 *			holds the Bindable
+		 * @param	bindableIndex the index of the Bindable inside the
+		 *			BindableRenderNode */
+		BindableRNodeConnector(
+			BindableRenderNode* parentNode, std::size_t bindableIndex
+		) : mParentNode(parentNode), mBindableIndex(bindableIndex) {};
+
+		/** Class destructor */
+		virtual ~BindableRNodeConnector() = default;
+
+		/** The index of the Bindable resource inside @see mParentNode */
+		std::size_t getBindableIndex() const;
+
+		/** @return	a pointer to the Bindable resource */
+		BindableSPtr getBindable() const;
+
+		/** Notifies the BindableRNodeConnector of a change in the Bindable
+		 * value */
+		virtual void onBindableUpdate() = 0;
+	};
 
 
 	/**
@@ -15,18 +59,13 @@ namespace se::graphics {
 	 * of its Bindable resources by connecting it to their BindableRNodeInputs
 	 */
 	template <typename T>
-	class BindableRNodeOutput : public RNodeOutput
+	class BindableRNodeOutput :
+		public RNodeOutput, public BindableRNodeConnector
 	{
-	private:	// Nested types
-		using BindableSPtr = std::shared_ptr<Bindable>;
-
 	private:	// Attributes
-		/** A pointer to the BindableRenderNode where the BindableRNodeOutput
-		 * is located */
-		BindableRenderNode* mParentNode;
-
-		/** The index of the Bindable resource inside @see mParentNode */
-		std::size_t mBindableIndex;
+		/** The connected BindableRNodeInputs to the current
+		 * BindableRNodeOutput */
+		std::vector<BindableRNodeInput<T>*> mConnectedInputs;
 
 	public:
 		/** Creates a new BindableRNodeOutput
@@ -39,14 +78,17 @@ namespace se::graphics {
 		BindableRNodeOutput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		) : RNodeOutput(name), mParentNode(parentNode),
-			mBindableIndex(bindableIndex) {};
+		) : RNodeOutput(name),
+			BindableRNodeConnector(parentNode, bindableIndex) {};
 
-		/** @return	the RenderNode where the RNodeOutput resource is located */
+		/** @copydoc RNodeConnector::getParentNode() const */
 		virtual RenderNode* getParentNode() const override;
 
-		/** @return	a pointer to the Bindable resource */
-		BindableSPtr getBindable() const;
+		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
+		virtual void onBindableUpdate() override;
+
+		/** Adds the given BindableRNodeInput to @see mConnectedInputs */
+		void addInput(BindableRNodeInput<T>* input);
 	};
 
 
@@ -56,17 +98,10 @@ namespace se::graphics {
 	 * BindableRenderNodes by connecting it to their BindableRNodeOutputs
 	 */
 	template <typename T>
-	class BindableRNodeInput : public RNodeInput
+	class BindableRNodeInput :
+		public RNodeInput, public BindableRNodeConnector
 	{
 	private:	// Attributes
-		/** A pointer to the parent BindableRenderNode of the current
-		 * BindableRNodeInput */
-		BindableRenderNode* mParentNode;
-
-		/** The index where the connected Bindable resource will be stored
-		 * inside @see mParentNode */
-		std::size_t mBindableIndex;
-
 		/** The BindableRNodeOutput connected to the current
 		 * BindableRNodeInput */
 		BindableRNodeOutput<T>* mConnectedOutput;
@@ -82,25 +117,23 @@ namespace se::graphics {
 		BindableRNodeInput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		) : RNodeInput(name), mParentNode(parentNode),
-			mBindableIndex(bindableIndex), mConnectedOutput(nullptr) {};
+		) : RNodeInput(name),
+			BindableRNodeConnector(parentNode, bindableIndex),
+			mConnectedOutput(nullptr) {};
 
-		/** @return	the RenderNode where the RNodeOutput resource is located */
+		/** @copydoc RNodeConnector::getParentNode() const */
 		virtual RenderNode* getParentNode() const override;
 
-		/** @return	the RNodeOutput connected to the current RNodeInput,
-		 *			nullptr if there is no connection */
+		/** @copydoc RNodeInput::getConnectedOutput() const */
 		virtual RNodeOutput* getConnectedOutput() const override;
 
-		/** Connects the current BindableRNodeInput to the given RNodeOutput.
-		 * It will also append the RNodeOutput's Bindable to the parent
-		 * BindableRenderNode
-		 *
-		 * @param	output a pointer to the RNodeOutput to connect
-		 * @return	true if the RNodeOutput was connected succesfully, false
-		 *			otherwise
-		 * @note	you can't connect the same RNodeInput more than one time */
+		/** @copydoc RNodeInput::connect(RNodeOutput* output)
+		 * @note It will also append the RNodeOutput's Bindable to the parent
+		 * BindableRenderNode */
 		virtual bool connect(RNodeOutput* output) override;
+
+		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
+		virtual void onBindableUpdate() override;
 	};
 
 

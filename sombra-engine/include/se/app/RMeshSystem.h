@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include "../utils/MathUtils.h"
+#include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
 #include "graphics/SkinComponent.h"
@@ -24,9 +25,9 @@ namespace se::app {
 		 * update of a RenderableMesh */
 		struct RenderableMeshUniforms
 		{
-			std::shared_ptr<graphics::UniformVariableValue<
-				glm::mat4
-			>> modelMatrix;
+			std::shared_ptr<graphics::Pass> pass;
+			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
+				modelMatrix;
 			std::shared_ptr<graphics::UniformVariableValueVector<
 				glm::mat4, Skin::kMaxJoints
 			>> jointMatrices;

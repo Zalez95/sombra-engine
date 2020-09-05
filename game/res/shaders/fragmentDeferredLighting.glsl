@@ -8,6 +8,16 @@ const uint	MAX_LIGHTS			= 32u;
 const uint	DIRECTIONAL_LIGHT	= 0u;
 const uint	POINT_LIGHT			= 1u;
 const uint	SPOT_LIGHT			= 2u;
+const vec2 POISSON_DISK[16] = vec2[](
+	vec2(0.282571, 0.023957), vec2(0.792657, 0.945738),
+	vec2(0.922361, 0.411756), vec2(0.165838, 0.552995),
+	vec2(0.566027, 0.216651), vec2(0.335398, 0.783654),
+	vec2(0.0190741, 0.318522), vec2(0.647572, 0.581896),
+	vec2(0.916288, 0.0120243), vec2(0.0278329, 0.866634),
+	vec2(0.398053, 0.4214), vec2(0.00289926, 0.051149),
+	vec2(0.517624, 0.989044), vec2(0.963744, 0.719901),
+	vec2(0.76867, 0.018128), vec2(0.684194, 0.167302)
+);
 
 
 // ____ DATATYPES ____
@@ -25,26 +35,30 @@ struct BaseLight
 
 
 // ____ GLOBAL VARIABLES ____
-// Input data in tangent space from the vertex shader
+// Input data from the vertex shader
 in vec3 vsPosition;
 
 // Uniform variables
 uniform uint uNumLights;
+uniform uint uShadowLightIndex;
 layout (std140) uniform LightsBlock
 {
 	BaseLight uBaseLights[MAX_LIGHTS];
 };
 
-uniform vec3 uViewPosition;
+uniform vec3 uViewPosition;						// Camera position in World space
+uniform mat4 uShadowViewMatrix;					// World space to View space Matrix (shadow mapping)
+uniform mat4 uShadowProjectionMatrix;			// View space to NDC space Matrix (shadow mapping)
 
+uniform sampler2D uShadowMap;
+uniform samplerCube uIrradianceMap;
+uniform samplerCube uPrefilterMap;
+uniform sampler2D uBRDFMap;
 uniform sampler2D uPosition;
 uniform sampler2D uNormal;
 uniform sampler2D uAlbedo;
 uniform sampler2D uMaterial;
 uniform sampler2D uEmissive;
-uniform samplerCube uIrradianceMap;
-uniform samplerCube uPrefilterMap;
-uniform sampler2D uBRDFMap;
 
 // Output data
 layout (location = 0) out vec4 oColor;
@@ -52,6 +66,39 @@ layout (location = 1) out vec4 oBright;
 
 
 // ____ FUNCTION DEFINITIONS ____
+/** Random function in the range [0,1] */
+float rand(vec2 seed)
+{
+	return fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+
+/* Calculates wether the given point is in shadow or not */
+float calculateShadow(vec4 position, vec3 normal)
+{
+	vec3 projCoords = position.xyz / position.w;	// Perspective divide
+	projCoords = projCoords * 0.5 + 0.5;			// [0,1] range
+
+	bool isDirectional = uBaseLights[uShadowLightIndex].type == DIRECTIONAL_LIGHT;
+	vec3 lightDirection1 = normalize(-uBaseLights[uShadowLightIndex].direction);
+	vec3 lightDirection2 = normalize(uBaseLights[uShadowLightIndex].position - position.xyz);
+	vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
+	float bias = max(0.005 * (1.0 - dot(normal, lightDirection)), 0.0005);
+
+	float shadow = 0.0;
+	for (uint i = 0u; i < 4u; ++i) {
+		int randomIndex = int(16.0 * rand(i * gl_FragCoord.xy));
+		float shadowMapDepth = texture(uShadowMap, projCoords.xy + POISSON_DISK[randomIndex] / 700.0).r;
+		float currentDepth = projCoords.z;
+		if (currentDepth - bias > shadowMapDepth){
+			shadow += 0.25;
+		}
+	}
+
+	return float(position.z <= 1.0) * shadow;
+}
+
+
 /* Returns relative surface area of the microfacets aligned to the
  * halfwayVector */
 float normalDistributionGGX(vec3 normalDirection, vec3 halfwayVector, float roughness)
@@ -132,6 +179,10 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(normalDirection, viewDirection), 0.0);
 
+	// ---- Calculate shadow mapping ---
+	vec4 shadowPosition = uShadowProjectionMatrix * uShadowViewMatrix * vec4(position, 1.0);
+	float shadow = calculateShadow(shadowPosition, normal);
+
 	// ---- Calculate Direct lighting ----
 	for (uint i = 0u; i < uNumLights; ++i) {
 		// Calculate the light direction and distance from the current point
@@ -163,9 +214,12 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 			float normalDotLight = max(dot(normalDirection, lightDirection), 0.0);
 			vec3 specularColor = (n * f * g) / max(4 * normalDotView * normalDotLight, 0.001);
 
-			// Add the current light color
+			// Add the current light color if it's being lit
 			vec3 diffuseRatio = (vec3(1.0) - f) * (1.0 - metallic);
-			totalLightColor += (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
+			vec3 currentLightColor = (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
+
+			bool isShadowLight = i == uShadowLightIndex;
+			totalLightColor += (float(isShadowLight) * (1.0 - shadow) + float(!isShadowLight)) * currentLightColor;
 		}
 	}
 

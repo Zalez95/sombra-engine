@@ -2,6 +2,18 @@
 
 namespace se::graphics {
 
+	std::size_t BindableRNodeConnector::getBindableIndex() const
+	{
+		return mBindableIndex;
+	}
+
+
+	BindableRNodeConnector::BindableSPtr BindableRNodeConnector::getBindable() const
+	{
+		return mParentNode->getBindable(mBindableIndex);
+	}
+
+
 	std::size_t BindableRenderNode::addBindable(BindableSPtr bindable, bool mustBind)
 	{
 		mBindables.emplace_back(bindable, mustBind);
@@ -18,13 +30,20 @@ namespace se::graphics {
 	void BindableRenderNode::setBindable(std::size_t bindableIndex, BindableSPtr bindable)
 	{
 		mBindables[bindableIndex].first = bindable;
+		iterateOutputs([&](RNodeOutput& output) {
+			if (auto outputPtr = dynamic_cast<BindableRNodeConnector*>(&output)) {
+				if (outputPtr->getBindableIndex() == bindableIndex) {
+					outputPtr->onBindableUpdate();
+				}
+			}
+		});
 	}
 
 
 	void BindableRenderNode::bind() const
 	{
 		for (auto& [bindable, mustBind] : mBindables) {
-			if (mustBind) {
+			if (bindable && mustBind) {
 				bindable->bind();
 			}
 		}
@@ -34,7 +53,7 @@ namespace se::graphics {
 	void BindableRenderNode::unbind() const
 	{
 		for (auto& [bindable, mustBind] : mBindables) {
-			if (mustBind) {
+			if (bindable && mustBind) {
 				bindable->unbind();
 			}
 		}

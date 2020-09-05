@@ -44,11 +44,9 @@ namespace se::app {
 
 	void GaussianBlurNode::execute()
 	{
-		graphics::GraphicsOperations::setDepthTest(false);
 		graphics::GraphicsOperations::setDepthMask(false);
 
 		bind();
-		mPlane->bind();
 
 		auto mask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor);
 		graphics::GraphicsOperations::clear(mask);
@@ -56,7 +54,6 @@ namespace se::app {
 		mPlane->draw();
 
 		graphics::GraphicsOperations::setDepthMask(true);
-		graphics::GraphicsOperations::setDepthTest(true);
 	}
 
 }

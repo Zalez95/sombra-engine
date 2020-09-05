@@ -26,7 +26,30 @@ namespace se::app {
 
 	void EntityDatabase::addSystem(ISystem* system, ComponentMask mask)
 	{
-		mSystems.emplace_back(system, mask);
+		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
+			return pair.first == system;
+		});
+		if (itSystem != mSystems.end()) {
+			itSystem->second = mask;
+		}
+		else {
+			mSystems.emplace_back(system, mask);
+		}
+	}
+
+
+	EntityDatabase::ComponentMask EntityDatabase::getSystemMask(ISystem* system) const
+	{
+		ComponentMask ret;
+
+		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
+			return pair.first == system;
+		});
+		if (itSystem != mSystems.end()) {
+			ret = itSystem->second;
+		}
+
+		return ret;
 	}
 
 
