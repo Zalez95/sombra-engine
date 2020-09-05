@@ -255,7 +255,6 @@ namespace game {
 					auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
 
 					auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-					mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(pass.get(), program);
 					se::app::TechniqueLoader::addMaterialBindables(pass, material, program);
 
 					auto technique = std::make_unique<se::graphics::Technique>();
@@ -432,14 +431,13 @@ namespace game {
 			auto skyEntity = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(skyEntity);
 
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, se::app::TagComponent("sky"));
+			mGame.getEntityDatabase().addComponent(skyEntity, se::app::TagComponent("sky"));
 
 			se::app::TransformsComponent transforms;
 			transforms.scale = glm::vec3(kZFar / 2.0f);
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
+			mGame.getEntityDatabase().addComponent(skyEntity, std::move(transforms));
 
-			/*auto passSky = std::make_shared<se::graphics::Pass>(*forwardRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passSky.get(), programSky);
+			auto passSky = std::make_shared<se::graphics::Pass>(*forwardRenderer);
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(programSky)
 				.addBindable(skyTexture)
@@ -451,7 +449,7 @@ namespace game {
 
 			se::app::MeshComponent mesh;
 			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueSky));
-			mGame.getEntityDatabase().addComponent(skyEntity, std::move(mesh));*/
+			mGame.getEntityDatabase().addComponent(skyEntity, std::move(mesh));
 
 			se::app::LightProbe lightProbe = { environmentTexture, prefilterTexture };
 			mGame.getEntityDatabase().addComponent(skyEntity, std::move(lightProbe));
@@ -466,7 +464,6 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
 			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(terrainPass.get(), programGBufSplatmap);
 			se::app::TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
 
 			auto terrainTechnique = std::make_shared<se::graphics::Technique>();
@@ -489,7 +486,6 @@ namespace game {
 			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
 
 			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passPlane.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
@@ -556,7 +552,6 @@ namespace game {
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
 			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passCube.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
@@ -581,7 +576,6 @@ namespace game {
 		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(constraint.get());
 
 		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-		mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passRed.get(), programGBufMaterial);
 		se::app::TechniqueLoader::addMaterialBindables(
 			passRed,
 			se::app::Material{
@@ -668,7 +662,6 @@ namespace game {
 			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(transforms));
 
 			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passSlice.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
@@ -694,7 +687,6 @@ namespace game {
 		// Random cubes
 		{
 			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-			mScene.repository.add<se::graphics::Pass*, se::graphics::Program>(passRandom.get(), programGBufMaterial);
 			se::app::TechniqueLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{

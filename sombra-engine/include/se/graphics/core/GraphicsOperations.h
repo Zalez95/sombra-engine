@@ -114,7 +114,7 @@ namespace se::graphics {
 		 * @param	a if we want to write to the the alpha color component */
 		static void setColorMask(bool r, bool g, bool b, bool a);
 
-		/** Enables or disables writting to the depth buffer
+		/** Enables or disables writing to the depth buffer
 		 *
 		 * @param	active if the we should write to the depth buffer or not */
 		static void setDepthMask(bool active);
@@ -199,6 +199,35 @@ namespace se::graphics {
 		/** Disables Blending if mActive is true, enables it otherwise */
 		virtual void unbind() const override
 		{ GraphicsOperations::setBlending(!mActive); };
+	};
+
+
+	/**
+	 * Class DepthMaskOperation, it's a Bindable used for enabling or disabling
+	 * writing to the depth buffer
+	 */
+	class DepthMaskOperation : public Bindable
+	{
+	private:	// Attributes
+		/** If we want to write to the depth buffer on bind or not */
+		bool mActive;
+
+	public:		// Functions
+		/** Creates a new DepthMaskOperation
+		 *
+		 * @param	active if we want to write to the depth buffer on bind or
+		 *			not */
+		DepthMaskOperation(bool active = true) : mActive(active) {};
+
+		/** Enables writing to the depth buffer if mActive is true, disables
+		 * it otherwise */
+		virtual void bind() const override
+		{ GraphicsOperations::setDepthMask(mActive); };
+
+		/** Disables writing to the depth buffer if mActive is true, enables
+		 * it otherwise */
+		virtual void unbind() const override
+		{ GraphicsOperations::setDepthMask(!mActive); };
 	};
 
 }

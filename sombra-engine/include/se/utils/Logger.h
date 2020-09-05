@@ -40,7 +40,7 @@ namespace se::utils {
 		/** The log file */
 		std::ofstream mLogFile;
 
-		/** The mutex for writting to the log file */
+		/** The mutex for writing to the log file */
 		std::mutex mMutex;
 
 		/** The maximum dept of the text logs to write to the mLogFile */
