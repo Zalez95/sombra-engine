@@ -7,11 +7,33 @@
 
 namespace se::animation {
 
+	/** A single KeyFrame data */
+	struct Vec3StepKeyFrame
+	{
+		/** The tranformation state at the current KeyFrame */
+		glm::vec3 transformation;
+
+		/** The time point in seconds since the start of the Animation */
+		float timePoint;
+	};
+
+
+	/** A single KeyFrame data */
+	struct QuatStepKeyFrame
+	{
+		/** The tranformation state at the current KeyFrame */
+		glm::quat transformation;
+
+		/** The time point in seconds since the start of the Animation */
+		float timePoint;
+	};
+
+
 	/**
 	 * Class AnimationQuatStep, it's an Animation that holds vec3
 	 * transformation data. It also implements a step interpolation function
 	 */
-	class AnimationVec3Step : public Animation<glm::vec3, float>
+	class AnimationVec3Step : public Animation<glm::vec3, Vec3StepKeyFrame>
 	{
 	protected:
 		/** The step interpolation function used for calculating the
@@ -24,7 +46,7 @@ namespace se::animation {
 		 * @param	timePoint the timePoint used for interpolating the data
 		 * @return	the interpolated vec3 transformation
 		 * @note	k2 must be later than k1 */
-		virtual glm::vec3 interpolationFunction(
+		virtual PrimitiveType interpolationFunction(
 			const KeyFrame& k1, const KeyFrame& /*k2*/, float /*timePoint*/
 		) const override { return k1.transformation; };
 
@@ -42,7 +64,7 @@ namespace se::animation {
 	 * Class AnimationQuatStep, it's an Animation that holds quaternion
 	 * transformation data. It also implements a step interpolation function
 	 */
-	class AnimationQuatStep : public Animation<glm::quat, float>
+	class AnimationQuatStep : public Animation<glm::quat, QuatStepKeyFrame>
 	{
 	protected:
 		/** The step interpolation function used for calculating the
@@ -55,7 +77,7 @@ namespace se::animation {
 		 * @param	timePoint the timePoint used for interpolating the data
 		 * @return	the interpolated quat transformation
 		 * @note	k2 must be later than k1 */
-		virtual glm::quat interpolationFunction(
+		virtual PrimitiveType interpolationFunction(
 			const KeyFrame& k1, const KeyFrame& /*k2*/, float /*timePoint*/
 		) const override { return k1.transformation; };
 

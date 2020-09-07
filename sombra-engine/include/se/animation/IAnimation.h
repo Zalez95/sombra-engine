@@ -11,7 +11,10 @@ namespace se::animation {
 	template <typename T>
 	class IAnimation
 	{
-	public:
+	public:		// Nested types
+		using PrimitiveType = T;
+
+	public:		// Functions
 		/** Class destructor */
 		virtual ~IAnimation() = default;
 
@@ -20,7 +23,7 @@ namespace se::animation {
 		 *
 		 * @param	timePoint the time point used for interpolating the data
 		 * @return	the interpolated transformation */
-		virtual T interpolate(float timePoint) const = 0;
+		virtual PrimitiveType interpolate(float timePoint) const = 0;
 
 		/** @return	the length in seconds of the animation */
 		virtual float getLength() const = 0;
@@ -29,24 +32,18 @@ namespace se::animation {
 
 	/**
 	 * Class Animation, it holds the set of KeyFrames of an Animation
+	 * @tparam	T is the primitive type that is going to be interpolated
+	 * @tparam	U holds the data of each KeyFrame needed for calculating the
+	 *			interpolation
 	 */
 	template <typename T, typename U>
 	class Animation : public IAnimation<T>
 	{
 	public:		// Nested types
-		/** A single KeyFrame data */
-		struct KeyFrame
-		{
-			/** The tranformation state at the current KeyFrame */
-			T transformation;
-
-			/** The time point in seconds since the start of the Animation */
-			U timePoint;
-		};
-
+		using KeyFrame = U;
 		using KeyFramePair = std::pair<KeyFrame, KeyFrame>;
 
-	private:	// Attributes
+	protected:	// Attributes
 		/** The KeyFrames raw data sorted by their timePoint */
 		std::vector<KeyFrame> mKeyFrames;
 
@@ -64,11 +61,13 @@ namespace se::animation {
 		 *
 		 * @param	timePoint the timePoint used for interpolating the data
 		 * @return	the interpolated transformation */
-		virtual T interpolate(float timePoint) const override;
+		virtual typename IAnimation<T>::PrimitiveType interpolate(
+			float timePoint
+		) const override;
 
 		/** @return	the length in seconds of the animation */
 		virtual float getLength() const override;
-	private:
+	protected:
 		/** The interpolation function used for calculating the transformation
 		 * with the Animations KeyFrames and the given timePoint
 		 *
@@ -77,7 +76,7 @@ namespace se::animation {
 		 * @param	timePoint the timePoint used for interpolating the data
 		 * @return	the interpolated transformation
 		 * @note	k2 must be later than k1 */
-		virtual T interpolationFunction(
+		virtual typename IAnimation<T>::PrimitiveType interpolationFunction(
 			const KeyFrame& k1, const KeyFrame& k2, float timePoint
 		) const = 0;
 

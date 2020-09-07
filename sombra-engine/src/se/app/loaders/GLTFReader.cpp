@@ -12,6 +12,7 @@
 #include "se/app/graphics/RawMesh.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
+#include "se/animation/CubicSplineAnimations.h"
 #include "se/animation/TransformationAnimators.h"
 
 namespace se::app {
@@ -1061,6 +1062,7 @@ namespace se::app {
 				else {
 					return Result(false, "Invalid accessor component sizes");
 				}
+				break;
 			case InterpolationType::Step:
 				if (aInput.count != aOutput.count) {
 					return Result(false, "Input number of elements doesn't match the output one");
@@ -1084,9 +1086,42 @@ namespace se::app {
 				else {
 					return Result(false, "Invalid accessor component sizes");
 				}
-			default:
-				return Result(false, "Interpolation isn't available");
+				break;
+			case InterpolationType::CubicSpline:
+				if (3 * aInput.count != aOutput.count) {
+					return Result(false, "Input number of elements doesn't match the output one");
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+					auto animVec3 = std::make_unique<animation::AnimationVec3CubicSpline>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animVec3->addKeyFrame({
+							*reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::vec3*>(outputPtr + numElements * aOutput.componentSize + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::vec3*>(outputPtr + 2 * numElements * aOutput.componentSize + i * aOutput.componentSize),
+							inputPtr[i] });
+					}
+					out1 = std::move(animVec3);
+					return Result();
+				}
+				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+					auto animQuat = std::make_unique<animation::AnimationQuatCubicSpline>();
+					for (std::size_t i = 0; i < numElements; ++i) {
+						animQuat->addKeyFrame({
+							*reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::quat*>(outputPtr + numElements * aOutput.componentSize + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::quat*>(outputPtr + 2 * numElements * aOutput.componentSize + i * aOutput.componentSize),
+							inputPtr[i] });
+					}
+					out2 = std::move(animQuat);
+					return Result();
+				}
+				else {
+					return Result(false, "Invalid accessor component sizes");
+				}
+				break;
 		}
+
+		return Result(false, "You shouldn't be here");
 	}
 
 

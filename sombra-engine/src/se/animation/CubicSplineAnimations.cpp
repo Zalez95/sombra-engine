@@ -1,8 +1,9 @@
-#include "se/animation/LinearAnimations.h"
+#include <glm/gtx/spline.hpp>
+#include "se/animation/CubicSplineAnimations.h"
 
 namespace se::animation {
 
-	AnimationVec3Linear::PrimitiveType AnimationVec3Linear::interpolationFunction(
+	AnimationVec3CubicSpline::PrimitiveType AnimationVec3CubicSpline::interpolationFunction(
 		const KeyFrame& k1, const KeyFrame& k2, float timePoint
 	) const
 	{
@@ -12,11 +13,11 @@ namespace se::animation {
 			factor /= length;
 		}
 
-		return glm::mix(k1.transformation, k2.transformation, factor);
+		return glm::hermite(k1.point, k1.outTangent, k2.point, k2.inTangent, length);
 	}
 
 
-	AnimationQuatLinear::PrimitiveType AnimationQuatLinear::interpolationFunction(
+	AnimationQuatCubicSpline::PrimitiveType AnimationQuatCubicSpline::interpolationFunction(
 		const KeyFrame& k1, const KeyFrame& k2, float timePoint
 	) const
 	{
@@ -26,7 +27,7 @@ namespace se::animation {
 			factor /= length;
 		}
 
-		return glm::normalize(glm::slerp(k1.transformation, k2.transformation, factor));
+		return glm::hermite(k1.point, k1.outTangent, k2.point, k2.inTangent, length);
 	}
 
 }

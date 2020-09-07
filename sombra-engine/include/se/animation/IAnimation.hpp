@@ -19,7 +19,7 @@ namespace se::animation {
 
 
 	template <typename T, typename U>
-	T Animation<T, U>::interpolate(float timePoint) const
+	typename IAnimation<T>::PrimitiveType Animation<T, U>::interpolate(float timePoint) const
 	{
 		auto [k1, k2] = getPreviousAndNextKeyFrames(timePoint);
 		return interpolationFunction(k1, k2, timePoint);

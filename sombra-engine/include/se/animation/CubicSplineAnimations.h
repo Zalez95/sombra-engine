@@ -1,5 +1,5 @@
-#ifndef LINEAR_ANIMATIONS_H
-#define LINEAR_ANIMATIONS_H
+#ifndef CUBIC_SPLINE_ANIMATIONS_H
+#define CUBIC_SPLINE_ANIMATIONS_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -8,10 +8,16 @@
 namespace se::animation {
 
 	/** A single KeyFrame data */
-	struct Vec3LinearKeyFrame
+	struct Vec3CubicSplineKeyFrame
 	{
-		/** The tranformation state at the current KeyFrame */
-		glm::vec3 transformation;
+		/** The first tangent used for calculating the spline */
+		glm::vec3 inTangent;
+
+		/** The spline vertex used for calculating the spline */
+		glm::vec3 point;
+
+		/** The second tangent used for calculating the spline */
+		glm::vec3 outTangent;
 
 		/** The time point in seconds since the start of the Animation */
 		float timePoint;
@@ -19,10 +25,16 @@ namespace se::animation {
 
 
 	/** A single KeyFrame data */
-	struct QuatLinearKeyFrame
+	struct QuatCubicSplineKeyFrame
 	{
-		/** The tranformation state at the current KeyFrame */
-		glm::quat transformation;
+		/** The first tangent used for calculating the spline */
+		glm::quat inTangent;
+
+		/** The spline vertex used for calculating the spline */
+		glm::quat point;
+
+		/** The second tangent used for calculating the spline */
+		glm::quat outTangent;
 
 		/** The time point in seconds since the start of the Animation */
 		float timePoint;
@@ -30,10 +42,12 @@ namespace se::animation {
 
 
 	/**
-	 * Class AnimationQuatLinear, it's an Animation that holds vec3
-	 * transformation data. It also implements a linear interpolation function
+	 * Class AnimationQuatCubicSpline, it's an Animation that holds vec3
+	 * transformation data. It also implements a cubic spline interpolation
+	 * function
 	 */
-	class AnimationVec3Linear : public Animation<glm::vec3, Vec3LinearKeyFrame>
+	class AnimationVec3CubicSpline :
+		public Animation<glm::vec3, Vec3CubicSplineKeyFrame>
 	{
 	protected:
 		/** The linear interpolation function used for calculating the
@@ -60,13 +74,15 @@ namespace se::animation {
 
 
 	/**
-	 * Class AnimationQuatLinear, it's an Animation that holds quaternion
-	 * transformation data. It also implements a linear interpolation function
+	 * Class AnimationQuatCubicSpline, it's an Animation that holds quaternion
+	 * transformation data. It also implements a cubic spline interpolation
+	 * function
 	 */
-	class AnimationQuatLinear : public Animation<glm::quat, QuatLinearKeyFrame>
+	class AnimationQuatCubicSpline :
+		public Animation<glm::quat, QuatCubicSplineKeyFrame>
 	{
 	protected:
-		/** The linear interpolation function used for calculating the
+		/** The cubic spline interpolation function used for calculating the
 		 * quat transformation with the Animations KeyFrames and the given
 		 * timePoint
 		 *
@@ -90,4 +106,4 @@ namespace se::animation {
 
 }
 
-#endif		// LINEAR_ANIMATIONS_H
+#endif		// CUBIC_SPLINE_ANIMATIONS_H
