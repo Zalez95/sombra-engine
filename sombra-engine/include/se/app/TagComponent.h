@@ -20,7 +20,7 @@ namespace se::app {
 		/** Creates a new TagComponent
 		 *
 		 * @param	name the name of the new TagComponent */
-		TagComponent(std::string_view name)
+		TagComponent(std::string_view name = "")
 		{
 			std::size_t count = name.size();
 			if (count > 255) {

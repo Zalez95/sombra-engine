@@ -81,12 +81,8 @@ namespace se::graphics {
 		/** Creates a new RenderableTerrain
 		 *
 		 * @param	size the size of the terrain in the XZ plane
-		 * @param	maxHeight the maximum height/depression the terrain can
-		 *			have in the Y axis
-		 * @param	heightMap the texture to use as height map in the terrain
 		 * @param	lodDistances the minimum distance to the camera at each
-		 *			level of detail
-		 * @param	material the SplatmapMaterial of the Terrain */
+		 *			level of detail */
 		RenderableTerrain(float size, const std::vector<float>& lodDistances);
 
 		/** Updates the terrain QuadTree according to the given highest lod

@@ -152,7 +152,17 @@ namespace se::app {
 		 * @param	entity the Entity to remove */
 		void removeEntity(Entity entity);
 
-		/** Adds a Component with @tparam T to the given Entity
+		/** Adds a Component with type @tparam T to the given Entity
+		 *
+		 * @param	entity the Entity that will own the Component
+		 * @param	args the arguments needed for calling the constructor of
+		 *			the new Element
+		 * @return	a pointer to tha Component if it was added successfully,
+		 *			nullptr otherwise */
+		template <typename T, typename... Args>
+		T* emplaceComponent(Entity entity, Args&&... args);
+
+		/** Adds a Component with type @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
 		 * @param	component the Component to add
@@ -161,7 +171,7 @@ namespace se::app {
 		template <typename T>
 		T* addComponent(Entity entity, T&& component);
 
-		/** Adds a Component with @tparam T to the given Entity
+		/** Adds a Component with type @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
 		 * @param	component a pointer to the Component to add

@@ -23,6 +23,7 @@
 #include "se/app/events/EventManager.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/InputSystem.h"
+#include "se/app/ScriptSystem.h"
 #include "se/app/CameraSystem.h"
 #include "se/app/ShadowSystem.h"
 #include "se/app/AppRenderer.h"
@@ -35,6 +36,7 @@
 #include "se/app/AudioSystem.h"
 #include "se/app/gui/GUIManager.h"
 #include "se/app/TagComponent.h"
+#include "se/app/ScriptComponent.h"
 #include "se/app/graphics/MeshComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/graphics/CameraComponent.h"
@@ -92,6 +94,7 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
 			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
 			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
+			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
 			mEntityDatabase->addComponentTable<animation::AnimationNode*>(kMaxEntities);
 			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
 
@@ -102,6 +105,7 @@ namespace se::app {
 			shadowData.zFar = 100.0f;
 
 			mInputSystem = new InputSystem(*this);
+			mScriptSystem = new ScriptSystem(*this);
 			mAppRenderer = new AppRenderer(*this, shadowData, windowConfig.width, windowConfig.height);
 			mCameraSystem = new CameraSystem(*this);
 			mShadowSystem = new ShadowSystem(*this, shadowData);
@@ -137,6 +141,7 @@ namespace se::app {
 		if (mShadowSystem) { delete mShadowSystem; }
 		if (mCameraSystem) { delete mCameraSystem; }
 		if (mAppRenderer) { delete mAppRenderer; }
+		if (mScriptSystem) { delete mScriptSystem; }
 		if (mInputSystem) { delete mInputSystem; }
 		if (mEntityDatabase) { delete mTaskManager; }
 		if (mRepository) { delete mRepository; }
@@ -232,6 +237,10 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
 		utils::TaskSet taskSet(*mTaskManager);
+		auto scriptTask = taskSet.createTask([&]() {
+			mScriptSystem->setDeltaTime(deltaTime);
+			mScriptSystem->update();
+		});
 		auto animationTask = taskSet.createTask([&]() {
 			mAnimationSystem->setDeltaTime(deltaTime);
 			mAnimationSystem->update();
@@ -251,6 +260,8 @@ namespace se::app {
 		auto rmeshTask = taskSet.createTask([&]() { mRMeshSystem->update(); });
 		auto rterrainTask = taskSet.createTask([&]() { mRTerrainSystem->update(); });
 
+		taskSet.depends(dynamicsTask, scriptTask);
+		taskSet.depends(animationTask, scriptTask);
 		taskSet.depends(collisionTask, dynamicsTask);
 		taskSet.depends(constraintsTask, collisionTask);
 		taskSet.depends(audioTask, constraintsTask);

@@ -29,8 +29,7 @@ namespace se::app {
 		auto entity = mEntityDatabase.addEntity();
 
 		// Name
-		TagComponent tag(name);
-		mEntityDatabase.addComponent(entity, std::move(tag));
+		mEntityDatabase.emplaceComponent<TagComponent>(entity, name);
 
 		// Transforms
 		TransformsComponent transforms;
@@ -38,18 +37,15 @@ namespace se::app {
 		mEntityDatabase.addComponent(entity, std::move(transforms));
 
 		// Graphics data
-		auto renderableTerrain = createTerrainRenderable(size, lodDistances, techniqueName);
-		mEntityDatabase.addComponent(entity, std::move(renderableTerrain));
+		mEntityDatabase.addComponent(entity, createTerrainRenderable(size, lodDistances, techniqueName));
 
 		// Physics data
 		physics::RigidBodyConfig config(0.2f);
 		config.frictionCoefficient = 1.0f;
-		physics::RigidBody rb(config, physics::RigidBodyData());
-		mEntityDatabase.addComponent(entity, std::move(rb));
+		mEntityDatabase.emplaceComponent<physics::RigidBody>(entity, config);
 
 		// Collider data
-		auto terrainCollider = createTerrainCollider(heightMap, scaleVector);
-		mEntityDatabase.addComponent(entity, std::move(terrainCollider));
+		mEntityDatabase.addComponent(entity, createTerrainCollider(heightMap, scaleVector));
 
 		mScene.entities.push_back(entity);
 		return entity;

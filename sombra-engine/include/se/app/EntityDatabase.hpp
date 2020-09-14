@@ -364,6 +364,14 @@ namespace se::app {
 	}
 
 
+	template <typename T, typename... Args>
+	T* EntityDatabase::emplaceComponent(Entity entity, Args&&... args)
+	{
+		T component(std::forward<Args>(args)...);
+		return addComponent(entity, std::move(component));
+	}
+
+
 	template <typename T>
 	T* EntityDatabase::addComponent(Entity entity, T&& component)
 	{

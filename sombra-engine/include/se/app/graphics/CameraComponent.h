@@ -14,23 +14,18 @@ namespace se::app {
 	private:	// Attributes
 		/** The projection matrix of the renderer that transforms from View
 		 * Space to Projection Space */
-		glm::mat4 mProjectionMatrix;
+		glm::mat4 mProjectionMatrix = glm::mat4(1.0f);
 
 		/** The position coordinates of the CameraComponent in world space */
-		glm::vec3 mPosition;
+		glm::vec3 mPosition = {};
 
 		/** The point where the CameraComponent is pointing to in world space */
-		glm::vec3 mTarget;
+		glm::vec3 mTarget = {};
 
 		/** The Up vector of the CameraComponent in world space */
-		glm::vec3 mUp;
+		glm::vec3 mUp = {};
 
 	public:		// Functions
-		/** Creates a new CameraComponent */
-		CameraComponent() :
-			mProjectionMatrix(1.0f),
-			mPosition(0.0f), mTarget(0.0f), mUp(0.0f) {};
-
 		/** Sets the projection matrix of the CameraComponent
 		 *
 		 * @param	left the left coordinate of the screen

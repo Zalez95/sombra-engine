@@ -14,6 +14,7 @@ namespace se::app {
 	class EntityDatabase;
 	class EventManager;
 	class InputSystem;
+	class ScriptSystem;
 	class CameraSystem;
 	class ShadowSystem;
 	class AppRenderer;
@@ -97,6 +98,7 @@ namespace se::app {
 
 		/** The Systems that hold and update the data of the entities */
 		InputSystem* mInputSystem;
+		ScriptSystem* mScriptSystem;
 		CameraSystem* mCameraSystem;
 		ShadowSystem* mShadowSystem;
 		AppRenderer* mAppRenderer;

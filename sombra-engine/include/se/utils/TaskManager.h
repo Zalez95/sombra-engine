@@ -36,7 +36,7 @@ namespace se::utils {
 			TaskState state = TaskState::Released;
 
 			/** The number of task dependencies of the current one */
-			int remainingTasks = 0;
+			std::size_t remainingTasks = 0;
 
 			/** The tasks that depends on the current one */
 			std::vector<TaskId> dependentTasks;
