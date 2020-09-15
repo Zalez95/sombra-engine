@@ -20,18 +20,26 @@ namespace se::collision {
 	private:	// Attributes
 		/** The minimum difference between the distances to the origin of
 		 * a HEFace and the next SupportPoint during the Polytope expansion step
-		 * needed for determinate the closest face to the origin */
+		 * needed for checking if we found the closest face to the origin */
 		const float mMinFThreshold;
+
+		/** The maximum number of iteration of the GJK algorithm */
+		const std::size_t mMaxIterations;
 
 		/** The precision of the projected point onto a triangle */
 		const float mProjectionPrecision;
 
 	public:		// Functions
 		/** Creates a new EPACollisionDetector
-		 * @param	minFThreshold a threshold needed for determinate the
-		 *			closest face in contact and stop the Algorithm
+		 * @param	minFThreshold a threshold value needed for checking if we
+		 *			found the closest face in contact and stop the Algorithm
+		 * @param	maxIterations the maximum number of iterations of the
+		 *			algorithm
 		 * @param	projectionPrecision precision of the Contact coordinates */
-		EPACollisionDetector(float minFThreshold, float projectionPrecision);
+		EPACollisionDetector(
+			float minFThreshold, std::size_t maxIterations,
+			float projectionPrecision
+		);
 
 		/** Calculates the deepest Contact point between the given colliders
 		 * using the EPA algorithm

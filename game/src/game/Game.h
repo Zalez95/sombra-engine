@@ -8,15 +8,16 @@
 
 namespace game {
 
-	static constexpr char kTitle[]					= "< SOMBRA >";
-	static constexpr unsigned int kWidth			= 1280;
-	static constexpr unsigned int kHeight			= 720;
-	static constexpr float kMinFDifference			= 0.00001f;
-	static constexpr float kContactPrecision		= 0.0000001f;
-	static constexpr float kContactSeparation		= 0.00001f;
-	static constexpr std::size_t kMaxManifolds		= 128;
-	static constexpr int kMaxRayCasterIterations	= 32;
-	static constexpr float kUpdateTime				= 0.016f;
+	static constexpr char kTitle[]							= "< SOMBRA >";
+	static constexpr unsigned int kWidth					= 1280;
+	static constexpr unsigned int kHeight					= 720;
+	static constexpr std::size_t kMaxManifolds				= 128;
+	static constexpr float kMinFDifference					= 0.00001f;
+	static constexpr std::size_t kMaxCollisionIterations	= 128;
+	static constexpr float kContactPrecision				= 0.0000001f;
+	static constexpr float kContactSeparation				= 0.00001f;
+	static constexpr int kMaxRayCasterIterations			= 32;
+	static constexpr float kUpdateTime						= 0.016f;
 
 	enum class GameState : se::utils::StateMachine::State
 	{

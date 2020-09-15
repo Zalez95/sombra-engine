@@ -19,19 +19,23 @@ namespace se::collision {
 	 * CollisionWorld */
 	struct CollisionWorldData
 	{
-		/** The minimum difference between the distances to the origin of two
-		 * faces needed for the EPA algorithm */
+		/** The maximum number of collision Manifolds */
+		std::size_t maxManifolds;
+
+		/** The threshold value needed for checking if the closest face in
+		 * contact was found */
 		float minFDifference;
+
+		/** The maximmum number of iterations of the collision detection
+		 * algorithms */
+		std::size_t maxIterations;
 
 		/** The precision of the calculated Contact points */
 		float contactPrecision;
 
 		/** The minimum distance between the coordinates of two Contact used for
-		 * determining if a contact is the same than another one */
+		 * used for checking if a contact is the same than another one */
 		float contactSeparation;
-
-		/** The maximum number of collision Manifolds */
-		std::size_t maxManifolds;
 
 		/** The maximum number of iterations for the ray casting algorithm */
 		int maxRayCasterIterations;

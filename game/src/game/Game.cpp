@@ -16,7 +16,9 @@ namespace game {
 	Game::Game() :
 		Application(
 			{ kTitle, kWidth, kHeight },
-			{ kMinFDifference, kContactPrecision, kContactSeparation, kMaxManifolds, kMaxRayCasterIterations },
+			{	kMaxManifolds, kMinFDifference, kMaxCollisionIterations,
+				kContactPrecision, kContactSeparation, kMaxRayCasterIterations
+			},
 			kUpdateTime
 		)
 	{

@@ -27,13 +27,17 @@ namespace se::collision {
 		/** The precision of the comparisons in the GJK algorithm */
 		const float mEpsilon;
 
-		const float mRCEpsilon = 0.001f;
+		/** The maximum number of iteration of the GJK algorithm */
+		const std::size_t mMaxIterations;
 
 	public:		// Functions
 		/** Creates a new GJKCollisionDetector
 		 *
-		 * @param	epsilon the comparison precision of the algorithm */
-		GJKCollisionDetector(float epsilon) : mEpsilon(epsilon) {};
+		 * @param	epsilon the comparison precision of the algorithm
+		 * @param	maxIterations the maximum number of iterations of the
+		 *			algorithm */
+		GJKCollisionDetector(float epsilon, std::size_t maxIterations) :
+			mEpsilon(epsilon), mMaxIterations(maxIterations) {};
 
 		/** Checks if the given ConvexColliders are intersecting with the GJK
 		 * algorithm

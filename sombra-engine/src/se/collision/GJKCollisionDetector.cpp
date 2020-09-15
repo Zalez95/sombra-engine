@@ -10,27 +10,35 @@ namespace se::collision {
 		const ConvexCollider& collider1, const ConvexCollider& collider2
 	) const
 	{
-		// 1. Get an initial point in the direction from one collider to another
+		// Get an initial point in the direction from one collider to another
 		glm::vec3 c1Location = collider1.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 c2Location = collider2.getTransforms() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec3 direction = (c1Location == c2Location)? glm::sphericalRand(1.0f) : glm::normalize(c2Location - c1Location);
 		Simplex simplex = { SupportPoint(collider1, collider2, direction) };
 
+		std::size_t iteration = 0;
 		bool containsOrigin = doSimplex(simplex, direction);
 		while (!containsOrigin) {
-			// 2. Get a support point along the current direction
+			// Exit if we exceeded the maximum number of iterations
+			if (iteration >= mMaxIterations) {
+				return std::make_pair(false, simplex);
+			}
+
+			// Get a support point along the current direction
 			SupportPoint sp(collider1, collider2, direction);
 
-			// 3. Check if the support point is further along the search direction
+			// Check if the support point is further along the search direction
 			if (glm::dot(sp.getCSOPosition(), direction) < -mEpsilon) {
-				// 4.1 There is no collision, exit without finishing the simplex
+				// There is no collision, exit without finishing the simplex
 				return std::make_pair(false, simplex);
 			}
 			else {
-				// 4.2 Add the point and update the simplex
+				// Add the point and update the simplex
 				simplex.push_back(sp);
 				containsOrigin = doSimplex(simplex, direction);
 			}
+
+			++iteration;
 		}
 
 		return std::make_pair(true, simplex);

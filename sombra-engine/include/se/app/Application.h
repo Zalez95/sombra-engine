@@ -64,9 +64,6 @@ namespace se::app {
 		static constexpr int kMaxTasks				= 1024;
 		static constexpr int kShadowResolution		= 1024;
 		static constexpr float kBaseBias			= 0.1f;
-		static constexpr float kMinFDifference		= 0.00001f;
-		static constexpr float kContactPrecision	= 0.0000001f;
-		static constexpr float kContactSeparation	= 0.00001f;
 
 		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;

@@ -8,7 +8,10 @@
 namespace se::collision {
 
 	CollisionWorld::CollisionWorld(const CollisionWorldData& config) :
-		mFineCollisionDetector(config.minFDifference, config.contactPrecision, config.contactSeparation),
+		mFineCollisionDetector(
+			config.minFDifference, config.maxIterations,
+			config.contactPrecision, config.contactSeparation
+		),
 		mRayCaster(config.contactPrecision, config.maxRayCasterIterations)
 	{
 		mManifolds.reserve(config.maxManifolds);

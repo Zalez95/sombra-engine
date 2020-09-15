@@ -11,9 +11,8 @@
 namespace se::collision {
 
 	EPACollisionDetector::EPACollisionDetector(
-		float minFDifference, float projectionPrecision
-	) : mMinFThreshold(minFDifference),
-		mProjectionPrecision(projectionPrecision)
+		float minFDifference, std::size_t maxIterations, float projectionPrecision
+	) : mMinFThreshold(minFDifference), mMaxIterations(maxIterations), mProjectionPrecision(projectionPrecision)
 	{
 		assert(minFDifference >= 0.0f && "The minimum face difference must be at least 0");
 		assert(projectionPrecision >= 0.0f && "The precision of the projected points must be at least 0");
@@ -179,6 +178,7 @@ namespace se::collision {
 		}
 
 		// Expand the polytope until the closest HEFace is found
+		std::size_t iteration = 0;
 		int iClosestFace = -1;
 		float closestSeparation = std::numeric_limits<float>::max();
 		utils::FixedVector<int, 3> closestFaceIndices;
@@ -261,8 +261,13 @@ namespace se::collision {
 				currentFaceDistance = polytope.getDistanceData(iCurrentFace);
 				facesByDistance.pop_back();
 			}
+
+			++iteration;
 		}
-		while (!facesByDistance.empty() && (closestSeparation - currentFaceDistance.distance > mMinFThreshold));
+		while (!facesByDistance.empty()
+			&& (closestSeparation - currentFaceDistance.distance > mMinFThreshold)
+			&& (iteration < mMaxIterations)
+		);
 
 		// If we removed the closest HEFace then we have to recover it
 		if (iClosestFace < 0) {

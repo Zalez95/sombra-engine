@@ -31,7 +31,7 @@ namespace se::collision {
 		EPACollisionDetector mEPACollisionDetector;
 
 		/** The square of the minimum distance between the coordinates of two
-		 * Contacts used for determining if one contact is the same than the
+		 * Contacts used for checking if one contact is the same than the
 		 * other one */
 		const float mContactSeparation2;
 
@@ -40,17 +40,17 @@ namespace se::collision {
 		 *
 		 * @param	minFDifference the minimum difference between the distances
 		 *			to the origin of two faces needed for the EPA algorithm
+		 * @param	maxIterations the maximum number of iterations of the GJK
+		 *			and the EPA algorithms
 		 * @param	contactPrecision the precision of the calculated Contact
 		 *			points
 		 * @param	contactSeparation the minimum distance between the
-		 *			coordinates of two Contact used to determine if a contact
+		 *			coordinates of two Contacts used for checking if a contact
 		 *			is the same than another one */
 		FineCollisionDetector(
-			float minFDifference, float contactPrecision,
-			float contactSeparation
-		) : mGJKCollisionDetector(contactPrecision),
-			mEPACollisionDetector(minFDifference, contactPrecision),
-			mContactSeparation2(contactSeparation * contactSeparation) {};
+			float minFDifference, std::size_t maxIterations,
+			float contactPrecision, float contactSeparation
+		);
 
 		/** Checks if the Colliders of the given manifold are intersecting,
 		 * and if that is the case, updates the manifold contact data of the

@@ -9,6 +9,14 @@
 
 namespace se::collision {
 
+	FineCollisionDetector::FineCollisionDetector(
+		float minFDifference, std::size_t maxIterations,
+		float contactPrecision, float contactSeparation
+	) : mGJKCollisionDetector(contactPrecision, maxIterations),
+		mEPACollisionDetector(minFDifference, maxIterations, contactPrecision),
+		mContactSeparation2(contactSeparation * contactSeparation) {}
+
+
 	bool FineCollisionDetector::collide(Manifold& manifold) const
 	{
 		const Collider* collider1 = manifold.colliders[0];
