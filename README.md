@@ -17,10 +17,10 @@ Third party libraries used:
 - Nlohmann JSON		- Library for parsing JSON Objects (https://github.com/nlohmann/json)
 - FreeType			- Library for reading OpenType font files (https://www.freetype.org)
 - Google Test		- Library used for creating unit tests for the SombraEngine library (https://github.com/google/googletest).
+- Dear ImGui		- Library used for creating the GUI of the SombraEngine editor (https://github.com/ocornut/imgui).
 
 Project structure:
 - /build			- Object files and other CMake output
-- /cmake			- CMake files used to find or download the third party libraries used in this project
-- /ext				- Project dependencies source dir
-- /game				- Game source dir
-- /sombra-engine	- SombraEngine library source dir
+- /editor			- SombraEngine Editor
+- /example			- Game example created with the SombraEngine
+- /sombra			- SombraEngine library source dir

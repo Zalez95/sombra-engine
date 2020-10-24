@@ -7,15 +7,8 @@ cmake_minimum_required(VERSION 3.8.2 FATAL_ERROR)
 project(SombraEngine VERSION 0.5.0 LANGUAGES CXX)
 
 # Project options
-option(SOMBRA_ENGINE_BUILD_DOC "Generate the SombraEngine documentation" ON)
-option(SOMBRA_ENGINE_BUILD_TESTS "Build the SombraEngine test programs" ON)
-
-# Set the project module directories
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-# Set the external libraries configuration data
-set(EXTERNAL_PATH "${CMAKE_SOURCE_DIR}/ext")
-set(EXTERNAL_INSTALL_PATH "${CMAKE_BINARY_DIR}/ext")
+option(SOMBRA_ENGINE_BUILD_EDITOR "Build the SombraEngine editor program" ON)
+option(SOMBRA_ENGINE_BUILD_EXAMPLE "Build the SombraEngine example program" ON)
 
 # Global compiler options
 set(MY_DEBUG_POSTFIX "d")
@@ -33,10 +26,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	endif()
 endif()
 
-# Include the dependencies
-include(Dependencies)
-
 # Create the libraries and the executables
 enable_testing()
-add_subdirectory(sombra-engine)
-add_subdirectory(game)
+add_subdirectory(sombra)
+if(SOMBRA_ENGINE_BUILD_EDITOR)
+	add_subdirectory(editor)
+endif()
+if(SOMBRA_ENGINE_BUILD_EXAMPLE)
+	add_subdirectory(example)
+endif()

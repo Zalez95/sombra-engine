@@ -1,3 +1,3 @@
 build/
-sombra-engine/doc/*
-!sombra-engine/doc/Doxyfile.in
+sombra/doc/*
+!sombra/doc/Doxyfile.in

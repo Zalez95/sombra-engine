@@ -1,35 +1,38 @@
-[submodule "ext/glew"]
-	path = ext/glew
+[submodule "sombra/ext/glew"]
+	path = sombra/ext/glew
 	url = https://github.com/Perlmint/glew-cmake.git
-[submodule "ext/glfw"]
-	path = ext/glfw
+[submodule "sombra/ext/glfw"]
+	path = sombra/ext/glfw
 	url = https://github.com/glfw/glfw.git
 	shallow = true
-[submodule "ext/glm"]
-	path = ext/glm
+[submodule "sombra/ext/glm"]
+	path = sombra/ext/glm
 	url = https://github.com/g-truc/glm.git
 	shallow = true
-[submodule "ext/openal"]
-	path = ext/openal
+[submodule "sombra/ext/openal"]
+	path = sombra/ext/openal
 	url = https://github.com/kcat/openal-soft.git
 	shallow = true
-[submodule "ext/audiofile"]
-	path = ext/audiofile
+[submodule "sombra/ext/audiofile"]
+	path = sombra/ext/audiofile
 	url = https://github.com/Zalez95/AudioFile.git
 	shallow = true
-[submodule "ext/nlohmann-json"]
-	path = ext/nlohmann-json
+[submodule "sombra/ext/nlohmann-json"]
+	path = sombra/ext/nlohmann-json
 	url = https://github.com/nlohmann/json.git
 	shallow = true
-[submodule "ext/gtest"]
-	path = ext/gtest
+[submodule "sombra/ext/gtest"]
+	path = sombra/ext/gtest
 	url = https://github.com/google/googletest.git
 	shallow = true
-[submodule "ext/freetype"]
-	path = ext/freetype
+[submodule "sombra/ext/freetype"]
+	path = sombra/ext/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
-	shallow = true
-[submodule "ext/stb"]
-	path = ext/stb
+[submodule "sombra/ext/stb"]
+	path = sombra/ext/stb
 	url = https://github.com/Zalez95/stb.git
+	shallow = true
+[submodule "editor/ext/imgui"]
+	path = editor/ext/imgui
+	url = https://github.com/Zalez95/imgui.git
 	shallow = true
