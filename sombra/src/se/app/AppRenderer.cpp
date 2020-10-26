@@ -29,20 +29,6 @@ using namespace std::string_literals;
 
 namespace se::app {
 
-	struct AppRenderer::ShaderLightSource
-	{
-		glm::vec3 position;
-		float padding[1];
-		glm::vec3 direction;
-		unsigned int type;
-		glm::vec4 color;
-		float intensity;
-		float range;
-		float lightAngleScale;
-		float lightAngleOffset;
-	};
-
-
 	struct AppRenderer::EnvironmentTexUnits
 	{
 		static constexpr int kIrradianceMap	= 0;
@@ -52,13 +38,149 @@ namespace se::app {
 	};
 
 
-	struct AppRenderer::DeferredTexUnits
+	class AppRenderer::DeferredLightRenderer : public BindableRenderNode
 	{
-		static constexpr int kPosition		= 4;
-		static constexpr int kNormal		= 5;
-		static constexpr int kAlbedo		= 6;
-		static constexpr int kMaterial		= 7;
-		static constexpr int kEmissive		= 8;
+	public:
+		struct ShaderLightSource
+		{
+			glm::vec3 position;
+			float padding[1];
+			glm::vec3 direction;
+			unsigned int type;
+			glm::vec4 color;
+			float intensity;
+			float range;
+			float lightAngleScale;
+			float lightAngleOffset;
+		};
+
+		struct GBufferTexUnits
+		{
+			static constexpr int kPosition		= 4;
+			static constexpr int kNormal		= 5;
+			static constexpr int kAlbedo		= 6;
+			static constexpr int kMaterial		= 7;
+			static constexpr int kEmissive		= 8;
+		};
+
+		/** The maximum number of lights in the program */
+		static constexpr unsigned int kMaxLights = 32;
+
+	private:
+		/** The plane used for rendering */
+		std::shared_ptr<RenderableMesh> mPlane;
+
+		/** The uniform variable that the Camera location in world space */
+		std::shared_ptr<graphics::UniformVariableValue<glm::vec3>> mViewPosition;
+
+		/** The uniform variable that holds the number of active lights to
+		 * render */
+		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> mNumLights;
+
+		/** The UniformBuffer where the lights data will be stored */
+		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
+
+		/** The uniform variable that holds the index of the LightSource used
+		 * for rendering the Shadows */
+		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> mShadowLightIndex;
+
+		/** The uniform variable with the view matrix of the shadow mapping */
+		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> mShadowViewMatrix;
+
+		/** The uniform variable with the projection matrix of the shadow
+		 * mapping */
+		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> mShadowProjectionMatrix;
+
+	public:
+		DeferredLightRenderer(
+			const std::string& name, utils::Repository& repository,
+			std::shared_ptr<RenderableMesh> plane
+		) : BindableRenderNode(name), mPlane(plane)
+		{
+			auto iTargetBindable = addBindable();
+			addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", this, iTargetBindable) );
+			addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
+
+			auto iIrradianceTexBindable = addBindable();
+			auto iPrefilterTexBindable = addBindable();
+			auto iBRDFTexBindable = addBindable();
+			auto iShadowTexBindable = addBindable();
+			auto iPositionTexBindable = addBindable();
+			auto iNormalTexBindable = addBindable();
+			auto iAlbedoTexBindable = addBindable();
+			auto iMaterialTexBindable = addBindable();
+			auto iEmissiveTexBindable = addBindable();
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("irradiance", this, iIrradianceTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("prefilter", this, iPrefilterTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("brdf", this, iBRDFTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("shadow", this, iShadowTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("position", this, iPositionTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("normal", this, iNormalTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("albedo", this, iAlbedoTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("material", this, iMaterialTexBindable) );
+			addInput( std::make_unique<BindableRNodeInput<Texture>>("emissive", this, iEmissiveTexBindable) );
+
+			auto program = repository.find<std::string, Program>("programDeferredLighting");
+			if (!program) {
+				program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+				repository.add("programDeferredLighting"s, program);
+			}
+
+			mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
+			mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
+			mLightsBuffer = std::make_shared<UniformBuffer>();
+			utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
+			mLightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
+			mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", *program, kMaxLights);
+			mShadowViewMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewMatrix", *program, glm::mat4(1.0f));
+			mShadowProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowProjectionMatrix", *program, glm::mat4(1.0f));
+
+			addBindable(program);
+			addBindable(std::make_shared<SetDepthMask>(false));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
+			addBindable(mShadowViewMatrix);
+			addBindable(mShadowProjectionMatrix);
+			addBindable(mViewPosition);
+			addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", *program, EnvironmentTexUnits::kIrradianceMap));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", *program, EnvironmentTexUnits::kPrefilterMap));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", *program, EnvironmentTexUnits::kBRDFMap));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", *program, EnvironmentTexUnits::kShadowMap));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", *program, GBufferTexUnits::kPosition));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", *program, GBufferTexUnits::kNormal));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", *program, GBufferTexUnits::kAlbedo));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", *program, GBufferTexUnits::kMaterial));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", *program, GBufferTexUnits::kEmissive));
+			addBindable(mLightsBuffer);
+			addBindable(mNumLights);
+			addBindable(mShadowLightIndex);
+			addBindable(std::make_shared<UniformBlock>("LightsBlock", *program));
+		}
+
+		void setViewPosition(const glm::vec3& position)
+		{
+			mViewPosition->setValue(position);
+		};
+
+		void setLights(const ShaderLightSource* lightSources, unsigned int lightSourceCount)
+		{
+			mLightsBuffer->copy(lightSources, lightSourceCount);
+			mNumLights->setValue(lightSourceCount);
+		};
+
+		void setShadow(unsigned int shadowLightIndex, const glm::mat4& shadowViewMatrix, const glm::mat4& shadowProjectionMatrix)
+		{
+			mShadowLightIndex->setValue(shadowLightIndex);
+			mShadowViewMatrix->setValue(shadowViewMatrix);
+			mShadowProjectionMatrix->setValue(shadowProjectionMatrix);
+		};
+
+		virtual void execute() override
+		{
+			bind();
+			mPlane->draw();
+		};
 	};
 
 
@@ -66,11 +188,10 @@ namespace se::app {
 	{
 	private:
 		std::size_t mShadowResolution;
-		std::size_t mWidth, mHeight;
 	public:
-		ShadowRenderer(const std::string& name) : Renderer3D(name), mShadowResolution(0), mWidth(0), mHeight(0)
+		ShadowRenderer(const std::string& name) : Renderer3D(name), mShadowResolution(0)
 		{
-			addBindable(std::make_shared<DepthTestOperation>());
+			addBindable(std::make_shared<SetOperation>(graphics::Operation::DepthTest));
 		};
 
 		ShadowRenderer& setShadowResolution(std::size_t shadowResolution)
@@ -79,20 +200,18 @@ namespace se::app {
 			return *this;
 		};
 
-		ShadowRenderer& setViewportResolution(std::size_t width, std::size_t height)
-		{
-			mWidth = width;
-			mHeight = height;
-			return *this;
-		};
-
 		virtual void execute() override
 		{
+			int lastX, lastY;
+			std::size_t lastWidth, lastHeight;
+			se::graphics::GraphicsOperations::getViewport(lastX, lastY, lastWidth, lastHeight);
+
 			GraphicsOperations::setViewport(0, 0, mShadowResolution, mShadowResolution);
 			GraphicsOperations::setCullingMode(FaceMode::Front);
 			Renderer3D::execute();
 			GraphicsOperations::setCullingMode(FaceMode::Back);
-			GraphicsOperations::setViewport(0, 0, mWidth, mHeight);
+
+			GraphicsOperations::setViewport(lastX, lastY, lastWidth, lastHeight);
 		};
 	};
 
@@ -113,9 +232,10 @@ namespace se::app {
 		{
 			auto iTargetBindable = addBindable();
 			addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", this, iTargetBindable) );
+			addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
+
 			addInput( std::make_unique<BindableRNodeInput<Texture>>("color0", this, addBindable()) );
 			addInput( std::make_unique<BindableRNodeInput<Texture>>("color1", this, addBindable()) );
-			addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
 
 			auto program = repository.find<std::string, Program>("fragmentCombineHDR");
 			if (!program) {
@@ -150,353 +270,9 @@ namespace se::app {
 
 		GraphicsOperations::setViewport(0, 0, width, height);
 
-		// Create the buffer used for storing the light sources data
-		mLightsBuffer = std::make_shared<UniformBuffer>();
-		utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
-		mLightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
-
-		// Create the plane used for rendering the framebuffers
-		RawMesh planeRawMesh;
-		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
-		planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
-		auto planeMesh = std::make_unique<Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
-		mPlaneRenderable = std::make_shared<RenderableMesh>(std::move(planeMesh));
-
-		// Create the resources of the renderers
-		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
-		auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
-
-		auto shadowBuffer = std::make_shared<FrameBuffer>();
-		shadowBuffer->setColorBuffer(false);
-		auto iShadowBufferResource = resources->addBindable(shadowBuffer);
-		resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("shadowBuffer", resources, iShadowBufferResource) );
-
-		auto shadowTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		shadowTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth, mShadowData.resolution, mShadowData.resolution)
-			.setWrapping(TextureWrap::ClampToBorder, TextureWrap::ClampToBorder)
-			.setBorderColor(1.0f, 1.0f, 1.0f, 1.0f)
-			.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest);
-		shadowBuffer->attach(*shadowTexture, FrameBufferAttachment::kDepth);
-
-		auto gBuffer = std::make_shared<FrameBuffer>();
-		auto iGBufferResource = resources->addBindable(gBuffer);
-		resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("gBuffer", resources, iGBufferResource) );
-
-		auto zTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		zTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*zTexture, FrameBufferAttachment::kDepth);
-
-		auto positionTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		positionTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*positionTexture, FrameBufferAttachment::kColor0);
-
-		auto normalTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		normalTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*normalTexture, FrameBufferAttachment::kColor0 + 1);
-
-		auto albedoTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		albedoTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*albedoTexture, FrameBufferAttachment::kColor0 + 2);
-
-		auto materialTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		materialTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*materialTexture, FrameBufferAttachment::kColor0 + 3);
-
-		auto emissiveTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		emissiveTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		gBuffer->attach(*emissiveTexture, FrameBufferAttachment::kColor0 + 4);
-
-		auto deferredBuffer = std::make_shared<FrameBuffer>();
-		auto iDeferredBufferResource = resources->addBindable(deferredBuffer);
-		resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("deferredBuffer", resources, iDeferredBufferResource) );
-
-		auto depthTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		depthTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		deferredBuffer->attach(*depthTexture, FrameBufferAttachment::kDepth);
-
-		auto colorTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		colorTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		deferredBuffer->attach(*colorTexture, FrameBufferAttachment::kColor0);
-
-		auto brightTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		brightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
-			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
-			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		deferredBuffer->attach(*brightTexture, FrameBufferAttachment::kColor0 + 1);
-
-		mIrradianceTextureResource = resources->addBindable();
-		resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("irradianceTexture", resources, mIrradianceTextureResource) );
-
-		mPrefilterTextureResource = resources->addBindable();
-		resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("prefilterTexture", resources, mPrefilterTextureResource) );
-
-		auto brdfTexture = TextureUtils::precomputeBRDF(512);
-		brdfTexture->setTextureUnit(EnvironmentTexUnits::kBRDFMap);
-		auto iBRDFTextureResource = resources->addBindable(brdfTexture);
-		resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", resources, iBRDFTextureResource) );
-
-		{	// Create the FrameBuffer nodes
-			auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
-			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("defaultFBClear", clearMask));
-			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("shadowFBClear", FrameBufferMask::Mask().set(FrameBufferMask::kDepth)));
-			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("gFBClear", clearMask));
-			graphicsEngine.getRenderGraph().addNode(std::make_unique<FBClearNode>("deferredFBClear", clearMask));
-
-			auto zBufferCopy = std::make_unique<FBCopyNode>("zBufferCopy", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
-			zBufferCopy->setDimensions1(0, 0, width, height).setDimensions2(0, 0, width, height);
-			graphicsEngine.getRenderGraph().addNode(std::move(zBufferCopy));
-		}
-
-		{	// Create the shadowRenderer
-			auto shadowRenderer = std::make_unique<ShadowRenderer>("shadowRenderer");
-			shadowRenderer->setShadowResolution(mShadowData.resolution)
-				.setViewportResolution(width, height);
-
-			auto iTargetBindable = shadowRenderer->addBindable();
-			shadowRenderer->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", shadowRenderer.get(), iTargetBindable) );
-			shadowRenderer->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", shadowRenderer.get(), iTargetBindable) );
-
-			auto iShadowTexBindable = shadowRenderer->addBindable(shadowTexture, false);
-			shadowRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadow", shadowRenderer.get(), iShadowTexBindable) );
-
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodeShadow", EnvironmentTexUnits::kShadowMap) );
-			graphicsEngine.getRenderGraph().addNode(std::move(shadowRenderer));
-		}
-
-		{	// Create the gBufferRenderer
-			auto gBufferRenderer = std::make_unique<Renderer3D>("gBufferRenderer");
-
-			auto iGBufferBindable = gBufferRenderer->addBindable();
-			gBufferRenderer->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("gBuffer", gBufferRenderer.get(), iGBufferBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("gBuffer", gBufferRenderer.get(), iGBufferBindable) );
-
-			auto iDepthTexBindable = gBufferRenderer->addBindable(zTexture, false);
-			auto iPositionTexBindable = gBufferRenderer->addBindable(positionTexture, false);
-			auto iNormalTexBindable = gBufferRenderer->addBindable(normalTexture, false);
-			auto iAlbedoTexBindable = gBufferRenderer->addBindable(albedoTexture, false);
-			auto iMaterialTexBindable = gBufferRenderer->addBindable(materialTexture, false);
-			auto iEmissiveTexBindable = gBufferRenderer->addBindable(emissiveTexture, false);
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("zBuffer", gBufferRenderer.get(), iDepthTexBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("position", gBufferRenderer.get(), iPositionTexBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("normal", gBufferRenderer.get(), iNormalTexBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("albedo", gBufferRenderer.get(), iAlbedoTexBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("material", gBufferRenderer.get(), iMaterialTexBindable) );
-			gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("emissive", gBufferRenderer.get(), iEmissiveTexBindable) );
-
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodePosition", DeferredTexUnits::kPosition) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodeNormal", DeferredTexUnits::kNormal) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodeAlbedo", DeferredTexUnits::kAlbedo) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodeMaterial", DeferredTexUnits::kMaterial) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredTexUnits::kEmissive) );
-			graphicsEngine.getRenderGraph().addNode(std::move(gBufferRenderer));
-		}
-
-		{	// Create the rendererDeferredLight
-			auto rendererDeferredLight = std::make_unique<Renderer3D>("rendererDeferredLight");
-			rendererDeferredLight->addBindable(std::make_shared<DepthMaskOperation>(false));
-
-			auto iTargetBindable = rendererDeferredLight->addBindable();
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
-			rendererDeferredLight->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", rendererDeferredLight.get(), iTargetBindable) );
-
-			auto iIrradianceTexBindable = rendererDeferredLight->addBindable();
-			auto iPrefilterTexBindable = rendererDeferredLight->addBindable();
-			auto iBRDFTexBindable = rendererDeferredLight->addBindable();
-			auto iShadowTexBindable = rendererDeferredLight->addBindable();
-			auto iPositionTexBindable = rendererDeferredLight->addBindable();
-			auto iNormalTexBindable = rendererDeferredLight->addBindable();
-			auto iAlbedoTexBindable = rendererDeferredLight->addBindable();
-			auto iMaterialTexBindable = rendererDeferredLight->addBindable();
-			auto iEmissiveTexBindable = rendererDeferredLight->addBindable();
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("irradiance", rendererDeferredLight.get(), iIrradianceTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("prefilter", rendererDeferredLight.get(), iPrefilterTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("brdf", rendererDeferredLight.get(), iBRDFTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("shadow", rendererDeferredLight.get(), iShadowTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("position", rendererDeferredLight.get(), iPositionTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("normal", rendererDeferredLight.get(), iNormalTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("albedo", rendererDeferredLight.get(), iAlbedoTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("material", rendererDeferredLight.get(), iMaterialTexBindable) );
-			rendererDeferredLight->addInput( std::make_unique<BindableRNodeInput<Texture>>("emissive", rendererDeferredLight.get(), iEmissiveTexBindable) );
-
-			graphicsEngine.getRenderGraph().addNode( std::move(rendererDeferredLight) );
-		}
-
-		{	// Create the forwardRenderer
-			auto forwardRenderer = std::make_unique<Renderer3D>("forwardRenderer");
-			forwardRenderer->addBindable(std::make_shared<DepthMaskOperation>(true));
-
-			auto iTargetBindable = forwardRenderer->addBindable();
-			forwardRenderer->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", forwardRenderer.get(), iTargetBindable) );
-			forwardRenderer->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", forwardRenderer.get(), iTargetBindable) );
-
-			auto iIrradianceTexBindable = forwardRenderer->addBindable();
-			auto iPrefilterTexBindable = forwardRenderer->addBindable();
-			auto iBRDFTexBindable = forwardRenderer->addBindable();
-			auto iShadowTexBindable = forwardRenderer->addBindable();
-			forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("irradiance", forwardRenderer.get(), iIrradianceTexBindable) );
-			forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("prefilter", forwardRenderer.get(), iPrefilterTexBindable) );
-			forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("brdf", forwardRenderer.get(), iBRDFTexBindable) );
-			forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("shadow", forwardRenderer.get(), iShadowTexBindable) );
-
-			auto iColorTexBindable = forwardRenderer->addBindable(colorTexture, false);
-			forwardRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("color", forwardRenderer.get(), iColorTexBindable) );
-
-			auto iBrightTexBindable = forwardRenderer->addBindable(brightTexture, false);
-			forwardRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("bright", forwardRenderer.get(), iBrightTexBindable) );
-
-			graphicsEngine.getRenderGraph().addNode(std::move(forwardRenderer));
-		}
-
-		{	// Nodes used for blurring the bright colors (bloom)
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("hBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, true) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<GaussianBlurNode>("vBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, false) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit) );
-		}
-
-		{	// Node used for combining the bloom and color
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine0TexUnitNode", CombineNode::kColor0) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<TextureUnitNode>("combine1TexUnitNode", CombineNode::kColor1) );
-			graphicsEngine.getRenderGraph().addNode( std::make_unique<CombineNode>("combineBloomNode", mApplication.getRepository(), mPlaneRenderable) );
-		}
-
-		{	// Create the renderer2D
-			auto renderer2D = std::make_unique<Renderer2D>("renderer2D");
-			auto targetIndex = renderer2D->addBindable();
-			renderer2D->addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", renderer2D.get(), targetIndex) );
-			renderer2D->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", renderer2D.get(), targetIndex) );
-			graphicsEngine.getRenderGraph().addNode( std::move(renderer2D) );
-		}
-
-		{	// Link the render graph nodes
-			auto defaultFBClear = graphicsEngine.getRenderGraph().getNode("defaultFBClear"),
-				shadowFBClear = graphicsEngine.getRenderGraph().getNode("shadowFBClear"),
-				gFBClear = graphicsEngine.getRenderGraph().getNode("gFBClear"),
-				deferredFBClear = graphicsEngine.getRenderGraph().getNode("deferredFBClear"),
-				zBufferCopy = graphicsEngine.getRenderGraph().getNode("zBufferCopy"),
-				shadowRenderer = graphicsEngine.getRenderGraph().getNode("shadowRenderer"),
-				texUnitNodeShadow = graphicsEngine.getRenderGraph().getNode("texUnitNodeShadow"),
-				gBufferRenderer = graphicsEngine.getRenderGraph().getNode("gBufferRenderer"),
-				texUnitNodePosition = graphicsEngine.getRenderGraph().getNode("texUnitNodePosition"),
-				texUnitNodeNormal = graphicsEngine.getRenderGraph().getNode("texUnitNodeNormal"),
-				texUnitNodeAlbedo = graphicsEngine.getRenderGraph().getNode("texUnitNodeAlbedo"),
-				texUnitNodeMaterial = graphicsEngine.getRenderGraph().getNode("texUnitNodeMaterial"),
-				texUnitNodeEmissive = graphicsEngine.getRenderGraph().getNode("texUnitNodeEmissive"),
-				rendererDeferredLight = graphicsEngine.getRenderGraph().getNode("rendererDeferredLight"),
-				forwardRenderer = graphicsEngine.getRenderGraph().getNode("forwardRenderer"),
-				hBlurNode = graphicsEngine.getRenderGraph().getNode("hBlurNode"),
-				vBlurNode = graphicsEngine.getRenderGraph().getNode("vBlurNode"),
-				hBlurTexUnitNode = graphicsEngine.getRenderGraph().getNode("hBlurTexUnitNode"),
-				vBlurTexUnitNode = graphicsEngine.getRenderGraph().getNode("vBlurTexUnitNode"),
-				combine0TexUnitNode = graphicsEngine.getRenderGraph().getNode("combine0TexUnitNode"),
-				combine1TexUnitNode = graphicsEngine.getRenderGraph().getNode("combine1TexUnitNode"),
-				combineBloomNode = graphicsEngine.getRenderGraph().getNode("combineBloomNode"),
-				renderer2D = graphicsEngine.getRenderGraph().getNode("renderer2D");
-
-			defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") );
-			shadowFBClear->findInput("input")->connect( resources->findOutput("shadowBuffer") );
-			gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") );
-			deferredFBClear->findInput("input")->connect( resources->findOutput("deferredBuffer") );
-			shadowRenderer->findInput("target")->connect( shadowFBClear->findOutput("output") );
-			texUnitNodeShadow->findInput("input")->connect( shadowRenderer->findOutput("shadow") );
-			gBufferRenderer->findInput("gBuffer")->connect( gFBClear->findOutput("output") );
-			texUnitNodePosition->findInput("input")->connect( gBufferRenderer->findOutput("position") );
-			texUnitNodeNormal->findInput("input")->connect( gBufferRenderer->findOutput("normal") );
-			texUnitNodeAlbedo->findInput("input")->connect( gBufferRenderer->findOutput("albedo") );
-			texUnitNodeMaterial->findInput("input")->connect( gBufferRenderer->findOutput("material") );
-			texUnitNodeEmissive->findInput("input")->connect( gBufferRenderer->findOutput("emissive") );
-			rendererDeferredLight->findInput("target")->connect( deferredFBClear->findOutput("output") );
-			rendererDeferredLight->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") );
-			rendererDeferredLight->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") );
-			rendererDeferredLight->findInput("brdf")->connect( resources->findOutput("brdfTexture") );
-			rendererDeferredLight->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") );
-			rendererDeferredLight->findInput("position")->connect( texUnitNodePosition->findOutput("output") );
-			rendererDeferredLight->findInput("normal")->connect( texUnitNodeNormal->findOutput("output") );
-			rendererDeferredLight->findInput("albedo")->connect( texUnitNodeAlbedo->findOutput("output") );
-			rendererDeferredLight->findInput("material")->connect( texUnitNodeMaterial->findOutput("output") );
-			rendererDeferredLight->findInput("emissive")->connect( texUnitNodeEmissive->findOutput("output") );
-			zBufferCopy->findInput("input1")->connect( rendererDeferredLight->findOutput("target") );
-			zBufferCopy->findInput("input2")->connect( gBufferRenderer->findOutput("gBuffer") );
-			forwardRenderer->findInput("target")->connect( zBufferCopy->findOutput("output") );
-			forwardRenderer->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") );
-			forwardRenderer->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") );
-			forwardRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") );
-			forwardRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") );
-			hBlurTexUnitNode->findInput("input")->connect( forwardRenderer->findOutput("bright") );
-			hBlurNode->findInput("input")->connect( hBlurTexUnitNode->findOutput("output") );
-			vBlurTexUnitNode->findInput("input")->connect( hBlurNode->findOutput("output") );
-			vBlurNode->findInput("input")->connect( vBlurTexUnitNode->findOutput("output") );
-			combine0TexUnitNode->findInput("input")->connect( forwardRenderer->findOutput("color") );
-			combine1TexUnitNode->findInput("input")->connect( vBlurNode->findOutput("output") );
-			combineBloomNode->findInput("target")->connect( defaultFBClear->findOutput("output") );
-			combineBloomNode->findInput("color0")->connect( combine0TexUnitNode->findOutput("output") );
-			combineBloomNode->findInput("color1")->connect( combine1TexUnitNode->findOutput("output") );
-			renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") );
-
-			graphicsEngine.getRenderGraph().prepareGraph();
-		}
-
-		{	// Create the pass and technique used for the deferred lighting
-			auto planeTechnique = mApplication.getRepository().find<std::string, Technique>("techniqueDeferredLighting");
-			if (!planeTechnique) {
-				planeTechnique = std::make_shared<Technique>();
-				mApplication.getRepository().add("techniqueDeferredLighting"s, planeTechnique);
-
-				std::shared_ptr<Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
-				mApplication.getRepository().add("programDeferredLighting"s, program);
-
-				auto rendererDeferredLight = dynamic_cast<Renderer*>(graphicsEngine.getRenderGraph().getNode("rendererDeferredLight"));
-				auto lightingPass = std::make_shared<Pass>(*rendererDeferredLight);
-				mApplication.getRepository().add("passDeferredLighting"s, lightingPass);
-
-				mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
-				mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", *program, kMaxLights);
-				mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
-				mShadowViewMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewMatrix", *program, glm::mat4(1.0f));
-				mShadowProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowProjectionMatrix", *program, glm::mat4(1.0f));
-				lightingPass->addBindable(program)
-					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
-					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
-					.addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
-					.addBindable(mShadowViewMatrix)
-					.addBindable(mShadowProjectionMatrix)
-					.addBindable(mViewPosition)
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", *program, EnvironmentTexUnits::kIrradianceMap))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", *program, EnvironmentTexUnits::kPrefilterMap))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", *program, EnvironmentTexUnits::kBRDFMap))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", *program, EnvironmentTexUnits::kShadowMap))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", *program, DeferredTexUnits::kPosition))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", *program, DeferredTexUnits::kNormal))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", *program, DeferredTexUnits::kAlbedo))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", *program, DeferredTexUnits::kMaterial))
-					.addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", *program, DeferredTexUnits::kEmissive))
-					.addBindable(brdfTexture)
-					.addBindable(mLightsBuffer)
-					.addBindable(mNumLights)
-					.addBindable(mShadowLightIndex)
-					.addBindable(std::make_shared<UniformBlock>("LightsBlock", *program));
-				planeTechnique->addPass(lightingPass);
-
-				mPlaneRenderable->addTechnique(std::move(planeTechnique));
-				graphicsEngine.addRenderable(mPlaneRenderable.get());
-			}
-		}
+		addResources(width, height);
+		addNodes(width, height);
+		mApplication.getExternalTools().graphicsEngine->getRenderGraph().prepareGraph();
 	}
 
 
@@ -562,11 +338,11 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the LightComponents";
 
-		unsigned int i = 0, iShadowLight = kMaxLights;
-		std::array<ShaderLightSource, kMaxLights> uBaseLights;
+		unsigned int i = 0, iShadowLight = DeferredLightRenderer::kMaxLights;
+		std::array<DeferredLightRenderer::ShaderLightSource, DeferredLightRenderer::kMaxLights> uBaseLights;
 		mEntityDatabase.iterateComponents<TransformsComponent, LightComponent>(
 			[&](Entity entity, TransformsComponent* transforms, LightComponent* light) {
-				if (i < kMaxLights) {
+				if (i < DeferredLightRenderer::kMaxLights) {
 					uBaseLights[i].type = static_cast<unsigned int>(light->source->type);
 					uBaseLights[i].position = transforms->position;
 					uBaseLights[i].direction = glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
@@ -596,13 +372,11 @@ namespace se::app {
 			}
 		);
 
-		mNumLights->setValue(i);
-		mShadowLightIndex->setValue(iShadowLight);
-		mLightsBuffer->copy(uBaseLights.data(), i);
+		mDeferredLightRenderer->setLights(uBaseLights.data(), i);
 
 		auto [cameraTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
 		if (cameraTransforms) {
-			mViewPosition->setValue(cameraTransforms->position);
+			mDeferredLightRenderer->setViewPosition(cameraTransforms->position);
 		}
 
 		auto [shadowTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mShadowEntity);
@@ -611,8 +385,7 @@ namespace se::app {
 			mShadowCamera.setTarget(shadowTransforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * shadowTransforms->orientation);
 			mShadowCamera.setUp({ 0.0f, 1.0f, 0.0f });
 		}
-		mShadowViewMatrix->setValue(mShadowCamera.getViewMatrix());
-		mShadowProjectionMatrix->setValue(mShadowCamera.getProjectionMatrix());
+		mDeferredLightRenderer->setShadow(iShadowLight, mShadowCamera.getViewMatrix(), mShadowCamera.getProjectionMatrix());
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
@@ -626,6 +399,324 @@ namespace se::app {
 	}
 
 // Private functions
+	bool AppRenderer::addResources(std::size_t width, std::size_t height)
+	{
+		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
+		auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
+
+		RawMesh planeRawMesh;
+		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
+		planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+		auto planeMesh = std::make_unique<Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
+		mPlaneRenderable = std::make_shared<RenderableMesh>(std::move(planeMesh));
+
+		mIrradianceTextureResource = resources->addBindable();
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("irradianceTexture", resources, mIrradianceTextureResource) )) {
+			return false;
+		}
+
+		mPrefilterTextureResource = resources->addBindable();
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("prefilterTexture", resources, mPrefilterTextureResource) )) {
+			return false;
+		}
+
+		auto brdfTexture = TextureUtils::precomputeBRDF(512);
+		brdfTexture->setTextureUnit(EnvironmentTexUnits::kBRDFMap);
+		auto iBRDFTextureResource = resources->addBindable(brdfTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", resources, iBRDFTextureResource) )) {
+			return false;
+		}
+
+		auto deferredBuffer = std::make_shared<FrameBuffer>();
+		auto iDeferredBufferResource = resources->addBindable(deferredBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("deferredBuffer", resources, iDeferredBufferResource) )) {
+			return false;
+		}
+
+		auto depthTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		depthTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		deferredBuffer->attach(*depthTexture, FrameBufferAttachment::kDepth);
+		auto iDepthTextureResource = resources->addBindable(depthTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("depthTexture", resources, iDepthTextureResource) )) {
+			return false;
+		}
+
+		auto colorTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		colorTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		deferredBuffer->attach(*colorTexture, FrameBufferAttachment::kColor0);
+		auto iColorTextureResource = resources->addBindable(colorTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("colorTexture", resources, iColorTextureResource) )) {
+			return false;
+		}
+
+		auto brightTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		brightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		deferredBuffer->attach(*brightTexture, FrameBufferAttachment::kColor0 + 1);
+		auto iBrightTextureResource = resources->addBindable(brightTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brightTexture", resources, iBrightTextureResource) )) {
+			return false;
+		}
+
+		return true;
+	}
+
+
+	bool AppRenderer::addNodes(std::size_t width, std::size_t height)
+	{
+		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
+		auto& renderGraph = graphicsEngine.getRenderGraph();
+
+		if (!addShadowRenderer(renderGraph)
+			|| !addDeferredRenderer(renderGraph, width, height)
+			|| !addForwardRenderer(renderGraph)
+		) {
+			return false;
+		}
+
+		auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
+		auto defaultFBClear = std::make_unique<FBClearNode>("defaultFBClear", clearMask);
+		auto deferredFBClear = std::make_unique<FBClearNode>("deferredFBClear", clearMask);
+
+		// Node used for combining the shadow map and the forward and deferred renderers
+		auto texUnitNodeShadow = std::make_unique<TextureUnitNode>("texUnitNodeShadow", EnvironmentTexUnits::kShadowMap);
+
+		// Node used for combining the zBuffer of the deferred and forward renderers
+		auto zBufferCopy = std::make_unique<FBCopyNode>("zBufferCopy", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
+		zBufferCopy->setDimensions1(0, 0, width, height).setDimensions2(0, 0, width, height);
+
+		// Nodes used for blurring the bright colors (bloom)
+		auto hBlurNode = std::make_unique<GaussianBlurNode>("hBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, true);
+		auto vBlurNode = std::make_unique<GaussianBlurNode>("vBlurNode", mApplication.getRepository(), mPlaneRenderable, width, height, false);
+		auto hBlurTexUnitNode = std::make_unique<TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto vBlurTexUnitNode = std::make_unique<TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+
+		// Node used for combining the bloom and color
+		auto combine0TexUnitNode = std::make_unique<TextureUnitNode>("combine0TexUnitNode", CombineNode::kColor0);
+		auto combine1TexUnitNode = std::make_unique<TextureUnitNode>("combine1TexUnitNode", CombineNode::kColor1);
+		auto combineBloomNode = std::make_unique<CombineNode>("combineBloomNode", mApplication.getRepository(), mPlaneRenderable);
+
+		// Node used for drawing 2D renderables
+		auto renderer2D = std::make_unique<Renderer2D>("renderer2D");
+
+		// Link the render graph nodes
+		auto resources = renderGraph.getNode("resources"),
+			shadowRenderer = renderGraph.getNode("shadowRenderer"),
+			gBufferRenderer = renderGraph.getNode("gBufferRenderer"),
+			deferredLightRenderer = renderGraph.getNode("deferredLightRenderer"),
+			forwardRenderer = renderGraph.getNode("forwardRenderer");
+
+		return defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") )
+			&& deferredFBClear->findInput("input")->connect( resources->findOutput("deferredBuffer") )
+			&& texUnitNodeShadow->findInput("input")->connect( shadowRenderer->findOutput("shadow") )
+			&& deferredLightRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
+			&& deferredLightRenderer->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") )
+			&& deferredLightRenderer->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") )
+			&& deferredLightRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
+			&& deferredLightRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
+			&& zBufferCopy->findInput("input1")->connect( deferredLightRenderer->findOutput("target") )
+			&& zBufferCopy->findInput("input2")->connect( gBufferRenderer->findOutput("target") )
+			&& forwardRenderer->findInput("target")->connect( zBufferCopy->findOutput("output") )
+			&& forwardRenderer->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") )
+			&& forwardRenderer->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") )
+			&& forwardRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
+			&& forwardRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
+			&& forwardRenderer->findInput("color")->connect( resources->findOutput("colorTexture") )
+			&& forwardRenderer->findInput("bright")->connect( resources->findOutput("brightTexture") )
+			&& hBlurTexUnitNode->findInput("input")->connect( forwardRenderer->findOutput("bright") )
+			&& hBlurNode->findInput("input")->connect( hBlurTexUnitNode->findOutput("output") )
+			&& vBlurTexUnitNode->findInput("input")->connect( hBlurNode->findOutput("output") )
+			&& vBlurNode->findInput("input")->connect( vBlurTexUnitNode->findOutput("output") )
+			&& combine0TexUnitNode->findInput("input")->connect( forwardRenderer->findOutput("color") )
+			&& combine1TexUnitNode->findInput("input")->connect( vBlurNode->findOutput("output") )
+			&& combineBloomNode->findInput("target")->connect( defaultFBClear->findOutput("output") )
+			&& combineBloomNode->findInput("color0")->connect( combine0TexUnitNode->findOutput("output") )
+			&& combineBloomNode->findInput("color1")->connect( combine1TexUnitNode->findOutput("output") )
+			&& renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") )
+			&& renderGraph.addNode( std::move(defaultFBClear) )
+			&& renderGraph.addNode( std::move(deferredFBClear) )
+			&& renderGraph.addNode( std::move(texUnitNodeShadow) )
+			&& renderGraph.addNode( std::move(zBufferCopy) )
+			&& renderGraph.addNode( std::move(hBlurNode) )
+			&& renderGraph.addNode( std::move(vBlurNode) )
+			&& renderGraph.addNode( std::move(hBlurTexUnitNode) )
+			&& renderGraph.addNode( std::move(vBlurTexUnitNode) )
+			&& renderGraph.addNode( std::move(combine0TexUnitNode) )
+			&& renderGraph.addNode( std::move(combine1TexUnitNode) )
+			&& renderGraph.addNode( std::move(combineBloomNode) )
+			&& renderGraph.addNode( std::move(renderer2D) );
+	}
+
+
+	bool AppRenderer::addDeferredRenderer(graphics::RenderGraph& renderGraph, std::size_t width, std::size_t height)
+	{
+		auto resources = dynamic_cast<BindableRenderNode*>(renderGraph.getNode("resources"));
+
+		// Create the gBuffer FB
+		auto gBuffer = std::make_shared<FrameBuffer>();
+		auto iGBufferResource = resources->addBindable(gBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("gBuffer", resources, iGBufferResource) )) {
+			return false;
+		}
+
+		auto zTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		zTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*zTexture, FrameBufferAttachment::kDepth);
+
+		auto positionTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		positionTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*positionTexture, FrameBufferAttachment::kColor0);
+
+		auto normalTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		normalTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*normalTexture, FrameBufferAttachment::kColor0 + 1);
+
+		auto albedoTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		albedoTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*albedoTexture, FrameBufferAttachment::kColor0 + 2);
+
+		auto materialTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		materialTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*materialTexture, FrameBufferAttachment::kColor0 + 3);
+
+		auto emissiveTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		emissiveTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		gBuffer->attach(*emissiveTexture, FrameBufferAttachment::kColor0 + 4);
+
+		// Create the gBuffer FB clear node
+		auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
+		auto gFBClear = std::make_unique<FBClearNode>("gFBClear", clearMask);
+
+		// Create the gBufferRenderer
+		auto gBufferRenderer = std::make_unique<Renderer3D>("gBufferRenderer");
+
+		auto iDepthTexBindable = gBufferRenderer->addBindable(zTexture, false);
+		auto iPositionTexBindable = gBufferRenderer->addBindable(positionTexture, false);
+		auto iNormalTexBindable = gBufferRenderer->addBindable(normalTexture, false);
+		auto iAlbedoTexBindable = gBufferRenderer->addBindable(albedoTexture, false);
+		auto iMaterialTexBindable = gBufferRenderer->addBindable(materialTexture, false);
+		auto iEmissiveTexBindable = gBufferRenderer->addBindable(emissiveTexture, false);
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("zBuffer", gBufferRenderer.get(), iDepthTexBindable) );
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("position", gBufferRenderer.get(), iPositionTexBindable) );
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("normal", gBufferRenderer.get(), iNormalTexBindable) );
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("albedo", gBufferRenderer.get(), iAlbedoTexBindable) );
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("material", gBufferRenderer.get(), iMaterialTexBindable) );
+		gBufferRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("emissive", gBufferRenderer.get(), iEmissiveTexBindable) );
+
+		// Create the deferredLightRenderer
+		auto deferredLightRenderer = std::make_unique<DeferredLightRenderer>("deferredLightRenderer", mApplication.getRepository(), mPlaneRenderable);
+		mDeferredLightRenderer = deferredLightRenderer.get();
+
+		auto texUnitNodePosition = std::make_unique<TextureUnitNode>("texUnitNodePosition", DeferredLightRenderer::GBufferTexUnits::kPosition);
+		auto texUnitNodeNormal = std::make_unique<TextureUnitNode>("texUnitNodeNormal", DeferredLightRenderer::GBufferTexUnits::kNormal);
+		auto texUnitNodeAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeAlbedo", DeferredLightRenderer::GBufferTexUnits::kAlbedo);
+		auto texUnitNodeMaterial = std::make_unique<TextureUnitNode>("texUnitNodeMaterial", DeferredLightRenderer::GBufferTexUnits::kMaterial);
+		auto texUnitNodeEmissive = std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredLightRenderer::GBufferTexUnits::kEmissive);
+
+		// Add the nodes and their connections
+		return gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") )
+			&& gBufferRenderer->findInput("target")->connect( gFBClear->findOutput("output") )
+			&& texUnitNodePosition->findInput("input")->connect( gBufferRenderer->findOutput("position") )
+			&& texUnitNodeNormal->findInput("input")->connect( gBufferRenderer->findOutput("normal") )
+			&& texUnitNodeAlbedo->findInput("input")->connect( gBufferRenderer->findOutput("albedo") )
+			&& texUnitNodeMaterial->findInput("input")->connect( gBufferRenderer->findOutput("material") )
+			&& texUnitNodeEmissive->findInput("input")->connect( gBufferRenderer->findOutput("emissive") )
+			&& deferredLightRenderer->findInput("position")->connect( texUnitNodePosition->findOutput("output") )
+			&& deferredLightRenderer->findInput("normal")->connect( texUnitNodeNormal->findOutput("output") )
+			&& deferredLightRenderer->findInput("albedo")->connect( texUnitNodeAlbedo->findOutput("output") )
+			&& deferredLightRenderer->findInput("material")->connect( texUnitNodeMaterial->findOutput("output") )
+			&& deferredLightRenderer->findInput("emissive")->connect( texUnitNodeEmissive->findOutput("output") )
+			&& renderGraph.addNode( std::move(gFBClear) )
+			&& renderGraph.addNode( std::move(gBufferRenderer) )
+			&& renderGraph.addNode( std::move(texUnitNodePosition) )
+			&& renderGraph.addNode( std::move(texUnitNodeNormal) )
+			&& renderGraph.addNode( std::move(texUnitNodeAlbedo) )
+			&& renderGraph.addNode( std::move(texUnitNodeMaterial) )
+			&& renderGraph.addNode( std::move(texUnitNodeEmissive) )
+			&& renderGraph.addNode( std::move(deferredLightRenderer) );
+	}
+
+
+	bool AppRenderer::addForwardRenderer(graphics::RenderGraph& renderGraph)
+	{
+		auto forwardRenderer = std::make_unique<Renderer3D>("forwardRenderer");
+		forwardRenderer->addBindable(std::make_shared<SetDepthMask>());
+
+		auto iIrradianceTexBindable = forwardRenderer->addBindable();
+		auto iPrefilterTexBindable = forwardRenderer->addBindable();
+		auto iBRDFTexBindable = forwardRenderer->addBindable();
+		auto iShadowTexBindable = forwardRenderer->addBindable();
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("irradiance", forwardRenderer.get(), iIrradianceTexBindable) );
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("prefilter", forwardRenderer.get(), iPrefilterTexBindable) );
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("brdf", forwardRenderer.get(), iBRDFTexBindable) );
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("shadow", forwardRenderer.get(), iShadowTexBindable) );
+
+		auto iColorTexBindable = forwardRenderer->addBindable(nullptr, false);
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("color", forwardRenderer.get(), iColorTexBindable) );
+		forwardRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("color", forwardRenderer.get(), iColorTexBindable) );
+
+		auto iBrightTexBindable = forwardRenderer->addBindable(nullptr, false);
+		forwardRenderer->addInput( std::make_unique<BindableRNodeInput<Texture>>("bright", forwardRenderer.get(), iBrightTexBindable) );
+		forwardRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("bright", forwardRenderer.get(), iBrightTexBindable) );
+
+		return renderGraph.addNode(std::move(forwardRenderer));
+	}
+
+
+	bool AppRenderer::addShadowRenderer(graphics::RenderGraph& renderGraph)
+	{
+		auto resources = dynamic_cast<BindableRenderNode*>(renderGraph.getNode("resources"));
+
+		// Create the shadow FB
+		auto shadowTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		shadowTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth, mShadowData.resolution, mShadowData.resolution)
+			.setWrapping(TextureWrap::ClampToBorder, TextureWrap::ClampToBorder)
+			.setBorderColor(1.0f, 1.0f, 1.0f, 1.0f)
+			.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest);
+
+		auto shadowBuffer = std::make_shared<FrameBuffer>();
+		shadowBuffer->setColorBuffer(false)
+			.attach(*shadowTexture, FrameBufferAttachment::kDepth);
+		auto iShadowBufferResource = resources->addBindable(shadowBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("shadowBuffer", resources, iShadowBufferResource) )) {
+			return false;
+		}
+
+		// Create the shadow FB clear node
+		auto shadowFBClear = std::make_unique<FBClearNode>("shadowFBClear", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
+
+		// Create the shadow Renderer
+		auto shadowRenderer = std::make_unique<ShadowRenderer>("shadowRenderer");
+		shadowRenderer->setShadowResolution(mShadowData.resolution);
+
+		auto iShadowTexBindable = shadowRenderer->addBindable(shadowTexture, false);
+		shadowRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadow", shadowRenderer.get(), iShadowTexBindable) );
+
+		// Add the nodes and their connections
+		return shadowFBClear->findInput("input")->connect( resources->findOutput("shadowBuffer") )
+			&& shadowRenderer->findInput("target")->connect( shadowFBClear->findOutput("output") )
+			&& renderGraph.addNode( std::move(shadowRenderer) )
+			&& renderGraph.addNode( std::move(shadowFBClear) );
+	}
+
+
 	void AppRenderer::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
 		mCameraEntity = event.getValue();
@@ -663,9 +754,9 @@ namespace se::app {
 
 	void AppRenderer::onResizeEvent(const ResizeEvent& event)
 	{
-		auto mWidth = static_cast<std::size_t>(event.getWidth());
-		auto mHeight = static_cast<std::size_t>(event.getHeight());
-		GraphicsOperations::setViewport(0, 0, mWidth, mHeight);
+		auto width = static_cast<std::size_t>(event.getWidth());
+		auto height = static_cast<std::size_t>(event.getHeight());
+		GraphicsOperations::setViewport(0, 0, width, height);
 	}
 
 }

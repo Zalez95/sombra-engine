@@ -30,10 +30,13 @@ namespace se::graphics {
 	{
 		std::unique_lock lck(mMutex);
 
-		mRenderables.erase(
-			std::remove(mRenderables.begin(), mRenderables.end(), renderable),
-			mRenderables.end()
-		);
+		auto itRenderable = std::find(mRenderables.begin(), mRenderables.end(), renderable);
+		if (itRenderable != mRenderables.end()) {
+			if (mRenderables.size() > 1) {
+				std::swap(*itRenderable, mRenderables.back());
+			}
+			mRenderables.pop_back();
+		}
 	}
 
 

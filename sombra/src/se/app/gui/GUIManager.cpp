@@ -15,7 +15,8 @@ namespace se::app {
 	GUIManager::GUIManager(Application& application, const glm::vec2& initialWindowSize) : mApplication(application)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Resize);
-		mApplication.getEventManager().subscribe(this, Topic::Mouse);
+		mApplication.getEventManager().subscribe(this, Topic::MouseMove);
+		mApplication.getEventManager().subscribe(this, Topic::MouseButton);
 
 		if (!mApplication.getRepository().find<std::string, graphics::Program>("technique2D")) {
 			auto renderer = dynamic_cast<graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("renderer2D"));
@@ -32,8 +33,8 @@ namespace se::app {
 
 			auto pass = std::make_shared<graphics::Pass>(*renderer);
 			pass->addBindable(program)
-				.addBindable(std::make_shared<graphics::BlendingOperation>(true))
-				.addBindable(std::make_shared<graphics::DepthTestOperation>(false))
+				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, true))
+				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, false))
 				.addBindable(mProjectionMatrix);
 
 			for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
@@ -53,7 +54,8 @@ namespace se::app {
 
 	GUIManager::~GUIManager()
 	{
-		mApplication.getEventManager().unsubscribe(this, Topic::Mouse);
+		mApplication.getEventManager().unsubscribe(this, Topic::MouseButton);
+		mApplication.getEventManager().unsubscribe(this, Topic::MouseMove);
 		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
 	}
 
@@ -73,7 +75,8 @@ namespace se::app {
 	void GUIManager::notify(const IEvent& event)
 	{
 		tryCall(&GUIManager::onResizeEvent, event);
-		tryCall(&GUIManager::onMouseEvent, event);
+		tryCall(&GUIManager::onMouseMoveEvent, event);
+		tryCall(&GUIManager::onMouseButtonEvent, event);
 	}
 
 // Private functions
@@ -90,16 +93,19 @@ namespace se::app {
 	}
 
 
-	void GUIManager::onMouseEvent(const MouseEvent& event)
+	void GUIManager::onMouseMoveEvent(const MouseMoveEvent& event)
 	{
-		switch (event.getType()) {
-			case MouseEvent::Type::Move:
-				mRootComponent.onHover(static_cast<const MouseMoveEvent&>(event));
-				break;
-			case MouseEvent::Type::ButtonPressed:
+		mRootComponent.onHover(static_cast<const MouseMoveEvent&>(event));
+	}
+
+
+	void GUIManager::onMouseButtonEvent(const MouseButtonEvent& event)
+	{
+		switch (event.getState()) {
+			case MouseButtonEvent::State::Pressed:
 				mRootComponent.onClick(static_cast<const MouseButtonEvent&>(event));
 				break;
-			case MouseEvent::Type::ButtonReleased:
+			case MouseButtonEvent::State::Released:
 				mRootComponent.onRelease(static_cast<const MouseButtonEvent&>(event));
 				break;
 			default:

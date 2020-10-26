@@ -49,6 +49,13 @@ namespace se::window {
 		/** A pointer to the GLFW Window */
 		GLFWwindow* mWindow;
 
+		/** The callback to execute when the window close button is pressed */
+		std::function<void()> onCloseCB;
+
+		/** The callback to execute when the window minimize button is
+		 * pressed */
+		std::function<void(bool)> onMinimizeCB;
+
 		/** The callback to execute when the window size changes */
 		std::function<void(int, int)> onResizeCB;
 
@@ -60,6 +67,10 @@ namespace se::window {
 
 		/** The callback to execute when a key state changes */
 		std::function<void(int, ButtonState)> onKeyCB;
+
+		/** The callback to execute when a new code point of an input text is
+		 * added (keyboard layout dependent) */
+		std::function<void(unsigned int)> onTextInputCB;
 
 		/** The callback to execute when a mouse button state changes */
 		std::function<void(int, ButtonState)> onMouseButtonCB;
@@ -113,6 +124,19 @@ namespace se::window {
 		 * @param	isVisible if the cursor must be shown or not */
 		void setCursorVisibility(bool isVisible);
 
+		/** Sets the callback function to execute when the window close
+		 * button is pressed
+		 *
+		 * @param	callback the function to execute */
+		void onClose(const std::function<void()>& callback);
+
+		/** Sets the callback function to execute when the mouse button state
+		 * changes
+		 *
+		 * @param	callback the function to execute. It must take as parameter
+		 *			true if the window was minimized or false if restored */
+		void onMinimize(const std::function<void(bool)>& callback);
+
 		/** Sets the callback function to execute when the window is resized
 		 *
 		 * @param	callback the function to execute. It must take as parameters
@@ -128,16 +152,21 @@ namespace se::window {
 		/** Sets the callback function to execute when the scroll changes
 		 *
 		 * @param	callback the function to execute. It must take as parameters
-		 *			the x and y position of the scroll */
+		 *			the x and y offsets of the scroll */
 		void onScroll(const std::function<void(double, double)>& callback);
 
 		/** Sets the callback function to execute when the key state changes
 		 *
 		 * @param	callback the function to execute. It must take as parameters
 		 *			the key code and its state */
-		void onKey(
-			const std::function<void(int, ButtonState)>& callback
-		);
+		void onKey(const std::function<void(int, ButtonState)>& callback);
+
+		/** Sets the callback function to execute when a new code point of an
+		 * input text is added (keyboard layout dependent)
+		 *
+		 * @param	callback the function to execute. It must take as parameter
+		 *			the code point added */
+		void onTextInput(const std::function<void(unsigned int)>& callback);
 
 		/** Sets the callback function to execute when the mouse button state
 		 * changes

@@ -29,28 +29,20 @@ namespace se::app {
 	public:		// Functions
 		MyRenderGraph()
 		{
-			{
-				auto resources = dynamic_cast<graphics::BindableRenderNode*>(getNode("resources"));
-				auto frameBufferIndex = resources->addBindable(std::make_shared<graphics::FrameBuffer>());
-				resources->addOutput(std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("frameBuffer", resources, frameBufferIndex));
-			}
+			auto resources = dynamic_cast<graphics::BindableRenderNode*>(getNode("resources"));
+			auto frameBufferIndex = resources->addBindable(std::make_shared<graphics::FrameBuffer>());
+			resources->addOutput(std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("frameBuffer", resources, frameBufferIndex));
 
-			{
-				auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
-				auto fbClearNode = std::make_unique<graphics::FBClearNode>("fbClearNode", clearMask);
-				addNode(std::move(fbClearNode));
-			}
+			auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
+			auto fbClearNode = std::make_unique<graphics::FBClearNode>("fbClearNode", clearMask);
 
-			{
-				auto renderer3D = std::make_unique<graphics::Renderer3D>("renderer3D");
-				auto frameBufferIndex = renderer3D->addBindable();
-				renderer3D->addInput(std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("frameBuffer", renderer3D.get(), frameBufferIndex));
-				addNode(std::move(renderer3D));
-			}
+			auto renderer3D = std::make_unique<graphics::Renderer3D>("renderer3D");
 
-			auto resources = getNode("resources"), fbClearNode = getNode("fbClearNode"), renderer3D = getNode("renderer3D");
 			fbClearNode->findInput("input")->connect(resources->findOutput("frameBuffer"));
-			renderer3D->findInput("frameBuffer")->connect(fbClearNode->findOutput("output"));
+			renderer3D->findInput("target")->connect(fbClearNode->findOutput("output"));
+			addNode(std::move(renderer3D));
+			addNode(std::move(fbClearNode));
+
 			prepareGraph();
 		};
 	};

@@ -2,6 +2,7 @@
 #define APP_RENDERER_H
 
 #include <glm/glm.hpp>
+#include "../graphics/GraphicsEngine.h"
 #include "../graphics/Pass.h"
 #include "../graphics/core/Texture.h"
 #include "../graphics/core/UniformBuffer.h"
@@ -32,47 +33,20 @@ namespace se::app {
 	class AppRenderer : public ISystem
 	{
 	private:	// Nested types
-		struct ShaderLightSource;
 		struct EnvironmentTexUnits;
-		struct DeferredTexUnits;
-		using TextureSPtr = std::shared_ptr<graphics::Texture>;
-		template <typename T>
-		using UniformVariableSPtr
-			= std::shared_ptr<graphics::UniformVariableValue<T>>;
+		class DeferredLightRenderer;
 		class ShadowRenderer;
 		class CombineNode;
 
 	private:	// Attributes
-		/** The maximum number of lights in the program */
-		static constexpr unsigned int kMaxLights = 32;
-
 		/** The Application that holds the GraphicsEngine used for rendering
 		 * the Entities */
 		Application& mApplication;
 
+		DeferredLightRenderer* mDeferredLightRenderer;
+
 		/** The configuration used for rendering the shadows */
 		ShadowData mShadowData;
-
-		/** The UniformBuffer where the lights data will be stored */
-		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
-
-		/** The uniform variable that holds the number of active lights to
-		 * render */
-		UniformVariableSPtr<unsigned int> mNumLights;
-
-		/** The uniform variable that holds the index of the LightSource used
-		 * for rendering the Shadows */
-		UniformVariableSPtr<unsigned int> mShadowLightIndex;
-
-		/** The uniform variable that the Camera location in world space */
-		UniformVariableSPtr<glm::vec3> mViewPosition;
-
-		/** The uniform variable with the view matrix of the shadow mapping */
-		UniformVariableSPtr<glm::mat4> mShadowViewMatrix;
-
-		/** The uniform variable with the projection matrix of the shadow
-		 * mapping */
-		UniformVariableSPtr<glm::mat4> mShadowProjectionMatrix;
 
 		/** The bindable index of the irradiance Texture to render with */
 		std::size_t mIrradianceTextureResource;
@@ -139,6 +113,62 @@ namespace se::app {
 		 *			Graphics API context (probably thread 0) */
 		void render();
 	private:
+		/** Adds shared resources to the RenderGraph resource node
+		 *
+		 * @param	width the initial width of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @param	height the initial height of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @return	true if the resources were added succesfully,
+		 *			false otherwise */
+		virtual bool addResources(std::size_t width, std::size_t height);
+
+		/** Adds nodes to the RenderGraph and links them
+		 *
+		 * @param	width the initial width of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @param	height the initial height of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @return	true if the nodes were added and linked succesfully,
+		 *			false otherwise */
+		virtual bool addNodes(std::size_t width, std::size_t height);
+
+		/** Creates a shadow renderer with name "shadowRenderer" and adds it to
+		 * the given RenderGraph. It will have a texture output called "shadow"
+		 * and a Framebuffer to write to output called "target"
+		 * @param	renderGraph the RenderGraph where the nodes will be added
+		 * @return	true if the nodes where added successfully, false
+		 *			otherwise */
+		bool addShadowRenderer(graphics::RenderGraph& renderGraph);
+
+		/** Creates a deferred renderer with name "rendererDeferredLight".
+		 * It will have texture inputs "irradiance", "prefilter", "brdf" and
+		 * "shadow", and a Framebuffer to write to as input and output called
+		 * "target". It will also add a "gBufferRenderer" with texture outputs
+		 * "zBuffer", "position", "normal", "albedo", "material" and
+		 * "emissive"
+		 * @param	renderGraph the RenderGraph where the nodes will be added
+		 * @param	width the initial width of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @param	height the initial height of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @return	true if the nodes where added successfully, false
+		 *			otherwise */
+		bool addDeferredRenderer(
+			graphics::RenderGraph& renderGraph,
+			std::size_t width, std::size_t height
+		);
+
+		/** Creates a forward renderer with name "forwardRenderer" and adds it
+		 * to the given RenderGraph. It will have two textures inputs and
+		 * outputs called "color" and "bright", texture inputs "irradiance",
+		 * "prefilter", "brdf" and "shadow", and a Framebuffer to write to
+		 * input and output called "target"
+		 * @param	renderGraph the RenderGraph where the nodes will be added
+		 * @return	true if the nodes where added successfully, false
+		 *			otherwise */
+		bool addForwardRenderer(graphics::RenderGraph& renderGraph);
+
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Entities will be rendered
 		 *

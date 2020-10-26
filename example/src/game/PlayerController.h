@@ -4,7 +4,7 @@
 #include <se/app/Entity.h>
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
-#include <se/app/events/MouseEvent.h>
+#include <se/app/events/MouseEvents.h>
 #include <se/app/graphics/Material.h>
 #include <se/graphics/3D/Mesh.h>
 #include <se/graphics/2D/RenderableText.h>
@@ -81,8 +81,13 @@ namespace game {
 
 		/** Handles the given event
 		 *
-		 * @param	event the MouseEvent to handle */
-		void onMouseEvent(const se::app::MouseEvent& event);
+		 * @param	event the MouseEventMove to handle */
+		void onMouseMoveEvent(const se::app::MouseMoveEvent& event);
+
+		/** Handles the given event
+		 *
+		 * @param	event the MouseEventButton to handle */
+		void onMouseButtonEvent(const se::app::MouseButtonEvent& event);
 	};
 
 }

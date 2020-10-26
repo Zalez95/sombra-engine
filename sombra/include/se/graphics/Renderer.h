@@ -10,7 +10,8 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Renderer, it's RenderNode that can draw Renderables
+	 * Class Renderer, it's BindableRenderNode that can draw Renderables.
+	 * Every Renderer has a Framebuffer input and output called "target"
 	 */
 	class Renderer : public BindableRenderNode
 	{
@@ -18,13 +19,13 @@ namespace se::graphics {
 		/** Creates a new Renderer
 		 *
 		 * @param	name the name of the new Renderer */
-		Renderer(const std::string& name) : BindableRenderNode(name) {};
+		Renderer(const std::string& name);
 
 		/** Class destructor */
 		virtual ~Renderer() = default;
 
 		/** Executes the current RenderNode */
-		virtual void execute() override { bind(); render(); };
+		virtual void execute() override;
 
 		/** Submits the given Renderable for rendering
 		 *

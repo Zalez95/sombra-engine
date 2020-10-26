@@ -53,20 +53,22 @@ namespace se::app {
 		graphics::GraphicsOperations::getViewport(originX, originY, dimensionsX, dimensionsY);
 		graphics::GraphicsOperations::setViewport(0, 0, mMaxSize, mMaxSize);
 		graphics::GraphicsOperations::setColorMask(false, false, false, false);
-
-		graphics::GraphicsOperations::setCulling(false);
-		graphics::GraphicsOperations::setDepthTest(false);
-		graphics::GraphicsOperations::setBlending(false);
+		graphics::SetOperation opCulling(graphics::Operation::Culling, false);		opCulling.bind();
+		graphics::SetOperation opDepthTest(graphics::Operation::DepthTest, false);	opDepthTest.bind();
+		graphics::SetOperation opBlending(graphics::Operation::Blending, false);	opBlending.bind();
 
 		bind();
 		mPlane->bind();
 		graphics::GraphicsOperations::drawIndexedInstanced(
 			graphics::PrimitiveType::Triangle,
-			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType(),
+			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType(), 0,
 			mMaxSize
 		);
 		graphics::GraphicsOperations::imageMemoryBarrier();
 
+		opBlending.unbind();
+		opDepthTest.unbind();
+		opCulling.unbind();
 		graphics::GraphicsOperations::setColorMask(true, true, true, true);
 		graphics::GraphicsOperations::setViewport(originX, originY, dimensionsX, dimensionsY);
 	}

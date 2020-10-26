@@ -29,7 +29,8 @@ namespace game {
 		mYaw(0.0f), mPitch(0.0f), mMovement{}, mClicked(false)
 	{
 		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::Key);
-		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::Mouse);
+		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::MouseMove);
+		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::MouseButton);
 
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
@@ -78,7 +79,8 @@ namespace game {
 
 	PlayerController::~PlayerController()
 	{
-		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::Mouse);
+		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::MouseButton);
+		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::MouseMove);
 		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::Key);
 	}
 
@@ -177,7 +179,8 @@ namespace game {
 	void PlayerController::notify(const se::app::IEvent& event)
 	{
 		tryCall(&PlayerController::onKeyEvent, event);
-		tryCall(&PlayerController::onMouseEvent, event);
+		tryCall(&PlayerController::onMouseMoveEvent, event);
+		tryCall(&PlayerController::onMouseButtonEvent, event);
 	}
 
 // Private functions
@@ -213,28 +216,27 @@ namespace game {
 	}
 
 
-	void PlayerController::onMouseEvent(const se::app::MouseEvent& event)
+	void PlayerController::onMouseMoveEvent(const se::app::MouseMoveEvent& event)
 	{
-		if (event.getType() == se::app::MouseEvent::Type::Move) {
-			auto moveEvent = static_cast<const se::app::MouseMoveEvent&>(event);
+		// Get the mouse movement from the center of the screen in the range [-1, 1]
+		const se::window::WindowData& data = mLevel.getGame().getExternalTools().windowManager->getWindowData();
+		double mouseDeltaX = 2.0 * event.getX() / data.width - 1.0;
+		double mouseDeltaY = 1.0 - 2.0 * event.getY() / data.height;	// note that the Y position is upsidedown
 
-			// Get the mouse movement from the center of the screen in the range [-1, 1]
-			const se::window::WindowData& data = mLevel.getGame().getExternalTools().windowManager->getWindowData();
-			double mouseDeltaX = 2.0 * moveEvent.getX() / data.width - 1.0;
-			double mouseDeltaY = 1.0 - 2.0 * moveEvent.getY() / data.height;	// note that the Y position is upsidedown
+		// Multiply the values by the mouse speed
+		mYaw = kMouseSpeed * static_cast<float>(mouseDeltaX);
+		mPitch = kMouseSpeed * static_cast<float>(mouseDeltaY);
 
-			// Multiply the values by the mouse speed
-			mYaw = kMouseSpeed * static_cast<float>(mouseDeltaX);
-			mPitch = kMouseSpeed * static_cast<float>(mouseDeltaY);
+		resetMousePosition();
+	}
 
-			resetMousePosition();
-		}
-		else if (event.getType() == se::app::MouseEvent::Type::ButtonPressed) {
-			auto buttonEvent = static_cast<const se::app::MouseButtonEvent&>(event);
 
-			if (buttonEvent.getButtonCode() == SE_MOUSE_BUTTON_LEFT) {
-				mClicked = true;
-			}
+	void PlayerController::onMouseButtonEvent(const se::app::MouseButtonEvent& event)
+	{
+		if ((event.getState() == se::app::MouseButtonEvent::State::Pressed)
+			&& (event.getButtonCode() == SE_MOUSE_BUTTON_LEFT)
+		) {
+			mClicked = true;
 		}
 	}
 

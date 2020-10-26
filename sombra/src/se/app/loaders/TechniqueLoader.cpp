@@ -14,11 +14,11 @@ namespace se::app {
 	void TechniqueLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
 	{
 		// Set the material alphaMode
-		pass->addBindable(std::make_shared<graphics::BlendingOperation>(material.alphaMode == graphics::AlphaMode::Blend))
-			.addBindable(std::make_shared<graphics::DepthTestOperation>(material.alphaMode != graphics::AlphaMode::Blend));
+		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, material.alphaMode == graphics::AlphaMode::Blend))
+			.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, material.alphaMode != graphics::AlphaMode::Blend));
 
 		// Unset face culling
-		pass->addBindable(std::make_shared<graphics::CullingOperation>(!material.doubleSided));
+		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, !material.doubleSided));
 
 		// Set uniforms
 		pass->addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec4>>(
@@ -116,11 +116,11 @@ namespace se::app {
 	void TechniqueLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
 	{
 		// Set the material alphaMode
-		pass->addBindable(std::make_shared<graphics::BlendingOperation>(false))
-			.addBindable(std::make_shared<graphics::DepthTestOperation>(true));
+		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, false))
+			.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, true));
 
 		// Set face culling
-		pass->addBindable(std::make_shared<graphics::CullingOperation>(true));
+		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
 
 		// Set uniforms
 		int numMaterials = static_cast<int>(material.materials.size());

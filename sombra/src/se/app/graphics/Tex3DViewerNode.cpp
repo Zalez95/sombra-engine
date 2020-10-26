@@ -83,16 +83,19 @@ namespace se::app {
 
 	void Tex3DViewerNode::execute()
 	{
-		graphics::GraphicsOperations::setCulling(true);
-		graphics::GraphicsOperations::setDepthTest(true);
+		graphics::SetOperation opCulling(graphics::Operation::Culling);		opCulling.bind();
+		graphics::SetOperation opDepthTest(graphics::Operation::DepthTest);	opDepthTest.bind();
 
 		bind();
 		mCube->bind();
 		graphics::GraphicsOperations::drawIndexedInstanced(
 			graphics::PrimitiveType::Triangle,
-			mCube->getIBO().getIndexCount(), mCube->getIBO().getIndexType(),
+			mCube->getIBO().getIndexCount(), mCube->getIBO().getIndexType(), 0,
 			mNumInstances
 		);
+
+		opDepthTest.unbind();
+		opCulling.unbind();
 	}
 
 }

@@ -18,7 +18,6 @@
 #include "se/audio/Source.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
-#include "se/app/events/EventManager.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/InputSystem.h"
 #include "se/app/ScriptSystem.h"
@@ -120,7 +119,7 @@ namespace se::app {
 		}
 		catch (std::exception& e) {
 			mState = AppState::Error;
-			SOMBRA_FATAL_LOG << " Error while creating the Application: " << e.what();
+			SOMBRA_FATAL_LOG << "Error while creating the Application: " << e.what();
 		}
 	}
 

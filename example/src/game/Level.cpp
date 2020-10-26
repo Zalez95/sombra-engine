@@ -485,7 +485,7 @@ namespace game {
 			passSky->addBindable(programSky)
 				.addBindable(skyTexture)
 				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
-				.addBindable(std::make_shared<se::graphics::CullingOperation>(false));
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
 
 			auto techniqueSky = std::make_unique<se::graphics::Technique>();
 			techniqueSky->addPass(passSky);

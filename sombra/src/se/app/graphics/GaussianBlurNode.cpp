@@ -42,6 +42,14 @@ namespace se::app {
 	}
 
 
+	void GaussianBlurNode::setTextureDimensions(std::size_t width, std::size_t height)
+	{
+		auto output = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(findOutput("output"));
+		auto texture = std::dynamic_pointer_cast<graphics::Texture>(output->getBindable());
+		texture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGBA, graphics::ColorFormat::RGBA16f, width, height);
+	}
+
+
 	void GaussianBlurNode::execute()
 	{
 		graphics::GraphicsOperations::setDepthMask(false);

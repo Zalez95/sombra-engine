@@ -39,6 +39,12 @@ namespace se::graphics {
 		Program& operator=(const Program& other) = delete;
 		Program& operator=(Program&& other);
 
+		/** Returns the index of the requested attribute
+		 *
+		 * @param	name the name of the Attribute
+		 * @return	the index of the requested attribute */
+		unsigned int getAttributeLocation(const char* name) const;
+
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
 		void bind() const override;

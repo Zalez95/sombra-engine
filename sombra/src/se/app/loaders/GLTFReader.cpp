@@ -784,7 +784,15 @@ namespace se::app {
 
 					// Add the VBO to the VAO
 					vbo.bind();
-					vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.componentSize), bv.stride);
+					if ((a.componentTypeId == graphics::TypeId::Float) || (a.componentTypeId == graphics::TypeId::HalfFloat)) {
+						vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.componentSize), bv.stride);
+					}
+					else if (a.componentTypeId == graphics::TypeId::Double) {
+						vao.setVertexDoubleAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.componentSize), bv.stride);
+					}
+					else {
+						vao.setVertexIntegerAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.componentSize), bv.stride);
+					}
 				}
 				else {
 					return Result(false, "Invalid attribute \"" + itAttribute.key() + "\"");
@@ -1328,7 +1336,12 @@ namespace se::app {
 
 		auto itName = jsonNode.find("name");
 		if (itName != jsonNode.end()) {
-			node.nodeData.name = *itName;
+			std::string name = *itName;
+			std::size_t length = name.size();
+			if (length >= animation::NodeData::kMaxLength) {
+				length = animation::NodeData::kMaxLength - 1;
+			}
+			name.copy(node.nodeData.name.data(), length);
 		}
 
 		auto itMatrix = jsonNode.find("matrix");
@@ -1387,7 +1400,7 @@ namespace se::app {
 			mGLTFData->scene.entities.push_back(node.entity);
 
 			entityDB.emplaceComponent<TransformsComponent>(node.entity);
-			entityDB.emplaceComponent<TagComponent>(node.entity, node.nodeData.name);
+			entityDB.emplaceComponent<TagComponent>(node.entity, node.nodeData.name.data());
 
 			if (itCamera != jsonNode.end()) {
 				std::size_t cameraIndex = *itCamera;

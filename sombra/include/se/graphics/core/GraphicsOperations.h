@@ -26,8 +26,8 @@ namespace se::graphics {
 
 		/** Sets the Viewport origin and its dimensions
 		 *
-		 * @param	x the origin of the viewport in the X axis
-		 * @param	y the origin of the viewport in the Y axis
+		 * @param	x the origin (lower-left) of the viewport in the X axis
+		 * @param	y the origin (lower-left) of the viewport in the Y axis
 		 * @param	width the width of the viewport
 		 * @param	height the height of the viewport */
 		static void setViewport(
@@ -36,8 +36,10 @@ namespace se::graphics {
 
 		/** Returns the Viewport origin and its dimensions
 		 *
-		 * @param	x a reference to the origin of the viewport in the X axis
-		 * @param	y a reference to the origin of the viewport in the Y axis
+		 * @param	x a reference to the origin (lower-left) of the viewport in
+		 *			the X axis
+		 * @param	y a reference to the origin (lower-left) of the viewport in
+		 *			the Y axis
 		 * @param	width a reference to the width of the viewport
 		 * @param	height a reference to the height of the viewport */
 		static void getViewport(
@@ -57,10 +59,12 @@ namespace se::graphics {
 		 *
 		 * @param	primitive the type of primitive to draw
 		 * @param	indexCount the number of indices in the IndexBuffer bound
-		 * @param	indexType the type of indices in the IndexBuffer bound */
+		 * @param	indexType the type of indices in the IndexBuffer bound
+		 * @param	offset the byte offset from the start of the buffer that
+		 *			contains the vertex data where indices start */
 		static void drawIndexed(
 			PrimitiveType primitive,
-			std::size_t indexCount, TypeId indexType
+			std::size_t indexCount, TypeId indexType, std::size_t offset = 0
 		);
 
 		/** Draws the VertexBuffers bound (instanced)
@@ -79,10 +83,13 @@ namespace se::graphics {
 		 * @param	primitive the type of primitive to draw
 		 * @param	indexCount the number of indices in the IndexBuffer bound
 		 * @param	indexType the type of indices in the IndexBuffer bound
+		 * @param	offset the byte offset from the start of the buffer that
+		 *			contains the vertex data where indices start
 		 * @param	instanceCount the number of instances to draw */
 		static void drawIndexedInstanced(
 			PrimitiveType primitive,
-			std::size_t indexCount, TypeId indexType, std::size_t instanceCount
+			std::size_t indexCount, TypeId indexType, std::size_t offset = 0,
+			std::size_t instanceCount = 1
 		);
 
 		/** Clears the given buffers
@@ -90,25 +97,28 @@ namespace se::graphics {
 		 * @param	mask a bit mask with the FrameBuffer buffers to clear */
 		static void clear(const FrameBufferMask::Mask& mask);
 
-		/** Enables or disables face culling
+		/** Enables or disables the given operation
 		 *
-		 * @param	active if face culling should be enabled or not */
-		static void setCulling(bool active);
+		 * @param	active if the operation should be enabled or not */
+		static void setOperation(Operation operation, bool active);
+
+		/** @return	true if the operation is enabled, false otherwise */
+		static bool hasOperation(Operation operation);
 
 		/** Sets the faces to cull
 		 *
 		 * @param	mode the faces to cull */
 		static void setCullingMode(FaceMode mode);
 
-		/** Enables or disables depth-testing
+		/** Sets the Scissor-box origin and its dimensions
 		 *
-		 * @param	active if depth-testing should be enabled or not */
-		static void setDepthTest(bool active);
-
-		/** Enables or disables alpha-blending
-		 *
-		 * @param	active if alpha-blending should be enabled or not */
-		static void setBlending(bool active);
+		 * @param	x the origin (lower-left) of the scissor box in the X axis
+		 * @param	y the origin (lower-left) of the scissor box in the Y axis
+		 * @param	width the width of the scissor box
+		 * @param	height the height of the scissor box */
+		static void setScissorBox(
+			int x, int y, std::size_t width, std::size_t height
+		);
 
 		/** Enables or disables color components so the next draw operations
 		 * won't write to the selected components
@@ -124,115 +134,75 @@ namespace se::graphics {
 		 * @param	active if the we should write to the depth buffer or not */
 		static void setDepthMask(bool active);
 
+		/** @return	true if writting to the depth buffer is enabled or not */
+		static bool hasDepthMask();
+
 		/** Adds a memory barrier for syncing image reads and writes */
 		static void imageMemoryBarrier();
 	};
 
 
 	/**
-	 * Class CullingOperation, it's a Bindable used for enabling or disabling
-	 * face culling
+	 * Class SetOperation, it's a Bindable used for enabling or disabling
+	 * an operation
 	 */
-	class CullingOperation : public Bindable
+	class SetOperation : public Bindable
 	{
 	private:	// Attributes
-		/** If the disables culling should be enabled or not */
+		/** The operation to enable/disable */
+		Operation mOperation;
+
+		/** If the operation should be enabled or disabled */
 		bool mActive;
 
-	public:		// Functions
-		/** Creates a new CullingOperation
-		 *
-		 * @param	active if the disables culling should be enabled or not */
-		CullingOperation(bool active = true) : mActive(active) {};
-
-		/** Enables face culling if mActive is true, disables it otherwise */
-		virtual void bind() const override
-		{ GraphicsOperations::setCulling(mActive); };
-
-		/** Disables face culling if mActive is true, disables it otherwise */
-		virtual void unbind() const override
-		{ GraphicsOperations::setCulling(!mActive); };
-	};
-
-
-	/**
-	 * Class DepthTestOperation, it's a Bindable used for enabling or disabling
-	 * depth-testing
-	 */
-	class DepthTestOperation : public Bindable
-	{
-	private:	// Attributes
-		/** If the depth-testing should be enabled or not */
-		bool mActive;
+		/** The previous state of the operation */
+		mutable bool mLastActive;
 
 	public:		// Functions
-		/** Creates a new DepthTestOperation
+		/** Creates a new SetOperation
 		 *
+		 * @param	operation the operation to enable/disable
 		 * @param	active if the depth-testing should be enabled or not */
-		DepthTestOperation(bool active = true) : mActive(active) {};
+		SetOperation(Operation operation, bool active = true) :
+			mOperation(operation), mActive(active), mLastActive(false) {};
 
-		/** Enables depth-testing if mActive is true, disables it otherwise */
-		virtual void bind() const override
-		{ GraphicsOperations::setDepthTest(mActive); };
+		/** Enables the Operation if mActive is true, disables it otherwise */
+		virtual void bind() const override;
 
-		/** Disables depth-testing if mActive is true, disables it otherwise */
-		virtual void unbind() const override
-		{ GraphicsOperations::setDepthTest(!mActive); };
+		/** Recovers the previous state of the Operation after calling
+		 * @see bind */
+		virtual void unbind() const override;
 	};
 
 
 	/**
-	 * Class BlendingOperation, it's a Bindable used for enabling or disabling
-	 * alpha-blending
-	 */
-	class BlendingOperation : public Bindable
-	{
-	private:	// Attributes
-		/** If the alpha-blending should be enabled or not */
-		bool mActive;
-
-	public:		// Functions
-		/** Creates a new BlendingOperation
-		 *
-		 * @param	active if the alpha-blending should be enabled or not */
-		BlendingOperation(bool active = true) : mActive(active) {};
-
-		/** Enables Blending if mActive is true, disables it otherwise */
-		virtual void bind() const override
-		{ GraphicsOperations::setBlending(mActive); };
-
-		/** Disables Blending if mActive is true, enables it otherwise */
-		virtual void unbind() const override
-		{ GraphicsOperations::setBlending(!mActive); };
-	};
-
-
-	/**
-	 * Class DepthMaskOperation, it's a Bindable used for enabling or disabling
+	 * Class SetDepthMask, it's a Bindable used for enabling or disabling
 	 * writing to the depth buffer
 	 */
-	class DepthMaskOperation : public Bindable
+	class SetDepthMask : public Bindable
 	{
 	private:	// Attributes
 		/** If we want to write to the depth buffer on bind or not */
 		bool mActive;
 
+		/** The previous state of the operation */
+		mutable bool mLastActive;
+
 	public:		// Functions
-		/** Creates a new DepthMaskOperation
+		/** Creates a new SetDepthMask
 		 *
 		 * @param	active if we want to write to the depth buffer on bind or
 		 *			not */
-		DepthMaskOperation(bool active = true) : mActive(active) {};
+		SetDepthMask(bool active = true) :
+			mActive(active), mLastActive(false) {};
 
 		/** Enables writing to the depth buffer if mActive is true, disables
 		 * it otherwise */
-		virtual void bind() const override
-		{ GraphicsOperations::setDepthMask(mActive); };
+		virtual void bind() const override;
 
-		/** Disables writing to the depth buffer if mActive is true, enables
-		 * it otherwise */
-		virtual void unbind() const override
-		{ GraphicsOperations::setDepthMask(!mActive); };
+		/** Recovers the previous state of the Depth Mask after calling
+		 * @see bind */
+		virtual void unbind() const override;
 	};
 
 }

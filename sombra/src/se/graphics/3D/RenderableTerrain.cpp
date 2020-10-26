@@ -64,7 +64,7 @@ namespace se::graphics {
 		mVAO.setAttributeDivisor(1, 1);
 
 		mVBOLods.bind();
-		mVAO.setVertexAttribute(2, TypeId::Int, false, 1, 0);
+		mVAO.setVertexIntegerAttribute(2, TypeId::Int, 1, 0);
 		mVAO.setAttributeDivisor(2, 1);
 	}
 

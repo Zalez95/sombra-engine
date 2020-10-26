@@ -102,13 +102,37 @@ namespace se::window {
 	}
 
 
+	void WindowManager::onClose(const std::function<void()>& callback)
+	{
+		if (callback) {
+			onCloseCB = callback;
+
+			glfwSetWindowCloseCallback(mWindow, [](GLFWwindow* window) {
+				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
+				userWindow->onCloseCB();
+			});
+		}
+	}
+
+
+	void WindowManager::onMinimize(const std::function<void(bool)>& callback)
+	{
+		if (callback) {
+			onMinimizeCB = callback;
+			glfwSetWindowIconifyCallback(mWindow, [](GLFWwindow* window, int iconified) {
+				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
+				userWindow->onMinimizeCB(iconified != 0);
+			});
+		}
+	}
+
+
 	void WindowManager::onResize(const std::function<void(int, int)>& callback)
 	{
 		if (callback) {
 			onResizeCB = callback;
 
-			glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height)
-			{
+			glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height) {
 				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
 				userWindow->mWindowData.width = width;
 				userWindow->mWindowData.height = height;
@@ -124,8 +148,7 @@ namespace se::window {
 		if (callback) {
 			onMouseMoveCB = callback;
 
-			glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xpos, double ypos)
-			{
+			glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xpos, double ypos) {
 				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
 				userWindow->onMouseMoveCB(xpos, ypos);
 			});
@@ -138,8 +161,7 @@ namespace se::window {
 		if (callback) {
 			onScrollCB = callback;
 
-			glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset)
-			{
+			glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset) {
 				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
 				userWindow->onScrollCB(xoffset, yoffset);
 			});
@@ -152,15 +174,27 @@ namespace se::window {
 		if (callback) {
 			onKeyCB = callback;
 
-			glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int button, int /*scancode*/, int action, int /*mods*/)
-			{
+			glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
 				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
 				userWindow->onKeyCB(
-					button,
+					key,
 					(action == GLFW_PRESS)? ButtonState::Pressed :
 					(action == GLFW_REPEAT)? ButtonState::Repeated :
 					ButtonState::Released
 				);
+			});
+		}
+	}
+
+
+	void WindowManager::onTextInput(const std::function<void(unsigned int)>& callback)
+	{
+		if (callback) {
+			onTextInputCB = callback;
+
+			glfwSetCharCallback(mWindow, [](GLFWwindow* window, unsigned int codepoint) {
+				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
+				userWindow->onTextInputCB(codepoint);
 			});
 		}
 	}
@@ -171,8 +205,7 @@ namespace se::window {
 		if (callback) {
 			onMouseButtonCB = callback;
 
-			glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int /*mods*/)
-			{
+			glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int /*mods*/) {
 				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
 				userWindow->onMouseButtonCB(
 					button,

@@ -45,25 +45,36 @@ namespace se::graphics {
 	) const
 	{
 		GL_WRAP( glEnableVertexAttribArray(index) );
+		GL_WRAP( glVertexAttribPointer(
+			index, componentSize, toGLType(type), normalized,
+			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
+		) );
+	}
 
-		if ((type == TypeId::Float) || (type == TypeId::HalfFloat)) {
-			GL_WRAP( glVertexAttribPointer(
-				index, componentSize, toGLType(type), normalized,
-				static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
-			) );
-		}
-		else if (type == TypeId::Double) {
-			GL_WRAP( glVertexAttribLPointer(
-				index, componentSize, toGLType(type),
-				static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
-			) );
-		}
-		else {
-			GL_WRAP( glVertexAttribIPointer(
-				index, componentSize, toGLType(type),
-				static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
-			) );
-		}
+
+	void VertexArray::setVertexDoubleAttribute(
+		unsigned int index,
+		TypeId type, int componentSize, std::size_t stride, std::size_t offset
+	) const
+	{
+		GL_WRAP( glEnableVertexAttribArray(index) );
+		GL_WRAP( glVertexAttribLPointer(
+			index, componentSize, toGLType(type),
+			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
+		) );
+	}
+
+
+	void VertexArray::setVertexIntegerAttribute(
+		unsigned int index,
+		TypeId type, int componentSize, std::size_t stride, std::size_t offset
+	) const
+	{
+		GL_WRAP( glEnableVertexAttribArray(index) );
+		GL_WRAP( glVertexAttribIPointer(
+			index, componentSize, toGLType(type),
+			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
+		) );
 	}
 
 

@@ -138,6 +138,18 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLOperation(Operation operation)
+	{
+		switch (operation) {
+			case Operation::Culling:		return GL_CULL_FACE;
+			case Operation::DepthTest:		return GL_DEPTH_TEST;
+			case Operation::ScissorTest:	return GL_SCISSOR_TEST;
+			case Operation::Blending:		return GL_BLEND;
+			default:						return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLColorFormat(ColorFormat format)
 	{
 		switch (format) {

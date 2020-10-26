@@ -41,13 +41,12 @@ namespace se::graphics {
 		 *			otherwise */
 		bool addNode(RenderNodeUPtr node);
 
-		/** Removes the RenderNode with the same name than the given from
-		 * the RenderGraph
+		/** Removes the given RenderNode from the RenderGraph
 		 *
-		 * @param	nodeName the name of the RenderNode
+		 * @param	node a pointer to the RenderNode to remove
 		 * @return	true if the RenderNode was removed successfully, false
 		 *			otherwise */
-		bool removeNode(const std::string& nodeName);
+		bool removeNode(RenderNode* node);
 
 		/** Searchs a RenderNode with the same name in the RenderGraph
 		 *

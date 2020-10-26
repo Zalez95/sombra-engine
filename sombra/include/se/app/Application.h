@@ -1,8 +1,9 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "se/window/WindowManager.h"
-#include "se/collision/CollisionWorld.h"
+#include "events/EventManager.h"
+#include "../window/WindowManager.h"
+#include "../collision/CollisionWorld.h"
 
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
@@ -13,7 +14,6 @@ namespace se::utils { class TaskManager; class Repository; }
 namespace se::app {
 
 	class EntityDatabase;
-	class EventManager;
 	class InputSystem;
 	class ScriptSystem;
 	class CameraSystem;
@@ -34,7 +34,7 @@ namespace se::app {
 	 * to get access to all the SOMBRA managers and systems and to be updated
 	 * at a constant rate.
 	 */
-	class Application
+	class Application : public IEventListener
 	{
 	public:		// Nested Types
 		/** The different states in which the Application could be */
@@ -146,6 +146,9 @@ namespace se::app {
 
 		/** @return	a reference to the GUIManager of the Application */
 		GUIManager& getGUIManager() { return *mGUIManager; };
+
+		/** @copydoc IEventListener::notify(const IEvent&) */
+		virtual void notify(const IEvent&) override {};
 
 		/** Function used for starting the Application
 		 * @note	the current thread will be used by the Application until

@@ -5,7 +5,7 @@
 #include "se/app/Application.h"
 #include "se/app/events/KeyEvent.h"
 #include "se/app/events/ResizeEvent.h"
-#include "se/app/events/MouseEvent.h"
+#include "se/app/events/MouseEvents.h"
 
 namespace se::app {
 
@@ -21,19 +21,20 @@ namespace se::app {
 			mEventQueue.push_back(new KeyEvent(keyCode, keyState));
 		});
 
+		windowManager.onTextInput([&](unsigned int codePoint) {
+			mEventQueue.push_back(new TextInputEvent(codePoint));
+		});
+
 		windowManager.onMouseButton([&](int buttonCode, window::ButtonState state) {
-			MouseEvent::Type type = (state == window::ButtonState::Pressed)? MouseEvent::Type::ButtonPressed :
-				MouseEvent::Type::ButtonReleased;
-			mEventQueue.push_back(new MouseButtonEvent(buttonCode, type));
+			MouseButtonEvent::State mbState = (state == window::ButtonState::Pressed)? MouseButtonEvent::State::Pressed :
+				MouseButtonEvent::State::Released;
+			mEventQueue.push_back(new MouseButtonEvent(buttonCode, mbState));
 		});
 
 		windowManager.onMouseMove([&](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) {
-					return (event->getTopic() == Topic::Mouse)
-						&& (static_cast<const MouseEvent*>(event)->getType() == MouseEvent::Type::Move);
-				}
+				[](const IEvent* event) { return (event->getTopic() == Topic::MouseMove); }
 			);
 			if (itEvent != mEventQueue.end()) {
 				auto event = static_cast<MouseMoveEvent*>(*itEvent);
@@ -45,21 +46,18 @@ namespace se::app {
 			}
 		});
 
-		windowManager.onScroll([&](double x, double y) {
+		windowManager.onScroll([&](double xOffset, double yOffset) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) {
-					return (event->getTopic() == Topic::Mouse)
-						&& (static_cast<const MouseEvent*>(event)->getType() == MouseEvent::Type::Scroll);
-				}
+				[](const IEvent* event) { return (event->getTopic() == Topic::MouseScroll); }
 			);
 			if (itEvent != mEventQueue.end()) {
 				auto event = static_cast<MouseScrollEvent*>(*itEvent);
-				event->setX(x);
-				event->setY(y);
+				event->setXOffset(xOffset);
+				event->setYOffset(yOffset);
 			}
 			else {
-				mEventQueue.push_back(new MouseScrollEvent(x, y));
+				mEventQueue.push_back(new MouseScrollEvent(xOffset, yOffset));
 			}
 		});
 

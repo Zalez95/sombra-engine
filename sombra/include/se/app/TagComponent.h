@@ -12,25 +12,40 @@ namespace se::app {
 	 */
 	class TagComponent
 	{
-	private:	// Attributes
+	public:		// Attributes
+		/** The maximum length allowed */
+		static constexpr std::size_t kMaxLength = 256;
+
+	private:
 		/** The name of the Tag */
-		std::array<char, 256> mName;
+		std::array<char, kMaxLength> mName;
+
+		/** The length @see mName */
+		std::size_t mLength;
 
 	public:		// Functions
 		/** Creates a new TagComponent
 		 *
 		 * @param	name the name of the new TagComponent */
-		TagComponent(std::string_view name = "")
-		{
-			std::size_t count = name.size();
-			if (count > 255) {
-				count = 255;
-			}
-			name.copy(mName.data(), count);
-		};
+		TagComponent(std::string_view name = "") : mName{} { setName(name); };
 
 		/** @return	the name of the Tag */
 		const char* getName() const { return mName.data(); };
+
+		/** @return	the length of the name of the Tag */
+		std::size_t getLength() const { return mLength; };
+
+		/** Sets the name of the TagComponent
+		 *
+		 * @param	name the new name of the TagComponent */
+		void setName(std::string_view name = "")
+		{
+			mLength = name.size();
+			if (mLength >= kMaxLength) {
+				mLength = kMaxLength - 1;
+			}
+			name.copy(mName.data(), mLength);
+		};
 	};
 
 }

@@ -65,6 +65,38 @@ namespace se::app {
 		};
 	};
 
+
+	/**
+	 * Class TextInputEvent, its an event used for notifying of a new code point
+	 * of an input text (keyboard layout dependent)
+	 */
+	class TextInputEvent : public Event<Topic::TextInput>
+	{
+	private:	// Attributes
+		/** The code point of the TextInputEvent */
+		unsigned int mCodePoint;
+
+	public:		// Functions
+		/** Creates a new TextInputEvent
+		 *
+		 * @param	codePoint the new Character */
+		TextInputEvent(unsigned int codePoint) : mCodePoint(codePoint) {};
+
+		/** @return	the code point of the TextInputEvent */
+		unsigned int getCodePoint() const { return mCodePoint; };
+	private:
+		/** Appends the current TextInputEvent formated as text to the given
+		 * ostream
+		 *
+		 * @param	os a reference to the ostream where we want to print the
+		 *			current TextInputEvent */
+		virtual void printTo(std::ostream& os) const override
+		{
+			os	<< "{ kTopic : " << kTopic
+				<< ", mCodePoint : " << mCodePoint << " }";
+		};
+	};
+
 }
 
 #endif		// KEY_EVENT_H

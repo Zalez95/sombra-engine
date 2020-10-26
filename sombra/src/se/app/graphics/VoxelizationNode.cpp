@@ -50,10 +50,9 @@ namespace se::app {
 		graphics::GraphicsOperations::getViewport(originX, originY, dimensionsX, dimensionsY);
 		graphics::GraphicsOperations::setViewport(0, 0, mMaxVoxels, mMaxVoxels);
 		graphics::GraphicsOperations::setColorMask(false, false, false, false);
-
-		graphics::GraphicsOperations::setCulling(false);
-		graphics::GraphicsOperations::setDepthTest(false);
-		graphics::GraphicsOperations::setBlending(false);
+		graphics::SetOperation opCulling(graphics::Operation::Culling, false);		opCulling.bind();
+		graphics::SetOperation opDepthTest(graphics::Operation::DepthTest, false);	opDepthTest.bind();
+		graphics::SetOperation opBlending(graphics::Operation::Blending, false);	opBlending.bind();
 
 		auto sceneVector = mMaxPosition - mMinPosition;
 		glm::vec3 sceneCenter = mMinPosition + 0.5f * sceneVector;
@@ -74,6 +73,9 @@ namespace se::app {
 		graphics::GraphicsOperations::imageMemoryBarrier();
 		std::static_pointer_cast<graphics::Texture>( getBindable(mVoxelImage) )->generateMipMap();
 
+		opCulling.unbind();
+		opDepthTest.unbind();
+		opBlending.unbind();
 		graphics::GraphicsOperations::setColorMask(true, true, true, true);
 		graphics::GraphicsOperations::setViewport(originX, originY, dimensionsX, dimensionsY);
 	}

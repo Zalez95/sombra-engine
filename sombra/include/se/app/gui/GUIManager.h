@@ -4,7 +4,7 @@
 #include <memory>
 #include "../events/EventManager.h"
 #include "../events/ResizeEvent.h"
-#include "../events/MouseEvent.h"
+#include "../events/MouseEvents.h"
 #include "ComposedComponent.h"
 #include "../../graphics/core/UniformVariable.h"
 
@@ -76,16 +76,22 @@ namespace se::app {
 		 * @param	event the IEvent to notify */
 		virtual void notify(const IEvent& event) override;
 	private:
-		/** Handles the given ResizeEvent by updating the GUI size
+		/** Handles the given event by updating the GUI size
 		 *
 		 * @param	event the ResizeEvent to handle */
 		void onResizeEvent(const ResizeEvent& event);
 
-		/** Handles the given MouseEvent by dispatching it to the IComponents
+		/** Handles the given event by dispatching it to the IComponents
 		 * added to the GUIManager
 		 *
-		 * @param	event the MouseEvent to handle */
-		void onMouseEvent(const MouseEvent& event);
+		 * @param	event the MouseMoveEvent to handle */
+		void onMouseMoveEvent(const MouseMoveEvent& event);
+
+		/** Handles the given event by dispatching it to the IComponents
+		 * added to the GUIManager
+		 *
+		 * @param	event the MouseButtonEvent to handle */
+		void onMouseButtonEvent(const MouseButtonEvent& event);
 	};
 
 }

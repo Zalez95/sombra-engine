@@ -49,8 +49,21 @@ namespace se::graphics {
 		 *			contains the vertex data where attribute starts
 		 * @note	the VAO must be bound before calling this function */
 		void setVertexAttribute(
-			unsigned int index,
-			TypeId type, bool normalized, int componentSize,
+			unsigned int index, TypeId type, bool normalized, int componentSize,
+			std::size_t stride, std::size_t offset = 0
+		) const;
+
+		/** Behaves like @see setVertexAttribute with the difference that the
+		 * shader attribute will be treated as doubles */
+		void setVertexDoubleAttribute(
+			unsigned int index, TypeId type, int componentSize,
+			std::size_t stride, std::size_t offset = 0
+		) const;
+
+		/** Behaves like @see setVertexAttribute with the difference that the
+		 * shader attribute will be treated as integers */
+		void setVertexIntegerAttribute(
+			unsigned int index, TypeId type, int componentSize,
 			std::size_t stride, std::size_t offset = 0
 		) const;
 

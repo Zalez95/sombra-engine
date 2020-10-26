@@ -28,7 +28,7 @@ namespace se::graphics {
 		mVAO.setVertexAttribute(2, TypeId::Float, false, 4, 0);
 
 		mVBOTextureIds.bind();
-		mVAO.setVertexAttribute(3, TypeId::UnsignedByte, false, 1, 0);
+		mVAO.setVertexIntegerAttribute(3, TypeId::UnsignedByte, 1, 0);
 
 		mIBO.bind();
 

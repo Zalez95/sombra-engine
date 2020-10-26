@@ -62,12 +62,9 @@ namespace se::graphics {
 	}
 
 
-	bool RenderGraph::removeNode(const std::string& nodeName)
+	bool RenderGraph::removeNode(RenderNode* node)
 	{
-		auto itRenderNode = std::find_if(
-			mRenderNodes.begin(), mRenderNodes.end(),
-			[&](RenderNodeUPtr& node) { return node->getName() == nodeName; }
-		);
+		auto itRenderNode = std::find_if(mRenderNodes.begin(), mRenderNodes.end(), [&](const auto& node2) { return node2.get() == node; });
 		if (itRenderNode != mRenderNodes.end()) {
 			std::swap(*itRenderNode, mRenderNodes.back());
 			mRenderNodes.pop_back();

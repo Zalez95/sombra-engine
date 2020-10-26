@@ -76,6 +76,17 @@ namespace se::graphics {
 	}
 
 
+	unsigned int Program::getAttributeLocation(const char* name) const
+	{
+		GLint ret = -1;
+
+		bind();
+		GL_WRAP( ret = glGetAttribLocation(mProgramId, name) );
+
+		return ret;
+	}
+
+
 	void Program::bind() const
 	{
 		GL_WRAP( glUseProgram(mProgramId) );

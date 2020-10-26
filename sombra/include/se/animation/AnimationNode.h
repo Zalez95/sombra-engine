@@ -1,7 +1,7 @@
 #ifndef ANIMATION_NODE_H
 #define ANIMATION_NODE_H
 
-#include <string>
+#include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "../utils/TreeNode.h"
@@ -38,8 +38,11 @@ namespace se::animation {
 	 */
 	struct NodeData
 	{
+		/** The maximum name length allowed */
+		static constexpr std::size_t kMaxLength = 256;
+
 		/** The name of the Node */
-		std::string name;
+		std::array<char, kMaxLength> name = {};
 
 		/** The node transforms in relation to its parent */
 		NodeTransforms localTransforms;

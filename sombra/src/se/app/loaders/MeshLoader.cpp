@@ -53,7 +53,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
 
 			vbo.bind();
-			vao.setVertexAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, false, 4, 0);
+			vao.setVertexIntegerAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, 4, 0);
 		}
 		if (!rawMesh.jointWeights.empty()) {
 			auto& vbo = vbos.emplace_back();

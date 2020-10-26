@@ -46,6 +46,16 @@ namespace se::graphics {
 	};
 
 
+	/** The different operations that can be enabled/disabled */
+ 	enum class Operation
+	{
+		Culling,
+		DepthTest,
+		ScissorTest,
+		Blending
+	};
+
+
 	/** The Color format for the Textures */
 	enum class ColorFormat
 	{

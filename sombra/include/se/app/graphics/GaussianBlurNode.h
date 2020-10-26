@@ -40,6 +40,12 @@ namespace se::app {
 			std::size_t width, std::size_t height, bool horizontal
 		);
 
+		/** Sets the dimensions of the output texture
+		 *
+		 * @param	width the new width of the output Texture
+		 * @param	height the new height of the output Texture */
+		void setTextureDimensions(std::size_t width, std::size_t height);
+
 		/** Adds the Gaussian blur */
 		virtual void execute() override;
 	};

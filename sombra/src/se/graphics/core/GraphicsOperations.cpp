@@ -24,11 +24,14 @@ namespace se::graphics {
 		// Allow non-aligned textures
 		GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
 
-		/** Enable interpolation between cubemap faces */
+		// Enable interpolation between cubemap faces
 		GL_WRAP( glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS) );
 
 		// Set the clear color
 		GL_WRAP( glClearColor(0.0f, 0.0f, 0.0f, 1.0f) );
+
+		// Set blending mode
+		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
 
 		return true;
 	}
@@ -50,13 +53,13 @@ namespace se::graphics {
 		GL_WRAP( glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniforms) );
 
 		int maxTextureUnits = -1;
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+		GL_WRAP( glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits) );
 
 		int maxTextureSize = -1;
-		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+		GL_WRAP( glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize) );
 
 		int max3DTextureSize = -1;
-		glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3DTextureSize);
+		GL_WRAP( glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3DTextureSize) );
 
 		return	std::string("OpenGL Renderer: ") + glRenderer + "\n"
 				+ "OpenGL version supported: " + glVersion + "\n"
@@ -94,9 +97,9 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsOperations::drawIndexed(PrimitiveType primitive, std::size_t indexCount, TypeId indexType)
+	void GraphicsOperations::drawIndexed(PrimitiveType primitive, std::size_t indexCount, TypeId indexType, std::size_t offset)
 	{
-		GL_WRAP( glDrawElements(toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr) );
+		GL_WRAP( glDrawElements(toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), reinterpret_cast<const void*>(offset)) );
 	}
 
 
@@ -109,10 +112,10 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsOperations::drawIndexedInstanced(PrimitiveType primitive, std::size_t indexCount, TypeId indexType, std::size_t instanceCount)
+	void GraphicsOperations::drawIndexedInstanced(PrimitiveType primitive, std::size_t indexCount, TypeId indexType, std::size_t offset, std::size_t instanceCount)
 	{
 		GL_WRAP( glDrawElementsInstanced(
-			toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), nullptr,
+			toGLPrimitive(primitive), static_cast<GLsizei>(indexCount), toGLType(indexType), reinterpret_cast<const void*>(offset),
 			static_cast<GLsizei>(instanceCount)
 		) );
 	}
@@ -124,14 +127,21 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsOperations::setCulling(bool active)
+	void GraphicsOperations::setOperation(Operation operation, bool active)
 	{
 		if (active) {
-			GL_WRAP( glEnable(GL_CULL_FACE) );
+			GL_WRAP( glEnable(toGLOperation(operation)) );
 		}
 		else {
-			GL_WRAP( glDisable(GL_CULL_FACE) );
+			GL_WRAP( glDisable(toGLOperation(operation)) );
 		}
+	}
+
+
+	bool GraphicsOperations::hasOperation(Operation operation)
+	{
+		GL_WRAP( bool enabled = glIsEnabled(toGLOperation(operation)) );
+		return enabled;
 	}
 
 
@@ -141,26 +151,9 @@ namespace se::graphics {
 	}
 
 
-	void GraphicsOperations::setDepthTest(bool active)
+	void GraphicsOperations::setScissorBox(int x, int y, std::size_t width, std::size_t height)
 	{
-		if (active) {
-			GL_WRAP( glEnable(GL_DEPTH_TEST) );
-		}
-		else {
-			GL_WRAP( glDisable(GL_DEPTH_TEST) );
-		}
-	}
-
-
-	void GraphicsOperations::setBlending(bool active)
-	{
-		if (active) {
-			GL_WRAP( glEnable(GL_BLEND) );
-			GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
-		}
-		else {
-			GL_WRAP( glDisable(GL_BLEND) );
-		}
+		GL_WRAP( glScissor(x, y, static_cast<GLsizei>(width), static_cast<GLsizei>(height)) );
 	}
 
 
@@ -176,9 +169,51 @@ namespace se::graphics {
 	}
 
 
+	bool GraphicsOperations::hasDepthMask()
+	{
+		GLint ret;
+		GL_WRAP( glGetIntegerv(GL_DEPTH_WRITEMASK, &ret) );
+		return ret;
+	}
+
+
 	void GraphicsOperations::imageMemoryBarrier()
 	{
 		GL_WRAP( glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT) );
+	}
+
+
+	void SetOperation::bind() const
+	{
+		mLastActive = GraphicsOperations::hasOperation(mOperation);
+		if (mActive != mLastActive) {
+			GraphicsOperations::setOperation(mOperation, mActive);
+		}
+	}
+
+
+	void SetOperation::unbind() const
+	{
+		if (mActive != mLastActive) {
+			GraphicsOperations::setOperation(mOperation, mLastActive);
+		}
+	}
+
+
+	void SetDepthMask::bind() const
+	{
+		mLastActive = GraphicsOperations::hasDepthMask();
+		if (mActive != mLastActive) {
+			GraphicsOperations::setDepthMask(mActive);
+		}
+	}
+
+
+	void SetDepthMask::unbind() const
+	{
+		if (mActive != mLastActive) {
+			GraphicsOperations::setDepthMask(mLastActive);
+		}
 	}
 
 }

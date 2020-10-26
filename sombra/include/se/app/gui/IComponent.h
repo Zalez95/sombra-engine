@@ -2,7 +2,7 @@
 #define I_COMPONENT_H
 
 #include <glm/glm.hpp>
-#include "../events/MouseEvent.h"
+#include "../events/MouseEvents.h"
 
 namespace se::app {
 
