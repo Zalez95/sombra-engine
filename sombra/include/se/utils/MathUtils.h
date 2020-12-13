@@ -86,6 +86,17 @@ namespace se::utils {
 	);
 
 
+	/** Calculates the signed distance of the given point to the plane
+	 *
+	 * @param	plane a vec4 that represents the normal vector of the plane
+	 *			(xyz) and a distance constant (w)
+	 * @param	point the point to calculate its distance
+	 * @return	the signed distance of the point */
+	float signedDistancePlanePoint(
+		const glm::vec4& plane, const glm::vec3& point
+	);
+
+
 	/** Projects the given point onto the the given 3D triangle
 	 *
 	 * @param	point the 3D coordinates of the point

@@ -42,6 +42,7 @@ namespace se::app {
 		auto& entityUniforms = mEntityUniforms[entity];
 		entityUniforms.clear();
 		for (auto& rMesh : mesh->rMeshes) {
+			rMesh.setModelMatrix(modelMatrix);
 			rMesh.processTechniques([&, skin = skin](auto technique) { technique->processPasses([&](auto pass) {
 				std::shared_ptr<graphics::Program> program;
 				pass->processBindables([&](const auto& bindable) {
@@ -108,12 +109,16 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 
 		for (auto [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, skin] = mEntityDatabase.getComponents<TransformsComponent, SkinComponent>(entity);
+			auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
 			if (transforms && transforms->updated.any()) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
 				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
 				glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
 				glm::mat4 modelMatrix	= translation * rotation * scale;
+
+				for (auto& rMesh : mesh->rMeshes) {
+					rMesh.setModelMatrix(modelMatrix);
+				}
 
 				for (auto& meshUniforms : entityUniforms) {
 					meshUniforms.modelMatrix->setValue(modelMatrix);

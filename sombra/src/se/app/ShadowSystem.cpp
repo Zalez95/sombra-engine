@@ -17,7 +17,7 @@ namespace se::app {
 		mEntityDatabase.addSystem(this, mEntityDatabase.getSystemMask(this).set<LightComponent>());
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-		mShadowRenderer = renderGraph.getNode("shadowRenderer");
+		mShadowRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("shadowRenderer"));
 	}
 
 
@@ -57,6 +57,10 @@ namespace se::app {
 			mShadowCamera.setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
 			mShadowCamera.setUp({ 0.0f, 1.0f, 0.0f });
 		}
+
+		SOMBRA_DEBUG_LOG << "Updating the Renderers";
+		glm::mat4 viewProjectionMatrix = getProjectionMatrix() * getViewMatrix();
+		mShadowRenderer->updateFrustum(viewProjectionMatrix);
 
 		IVPSystem::update();
 

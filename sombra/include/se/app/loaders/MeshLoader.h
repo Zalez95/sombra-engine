@@ -20,6 +20,15 @@ namespace se::app {
 		 * @return	the new Graphics Mesh */
 		static graphics::Mesh createGraphicsMesh(const RawMesh& rawMesh);
 
+		/** Calculates the Bounds of the given RawMesh
+		 *
+		 * @param	rawMesh the RawMesh to calculate its bounds
+		 * @return	a pair minimum and maximum positions at each direction of
+		 *			the RawMesh */
+		static std::pair<glm::vec3, glm::vec3> calculateBounds(
+			const RawMesh& rawMesh
+		);
+
 		/** Creates a HalfEdgeMesh with the given mesh data
 		 *
 		 * @param	rawMesh the data with which we will create the HalfEdgeMesh

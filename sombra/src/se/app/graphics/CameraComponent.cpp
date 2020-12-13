@@ -13,7 +13,7 @@ namespace se::app {
 
 	void CameraComponent::setPerspectiveProjectionMatrix(float fovy, float aspectRatio, float zNear, float zFar)
 	{
-		mProjectionMatrix = glm::perspective(fovy, aspectRatio , zNear, zFar);
+		mProjectionMatrix = glm::perspective(fovy, aspectRatio, zNear, zFar);
 	}
 
 

@@ -50,10 +50,12 @@ namespace se::app {
 	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
 		mTaskManager(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
 		mRepository(nullptr), mEntityDatabase(nullptr),
-		mInputSystem(nullptr), mCameraSystem(nullptr), mAppRenderer(nullptr),
-		mRMeshSystem(nullptr), mRTerrainSystem(nullptr), mDynamicsSystem(nullptr),
-		mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
-		mAnimationSystem(nullptr), mAudioSystem(nullptr)
+		mInputSystem(nullptr), mScriptSystem(nullptr),
+		mCameraSystem(nullptr), mShadowSystem(nullptr), mAppRenderer(nullptr),
+		mRMeshSystem(nullptr), mRTerrainSystem(nullptr),
+		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
+		mAnimationSystem(nullptr), mAudioSystem(nullptr),
+		mGUIManager(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 

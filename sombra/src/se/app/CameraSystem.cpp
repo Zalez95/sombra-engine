@@ -17,8 +17,8 @@ namespace se::app {
 		mEntityDatabase.addSystem(this, mEntityDatabase.getSystemMask(this).set<CameraComponent>());
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-		mForwardRenderer = renderGraph.getNode("forwardRenderer");
-		mGBufferRenderer = renderGraph.getNode("gBufferRenderer");
+		mForwardRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("forwardRenderer"));
+		mGBufferRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("gBufferRenderer"));
 	}
 
 
@@ -80,6 +80,11 @@ namespace se::app {
 				}
 			}
 		);
+
+		SOMBRA_DEBUG_LOG << "Updating the Renderers";
+		glm::mat4 viewProjectionMatrix = getProjectionMatrix() * getViewMatrix();
+		mForwardRenderer->updateFrustum(viewProjectionMatrix);
+		mGBufferRenderer->updateFrustum(viewProjectionMatrix);
 
 		IVPSystem::update();
 

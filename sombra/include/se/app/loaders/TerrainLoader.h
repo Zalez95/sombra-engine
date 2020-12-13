@@ -68,6 +68,8 @@ namespace se::app {
 		/** Creates a new RenderableTerrain from the given data
 		 *
 		 * @param	size the length in the X and Z axis of the Terrain
+		 * @param	maxHeight the maximum height of the vertices of the
+		 *			Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
 		 * @param	techniqueName the name of the program used for rendering the
@@ -75,7 +77,7 @@ namespace se::app {
 		 * @return	a pointer to the new RenderableTerrain, nullptr if it
 		 *			failed */
 		graphics::RenderableTerrain createTerrainRenderable(
-			float size, const std::vector<float>& lodDistances,
+			float size, float maxHeight, const std::vector<float>& lodDistances,
 			const char* techniqueName
 		);
 

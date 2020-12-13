@@ -20,6 +20,7 @@
 #include "se/app/LightProbe.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
+#include "se/app/graphics/FrustumRenderer3D.h"
 #include "se/app/loaders/MeshLoader.h"
 #include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/events/ContainerEvent.h"
@@ -184,12 +185,12 @@ namespace se::app {
 	};
 
 
-	class AppRenderer::ShadowRenderer : public Renderer3D
+	class AppRenderer::ShadowRenderer : public FrustumRenderer3D
 	{
 	private:
 		std::size_t mShadowResolution;
 	public:
-		ShadowRenderer(const std::string& name) : Renderer3D(name), mShadowResolution(0)
+		ShadowRenderer(const std::string& name) : FrustumRenderer3D(name), mShadowResolution(0)
 		{
 			addBindable(std::make_shared<SetOperation>(graphics::Operation::DepthTest));
 		};
@@ -200,7 +201,7 @@ namespace se::app {
 			return *this;
 		};
 
-		virtual void execute() override
+		virtual void render() override
 		{
 			int lastX, lastY;
 			std::size_t lastWidth, lastHeight;
@@ -208,7 +209,7 @@ namespace se::app {
 
 			GraphicsOperations::setViewport(0, 0, mShadowResolution, mShadowResolution);
 			GraphicsOperations::setCullingMode(FaceMode::Front);
-			Renderer3D::execute();
+			Renderer3D::render();
 			GraphicsOperations::setCullingMode(FaceMode::Back);
 
 			GraphicsOperations::setViewport(lastX, lastY, lastWidth, lastHeight);
@@ -605,7 +606,7 @@ namespace se::app {
 		auto gFBClear = std::make_unique<FBClearNode>("gFBClear", clearMask);
 
 		// Create the gBufferRenderer
-		auto gBufferRenderer = std::make_unique<Renderer3D>("gBufferRenderer");
+		auto gBufferRenderer = std::make_unique<FrustumRenderer3D>("gBufferRenderer");
 
 		auto iDepthTexBindable = gBufferRenderer->addBindable(zTexture, false);
 		auto iPositionTexBindable = gBufferRenderer->addBindable(positionTexture, false);
@@ -656,7 +657,7 @@ namespace se::app {
 
 	bool AppRenderer::addForwardRenderer(graphics::RenderGraph& renderGraph)
 	{
-		auto forwardRenderer = std::make_unique<Renderer3D>("forwardRenderer");
+		auto forwardRenderer = std::make_unique<FrustumRenderer3D>("forwardRenderer");
 		forwardRenderer->addBindable(std::make_shared<SetDepthMask>());
 
 		auto iIrradianceTexBindable = forwardRenderer->addBindable();

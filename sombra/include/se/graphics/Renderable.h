@@ -35,9 +35,10 @@ namespace se::graphics {
 		/** Iterates through all the technique of the Renderable calling the
 		 * given callback function
 		 *
-		 * @param	callback the function to call for each Technique */
+		 * @param	callback the function to call for each Technique
+		 * @return	a reference to the current Renderable object */
 		template <typename F>
-		void processTechniques(F callback);
+		Renderable& processTechniques(F callback);
 
 		/** Removes a Technique from the current Renderable
 		 *
@@ -51,11 +52,12 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Renderable::processTechniques(F callback)
+	Renderable& Renderable::processTechniques(F callback)
 	{
 		for (auto& technique : mTechniques) {
 			callback(technique);
 		}
+		return *this;
 	}
 
 }

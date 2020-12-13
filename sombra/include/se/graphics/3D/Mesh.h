@@ -2,6 +2,7 @@
 #define MESH_H
 
 #include <vector>
+#include <glm/glm.hpp>
 #include "../core/VertexBuffer.h"
 #include "../core/IndexBuffer.h"
 #include "../core/VertexArray.h"
@@ -23,6 +24,12 @@ namespace se::graphics {
 		/** The VAO of the Mesh */
 		VertexArray mVAO;
 
+		/** The minimum position of the Mesh at each direction */
+		glm::vec3 mMinimum;
+
+		/** The maximum position of the Mesh at each direction */
+		glm::vec3 mMaximum;
+
 	public:		// Functions
 		/** Creates a new Mesh from the given data
 		 *
@@ -37,6 +44,17 @@ namespace se::graphics {
 			std::vector<VertexBuffer>&& vbos,
 			IndexBuffer&& ibo, VertexArray&& vao
 		);
+
+		/** Sets the bounds of the Mesh
+		 *
+		 * @param	minimum the minimum position of the mesh at each direction
+		 * @param	minimum the maximum position of the mesh at each
+		 *			direction */
+		void setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
+
+		/** @return	the minimum and maximum position of the Mesh in each
+		 *			direction */
+		std::pair<glm::vec3, glm::vec3> getBounds() const;
 
 		/** @return a reference to the IndexBuffer of the Mesh */
 		const IndexBuffer& getIBO() const;

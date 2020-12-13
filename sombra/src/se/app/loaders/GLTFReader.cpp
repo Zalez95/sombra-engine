@@ -38,6 +38,21 @@ namespace se::app {
 		return ret;
 	}
 
+	constexpr bool toTypeSize(int code, std::size_t& size)
+	{
+		bool ret = true;
+		switch (code) {
+			case 5120:	size = 1;	break;
+			case 5121:	size = 1;	break;
+			case 5122:	size = 2;	break;
+			case 5123:	size = 2;	break;
+			case 5125:	size = 4;	break;
+			case 5126:	size = 4;	break;
+			default:	ret = false;
+		}
+		return ret;
+	}
+
 	constexpr bool toTextureFilter(int code, graphics::TextureFilter& textureFilter)
 	{
 		bool ret = true;
@@ -80,16 +95,16 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toComponentSize(const std::string& text, std::size_t& componentSize)
+	static bool toNumComponents(const std::string& text, std::size_t& numComponents)
 	{
 		bool ret = true;
-		if (text == "SCALAR")		{ componentSize = 1; }
-		else if (text == "VEC2")	{ componentSize = 2; }
-		else if (text == "VEC3")	{ componentSize = 3; }
-		else if (text == "VEC4")	{ componentSize = 4; }
-		else if (text == "MAT2")	{ componentSize = 4; }
-		else if (text == "MAT3")	{ componentSize = 9; }
-		else if (text == "MAT4")	{ componentSize = 16; }
+		if (text == "SCALAR")		{ numComponents = 1; }
+		else if (text == "VEC2")	{ numComponents = 2; }
+		else if (text == "VEC3")	{ numComponents = 3; }
+		else if (text == "VEC4")	{ numComponents = 4; }
+		else if (text == "MAT2")	{ numComponents = 4; }
+		else if (text == "MAT3")	{ numComponents = 9; }
+		else if (text == "MAT4")	{ numComponents = 16; }
 		else { ret = false; }
 		return ret;
 	}
@@ -436,6 +451,8 @@ namespace se::app {
 		auto itNormalized = jsonAccessor.find("normalized");
 		auto itCount = jsonAccessor.find("count");
 		auto itType = jsonAccessor.find("type");
+		auto itMin = jsonAccessor.find("min");
+		auto itMax = jsonAccessor.find("max");
 		if ((itBufferView != jsonAccessor.end()) && (itComponentType != jsonAccessor.end())
 			&& (itCount != jsonAccessor.end()) && (itType != jsonAccessor.end())
 		) {
@@ -445,12 +462,13 @@ namespace se::app {
 			std::size_t count			= *itCount;
 
 			graphics::TypeId typeId;
-			if (!toTypeId(*itComponentType, typeId)) {
+			std::size_t typeSize;
+			if (!toTypeId(*itComponentType, typeId) || !toTypeSize(*itComponentType, typeSize)) {
 				return Result(false, "Invalid component type" + itComponentType->get<std::string>());
 			}
 
-			std::size_t componentSize = 0;
-			if (!toComponentSize(*itType, componentSize)) {
+			std::size_t numComponents = 0;
+			if (!toNumComponents(*itType, numComponents)) {
 				return Result(false, "Invalid component size" + itComponentType->get<std::string>());
 			}
 
@@ -458,7 +476,33 @@ namespace se::app {
 				return Result(false, "BufferView index " + std::to_string(bufferViewId) + " out of range");
 			}
 
-			mGLTFData->accessors.push_back({ bufferViewId, byteOffset, count, componentSize, typeId, normalized });
+			Accessor::BoundsType minimum;
+			if (itMin != jsonAccessor.end()) {
+				for (auto componentMin : *itMin) {
+					auto& componentMinDst = minimum.emplace_back();
+					if (typeId == graphics::TypeId::Float) {
+						componentMinDst.f = componentMin.get<float>();
+					}
+					else {
+						componentMinDst.i = componentMin.get<int>();
+					}
+				}
+			}
+
+			Accessor::BoundsType maximum;
+			if (itMax != jsonAccessor.end()) {
+				for (auto componentMax : *itMax) {
+					auto& componentMaxDst = maximum.emplace_back();
+					if (typeId == graphics::TypeId::Float) {
+						componentMaxDst.f = componentMax.get<float>();
+					}
+					else {
+						componentMaxDst.i = componentMax.get<int>();
+					}
+				}
+			}
+
+			mGLTFData->accessors.push_back({ bufferViewId, byteOffset, count, numComponents, typeId, normalized, minimum, maximum });
 			return Result();
 		}
 		else {
@@ -762,6 +806,7 @@ namespace se::app {
 		vao.bind();
 
 		std::vector<graphics::VertexBuffer> vbos;
+		glm::vec3 minPosition(0.0f), maxPosition(0.0f);
 		auto itAttributes = jsonPrimitive.find("attributes");
 		if (itAttributes != jsonPrimitive.end()) {
 			for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
@@ -785,13 +830,20 @@ namespace se::app {
 					// Add the VBO to the VAO
 					vbo.bind();
 					if ((a.componentTypeId == graphics::TypeId::Float) || (a.componentTypeId == graphics::TypeId::HalfFloat)) {
-						vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.componentSize), bv.stride);
+						vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
 					}
 					else if (a.componentTypeId == graphics::TypeId::Double) {
-						vao.setVertexDoubleAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.componentSize), bv.stride);
+						vao.setVertexDoubleAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
 					}
 					else {
-						vao.setVertexIntegerAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.componentSize), bv.stride);
+						vao.setVertexIntegerAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
+					}
+
+					if (meshAttribute == MeshAttributes::PositionAttribute) {
+						for (std::size_t i = 0; i < 3; ++i) {
+							minPosition[i] = a.minimum[i].f;
+							maxPosition[i] = a.maximum[i].f;
+						}
 					}
 				}
 				else {
@@ -820,7 +872,7 @@ namespace se::app {
 			) {
 				return Result(false, "Accessor " + std::to_string(accessorId) + " must be UByte or UShort or UInt");
 			}
-			if (a.componentSize != 1) {
+			if (a.numComponents != 1) {
 				return Result(false, "Accessor " + std::to_string(accessorId) + " component size must be 1");
 			}
 			if ((bv.target != BufferView::Target::Undefined)
@@ -836,6 +888,7 @@ namespace se::app {
 			ibo.bind();
 
 			mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+			mesh->setBounds(minPosition, maxPosition);
 		}
 		else {
 			return Result(false, "Meshes without indices aren't supported");
@@ -1055,18 +1108,18 @@ namespace se::app {
 				if (aInput.count != aOutput.count) {
 					return Result(false, "Input number of elements doesn't match the output one");
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 3)) {
 					auto animVec3 = std::make_unique<animation::AnimationVec3Linear>();
 					for (std::size_t i = 0; i < numElements; ++i) {
-						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.numComponents), inputPtr[i] });
 					}
 					out1 = std::move(animVec3);
 					return Result();
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 4)) {
 					auto animQuat = std::make_unique<animation::AnimationQuatLinear>();
 					for (std::size_t i = 0; i < numElements; ++i) {
-						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.numComponents), inputPtr[i] });
 					}
 					out2 = std::move(animQuat);
 					return Result();
@@ -1079,18 +1132,18 @@ namespace se::app {
 				if (aInput.count != aOutput.count) {
 					return Result(false, "Input number of elements doesn't match the output one");
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 3)) {
 					auto animVec3 = std::make_unique<animation::AnimationVec3Step>();
 					for (std::size_t i = 0; i < numElements; ++i) {
-						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+						animVec3->addKeyFrame({ *reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.numComponents), inputPtr[i] });
 					}
 					out1 = std::move(animVec3);
 					return Result();
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 4)) {
 					auto animQuat = std::make_unique<animation::AnimationQuatStep>();
 					for (std::size_t i = 0; i < numElements; ++i) {
-						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize), inputPtr[i] });
+						animQuat->addKeyFrame({ *reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.numComponents), inputPtr[i] });
 					}
 					out2 = std::move(animQuat);
 					return Result();
@@ -1103,25 +1156,25 @@ namespace se::app {
 				if (3 * aInput.count != aOutput.count) {
 					return Result(false, "Input number of elements doesn't match the output one");
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 3)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 3)) {
 					auto animVec3 = std::make_unique<animation::AnimationVec3CubicSpline>();
 					for (std::size_t i = 0; i < numElements; ++i) {
 						animVec3->addKeyFrame({
-							*reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.componentSize),
-							*reinterpret_cast<const glm::vec3*>(outputPtr + numElements * aOutput.componentSize + i * aOutput.componentSize),
-							*reinterpret_cast<const glm::vec3*>(outputPtr + 2 * numElements * aOutput.componentSize + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::vec3*>(outputPtr + i * aOutput.numComponents),
+							*reinterpret_cast<const glm::vec3*>(outputPtr + numElements * aOutput.numComponents + i * aOutput.numComponents),
+							*reinterpret_cast<const glm::vec3*>(outputPtr + 2 * numElements * aOutput.numComponents + i * aOutput.numComponents),
 							inputPtr[i] });
 					}
 					out1 = std::move(animVec3);
 					return Result();
 				}
-				else if ((aInput.componentSize == 1) && (aOutput.componentSize == 4)) {
+				else if ((aInput.numComponents == 1) && (aOutput.numComponents == 4)) {
 					auto animQuat = std::make_unique<animation::AnimationQuatCubicSpline>();
 					for (std::size_t i = 0; i < numElements; ++i) {
 						animQuat->addKeyFrame({
-							*reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.componentSize),
-							*reinterpret_cast<const glm::quat*>(outputPtr + numElements * aOutput.componentSize + i * aOutput.componentSize),
-							*reinterpret_cast<const glm::quat*>(outputPtr + 2 * numElements * aOutput.componentSize + i * aOutput.componentSize),
+							*reinterpret_cast<const glm::quat*>(outputPtr + i * aOutput.numComponents),
+							*reinterpret_cast<const glm::quat*>(outputPtr + numElements * aOutput.numComponents + i * aOutput.numComponents),
+							*reinterpret_cast<const glm::quat*>(outputPtr + 2 * numElements * aOutput.numComponents + i * aOutput.numComponents),
 							inputPtr[i] });
 					}
 					out2 = std::move(animQuat);

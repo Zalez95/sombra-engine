@@ -37,7 +37,7 @@ namespace se::app {
 		mEntityDatabase.addComponent(entity, std::move(transforms));
 
 		// Graphics data
-		mEntityDatabase.addComponent(entity, createTerrainRenderable(size, lodDistances, techniqueName));
+		mEntityDatabase.addComponent(entity, createTerrainRenderable(size, maxHeight, lodDistances, techniqueName));
 
 		// Physics data
 		physics::RigidBodyConfig config(0.2f);
@@ -53,9 +53,9 @@ namespace se::app {
 
 // Private functions
 	graphics::RenderableTerrain TerrainLoader::createTerrainRenderable(
-		float size, const std::vector<float>& lodDistances, const char* techniqueName
+		float size, float maxHeight, const std::vector<float>& lodDistances, const char* techniqueName
 	) {
-		graphics::RenderableTerrain renderable(size, lodDistances);
+		graphics::RenderableTerrain renderable(size, maxHeight, lodDistances);
 
 		auto technique = mScene.repository.find<std::string, graphics::Technique>(techniqueName);
 		if (technique) {

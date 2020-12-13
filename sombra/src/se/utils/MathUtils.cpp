@@ -88,6 +88,12 @@ namespace se::utils {
 	}
 
 
+	float signedDistancePlanePoint(const glm::vec4& plane, const glm::vec3& point)
+	{
+		return glm::dot(glm::vec3(plane), point) + plane.w;
+	}
+
+
 	std::pair<bool, glm::vec3> projectPointOnTriangle(
 		const glm::vec3& point, const std::array<glm::vec3, 3>& triangle,
 		float projectionPrecision

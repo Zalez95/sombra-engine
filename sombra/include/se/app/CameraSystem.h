@@ -2,7 +2,7 @@
 #define CAMERA_SYSTEM_H
 
 #include "IVPSystem.h"
-#include "../graphics/RenderNode.h"
+#include "graphics/FrustumRenderer3D.h"
 #include "events/ContainerEvent.h"
 #include "CameraComponent.h"
 #include "IVPSystem.h"
@@ -26,10 +26,10 @@ namespace se::app {
 		CameraComponent* mCamera;
 
 		/** A pointer to the forward renderer used for rendering Entities */
-		graphics::RenderNode* mForwardRenderer;
+		FrustumRenderer3D* mForwardRenderer;
 
 		/** A pointer to the g-buffer renderer used for rendering Entities */
-		graphics::RenderNode* mGBufferRenderer;
+		FrustumRenderer3D* mGBufferRenderer;
 
 	public:		// Functions
 		/** Creates a new CameraSystem

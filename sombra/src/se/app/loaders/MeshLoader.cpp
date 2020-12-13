@@ -68,7 +68,28 @@ namespace se::app {
 
 		ibo.bind();
 
-		return Mesh(std::move(vbos), std::move(ibo), std::move(vao));
+		auto [minimum, maximum] = calculateBounds(rawMesh);
+
+		Mesh ret(std::move(vbos), std::move(ibo), std::move(vao));
+		ret.setBounds(minimum, maximum);
+		return ret;
+	}
+
+
+	std::pair<glm::vec3, glm::vec3> MeshLoader::calculateBounds(
+		const RawMesh& rawMesh
+	) {
+		glm::vec3 minimum(0.0f), maximum(0.0f);
+
+		if (!rawMesh.positions.empty()) {
+			minimum = maximum = rawMesh.positions[0];
+			for (std::size_t i = 1; i < rawMesh.positions.size(); ++i) {
+				minimum = glm::min(minimum, rawMesh.positions[i]);
+				maximum = glm::max(maximum, rawMesh.positions[i]);
+			}
+		}
+
+		return { minimum, maximum };
 	}
 
 

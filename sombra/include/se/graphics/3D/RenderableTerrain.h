@@ -66,6 +66,9 @@ namespace se::graphics {
 		/** The terrain QuadTree */
 		QuadTree mQuadTree;
 
+		/** The maximum height of the vertices of the terrain */
+		float mMaxHeight;
+
 		/** The patch to render with all the vertices */
 		Patch mNormal;
 
@@ -81,9 +84,18 @@ namespace se::graphics {
 		/** Creates a new RenderableTerrain
 		 *
 		 * @param	size the size of the terrain in the XZ plane
+		 * @param	maxHeight the maximum height of the vertices of the terrain
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail */
-		RenderableTerrain(float size, const std::vector<float>& lodDistances);
+		RenderableTerrain(
+			float size, float maxHeight,
+			const std::vector<float>& lodDistances
+		);
+
+		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
+		virtual Renderable3D& setModelMatrix(
+			const glm::mat4& modelMatrix
+		) override;
 
 		/** Updates the terrain QuadTree according to the given highest lod
 		 * location and the configured level of detail distances

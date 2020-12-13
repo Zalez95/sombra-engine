@@ -18,8 +18,13 @@ namespace game {
 				kContactPrecision, kContactSeparation, kMaxRayCasterIterations
 			},
 			kUpdateTime
-		)
+		),
+		mStateMachine(nullptr), mFPSText(nullptr)
 	{
+		if (mState == AppState::Error) {
+			return;
+		}
+
 		// State Machine
 		auto fClearAllScreens = [this]() {
 			for (auto& screen : mCurrentGameScreens) {

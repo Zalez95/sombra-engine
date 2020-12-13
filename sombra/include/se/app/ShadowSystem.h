@@ -2,7 +2,7 @@
 #define SHADOW_SYSTEM_H
 
 #include "IVPSystem.h"
-#include "../graphics/RenderNode.h"
+#include "graphics/FrustumRenderer3D.h"
 #include "events/ContainerEvent.h"
 #include "CameraComponent.h"
 #include "LightComponent.h"
@@ -30,7 +30,7 @@ namespace se::app {
 		CameraComponent mShadowCamera;
 
 		/** A pointer to the renderer used for rendering the shadows */
-		graphics::RenderNode* mShadowRenderer;
+		FrustumRenderer3D* mShadowRenderer;
 
 	public:		// Functions
 		/** Creates a new ShadowSystem

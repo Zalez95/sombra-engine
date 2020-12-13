@@ -46,9 +46,13 @@ namespace se::app {
 		/** Struct Accessor, holds the data of a GLTF accessor */
 		struct Accessor
 		{
-			std::size_t bufferViewId, byteOffset, count, componentSize;
+			union BoundsComponentType { float f; int i; };
+			using BoundsType = utils::FixedVector<BoundsComponentType, 16>;
+
+			std::size_t bufferViewId, byteOffset, count, numComponents;
 			graphics::TypeId componentTypeId;
 			bool normalized;
+			BoundsType minimum, maximum;
 		};
 
 		/** Struct BufferView, holds the data of a GLTF bufferView */

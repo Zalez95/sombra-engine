@@ -23,7 +23,12 @@ namespace se::graphics {
 		/** Creates a new RenderableMesh
 		 *
 		 * @param	mesh a pointer to the Mesh of the RenderableMesh */
-		RenderableMesh(MeshSPtr mesh) : mMesh(mesh) {};
+		RenderableMesh(MeshSPtr mesh);
+
+		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
+		virtual Renderable3D& setModelMatrix(
+			const glm::mat4& modelMatrix
+		) override;
 
 		/** @copydoc Renderable3D::draw() */
 		virtual void draw() override;
