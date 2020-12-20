@@ -10,8 +10,9 @@
 namespace se::app {
 
 	/**
-	 * Class CameraSystem, it's the System used for updating the Entities
-	 * Cameras, and the view and projection matrices on their shaders.
+	 * Class CameraSystem, it's the System used for updating the Entities'
+	 * Cameras, the view and projection matrices on their shaders and the
+	 * Renderers that use the Cameras
 	 * @note	it will only update the cameras of the Passes that use the
 	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */

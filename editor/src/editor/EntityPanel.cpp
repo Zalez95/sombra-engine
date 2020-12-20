@@ -6,6 +6,7 @@
 #include <se/app/TagComponent.h>
 #include <se/app/Scene.h>
 #include <se/app/EntityDatabase.h>
+#include <se/app/CameraComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/animation/AnimationNode.h>
 #include "EntityPanel.h"
@@ -107,7 +108,9 @@ namespace editor {
 		auto it = std::find_if(mSelectedEntities.begin(), mSelectedEntities.end(), [](auto pair) { return pair.second; });
 		if (it != mSelectedEntities.end()) {
 			Entity selectedEntity = it->first;
-			auto [tag, transforms, animationNode] = mEditor.getEntityDatabase().getComponents<TagComponent, TransformsComponent, AnimationNode*>(selectedEntity);
+			auto [tag, transforms, animationNode, camera] = mEditor.getEntityDatabase().getComponents<
+					TagComponent, TransformsComponent, AnimationNode*, CameraComponent
+				>(selectedEntity);
 
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text(("Entity #" + std::to_string(selectedEntity) + " selected").c_str());
@@ -116,19 +119,24 @@ namespace editor {
 				ImGui::OpenPopup("components");
 			}
 			if (ImGui::BeginPopup("components")) {
-				if (!mEditor.getEntityDatabase().hasComponents<TagComponent>(selectedEntity)) {
+				if (!tag) {
 					if (ImGui::MenuItem("Add Tag", nullptr, false)) {
-						mEditor.getEntityDatabase().emplaceComponent<TagComponent>(selectedEntity, "");
+						tag = mEditor.getEntityDatabase().emplaceComponent<TagComponent>(selectedEntity, "");
 					}
 				}
-				if (!mEditor.getEntityDatabase().hasComponents<TransformsComponent>(selectedEntity)) {
+				if (!transforms) {
 					if (ImGui::MenuItem("Add Transforms", nullptr, false)) {
-						mEditor.getEntityDatabase().emplaceComponent<TransformsComponent>(selectedEntity);
+						transforms = mEditor.getEntityDatabase().emplaceComponent<TransformsComponent>(selectedEntity);
 					}
 				}
-				if (!mEditor.getEntityDatabase().hasComponents<AnimationNode*>(selectedEntity)) {
+				if (!animationNode) {
 					if (ImGui::MenuItem("Add AnimationNode", nullptr, false)) {
-						mEditor.getEntityDatabase().emplaceComponent<AnimationNode*>(selectedEntity, new AnimationNode());
+						animationNode = mEditor.getEntityDatabase().emplaceComponent<AnimationNode*>(selectedEntity, new AnimationNode());
+					}
+				}
+				if (!camera) {
+					if (ImGui::MenuItem("Add Camera", nullptr, false)) {
+						camera = mEditor.getEntityDatabase().emplaceComponent<CameraComponent>(selectedEntity);
 					}
 				}
 				ImGui::EndPopup();
@@ -173,6 +181,45 @@ namespace editor {
 
 				if (updated) {
 					transforms->updated.set( static_cast<int>(TransformsComponent::Update::Input) );
+				}
+
+				ImGui::TreePop();
+			}
+
+			if (camera && ImGui::TreeNode("Camera")) {
+				bool updated = false;
+				bool ortho = camera->hasOrthographicProjection();
+				if (ImGui::RadioButton("Orthographic", ortho)) { updated = !ortho; ortho = true; }
+				ImGui::SameLine();
+				if (ImGui::RadioButton("Perspective", !ortho)) { updated = ortho; ortho = false; }
+
+				if (ortho) {
+					float left = 0.0f, right = 1280.0f, bottom = 0.0f, top = 720.0f, zNear = 0.1f, zFar = 10000.0f;
+					camera->getOrthographicParams(left, right, bottom, top, zNear, zFar);
+
+					updated |= ImGui::InputFloat("Left", &left, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("Right", &right, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("Bottom", &bottom, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("Top", &top, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("zNear", &zNear, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("zFar", &zFar, 0.05f, 0.0f, "%.3f");
+
+					if (updated) {
+						camera->setOrthographicProjection(left, right, bottom, top, zNear, zFar);
+					}
+				}
+				else {
+					float fovy = glm::pi<float>() / 3.0f, aspectRatio = 1280.0f / 720.0f, zNear = 0.1f, zFar = 10000.0f;
+					camera->getPerspectiveParams(fovy, aspectRatio, zNear, zFar);
+
+					updated |= ImGui::InputFloat("fovy", &fovy, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("Aspect Ratio", &aspectRatio, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("zNear", &zNear, 0.05f, 0.0f, "%.3f");
+					updated |= ImGui::InputFloat("zFar", &zFar, 0.05f, 0.0f, "%.3f");
+
+					if (updated) {
+						camera->setPerspectiveProjection(fovy, aspectRatio, zNear, zFar);
+					}
 				}
 
 				ImGui::TreePop();

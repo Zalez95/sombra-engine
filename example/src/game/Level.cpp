@@ -455,7 +455,7 @@ namespace game {
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
 
 			se::app::CameraComponent camera;
-			camera.setPerspectiveProjectionMatrix(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
+			camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
 
 			auto spotLight = std::make_shared<se::app::LightSource>(se::app::LightSource::Type::Spot);

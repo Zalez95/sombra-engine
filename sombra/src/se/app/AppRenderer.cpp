@@ -735,13 +735,13 @@ namespace se::app {
 			mShadowCamera.setUp({ 0.0f, 1.0f, 0.0f });
 
 			if (light->source->type == LightSource::Type::Directional) {
-				mShadowCamera.setOrthographicProjectionMatrix(
+				mShadowCamera.setOrthographicProjection(
 					-mShadowData.size, mShadowData.size, -mShadowData.size, mShadowData.size,
 					mShadowData.zNear, mShadowData.zFar
 				);
 			}
 			else if (light->source->type == LightSource::Type::Spot) {
-				mShadowCamera.setPerspectiveProjectionMatrix(
+				mShadowCamera.setPerspectiveProjection(
 					glm::radians(45.0f), 1.0f,
 					mShadowData.zNear, mShadowData.zFar
 				);

@@ -1017,7 +1017,7 @@ namespace se::app {
 					&& (itZFar != jsonCamera.end()) && (itZNear != jsonCamera.end())
 				) {
 					auto& camera = mGLTFData->cameraComponents.emplace_back();
-					camera.setPerspectiveProjectionMatrix(*itYFov, *itAspectRatio, *itZNear, *itZFar);
+					camera.setPerspectiveProjection(*itYFov, *itAspectRatio, *itZNear, *itZFar);
 					return Result();
 				}
 				else {
@@ -1034,7 +1034,7 @@ namespace se::app {
 				) {
 					auto& camera = mGLTFData->cameraComponents.emplace_back();
 					float halfWidth = *itXMag, halfHeight = *itYMag;
-					camera.setOrthographicProjectionMatrix(-halfWidth, halfWidth, -halfHeight, halfHeight, *itZNear, *itZFar);
+					camera.setOrthographicProjection(-halfWidth, halfWidth, -halfHeight, halfHeight, *itZNear, *itZFar);
 					return Result();
 				}
 				else {
