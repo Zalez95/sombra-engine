@@ -23,13 +23,17 @@ namespace se::app {
 		/** Creates a new FrustumRenderer3D
 		 *
 		 * @param	name the name of the new Renderer3D */
-		FrustumRenderer3D(const std::string& name) : Renderer3D(name) {}
+		FrustumRenderer3D(const std::string& name) :
+			Renderer3D(name), mFrustumPlanes{} {};
+
+		/** Class destructor */
+		virtual ~FrustumRenderer3D() = default;
 
 		/** Updates the frustum needed for the frustum culling
 		 *
 		 * @param	viewProjectionMatrix the view projection matrix of the
 		 *			camera used for calculating the frustum */
-		FrustumRenderer3D& updateFrustum(
+		virtual FrustumRenderer3D& updateFrustum(
 			const glm::mat4& viewProjectionMatrix
 		);
 

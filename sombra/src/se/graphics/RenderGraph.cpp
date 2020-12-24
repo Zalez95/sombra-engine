@@ -16,6 +16,9 @@ namespace se::graphics {
 		 * @param	name the name of the new ResourceNode */
 		ResourceNode(const std::string& name) : BindableRenderNode(name) {};
 
+		/** Class destructor */
+		virtual ~ResourceNode() = default;
+
 		/** Executes the current RenderNode */
 		virtual void execute() override {};
 	};

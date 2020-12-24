@@ -52,8 +52,8 @@ namespace se::graphics {
 		int maxFragmentUniforms = -1;
 		GL_WRAP( glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniforms) );
 
-		int maxTextureUnits = -1;
-		GL_WRAP( glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits) );
+		int maxCombinedTextureUnits = -1;
+		GL_WRAP( glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombinedTextureUnits) );
 
 		int maxTextureSize = -1;
 		GL_WRAP( glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize) );
@@ -67,7 +67,7 @@ namespace se::graphics {
 				+ "Max vertex uniforms: " + std::to_string(maxVertexUniforms) + "\n"
 				+ "Max geometry uniforms: " + std::to_string(maxGeometryUniforms) + "\n"
 				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n"
-				+ "Max texture units: " + std::to_string(maxTextureUnits) + "\n"
+				+ "Max combined texture units: " + std::to_string(maxCombinedTextureUnits) + "\n"
 				+ "Max texture size: " + std::to_string(maxTextureSize) + "\n"
 				+ "Max 3D texture size: " + std::to_string(max3DTextureSize) + "\n";
 	}

@@ -1,29 +1,76 @@
 #include "se/utils/Log.h"
+#include "se/graphics/Renderer.h"
+#include "se/graphics/RenderGraph.h"
+#include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/app/CameraSystem.h"
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/graphics/Renderer.h"
-#include "se/graphics/RenderGraph.h"
-#include "se/graphics/GraphicsEngine.h"
+#include "se/app/MeshComponent.h"
+#include "se/app/graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
 
+	class CameraSystem::CameraUniformsUpdater : public IViewProjectionUpdater
+	{
+	private:
+		CameraSystem* mParent;
+
+	public:		// Functions
+		CameraUniformsUpdater(CameraSystem* parent,
+			const std::string& viewMatUniformName,
+			const std::string& projectionMatUniformName
+		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName),
+			mParent(parent) {};
+
+		virtual glm::mat4 getViewMatrix() const override
+		{
+			if (mParent->mCamera) {
+				return mParent->mCamera->getViewMatrix();
+			}
+			return glm::mat4(1.0f);
+		};
+
+		virtual glm::mat4 getProjectionMatrix() const override
+		{
+			if (mParent->mCamera) {
+				return mParent->mCamera->getProjectionMatrix();
+			}
+			return glm::mat4(1.0f);
+		};
+
+		virtual bool shouldAddUniforms(PassSPtr pass) const override
+		{
+			return (&pass->getRenderer() == mParent->mForwardRenderer)
+				|| (&pass->getRenderer() == mParent->mGBufferRenderer);
+		};
+	};
+
+
 	CameraSystem::CameraSystem(Application& application) :
-		IVPSystem(application, "uViewMatrix", "uProjectionMatrix"),
-		mCameraEntity(kNullEntity), mCamera(nullptr)
+		ISystem(application.getEntityDatabase()), mApplication(application), mCamera(nullptr)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
-		mEntityDatabase.addSystem(this, mEntityDatabase.getSystemMask(this).set<CameraComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<CameraComponent>()
+			.set<MeshComponent>()
+			.set<graphics::RenderableTerrain>()
+		);
+
+		mCameraUniformsUpdater = new CameraUniformsUpdater(this, "uViewMatrix", "uProjectionMatrix");
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		mForwardRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("forwardRenderer"));
 		mGBufferRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("gBufferRenderer"));
+		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
 	}
 
 
 	CameraSystem::~CameraSystem()
 	{
+		delete mCameraUniformsUpdater;
+
 		mEntityDatabase.removeSystem(this);
 		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
 	}
@@ -37,7 +84,10 @@ namespace se::app {
 
 	void CameraSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, camera] = mEntityDatabase.getComponents<TransformsComponent, CameraComponent>(entity);
+		auto [transforms, camera, mesh, rTerrain] = mEntityDatabase.getComponents<
+			TransformsComponent, CameraComponent, MeshComponent, graphics::RenderableTerrain
+		>(entity);
+
 		if (camera) {
 			if (transforms) {
 				// The Camera initial data is overridden by the entity one
@@ -49,19 +99,36 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
 		}
 
-		IVPSystem::onNewEntity(entity);
+		if (mesh) {
+			for (auto& rMesh : mesh->rMeshes) {
+				mCameraUniformsUpdater->addRenderable(rMesh);
+			}
+		}
+		if (rTerrain) {
+			mCameraUniformsUpdater->addRenderable(*rTerrain);
+		}
 	}
 
 
 	void CameraSystem::onRemoveEntity(Entity entity)
 	{
-		if (mCameraEntity == entity) {
-			mCameraEntity = kNullEntity;
-			mCamera = nullptr;
-			SOMBRA_INFO_LOG << "Active Camera Entity " << entity << " removed";
+		auto [camera, mesh, rTerrain] = mEntityDatabase.getComponents<
+			CameraComponent, MeshComponent, graphics::RenderableTerrain
+		>(entity);
+
+		if (mesh) {
+			for (auto& rMesh : mesh->rMeshes) {
+				mCameraUniformsUpdater->removeRenderable(rMesh);
+			}
+		}
+		if (rTerrain) {
+			mCameraUniformsUpdater->removeRenderable(*rTerrain);
 		}
 
-		IVPSystem::onRemoveEntity(entity);
+		if (mCamera == camera) {
+			mCamera = nullptr;
+			SOMBRA_INFO_LOG << "Active Camera removed";
+		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
 	}
@@ -70,7 +137,6 @@ namespace se::app {
 	void CameraSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
-
 		mEntityDatabase.iterateComponents<TransformsComponent, CameraComponent>(
 			[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
 				if (transforms->updated.any()) {
@@ -81,45 +147,30 @@ namespace se::app {
 			}
 		);
 
-		SOMBRA_DEBUG_LOG << "Updating the Renderers";
-		glm::mat4 viewProjectionMatrix = getProjectionMatrix() * getViewMatrix();
-		mForwardRenderer->updateFrustum(viewProjectionMatrix);
-		mGBufferRenderer->updateFrustum(viewProjectionMatrix);
+		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
+		mCameraUniformsUpdater->update();
 
-		IVPSystem::update();
+		if (mCamera) {
+			SOMBRA_DEBUG_LOG << "Updating the Renderers";
+			glm::mat4 viewProjectionMatrix = mCamera->getProjectionMatrix() * mCamera->getViewMatrix();
+			mForwardRenderer->updateFrustum(viewProjectionMatrix);
+			mGBufferRenderer->updateFrustum(viewProjectionMatrix);
+			mDeferredLightRenderer->setViewPosition(mCamera->getPosition());
+		}
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
 
 // Private functions
-	glm::mat4 CameraSystem::getViewMatrix() const
-	{
-		if (mCamera) {
-			return mCamera->getViewMatrix();
-		}
-		return glm::mat4(1.0f);
-	}
-
-
-	glm::mat4 CameraSystem::getProjectionMatrix() const
-	{
-		if (mCamera) {
-			return mCamera->getProjectionMatrix();
-		}
-		return glm::mat4(1.0f);
-	}
-
-
-	bool CameraSystem::shouldAddUniforms(PassSPtr pass) const
-	{
-		return (&pass->getRenderer() == mForwardRenderer) || (&pass->getRenderer() == mGBufferRenderer);
-	}
-
-
 	void CameraSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
-		mCameraEntity = event.getValue();
-		mCamera = std::get<0>( mEntityDatabase.getComponents<CameraComponent>(mCameraEntity) );
+		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue());
+		if (camera) {
+			mCamera = camera;
+		}
+		else {
+			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
+		}
 	}
 
 }

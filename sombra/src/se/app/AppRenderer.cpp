@@ -9,7 +9,6 @@
 #include "se/graphics/FBCopyNode.h"
 #include "se/graphics/TextureUnitNode.h"
 #include "se/graphics/2D/Renderer2D.h"
-#include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformBlock.h"
 #include "se/graphics/core/GraphicsOperations.h"
@@ -20,6 +19,7 @@
 #include "se/app/LightProbe.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
+#include "se/app/graphics/ShadowRenderer3D.h"
 #include "se/app/graphics/FrustumRenderer3D.h"
 #include "se/app/loaders/MeshLoader.h"
 #include "se/app/loaders/TechniqueLoader.h"
@@ -29,193 +29,6 @@ using namespace se::graphics;
 using namespace std::string_literals;
 
 namespace se::app {
-
-	struct AppRenderer::EnvironmentTexUnits
-	{
-		static constexpr int kIrradianceMap	= 0;
-		static constexpr int kPrefilterMap	= 1;
-		static constexpr int kBRDFMap		= 2;
-		static constexpr int kShadowMap		= 3;
-	};
-
-
-	class AppRenderer::DeferredLightRenderer : public BindableRenderNode
-	{
-	public:
-		struct ShaderLightSource
-		{
-			glm::vec3 position;
-			float padding[1];
-			glm::vec3 direction;
-			unsigned int type;
-			glm::vec4 color;
-			float intensity;
-			float range;
-			float lightAngleScale;
-			float lightAngleOffset;
-		};
-
-		struct GBufferTexUnits
-		{
-			static constexpr int kPosition		= 4;
-			static constexpr int kNormal		= 5;
-			static constexpr int kAlbedo		= 6;
-			static constexpr int kMaterial		= 7;
-			static constexpr int kEmissive		= 8;
-		};
-
-		/** The maximum number of lights in the program */
-		static constexpr unsigned int kMaxLights = 32;
-
-	private:
-		/** The plane used for rendering */
-		std::shared_ptr<RenderableMesh> mPlane;
-
-		/** The uniform variable that the Camera location in world space */
-		std::shared_ptr<graphics::UniformVariableValue<glm::vec3>> mViewPosition;
-
-		/** The uniform variable that holds the number of active lights to
-		 * render */
-		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> mNumLights;
-
-		/** The UniformBuffer where the lights data will be stored */
-		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
-
-		/** The uniform variable that holds the index of the LightSource used
-		 * for rendering the Shadows */
-		std::shared_ptr<graphics::UniformVariableValue<unsigned int>> mShadowLightIndex;
-
-		/** The uniform variable with the view matrix of the shadow mapping */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> mShadowViewMatrix;
-
-		/** The uniform variable with the projection matrix of the shadow
-		 * mapping */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>> mShadowProjectionMatrix;
-
-	public:
-		DeferredLightRenderer(
-			const std::string& name, utils::Repository& repository,
-			std::shared_ptr<RenderableMesh> plane
-		) : BindableRenderNode(name), mPlane(plane)
-		{
-			auto iTargetBindable = addBindable();
-			addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", this, iTargetBindable) );
-			addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
-
-			auto iIrradianceTexBindable = addBindable();
-			auto iPrefilterTexBindable = addBindable();
-			auto iBRDFTexBindable = addBindable();
-			auto iShadowTexBindable = addBindable();
-			auto iPositionTexBindable = addBindable();
-			auto iNormalTexBindable = addBindable();
-			auto iAlbedoTexBindable = addBindable();
-			auto iMaterialTexBindable = addBindable();
-			auto iEmissiveTexBindable = addBindable();
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("irradiance", this, iIrradianceTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("prefilter", this, iPrefilterTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("brdf", this, iBRDFTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("shadow", this, iShadowTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("position", this, iPositionTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("normal", this, iNormalTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("albedo", this, iAlbedoTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("material", this, iMaterialTexBindable) );
-			addInput( std::make_unique<BindableRNodeInput<Texture>>("emissive", this, iEmissiveTexBindable) );
-
-			auto program = repository.find<std::string, Program>("programDeferredLighting");
-			if (!program) {
-				program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
-				repository.add("programDeferredLighting"s, program);
-			}
-
-			mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", *program, glm::vec3(0.0f));
-			mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", *program, 0);
-			mLightsBuffer = std::make_shared<UniformBuffer>();
-			utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
-			mLightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
-			mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", *program, kMaxLights);
-			mShadowViewMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewMatrix", *program, glm::mat4(1.0f));
-			mShadowProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowProjectionMatrix", *program, glm::mat4(1.0f));
-
-			addBindable(program);
-			addBindable(std::make_shared<SetDepthMask>(false));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
-			addBindable(mShadowViewMatrix);
-			addBindable(mShadowProjectionMatrix);
-			addBindable(mViewPosition);
-			addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", *program, EnvironmentTexUnits::kIrradianceMap));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", *program, EnvironmentTexUnits::kPrefilterMap));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", *program, EnvironmentTexUnits::kBRDFMap));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", *program, EnvironmentTexUnits::kShadowMap));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", *program, GBufferTexUnits::kPosition));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", *program, GBufferTexUnits::kNormal));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", *program, GBufferTexUnits::kAlbedo));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", *program, GBufferTexUnits::kMaterial));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", *program, GBufferTexUnits::kEmissive));
-			addBindable(mLightsBuffer);
-			addBindable(mNumLights);
-			addBindable(mShadowLightIndex);
-			addBindable(std::make_shared<UniformBlock>("LightsBlock", *program));
-		}
-
-		void setViewPosition(const glm::vec3& position)
-		{
-			mViewPosition->setValue(position);
-		};
-
-		void setLights(const ShaderLightSource* lightSources, unsigned int lightSourceCount)
-		{
-			mLightsBuffer->copy(lightSources, lightSourceCount);
-			mNumLights->setValue(lightSourceCount);
-		};
-
-		void setShadow(unsigned int shadowLightIndex, const glm::mat4& shadowViewMatrix, const glm::mat4& shadowProjectionMatrix)
-		{
-			mShadowLightIndex->setValue(shadowLightIndex);
-			mShadowViewMatrix->setValue(shadowViewMatrix);
-			mShadowProjectionMatrix->setValue(shadowProjectionMatrix);
-		};
-
-		virtual void execute() override
-		{
-			bind();
-			mPlane->draw();
-		};
-	};
-
-
-	class AppRenderer::ShadowRenderer : public FrustumRenderer3D
-	{
-	private:
-		std::size_t mShadowResolution;
-	public:
-		ShadowRenderer(const std::string& name) : FrustumRenderer3D(name), mShadowResolution(0)
-		{
-			addBindable(std::make_shared<SetOperation>(graphics::Operation::DepthTest));
-		};
-
-		ShadowRenderer& setShadowResolution(std::size_t shadowResolution)
-		{
-			mShadowResolution = shadowResolution;
-			return *this;
-		};
-
-		virtual void render() override
-		{
-			int lastX, lastY;
-			std::size_t lastWidth, lastHeight;
-			se::graphics::GraphicsOperations::getViewport(lastX, lastY, lastWidth, lastHeight);
-
-			GraphicsOperations::setViewport(0, 0, mShadowResolution, mShadowResolution);
-			GraphicsOperations::setCullingMode(FaceMode::Front);
-			Renderer3D::render();
-			GraphicsOperations::setCullingMode(FaceMode::Back);
-
-			GraphicsOperations::setViewport(lastX, lastY, lastWidth, lastHeight);
-		};
-	};
-
 
 	class AppRenderer::CombineNode : public BindableRenderNode
 	{
@@ -262,17 +75,21 @@ namespace se::app {
 
 	AppRenderer::AppRenderer(Application& application, const ShadowData& shadowData, std::size_t width, std::size_t height) :
 		ISystem(application.getEntityDatabase()), mApplication(application), mShadowData(shadowData),
-		mCameraEntity(kNullEntity), mShadowEntity(kNullEntity)
+		mShadowEntity(kNullEntity)
 	{
-		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mApplication.getEventManager().subscribe(this, Topic::Resize);
 		mApplication.getEventManager().subscribe(this, Topic::Shadow);
 		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightComponent>().set<LightProbe>());
 
+		SOMBRA_INFO_LOG << GraphicsOperations::getGraphicsInfo();
 		GraphicsOperations::setViewport(0, 0, width, height);
 
-		addResources(width, height);
-		addNodes(width, height);
+		if (!addResources(width, height)) {
+			throw std::runtime_error("Failed to add resources");
+		}
+		if (!addNodes(width, height)) {
+			throw std::runtime_error("Failed to add nodes");
+		}
 		mApplication.getExternalTools().graphicsEngine->getRenderGraph().prepareGraph();
 	}
 
@@ -282,13 +99,11 @@ namespace se::app {
 		mApplication.getEntityDatabase().removeSystem(this);
 		mApplication.getEventManager().unsubscribe(this, Topic::Shadow);
 		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
-		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
 	}
 
 
 	void AppRenderer::notify(const IEvent& event)
 	{
-		tryCall(&AppRenderer::onCameraEvent, event);
 		tryCall(&AppRenderer::onShadowEvent, event);
 		tryCall(&AppRenderer::onResizeEvent, event);
 	}
@@ -302,11 +117,11 @@ namespace se::app {
 			auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
 
 			if (lightProbe->irradianceMap) {
-				lightProbe->irradianceMap->setTextureUnit(EnvironmentTexUnits::kIrradianceMap);
+				lightProbe->irradianceMap->setTextureUnit(DeferredLightRenderer::TexUnits::kIrradianceMap);
 				resources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap);
 			}
 			if (lightProbe->prefilterMap) {
-				lightProbe->prefilterMap->setTextureUnit(EnvironmentTexUnits::kPrefilterMap);
+				lightProbe->prefilterMap->setTextureUnit(DeferredLightRenderer::TexUnits::kPrefilterMap);
 				resources->setBindable(mPrefilterTextureResource, lightProbe->prefilterMap);
 			}
 
@@ -374,19 +189,7 @@ namespace se::app {
 		);
 
 		mDeferredLightRenderer->setLights(uBaseLights.data(), i);
-
-		auto [cameraTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
-		if (cameraTransforms) {
-			mDeferredLightRenderer->setViewPosition(cameraTransforms->position);
-		}
-
-		auto [shadowTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mShadowEntity);
-		if (shadowTransforms) {
-			mShadowCamera.setPosition(shadowTransforms->position);
-			mShadowCamera.setTarget(shadowTransforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * shadowTransforms->orientation);
-			mShadowCamera.setUp({ 0.0f, 1.0f, 0.0f });
-		}
-		mDeferredLightRenderer->setShadow(iShadowLight, mShadowCamera.getViewMatrix(), mShadowCamera.getProjectionMatrix());
+		mDeferredLightRenderer->setShadowLightIndex(iShadowLight);
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
@@ -422,7 +225,7 @@ namespace se::app {
 		}
 
 		auto brdfTexture = TextureUtils::precomputeBRDF(512);
-		brdfTexture->setTextureUnit(EnvironmentTexUnits::kBRDFMap);
+		brdfTexture->setTextureUnit(DeferredLightRenderer::TexUnits::kBRDFMap);
 		auto iBRDFTextureResource = resources->addBindable(brdfTexture);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", resources, iBRDFTextureResource) )) {
 			return false;
@@ -485,7 +288,7 @@ namespace se::app {
 		auto deferredFBClear = std::make_unique<FBClearNode>("deferredFBClear", clearMask);
 
 		// Node used for combining the shadow map and the forward and deferred renderers
-		auto texUnitNodeShadow = std::make_unique<TextureUnitNode>("texUnitNodeShadow", EnvironmentTexUnits::kShadowMap);
+		auto texUnitNodeShadow = std::make_unique<TextureUnitNode>("texUnitNodeShadow", DeferredLightRenderer::TexUnits::kShadowMap);
 
 		// Node used for combining the zBuffer of the deferred and forward renderers
 		auto zBufferCopy = std::make_unique<FBCopyNode>("zBufferCopy", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
@@ -625,11 +428,11 @@ namespace se::app {
 		auto deferredLightRenderer = std::make_unique<DeferredLightRenderer>("deferredLightRenderer", mApplication.getRepository(), mPlaneRenderable);
 		mDeferredLightRenderer = deferredLightRenderer.get();
 
-		auto texUnitNodePosition = std::make_unique<TextureUnitNode>("texUnitNodePosition", DeferredLightRenderer::GBufferTexUnits::kPosition);
-		auto texUnitNodeNormal = std::make_unique<TextureUnitNode>("texUnitNodeNormal", DeferredLightRenderer::GBufferTexUnits::kNormal);
-		auto texUnitNodeAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeAlbedo", DeferredLightRenderer::GBufferTexUnits::kAlbedo);
-		auto texUnitNodeMaterial = std::make_unique<TextureUnitNode>("texUnitNodeMaterial", DeferredLightRenderer::GBufferTexUnits::kMaterial);
-		auto texUnitNodeEmissive = std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredLightRenderer::GBufferTexUnits::kEmissive);
+		auto texUnitNodePosition = std::make_unique<TextureUnitNode>("texUnitNodePosition", DeferredLightRenderer::TexUnits::kPosition);
+		auto texUnitNodeNormal = std::make_unique<TextureUnitNode>("texUnitNodeNormal", DeferredLightRenderer::TexUnits::kNormal);
+		auto texUnitNodeAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeAlbedo", DeferredLightRenderer::TexUnits::kAlbedo);
+		auto texUnitNodeMaterial = std::make_unique<TextureUnitNode>("texUnitNodeMaterial", DeferredLightRenderer::TexUnits::kMaterial);
+		auto texUnitNodeEmissive = std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredLightRenderer::TexUnits::kEmissive);
 
 		// Add the nodes and their connections
 		return gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") )
@@ -688,9 +491,13 @@ namespace se::app {
 		// Create the shadow FB
 		auto shadowTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
 		shadowTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth, mShadowData.resolution, mShadowData.resolution)
-			.setWrapping(TextureWrap::ClampToBorder, TextureWrap::ClampToBorder)
+		.setWrapping(TextureWrap::ClampToBorder, TextureWrap::ClampToBorder)
 			.setBorderColor(1.0f, 1.0f, 1.0f, 1.0f)
 			.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest);
+		auto iShadowTextureResource = resources->addBindable(shadowTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadowTexture", resources, iShadowTextureResource) )) {
+			return false;
+		}
 
 		auto shadowBuffer = std::make_shared<FrameBuffer>();
 		shadowBuffer->setColorBuffer(false)
@@ -700,55 +507,26 @@ namespace se::app {
 			return false;
 		}
 
-		// Create the shadow FB clear node
+		// Create the nodes
 		auto shadowFBClear = std::make_unique<FBClearNode>("shadowFBClear", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
-
-		// Create the shadow Renderer
-		auto shadowRenderer = std::make_unique<ShadowRenderer>("shadowRenderer");
-		shadowRenderer->setShadowResolution(mShadowData.resolution);
-
-		auto iShadowTexBindable = shadowRenderer->addBindable(shadowTexture, false);
-		shadowRenderer->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadow", shadowRenderer.get(), iShadowTexBindable) );
+		auto shadowRenderer = std::make_unique<ShadowRenderer3D>("shadowRenderer");
 
 		// Add the nodes and their connections
 		return shadowFBClear->findInput("input")->connect( resources->findOutput("shadowBuffer") )
 			&& shadowRenderer->findInput("target")->connect( shadowFBClear->findOutput("output") )
+			&& shadowRenderer->findInput("shadow")->connect( resources->findOutput("shadowTexture") )
 			&& renderGraph.addNode( std::move(shadowRenderer) )
 			&& renderGraph.addNode( std::move(shadowFBClear) );
 	}
 
 
-	void AppRenderer::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
-	{
-		mCameraEntity = event.getValue();
-	}
-
-
 	void AppRenderer::onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event)
 	{
-		auto [transforms, light] = mEntityDatabase.getComponents<TransformsComponent, LightComponent>(event.getValue());
-		if (transforms && light) {
+		if (mEntityDatabase.hasComponents<TransformsComponent, LightComponent>(event.getValue())) {
 			mShadowEntity = event.getValue();
-
-			mShadowCamera.setPosition(transforms->position);
-			mShadowCamera.setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-			mShadowCamera.setUp({ 0.0f, 1.0f, 0.0f });
-
-			if (light->source->type == LightSource::Type::Directional) {
-				mShadowCamera.setOrthographicProjection(
-					-mShadowData.size, mShadowData.size, -mShadowData.size, mShadowData.size,
-					mShadowData.zNear, mShadowData.zFar
-				);
-			}
-			else if (light->source->type == LightSource::Type::Spot) {
-				mShadowCamera.setPerspectiveProjection(
-					glm::radians(45.0f), 1.0f,
-					mShadowData.zNear, mShadowData.zFar
-				);
-			}
 		}
 		else {
-			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera";
+			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Shadow Entity";
 		}
 	}
 

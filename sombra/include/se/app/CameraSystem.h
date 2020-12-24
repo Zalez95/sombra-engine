@@ -1,13 +1,16 @@
 #ifndef CAMERA_SYSTEM_H
 #define CAMERA_SYSTEM_H
 
-#include "IVPSystem.h"
 #include "graphics/FrustumRenderer3D.h"
+#include "graphics/DeferredLightRenderer.h"
 #include "events/ContainerEvent.h"
+#include "ISystem.h"
 #include "CameraComponent.h"
-#include "IVPSystem.h"
 
 namespace se::app {
+
+	class Application;
+
 
 	/**
 	 * Class CameraSystem, it's the System used for updating the Entities'
@@ -16,21 +19,31 @@ namespace se::app {
 	 * @note	it will only update the cameras of the Passes that use the
 	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */
-	class CameraSystem : public IVPSystem
+	class CameraSystem : public ISystem
 	{
+	private:	// Nested Types
+		class CameraUniformsUpdater;
+
 	private:	// Attributes
-		/** The Entity that holds the current active camera with which the
-		 * scene will be rendered */
-		Entity mCameraEntity;
+		/** The Application that holds the Entities */
+		Application& mApplication;
 
 		/** The active CameraComponent of the Entity */
 		CameraComponent* mCamera;
+
+		/** The object used for updating the camera uniforms in the Entities
+		 * passes */
+		CameraUniformsUpdater* mCameraUniformsUpdater;
 
 		/** A pointer to the forward renderer used for rendering Entities */
 		FrustumRenderer3D* mForwardRenderer;
 
 		/** A pointer to the g-buffer renderer used for rendering Entities */
 		FrustumRenderer3D* mGBufferRenderer;
+
+		/** A pointer to the deferred light renderer used for computing the
+		 * lighting */
+		DeferredLightRenderer* mDeferredLightRenderer;
 
 	public:		// Functions
 		/** Creates a new CameraSystem
@@ -56,15 +69,6 @@ namespace se::app {
 		/** Updates the Cameras sources with the Entities */
 		virtual void update() override;
 	private:
-		/** @copydoc IVPSystem::getViewMatrix() */
-		virtual glm::mat4 getViewMatrix() const override;
-
-		/** @copydoc IVPSystem::getProjectionMatrix() */
-		virtual glm::mat4 getProjectionMatrix() const override;
-
-		/** @copydoc IVPSystem::shouldAddUniforms(PassSPtr) */
-		virtual bool shouldAddUniforms(PassSPtr pass) const override;
-
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered
 		 *

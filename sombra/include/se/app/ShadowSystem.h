@@ -1,36 +1,42 @@
 #ifndef SHADOW_SYSTEM_H
 #define SHADOW_SYSTEM_H
 
-#include "IVPSystem.h"
-#include "graphics/FrustumRenderer3D.h"
 #include "events/ContainerEvent.h"
-#include "CameraComponent.h"
+#include "graphics/DeferredLightRenderer.h"
 #include "LightComponent.h"
-#include "IVPSystem.h"
+#include "ISystem.h"
 
 namespace se::app {
 
+	class Application;
+
+
 	/**
-	 * Class ShadowSystem, it's the System used for updating the Entities
-	 * the view and projection matrices of the shaders used for rendering the
-	 * shadows.
+	 * Class CameraSystem, it's the System used for updating the Entities'
+	 * view and projection matrices on their shadow shaders and the shadow
+	 * Renderers
 	 * @note	it will only update the uniforms of the Passes that use the
 	 *			"shadowRenderer"
 	 */
-	class ShadowSystem : public IVPSystem
+	class ShadowSystem : public ISystem
 	{
+	private:	// Nested Types
+		struct Shadow;
+		class ShadowUniformsUpdater;
+
 	private:	// Attributes
-		/** The configuration used for rendering the shadows */
-		ShadowData mShadowData;
+		/** The Application that holds the Entities */
+		Application& mApplication;
 
 		/** The Entity that holds the current light that creates the shadows */
 		Entity mShadowEntity;
 
-		/** The CameraComponent used for rendering the shadows */
-		CameraComponent mShadowCamera;
+		/** The objects used for rendering each the shadow */
+		std::vector<Shadow> mShadows;
 
-		/** A pointer to the renderer used for rendering the shadows */
-		FrustumRenderer3D* mShadowRenderer;
+		/** A pointer to the deferred light renderer used for computing the
+		 * lighting */
+		DeferredLightRenderer* mDeferredLightRenderer;
 
 	public:		// Functions
 		/** Creates a new ShadowSystem
@@ -49,21 +55,15 @@ namespace se::app {
 		 * @param	event the IEvent to notify */
 		virtual void notify(const IEvent& event) override;
 
+		/** @copydoc IVPSystem::onNewEntity(Entity) */
+		virtual void onNewEntity(Entity entity) override;
+
 		/** @copydoc IVPSystem::onRemoveEntity(Entity) */
 		virtual void onRemoveEntity(Entity entity) override;
 
 		/** Updates the LightSources with the Entities */
 		virtual void update() override;
 	private:
-		/** @copydoc IVPSystem::getViewMatrix() */
-		virtual glm::mat4 getViewMatrix() const override;
-
-		/** @copydoc IVPSystem::getProjectionMatrix() */
-		virtual glm::mat4 getProjectionMatrix() const override;
-
-		/** @copydoc IVPSystem::shouldAddUniforms(PassSPtr) */
-		virtual bool shouldAddUniforms(PassSPtr pass) const override;
-
 		/** Handles the given ContainerEvent by updating the LightComponent
 		 * Entity with which the shadows will be rendered
 		 *

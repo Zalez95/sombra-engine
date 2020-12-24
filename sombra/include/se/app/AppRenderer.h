@@ -11,6 +11,7 @@
 #include "ISystem.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
+#include "graphics/DeferredLightRenderer.h"
 #include "CameraComponent.h"
 #include "LightComponent.h"
 
@@ -33,9 +34,6 @@ namespace se::app {
 	class AppRenderer : public ISystem
 	{
 	private:	// Nested types
-		struct EnvironmentTexUnits;
-		class DeferredLightRenderer;
-		class ShadowRenderer;
 		class CombineNode;
 
 	private:	// Attributes
@@ -43,6 +41,7 @@ namespace se::app {
 		 * the Entities */
 		Application& mApplication;
 
+		/** A pointer to the renderer used for deferred lighting */
 		DeferredLightRenderer* mDeferredLightRenderer;
 
 		/** The configuration used for rendering the shadows */
@@ -57,14 +56,8 @@ namespace se::app {
 		/** The plane RenderableMesh used for rendering */
 		std::shared_ptr<graphics::RenderableMesh> mPlaneRenderable;
 
-		/** The camera Entity used for rendering */
-		Entity mCameraEntity;
-
 		/** The light source Entity used for shadow mapping */
 		Entity mShadowEntity;
-
-		/** The CameraComponent used for rendering the shadows */
-		CameraComponent mShadowCamera;
 
 	public:		// Functions
 		/** Creates a new AppRenderer
@@ -168,12 +161,6 @@ namespace se::app {
 		 * @return	true if the nodes where added successfully, false
 		 *			otherwise */
 		bool addForwardRenderer(graphics::RenderGraph& renderGraph);
-
-		/** Handles the given ContainerEvent by updating the Camera Entity with
-		 * which the Entities will be rendered
-		 *
-		 * @param	event the ContainerEvent to handle */
-		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
 
 		/** Handles the given ContainerEvent by updating the Shadow Entity with
 		 * which the shadow will be rendered

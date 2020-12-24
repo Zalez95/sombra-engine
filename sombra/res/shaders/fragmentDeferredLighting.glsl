@@ -47,8 +47,7 @@ layout (std140) uniform LightsBlock
 };
 
 uniform vec3 uViewPosition;						// Camera position in World space
-uniform mat4 uShadowViewMatrix;					// World space to View space Matrix (shadow mapping)
-uniform mat4 uShadowProjectionMatrix;			// View space to NDC space Matrix (shadow mapping)
+uniform mat4 uShadowViewProjectionMatrix;		// World space to NDC space Matrix (shadow mapping)
 
 uniform sampler2D uShadowMap;
 uniform samplerCube uIrradianceMap;
@@ -180,7 +179,7 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 	float normalDotView		= max(dot(normalDirection, viewDirection), 0.0);
 
 	// ---- Calculate shadow mapping ---
-	vec4 shadowPosition = uShadowProjectionMatrix * uShadowViewMatrix * vec4(position, 1.0);
+	vec4 shadowPosition = uShadowViewProjectionMatrix * vec4(position, 1.0);
 	float shadow = calculateShadow(shadowPosition, normal);
 
 	// ---- Calculate Direct lighting ----
