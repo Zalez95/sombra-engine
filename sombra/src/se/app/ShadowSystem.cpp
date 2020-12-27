@@ -162,7 +162,7 @@ namespace se::app {
 	void ShadowSystem::onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event)
 	{
 		auto [transforms, light] = mEntityDatabase.getComponents<TransformsComponent, LightComponent>(event.getValue());
-		if (transforms && light) {
+		if (transforms && light && light->source) {
 			mShadowEntity = event.getValue();
 
 			mShadows[0].camera.setPosition(transforms->position);

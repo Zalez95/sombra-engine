@@ -36,8 +36,17 @@ namespace se::graphics {
 		glm::vec3 mMaximum = {};
 
 	public:		// Functions
+		/** Creates a new Renderable3D */
+		Renderable3D() = default;
+		Renderable3D(const Renderable3D& other) = default;
+		Renderable3D(Renderable3D&& other) = default;
+
 		/** Class destructor */
 		virtual ~Renderable3D() = default;
+
+		/** Assignment operator */
+		Renderable3D& operator=(const Renderable3D& other) = default;
+		Renderable3D& operator=(Renderable3D&& other) = default;
 
 		/** Sets the model matrix
 		 *

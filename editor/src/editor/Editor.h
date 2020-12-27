@@ -25,6 +25,11 @@ namespace editor {
 		static constexpr float kContactSeparation				= 0.00001f;
 		static constexpr int kMaxRayCasterIterations			= 32;
 		static constexpr float kUpdateTime						= 0.016f;
+		static constexpr float kFOV								= 60.0f;
+		static constexpr float kZNear							= 0.1f;
+		static constexpr float kZFar							= 2000.0f;
+
+		se::app::Entity mViewportEntity;
 		se::app::Scene* mScene;
 		ImGuiInput* mImGuiInput;
 		MenuBar* mMenuBar;
@@ -35,7 +40,7 @@ namespace editor {
 		Editor();
 
 		/** Class destructor */
-		~Editor();
+		virtual ~Editor();
 
 		/** @return	a pointer to the Scene of the Editor */
 		se::app::Scene* getScene() { return mScene; };
@@ -45,6 +50,9 @@ namespace editor {
 
 		/** Destroy the current Scene */
 		void destroyScene();
+
+		/** @copydoc se::app::Application::notify(const IEvent&) */
+		virtual void notify(const se::app::IEvent&) override;
 	protected:
 		/** Updates the Editor managers and systems each main loop
 		 * iteration
@@ -55,6 +63,11 @@ namespace editor {
 
 		/** Draws to screen */
 		virtual void onRender() override;
+
+		/** Handles the given close Event by closing the Editor
+		 *
+		 * @param	event the ResizeEvent to handle */
+		void onCloseEvent(const se::app::Event<se::app::Topic::Close>& event);
 	};
 
 }

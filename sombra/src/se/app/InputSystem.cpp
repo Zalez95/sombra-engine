@@ -14,6 +14,10 @@ namespace se::app {
 	{
 		auto& windowManager = *mApplication.getExternalTools().windowManager;
 
+		windowManager.onClose([&]() {
+			mEventQueue.push_back(new Event<Topic::Close>());
+		});
+
 		windowManager.onKey([&](int keyCode, window::ButtonState state) {
 			KeyEvent::State keyState = (state == window::ButtonState::Pressed)? KeyEvent::State::Pressed :
 				(state == window::ButtonState::Repeated)? KeyEvent::State::Repeated :

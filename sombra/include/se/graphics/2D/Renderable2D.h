@@ -23,9 +23,15 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new Renderable2D */
 		Renderable2D() : mZIndex(0) {};
+		Renderable2D(const Renderable2D& other) = default;
+		Renderable2D(Renderable2D&& other) = default;
 
 		/** Class destructor */
 		virtual ~Renderable2D() = default;
+
+		/** Assignment operator */
+		Renderable2D& operator=(const Renderable2D& other) = default;
+		Renderable2D& operator=(Renderable2D&& other) = default;
 
 		/** @return	the z-index of the Renderable2D */
 		unsigned char getZIndex() const { return mZIndex; };

@@ -158,7 +158,7 @@ namespace se::app {
 		std::array<DeferredLightRenderer::ShaderLightSource, DeferredLightRenderer::kMaxLights> uBaseLights;
 		mEntityDatabase.iterateComponents<TransformsComponent, LightComponent>(
 			[&](Entity entity, TransformsComponent* transforms, LightComponent* light) {
-				if (i < DeferredLightRenderer::kMaxLights) {
+				if (light->source && (i < DeferredLightRenderer::kMaxLights)) {
 					uBaseLights[i].type = static_cast<unsigned int>(light->source->type);
 					uBaseLights[i].position = transforms->position;
 					uBaseLights[i].direction = glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);

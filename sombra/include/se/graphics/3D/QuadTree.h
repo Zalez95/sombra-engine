@@ -46,6 +46,15 @@ namespace se::graphics {
 
 			/** Creates a new Node */
 			Node();
+			Node(const Node& other);
+			Node(Node&& other) = default;
+
+			/** Class destructor */
+			~Node() = default;
+
+			/** Assignment operator */
+			Node& operator=(const Node& other);
+			Node& operator=(Node&& other) = default;
 		};
 
 		/** Each of the directions of a Node */
@@ -59,10 +68,10 @@ namespace se::graphics {
 		/** The minimum distance to the highestLodLocation at each level of
 		 * detail, from higher distance (smallest lod) to lower distance
 		 * (highest lod) */
-		const std::vector<float> mLodDistances;
+		std::vector<float> mLodDistances;
 
 		/** The root node of the QuadTree */
-		std::unique_ptr<Node> mRootNode;
+		Node mRootNode;
 
 	public:		// Functions
 		/** Creates a new QuadTree
@@ -76,7 +85,7 @@ namespace se::graphics {
 		float getSize() const { return mSize; };
 
 		/** @return	the root Node of the QuadTree */
-		const Node& getRootNode() const { return *mRootNode; };
+		const Node& getRootNode() const { return mRootNode; };
 
 		/** Updates the QuadTree nodes depending on the distance to the
 		 * highestLodLocation and the level of details

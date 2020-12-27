@@ -75,7 +75,10 @@ namespace se::graphics {
 		/** Sets the value of the UniformVariableValue
 		 *
 		 * @param	value the new Value */
-		void setValue(const T& value) { mValue = value; }
+		void setValue(const T& value) { mValue = value; };
+
+		/** @return	the value stored in the UniformVariableValue */
+		const T& getValue() const { return mValue; };
 
 		/** Binds the current UniformVariableValue for using it in the following
 		 * operations */
@@ -123,7 +126,17 @@ namespace se::graphics {
 		 *			values
 		 * @param	count the number of elements in valuePtr */
 		void setValue(const T* valuePtr, std::size_t count)
-		{ mValue = Vector(valuePtr, valuePtr + count); }
+		{ mValue = Vector(valuePtr, valuePtr + count); };
+
+		/** Function used for retrieving the values stored in the
+		 * UniformVariableValueVector
+		 *
+		 * @param	retValuePtr a pointer to the first element of the vector of
+		 *			values (return parameter)
+		 * @param	retCount the number of elements in retValuePtr
+		 *			(return parameter) */
+		void setValue(const T*& retValuePtr, std::size_t& retCount)
+		{ retValuePtr = mValue.data(); retCount = mValue.size(); };
 
 		/** Binds the current UniformVariableValueVector for using it in the
 		 * following operations */

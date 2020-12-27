@@ -21,13 +21,18 @@ namespace se::app {
 	class RMeshSystem : public ISystem
 	{
 	private:	// Nested types
-		/** Struct RenderableMeshUniforms, holds the uniform variables to
-		 * update of a RenderableMesh */
+		/** Holds the uniform variables of a RenderableMesh */
 		struct RenderableMeshUniforms
 		{
+			/** The pass used for retrieving the uniforms */
 			std::shared_ptr<graphics::Pass> pass;
+
+			/** The model matrix uniform variable */
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 				modelMatrix;
+
+			/** The joint matrices uniform variables (only for skeletal
+			 * animation) */
 			std::shared_ptr<graphics::UniformVariableValueVector<
 				glm::mat4, Skin::kMaxJoints
 			>> jointMatrices;

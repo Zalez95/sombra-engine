@@ -58,8 +58,8 @@ namespace se::utils {
 		 * callback function
 		 *
 		 * @param	callback the function to call for each element */
-		template <typename F, typename KeyType, typename ValueType>
-		void iterate(F callback);
+		template <typename KeyType, typename ValueType, typename F>
+		void iterate(F&& callback);
 
 		/** Removes an element with the given key from the Repository
 		 *

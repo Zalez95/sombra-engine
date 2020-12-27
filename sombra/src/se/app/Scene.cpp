@@ -6,6 +6,7 @@
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/core/Texture.h"
+#include "se/graphics/3D/Mesh.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
 #include "se/app/Scene.h"
@@ -23,9 +24,9 @@ namespace se::app {
 		repository.init<std::string, physics::Constraint>();
 		repository.init<std::string, graphics::Program>();
 		repository.init<std::string, graphics::Pass>();
-		repository.init<std::string, graphics::Texture>();
 		repository.init<std::string, graphics::Technique>();
-		repository.init<graphics::Pass*, graphics::Program>();
+		repository.init<std::string, graphics::Texture>();
+		repository.init<std::string, graphics::Mesh>();
 
 		entities.reserve(application.getEntityDatabase().getMaxEntities());
 	}

@@ -23,8 +23,17 @@ namespace se::graphics {
 		std::vector<TechniqueSPtr> mTechniques;
 
 	public:		// Functions
+		/** Creates a new Renderable */
+		Renderable() = default;
+		Renderable(const Renderable& other) = default;
+		Renderable(Renderable&& other) = default;
+
 		/** Class destructor */
 		virtual ~Renderable() = default;
+
+		/** Assignment operator */
+		Renderable& operator=(const Renderable& other) = default;
+		Renderable& operator=(Renderable&& other) = default;
 
 		/** Adds a Technique to the current Renderable
 		 *

@@ -63,11 +63,11 @@ namespace se::utils {
 	}
 
 
-	template <typename F, typename KeyType, typename ValueType>
-	void Repository::iterate(F callback)
+	template <typename KeyType, typename ValueType, typename F>
+	void Repository::iterate(F&& callback)
 	{
 		auto& table = getRepoTable<KeyType, ValueType>();
-		for (auto& [key, value] : table) {
+		for (auto& [key, value] : table.data) {
 			callback(key, value);
 		}
 	}

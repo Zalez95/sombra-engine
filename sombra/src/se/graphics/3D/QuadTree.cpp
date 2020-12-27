@@ -9,16 +9,47 @@ namespace se::graphics {
 		lod(0), neighboursLods{ -1, -1, -1, -1 } {}
 
 
-	QuadTree::QuadTree(float size, const std::vector<float>& lodDistances) :
-		mSize(size), mLodDistances(lodDistances)
+	QuadTree::Node::Node(const Node& other) :
+		children{ nullptr, nullptr, nullptr, nullptr }, isLeaf(other.isLeaf),
+		parent(other.parent), quarterIndex(other.quarterIndex), xzSeparation(other.xzSeparation),
+		lod(other.lod), neighboursLods(other.neighboursLods)
 	{
-		mRootNode = std::make_unique<Node>();
+		for (std::size_t i = 0; i < children.size(); ++i) {
+			if (other.children[i]) {
+				children[i] = std::make_unique<Node>(*other.children[i]);
+				children[i]->parent = this;
+			}
+		}
 	}
+
+
+	QuadTree::Node& QuadTree::Node::operator=(const Node& other)
+	{
+		children = { nullptr, nullptr, nullptr, nullptr };
+		isLeaf = other.isLeaf;
+		parent = other.parent;
+		quarterIndex = other.quarterIndex;
+		xzSeparation = other.xzSeparation;
+		lod = other.lod;
+		neighboursLods = other.neighboursLods;
+		for (std::size_t i = 0; i < children.size(); ++i) {
+			if (other.children[i]) {
+				children[i] = std::make_unique<Node>(*other.children[i]);
+				children[i]->parent = this;
+			}
+		}
+
+		return *this;
+	}
+
+
+	QuadTree::QuadTree(float size, const std::vector<float>& lodDistances) :
+		mSize(size), mLodDistances(lodDistances) {}
 
 
 	void QuadTree::updateHighestLodLocation(const glm::vec3& highestLodLocation)
 	{
-		updateNode(*mRootNode, glm::vec2(0.0f), highestLodLocation);
+		updateNode(mRootNode, glm::vec2(0.0f), highestLodLocation);
 	}
 
 // Private functions
@@ -72,7 +103,7 @@ namespace se::graphics {
 	void QuadTree::split(Node& node) const
 	{
 		// Add the children nodes
-		float childSeparation = mSize / std::pow(2.0f, node.lod + 2);
+		float childSeparation = mSize / static_cast<float>(std::pow(2.0f, node.lod + 2));
 		for (unsigned char i = 0; i < 2; ++i) {
 			for (unsigned char j = 0; j < 2; ++j) {
 				auto child = std::make_unique<Node>();

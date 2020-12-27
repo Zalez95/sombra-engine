@@ -25,6 +25,16 @@ namespace se::graphics {
 		 * @param	mesh a pointer to the Mesh of the RenderableMesh */
 		RenderableMesh(MeshSPtr mesh);
 
+		/** @return	the Mesh pointed by the RenderableMesh */
+		MeshSPtr getMesh() const { return mMesh; };
+
+		/** Sets the Mesh pointed by the RenderableMesh
+		 *
+		 * @param	mesh a pointer to the new Mesh pointed by the
+		 *			RenderableMesh
+		 * @return	a reference to the current RenderableMesh */
+		RenderableMesh& setMesh(MeshSPtr mesh);
+
 		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
 		virtual Renderable3D& setModelMatrix(
 			const glm::mat4& modelMatrix

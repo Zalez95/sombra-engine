@@ -105,6 +105,25 @@ namespace se::graphics {
 	}
 
 
+	RenderableTerrain::RenderableTerrain(const RenderableTerrain& other) :
+		Renderable3D(other),
+		mQuadTree(other.mQuadTree), mMaxHeight(other.mMaxHeight),
+		mNormal(kNormal, 20),
+		mBottom(kBottom, 18), mTop(kTop, 18), mLeft(kLeft, 18), mRight(kRight, 18),
+		mBottomLeft(kBottomLeft, 16), mBottomRight(kBottomRight, 16),
+		mTopLeft(kTopLeft, 16), mTopRight(kTopRight, 16) {}
+
+
+	RenderableTerrain& RenderableTerrain::operator=(const RenderableTerrain& other)
+	{
+		Renderable3D::operator=(other);
+		mQuadTree = other.mQuadTree;
+		mMaxHeight = other.mMaxHeight;
+
+		return *this;
+	}
+
+
 	Renderable3D& RenderableTerrain::setModelMatrix(const glm::mat4& modelMatrix)
 	{
 		Renderable3D::setModelMatrix(modelMatrix);

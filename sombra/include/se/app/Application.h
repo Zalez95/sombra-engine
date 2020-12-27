@@ -36,7 +36,7 @@ namespace se::app {
 	 */
 	class Application : public IEventListener
 	{
-	public:		// Nested Types
+	protected:	// Nested Types
 		/** The different states in which the Application could be */
 		enum class AppState
 		{
@@ -44,7 +44,7 @@ namespace se::app {
 			Running,
 			Stopped
 		};
-
+	public:
 		/** Struct ExternalTools, holds the External tools used for running the
 		 * Application */
 		struct ExternalTools
@@ -128,9 +128,6 @@ namespace se::app {
 
 		/** Class destructor */
 		virtual ~Application();
-
-		/** @return	the current state of the Application */
-		AppState getState() const { return mState; };
 
 		/** @return	a reference to the ExternalTools of the Application */
 		ExternalTools& getExternalTools() { return *mExternalTools; };

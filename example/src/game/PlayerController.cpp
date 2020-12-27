@@ -61,7 +61,6 @@ namespace game {
 		auto programGBufMaterial = scene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
 		auto passYellow = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 		scene.repository.add(std::string("passYellow"), passYellow);
-		scene.repository.add(passYellow.get(), programGBufMaterial);
 
 		se::app::TechniqueLoader::addMaterialBindables(
 			passYellow,

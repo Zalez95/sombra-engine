@@ -123,7 +123,7 @@ namespace se::app {
 				for (auto& meshUniforms : entityUniforms) {
 					meshUniforms.modelMatrix->setValue(modelMatrix);
 					if (skin) {
-						auto jointMatrices = skin->calculateJointMatrices(modelMatrix);
+						auto jointMatrices = skin->calculateJointMatrices(modelMatrix);//FIXME: joints updated but no transforms
 						std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
 						meshUniforms.jointMatrices->setValue(jointMatrices.data(), numJoints);
 					}

@@ -91,6 +91,15 @@ namespace se::graphics {
 			float size, float maxHeight,
 			const std::vector<float>& lodDistances
 		);
+		RenderableTerrain(const RenderableTerrain& other);
+		RenderableTerrain(RenderableTerrain&& other) = default;
+
+		/** Class destructor */
+		~RenderableTerrain() = default;
+
+		/** Assignment operator */
+		RenderableTerrain& operator=(const RenderableTerrain& other);
+		RenderableTerrain& operator=(RenderableTerrain&& other) = default;
 
 		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
 		virtual Renderable3D& setModelMatrix(

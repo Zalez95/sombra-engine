@@ -12,6 +12,14 @@ namespace se::graphics {
 	}
 
 
+	RenderableMesh& RenderableMesh::setMesh(MeshSPtr mesh)
+	{
+		mMesh = mesh;
+		setModelMatrix(getModelMatrix());	// force to recalculate the AABB
+		return *this;
+	}
+
+
 	Renderable3D& RenderableMesh::setModelMatrix(const glm::mat4& modelMatrix)
 	{
 		Renderable3D::setModelMatrix(modelMatrix);
