@@ -1,5 +1,5 @@
 #include "se/app/graphics/Tex3DClearNode.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
@@ -12,7 +12,7 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DClear");
 		if (!program) {
-			program = TechniqueLoader::createProgram(
+			program = ShaderLoader::createProgram(
 				"res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl"
 			);
 			repository.add(std::string("programTex3DClear"), program);

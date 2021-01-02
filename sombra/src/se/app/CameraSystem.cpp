@@ -2,13 +2,13 @@
 #include "se/graphics/Renderer.h"
 #include "se/graphics/RenderGraph.h"
 #include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/app/CameraSystem.h"
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/MeshComponent.h"
-#include "se/app/graphics/IViewProjectionUpdater.h"
+#include "se/app/TerrainComponent.h"
+#include "se/app/IViewProjectionUpdater.h"
 
 namespace se::app {
 
@@ -40,7 +40,7 @@ namespace se::app {
 			return glm::mat4(1.0f);
 		};
 
-		virtual bool shouldAddUniforms(PassSPtr pass) const override
+		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
 		{
 			return (&pass->getRenderer() == mParent->mForwardRenderer)
 				|| (&pass->getRenderer() == mParent->mGBufferRenderer);
@@ -51,11 +51,15 @@ namespace se::app {
 	CameraSystem::CameraSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application), mCamera(nullptr)
 	{
-		mApplication.getEventManager().subscribe(this, Topic::Camera);
+		mApplication.getEventManager()
+			.subscribe(this, Topic::Camera)
+			.subscribe(this, Topic::RMesh)
+			.subscribe(this, Topic::RShader)
+			.subscribe(this, Topic::Shader);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
 			.set<CameraComponent>()
 			.set<MeshComponent>()
-			.set<graphics::RenderableTerrain>()
+			.set<TerrainComponent>()
 		);
 
 		mCameraUniformsUpdater = new CameraUniformsUpdater(this, "uViewMatrix", "uProjectionMatrix");
@@ -72,20 +76,27 @@ namespace se::app {
 		delete mCameraUniformsUpdater;
 
 		mEntityDatabase.removeSystem(this);
-		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
+		mApplication.getEventManager()
+			.unsubscribe(this, Topic::Shader)
+			.unsubscribe(this, Topic::RShader)
+			.unsubscribe(this, Topic::RMesh)
+			.unsubscribe(this, Topic::Camera);
 	}
 
 
 	void CameraSystem::notify(const IEvent& event)
 	{
 		tryCall(&CameraSystem::onCameraEvent, event);
+		tryCall(&CameraSystem::onRMeshEvent, event);
+		tryCall(&CameraSystem::onRenderableShaderEvent, event);
+		tryCall(&CameraSystem::onShaderEvent, event);
 	}
 
 
 	void CameraSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, camera, mesh, rTerrain] = mEntityDatabase.getComponents<
-			TransformsComponent, CameraComponent, MeshComponent, graphics::RenderableTerrain
+		auto [transforms, camera, mesh, terrain] = mEntityDatabase.getComponents<
+			TransformsComponent, CameraComponent, MeshComponent, TerrainComponent
 		>(entity);
 
 		if (camera) {
@@ -100,29 +111,35 @@ namespace se::app {
 		}
 
 		if (mesh) {
-			for (auto& rMesh : mesh->rMeshes) {
-				mCameraUniformsUpdater->addRenderable(rMesh);
+			for (std::size_t i = 0; i < mesh->size(); ++i) {
+				mCameraUniformsUpdater->addRenderable(mesh->get(i));
+				mesh->processRenderableShaders(i, [&](const auto& shader) {
+					mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader);
+				});
 			}
 		}
-		if (rTerrain) {
-			mCameraUniformsUpdater->addRenderable(*rTerrain);
+		if (terrain) {
+			mCameraUniformsUpdater->addRenderable(terrain->get());
+			terrain->processRenderableShaders([&](const auto& shader) {
+				mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader);
+			});
 		}
 	}
 
 
 	void CameraSystem::onRemoveEntity(Entity entity)
 	{
-		auto [camera, mesh, rTerrain] = mEntityDatabase.getComponents<
-			CameraComponent, MeshComponent, graphics::RenderableTerrain
+		auto [camera, mesh, terrain] = mEntityDatabase.getComponents<
+			CameraComponent, MeshComponent, TerrainComponent
 		>(entity);
 
 		if (mesh) {
-			for (auto& rMesh : mesh->rMeshes) {
-				mCameraUniformsUpdater->removeRenderable(rMesh);
+			for (std::size_t i = 0; i < mesh->size(); ++i) {
+				mCameraUniformsUpdater->removeRenderable(mesh->get(i));
 			}
 		}
-		if (rTerrain) {
-			mCameraUniformsUpdater->removeRenderable(*rTerrain);
+		if (terrain) {
+			mCameraUniformsUpdater->removeRenderable(terrain->get());
 		}
 
 		if (mCamera == camera) {
@@ -170,6 +187,66 @@ namespace se::app {
 		}
 		else {
 			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
+		}
+	}
+
+
+	void CameraSystem::onRMeshEvent(const RMeshEvent& event)
+	{
+		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+		if (mesh) {
+			switch (event.getOperation()) {
+				case RMeshEvent::Operation::Add:
+					mCameraUniformsUpdater->addRenderable(mesh->get(event.getRIndex()));
+					break;
+				case RMeshEvent::Operation::Remove:
+					mCameraUniformsUpdater->removeRenderable(mesh->get(event.getRIndex()));
+					break;
+			}
+		}
+	}
+
+
+	void CameraSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
+	{
+		if (event.isTerrain()) {
+			auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
+			if (terrain) {
+				switch (event.getOperation()) {
+					case RenderableShaderEvent::Operation::Add:
+						mCameraUniformsUpdater->addRenderableShader(terrain->get(), event.getShader());
+						break;
+					case RenderableShaderEvent::Operation::Remove:
+						mCameraUniformsUpdater->removeRenderableShader(terrain->get(), event.getShader());
+						break;
+				}
+			}
+		}
+		else {
+			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+			if (mesh) {
+				switch (event.getOperation()) {
+					case RenderableShaderEvent::Operation::Add:
+						mCameraUniformsUpdater->addRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						break;
+					case RenderableShaderEvent::Operation::Remove:
+						mCameraUniformsUpdater->removeRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						break;
+				}
+			}
+		}
+	}
+
+
+	void CameraSystem::onShaderEvent(const ShaderEvent& event)
+	{
+		switch (event.getOperation()) {
+			case ShaderEvent::Operation::Add:
+				mCameraUniformsUpdater->onAddShaderPass(event.getShader(), event.getPass());
+				break;
+			case ShaderEvent::Operation::Remove:
+				mCameraUniformsUpdater->onRemoveShaderPass(event.getShader(), event.getPass());
+				break;
 		}
 	}
 

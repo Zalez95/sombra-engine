@@ -1,7 +1,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/TextureUtils.h"
 #include "se/app/loaders/MeshLoader.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
+#include "se/graphics/Technique.h"
 #include "se/graphics/RenderGraph.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -68,7 +69,7 @@ namespace se::app {
 		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
-		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentEquiToCubeMap.glsl");
+		std::shared_ptr<graphics::Program> program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentEquiToCubeMap.glsl");
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
@@ -128,7 +129,7 @@ namespace se::app {
 		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
-		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentConvoluteCubeMap.glsl");
+		std::shared_ptr<graphics::Program> program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentConvoluteCubeMap.glsl");
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
@@ -188,7 +189,7 @@ namespace se::app {
 			.generateMipMap();
 
 		// Create the Technique
-		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentPrefilterCubeMap.glsl");
+		std::shared_ptr<graphics::Program> program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentPrefilterCubeMap.glsl");
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
 		auto roughnessUniform = std::make_shared<graphics::UniformVariableValue<float>>("uRoughness", *program);
 		source->setTextureUnit(0);
@@ -257,7 +258,7 @@ namespace se::app {
 		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
-		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentPrecomputeBRDF.glsl");
+		std::shared_ptr<graphics::Program> program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentPrecomputeBRDF.glsl");
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
@@ -308,7 +309,7 @@ namespace se::app {
 		frameBuffer->attach(*depthTexture, graphics::FrameBufferAttachment::kDepth);
 
 		// Create the Technique
-		std::shared_ptr<graphics::Program> program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentToNormalLocal.glsl");
+		std::shared_ptr<graphics::Program> program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentToNormalLocal.glsl");
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)

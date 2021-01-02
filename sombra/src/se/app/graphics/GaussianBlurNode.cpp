@@ -1,6 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/GaussianBlurNode.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -28,7 +28,7 @@ namespace se::app {
 
 		auto program = repository.find<std::string, graphics::Program>("programGaussianBlur");
 		if (!program) {
-			program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
+			program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl");
 			repository.add(std::string("programGaussianBlur"), program);
 		}
 

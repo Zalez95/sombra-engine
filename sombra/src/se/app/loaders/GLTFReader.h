@@ -25,6 +25,8 @@ namespace se::app {
 	private:	// Nested types
 		using Buffer = std::vector<std::byte>;
 		using TextureSPtr = std::shared_ptr<graphics::Texture>;
+		using ShaderSPtr = std::shared_ptr<RenderableShader>;
+		using MeshSPtr = std::shared_ptr<graphics::Mesh>;
 		using LightSourceSPtr = std::shared_ptr<LightSource>;
 		using SkinSPtr = std::shared_ptr<Skin>;
 		using SceneUPtr = std::unique_ptr<Scene>;
@@ -35,6 +37,14 @@ namespace se::app {
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
 		using CAnimatorSPtr = std::shared_ptr<animation::CompositeAnimator>;
 		using IndexVector = std::vector<std::size_t>;
+		struct Accessor;
+		struct BufferView;
+		struct Sampler;
+		struct MaterialTechnique;
+		struct Node;
+		struct PrimitiveMeshData;
+		struct PrimitiveData;
+		struct GLTFData;
 
 		/** Struct FileFormat, holds the version of a valid GLTF file format */
 		struct FileFormat
@@ -43,87 +53,16 @@ namespace se::app {
 			static constexpr int sRevision = 0;
 		};
 
-		/** Struct Accessor, holds the data of a GLTF accessor */
-		struct Accessor
-		{
-			union BoundsComponentType { float f; int i; };
-			using BoundsType = utils::FixedVector<BoundsComponentType, 16>;
-
-			std::size_t bufferViewId, byteOffset, count, numComponents;
-			graphics::TypeId componentTypeId;
-			bool normalized;
-			BoundsType minimum, maximum;
-		};
-
-		/** Struct BufferView, holds the data of a GLTF bufferView */
-		struct BufferView
-		{
-			std::size_t bufferId, length, offset, stride;
-			enum class Target { Array, ElementArray, Undefined } target;
-		};
-
-		/** Struct Sampler, holds the data of a GLTF sampler */
-		struct Sampler
-		{
-			graphics::TextureFilter filters[2];
-			graphics::TextureWrap wraps[2];
-		};
-
-		/** Struct MaterialTechnique holds the data related to a Material */
-		struct MaterialTechnique
-		{
-			std::string name;
-			Material material;
-			TechniqueSPtr technique;
-			TechniqueSPtr techniqueSkin;
-		};
-
-		/** Struct Node, holds the data of a Node in the GLTF Node hierarchy */
-		struct Node
-		{
-			animation::NodeData nodeData;
-			std::vector<std::size_t> children;
-			Entity entity = kNullEntity;
-			bool hasSkin = false;
-			std::size_t skinIndex = 0;
-			animation::AnimationNode* animationNode = nullptr;
-		};
-
-		/** Struct GLTFData, it holds temporaly loaded data from a GLTF file */
-		struct GLTFData
-		{
-			std::string fileName;
-			std::string basePath;
-			Scene& scene;
-
-			std::vector<Accessor> accessors;
-			std::vector<Buffer> buffers;
-			std::vector<BufferView> bufferViews;
-			std::vector<Sampler> samplers;
-			std::vector<Image<unsigned char>> images;
-			std::vector<TextureSPtr> textures;
-			std::vector<MaterialTechnique> materials;
-			std::vector<MeshComponent> meshComponents;
-			std::vector<LightSourceSPtr> lightSources;
-			std::vector<SkinSPtr> skins;
-			std::vector<IndexVector> jointIndices;
-			std::vector<CameraComponent> cameraComponents;
-			std::vector<Node> nodes;
-			std::vector<SceneUPtr> scenes;
-			std::vector<CAnimatorSPtr> compositeAnimators;
-
-			GLTFData(Scene& scene) : scene(scene) {};
-		};
-
 	private:	// Attributes
 		/** The temporarily read GLTF data */
 		std::unique_ptr<GLTFData> mGLTFData;
 
 	public:		// Functions
-		/** @copydoc SceneReader::SceneReader(Application&,TechniqueBuilder&) */
-		GLTFReader(
-			Application& application, TechniqueBuilder& techniqueBuilder
-		) : SceneReader(application, techniqueBuilder) {};
+		/** @copydoc SceneReader::SceneReader(Application&, ShaderBuilder&) */
+		GLTFReader(Application& application, ShaderBuilder& shaderBuilder);
+
+		/** Class destructor */
+		virtual ~GLTFReader();
 
 		/** Parses the given GLTF file and stores the result in the given
 		 * Scenes object
@@ -207,15 +146,14 @@ namespace se::app {
 		 * @return	a Result object with the result of the parse operation */
 		Result parseMaterial(const nlohmann::json& jsonMaterial);
 
-		/** Creates a new RenderableMesh from the given GLTF JSON primitive and
+		/** Creates a new Mesh from the given GLTF JSON primitive and
 		 * returns it in the given parameter
 		 *
 		 * @param	jsonPrimitive the JSON object with the Primitive to parse
-		 * @param	out a reference to the RenderableMesh where the Primitive
-		 *			data will be stored
+		 * @param	out the Primitive (return parameter)
 		 * @return	a Result object with the result of the parse operation */
 		Result parsePrimitive(
-			const nlohmann::json& jsonPrimitive, graphics::RenderableMesh& out
+			const nlohmann::json& jsonPrimitive, PrimitiveData& out
 		);
 
 		/** Creates new MeshComponents from the given GLTF JSON Mesh and appends
@@ -308,6 +246,17 @@ namespace se::app {
 		 * @param	jsonScene the JSON object with the Scene to parse
 		 * @return	a Result object with the result of the parse operation */
 		Result parseScene(const nlohmann::json& jsonScene);
+
+		/** Creates a new Mesh from the given primitiveMesh and the loaded GLTF
+		 * data
+		 *
+		 * @param	primitiveMesh the PrimitiveMeshData that holds the indices
+		 *			of the attributes and indices of the Mesh
+		 * @param	out the pointer where the Mesh will be stored 
+		 * @note	it will check if the Mesh was already created */
+		Result createMesh(
+			const PrimitiveMeshData& primitiveMesh, MeshSPtr& out
+		) const;
 	};
 
 }

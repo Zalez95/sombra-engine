@@ -9,6 +9,7 @@
 #include "se/graphics/3D/Mesh.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/RenderableShader.h"
 #include "se/app/Scene.h"
 #include "se/app/EntityDatabase.h"
 
@@ -18,6 +19,7 @@ namespace se::app {
 	{
 		repository.init<std::string, Skin>();
 		repository.init<std::string, LightSource>();
+		repository.init<std::string, RenderableShader>();
 		repository.init<std::string, animation::CompositeAnimator>();
 		repository.init<std::string, audio::Buffer>();
 		repository.init<std::string, physics::Force>();

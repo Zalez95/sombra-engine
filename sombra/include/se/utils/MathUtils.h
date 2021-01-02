@@ -8,6 +8,18 @@
 
 namespace se::utils {
 
+	/** It combines multiple hash values
+	 *
+	 * @param	seed the previous hash value, it will be updated with the new
+	 *			combined hash. Initially it should be 0
+	 * @param	v the value to calculate its hash value
+	 * @see		https://www.boost.org/doc/libs/1_35_0/doc/html/boost/
+	 *			hash_combine_id241013.html */
+	template <class T>
+	inline void hash_combine(std::size_t& seed, const T& v)
+	{ seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2); }
+
+
 	/** Struct PairHash, used for calculating the hash value of pairs */
 	struct PairHash
 	{
@@ -17,7 +29,12 @@ namespace se::utils {
 		 * @return	the hash value */
 		template <typename T1, typename T2>
 		std::size_t operator()(const std::pair<T1, T2>& pair) const
-		{ return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second); }
+		{
+			std::size_t ret = 0;
+			hash_combine(ret, pair.first);
+			hash_combine(ret, pair.second);
+			return ret;
+		}
 	};
 
 

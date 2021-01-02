@@ -6,13 +6,13 @@
 #include "se/graphics/Technique.h"
 #include "se/graphics/Renderer.h"
 #include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/physics/RigidBody.h"
 #include "se/collision/TerrainCollider.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/Scene.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
+#include "se/app/TerrainComponent.h"
 #include "se/app/loaders/TerrainLoader.h"
 #include "se/app/graphics/Material.h"
 #include "se/app/graphics/TextureUtils.h"
@@ -21,7 +21,7 @@ namespace se::app {
 
 	Entity TerrainLoader::createTerrain(
 		const char* name, float size, float maxHeight, const Image<unsigned char>& heightMap,
-		const std::vector<float>& lodDistances, const char* techniqueName
+		const std::vector<float>& lodDistances, const char* shaderName
 	) {
 		glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
 
@@ -37,7 +37,13 @@ namespace se::app {
 		mEntityDatabase.addComponent(entity, std::move(transforms));
 
 		// Graphics data
-		mEntityDatabase.addComponent(entity, createTerrainRenderable(size, maxHeight, lodDistances, techniqueName));
+		auto terrain = mEntityDatabase.emplaceComponent<TerrainComponent>(
+			entity, mEventManager, entity, size, maxHeight, lodDistances
+		);
+		auto shader = mScene.repository.find<std::string, RenderableShader>(shaderName);
+		if (shader) {
+			terrain->addRenderableShader(shader);
+		}
 
 		// Physics data
 		physics::RigidBodyConfig config(0.2f);
@@ -52,20 +58,6 @@ namespace se::app {
 	}
 
 // Private functions
-	graphics::RenderableTerrain TerrainLoader::createTerrainRenderable(
-		float size, float maxHeight, const std::vector<float>& lodDistances, const char* techniqueName
-	) {
-		graphics::RenderableTerrain renderable(size, maxHeight, lodDistances);
-
-		auto technique = mScene.repository.find<std::string, graphics::Technique>(techniqueName);
-		if (technique) {
-			renderable.addTechnique(technique);
-		}
-
-		return renderable;
-	}
-
-
 	TerrainLoader::ColliderUPtr TerrainLoader::createTerrainCollider(
 		const Image<unsigned char>& heightMap, const glm::vec3& scaleVector
 	) {

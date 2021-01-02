@@ -3,7 +3,7 @@
 
 namespace se::app {
 
-	void EventManager::subscribe(IEventListener* eventListener, Topic topic)
+	EventManager& EventManager::subscribe(IEventListener* eventListener, Topic topic)
 	{
 		if (eventListener) {
 			int iTopic = static_cast<int>(topic);
@@ -12,10 +12,12 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Subscribed IEventListener " << eventListener << " to " << topic
 				<< " at index " << mListenersPerTopic[iTopic].size() - 1;
 		}
+
+		return *this;
 	}
 
 
-	void EventManager::unsubscribe(IEventListener* eventListener, Topic topic)
+	EventManager& EventManager::unsubscribe(IEventListener* eventListener, Topic topic)
 	{
 		if (eventListener) {
 			int iTopic = static_cast<int>(topic);
@@ -27,10 +29,12 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Unsubscribed IEventListener " << eventListener << " from " << topic
 				<< " at index " << mListenersPerTopic[iTopic].size();
 		}
+
+		return *this;
 	}
 
 
-	void EventManager::publish(IEvent* event)
+	EventManager& EventManager::publish(IEvent* event)
 	{
 		if (event) {
 			Topic topic = event->getTopic();
@@ -39,6 +43,8 @@ namespace se::app {
 			}
 			delete event;
 		}
+
+		return *this;
 	}
 
 }

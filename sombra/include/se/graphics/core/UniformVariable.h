@@ -135,7 +135,7 @@ namespace se::graphics {
 		 *			values (return parameter)
 		 * @param	retCount the number of elements in retValuePtr
 		 *			(return parameter) */
-		void setValue(const T*& retValuePtr, std::size_t& retCount)
+		void getValue(const T*& retValuePtr, std::size_t& retCount)
 		{ retValuePtr = mValue.data(); retCount = mValue.size(); };
 
 		/** Binds the current UniformVariableValueVector for using it in the

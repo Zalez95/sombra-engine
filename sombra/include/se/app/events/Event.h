@@ -18,6 +18,9 @@ namespace se::app {
 		Collision,		// Notifies collision detection events
 		Camera,			// Camera change events
 		Shadow,			// Shadow LightSource change events
+		RMesh,			// MeshComponent RMesh add/remove
+		RShader,		// Renderable shader update
+		Shader,			// Shader change
 		Application,	// Reserved for client code events
 		NumTopics		// Total number of events
 	};
@@ -40,6 +43,9 @@ namespace se::app {
 			case Topic::Collision:		return os << "Topic::Collision";
 			case Topic::Camera:			return os << "Topic::Camera";
 			case Topic::Shadow:			return os << "Topic::Shadow";
+			case Topic::RMesh:			return os << "Topic::RMesh";
+			case Topic::RShader:		return os << "Topic::RShader";
+			case Topic::Shader:			return os << "Topic::Shader";
 			case Topic::Application:	return os << "Topic::Application";
 			default:					return os;
 		}

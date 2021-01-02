@@ -22,7 +22,7 @@
 #include "se/app/graphics/ShadowRenderer3D.h"
 #include "se/app/graphics/FrustumRenderer3D.h"
 #include "se/app/loaders/MeshLoader.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/app/events/ContainerEvent.h"
 
 using namespace se::graphics;
@@ -53,7 +53,7 @@ namespace se::app {
 
 			auto program = repository.find<std::string, Program>("fragmentCombineHDR");
 			if (!program) {
-				program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
+				program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
 				repository.add("programCombineHDR"s, program);
 			}
 

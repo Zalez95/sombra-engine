@@ -34,10 +34,7 @@ namespace se::app {
 
 		if (transforms) {
 			// The Collider initial data is overridden by the entity one
-			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-			glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-			glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
-			collider->setTransforms(translation * rotation * scale);
+			collider->setTransforms( getModelMatrix(*transforms) );
 		}
 
 		mApplication.getExternalTools().collisionWorld->addCollider(collider);

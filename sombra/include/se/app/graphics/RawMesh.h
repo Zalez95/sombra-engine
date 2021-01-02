@@ -18,6 +18,7 @@ namespace se::app {
 		static constexpr unsigned int ColorAttribute		= 5;
 		static constexpr unsigned int JointIndexAttribute	= 6;
 		static constexpr unsigned int JointWeightAttribute	= 7;
+		static constexpr unsigned int NumAttributes			= 8;
 	};
 
 

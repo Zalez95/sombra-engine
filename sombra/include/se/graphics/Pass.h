@@ -12,8 +12,10 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Pass, It's a Bindable that represents one of the multiple Steps
-	 * that a Technique can be splitted into
+	 * Class Pass, It's a Bindable that represents one of the multiple steps
+	 * that a Technique can be splitted into. It's used for rendering
+	 * multiple Renderables using a single Renderer. It can also hold a common
+	 * state to all those Renderables that will be used during the rendering.
 	 */
 	class Pass : public Bindable
 	{
@@ -52,7 +54,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each Bindable */
 		template <typename F>
-		void processBindables(F callback);
+		void processBindables(F callback) const;
 
 		/** Removes a Bindable from the current Pass
 		 *
@@ -74,7 +76,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Pass::processBindables(F callback)
+	void Pass::processBindables(F callback) const
 	{
 		for (auto& bindable : mBindables) {
 			callback(bindable);

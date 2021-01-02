@@ -6,12 +6,12 @@
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/app/graphics/TextureUtils.h"
 
 namespace se::app {
 
-	void TechniqueLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
+	void ShaderLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
 	{
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, material.alphaMode == graphics::AlphaMode::Blend))
@@ -113,7 +113,7 @@ namespace se::app {
 	}
 
 
-	void TechniqueLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
+	void ShaderLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
 	{
 		// Set the material alphaMode
 		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, false))
@@ -222,7 +222,7 @@ namespace se::app {
 	}
 
 
-	void TechniqueLoader::addHeightMapBindables(
+	void ShaderLoader::addHeightMapBindables(
 		PassSPtr pass, const Image<unsigned char>& heightMap, float size, float maxHeight, const ProgramSPtr program
 	) {
 		auto heightMapTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
@@ -254,7 +254,7 @@ namespace se::app {
 	}
 
 
-	TechniqueLoader::ProgramUPtr TechniqueLoader::createProgram(
+	ShaderLoader::ProgramUPtr ShaderLoader::createProgram(
 		const char* vertexShaderPath,
 		const char* geometryShaderPath,
 		const char* fragmentShaderPath

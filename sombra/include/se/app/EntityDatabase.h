@@ -98,7 +98,7 @@ namespace se::app {
 		 * @param	maxComponents the maximum number of Components of that type
 		 *			that can be stored in the table
 		 * @note	this function must be called for each Component type
-		 *			before using any of the other functions */
+		 *			before using any other functions */
 		template <typename T, bool hasDerived = false>
 		void addComponentTable(std::size_t maxComponents);
 
@@ -151,6 +151,10 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity to remove */
 		void removeEntity(Entity entity);
+
+		/** @return	the maximum number of Components with @tparam T allowed */
+		template <typename T>
+		std::size_t getMaxComponents() const;
 
 		/** Adds a Component with type @tparam T to the given Entity
 		 *
@@ -236,7 +240,7 @@ namespace se::app {
 		/** @return	a reference to the ComponentTable of the Component with
 		 *			type @tparam T */
 		template <typename T>
-		ITComponentTable<T>& getTable();
+		ITComponentTable<T>& getTable() const;
 	};
 
 }

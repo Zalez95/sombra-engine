@@ -16,7 +16,7 @@
 #include <se/app/loaders/FontReader.h>
 #include <se/app/loaders/TerrainLoader.h>
 #include <se/app/loaders/SceneReader.h>
-#include <se/app/loaders/TechniqueLoader.h>
+#include <se/app/loaders/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/AudioSystem.h>
@@ -60,17 +60,17 @@
 
 namespace game {
 
-	class MyTechniqueBuilder : public se::app::SceneReader::TechniqueBuilder
+	class MyShaderBuilder : public se::app::SceneReader::ShaderBuilder
 	{
 	private:	// Attributes
 		se::app::Application& mApplication;
 		se::app::Scene& mScene;
 
 	public:		// Functions
-		MyTechniqueBuilder(se::app::Application& application, se::app::Scene& scene) :
+		MyShaderBuilder(se::app::Application& application, se::app::Scene& scene) :
 			mApplication(application), mScene(scene) {};
 
-		virtual se::app::SceneReader::TechniqueSPtr createTechnique(const se::app::Material& material, bool hasSkin) override
+		virtual ShaderSPtr createShader(const se::app::Material& material, bool hasSkin) override
 		{
 			std::string shadowPassKey = hasSkin? "passShadowSkinning" : "passShadow";
 			auto shadowPass = mScene.repository.find<std::string, se::graphics::Pass>(shadowPassKey);
@@ -80,13 +80,13 @@ namespace game {
 			auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
 			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			pass->addBindable(program);
-			se::app::TechniqueLoader::addMaterialBindables(pass, material, program);
+			se::app::ShaderLoader::addMaterialBindables(pass, material, program);
 
-			auto technique = std::make_unique<se::graphics::Technique>();
-			technique->addPass(shadowPass)
+			auto shader = std::make_shared<se::app::RenderableShader>(mApplication.getEventManager());
+			shader->addPass(shadowPass)
 				.addPass(pass);
 
-			return technique;
+			return shader;
 		};
 	};
 
@@ -213,7 +213,7 @@ namespace game {
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::app::TerrainLoader terrainLoader(mGame.getEntityDatabase(), mScene);
+		se::app::TerrainLoader terrainLoader(mGame.getEntityDatabase(), mGame.getEventManager(), mScene);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
@@ -242,49 +242,49 @@ namespace game {
 
 			// Programs
 			std::shared_ptr<se::graphics::Program> programShadow;
-			programShadow = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
+			programShadow = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
 			if (!programShadow) {
 				throw std::runtime_error("programShadow not found");
 			}
 			mScene.repository.add(std::string("programShadow"), programShadow);
 
 			std::shared_ptr<se::graphics::Program> programShadowSkinning;
-			programShadowSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
+			programShadowSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
 			if (!programShadowSkinning) {
 				throw std::runtime_error("programShadowSkinning not found");
 			}
 			mScene.repository.add(std::string("programShadow"), programShadowSkinning);
 
 			std::shared_ptr<se::graphics::Program> programShadowTerrain;
-			programShadowTerrain = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
+			programShadowTerrain = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
 			if (!programShadowTerrain) {
 				throw std::runtime_error("programShadowTerrain not found");
 			}
 			mScene.repository.add(std::string("programShadowTerrain"), std::move(programShadowTerrain));
 
 			std::shared_ptr<se::graphics::Program> programSky;
-			programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
+			programSky = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
 			if (!programSky) {
 				throw std::runtime_error("programSky not found");
 			}
 			mScene.repository.add(std::string("programSky"), programSky);
 
 			std::shared_ptr<se::graphics::Program> programGBufMaterial;
-			programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			programGBufMaterial = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterial) {
 				throw std::runtime_error("programGBufMaterial not found");
 			}
 			mScene.repository.add(std::string("programGBufMaterial"), programGBufMaterial);
 
 			std::shared_ptr<se::graphics::Program> programGBufMaterialSkinning;
-			programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+			programGBufMaterialSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 			if (!programGBufMaterialSkinning) {
 				throw std::runtime_error("programGBufMaterialSkinning not found");
 			}
 			mScene.repository.add(std::string("programGBufMaterialSkinning"), std::move(programGBufMaterialSkinning));
 
 			std::shared_ptr<se::graphics::Program> programGBufSplatmap;
-			programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
+			programGBufSplatmap = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
 			if (!programGBufSplatmap) {
 				throw std::runtime_error("programGBufSplatmap not found");
 			}
@@ -301,8 +301,8 @@ namespace game {
 
 			// Readers
 			AudioFile<float> audioFile;
-			MyTechniqueBuilder techniqueBuilder(mGame, mScene);
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, mGame, techniqueBuilder);
+			MyShaderBuilder shaderBuilder(mGame, mScene);
+			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, mGame, shaderBuilder);
 
 			// Fonts
 			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
@@ -487,12 +487,12 @@ namespace game {
 				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
 				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
 
-			auto techniqueSky = std::make_unique<se::graphics::Technique>();
-			techniqueSky->addPass(passSky);
+			auto shaderSky = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			shaderSky->addPass(passSky);
 
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueSky));
-			mGame.getEntityDatabase().addComponent(skyEntity, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(skyEntity, mGame.getEventManager(), skyEntity);
+			auto rIndex = mesh->add(false, cubeMesh);
+			mesh->addRenderableShader(rIndex, std::move(shaderSky));
 
 			se::app::LightProbe lightProbe = { environmentTexture, prefilterTexture };
 			mGame.getEntityDatabase().addComponent(skyEntity, std::move(lightProbe));
@@ -511,19 +511,19 @@ namespace game {
 
 			auto terrainShadowPass = std::make_shared<se::graphics::Pass>(*shadowRenderer);
 			terrainShadowPass->addBindable(programShadowTerrain);
-			se::app::TechniqueLoader::addHeightMapBindables(terrainShadowPass, heightMap1, size, maxHeight, programShadowTerrain);
+			se::app::ShaderLoader::addHeightMapBindables(terrainShadowPass, heightMap1, size, maxHeight, programShadowTerrain);
 
 			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			terrainPass->addBindable(programGBufSplatmap);
-			se::app::TechniqueLoader::addHeightMapBindables(terrainPass, heightMap1, size, maxHeight, programGBufSplatmap);
-			se::app::TechniqueLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
+			se::app::ShaderLoader::addHeightMapBindables(terrainPass, heightMap1, size, maxHeight, programGBufSplatmap);
+			se::app::ShaderLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
 
-			auto terrainTechnique = std::make_shared<se::graphics::Technique>();
-			terrainTechnique->addPass(terrainShadowPass)
+			auto terrainShader = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			terrainShader->addPass(terrainShadowPass)
 				.addPass(terrainPass);
-			mScene.repository.add(std::string("techniqueSplatmap"), terrainTechnique);
+			mScene.repository.add(std::string("shaderSplatmap"), terrainShader);
 
-			terrainLoader.createTerrain("terrain", size, maxHeight, heightMap1, lodDistances, "techniqueSplatmap");
+			terrainLoader.createTerrain("terrain", size, maxHeight, heightMap1, lodDistances, "shaderSplatmap");
 		}
 
 		// Plane
@@ -539,7 +539,7 @@ namespace game {
 
 			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			passPlane->addBindable(programGBufMaterial);
-			se::app::TechniqueLoader::addMaterialBindables(
+			se::app::ShaderLoader::addMaterialBindables(
 				passPlane,
 				se::app::Material{
 					se::app::PBRMetallicRoughness{ glm::vec4(1.0f), {}, 0.2f, 0.5f, {} },
@@ -548,13 +548,13 @@ namespace game {
 				programGBufMaterial
 			);
 
-			auto techniquePlane = std::make_unique<se::graphics::Technique>();
-			techniquePlane->addPass(passShadow)
+			auto shaderPlane = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			shaderPlane->addPass(passShadow)
 				.addPass(passPlane);
 
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(planeMesh).addTechnique(std::move(techniquePlane));
-			mGame.getEntityDatabase().addComponent(plane, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(plane, mGame.getEventManager(), plane);
+			auto rIndex = mesh->add(false, planeMesh);
+			mesh->addRenderableShader(rIndex, std::move(shaderPlane));
 		}
 
 		// Fixed cubes
@@ -607,7 +607,7 @@ namespace game {
 
 			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			passCube->addBindable(programGBufMaterial);
-			se::app::TechniqueLoader::addMaterialBindables(
+			se::app::ShaderLoader::addMaterialBindables(
 				passCube,
 				se::app::Material{
 					se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
@@ -616,13 +616,13 @@ namespace game {
 				programGBufMaterial
 			);
 
-			auto techniqueCube = std::make_unique<se::graphics::Technique>();
-			techniqueCube->addPass(passShadow)
+			auto shaderCube = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			shaderCube->addPass(passShadow)
 				.addPass(passCube);
 
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(std::move(techniqueCube));
-			mGame.getEntityDatabase().addComponent(cube, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube, mGame.getEventManager(), cube);
+			auto rIndex = mesh->add(false, cubeMesh);
+			mesh->addRenderableShader(rIndex, std::move(shaderCube));
 		}
 
 		auto [rb1] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(e1);
@@ -633,7 +633,7 @@ namespace game {
 
 		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 		passRed->addBindable(programGBufMaterial);
-		se::app::TechniqueLoader::addMaterialBindables(
+		se::app::ShaderLoader::addMaterialBindables(
 			passRed,
 			se::app::Material{
 				se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
@@ -642,8 +642,8 @@ namespace game {
 			programGBufMaterial
 		);
 
-		auto techniqueRed = std::make_shared<se::graphics::Technique>();
-		techniqueRed->addPass(passShadow)
+		auto shaderRed = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+		shaderRed->addPass(passShadow)
 			.addPass(passRed);
 
 		{
@@ -665,9 +665,9 @@ namespace game {
 			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(nonMovableCube, std::move(collider));
 
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRed);
-			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(nonMovableCube, mGame.getEventManager(), nonMovableCube);
+			auto rIndex = mesh->add(false, cubeMesh);
+			mesh->addRenderableShader(rIndex, shaderRed);
 		}
 
 		{
@@ -692,9 +692,9 @@ namespace game {
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
 
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRed);
-			mGame.getEntityDatabase().addComponent(gravityCube, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(gravityCube, mGame.getEventManager(), gravityCube);
+			auto rIndex = mesh->add(false, cubeMesh);
+			mesh->addRenderableShader(rIndex, shaderRed);
 		}
 
 		// HACD Tube
@@ -721,7 +721,7 @@ namespace game {
 
 			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			passSlice->addBindable(programGBufMaterial);
-			se::app::TechniqueLoader::addMaterialBindables(
+			se::app::ShaderLoader::addMaterialBindables(
 				passSlice,
 				se::app::Material{
 					se::app::PBRMetallicRoughness{
@@ -733,22 +733,22 @@ namespace game {
 				programGBufMaterial
 			);
 
-			auto techniqueSlice = std::make_shared<se::graphics::Technique>();
-			techniqueSlice->addPass(passShadow)
+			auto shaderSlice = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			shaderSlice->addPass(passShadow)
 				.addPass(passSlice);
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
 			auto tmpGraphicsMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh));
-			se::app::MeshComponent mesh;
-			mesh.rMeshes.emplace_back(tmpGraphicsMesh).addTechnique(techniqueSlice);
-			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(mesh));
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(tubeSlice, mGame.getEventManager(), tubeSlice);
+			auto rIndex = mesh->add(false, tmpGraphicsMesh);
+			mesh->addRenderableShader(rIndex, std::move(shaderSlice));
 		}
 
 		// Random cubes
 		{
 			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 			passRandom->addBindable(programGBufMaterial);
-			se::app::TechniqueLoader::addMaterialBindables(
+			se::app::ShaderLoader::addMaterialBindables(
 				passRandom,
 				se::app::Material{
 					se::app::PBRMetallicRoughness{ { 0.0f, 0.0f, 1.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
@@ -757,8 +757,8 @@ namespace game {
 				programGBufMaterial
 			);
 
-			auto techniqueRandom = std::make_shared<se::graphics::Technique>();
-			techniqueRandom->addPass(passShadow)
+			auto shaderRandom = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+			shaderRandom->addPass(passShadow)
 				.addPass(passRandom);
 
 			for (std::size_t i = 0; i < kNumCubes; ++i) {
@@ -768,7 +768,7 @@ namespace game {
 				mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, "random-cube-" + std::to_string(i));
 
 				se::app::TransformsComponent transforms;
-				transforms.position = glm::ballRand(50.0f);
+				transforms.position = glm::ballRand(50.0f) + glm::vec3(0.0f, 50.0f, 0.0f);
 				mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
 
 				se::physics::RigidBodyConfig config(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
@@ -783,9 +783,9 @@ namespace game {
 				auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 				mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
-				se::app::MeshComponent mesh;
-				mesh.rMeshes.emplace_back(cubeMesh).addTechnique(techniqueRandom);
-				mGame.getEntityDatabase().addComponent(cube, std::move(mesh));
+				auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube, mGame.getEventManager(), cube);
+				auto rIndex = mesh->add(false, cubeMesh);
+				mesh->addRenderableShader(rIndex, shaderRandom);
 			}
 		}
 

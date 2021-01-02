@@ -1,6 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/VoxelizationNode.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -13,7 +13,7 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programVoxelization");
 		if (!program) {
-			program = TechniqueLoader::createProgram(
+			program = ShaderLoader::createProgram(
 				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
 				"res/shaders/fragmentVoxelization.glsl"
 			);

@@ -175,7 +175,8 @@ namespace editor {
 				>(selectedEntity);
 
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text(("Entity #" + std::to_string(selectedEntity) + " selected").c_str());
+			std::string entityName = "Entity #" + std::to_string(selectedEntity) + " selected";
+			ImGui::Text(entityName.c_str());
 			ImGui::SameLine();
 			if (ImGui::Button("Add component")) {
 				ImGui::OpenPopup("components");
@@ -208,7 +209,7 @@ namespace editor {
 				}
 				if (!mesh) {
 					if (ImGui::MenuItem("Add Mesh", nullptr, false)) {
-						mesh = mEditor.getEntityDatabase().emplaceComponent<MeshComponent>(selectedEntity);
+						mesh = mEditor.getEntityDatabase().emplaceComponent<MeshComponent>(selectedEntity, mEditor.getEventManager(), selectedEntity);
 					}
 				}
 				ImGui::EndPopup();
@@ -307,51 +308,54 @@ namespace editor {
 			}
 
 			if (mesh && ImGui::TreeNode("Mesh")) {
-				bool canAddRMesh = (mesh->rMeshes.size() < MeshComponent::kMaxMeshes);
+				bool canAddRMesh = (mesh->size() < MeshComponent::kMaxMeshes);
 				if (!canAddRMesh) {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 				}
 				std::shared_ptr<Mesh> gMesh;
 				if (addRepoDropdownButton("Add RenderableMesh", "add_renderable_mesh", mEditor.getScene()->repository, gMesh)) {
-					mesh->rMeshes.emplace_back(gMesh);
+					mesh->add(false, gMesh);
 				}
 				if (!canAddRMesh) {
 					ImGui::PopItemFlag();
 					ImGui::PopStyleVar();
 				}
 
-				int i = 0;
-				for (auto& rMesh : mesh->rMeshes) {
-					std::string rMeshName = "RenderableMesh #" + std::to_string(i++);
+				for (std::size_t i = 0; i < mesh->size(); ++i) {
+					std::string rMeshName = "RenderableMesh #" + std::to_string(i);
 					if (ImGui::TreeNode(rMeshName.c_str())) {
+						if (ImGui::RadioButton("Has Skin", mesh->hasSkinning(i))) {
+							// TODO:
+						}
+
 						ImGui::AlignTextToFramePadding();
 						ImGui::Text("Mesh:");
 						ImGui::SameLine();
-						gMesh = rMesh.getMesh();
+						gMesh = mesh->get(i).getMesh();
 						if (addRepoDropdownShowSelected(rMeshName.c_str(), mEditor.getScene()->repository, gMesh)) {
-							rMesh.setMesh(gMesh);
+							mesh->get(i).setMesh(gMesh);
 						}
 
-						if (ImGui::TreeNode("Techniques")) {
-							std::shared_ptr<Technique> technique;
-							if (addRepoDropdownButton("Add Technique", "add_technique", mEditor.getScene()->repository, technique)) {
-								rMesh.addTechnique(technique);
+						if (ImGui::TreeNode("Shaders:")) {
+							std::shared_ptr<se::app::RenderableShader> shader;
+							std::string shadersName = "shaders_mesh_" + std::to_string(i);
+							if (addRepoDropdownButton("Add Shader", shadersName.c_str(), mEditor.getScene()->repository, shader)) {
+								mesh->addRenderableShader(i, shader);
 							}
 
 							int j = 0;
-							rMesh.processTechniques([&](auto technique2) {
-								std::string techniqueName = "Technique #" + std::to_string(j++);
+							mesh->processRenderableShaders(i, [&](const auto& shader1) {
 								ImGui::AlignTextToFramePadding();
-								ImGui::Text(techniqueName.c_str());
+								ImGui::Text("Shader:");
 								ImGui::SameLine();
-								auto currentTechnique = technique2;
-								if (addRepoDropdownShowSelected((rMeshName + "_" + techniqueName).c_str(), mEditor.getScene()->repository, currentTechnique)) {
-									rMesh.removeTechnique(technique2);
-									rMesh.addTechnique(currentTechnique);
+								std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
+								std::string shaderName2 = shadersName + "_shader_" + std::to_string(j);
+								if (addRepoDropdownShowSelected(shaderName2.c_str(), mEditor.getScene()->repository, shader2)) {
+									mesh->removeRenderableShader(i, shader1);
+									mesh->addRenderableShader(i, shader2);
 								}
 							});
-
 							ImGui::TreePop();
 						}
 						ImGui::TreePop();

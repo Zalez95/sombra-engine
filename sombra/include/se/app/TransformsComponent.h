@@ -39,6 +39,14 @@ namespace se::app {
 		std::bitset< static_cast<int>(Update::Count) > updated;
 	};
 
+
+	/** Calculates the model matrix of the given TransformsComponent as TRS
+	 * matrix
+	 *
+	 * @param	transforms the TransformsComponent to calculate its model matrix
+	 * @return	the model matrix */
+	glm::mat4 getModelMatrix(const TransformsComponent& transforms);
+
 }
 
 #endif		// TRANSFORMS_COMPONENT_H

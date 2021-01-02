@@ -15,7 +15,7 @@
 #include <se/app/CollisionSystem.h>
 #include <se/app/Scene.h>
 #include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/TechniqueLoader.h>
+#include <se/app/loaders/ShaderLoader.h>
 #include "PlayerController.h"
 #include "Game.h"
 #include "Level.h"
@@ -62,7 +62,7 @@ namespace game {
 		auto passYellow = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 		scene.repository.add(std::string("passYellow"), passYellow);
 
-		se::app::TechniqueLoader::addMaterialBindables(
+		se::app::ShaderLoader::addMaterialBindables(
 			passYellow,
 			se::app::Material{
 				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },

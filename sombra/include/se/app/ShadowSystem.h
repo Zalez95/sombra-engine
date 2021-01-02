@@ -1,8 +1,11 @@
 #ifndef SHADOW_SYSTEM_H
 #define SHADOW_SYSTEM_H
 
-#include "events/ContainerEvent.h"
 #include "graphics/DeferredLightRenderer.h"
+#include "events/ContainerEvent.h"
+#include "events/RMeshEvent.h"
+#include "events/ShaderEvent.h"
+#include "events/RenderableShaderEvent.h"
 #include "LightComponent.h"
 #include "ISystem.h"
 
@@ -69,6 +72,23 @@ namespace se::app {
 		 *
 		 * @param	event the ContainerEvent to handle */
 		void onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event);
+
+		/** Handles the given RMeshEvent by updating the RenderableMeshes
+		 * uniforms
+		 *
+		 * @param	event the RMeshEvent to handle */
+		void onRMeshEvent(const RMeshEvent& event);
+
+		/** Handles the given RenderableShaderEvent by updating the
+		 * Renderables uniforms
+		 *
+		 * @param	event the RenderableShaderEvent to handle */
+		void onRenderableShaderEvent(const RenderableShaderEvent& event);
+
+		/** Handles the given ShaderEvent by updating the Renderables uniforms
+		 *
+		 * @param	event the ShaderEvent to handle */
+		void onShaderEvent(const ShaderEvent& event);
 	};
 
 }

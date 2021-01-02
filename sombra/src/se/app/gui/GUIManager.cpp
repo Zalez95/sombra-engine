@@ -8,7 +8,7 @@
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/app/gui/GUIManager.h"
 #include "se/app/Application.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 
 namespace se::app {
 
@@ -23,7 +23,7 @@ namespace se::app {
 
 			auto program = mApplication.getRepository().find<std::string, graphics::Program>("program2D");
 			if (!program) {
-				program = TechniqueLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
+				program = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
 				mApplication.getRepository().add(std::string("program2D"), program);
 			}
 

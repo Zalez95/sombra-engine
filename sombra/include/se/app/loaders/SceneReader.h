@@ -2,8 +2,8 @@
 #define SCENE_READER_H
 
 #include <memory>
-#include "../../graphics/Technique.h"
 #include "../graphics/Material.h"
+#include "../RenderableShader.h"
 #include "../Scene.h"
 #include "../Application.h"
 #include "Result.h"
@@ -18,7 +18,6 @@ namespace se::app {
 	{
 	public:		// Nested types
 		using SceneReaderUPtr = std::unique_ptr<SceneReader>;
-		using TechniqueSPtr = std::shared_ptr<graphics::Technique>;
 
 		/** The scenes files than are supported by the SceneReader */
 		enum class FileType
@@ -26,21 +25,24 @@ namespace se::app {
 			GLTF
 		};
 
-		/** Class TechniqueBuilder, it's an interface used for creating
-		 * Techniques from Materials */
-		class TechniqueBuilder
+		/** Class ShaderBuilder, it's an interface used for creating
+		 * Shaders from Materials */
+		class ShaderBuilder
 		{
+		public:		// Nested types
+			using ShaderSPtr = std::shared_ptr<RenderableShader>;
+
 		public:		// Functions
 			/** Class destructor */
-			virtual ~TechniqueBuilder() = default;
+			virtual ~ShaderBuilder() = default;
 
-			/** Creates a new Technique from the given Material
+			/** Creates a new Shader from the given Material
 			 *
-			 * @param	material the material used for creating the Technique
-			 * @param	hasSkin if the technique must support skeletal animation
+			 * @param	material the material used for creating the Shader
+			 * @param	hasSkin if the Shader must support skeletal animation
 			 *			or not
-			 * @return	a pointer to the new Technique */
-			virtual TechniqueSPtr createTechnique(
+			 * @return	a pointer to the new Shader */
+			virtual ShaderSPtr createShader(
 				const Material& material, bool hasSkin
 			) = 0;
 		};
@@ -50,20 +52,19 @@ namespace se::app {
 		 * for creating the Entities */
 		Application& mApplication;
 
-		/** A reference to the TechniqueBuilder used for creating the
-		 * Techniques */
-		TechniqueBuilder& mTechniqueBuilder;
+		/** A reference to the ShaderBuilder used for creating the Shaders */
+		ShaderBuilder& mShaderBuilder;
 
 	public:		// Functions
 		/** Creates a new SceneReader
 		 *
 		 * @param	application the Application that holds the EntityDatabase
 		 *			used for creating the Entities
-		 * @param	techniqueBuilder the TechniqueBuilder used for creating the
-		 *			Techniques */
+		 * @param	shaderBuilder the ShaderBuilder used for creating the
+		 *			Shaders */
 		SceneReader(
-			Application& application, TechniqueBuilder& techniqueBuilder
-		) : mApplication(application), mTechniqueBuilder(techniqueBuilder) {};
+			Application& application, ShaderBuilder& shaderBuilder
+		) : mApplication(application), mShaderBuilder(shaderBuilder) {};
 
 		/** Class destructor */
 		virtual ~SceneReader() = default;
@@ -73,12 +74,12 @@ namespace se::app {
 		 * @param	fileType the FileType that we want to read
 		 * @param	application the Application that holds the EntityDatabase
 		 *			used for creating the Entities
-		 * @param	techniqueBuilder the TechniqueBuilder used for creating the
-		 *			Techniques
+		 * @param	shaderBuilder the ShaderBuilder used for creating the
+		 *			Shaders
 		 * @return	a pointer to the new SceneReader */
 		static SceneReaderUPtr createSceneReader(
 			FileType fileType,
-			Application& application, TechniqueBuilder& techniqueBuilder
+			Application& application, ShaderBuilder& shaderBuilder
 		);
 
 		/** Parses the given file and stores the result in the given Scenes
@@ -88,16 +89,15 @@ namespace se::app {
 		 * @param	output the Scene where the file data will be stored
 		 * @return	a Result object with the result of the load operation
 		 * @note	if there is any mesh without a material in the given file,
-		 *			we will use the default Techniques of the Scene repository
+		 *			we will use the default Shaders of the Scene repository
 		 *			(it will be created if it doesn't exist) */
 		virtual Result load(const std::string& path, Scene& output) = 0;
 	protected:
-		/** Creates a "defaultTechnique" and a "defaultTechniqueSkin" in the
+		/** Creates a "defaultShader" and a "defaultShaderSkin" in the
 		 * given Scene repository if it doesn't exist yet
 		 *
-		 * @param	scene the Scene where the Techniques are going to be
-		 *			added */
-		void createDefaultTechniques(Scene& scene);
+		 * @param	scene the Scene where the Shaders are going to be added */
+		void createDefaultShaders(Scene& scene);
 	};
 
 }

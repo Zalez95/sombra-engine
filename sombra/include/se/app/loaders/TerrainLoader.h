@@ -13,6 +13,7 @@ namespace se::collision { class Collider; }
 namespace se::app {
 
 	class EntityDatabase;
+	class EventManager;
 	struct Scene;
 
 
@@ -31,6 +32,9 @@ namespace se::app {
 		/** The EntityDatabase that holds the Terrain Entities and Components */
 		EntityDatabase& mEntityDatabase;
 
+		/** The EventManager used for publishing new events */
+		EventManager& mEventManager;
+
 		/** The Scene where the terrain Entity is going to be added */
 		Scene& mScene;
 
@@ -39,10 +43,14 @@ namespace se::app {
 		 *
 		 * @param	entityDatabase the EntityDatabase that holds the Terrain
 		 *			Entities and Components
+		 * @param	eventManager the EventManager used for publishing new events
 		 * @param	scene the Scene where the terrain Entity is going to be
 		 *			added */
-		TerrainLoader(EntityDatabase& entityDatabase, Scene& scene) :
-			mEntityDatabase(entityDatabase), mScene(scene) {};
+		TerrainLoader(
+			EntityDatabase& entityDatabase, EventManager& eventManager,
+			Scene& scene
+		) : mEntityDatabase(entityDatabase), mEventManager(eventManager),
+			mScene(scene) {};
 
 		/** Creates an Entity that represents a Terrain from the given data and
 		 * adds it to the Scene
@@ -55,32 +63,16 @@ namespace se::app {
 		 * 			vertices of the Terrain's mesh
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail
-		 * @param	techniqueName the name of the program used for rendering the
+		 * @param	shaderName the name of the Shader used for rendering the
 		 *			terrain
 		 * @return	the new Terrain entity */
 		Entity createTerrain(
 			const char* name, float size, float maxHeight,
 			const Image<unsigned char>& heightMap,
 			const std::vector<float>& lodDistances,
-			const char* techniqueName
+			const char* shaderName
 		);
 	private:
-		/** Creates a new RenderableTerrain from the given data
-		 *
-		 * @param	size the length in the X and Z axis of the Terrain
-		 * @param	maxHeight the maximum height of the vertices of the
-		 *			Terrain's mesh
-		 * @param	lodDistances the minimum distance to the camera at each
-		 *			level of detail
-		 * @param	techniqueName the name of the program used for rendering the
-		 *			terrain
-		 * @return	a pointer to the new RenderableTerrain, nullptr if it
-		 *			failed */
-		graphics::RenderableTerrain createTerrainRenderable(
-			float size, float maxHeight, const std::vector<float>& lodDistances,
-			const char* techniqueName
-		);
-
 		/** Creates a new TerrainCollider from the given height map
 		 *
 		 * @param	heightMap an Image that represents the height map

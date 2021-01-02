@@ -19,8 +19,8 @@ namespace se::app {
 	class CameraSystem;
 	class ShadowSystem;
 	class AppRenderer;
-	class RMeshSystem;
-	class RTerrainSystem;
+	class MeshSystem;
+	class TerrainSystem;
 	class DynamicsSystem;
 	class ConstraintsSystem;
 	class CollisionSystem;
@@ -100,8 +100,8 @@ namespace se::app {
 		CameraSystem* mCameraSystem;
 		ShadowSystem* mShadowSystem;
 		AppRenderer* mAppRenderer;
-		RMeshSystem* mRMeshSystem;
-		RTerrainSystem* mRTerrainSystem;
+		MeshSystem* mMeshSystem;
+		TerrainSystem* mTerrainSystem;
 		DynamicsSystem* mDynamicsSystem;
 		ConstraintsSystem* mConstraintsSystem;
 		CollisionSystem* mCollisionSystem;

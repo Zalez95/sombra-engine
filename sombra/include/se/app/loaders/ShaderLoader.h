@@ -1,16 +1,15 @@
-#ifndef TECHNIQUE_LOADER_H
-#define TECHNIQUE_LOADER_H
+#ifndef SHADER_LOADER_H
+#define SHADER_LOADER_H
 
 #include <memory>
 #include "../../graphics/Pass.h"
-#include "../../graphics/Technique.h"
 #include "../../graphics/core/Program.h"
 #include "../graphics/Image.h"
 #include "../graphics/Material.h"
 
 namespace se::app {
 
-	class TechniqueLoader
+	class ShaderLoader
 	{
 	private:	// Nested types
 		using ProgramUPtr = std::unique_ptr<graphics::Program>;
@@ -43,4 +42,4 @@ namespace se::app {
 
 }
 
-#endif		// TECHNIQUE_LOADER_H
+#endif		// SHADER_LOADER_H

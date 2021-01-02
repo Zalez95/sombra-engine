@@ -90,7 +90,7 @@ namespace se::animation {
 		 *
 		 * @param	callback the function to call for each AnimationNode */
 		template <typename F>
-		void processNodes(F callback);
+		void processNodes(F callback) const;
 
 		/** Removes a Node from the TransformationAnimator
 		 *
@@ -163,7 +163,7 @@ namespace se::animation {
 
 
 	template <typename F>
-	void TransformationAnimator::processNodes(F callback)
+	void TransformationAnimator::processNodes(F callback) const
 	{
 		for (AnimatedNode& animatedNode : mNodes) {
 			callback(animatedNode.node);

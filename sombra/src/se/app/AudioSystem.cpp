@@ -13,7 +13,7 @@ namespace se::app {
 		mListenerEntity(kNullEntity), mListenerUpdated(false)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask(true));
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<audio::Source>());
 	}
 
 

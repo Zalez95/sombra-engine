@@ -17,6 +17,9 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~IComponentTable() = default;
 
+		/** @return	the maximum number of components allowed */
+		virtual std::size_t getMaxComponents() const = 0;
+
 		/** Check if the given Entity has a Component
 		 *
 		 * @param	entity the Entity that owns the Component
@@ -115,6 +118,10 @@ namespace se::app {
 			mEntityComponentMap.reserve(maxComponents);
 			mComponentEntityMap.reserve(maxComponents);
 		};
+
+		/** @copydoc IComponentTable::getMaxComponents() */
+		virtual std::size_t getMaxComponents() const override
+		{ return mComponents.capacity(); };
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
 		virtual T* addComponent(Entity entity, T&& component) override
@@ -232,6 +239,10 @@ namespace se::app {
 			mEntityComponentMap.reserve(maxComponents);
 			mComponentEntityMap.reserve(maxComponents);
 		};
+
+		/** @copydoc IComponentTable::getMaxComponents() */
+		virtual std::size_t getMaxComponents() const override
+		{ return mComponents.capacity(); };
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
 		virtual T* addComponent(Entity, T&&) override
@@ -364,6 +375,13 @@ namespace se::app {
 	}
 
 
+	template <typename T>
+	std::size_t EntityDatabase::getMaxComponents() const
+	{
+		return getTable<T>().getMaxComponents();
+	}
+
+
 	template <typename T, typename... Args>
 	T* EntityDatabase::emplaceComponent(Entity entity, Args&&... args)
 	{
@@ -477,7 +495,7 @@ namespace se::app {
 
 
 	template <typename T>
-	EntityDatabase::ITComponentTable<T>& EntityDatabase::getTable()
+	EntityDatabase::ITComponentTable<T>& EntityDatabase::getTable() const
 	{
 		return *static_cast<ITComponentTable<T>*>( mComponentTables[getComponentTypeId<T>()].get() );
 	}

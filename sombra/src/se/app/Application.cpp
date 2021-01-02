@@ -9,7 +9,6 @@
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/2D/Font.h"
-#include "se/graphics/3D/RenderableTerrain.h"
 #include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/collision/Collider.h"
@@ -24,8 +23,8 @@
 #include "se/app/CameraSystem.h"
 #include "se/app/ShadowSystem.h"
 #include "se/app/AppRenderer.h"
-#include "se/app/RMeshSystem.h"
-#include "se/app/RTerrainSystem.h"
+#include "se/app/MeshSystem.h"
+#include "se/app/TerrainSystem.h"
 #include "se/app/DynamicsSystem.h"
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/CollisionSystem.h"
@@ -35,6 +34,7 @@
 #include "se/app/TagComponent.h"
 #include "se/app/ScriptComponent.h"
 #include "se/app/MeshComponent.h"
+#include "se/app/TerrainComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/CameraComponent.h"
 #include "se/app/SkinComponent.h"
@@ -52,7 +52,7 @@ namespace se::app {
 		mRepository(nullptr), mEntityDatabase(nullptr),
 		mInputSystem(nullptr), mScriptSystem(nullptr),
 		mCameraSystem(nullptr), mShadowSystem(nullptr), mAppRenderer(nullptr),
-		mRMeshSystem(nullptr), mRTerrainSystem(nullptr),
+		mMeshSystem(nullptr), mTerrainSystem(nullptr),
 		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
 		mAnimationSystem(nullptr), mAudioSystem(nullptr),
 		mGUIManager(nullptr)
@@ -90,7 +90,7 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
 			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<graphics::RenderableTerrain>(kMaxTerrains);
+			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains);
 			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
 			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
 			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
@@ -108,8 +108,8 @@ namespace se::app {
 			mAppRenderer = new AppRenderer(*this, shadowData, windowConfig.width, windowConfig.height);
 			mCameraSystem = new CameraSystem(*this);
 			mShadowSystem = new ShadowSystem(*this, shadowData);
-			mRMeshSystem = new RMeshSystem(*this);
-			mRTerrainSystem = new RTerrainSystem(*this);
+			mMeshSystem = new MeshSystem(*this);
+			mTerrainSystem = new TerrainSystem(*this);
 			mDynamicsSystem = new DynamicsSystem(*this);
 			mConstraintsSystem = new ConstraintsSystem(*this);
 			mCollisionSystem = new CollisionSystem(*this);
@@ -135,8 +135,8 @@ namespace se::app {
 		if (mCollisionSystem) { delete mCollisionSystem; }
 		if (mConstraintsSystem) { delete mConstraintsSystem; }
 		if (mDynamicsSystem) { delete mDynamicsSystem; }
-		if (mRTerrainSystem) { delete mRTerrainSystem; }
-		if (mRMeshSystem) { delete mRMeshSystem; }
+		if (mTerrainSystem) { delete mTerrainSystem; }
+		if (mMeshSystem) { delete mMeshSystem; }
 		if (mShadowSystem) { delete mShadowSystem; }
 		if (mCameraSystem) { delete mCameraSystem; }
 		if (mAppRenderer) { delete mAppRenderer; }
@@ -256,8 +256,8 @@ namespace se::app {
 		auto audioTask = taskSet.createTask([&]() { mAudioSystem->update(); });
 		auto cameraTask = taskSet.createTask([&]() { mCameraSystem->update(); });
 		auto shadowTask = taskSet.createTask([&]() { mShadowSystem->update(); });
-		auto rmeshTask = taskSet.createTask([&]() { mRMeshSystem->update(); });
-		auto rterrainTask = taskSet.createTask([&]() { mRTerrainSystem->update(); });
+		auto rmeshTask = taskSet.createTask([&]() { mMeshSystem->update(); });
+		auto rterrainTask = taskSet.createTask([&]() { mTerrainSystem->update(); });
 
 		taskSet.depends(dynamicsTask, scriptTask);
 		taskSet.depends(animationTask, scriptTask);

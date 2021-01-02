@@ -28,7 +28,8 @@ namespace se::app {
 
 		// Normalize the planes
 		for (auto& plane : mFrustumPlanes) {
-			plane /= glm::length( glm::vec3(plane) );
+			glm::vec3 p2(plane);
+			plane *= glm::inversesqrt( glm::dot(p2, p2) );
 		}
 
 		return *this;

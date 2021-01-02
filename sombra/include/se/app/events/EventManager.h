@@ -64,23 +64,26 @@ namespace se::app
 		 * notified to the listener
 		 *
 		 * @param	eventListener a pointer to the IEventListener to notify
-		 * @param	topic the topic to subscribe the eventListener */
-		void subscribe(IEventListener* eventListener, Topic topic);
+		 * @param	topic the topic to subscribe the eventListener
+		 * @return	a reference to the current EventManager object */
+		EventManager& subscribe(IEventListener* eventListener, Topic topic);
 
 		/** Unsubscribes the given IEventListener from the given topic, so the
 		 * published events in the EventManager with that topic will no longer
 		 * be notified to the listener
 		 *
 		 * @param	eventListener a pointer to the IEventListener to unsubscribe
-		 * @param	topic the topic to unsubscribe */
-		void unsubscribe(IEventListener* eventListener, Topic topic);
+		 * @param	topic the topic to unsubscribe
+		 * @return	a reference to the current EventManager object */
+		EventManager& unsubscribe(IEventListener* eventListener, Topic topic);
 
 		/** Publishes the given event to the EventManager, so the
 		 * IEventListeners subscribed to the same topics than the event will be
 		 * notified of it
 		 *
-		 * @param	event a pointer to the IEvent to notify */
-		void publish(IEvent* event);
+		 * @param	event a pointer to the IEvent to notify
+		 * @return	a reference to the current EventManager object */
+		EventManager& publish(IEvent* event);
 	};
 
 }

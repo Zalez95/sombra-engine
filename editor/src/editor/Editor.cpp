@@ -2,8 +2,9 @@
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
 #include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/TechniqueLoader.h>
+#include <se/app/loaders/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
+#include <se/app/RenderableShader.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraComponent.h>
 #include <se/app/events/ContainerEvent.h>
@@ -92,49 +93,49 @@ namespace editor {
 		mScene->repository.add(std::string("chessTexture"), chessTexture);
 
 		std::shared_ptr<se::graphics::Program> programShadow;
-		programShadow = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
+		programShadow = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
 		if (!programShadow) {
 			throw std::runtime_error("programShadow not found");
 		}
 		mScene->repository.add(std::string("programShadow"), programShadow);
 
 		std::shared_ptr<se::graphics::Program> programShadowSkinning;
-		programShadowSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
+		programShadowSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
 		if (!programShadowSkinning) {
 			throw std::runtime_error("programShadowSkinning not found");
 		}
 		mScene->repository.add(std::string("programShadow"), programShadowSkinning);
 
 		std::shared_ptr<se::graphics::Program> programShadowTerrain;
-		programShadowTerrain = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
+		programShadowTerrain = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
 		if (!programShadowTerrain) {
 			throw std::runtime_error("programShadowTerrain not found");
 		}
 		mScene->repository.add(std::string("programShadowTerrain"), programShadowTerrain);
 
 		std::shared_ptr<se::graphics::Program> programSky;
-		programSky = se::app::TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
+		programSky = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
 		if (!programSky) {
 			throw std::runtime_error("programSky not found");
 		}
 		mScene->repository.add(std::string("programSky"), programSky);
 
 		std::shared_ptr<se::graphics::Program> programGBufMaterial;
-		programGBufMaterial = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+		programGBufMaterial = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 		if (!programGBufMaterial) {
 			throw std::runtime_error("programGBufMaterial not found");
 		}
 		mScene->repository.add(std::string("programGBufMaterial"), programGBufMaterial);
 
 		std::shared_ptr<se::graphics::Program> programGBufMaterialSkinning;
-		programGBufMaterialSkinning = se::app::TechniqueLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
+		programGBufMaterialSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
 		if (!programGBufMaterialSkinning) {
 			throw std::runtime_error("programGBufMaterialSkinning not found");
 		}
 		mScene->repository.add(std::string("programGBufMaterialSkinning"), programGBufMaterialSkinning);
 
 		std::shared_ptr<se::graphics::Program> programGBufSplatmap;
-		programGBufSplatmap = se::app::TechniqueLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
+		programGBufSplatmap = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
 		if (!programGBufSplatmap) {
 			throw std::runtime_error("programGBufSplatmap not found");
 		}
@@ -153,7 +154,7 @@ namespace editor {
 
 		auto passDefault = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
 		passDefault->addBindable(programGBufMaterial);
-		se::app::TechniqueLoader::addMaterialBindables(
+		se::app::ShaderLoader::addMaterialBindables(
 			passDefault,
 			se::app::Material{
 				se::app::PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
@@ -163,10 +164,10 @@ namespace editor {
 		);
 		mScene->repository.add(std::string("passDefault"), passDefault);
 
-		auto techniqueDefault = std::make_shared<se::graphics::Technique>();
-		techniqueDefault->addPass(passShadow)
+		auto shaderDefault = std::make_shared<se::app::RenderableShader>(*mEventManager);
+		shaderDefault->addPass(passShadow)
 			.addPass(passDefault);
-		mScene->repository.add(std::string("techniqueDefault"), techniqueDefault);
+		mScene->repository.add(std::string("shaderDefault"), shaderDefault);
 	}
 
 

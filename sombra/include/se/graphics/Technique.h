@@ -12,7 +12,7 @@ namespace se::graphics {
 
 
 	/**
-	 * Class Technique, TODO:
+	 * Class Technique, it's a set of Passes used for rendering Renderables
 	 */
 	class Technique
 	{
@@ -35,7 +35,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each Pass */
 		template <typename F>
-		void processPasses(F callback);
+		void processPasses(F callback) const;
 
 		/** Removes a Pass from the current Technique
 		 *
@@ -54,7 +54,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Technique::processPasses(F callback)
+	void Technique::processPasses(F callback) const
 	{
 		for (auto& pass : mPasses) {
 			callback(pass);

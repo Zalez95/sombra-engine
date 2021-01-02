@@ -3,7 +3,7 @@
 #include "se/graphics/core/UniformBlock.h"
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/graphics/DeferredLightRenderer.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 
 namespace se::app {
 
@@ -30,7 +30,7 @@ namespace se::app {
 
 		auto program = repository.find<std::string, Program>("programDeferredLighting");
 		if (!program) {
-			program = TechniqueLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+			program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
 			repository.add(std::string("programDeferredLighting"), program);
 		}
 

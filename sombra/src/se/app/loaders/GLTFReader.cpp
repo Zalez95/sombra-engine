@@ -8,7 +8,6 @@
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/loaders/ImageReader.h"
-#include "se/app/loaders/TechniqueLoader.h"
 #include "se/app/graphics/RawMesh.h"
 #include "se/app/events/ContainerEvent.h"
 #include "se/animation/StepAnimations.h"
@@ -18,10 +17,123 @@
 
 namespace se::app {
 
-	enum class InterpolationType
+	struct GLTFReader::Accessor
 	{
-		Linear, Step, CubicSpline
+		union BoundsComponentType { float f; int i; };
+		using BoundsType = utils::FixedVector<BoundsComponentType, 16>;
+
+		std::size_t bufferViewId, byteOffset, count, numComponents;
+		graphics::TypeId componentTypeId;
+		bool normalized;
+		BoundsType minimum, maximum;
 	};
+
+
+	struct GLTFReader::BufferView
+	{
+		std::size_t bufferId, length, offset, stride;
+		enum class Target { Array, ElementArray, Undefined } target;
+	};
+
+
+	struct GLTFReader::Sampler
+	{
+		graphics::TextureFilter filters[2];
+		graphics::TextureWrap wraps[2];
+	};
+
+
+	struct GLTFReader::MaterialTechnique
+	{
+		std::string name;
+		Material material;
+		ShaderSPtr shader;
+		ShaderSPtr shaderSkin;
+	};
+
+
+	struct GLTFReader::Node
+	{
+		animation::NodeData nodeData;
+		std::vector<std::size_t> children;
+		Entity entity = kNullEntity;
+		bool hasSkin = false;
+		std::size_t skinIndex = 0;
+		animation::AnimationNode* animationNode = nullptr;
+	};
+
+
+	struct GLTFReader::PrimitiveMeshData
+	{
+		std::array<bool, MeshAttributes::NumAttributes> hasAttribute = {};
+		std::array<std::size_t, MeshAttributes::NumAttributes> attributeAccessor = {};
+		std::size_t indicesIndex;
+
+		friend bool operator==(
+			const PrimitiveMeshData& lhs, const PrimitiveMeshData& rhs
+		) {
+			return (lhs.hasAttribute == rhs.hasAttribute)
+				&& (lhs.attributeAccessor == rhs.attributeAccessor)
+				&& (lhs.indicesIndex == rhs.indicesIndex);
+		};
+
+		struct MyHash
+		{
+			std::size_t operator()(const PrimitiveMeshData& v) const noexcept
+			{
+				std::size_t ret = 0;
+				for (std::size_t i = 0; i < MeshAttributes::NumAttributes; ++i) {
+					utils::hash_combine(ret, v.hasAttribute[i]);
+					utils::hash_combine(ret, v.attributeAccessor[i]);
+				}
+				utils::hash_combine(ret, v.indicesIndex);
+				return ret;
+			}
+		};
+	};
+
+
+	struct GLTFReader::PrimitiveData
+	{
+		MeshSPtr mesh;
+		bool hasSkin = false;
+		ShaderSPtr shader;
+	};
+
+
+	struct GLTFReader::GLTFData
+	{
+		std::string fileName;
+		std::string basePath;
+		Scene& scene;
+
+		std::vector<Accessor> accessors;
+		std::vector<Buffer> buffers;
+		std::vector<BufferView> bufferViews;
+		std::vector<Sampler> samplers;
+		std::vector<Image<unsigned char>> images;
+		std::vector<TextureSPtr> textures;
+		std::vector<MaterialTechnique> materials;
+		std::vector<MeshSPtr> meshes;
+		std::unordered_map<
+			PrimitiveMeshData, std::size_t,
+			PrimitiveMeshData::MyHash
+		> primitiveMeshes;
+		std::vector<std::vector<PrimitiveData>> primitives;
+		std::vector<LightSourceSPtr> lightSources;
+		std::vector<SkinSPtr> skins;
+		std::vector<IndexVector> jointIndices;
+		std::vector<CameraComponent> cameraComponents;
+		std::vector<Node> nodes;
+		std::vector<SceneUPtr> scenes;
+		std::vector<CAnimatorSPtr> compositeAnimators;
+
+		GLTFData(Scene& scene) : scene(scene) {};
+	};
+
+
+	enum class InterpolationType { Linear, Step, CubicSpline };
+
 
 	constexpr bool toTypeId(int code, graphics::TypeId& typeId)
 	{
@@ -140,6 +252,13 @@ namespace se::app {
 	}
 
 
+	GLTFReader::GLTFReader(Application& application, ShaderBuilder& shaderBuilder) :
+		SceneReader(application, shaderBuilder) {}
+
+
+	GLTFReader::~GLTFReader() {}
+
+
 	Result GLTFReader::load(const std::string& path, Scene& output)
 	{
 		Result result;
@@ -148,7 +267,7 @@ namespace se::app {
 		mGLTFData = std::make_unique<GLTFData>(output);
 		mGLTFData->basePath = path.substr(0, path.find_last_of("/\\") + 1);
 		mGLTFData->fileName = path.substr(mGLTFData->basePath.size(), path.size());
-		createDefaultTechniques(mGLTFData->scene);
+		createDefaultShaders(mGLTFData->scene);
 
 		// Parse the file
 		nlohmann::json jsonGLTF;
@@ -795,56 +914,21 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive, graphics::RenderableMesh& out)
+	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive, PrimitiveData& out)
 	{
-		// TODO: shared meshes instead of creating new ones
-		bool hasSkin = false;
-		std::shared_ptr<graphics::Mesh> mesh;
-		std::shared_ptr<graphics::Technique> technique;
+		PrimitiveMeshData primitiveMesh;
 
-		graphics::VertexArray vao;
-		vao.bind();
-
-		std::vector<graphics::VertexBuffer> vbos;
-		glm::vec3 minPosition(0.0f), maxPosition(0.0f);
+		// Read the PrimitiveMeshData object from the json
 		auto itAttributes = jsonPrimitive.find("attributes");
 		if (itAttributes != jsonPrimitive.end()) {
 			for (auto itAttribute = itAttributes->begin(); itAttribute != itAttributes->end(); ++itAttribute) {
 				unsigned int meshAttribute;
 				if (toMeshAttribute(itAttribute.key(), meshAttribute)) {
-					hasSkin |= (meshAttribute == MeshAttributes::JointIndexAttribute);
-					hasSkin |= (meshAttribute == MeshAttributes::JointWeightAttribute);
+					out.hasSkin |= (meshAttribute == MeshAttributes::JointIndexAttribute);
+					out.hasSkin |= (meshAttribute == MeshAttributes::JointWeightAttribute);
 
-					std::size_t accessorId = *itAttribute;
-					if (accessorId >= mGLTFData->accessors.size()) {
-						return Result(false, "Attribute index " + std::to_string(accessorId) + " out of range");
-					}
-
-					const Accessor& a = mGLTFData->accessors[accessorId];
-					const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
-					const Buffer& b = mGLTFData->buffers[bv.bufferId];
-
-					auto& vbo = vbos.emplace_back();
-					vbo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length);
-
-					// Add the VBO to the VAO
-					vbo.bind();
-					if ((a.componentTypeId == graphics::TypeId::Float) || (a.componentTypeId == graphics::TypeId::HalfFloat)) {
-						vao.setVertexAttribute(meshAttribute, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
-					}
-					else if (a.componentTypeId == graphics::TypeId::Double) {
-						vao.setVertexDoubleAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
-					}
-					else {
-						vao.setVertexIntegerAttribute(meshAttribute, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
-					}
-
-					if (meshAttribute == MeshAttributes::PositionAttribute) {
-						for (std::size_t i = 0; i < 3; ++i) {
-							minPosition[i] = a.minimum[i].f;
-							maxPosition[i] = a.maximum[i].f;
-						}
-					}
+					primitiveMesh.hasAttribute[meshAttribute] = true;
+					primitiveMesh.attributeAccessor[meshAttribute] = *itAttribute;
 				}
 				else {
 					return Result(false, "Invalid attribute \"" + itAttribute.key() + "\"");
@@ -857,41 +941,16 @@ namespace se::app {
 
 		auto itIndices = jsonPrimitive.find("indices");
 		if (itIndices != jsonPrimitive.end()) {
-			std::size_t accessorId = *itIndices;
-			if (accessorId >= mGLTFData->accessors.size()) {
-				return Result(false, "Accessor index " + std::to_string(accessorId) + " out of range");
-			}
-
-			const Accessor& a = mGLTFData->accessors[accessorId];
-			const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
-			const Buffer& b = mGLTFData->buffers[bv.bufferId];
-
-			if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
-				&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
-				&& (a.componentTypeId != graphics::TypeId::UnsignedInt)
-			) {
-				return Result(false, "Accessor " + std::to_string(accessorId) + " must be UByte or UShort or UInt");
-			}
-			if (a.numComponents != 1) {
-				return Result(false, "Accessor " + std::to_string(accessorId) + " component size must be 1");
-			}
-			if ((bv.target != BufferView::Target::Undefined)
-				&& (bv.target != BufferView::Target::ElementArray)
-			) {
-				return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
-			}
-
-			graphics::IndexBuffer ibo;
-			ibo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
-
-			// Bind the IBO to the VAO
-			ibo.bind();
-
-			mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-			mesh->setBounds(minPosition, maxPosition);
+			primitiveMesh.indicesIndex = *itIndices;
 		}
 		else {
 			return Result(false, "Meshes without indices aren't supported");
+		}
+
+		// Create a Mesh from the PrimitiveMeshData object
+		Result result = createMesh(primitiveMesh, out.mesh);
+		if (!result) {
+			return Result(false, std::string("Couldn't create the Mesh: ") + result.description());
 		}
 
 		auto itMaterial = jsonPrimitive.find("material");
@@ -901,30 +960,28 @@ namespace se::app {
 				return Result(false, "Material index " + std::to_string(materialId) + " out of range");
 			}
 
-			auto& materialTechnique = mGLTFData->materials[materialId];
-			if (hasSkin) {
-				if (!materialTechnique.techniqueSkin) {
-					materialTechnique.techniqueSkin = mTechniqueBuilder.createTechnique(materialTechnique.material, true);
-					mGLTFData->scene.repository.add(materialTechnique.name + "Skin", materialTechnique.technique);
+			auto& materialShader = mGLTFData->materials[materialId];
+			if (out.hasSkin) {
+				if (!materialShader.shaderSkin) {
+					materialShader.shaderSkin = mShaderBuilder.createShader(materialShader.material, true);
+					mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shader);
 				}
-				technique = materialTechnique.techniqueSkin;
+				out.shader = materialShader.shaderSkin;
 			}
 			else {
-				if (!materialTechnique.technique) {
-					materialTechnique.technique = mTechniqueBuilder.createTechnique(materialTechnique.material, false);
-					mGLTFData->scene.repository.add(materialTechnique.name, materialTechnique.technique);
+				if (!materialShader.shader) {
+					materialShader.shader = mShaderBuilder.createShader(materialShader.material, false);
+					mGLTFData->scene.repository.add(materialShader.name, materialShader.shader);
 				}
-				technique = materialTechnique.technique;
+				out.shader = materialShader.shader;
 			}
 		}
 		else {
-			// Use the default technique
-			std::string techniqueKey = hasSkin? "defaultTechniqueSkin" : "defaultTechnique";
-			technique = mGLTFData->scene.repository.find<std::string, graphics::Technique>(techniqueKey);
+			// Use the default shader
+			std::string shaderKey = out.hasSkin? "defaultShaderSkin" : "defaultShader";
+			out.shader = mGLTFData->scene.repository.find<std::string, RenderableShader>(shaderKey);
 		}
 
-		out = graphics::RenderableMesh(mesh);
-		out.addTechnique(technique);
 		return Result();
 	}
 
@@ -943,12 +1000,15 @@ namespace se::app {
 				+ " (" + std::to_string(MeshComponent::kMaxMeshes) + ")");
 		}
 
-		auto& meshComponent = mGLTFData->meshComponents.emplace_back();
+		auto& primitives = mGLTFData->primitives.emplace_back();
 		for (std::size_t primitiveId = 0; primitiveId < itPrimitives->size(); ++primitiveId) {
-			Result result = parsePrimitive((*itPrimitives)[primitiveId], meshComponent.rMeshes.emplace_back(nullptr));
+			PrimitiveData primitive;
+			Result result = parsePrimitive((*itPrimitives)[primitiveId], primitive);
 			if (!result) {
 				return Result(false, "Failed to read the primitives property at primitive " + std::to_string(primitiveId) + ": " + result.description());
 			}
+
+			primitives.emplace_back(std::move(primitive));
 		}
 
 		return Result();
@@ -1467,8 +1527,12 @@ namespace se::app {
 
 			if (itMesh != jsonNode.end()) {
 				std::size_t meshIndex = *itMesh;
-				if (meshIndex < mGLTFData->meshComponents.size()) {
-					entityDB.emplaceComponent<MeshComponent>(node.entity, mGLTFData->meshComponents[meshIndex]);
+				if (meshIndex < mGLTFData->primitives.size()) {
+					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity, mApplication.getEventManager(), node.entity);
+					for (auto& primitive : mGLTFData->primitives[meshIndex]) {
+						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh);
+						mesh->addRenderableShader(rIndex, primitive.shader);
+					}
 				}
 				else {
 					return Result(false, "Mesh index " + std::to_string(meshIndex) + " out of range");
@@ -1572,6 +1636,93 @@ namespace se::app {
 				}
 			}
 		}
+
+		return Result();
+	}
+
+
+	Result GLTFReader::createMesh(const PrimitiveMeshData& primitiveMesh, MeshSPtr& out) const
+	{
+		// Check if the Mesh has already been created
+		auto itMesh = mGLTFData->primitiveMeshes.find(primitiveMesh);
+		if (itMesh != mGLTFData->primitiveMeshes.end()) {
+			out = mGLTFData->meshes[itMesh->second];
+			return Result();
+		}
+
+		// Create the VAO
+		graphics::VertexArray vao;
+		vao.bind();
+
+		// Create the VBOs
+		std::vector<graphics::VertexBuffer> vbos;
+		glm::vec3 minPosition(0.0f), maxPosition(0.0f);
+		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) { if (primitiveMesh.hasAttribute[i]) {
+			if (primitiveMesh.attributeAccessor[i] >= mGLTFData->accessors.size()) {
+				return Result(false, "Attribute index " + std::to_string(primitiveMesh.attributeAccessor[i]) + " out of range");
+			}
+
+			const Accessor& a = mGLTFData->accessors[primitiveMesh.attributeAccessor[i]];
+			const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
+			const Buffer& b = mGLTFData->buffers[bv.bufferId];
+
+			auto& vbo = vbos.emplace_back();
+			vbo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length);
+
+			// Add the VBO to the VAO
+			vbo.bind();
+			if ((a.componentTypeId == graphics::TypeId::Float) || (a.componentTypeId == graphics::TypeId::HalfFloat)) {
+				vao.setVertexAttribute(i, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
+			}
+			else if (a.componentTypeId == graphics::TypeId::Double) {
+				vao.setVertexDoubleAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
+			}
+			else {
+				vao.setVertexIntegerAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
+			}
+
+			if (i == MeshAttributes::PositionAttribute) {
+				for (std::size_t j = 0; j < 3; ++j) {
+					minPosition[j] = a.minimum[j].f;
+					maxPosition[j] = a.maximum[j].f;
+				}
+			}
+		}}
+
+		// Create the IBO
+		if (primitiveMesh.indicesIndex >= mGLTFData->accessors.size()) {
+			return Result(false, "Accessor index " + std::to_string(primitiveMesh.indicesIndex) + " out of range");
+		}
+
+		const Accessor& a = mGLTFData->accessors[primitiveMesh.indicesIndex];
+		const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
+		const Buffer& b = mGLTFData->buffers[bv.bufferId];
+
+		if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
+			&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
+			&& (a.componentTypeId != graphics::TypeId::UnsignedInt)
+		) {
+			return Result(false, "Accessor " + std::to_string(primitiveMesh.indicesIndex) + " must be UByte or UShort or UInt");
+		}
+		if (a.numComponents != 1) {
+			return Result(false, "Accessor " + std::to_string(primitiveMesh.indicesIndex) + " component size must be 1");
+		}
+		if ((bv.target != BufferView::Target::Undefined)
+			&& (bv.target != BufferView::Target::ElementArray)
+		) {
+			return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
+		}
+
+		graphics::IndexBuffer ibo;
+		ibo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
+
+		ibo.bind();
+
+		// Create a new Mesh
+		out = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+		out->setBounds(minPosition, maxPosition);
+		mGLTFData->meshes.emplace_back(out);
+		mGLTFData->primitiveMeshes.emplace(primitiveMesh, mGLTFData->meshes.size() - 1);
 
 		return Result();
 	}

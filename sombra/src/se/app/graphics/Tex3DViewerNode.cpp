@@ -1,5 +1,5 @@
 #include "se/app/graphics/Tex3DViewerNode.h"
-#include "se/app/loaders/TechniqueLoader.h"
+#include "se/app/loaders/ShaderLoader.h"
 #include "se/app/loaders/MeshLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
@@ -13,7 +13,7 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DViewer");
 		if (!program) {
-			program = TechniqueLoader::createProgram(
+			program = ShaderLoader::createProgram(
 				"res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl"
 			);
 			repository.add(std::string("programTex3DViewer"), program);
