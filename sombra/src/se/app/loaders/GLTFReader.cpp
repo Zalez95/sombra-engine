@@ -43,7 +43,7 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::MaterialTechnique
+	struct GLTFReader::MaterialShader
 	{
 		std::string name;
 		Material material;
@@ -113,7 +113,7 @@ namespace se::app {
 		std::vector<Sampler> samplers;
 		std::vector<Image<unsigned char>> images;
 		std::vector<TextureSPtr> textures;
-		std::vector<MaterialTechnique> materials;
+		std::vector<MaterialShader> materials;
 		std::vector<MeshSPtr> meshes;
 		std::unordered_map<
 			PrimitiveMeshData, std::size_t,
@@ -252,8 +252,7 @@ namespace se::app {
 	}
 
 
-	GLTFReader::GLTFReader(Application& application, ShaderBuilder& shaderBuilder) :
-		SceneReader(application, shaderBuilder) {}
+	GLTFReader::GLTFReader(ShaderBuilder& shaderBuilder) : SceneReader(shaderBuilder) {}
 
 
 	GLTFReader::~GLTFReader() {}
@@ -285,13 +284,15 @@ namespace se::app {
 	Result GLTFReader::readJSON(const std::string& path, nlohmann::json& output)
 	{
 		std::ifstream inputstream(path);
-			if (!inputstream.good()) {
-				return Result(false, "Can't open the GLTF file");
-			}
+		if (!inputstream.good()) {
+			return Result(false, "Can't open the GLTF file");
+		}
 
-		inputstream >> output;
-		if (inputstream.fail()) {
-			return Result(false, "Failed to parse the JSON file");
+		try {
+			inputstream >> output;
+		}
+		catch(const nlohmann::json::parse_error& e) {
+			return Result(false, "Failed to parse the JSON file: " + std::string(e.what()));
 		}
 
 		return Result();
@@ -457,7 +458,7 @@ namespace se::app {
 					nodeJointMap.emplace_back(mGLTFData->nodes[nodeIndex].animationNode, jointIndex);
 				}
 
-				mApplication.getEntityDatabase().emplaceComponent<SkinComponent>(
+				mGLTFData->scene.application.getEntityDatabase().emplaceComponent<SkinComponent>(
 					node.entity,
 					mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
 				);
@@ -753,7 +754,10 @@ namespace se::app {
 		}
 
 		mGLTFData->textures.push_back(texture);
-		mGLTFData->scene.repository.add(name, texture);
+		if (!mGLTFData->scene.repository.add(name, texture)) {
+			return Result(false, "Can't add Texture with name " + name);
+		}
+
 		return Result();
 	}
 
@@ -908,8 +912,8 @@ namespace se::app {
 			material.doubleSided = *itDoubleSided;
 		}
 
-		MaterialTechnique materialTechnique = { std::move(name), std::move(material), nullptr, nullptr };
-		mGLTFData->materials.emplace_back(std::move(materialTechnique));
+		MaterialShader materialShader = { std::move(name), std::move(material), nullptr, nullptr };
+		mGLTFData->materials.emplace_back(std::move(materialShader));
 		return Result();
 	}
 
@@ -964,14 +968,18 @@ namespace se::app {
 			if (out.hasSkin) {
 				if (!materialShader.shaderSkin) {
 					materialShader.shaderSkin = mShaderBuilder.createShader(materialShader.material, true);
-					mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shader);
+					if (!mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shader)) {
+						return Result(false, "Can't add MaterialShader with name " + materialShader.name);
+					}
 				}
 				out.shader = materialShader.shaderSkin;
 			}
 			else {
 				if (!materialShader.shader) {
 					materialShader.shader = mShaderBuilder.createShader(materialShader.material, false);
-					mGLTFData->scene.repository.add(materialShader.name, materialShader.shader);
+					if (!mGLTFData->scene.repository.add(materialShader.name, materialShader.shader)) {
+						return Result(false, "Can't add MaterialShader with name " + materialShader.name);
+					}
 				}
 				out.shader = materialShader.shader;
 			}
@@ -1001,6 +1009,7 @@ namespace se::app {
 		}
 
 		auto& primitives = mGLTFData->primitives.emplace_back();
+		primitives.reserve(itPrimitives->size());
 		for (std::size_t primitiveId = 0; primitiveId < itPrimitives->size(); ++primitiveId) {
 			PrimitiveData primitive;
 			Result result = parsePrimitive((*itPrimitives)[primitiveId], primitive);
@@ -1055,8 +1064,11 @@ namespace se::app {
 		}
 
 		mGLTFData->skins.push_back(skin);
-		mGLTFData->scene.repository.add(name, skin);
 		mGLTFData->jointIndices.emplace_back(std::move(jointIndices));
+		if (!mGLTFData->scene.repository.add(name, skin)) {
+			return Result(false, "Can't add Skin with name " + name);
+		}
+
 		return Result();
 	}
 
@@ -1353,7 +1365,10 @@ namespace se::app {
 		compositeAnimator->setLoopTime(maxLoopTime);
 
 		mGLTFData->compositeAnimators.emplace_back(compositeAnimator);
-		mGLTFData->scene.repository.add(name, compositeAnimator);
+		if (!mGLTFData->scene.repository.add(name, compositeAnimator)) {
+			return Result(false, "Can't add CompositeAnimator with name " + name);
+		}
+
 		return Result();
 	}
 
@@ -1438,7 +1453,10 @@ namespace se::app {
 		lightSource->intensity = (itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f;
 
 		mGLTFData->lightSources.push_back(lightSource);
-		mGLTFData->scene.repository.add(name, lightSource);
+		if (!mGLTFData->scene.repository.add(name, lightSource)) {
+			return Result(false, "Can't add LightSource with name " + name);
+		}
+
 		return Result();
 	}
 
@@ -1508,7 +1526,8 @@ namespace se::app {
 		if ((itCamera != jsonNode.end()) || (itMesh != jsonNode.end())
 			|| (itSkin != jsonNode.end()) || (itExtensions != jsonNode.end())
 		) {
-			se::app::EntityDatabase& entityDB = mApplication.getEntityDatabase();
+			se::app::EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
+			se::app::EventManager& eventManager = mGLTFData->scene.application.getEventManager();
 			node.entity = entityDB.addEntity();
 			mGLTFData->scene.entities.push_back(node.entity);
 
@@ -1528,7 +1547,7 @@ namespace se::app {
 			if (itMesh != jsonNode.end()) {
 				std::size_t meshIndex = *itMesh;
 				if (meshIndex < mGLTFData->primitives.size()) {
-					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity, mApplication.getEventManager(), node.entity);
+					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity, eventManager, node.entity);
 					for (auto& primitive : mGLTFData->primitives[meshIndex]) {
 						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh);
 						mesh->addRenderableShader(rIndex, primitive.shader);
@@ -1568,12 +1587,12 @@ namespace se::app {
 
 				auto itActiveCamera = itExtensions->find("active_camera");
 				if ((itActiveCamera != itExtensions->end()) && (*itActiveCamera == true)) {
-					mApplication.getEventManager().publish(new ContainerEvent<Topic::Camera, Entity>(node.entity));
+					eventManager.publish(new ContainerEvent<Topic::Camera, Entity>(node.entity));
 				}
 
 				auto itProjectShadows = itExtensions->find("project_shadows");
 				if ((itProjectShadows != itExtensions->end()) && (*itProjectShadows == true)) {
-					mApplication.getEventManager().publish(new ContainerEvent<Topic::Shadow, Entity>(node.entity));
+					eventManager.publish(new ContainerEvent<Topic::Shadow, Entity>(node.entity));
 				}
 			}
 		}
@@ -1602,7 +1621,9 @@ namespace se::app {
 				rootNode.animationNode = &(*itRootNode);
 				animation::updateWorldTransforms(*rootNode.animationNode);
 				if (rootNode.entity != kNullEntity) {
-					mApplication.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(rootNode.entity, rootNode.animationNode);
+					mGLTFData->scene.application.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(
+						rootNode.entity, rootNode.animationNode
+					);
 				}
 
 				// Build the tree
@@ -1628,7 +1649,9 @@ namespace se::app {
 						child.animationNode = &(*itChild);
 						animation::updateWorldTransforms(*child.animationNode);
 						if (child.entity != kNullEntity) {
-							mApplication.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(child.entity, child.animationNode);
+							mGLTFData->scene.application.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(
+								child.entity, child.animationNode
+							);
 						}
 
 						nodesToProcess.push_back(childId);
@@ -1723,6 +1746,11 @@ namespace se::app {
 		out->setBounds(minPosition, maxPosition);
 		mGLTFData->meshes.emplace_back(out);
 		mGLTFData->primitiveMeshes.emplace(primitiveMesh, mGLTFData->meshes.size() - 1);
+
+		std::string name = mGLTFData->fileName + "_mesh" + std::to_string(PrimitiveMeshData::MyHash()(primitiveMesh));
+		if (!mGLTFData->scene.repository.add(name, out)) {
+			return Result(false, "Can't add Mesh with name " + name);
+		}
 
 		return Result();
 	}

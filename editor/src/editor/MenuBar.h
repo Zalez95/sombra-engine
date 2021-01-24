@@ -1,6 +1,8 @@
 #ifndef MENU_BAR_H
 #define MENU_BAR_H
 
+#include "ImGuiUtils.h"
+
 namespace editor {
 
 	class Editor;
@@ -15,6 +17,9 @@ namespace editor {
 	private:	// Attributes
 		/** A reference to the Editor that holds the MenuBar */
 		Editor& mEditor;
+
+		/** The window used for opening GLTF files */
+		FileWindow mGLTFWindow;
 
 	public:		// Functions
 		/** Creates a new MenuBar

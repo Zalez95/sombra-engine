@@ -11,7 +11,7 @@
 using namespace se::collision;
 static constexpr float kTolerance			= 0.0001f;
 static constexpr float kMinFDifference		= 0.0001f;
-static constexpr float kMaxIterations		= 128;
+static constexpr std::size_t kMaxIterations	= 128;
 static constexpr float kContactPrecision	= 0.0000001f;
 static constexpr float kContactSeparation	= 0.0000001f;
 

@@ -9,7 +9,8 @@ namespace editor {
 
 	/**
 	 * Class ImGuiInput, acts as an adapter between the ImGui io input and the
-	 * Application input events
+	 * Application input events. It is based on @see imgui_impl_glfw.cpp ImGui
+	 * input implementation.
 	 */
 	class ImGuiInput : public se::app::IEventListener
 	{

@@ -8,6 +8,11 @@ namespace se::graphics { class VertexArray; }
 
 namespace editor {
 
+	/**
+	 * Class ImGuiRenderer. It's a BindableRenderNode used for rendering the
+	 * ImGui GUI. It is based on the @see imgui_impl_opengl3.cpp ImGui OpenGL
+	 * implementation.
+	 */
 	class ImGuiRenderer : public se::graphics::BindableRenderNode
 	{
 	private:	// Nested types

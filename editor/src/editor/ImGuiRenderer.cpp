@@ -117,7 +117,9 @@ namespace editor {
 						);
 
 						// Bind texture, Draw
-						((se::graphics::Texture*)pcmd->TextureId)->bind();
+						se::graphics::Texture* texture = static_cast<se::graphics::Texture*>(pcmd->TextureId);
+						texture->setTextureUnit(0);
+						texture->bind();
 						se::graphics::GraphicsOperations::drawIndexed(se::graphics::PrimitiveType::Triangle, pcmd->ElemCount,
 							(sizeof(ImDrawIdx) == 2)? se::graphics::TypeId::UnsignedShort : se::graphics::TypeId::UnsignedInt,
 							pcmd->IdxOffset * sizeof(ImDrawIdx)

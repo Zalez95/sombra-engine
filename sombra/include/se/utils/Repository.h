@@ -45,13 +45,21 @@ namespace se::utils {
 			const KeyType& key, std::shared_ptr<ValueType> value
 		);
 
-		/** Searchs an element with the given key value
+		/** Searchs an element with the given key
 		 *
-		 * @param	key the key value used for searching
+		 * @param	key the key used for searching
 		 * @return	a pointer to the element found, nullptr if it wasn't
 		 *			found */
 		template <typename KeyType, typename ValueType>
 		std::shared_ptr<ValueType> find(const KeyType& key);
+
+		/** Checks if there is an element with the given key
+		 *
+		 * @param	key the key used for searching
+		 * @return	true if there is a value with the given key, false
+		 *			otherwise */
+		template <typename KeyType, typename ValueType>
+		bool has(const KeyType& key);
 
 		/** Iterates through all the elements of the Repository with the given
 		 * @tparam KeyType and @tparam ValueType calling the given

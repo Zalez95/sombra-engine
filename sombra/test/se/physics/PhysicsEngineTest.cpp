@@ -4,7 +4,7 @@
 #include <se/physics/constraints/DistanceConstraint.h>
 
 using namespace se::physics;
-static constexpr float kTolerance = 0.000001;
+static constexpr float kTolerance = 0.000001f;
 
 TEST(PhysicsEngine, velocityIntegration)
 {
@@ -14,9 +14,10 @@ TEST(PhysicsEngine, velocityIntegration)
 	const glm::vec3 expectedLinearVelocity(2.5f, -2.0f, -0.5f);
 	const glm::vec3 expectedAngularVelocity(-0.13f, -3.6f, 10.125f);
 
-	RigidBodyConfig config(3.5f, glm::mat3(2.0f / 5.0f * 3.5f * std::pow(2.0f, 2)), 0.5f);
+	RigidBodyConfig config(3.5f, glm::mat3(2.0f / 5.0f * 3.5f * static_cast<float>(std::pow(2.0f, 2))));
 	config.linearDrag = 1.0f;
 	config.angularDrag = 1.0f;
+	config.sleepMotion = 0.5f;
 
 	RigidBodyData data;
 	data.position = glm::vec3(-3.0f, 2.0f, -5.0f);
@@ -51,9 +52,10 @@ TEST(PhysicsEngine, forceIntegration)
 	const glm::vec3 expectedLinearVelocity(-0.101241126f, -3.636560201f, 10.100842475f);
 	const glm::vec3 expectedLinearAcceleration(1.797428965f, -2.285017728f, -1.509840369f);
 
-	RigidBodyConfig config(4.512f, glm::mat3(2.0f / 5.0f * 4.512f * std::pow(2.0f, 2)), 0.5f);
+	RigidBodyConfig config(4.512f, glm::mat3(2.0f / 5.0f * 4.512f * static_cast<float>(std::pow(2.0f, 2))));
 	config.linearDrag = 1.0f;
 	config.angularDrag = 1.0f;
+	config.sleepMotion = 0.5f;
 
 	RigidBodyData data;
 	data.position = glm::vec3(-3.146f, 2.95f, -5.2f);
@@ -87,9 +89,10 @@ TEST(PhysicsEngine, torqueIntegration)
 	const glm::vec3 expectedLinearAcceleration(1.654692649f, -3.149759769f, 0.396660745f);
 	const glm::vec3 expectedAngularAcceleration(4.974330902f, 1.776694655f, -6.642519950f);
 
-	RigidBodyConfig config(3.953f, glm::mat3(2.0f / 5.0f * 3.953f * std::pow(2.0f, 2)), 0.5f);
+	RigidBodyConfig config(3.953f, glm::mat3(2.0f / 5.0f * 3.953f * static_cast<float>(std::pow(2.0f, 2))));
 	config.linearDrag = 1.0f;
 	config.angularDrag = 1.0f;
+	config.sleepMotion = 0.5f;
 
 	RigidBodyData data;
 	data.position = glm::vec3(5.373533248f, -5.649199485f, 3.746687889f);
@@ -130,9 +133,10 @@ TEST(PhysicsEngine, transformsIntegration)
 	const glm::vec3 expectedAngularVelocity(0.434944272f, -11.159923553f, -4.147571086f);
 	const glm::vec3 expectedLinearAcceleration(1.188229441f, 0.751120924f, -0.517487585f);
 	const glm::vec3 expectedAngularAcceleration(1.072137355f, -3.708540916f, -2.921071290f);
-	RigidBodyConfig config(6.1781f, glm::mat3(6.1781f * std::pow(3.21f, 2) / 6.0f), 0.2f);
+	RigidBodyConfig config(6.1781f, glm::mat3(6.1781f * static_cast<float>(std::pow(3.21f, 2) / 6.0f)));
 	config.linearDrag = 1.0f;
 	config.angularDrag = 1.0f;
+	config.sleepMotion = 0.2f;
 
 	RigidBodyData data;
 	data.position = glm::vec3(-4.547531127f, 2.949749708f, -3.636348962f);
@@ -166,9 +170,10 @@ TEST(PhysicsEngine, transformsIntegration)
 
 TEST(PhysicsEngine, rigidBodyState)
 {
-	RigidBodyConfig config(6.1781f, glm::mat3(6.1781f * std::pow(3.21f, 2) / 6.0f), 0.2f);
+	RigidBodyConfig config(6.1781f, glm::mat3(6.1781f * static_cast<float>(std::pow(3.21f, 2)) / 6.0f));
 	config.linearDrag = 1.0f;
 	config.angularDrag = 1.0f;
+	config.sleepMotion = 0.2f;
 
 	RigidBodyData data1;
 	data1.position = glm::vec3(-4.547531127f, 2.949749708f, -3.636348962f);

@@ -50,6 +50,10 @@ namespace se::physics {
 		 *			will be affected by the constraint in local space */
 		void setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints)
 		{ mAnchorPoints = anchorPoints; };
+
+		/** @return	the anchor points of the DistanceConstraint */
+		const std::array<glm::vec3, 2>& getAnchorPoints() const
+		{ return mAnchorPoints; };
 	};
 
 }

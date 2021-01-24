@@ -17,7 +17,8 @@ TEST(Force, gravity)
 	const glm::vec3 expectedAngularAcceleration(0.0f, 0.0f, 0.0f);
 	const glm::vec3 expectedTorqueSum(0.0f);
 
-	se::physics::RigidBodyConfig config(2.0f, glm::mat3(0.8f), 0.5f);
+	se::physics::RigidBodyConfig config(2.0f, glm::mat3(0.8f));
+	config.sleepMotion = 0.5f;
 	se::physics::RigidBodyData data;
 	data.position			= glm::vec3(0.0f, 1.0f, 0.0f);
 	data.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);

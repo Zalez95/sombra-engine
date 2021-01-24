@@ -4,9 +4,17 @@
 namespace se::collision {
 
 	BoundingSphere::BoundingSphere(float radius) :
-		mRadius(radius), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+		mRadius(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+	{
+		setRadius(radius);
+	}
+
+
+	void BoundingSphere::setRadius(float radius)
 	{
 		assert(radius >= 0.0f && "The radius of the sphere can't be smaller than zero.");
+		mRadius = radius;
+		mUpdated = true;
 	}
 
 

@@ -29,9 +29,19 @@ namespace se::collision {
 		/** Creates a new ConvexPolyhedron located at the origin of coordinates
 		 *
 		 * @param	meshData the convex 3D HalfEdgeMesh used to create the
-		 *			ConvexPolyhedron
+		 *			ConvexPolyhedron. Empty mesh by default
 		 * @note	the Mesh must be convex */
-		ConvexPolyhedron(const HalfEdgeMesh& meshData);
+		ConvexPolyhedron(const HalfEdgeMesh& meshData = HalfEdgeMesh());
+
+		/** @return	the convex 3D HalfEdgeMesh of the ConvexPolyhedron in local
+		 *			space */
+		HalfEdgeMesh getLocalMesh() const;
+
+		/** Sets the convex 3D HalfEdgeMesh of the ConvexPolyhedron
+		 *
+		 * @param	meshData the convex 3D HalfEdgeMesh in local space used by
+		 *			the ConvexPolyhedron */
+		void setLocalMesh(const HalfEdgeMesh& meshData);
 
 		/** Updates the scale, translation and orientation of the
 		 * ConvexPolyhedron with the given transformations matrix

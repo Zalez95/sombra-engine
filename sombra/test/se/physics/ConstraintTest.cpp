@@ -18,7 +18,9 @@ TEST(Constraint, distanceConstraint)
 	const glm::quat expectedOrientation2(0.999998450f, 0.0f, 0.000156249f, 0.001763155f);
 	const glm::vec3 expectedAngularVelocity2(0.0f, 0.003125000f, 0.035263157f);
 
-	se::physics::RigidBodyConfig config1(2.0f, glm::mat3(0.8f), 0.5f);
+	se::physics::RigidBodyConfig config1(2.0f, glm::mat3(0.8f));
+	config1.sleepMotion = 0.5f;
+
 	se::physics::RigidBodyData data1;
 	data1.position			= glm::vec3(0.0f, 1.0f, 0.0f);
 	data1.linearVelocity	= glm::vec3(1.0f, 0.0f, 0.0f);
@@ -26,7 +28,9 @@ TEST(Constraint, distanceConstraint)
 	data1.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
 	data1.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
 
-	se::physics::RigidBodyConfig config2(4.0f, glm::mat3(6.4f), 0.5f);
+	se::physics::RigidBodyConfig config2(4.0f, glm::mat3(6.4f));
+	config1.sleepMotion = 0.5f;
+
 	se::physics::RigidBodyData data2;
 	data2.position			= glm::vec3(1.0f, 2.0f, 0.0f);
 	data2.linearVelocity	= glm::vec3(-1.0f, 0.0f, 0.0f);
@@ -68,8 +72,9 @@ TEST(Constraint, frictionConstraint)
 	const glm::quat expectedOrientation2(0.999871969f, 0.008692886f, -0.0118539361f, -0.006322099f);
 	const glm::vec3 expectedAngularVelocity2(0.173879992f, -0.237109074f, -0.126458177f);
 
-	se::physics::RigidBodyConfig config1(2.0f, glm::mat3(0.8f), 0.5f);
+	se::physics::RigidBodyConfig config1(2.0f, glm::mat3(0.8f));
 	config1.frictionCoefficient = 0.5f;
+	config1.sleepMotion = 0.5f;
 
 	se::physics::RigidBodyData data1;
 	data1.position			= glm::vec3(0.0f, 1.0f, 0.0f);
@@ -77,8 +82,9 @@ TEST(Constraint, frictionConstraint)
 	data1.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
 	data1.forceSum			= glm::vec3(0.0f, -9.8f, 0.0f);
 
-	se::physics::RigidBodyConfig config2(4.0f, glm::mat3(6.4f), 0.5f);
+	se::physics::RigidBodyConfig config2(4.0f, glm::mat3(6.4f));
 	config1.frictionCoefficient = 0.72f;
+	config1.sleepMotion = 0.5f;
 
 	se::physics::RigidBodyData data2;
 	data2.position			= glm::vec3(1.0f, 2.0f, -0.5f);

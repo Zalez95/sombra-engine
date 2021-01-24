@@ -302,7 +302,7 @@ namespace game {
 			// Readers
 			AudioFile<float> audioFile;
 			MyShaderBuilder shaderBuilder(mGame, mScene);
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, mGame, shaderBuilder);
+			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, shaderBuilder);
 
 			// Fonts
 			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
@@ -443,7 +443,7 @@ namespace game {
 			transforms.orientation = glm::quat(glm::vec3(0.0f, glm::pi<float>(), 0.0f));
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
 
-			se::physics::RigidBodyConfig config(0.001f);
+			se::physics::RigidBodyConfig config;
 			config.invertedMass = 1.0f / 40.0f;	// No inertia tensor so the player can't rotate due to collisions
 			config.linearDrag = 0.01f;
 			config.angularDrag = 0.01f;
@@ -576,7 +576,7 @@ namespace game {
 			se::app::TransformsComponent transforms;
 			transforms.position = cubePositions[i];
 
-			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
+			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
 			config.linearDrag = 0.95f;
 			config.angularDrag = 0.95f;
 			config.frictionCoefficient = 0.5f;
@@ -657,7 +657,7 @@ namespace game {
 			transforms.scale = glm::vec3(10.0f, 1.0f, 10.0f);
 			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(transforms));
 
-			se::physics::RigidBodyConfig config(0.001f);
+			se::physics::RigidBodyConfig config;
 			config.frictionCoefficient = 0.75f;
 			se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
 			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(rigidBody));
@@ -680,7 +680,7 @@ namespace game {
 			transforms.position = glm::vec3(-50.0f, 2.0f, -40.0f);
 			mGame.getEntityDatabase().addComponent(gravityCube, std::move(transforms));
 
-			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
+			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
 			config.linearDrag = 0.95f;
 			config.angularDrag = 0.95f;
 			config.frictionCoefficient = 0.65f;
@@ -771,7 +771,7 @@ namespace game {
 				transforms.position = glm::ballRand(50.0f) + glm::vec3(0.0f, 50.0f, 0.0f);
 				mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
 
-				se::physics::RigidBodyConfig config(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f), 0.001f);
+				se::physics::RigidBodyConfig config(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
 				config.linearDrag = 0.9f;
 				config.angularDrag = 0.9f;
 				config.frictionCoefficient = 0.5f;

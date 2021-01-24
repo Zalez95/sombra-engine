@@ -32,13 +32,23 @@ namespace se::collision {
 		 *
 		 * @param	radius the Radius of the new Capsule
 		 * @param	height the Height of the new Capsule */
-		Capsule(float radius, float height);
+		Capsule(float radius = 0.0f, float height = 0.0f);
 
 		/** @return	the radius of the Capsule */
 		float getRadius() const { return mRadius; };
 
+		/** Sets the radius of the Capsule
+		 *
+		 * @param	radius the new radius of the Capsule */
+		void setRadius(float radius);
+
 		/** @return	the height of the Capsule */
 		float getHeight() const { return mHeight; };
+
+		/** Sets the height of the Capsule
+		 *
+		 * @param	height the new height of the Capsule */
+		void setHeight(float height);
 
 		/** Updates the scale, translation and orientation of the Capsule with
 		 * the given transformations matrix

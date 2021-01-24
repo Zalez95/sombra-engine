@@ -29,7 +29,7 @@ namespace se::app {
 
 		/** The distance from the LightSource where its intensity is considered
 		 * to be zero (only for PointLights and SpotLights) */
-		float range = std::numeric_limits<float>::max();
+		float range = 50.0f;
 
 		/** Angle in radians from the center of the LightSource where the
 		 * falloff begins (Only for SpotLights) */

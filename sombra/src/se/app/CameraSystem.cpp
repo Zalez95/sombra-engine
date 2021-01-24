@@ -102,9 +102,13 @@ namespace se::app {
 		if (camera) {
 			if (transforms) {
 				// The Camera initial data is overridden by the entity one
+				glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+				glm::vec3 right = glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::vec3 up = glm::cross(right, front);
+
 				camera->setPosition(transforms->position);
-				camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-				camera->setUp({ 0.0f, 1.0f, 0.0f });
+				camera->setTarget(transforms->position + front);
+				camera->setUp(up);
 			}
 
 			SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
@@ -157,9 +161,13 @@ namespace se::app {
 		mEntityDatabase.iterateComponents<TransformsComponent, CameraComponent>(
 			[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
 				if (transforms->updated.any()) {
+					glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+					glm::vec3 right = glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f));
+					glm::vec3 up = glm::cross(right, front);
+
 					camera->setPosition(transforms->position);
-					camera->setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-					camera->setUp({ 0.0f, 1.0f, 0.0f });
+					camera->setTarget(transforms->position + front);
+					camera->setUp(up);
 				}
 			}
 		);

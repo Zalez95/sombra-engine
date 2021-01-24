@@ -76,11 +76,6 @@ namespace se::app {
 		 *			wasn't found */
 		virtual Entity getEntity(const T* component) = 0;
 
-		/** Removes the given Component
-		 *
-		 * @param	component a pointer to the Component to remove */
-		virtual void removeComponent(const T* component) = 0;
-
 		/** Iterates over all the Components of the ITComponentTable
 		 *
 		 * @param	callback the function to call for each Component */
@@ -185,18 +180,6 @@ namespace se::app {
 			}
 		};
 
-		/** @copydoc ITComponentTable<T>::removeComponent(const T*) */
-		virtual void removeComponent(const T* component) override
-		{
-			auto it1 = mComponentEntityMap.find(component);
-			if (it1 != mComponentEntityMap.end()) {
-				auto it2 = mEntityComponentMap.find(it1->second);
-				mComponents.erase( mComponents.begin().setIndex(it2->second) );
-				mEntityComponentMap.erase(it2);
-				mComponentEntityMap.erase(it1);
-			}
-		};
-
 		/** @copydoc ITComponentTable<T>::iterateComponents(std::function<void(T&)>) */
 		virtual void iterateComponents(std::function<void(T&)> callback) override
 		{
@@ -298,18 +281,6 @@ namespace se::app {
 				mComponents.erase( mComponents.begin().setIndex(it1->second) );
 				mEntityComponentMap.erase(it1);
 				mComponentEntityMap.erase(it2);
-			}
-		};
-
-		/** @copydoc ITComponentTable<T>::removeComponent(const T*) */
-		virtual void removeComponent(const T* component) override
-		{
-			auto it1 = mComponentEntityMap.find(component);
-			if (it1 != mComponentEntityMap.end()) {
-				auto it2 = mEntityComponentMap.find(it1->second);
-				mComponents.erase( mComponents.begin().setIndex(it2->second) );
-				mEntityComponentMap.erase(it2);
-				mComponentEntityMap.erase(it1);
 			}
 		};
 

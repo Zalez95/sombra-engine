@@ -1,13 +1,17 @@
 #ifndef ENTITY_PANEL_H
 #define ENTITY_PANEL_H
 
+#include <vector>
+#include <se/app/Entity.h>
+
 namespace editor {
 
 	class Editor;
 
 
 	/**
-	 * Class EntityPanel, TODO:
+	 * Class EntityPanel, it's the ImGui panel used for viewing and interacting
+	 * with the Scene Entities
 	 */
 	class EntityPanel
 	{
@@ -15,8 +19,8 @@ namespace editor {
 		/** A reference to the Editor that holds the EntityPanel */
 		Editor& mEditor;
 
-		/** If an Entity has been selected or not */
-		std::unordered_map<se::app::Entity, bool> mSelectedEntities;
+		/** The selected entities in order */
+		std::vector<se::app::Entity> mSelectedEntities;
 
 	public:		// Functions
 		/** Creates a new EntityPanel
@@ -24,11 +28,12 @@ namespace editor {
 		 * @param	editor a reference to the Editor that holds the MenuBar */
 		EntityPanel(Editor& editor);
 
+		/** @return	the last selected Entity, kNullEntity if it no entity is
+		 *			Active */
+		se::app::Entity getActiveEntity() const;
+
 		/** Draws the current panel */
 		void render();
-	private:
-		void drawEntities();
-		void drawComponents();
 	};
 
 }

@@ -13,13 +13,21 @@ namespace se::physics {
 	{
 	private:	// Attributes
 		/** Holds the acceleration of the gravity */
-		const glm::vec3 mGravity;
+		glm::vec3 mGravity;
 
 	public:		// Functions
 		/** Creates a new Gravity Force
 		 *
-		 * @param	gravity the acceleration of the gravity */
-		Gravity(const glm::vec3& gravity);
+		 * @param	gravity the acceleration of the gravity (m/s2) */
+		Gravity(const glm::vec3& gravity = glm::vec3(0.0f, 9.807f, 0.0f));
+
+		/** @return	the gravity acceleration value (m/s2) */
+		const glm::vec3& getValue() const { return mGravity; };
+
+		/** Sets the gravity value
+		 *
+		 * @param	value the new gravity acceleration value (m/s2) */
+		void setValue(const glm::vec3& value) { mGravity = value; };
 
 		/** @return	always true because the Gravity is a constant Force */
 		virtual bool isConstant() const;

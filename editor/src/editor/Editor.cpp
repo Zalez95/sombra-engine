@@ -9,7 +9,6 @@
 #include <se/app/CameraComponent.h>
 #include <se/app/events/ContainerEvent.h>
 #include "Editor.h"
-#include "ImGuiRenderer.h"
 
 namespace editor {
 
@@ -21,15 +20,17 @@ namespace editor {
 			},
 			kUpdateTime
 		),
-		mViewportEntity(se::app::kNullEntity),
-		mScene(nullptr), mImGuiInput(nullptr), mMenuBar(nullptr), mEntityPanel(nullptr)
+		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),
+		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr), mRepositoryPanel(nullptr),
+		mViewportEntity(se::app::kNullEntity), mViewportControl(nullptr),
+		mScene(nullptr)
 	{
 		if (mState != AppState::Error) {
 			mEventManager->subscribe(this, se::app::Topic::Close);
 
 			// Create the ImGui context and renderer
 			IMGUI_CHECKVERSION();
-			ImGui::CreateContext();
+			mImGuiContext = ImGui::CreateContext();
 			ImGui::StyleColorsDark();
 
 			ImGuiIO& io = ImGui::GetIO();
@@ -37,11 +38,18 @@ namespace editor {
 			io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 			io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 
-			auto imGuiRenderer = std::make_unique<ImGuiRenderer>("ImGuiRenderer");
+			mImGuiInput = new ImGuiInput(*mEventManager);
+
+			mImGuiRenderer = new ImGuiRenderer("ImGuiRenderer");
 			auto& renderGraph = mExternalTools->graphicsEngine->getRenderGraph();
-			auto renderer2D = renderGraph.getNode("renderer2D");
-			imGuiRenderer->findInput("target")->connect( renderer2D->findOutput("target") );
-			renderGraph.addNode( std::move(imGuiRenderer) );
+			mImGuiRenderer->findInput("target")->connect( renderGraph.getNode("renderer2D")->findOutput("target") );
+			renderGraph.addNode( std::unique_ptr<ImGuiRenderer>(mImGuiRenderer) );
+
+			// Add the GUI components
+			mMenuBar = new MenuBar(*this);
+			mEntityPanel = new EntityPanel(*this);
+			mComponentPanel = new ComponentPanel(*this);
+			mRepositoryPanel = new RepositoryPanel(*this);
 
 			// Create the Entity used for controlling the viewport
 			mViewportEntity = mEntityDatabase->addEntity();
@@ -53,10 +61,7 @@ namespace editor {
 
 			mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
 
-			// Add the GUI components
-			mImGuiInput = new ImGuiInput(*mEventManager);
-			mMenuBar = new MenuBar(*this);
-			mEntityPanel = new EntityPanel(*this);
+			mViewportControl = new ViewportControl(*this, mViewportEntity);
 		}
 		else {
 			SOMBRA_FATAL_LOG << "Couldn't create the Editor: The Application has errors";
@@ -67,12 +72,20 @@ namespace editor {
 	Editor::~Editor()
 	{
 		destroyScene();
+
+		if (mViewportControl) { delete mViewportControl; }
+		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
+
+		if (mRepositoryPanel) { delete mRepositoryPanel; }
+		if (mComponentPanel) { delete mComponentPanel; }
 		if (mEntityPanel) { delete mEntityPanel; }
 		if (mMenuBar) { delete mMenuBar; }
-		if (mImGuiInput) { delete mImGuiInput; }
-		ImGui::DestroyContext();
 
-		mEventManager->unsubscribe(this, se::app::Topic::Close);
+		mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
+		if (mImGuiInput) { delete mImGuiInput; }
+		if (mImGuiContext) { ImGui::DestroyContext(mImGuiContext); }
+
+		if (mEventManager) { mEventManager->unsubscribe(this, se::app::Topic::Close); }
 	}
 
 
@@ -186,6 +199,13 @@ namespace editor {
 	}
 
 // Private functions
+	void Editor::onInput()
+	{
+		Application::onInput();
+		mViewportControl->update();
+	}
+
+
 	void Editor::onUpdate(float deltaTime)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
@@ -195,19 +215,23 @@ namespace editor {
 		const auto& windowData = mExternalTools->windowManager->getWindowData();
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = deltaTime;
-		io.DisplaySize = ImVec2(windowData.width, windowData.height);
+		io.DisplaySize = ImVec2(static_cast<float>(windowData.width), static_cast<float>(windowData.height));
 	}
 
 
 	void Editor::onRender()
 	{
+		ImGui::SetCurrentContext(mImGuiContext);
 		ImGui::NewFrame();
 
+		// TODO: Remove ImGui demo window
 		static bool show = true;
 		ImGui::ShowDemoWindow(&show);
 
 		mMenuBar->render();
 		mEntityPanel->render();
+		mComponentPanel->render();
+		mRepositoryPanel->render();
 
 		Application::onRender();
 	}

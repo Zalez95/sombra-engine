@@ -40,7 +40,7 @@ namespace se::app {
 		struct Accessor;
 		struct BufferView;
 		struct Sampler;
-		struct MaterialTechnique;
+		struct MaterialShader;
 		struct Node;
 		struct PrimitiveMeshData;
 		struct PrimitiveData;
@@ -58,8 +58,8 @@ namespace se::app {
 		std::unique_ptr<GLTFData> mGLTFData;
 
 	public:		// Functions
-		/** @copydoc SceneReader::SceneReader(Application&, ShaderBuilder&) */
-		GLTFReader(Application& application, ShaderBuilder& shaderBuilder);
+		/** @copydoc SceneReader::SceneReader(ShaderBuilder&) */
+		GLTFReader(ShaderBuilder& shaderBuilder);
 
 		/** Class destructor */
 		virtual ~GLTFReader();

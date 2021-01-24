@@ -5,15 +5,15 @@
 
 namespace se::physics {
 
-	RigidBodyConfig::RigidBodyConfig(float sleepMotion) :
+	RigidBodyConfig::RigidBodyConfig() :
 		invertedMass(0.0f), invertedInertiaTensor(0.0f),
 		linearDrag(0.0f), angularDrag(0.0f),
-		frictionCoefficient(0.0f), sleepMotion(sleepMotion) {}
+		frictionCoefficient(0.0f), sleepMotion(0.001f) {}
 
 
-	RigidBodyConfig::RigidBodyConfig(float mass, const glm::mat3& inertiaTensor, float sleepMotion) :
+	RigidBodyConfig::RigidBodyConfig(float mass, const glm::mat3& inertiaTensor) :
 		linearDrag(0.0f), angularDrag(0.0f),
-		frictionCoefficient(0.0f), sleepMotion(sleepMotion)
+		frictionCoefficient(0.0f), sleepMotion(0.001f)
 	{
 		assert(mass > 0.0f && "The mass must be larger than zero");
 

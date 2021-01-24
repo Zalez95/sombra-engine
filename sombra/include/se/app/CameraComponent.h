@@ -26,13 +26,13 @@ namespace se::app {
 		glm::mat4 mProjectionMatrix = glm::mat4(1.0f);
 
 		/** The position coordinates of the CameraComponent in world space */
-		glm::vec3 mPosition = {};
+		glm::vec3 mPosition = { 0.0f, 0.0f, 0.0f };
 
 		/** The point where the CameraComponent is pointing to in world space */
-		glm::vec3 mTarget = {};
+		glm::vec3 mTarget = { 0.0f, 0.0f, 1.0f };
 
 		/** The Up vector of the CameraComponent in world space */
-		glm::vec3 mUp = {};
+		glm::vec3 mUp = { 0.0f, 1.0f, 0.0f };
 
 	public:		// Functions
 		/** @return	true if the Camera has orthographic projection, false if

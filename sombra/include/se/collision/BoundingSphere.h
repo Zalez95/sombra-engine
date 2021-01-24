@@ -28,13 +28,18 @@ namespace se::collision {
 		/** Creates a new BoundingSphere located at the origin of coordinates
 		 *
 		 * @param	radius the Radius of the new BoundingSphere */
-		BoundingSphere(float radius);
+		BoundingSphere(float radius = 0.0f);
 
 		/** @return	the center of the BoundingSphere in world coordinates */
 		glm::vec3 getCenter() const { return glm::vec3(mTransformsMatrix[3]); };
 
 		/** @return	the radius of the BoundingSphere */
 		float getRadius() const { return mRadius; };
+
+		/** Sets the radius of the BoundingSphere
+		 *
+		 * @param	radius the new BoundingSphere radius */
+		void setRadius(float radius);
 
 		/** Updates the scale, translation and orientation of the BoundingSphere
 		 * with the given transformations matrix

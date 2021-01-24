@@ -50,21 +50,16 @@ namespace se::physics {
 		 * put to Sleeping state */
 		float sleepMotion;
 
-		/** Creates a new RigidBodyConfig with infinite mass
-		 *
-		 * @param	sleepMotion the maximum motion value that the RigidBody can
-		 *			have before being put to Sleeping state */
-		RigidBodyConfig(float sleepMotion);
+		/** Creates a new RigidBodyConfig with infinite mass */
+		RigidBodyConfig();
 
 		/** Creates a new RigidBodyConfig
 		 *
 		 * @param	mass the mass of the RigidBody
 		 * @param	inertiaTensor a 3x3 matrix that stores all the moments of
-		 *			inertia of the RigidBody
-		 * @param	sleepMotion the maximum motion value that the RigidBody can
-		 *			have before being put to Sleeping state */
+		 *			inertia of the RigidBody */
 		RigidBodyConfig(
-			float mass, const glm::mat3& inertiaTensor, float sleepMotion
+			float mass, const glm::mat3& inertiaTensor
 		);
 	};
 
@@ -122,7 +117,7 @@ namespace se::physics {
 		std::bitset< static_cast<int>(RigidBodyState::Count) > mState;
 
 		/** The initial configuration properties of the RigidBody */
-		const RigidBodyConfig mConfig;
+		RigidBodyConfig mConfig;
 
 		/** The current movement data of the RigidBody */
 		RigidBodyData mData;
@@ -145,7 +140,7 @@ namespace se::physics {
 		 * @param	config the configuration data of the RigidBody
 		 * @param	data the initial movement data of the RigidBody */
 		RigidBody(
-			const RigidBodyConfig& config,
+			const RigidBodyConfig& config = RigidBodyConfig(),
 			const RigidBodyData& data = RigidBodyData()
 		);
 
@@ -159,6 +154,9 @@ namespace se::physics {
 
 		/** @return	the RigidBodyConfig of the RigidBody */
 		const RigidBodyConfig& getConfig() const { return mConfig; };
+
+		/** @return	the RigidBodyConfig of the RigidBody */
+		RigidBodyConfig& getConfig() { return mConfig; };
 
 		/** @return	the current RigidBodyData of the RigidBody */
 		const RigidBodyData& getData() const { return mData; };

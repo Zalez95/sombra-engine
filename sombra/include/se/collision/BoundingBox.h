@@ -11,13 +11,24 @@ namespace se::collision {
 	 */
 	class BoundingBox : public ConvexPolyhedron
 	{
+	private:	// Attributes
+		/** The lenght in each axis of the BoundingBox */
+		glm::vec3 mLengths;
+
 	public:		// Functions
 		/** Creates a new BoundingBox located at the origin of
 		 * coordinates
 		 *
 		 * @param	lengths the lenght in each axis of the BoundingBox */
-		BoundingBox(const glm::vec3& lengths) :
-			ConvexPolyhedron(meshFromLengths(lengths)) {};
+		BoundingBox(const glm::vec3& lengths = glm::vec3(0.0f));
+
+		/** @return	the lenght in each axis of the BoundingBox */
+		const glm::vec3& getLengths() const { return mLengths; };
+
+		/** Sets the lengths of the BoundingBox
+		 *
+		 * @param	the new lenght in each axis of the BoundingBox */
+		void setLengths(const glm::vec3& lengths);
 	private:
 		/** Calculates the HalfEdgeMesh of the BoundingBox from its lenghts in
 		 * each axis

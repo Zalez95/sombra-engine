@@ -63,6 +63,19 @@ namespace se::utils {
 	}
 
 
+	template <typename KeyType, typename ValueType>
+	bool Repository::has(const KeyType& key)
+	{
+		auto& table = getRepoTable<KeyType, ValueType>();
+		auto it = table.data.find(key);
+		if (it != table.data.end()) {
+			return true;
+		}
+
+		return false;
+	}
+
+
 	template <typename KeyType, typename ValueType, typename F>
 	void Repository::iterate(F&& callback)
 	{

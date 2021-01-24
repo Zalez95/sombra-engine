@@ -3,6 +3,21 @@
 
 namespace se::collision {
 
+	BoundingBox::BoundingBox(const glm::vec3& lengths) : mLengths(0.0f)
+	{
+		setLengths(lengths);
+	}
+
+
+	void BoundingBox::setLengths(const glm::vec3& lengths)
+	{
+		assert(glm::all(glm::greaterThanEqual(lengths, glm::vec3(0.0f))) && "The lengths can't be smaller than zero.");
+
+		mLengths = lengths;
+		setLocalMesh(meshFromLengths(mLengths));
+	}
+
+
 	HalfEdgeMesh BoundingBox::meshFromLengths(const glm::vec3& lengths) const
 	{
 		HalfEdgeMesh ret;

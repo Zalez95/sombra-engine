@@ -85,15 +85,15 @@ namespace editor {
 	void ImGuiInput::onMouseMoveEvent(const se::app::MouseMoveEvent& event)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.MousePos = ImVec2(event.getX(), event.getY());
+		io.MousePos = ImVec2(static_cast<float>(event.getX()), static_cast<float>(event.getY()));
 	}
 
 
 	void ImGuiInput::onMouseScrollEvent(const se::app::MouseScrollEvent& event)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.MouseWheelH += event.getXOffset();
-		io.MouseWheel += event.getYOffset();
+		io.MouseWheelH += static_cast<float>(event.getXOffset());
+		io.MouseWheel += static_cast<float>(event.getYOffset());
 	}
 
 

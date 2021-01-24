@@ -4,8 +4,12 @@
 #include <se/app/Application.h>
 #include <se/app/Scene.h>
 #include "ImGuiInput.h"
+#include "ImGuiRenderer.h"
 #include "MenuBar.h"
 #include "EntityPanel.h"
+#include "ComponentPanel.h"
+#include "RepositoryPanel.h"
+#include "ViewportControl.h"
 
 namespace editor {
 
@@ -29,11 +33,18 @@ namespace editor {
 		static constexpr float kZNear							= 0.1f;
 		static constexpr float kZFar							= 2000.0f;
 
-		se::app::Entity mViewportEntity;
-		se::app::Scene* mScene;
+		ImGuiContext* mImGuiContext;
 		ImGuiInput* mImGuiInput;
+		ImGuiRenderer* mImGuiRenderer;
 		MenuBar* mMenuBar;
 		EntityPanel* mEntityPanel;
+		ComponentPanel* mComponentPanel;
+		RepositoryPanel* mRepositoryPanel;
+
+		se::app::Entity mViewportEntity;
+		ViewportControl* mViewportControl;
+
+		se::app::Scene* mScene;
 
 	public:		// Functions
 		/** Creates a new Editor */
@@ -43,7 +54,12 @@ namespace editor {
 		virtual ~Editor();
 
 		/** @return	a pointer to the Scene of the Editor */
-		se::app::Scene* getScene() { return mScene; };
+		se::app::Scene* getScene() const
+		{ return mScene; };
+
+		/** @return	the selected entity to work with */
+		se::app::Entity getActiveEntity() const
+		{ return mEntityPanel->getActiveEntity(); };
 
 		/** Creates a new Scene */
 		void createScene(const char* name = "");
@@ -54,6 +70,9 @@ namespace editor {
 		/** @copydoc se::app::Application::notify(const IEvent&) */
 		virtual void notify(const se::app::IEvent&) override;
 	protected:
+		/** Updates the Editor Viewport Entity */
+		virtual void onInput() override;
+
 		/** Updates the Editor managers and systems each main loop
 		 * iteration
 		 *

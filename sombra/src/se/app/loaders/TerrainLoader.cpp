@@ -46,8 +46,9 @@ namespace se::app {
 		}
 
 		// Physics data
-		physics::RigidBodyConfig config(0.2f);
+		physics::RigidBodyConfig config;
 		config.frictionCoefficient = 1.0f;
+		config.sleepMotion = 0.2f;
 		mEntityDatabase.emplaceComponent<physics::RigidBody>(entity, config);
 
 		// Collider data

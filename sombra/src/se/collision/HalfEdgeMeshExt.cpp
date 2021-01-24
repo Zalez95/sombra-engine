@@ -142,7 +142,8 @@ namespace se::collision {
 			}
 		}
 
-		return normal * glm::inversesqrt( glm::dot(normal, normal) );
+		float normalLength = glm::length(normal);
+		return (normalLength < NORMALIZATION_ZERO)? normal : normal / normalLength;
 	}
 
 
@@ -168,7 +169,8 @@ namespace se::collision {
 			while (iCurrentEdge != iInitialEdge);
 		}
 
-		return normal * glm::inversesqrt( glm::dot(normal, normal) );
+		float normalLength = glm::length(normal);
+		return (normalLength < NORMALIZATION_ZERO)? normal : normal / normalLength;
 	}
 
 

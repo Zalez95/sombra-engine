@@ -35,6 +35,7 @@ namespace se::app {
 	{
 		switch (t) {
 			case Topic::Close:			return os << "Topic::Close";
+			case Topic::MouseMove:		return os << "Topic::MouseMove";
 			case Topic::MouseScroll:	return os << "Topic::MouseScroll";
 			case Topic::MouseButton:	return os << "Topic::MouseButton";
 			case Topic::Resize:			return os << "Topic::Resize";

@@ -5,7 +5,6 @@
 #include "../graphics/Material.h"
 #include "../RenderableShader.h"
 #include "../Scene.h"
-#include "../Application.h"
 #include "Result.h"
 
 namespace se::app {
@@ -22,7 +21,7 @@ namespace se::app {
 		/** The scenes files than are supported by the SceneReader */
 		enum class FileType
 		{
-			GLTF
+			GLTF = 0
 		};
 
 		/** Class ShaderBuilder, it's an interface used for creating
@@ -48,38 +47,21 @@ namespace se::app {
 		};
 
 	protected:	// Attributes
-		/** A reference to the Application that holds the EntityDatabase used
-		 * for creating the Entities */
-		Application& mApplication;
-
 		/** A reference to the ShaderBuilder used for creating the Shaders */
 		ShaderBuilder& mShaderBuilder;
 
 	public:		// Functions
-		/** Creates a new SceneReader
-		 *
-		 * @param	application the Application that holds the EntityDatabase
-		 *			used for creating the Entities
-		 * @param	shaderBuilder the ShaderBuilder used for creating the
-		 *			Shaders */
-		SceneReader(
-			Application& application, ShaderBuilder& shaderBuilder
-		) : mApplication(application), mShaderBuilder(shaderBuilder) {};
-
 		/** Class destructor */
 		virtual ~SceneReader() = default;
 
 		/** Creates a SceneReader capable of reading the given file format
 		 *
 		 * @param	fileType the FileType that we want to read
-		 * @param	application the Application that holds the EntityDatabase
-		 *			used for creating the Entities
 		 * @param	shaderBuilder the ShaderBuilder used for creating the
 		 *			Shaders
 		 * @return	a pointer to the new SceneReader */
 		static SceneReaderUPtr createSceneReader(
-			FileType fileType,
-			Application& application, ShaderBuilder& shaderBuilder
+			FileType fileType, ShaderBuilder& shaderBuilder
 		);
 
 		/** Parses the given file and stores the result in the given Scenes
@@ -93,6 +75,13 @@ namespace se::app {
 		 *			(it will be created if it doesn't exist) */
 		virtual Result load(const std::string& path, Scene& output) = 0;
 	protected:
+		/** Creates a new SceneReader
+		 *
+		 * @param	shaderBuilder the ShaderBuilder used for creating the
+		 *			Shaders */
+		SceneReader(ShaderBuilder& shaderBuilder) :
+			mShaderBuilder(shaderBuilder) {};
+
 		/** Creates a "defaultShader" and a "defaultShaderSkin" in the
 		 * given Scene repository if it doesn't exist yet
 		 *

@@ -5,11 +5,28 @@
 namespace se::collision {
 
 	Capsule::Capsule(float radius, float height) :
-		mRadius(radius), mHeight(height), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+		mRadius(0.0f), mHeight(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+	{
+		setRadius(radius);
+		setHeight(height);
+	}
+
+
+	void Capsule::setRadius(float radius)
 	{
 		assert(radius >= 0.0f && "The radius of the capsule can't be smaller than zero.");
-		assert(height >= 0.0f && "The height of the capsule can't be smaller than zero.");
+		mRadius = radius;
+		mUpdated = true;
 	}
+
+
+	void Capsule::setHeight(float height)
+	{
+		assert(height >= 0.0f && "The height of the capsule can't be smaller than zero.");
+		mHeight = height;
+		mUpdated = true;
+	}
+
 
 
 	void Capsule::setTransforms(const glm::mat4& transforms)
