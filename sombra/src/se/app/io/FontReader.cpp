@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include "se/app/loaders/FontReader.h"
+#include "se/app/io/FontReader.h"
 #include "se/graphics/core/Texture.h"
 
 namespace se::app {

@@ -30,9 +30,19 @@ namespace se::collision {
 		 *
 		 * @param	vertices the vertices of the triangle in local
 		 *			coordinates */
-		TriangleCollider(const std::array<glm::vec3, 3>& vertices) :
+		TriangleCollider(const std::array<glm::vec3, 3>& vertices = {}) :
 			mLocalVertices(vertices), mWorldVertices(vertices),
 			mTransformsMatrix(1.0f), mUpdated(true) {};
+
+		/** @return	the vertices of the TriangleCollider in local coordinates */
+		const std::array<glm::vec3, 3>& getLocalVertices() const
+		{ return mLocalVertices; };
+
+		/** Sets the vertices of the TriangleCollider
+		 *
+		 * @param	vertices the new vertices of the TriangleCollider in local
+		 *			coordinates */
+		void setLocalVertices(const std::array<glm::vec3, 3>& vertices);
 
 		/** Updates the scale, translation and orientation of the
 		 * TriangleCollider with the given transformations matrix

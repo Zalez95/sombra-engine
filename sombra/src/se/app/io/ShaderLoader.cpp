@@ -6,7 +6,7 @@
 #include "se/graphics/core/Shader.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/ShaderLoader.h"
 #include "se/app/graphics/TextureUtils.h"
 
 namespace se::app {

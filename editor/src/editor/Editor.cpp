@@ -1,8 +1,8 @@
 #include <se/utils/Log.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
-#include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/ShaderLoader.h>
+#include <se/app/io/MeshLoader.h>
+#include <se/app/io/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/RenderableShader.h>
 #include <se/app/TransformsComponent.h>
@@ -25,6 +25,8 @@ namespace editor {
 		mViewportEntity(se::app::kNullEntity), mViewportControl(nullptr),
 		mScene(nullptr)
 	{
+		SOMBRA_INFO_LOG << "Creating the editor";
+
 		if (mState != AppState::Error) {
 			mEventManager->subscribe(this, se::app::Topic::Close);
 
@@ -62,6 +64,8 @@ namespace editor {
 			mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
 
 			mViewportControl = new ViewportControl(*this, mViewportEntity);
+
+			SOMBRA_INFO_LOG << "Editor created";
 		}
 		else {
 			SOMBRA_FATAL_LOG << "Couldn't create the Editor: The Application has errors";
@@ -71,7 +75,11 @@ namespace editor {
 
 	Editor::~Editor()
 	{
-		destroyScene();
+		SOMBRA_INFO_LOG << "Destroying the Editor";
+
+		if (mScene) {
+			destroyScene();
+		}
 
 		if (mViewportControl) { delete mViewportControl; }
 		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
@@ -86,11 +94,15 @@ namespace editor {
 		if (mImGuiContext) { ImGui::DestroyContext(mImGuiContext); }
 
 		if (mEventManager) { mEventManager->unsubscribe(this, se::app::Topic::Close); }
+
+		SOMBRA_INFO_LOG << "Editor destroyed";
 	}
 
 
 	void Editor::createScene(const char* name)
 	{
+		SOMBRA_INFO_LOG << "Creating a Scene";
+
 		mScene = new se::app::Scene(name, *this);
 
 		// Default Scene resources
@@ -181,15 +193,19 @@ namespace editor {
 		shaderDefault->addPass(passShadow)
 			.addPass(passDefault);
 		mScene->repository.add(std::string("shaderDefault"), shaderDefault);
+
+		SOMBRA_INFO_LOG << "Scene created";
 	}
 
 
 	void Editor::destroyScene()
 	{
-		if (mScene) {
-			delete mScene;
-			mScene = nullptr;
-		}
+		SOMBRA_INFO_LOG << "Destroying the scene";
+
+		delete mScene;
+		mScene = nullptr;
+
+		SOMBRA_INFO_LOG << "Scene destroyed";
 	}
 
 

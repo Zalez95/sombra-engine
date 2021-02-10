@@ -3,6 +3,13 @@
 
 namespace se::collision {
 
+	void TriangleCollider::setLocalVertices(const std::array<glm::vec3, 3>& vertices)
+	{
+		mLocalVertices = vertices;
+		setTransforms(mTransformsMatrix);
+	}
+
+
 	void TriangleCollider::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;
@@ -42,7 +49,7 @@ namespace se::collision {
 			float currentDot = glm::dot(direction, mWorldVertices[i]);
 			if (currentDot > maxDot) {
 				maxDot = currentDot;
-				iMaxVertex = i;
+				iMaxVertex = static_cast<int>(i);
 			}
 		}
 

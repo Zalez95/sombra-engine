@@ -1,5 +1,5 @@
-#ifndef GLTF_READER_H
-#define GLTF_READER_H
+#ifndef GLTF_IMPORTER_H
+#define GLTF_IMPORTER_H
 
 #include <string>
 #include <nlohmann/json_fwd.hpp>
@@ -7,7 +7,7 @@
 #include "se/animation/IAnimation.h"
 #include "se/animation/CompositeAnimator.h"
 #include "se/animation/AnimationNode.h"
-#include "se/app/loaders/SceneReader.h"
+#include "se/app/io/SceneImporter.h"
 #include "se/app/graphics/Image.h"
 #include "se/app/graphics/Material.h"
 #include "se/app/MeshComponent.h"
@@ -18,9 +18,10 @@
 namespace se::app {
 
 	/**
-	 * Class GLTFReader, TODO:
+	 * Class GLTFImporter, it's used for loading the full scenes stored in the
+	 * given GLTF2 files
 	 */
-	class GLTFReader : public SceneReader
+	class GLTFImporter : public SceneImporter
 	{
 	private:	// Nested types
 		using Buffer = std::vector<std::byte>;
@@ -58,11 +59,11 @@ namespace se::app {
 		std::unique_ptr<GLTFData> mGLTFData;
 
 	public:		// Functions
-		/** @copydoc SceneReader::SceneReader(ShaderBuilder&) */
-		GLTFReader(ShaderBuilder& shaderBuilder);
+		/** @copydoc SceneImporter::SceneImporter(ShaderBuilder&) */
+		GLTFImporter(ShaderBuilder& shaderBuilder);
 
 		/** Class destructor */
-		virtual ~GLTFReader();
+		virtual ~GLTFImporter();
 
 		/** Parses the given GLTF file and stores the result in the given
 		 * Scenes object
@@ -261,4 +262,4 @@ namespace se::app {
 
 }
 
-#endif		// GLTF_READER_H
+#endif		// GLTF_IMPORTER_H

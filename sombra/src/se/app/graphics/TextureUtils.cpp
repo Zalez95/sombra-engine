@@ -1,7 +1,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/TextureUtils.h"
-#include "se/app/loaders/MeshLoader.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/MeshLoader.h"
+#include "se/app/io/ShaderLoader.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/RenderGraph.h"
 #include "se/graphics/core/FrameBuffer.h"

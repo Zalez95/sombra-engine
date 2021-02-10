@@ -1,16 +1,16 @@
-#include "se/app/loaders/SceneReader.h"
-#include "GLTFReader.h"
+#include "se/app/io/SceneImporter.h"
+#include "GLTFImporter.h"
 
 namespace se::app {
 
-	SceneReader::SceneReaderUPtr SceneReader::createSceneReader(
+	SceneImporter::SceneImporterUPtr SceneImporter::createSceneImporter(
 		FileType fileType, ShaderBuilder& shaderBuilder
 	) {
-		SceneReaderUPtr ret = nullptr;
+		SceneImporterUPtr ret = nullptr;
 
 		switch (fileType) {
 			case FileType::GLTF:
-				ret = std::make_unique<GLTFReader>(shaderBuilder);
+				ret = std::make_unique<GLTFImporter>(shaderBuilder);
 				break;
 		}
 
@@ -18,7 +18,7 @@ namespace se::app {
 	}
 
 
-	void SceneReader::createDefaultShaders(Scene& scene)
+	void SceneImporter::createDefaultShaders(Scene& scene)
 	{
 		static const Material defaultMaterial = {
 			{ glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), {}, 1.0f, 1.0f, {} },

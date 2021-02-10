@@ -14,8 +14,8 @@
 #include <se/app/CameraSystem.h>
 #include <se/app/CollisionSystem.h>
 #include <se/app/Scene.h>
-#include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/ShaderLoader.h>
+#include <se/app/io/MeshLoader.h>
+#include <se/app/io/ShaderLoader.h>
 #include "PlayerController.h"
 #include "Game.h"
 #include "Level.h"

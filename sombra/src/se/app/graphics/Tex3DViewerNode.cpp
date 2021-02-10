@@ -1,6 +1,6 @@
 #include "se/app/graphics/Tex3DViewerNode.h"
-#include "se/app/loaders/ShaderLoader.h"
-#include "se/app/loaders/MeshLoader.h"
+#include "se/app/io/ShaderLoader.h"
+#include "se/app/io/MeshLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"

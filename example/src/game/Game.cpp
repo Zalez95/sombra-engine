@@ -1,7 +1,7 @@
 #include <numeric>
 #include <se/utils/Log.h>
 #include <se/utils/Repository.h>
-#include <se/app/loaders/FontReader.h>
+#include <se/app/io/FontReader.h>
 #include <se/graphics/GraphicsEngine.h>
 #include "Game.h"
 #include "Level.h"

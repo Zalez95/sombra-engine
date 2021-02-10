@@ -11,13 +11,13 @@
 
 namespace se::graphics {
 
-	static void glClearError()
+	inline void glClearError()
 	{
 		while (glGetError() != GL_NO_ERROR);
 	}
 
 
-	static void glLogError(const char* glFunction, const char* function, int line)
+	inline void glLogError(const char* glFunction, const char* function, int line)
 	{
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {

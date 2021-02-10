@@ -10,16 +10,18 @@ namespace editor {
 
 	/** Draws a 3x3 matrix
 	 *
+	 * @param	name the name of the ImGui component
 	 * @param	matrix the matrix to update
 	 * @return	true if any matrix value was updated, false otherwise */
-	bool drawMat3ImGui(glm::mat3& matrix);
+	bool drawMat3ImGui(const char* name, glm::mat3& matrix);
 
 
 	/** Draws a 4x4 matrix
 	 *
+	 * @param	name the name of the ImGui component
 	 * @param	matrix the matrix to update
 	 * @return	true if any matrix value was updated, false otherwise */
-	bool drawMat4ImGui(glm::mat4& matrix);
+	bool drawMat4ImGui(const char* name, glm::mat4& matrix);
 
 
 	/** Creates a dropdown button used for selecting a value with type @tparam T

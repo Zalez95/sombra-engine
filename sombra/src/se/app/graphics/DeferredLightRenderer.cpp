@@ -3,7 +3,7 @@
 #include "se/graphics/core/UniformBlock.h"
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/graphics/DeferredLightRenderer.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/ShaderLoader.h"
 
 namespace se::app {
 

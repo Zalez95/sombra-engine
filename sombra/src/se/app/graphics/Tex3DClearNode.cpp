@@ -1,5 +1,5 @@
 #include "se/app/graphics/Tex3DClearNode.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"

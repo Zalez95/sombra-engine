@@ -10,13 +10,13 @@
 
 namespace se::audio {
 
-	static void alcClearError(ALCdevice* device)
+	inline void alcClearError(ALCdevice* device)
 	{
 		while (alcGetError(device) != ALC_NO_ERROR);
 	}
 
 
-	static void alcLogError(ALCdevice* device, const char* alcFunction, const char* function, int line)
+	inline void alcLogError(ALCdevice* device, const char* alcFunction, const char* function, int line)
 	{
 		ALCenum error;
 		while ((error = alcGetError(device)) != ALC_NO_ERROR) {

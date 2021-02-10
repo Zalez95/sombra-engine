@@ -4,8 +4,8 @@
 #include <se/app/Application.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
-#include <se/app/loaders/SceneReader.h>
-#include <se/app/loaders/ShaderLoader.h>
+#include <se/app/io/SceneImporter.h>
+#include <se/app/io/ShaderLoader.h>
 
 using namespace se::app;
 
@@ -13,7 +13,7 @@ namespace editor {
 
 	/** Class DefaultShaderBuilder, it's the default ShaderBuilder, it
 	 * creates RenderableShaders with the PBR and Shadow passes */
-	class DefaultShaderBuilder : public se::app::SceneReader::ShaderBuilder
+	class DefaultShaderBuilder : public se::app::SceneImporter::ShaderBuilder
 	{
 	private:	// Attributes
 		/** A reference to the Application that holds the EventManager used

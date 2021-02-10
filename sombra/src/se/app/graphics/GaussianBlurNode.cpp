@@ -1,6 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/GaussianBlurNode.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"

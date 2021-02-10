@@ -5,17 +5,12 @@
 #include <se/window/MouseButtonCodes.h>
 #include "ViewportControl.h"
 
-#define SPEED_X 25
-#define SPEED_Y 25
-#define SPEED_Z 50
-
 namespace editor {
 
 	ViewportControl::ViewportControl(se::app::Application& application, se::app::Entity entity) :
 		mApplication(application), mEntity(entity),
-		mCtrlPressed(false), mShiftPressed(false), mAltPressed(false),
-		mZoom(false), mMove(false), mOrbit(false),
-		mLastMousePositions{}
+		mCtrlPressed(false), mShiftPressed(false), mAltPressed(false), mLastMousePositions{},
+		mZoomActive(false), mMoveActive(false), mOrbitActive(false), mZoom(10.0f)
 	{
 		mApplication.getEventManager().subscribe(this, se::app::Topic::Key);
 		mApplication.getEventManager().subscribe(this, se::app::Topic::MouseMove);
@@ -37,54 +32,55 @@ namespace editor {
 		auto [transforms] = mApplication.getEntityDatabase().getComponents<se::app::TransformsComponent>(mEntity);
 		if (!transforms) { return; }
 
-		if (mZoom) {
-			float newZoom = SPEED_Z * (mLastMousePositions[0].y - mLastMousePositions[1].y) / windowData.height;
-			transforms->position += newZoom * (transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+		if (mZoomActive) {
+			float zoomDelta = kMoveSpeed * (mLastMousePositions[0].y - mLastMousePositions[1].y) / windowData.height;
+			float currentZoom = mZoom;
+			float nextZoom = glm::max(currentZoom + zoomDelta, 0.0f);
+			zoomDelta = nextZoom - currentZoom;
+
+			mZoom = nextZoom;
+			transforms->position -= zoomDelta * (transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 			transforms->updated.set(static_cast<int>(se::app::TransformsComponent::Update::Input));
 		}
-		else if (mMove) {
+		else if (mMoveActive) {
 			glm::vec2 windowSize = { windowData.width, windowData.height };
-			glm::vec2 speed = {-SPEED_X, SPEED_Y };
-			glm::vec2 newMove = speed * (mLastMousePositions[0] - mLastMousePositions[1]) / windowSize;
+			glm::vec2 speed = {-kMoveSpeed, kMoveSpeed };
+			glm::vec2 moveDelta = speed * (mLastMousePositions[0] - mLastMousePositions[1]) / windowSize;
 
 			glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 			glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 			glm::vec3 right = glm::cross(front, up);
 			up = glm::cross(right, front);
 
-			transforms->position += newMove.x * right + newMove.y * up;
+			transforms->position += moveDelta.x * right + moveDelta.y * up;
 			transforms->updated.set(static_cast<int>(se::app::TransformsComponent::Update::Input));
 		}
-		else if (mOrbit) {
-			auto calcArcball = [&](const glm::vec2& p) {
-				glm::vec2 windowSize = { windowData.width, windowData.height };
-				glm::vec3 v = glm::vec3(2.0f * p / windowSize - glm::vec2(1.0f), 0.0f);
-				float l2 = glm::dot(v, v);
-				if (l2 <= 1.0f) {
-					v.z = glm::sqrt(1.0f - l2);
-				}
-				else {
-					v *= glm::inversesqrt(l2);
-				}
-				return v;
-			};
+		else if (mOrbitActive) {
+			glm::vec2 windowSize = { windowData.width, windowData.height };
+			glm::vec2 mouseMove = (mLastMousePositions[0] - mLastMousePositions[1]) / windowSize;
+			glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 
-			glm::vec3 v0 = calcArcball(mLastMousePositions[0]);
-			glm::vec3 v1 = calcArcball(mLastMousePositions[1]);
-			float angle = std::acos( std::min(1.0f, glm::dot(v1, v0)) );
-			glm::vec3 axis = glm::cross(v1, v0);
-			float lAxis = glm::dot(axis, axis);
-			if (lAxis > 0) {
-				axis *= glm::inversesqrt(lAxis);
-			}
+			// Yaw
+			float yaw = -kRotationSpeed * mouseMove.x;
 
-			glm::quat rotation = glm::angleAxis(angle, axis);
-			glm::vec3 frontV = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-			glm::vec3 frontP = transforms->position + 10.0f * frontV;
-			transforms->position = frontP + rotation * (-10.0f * frontV);
-			transforms->orientation = glm::normalize(transforms->orientation * rotation);
+			// Pitch
+			float currentPitch = std::asin(front.y);
+			float nextPitch = currentPitch + kRotationSpeed * mouseMove.y;
+			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
+			float pitch = nextPitch - currentPitch;
 
-			transforms->updated.set(static_cast<int>(se::app::TransformsComponent::Update::Input));
+			// Apply the rotation
+			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
+			transforms->orientation = glm::normalize(transforms->orientation * qPitch * qYaw);
+
+			// Apply the position
+			transforms->position += mZoom * front;
+			front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+			transforms->position -= mZoom * front;
+
+			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
 		mLastMousePositions[1] = mLastMousePositions[0];
@@ -127,17 +123,17 @@ namespace editor {
 			switch (event.getState()) {
 				case se::app::MouseButtonEvent::State::Pressed:
 					if (mCtrlPressed && mAltPressed) {
-						mZoom = true;
+						mZoomActive = true;
 					}
 					else if (mShiftPressed && mAltPressed) {
-						mMove = true;
+						mMoveActive = true;
 					}
 					else if (mAltPressed) {
-						mOrbit = true;
+						mOrbitActive = true;
 					}
 					break;
 				case se::app::MouseButtonEvent::State::Released:
-					mZoom = mMove = mOrbit = false;
+					mZoomActive = mMoveActive = mOrbitActive = false;
 					break;
 			}
 		}

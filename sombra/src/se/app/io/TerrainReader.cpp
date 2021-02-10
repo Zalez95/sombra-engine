@@ -1,5 +1,5 @@
-#include "se/app/loaders/TerrainReader.h"
-#include "se/app/loaders/ImageReader.h"
+#include "se/app/io/TerrainReader.h"
+#include "se/app/io/ImageReader.h"
 #include "se/utils/FileReader.h"
 
 namespace se::app {

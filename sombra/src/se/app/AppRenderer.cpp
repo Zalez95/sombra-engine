@@ -21,8 +21,8 @@
 #include "se/app/graphics/TextureUtils.h"
 #include "se/app/graphics/ShadowRenderer3D.h"
 #include "se/app/graphics/FrustumRenderer3D.h"
-#include "se/app/loaders/MeshLoader.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/MeshLoader.h"
+#include "se/app/io/ShaderLoader.h"
 #include "se/app/events/ContainerEvent.h"
 
 using namespace se::graphics;

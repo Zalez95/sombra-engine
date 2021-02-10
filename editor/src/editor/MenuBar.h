@@ -18,8 +18,17 @@ namespace editor {
 		/** A reference to the Editor that holds the MenuBar */
 		Editor& mEditor;
 
-		/** The window used for opening GLTF files */
-		FileWindow mGLTFWindow;
+		/** The window used for opening/importing/saving files */
+		FileWindow mWindow;
+
+		/** @see mWindow is being used for opening a Scene */
+		bool mOpen;
+
+		/** @see mWindow is being used for importing a Scene */
+		bool mImport;
+
+		/** @see mWindow is being used for saving a Scene */
+		bool mSave;
 
 	public:		// Functions
 		/** Creates a new MenuBar

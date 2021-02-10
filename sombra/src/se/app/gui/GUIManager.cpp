@@ -8,7 +8,7 @@
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/app/gui/GUIManager.h"
 #include "se/app/Application.h"
-#include "se/app/loaders/ShaderLoader.h"
+#include "se/app/io/ShaderLoader.h"
 
 namespace se::app {
 

@@ -1,13 +1,13 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
-#include <nlohmann/json.hpp>
-#include "GLTFReader.h"
+#include "GLMJSON.h"
+#include "GLTFImporter.h"
 #include "se/utils/MathUtils.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/loaders/ImageReader.h"
+#include "se/app/io/ImageReader.h"
 #include "se/app/graphics/RawMesh.h"
 #include "se/app/events/ContainerEvent.h"
 #include "se/animation/StepAnimations.h"
@@ -17,7 +17,7 @@
 
 namespace se::app {
 
-	struct GLTFReader::Accessor
+	struct GLTFImporter::Accessor
 	{
 		union BoundsComponentType { float f; int i; };
 		using BoundsType = utils::FixedVector<BoundsComponentType, 16>;
@@ -29,21 +29,21 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::BufferView
+	struct GLTFImporter::BufferView
 	{
 		std::size_t bufferId, length, offset, stride;
 		enum class Target { Array, ElementArray, Undefined } target;
 	};
 
 
-	struct GLTFReader::Sampler
+	struct GLTFImporter::Sampler
 	{
 		graphics::TextureFilter filters[2];
 		graphics::TextureWrap wraps[2];
 	};
 
 
-	struct GLTFReader::MaterialShader
+	struct GLTFImporter::MaterialShader
 	{
 		std::string name;
 		Material material;
@@ -52,7 +52,7 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::Node
+	struct GLTFImporter::Node
 	{
 		animation::NodeData nodeData;
 		std::vector<std::size_t> children;
@@ -63,7 +63,7 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::PrimitiveMeshData
+	struct GLTFImporter::PrimitiveMeshData
 	{
 		std::array<bool, MeshAttributes::NumAttributes> hasAttribute = {};
 		std::array<std::size_t, MeshAttributes::NumAttributes> attributeAccessor = {};
@@ -93,7 +93,7 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::PrimitiveData
+	struct GLTFImporter::PrimitiveData
 	{
 		MeshSPtr mesh;
 		bool hasSkin = false;
@@ -101,7 +101,7 @@ namespace se::app {
 	};
 
 
-	struct GLTFReader::GLTFData
+	struct GLTFImporter::GLTFData
 	{
 		std::string fileName;
 		std::string basePath;
@@ -192,7 +192,7 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toMeshAttribute(const std::string& text, unsigned int& meshAttribute)
+	inline bool toMeshAttribute(const std::string& text, unsigned int& meshAttribute)
 	{
 		bool ret = true;
 		if (text == "POSITION")			{ meshAttribute = MeshAttributes::PositionAttribute; }
@@ -207,7 +207,7 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toNumComponents(const std::string& text, std::size_t& numComponents)
+	inline bool toNumComponents(const std::string& text, std::size_t& numComponents)
 	{
 		bool ret = true;
 		if (text == "SCALAR")		{ numComponents = 1; }
@@ -221,7 +221,7 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toAlphaMode(const std::string& text, graphics::AlphaMode& alphaMode)
+	inline bool toAlphaMode(const std::string& text, graphics::AlphaMode& alphaMode)
 	{
 		bool ret = true;
 		if (text == "OPAQUE")		{ alphaMode = graphics::AlphaMode::Opaque; }
@@ -231,7 +231,7 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toInterpolationType(const std::string& text, InterpolationType& interpolationType)
+	inline bool toInterpolationType(const std::string& text, InterpolationType& interpolationType)
 	{
 		bool ret = true;
 		if (text == "LINEAR")			{ interpolationType = InterpolationType::Linear; }
@@ -241,7 +241,7 @@ namespace se::app {
 		return ret;
 	}
 
-	static bool toTransformationType(const std::string& text, animation::TransformationAnimator::TransformationType& transformationType)
+	inline bool toTransformationType(const std::string& text, animation::TransformationAnimator::TransformationType& transformationType)
 	{
 		bool ret = true;
 		if (text == "translation")		{ transformationType = animation::TransformationAnimator::TransformationType::Translation; }
@@ -252,13 +252,13 @@ namespace se::app {
 	}
 
 
-	GLTFReader::GLTFReader(ShaderBuilder& shaderBuilder) : SceneReader(shaderBuilder) {}
+	GLTFImporter::GLTFImporter(ShaderBuilder& shaderBuilder) : SceneImporter(shaderBuilder) {}
 
 
-	GLTFReader::~GLTFReader() {}
+	GLTFImporter::~GLTFImporter() {}
 
 
-	Result GLTFReader::load(const std::string& path, Scene& output)
+	Result GLTFImporter::load(const std::string& path, Scene& output)
 	{
 		Result result;
 
@@ -281,7 +281,7 @@ namespace se::app {
 	}
 
 // Private functions
-	Result GLTFReader::readJSON(const std::string& path, nlohmann::json& output)
+	Result GLTFImporter::readJSON(const std::string& path, nlohmann::json& output)
 	{
 		std::ifstream inputstream(path);
 		if (!inputstream.good()) {
@@ -299,7 +299,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseGLTF(const nlohmann::json& jsonGLTF)
+	Result GLTFImporter::parseGLTF(const nlohmann::json& jsonGLTF)
 	{
 		auto itAsset = jsonGLTF.find("asset");
 		if (itAsset == jsonGLTF.end()) {
@@ -469,7 +469,7 @@ namespace se::app {
 	}
 
 
-	bool GLTFReader::checkAssetVersion(const nlohmann::json& jsonAsset, int version, int revision)
+	bool GLTFImporter::checkAssetVersion(const nlohmann::json& jsonAsset, int version, int revision)
 	{
 		bool valid = false;
 
@@ -492,7 +492,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseBuffer(const nlohmann::json& jsonBuffer)
+	Result GLTFImporter::parseBuffer(const nlohmann::json& jsonBuffer)
 	{
 		auto itByteLength = jsonBuffer.find("byteLength");
 		auto itUri = jsonBuffer.find("uri");
@@ -523,7 +523,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseBufferView(const nlohmann::json& jsonBufferView)
+	Result GLTFImporter::parseBufferView(const nlohmann::json& jsonBufferView)
 	{
 		auto itBuffer = jsonBufferView.find("buffer");
 		auto itByteLength = jsonBufferView.find("byteLength");
@@ -563,7 +563,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseAccessor(const nlohmann::json& jsonAccessor)
+	Result GLTFImporter::parseAccessor(const nlohmann::json& jsonAccessor)
 	{
 		auto itBufferView = jsonAccessor.find("bufferView");
 		auto itByteOffset = jsonAccessor.find("byteOffset");
@@ -631,7 +631,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseSampler(const nlohmann::json& jsonSampler)
+	Result GLTFImporter::parseSampler(const nlohmann::json& jsonSampler)
 	{
 		Sampler sampler;
 
@@ -675,7 +675,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseImage(const nlohmann::json& jsonImage)
+	Result GLTFImporter::parseImage(const nlohmann::json& jsonImage)
 	{
 		auto itUri = jsonImage.find("uri");
 		if (itUri != jsonImage.end()) {
@@ -696,7 +696,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseTexture(const nlohmann::json& jsonTexture)
+	Result GLTFImporter::parseTexture(const nlohmann::json& jsonTexture)
 	{
 		auto texture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		if (!texture) {
@@ -762,7 +762,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseMaterial(const nlohmann::json& jsonMaterial)
+	Result GLTFImporter::parseMaterial(const nlohmann::json& jsonMaterial)
 	{
 		Material material;
 
@@ -779,10 +779,7 @@ namespace se::app {
 		if (itPBRMetallicRoughness != jsonMaterial.end()) {
 			auto itBaseColorFactor = itPBRMetallicRoughness->find("baseColorFactor");
 			if (itBaseColorFactor != itPBRMetallicRoughness->end()) {
-				std::vector<float> fVector = *itBaseColorFactor;
-				if (fVector.size() >= 4) {
-					material.pbrMetallicRoughness.baseColorFactor = *reinterpret_cast<glm::vec4*>(fVector.data());
-				}
+				toVec4(*itBaseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
 			}
 
 			auto itBaseColorTexture = itPBRMetallicRoughness->find("baseColorTexture");
@@ -886,10 +883,7 @@ namespace se::app {
 		material.emissiveFactor = glm::vec3(0.0f);
 		auto itEmissiveFactor = jsonMaterial.find("emissiveFactor");
 		if (itEmissiveFactor != jsonMaterial.end()) {
-			std::vector<float> fVector = *itEmissiveFactor;
-			if (fVector.size() >= 3) {
-				material.emissiveFactor = *reinterpret_cast<glm::vec3*>(fVector.data());
-			}
+			toVec3(*itEmissiveFactor, material.emissiveFactor);
 		}
 
 		material.alphaMode = graphics::AlphaMode::Opaque;
@@ -918,7 +912,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parsePrimitive(const nlohmann::json& jsonPrimitive, PrimitiveData& out)
+	Result GLTFImporter::parsePrimitive(const nlohmann::json& jsonPrimitive, PrimitiveData& out)
 	{
 		PrimitiveMeshData primitiveMesh;
 
@@ -994,7 +988,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseMesh(const nlohmann::json& jsonMesh)
+	Result GLTFImporter::parseMesh(const nlohmann::json& jsonMesh)
 	{
 		auto itPrimitives = jsonMesh.find("primitives");
 		if (itPrimitives == jsonMesh.end()) {
@@ -1024,7 +1018,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseSkin(const nlohmann::json& jsonSkin)
+	Result GLTFImporter::parseSkin(const nlohmann::json& jsonSkin)
 	{
 		auto skin = std::make_shared<Skin>();
 		IndexVector jointIndices;
@@ -1073,7 +1067,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseCamera(const nlohmann::json& jsonCamera)
+	Result GLTFImporter::parseCamera(const nlohmann::json& jsonCamera)
 	{
 		auto itType = jsonCamera.find("type");
 		auto itPerspective = jsonCamera.find("perspective");
@@ -1123,7 +1117,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseAnimationSampler(
+	Result GLTFImporter::parseAnimationSampler(
 		const nlohmann::json& jsonSampler,
 		std::unique_ptr<Vec3Animation>& out1, std::unique_ptr<QuatAnimation>& out2
 	) const
@@ -1262,7 +1256,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseAnimationChannel(
+	Result GLTFImporter::parseAnimationChannel(
 		const nlohmann::json& jsonChannel,
 		const std::map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
 		const std::map<std::size_t, QuatAnimationSPtr>& quatAnimations,
@@ -1313,7 +1307,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseAnimation(const nlohmann::json& jsonAnimation)
+	Result GLTFImporter::parseAnimation(const nlohmann::json& jsonAnimation)
 	{
 		std::string name = mGLTFData->fileName + "_animator" + std::to_string(mGLTFData->compositeAnimators.size());
 		auto itName = jsonAnimation.find("name");
@@ -1373,7 +1367,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseKHRLights(const nlohmann::json& jsonKHRLights)
+	Result GLTFImporter::parseKHRLights(const nlohmann::json& jsonKHRLights)
 	{
 		if (auto itLights = jsonKHRLights.find("lights"); itLights != jsonKHRLights.end()) {
 			mGLTFData->lightSources.reserve(itLights->size());
@@ -1392,7 +1386,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseLight(const nlohmann::json& jsonLight)
+	Result GLTFImporter::parseLight(const nlohmann::json& jsonLight)
 	{
 		LightSourceSPtr lightSource;
 
@@ -1438,15 +1432,10 @@ namespace se::app {
 			return Result(false, "A light must have a type property");
 		}
 
+		lightSource->color = glm::vec3(1.0f);
 		auto itColor = jsonLight.find("color");
 		if (itColor != jsonLight.end()) {
-			std::vector<float> fVector = *itColor;
-			if (fVector.size() >= 3) {
-				lightSource->color = *reinterpret_cast<glm::vec3*>(fVector.data());
-			}
-		}
-		else {
-			lightSource->color = glm::vec3(1.0f);
+			toVec3(*itColor, lightSource->color);
 		}
 
 		auto itIntensity = jsonLight.find("intensity");
@@ -1461,7 +1450,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseNode(const nlohmann::json& jsonNode)
+	Result GLTFImporter::parseNode(const nlohmann::json& jsonNode)
 	{
 		Node node;
 
@@ -1477,9 +1466,8 @@ namespace se::app {
 
 		auto itMatrix = jsonNode.find("matrix");
 		if (itMatrix != jsonNode.end()) {
-			std::vector<float> fVector = *itMatrix;
-			if (fVector.size() >= 16) {
-				glm::mat4 matrix = *reinterpret_cast<glm::mat4*>(fVector.data());
+			glm::mat4 matrix;
+			if (toMat4(*itMatrix, matrix)) {
 				utils::decompose(
 					matrix,
 					node.nodeData.localTransforms.position,
@@ -1491,26 +1479,17 @@ namespace se::app {
 		else {
 			auto itRotation = jsonNode.find("rotation");
 			if (itRotation != jsonNode.end()) {
-				std::vector<float> fVector = *itRotation;
-				if (fVector.size() >= 4) {
-					node.nodeData.localTransforms.orientation = *reinterpret_cast<glm::quat*>(fVector.data());
-				}
+				toQuat(*itRotation, node.nodeData.localTransforms.orientation);
 			}
 
 			auto itScale = jsonNode.find("scale");
 			if (itScale != jsonNode.end()) {
-				std::vector<float> fVector = *itScale;
-				if (fVector.size() >= 3) {
-					node.nodeData.localTransforms.scale = *reinterpret_cast<glm::vec3*>(fVector.data());
-				}
+				toVec3(*itScale, node.nodeData.localTransforms.scale);
 			}
 
 			auto itTranslation = jsonNode.find("translation");
 			if (itTranslation != jsonNode.end()) {
-				std::vector<float> fVector = *itTranslation;
-				if (fVector.size() >= 3) {
-					node.nodeData.localTransforms.position = *reinterpret_cast<glm::vec3*>(fVector.data());
-				}
+				toVec3(*itTranslation, node.nodeData.localTransforms.position);
 			}
 		}
 
@@ -1602,7 +1581,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::parseScene(const nlohmann::json& jsonScene)
+	Result GLTFImporter::parseScene(const nlohmann::json& jsonScene)
 	{
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {
@@ -1664,7 +1643,7 @@ namespace se::app {
 	}
 
 
-	Result GLTFReader::createMesh(const PrimitiveMeshData& primitiveMesh, MeshSPtr& out) const
+	Result GLTFImporter::createMesh(const PrimitiveMeshData& primitiveMesh, MeshSPtr& out) const
 	{
 		// Check if the Mesh has already been created
 		auto itMesh = mGLTFData->primitiveMeshes.find(primitiveMesh);

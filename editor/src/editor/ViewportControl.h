@@ -16,6 +16,10 @@ namespace editor {
 	class ViewportControl : public se::app::IEventListener
 	{
 	private:	// Attributes
+		static constexpr float kMoveSpeed		= 25.0f;
+		static constexpr float kRotationSpeed	= 10.0f;
+		static constexpr float kPitchLimit		= 0.05f;
+
 		/** The Application that holds the EntityDatabase and systems */
 		se::app::Application& mApplication;
 
@@ -25,11 +29,14 @@ namespace editor {
 		/** The pressed keys */
 		bool mCtrlPressed, mShiftPressed, mAltPressed;
 
-		/** The type of movement that is going to be used */
-		bool mZoom, mMove, mOrbit;
-
 		/** The last two mouse locations, the frist one is the newest one */
 		glm::vec2 mLastMousePositions[2];
+
+		/** The type of movement that is going to be used */
+		bool mZoomActive, mMoveActive, mOrbitActive;
+
+		/** The current zoom value */
+		float mZoom;
 
 	public:		// Functions
 		/** Creates a new ViewportControl

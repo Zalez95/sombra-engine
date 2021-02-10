@@ -11,12 +11,12 @@
 #include <se/app/graphics/Material.h>
 #include <se/app/graphics/TextureUtils.h>
 #include <se/app/events/ContainerEvent.h>
-#include <se/app/loaders/MeshLoader.h>
-#include <se/app/loaders/ImageReader.h>
-#include <se/app/loaders/FontReader.h>
-#include <se/app/loaders/TerrainLoader.h>
-#include <se/app/loaders/SceneReader.h>
-#include <se/app/loaders/ShaderLoader.h>
+#include <se/app/io/MeshLoader.h>
+#include <se/app/io/ImageReader.h>
+#include <se/app/io/FontReader.h>
+#include <se/app/io/TerrainLoader.h>
+#include <se/app/io/SceneImporter.h>
+#include <se/app/io/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/AudioSystem.h>
@@ -60,7 +60,7 @@
 
 namespace game {
 
-	class MyShaderBuilder : public se::app::SceneReader::ShaderBuilder
+	class MyShaderBuilder : public se::app::SceneImporter::ShaderBuilder
 	{
 	private:	// Attributes
 		se::app::Application& mApplication;
@@ -302,7 +302,7 @@ namespace game {
 			// Readers
 			AudioFile<float> audioFile;
 			MyShaderBuilder shaderBuilder(mGame, mScene);
-			auto sceneReader = se::app::SceneReader::createSceneReader(se::app::SceneReader::FileType::GLTF, shaderBuilder);
+			auto SceneImporter = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
 
 			// Fonts
 			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
@@ -311,7 +311,7 @@ namespace game {
 			}
 
 			// GLTF scenes
-			se::app::Result result = sceneReader->load("res/meshes/test.gltf", mScene);
+			se::app::Result result = SceneImporter->load("res/meshes/test.gltf", mScene);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}

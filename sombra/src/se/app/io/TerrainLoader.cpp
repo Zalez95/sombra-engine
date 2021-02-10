@@ -13,7 +13,7 @@
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/TerrainComponent.h"
-#include "se/app/loaders/TerrainLoader.h"
+#include "se/app/io/TerrainLoader.h"
 #include "se/app/graphics/Material.h"
 #include "se/app/graphics/TextureUtils.h"
 

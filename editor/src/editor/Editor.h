@@ -64,7 +64,7 @@ namespace editor {
 		/** Creates a new Scene */
 		void createScene(const char* name = "");
 
-		/** Destroy the current Scene */
+		/** Destroys the current Scene */
 		void destroyScene();
 
 		/** @copydoc se::app::Application::notify(const IEvent&) */

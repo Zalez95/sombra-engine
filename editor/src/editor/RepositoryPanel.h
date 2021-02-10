@@ -16,7 +16,7 @@ namespace editor {
 		class ITypeNode;
 		template <typename T> class TypeNode;
 		template <typename T> class ImportTypeNode;
-		template <typename T> class SceneReaderTypeNode;
+		template <typename T> class SceneImporterTypeNode;
 		class SkinNode;
 		class LightSourceNode;
 		class RenderableShaderNode;

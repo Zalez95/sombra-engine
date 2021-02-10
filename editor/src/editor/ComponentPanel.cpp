@@ -15,6 +15,7 @@
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/Capsule.h>
+#include <se/collision/TriangleCollider.h>
 #include "ComponentPanel.h"
 #include "Editor.h"
 #include "ImGuiUtils.h"
@@ -305,7 +306,7 @@ namespace editor {
 			auto& rbConfig = rigidBody->getConfig();
 
 			bool infiniteMass = (rbConfig.invertedMass == 0);
-			if (ImGui::BeginCombo("Mass: ##mass", infiniteMass? "infinite" : "custom")) {
+			if (ImGui::BeginCombo("Mass##mass", infiniteMass? "infinite" : "custom")) {
 				if (ImGui::Selectable("infinite", infiniteMass)) {
 					infiniteMass = true;
 				}
@@ -327,18 +328,19 @@ namespace editor {
 					inertiaTensor = glm::inverse(rbConfig.invertedInertiaTensor);
 				}
 
-				ImGui::DragFloat("Mass:", &mass, 0.005f, FLT_MIN, FLT_MAX, "%.3f", 1.0f);
-				ImGui::Text("Inertia Tensor:");
-				drawMat3ImGui(inertiaTensor);
+				if (ImGui::DragFloat("Mass", &mass, 0.005f, FLT_MIN, FLT_MAX, "%.3f", 1.0f)) {
+					rbConfig.invertedMass = 1.0f / mass;
+				}
 
-				rbConfig.invertedMass = 1.0f / mass;
-				rbConfig.invertedInertiaTensor = glm::inverse(inertiaTensor);
+				if (drawMat3ImGui("Inertia Tensor", inertiaTensor)) {
+					rbConfig.invertedInertiaTensor = glm::inverse(inertiaTensor);
+				}
 			}
 
-			ImGui::DragFloat("Linear drag:", &rbConfig.linearDrag, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-			ImGui::DragFloat("Angular drag:", &rbConfig.angularDrag, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-			ImGui::DragFloat("Friction coefficient:", &rbConfig.frictionCoefficient, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-			ImGui::DragFloat("Sleep motion:", &rbConfig.sleepMotion, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Linear drag", &rbConfig.linearDrag, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Angular drag", &rbConfig.angularDrag, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Friction coefficient", &rbConfig.frictionCoefficient, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Sleep motion", &rbConfig.sleepMotion, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
 		};
 	};
 
@@ -358,9 +360,10 @@ namespace editor {
 			auto bBox		= dynamic_cast<BoundingBox*>(collider);
 			auto bSphere	= dynamic_cast<BoundingSphere*>(collider);
 			auto capsule	= dynamic_cast<Capsule*>(collider);
+			auto triangle	= dynamic_cast<TriangleCollider*>(collider);
 
-			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule" };
-			std::size_t currentType = bBox? 0 : bSphere? 1 : 2;
+			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle" };
+			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : 3;
 			if (ImGui::BeginCombo("Type##ColliderType", types[currentType])) {
 				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
 					bool isSelected = (i == currentType);
@@ -398,6 +401,14 @@ namespace editor {
 				}
 				drawCapsule(*capsule);
 			}
+			else if (currentType == 3) {
+				if (!triangle) {
+					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TriangleCollider>());
+					triangle = dynamic_cast<TriangleCollider*>(c);
+				}
+				drawTriangle(*triangle);
+			}
 		};
 	protected:
 		void drawBBox(BoundingBox& bBox)
@@ -424,6 +435,19 @@ namespace editor {
 			float height = capsule.getHeight();
 			if (ImGui::DragFloat("Height", &height, 0.005f, 0.0f, FLT_MAX, "%.3f", 1.0f)) {
 				capsule.setHeight(height);
+			}
+		}
+		void drawTriangle(TriangleCollider& triangle)
+		{
+			bool setVertices = false;
+			auto vertices = triangle.getLocalVertices();
+
+			setVertices |= ImGui::DragFloat3("v0", glm::value_ptr(vertices[0]), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			setVertices |= ImGui::DragFloat3("v1", glm::value_ptr(vertices[1]), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			setVertices |= ImGui::DragFloat3("v2", glm::value_ptr(vertices[2]), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+
+			if (setVertices) {
+				triangle.setLocalVertices(vertices);
 			}
 		}
 	};

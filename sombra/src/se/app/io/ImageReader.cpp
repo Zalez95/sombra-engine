@@ -1,6 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include "se/app/loaders/ImageReader.h"
+#include "se/app/io/ImageReader.h"
 
 using namespace std::string_literals;
 

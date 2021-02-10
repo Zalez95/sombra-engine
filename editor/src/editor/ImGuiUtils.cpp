@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 
 namespace editor {
 
-	bool drawMat3ImGui(glm::mat3& matrix)
+	bool drawMat3ImGui(const char* name, glm::mat3& matrix)
 	{
 		bool ret = false;
 
@@ -18,19 +18,22 @@ namespace editor {
 		glm::vec3 row1 = glm::row(matrix, 1);
 		glm::vec3 row2 = glm::row(matrix, 2);
 
-		ret |= ImGui::DragFloat3("", glm::value_ptr(row0), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-		ret |= ImGui::DragFloat3("", glm::value_ptr(row1), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-		ret |= ImGui::DragFloat3("", glm::value_ptr(row2), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		auto r0 = std::string(name) + "##" + std::string(name) + "_r0";
+		auto r1 = "##" + std::string(name) + "_r1";
+		auto r2 = "##" + std::string(name) + "_r2";
+		ret |= ImGui::DragFloat3(r0.c_str(), glm::value_ptr(row0), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat3(r1.c_str(), glm::value_ptr(row1), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat3(r2.c_str(), glm::value_ptr(row2), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 
-		glm::row(matrix, 0, row0);
-		glm::row(matrix, 1, row1);
-		glm::row(matrix, 2, row2);
+		matrix = glm::row(matrix, 0, row0);
+		matrix = glm::row(matrix, 1, row1);
+		matrix = glm::row(matrix, 2, row2);
 
 		return ret;
 	}
 
 
-	bool drawMat4ImGui(glm::mat4& matrix)
+	bool drawMat4ImGui(const char* name, glm::mat4& matrix)
 	{
 		bool ret = false;
 
@@ -39,15 +42,19 @@ namespace editor {
 		glm::vec4 row2 = glm::row(matrix, 2);
 		glm::vec4 row3 = glm::row(matrix, 3);
 
-		ret |= ImGui::DragFloat4("", glm::value_ptr(row0), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-		ret |= ImGui::DragFloat4("", glm::value_ptr(row1), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-		ret |= ImGui::DragFloat4("", glm::value_ptr(row2), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-		ret |= ImGui::DragFloat4("", glm::value_ptr(row3), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		auto r0 = std::string(name) + "##" + std::string(name) + "_r0";
+		auto r1 = "##" + std::string(name) + "_r1";
+		auto r2 = "##" + std::string(name) + "_r2";
+		auto r3 = "##" + std::string(name) + "_r3";
+		ret |= ImGui::DragFloat4(r0.c_str(), glm::value_ptr(row0), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat4(r1.c_str(), glm::value_ptr(row1), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat4(r2.c_str(), glm::value_ptr(row2), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat4(r3.c_str(), glm::value_ptr(row3), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 
-		glm::row(matrix, 0, row0);
-		glm::row(matrix, 1, row1);
-		glm::row(matrix, 2, row2);
-		glm::row(matrix, 3, row3);
+		matrix = glm::row(matrix, 0, row0);
+		matrix = glm::row(matrix, 1, row1);
+		matrix = glm::row(matrix, 2, row2);
+		matrix = glm::row(matrix, 3, row3);
 
 		return ret;
 	}

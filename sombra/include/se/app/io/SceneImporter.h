@@ -1,5 +1,5 @@
-#ifndef SCENE_READER_H
-#define SCENE_READER_H
+#ifndef SCENE_IMPORTER_H
+#define SCENE_IMPORTER_H
 
 #include <memory>
 #include "../graphics/Material.h"
@@ -10,15 +10,15 @@
 namespace se::app {
 
 	/**
-	 * Class SceneReader, it's used for loading the full scenes stored in the
+	 * Class SceneImporter, it's used for loading the full scenes stored in the
 	 * given files
 	 */
-	class SceneReader
+	class SceneImporter
 	{
 	public:		// Nested types
-		using SceneReaderUPtr = std::unique_ptr<SceneReader>;
+		using SceneImporterUPtr = std::unique_ptr<SceneImporter>;
 
-		/** The scenes files than are supported by the SceneReader */
+		/** The scenes files than are supported by the SceneImporter */
 		enum class FileType
 		{
 			GLTF = 0
@@ -52,15 +52,15 @@ namespace se::app {
 
 	public:		// Functions
 		/** Class destructor */
-		virtual ~SceneReader() = default;
+		virtual ~SceneImporter() = default;
 
-		/** Creates a SceneReader capable of reading the given file format
+		/** Creates a SceneImporter capable of reading the given file format
 		 *
 		 * @param	fileType the FileType that we want to read
 		 * @param	shaderBuilder the ShaderBuilder used for creating the
 		 *			Shaders
-		 * @return	a pointer to the new SceneReader */
-		static SceneReaderUPtr createSceneReader(
+		 * @return	a pointer to the new SceneImporter */
+		static SceneImporterUPtr createSceneImporter(
 			FileType fileType, ShaderBuilder& shaderBuilder
 		);
 
@@ -75,11 +75,11 @@ namespace se::app {
 		 *			(it will be created if it doesn't exist) */
 		virtual Result load(const std::string& path, Scene& output) = 0;
 	protected:
-		/** Creates a new SceneReader
+		/** Creates a new SceneImporter
 		 *
 		 * @param	shaderBuilder the ShaderBuilder used for creating the
 		 *			Shaders */
-		SceneReader(ShaderBuilder& shaderBuilder) :
+		SceneImporter(ShaderBuilder& shaderBuilder) :
 			mShaderBuilder(shaderBuilder) {};
 
 		/** Creates a "defaultShader" and a "defaultShaderSkin" in the
@@ -91,4 +91,4 @@ namespace se::app {
 
 }
 
-#endif		// SCENE_READER_H
+#endif		// SCENE_IMPORTER_H

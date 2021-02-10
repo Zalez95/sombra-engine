@@ -14,9 +14,9 @@
 #include <se/app/LightComponent.h>
 #include <se/app/RenderableShader.h>
 #include <se/app/Scene.h>
-#include <se/app/loaders/ImageReader.h>
-#include <se/app/loaders/SceneReader.h>
-#include <se/app/loaders/ShaderLoader.h>
+#include <se/app/io/ImageReader.h>
+#include <se/app/io/SceneImporter.h>
+#include <se/app/io/ShaderLoader.h>
 #include "Editor.h"
 #include "ImGuiUtils.h"
 #include "RepositoryPanel.h"
@@ -169,27 +169,27 @@ namespace editor {
 
 
 	template <typename T>
-	class RepositoryPanel::SceneReaderTypeNode : public RepositoryPanel::ImportTypeNode<T>
+	class RepositoryPanel::SceneImporterTypeNode : public RepositoryPanel::ImportTypeNode<T>
 	{
 	protected:	// Attributes
 		using TypeNode<T>::mPanel;
 	private:
-		SceneReader::FileType mFileType;
+		SceneImporter::FileType mFileType;
 
 	public:		// Functions
-		SceneReaderTypeNode(RepositoryPanel& panel) :
-			ImportTypeNode<T>(panel), mFileType(SceneReader::FileType::GLTF) {};
+		SceneImporterTypeNode(RepositoryPanel& panel) :
+			ImportTypeNode<T>(panel), mFileType(SceneImporter::FileType::GLTF) {};
 	protected:
 		virtual bool options() override
 		{
 			static const char* types[] = { "GLTF" };
 			std::size_t currentType = static_cast<std::size_t>(mFileType);
-			if (ImGui::BeginCombo("Type:##SceneReader", types[currentType])) {
+			if (ImGui::BeginCombo("Type:##SceneImporter", types[currentType])) {
 				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
 					bool isSelected = (i == currentType);
 					if (ImGui::Selectable(types[i], isSelected)) {
 						currentType = i;
-						mFileType = static_cast<SceneReader::FileType>(currentType);
+						mFileType = static_cast<SceneImporter::FileType>(currentType);
 					}
 					if (isSelected) {
 						ImGui::SetItemDefaultFocus();
@@ -204,8 +204,8 @@ namespace editor {
 		virtual bool load(const char* path) override
 		{
 			DefaultShaderBuilder shaderBuilder(mPanel.mEditor, mPanel.mEditor.getScene()->repository);
-			auto sceneReader = SceneReader::createSceneReader(mFileType, shaderBuilder);
-			auto result = sceneReader->load(path, *mPanel.mEditor.getScene());
+			auto SceneImporter = SceneImporter::createSceneImporter(mFileType, shaderBuilder);
+			auto result = SceneImporter->load(path, *mPanel.mEditor.getScene());
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 			}
@@ -214,10 +214,10 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::SkinNode : public RepositoryPanel::SceneReaderTypeNode<Skin>
+	class RepositoryPanel::SkinNode : public RepositoryPanel::SceneImporterTypeNode<Skin>
 	{
 	public:		// Functions
-		SkinNode(RepositoryPanel& panel) : SceneReaderTypeNode(panel) {};
+		SkinNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Skin"; };
 	protected:
 		virtual void draw(const std::string& key) override
@@ -292,10 +292,10 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::RenderableShaderNode : public RepositoryPanel::SceneReaderTypeNode<RenderableShader>
+	class RepositoryPanel::RenderableShaderNode : public RepositoryPanel::SceneImporterTypeNode<RenderableShader>
 	{
 	public:		// Functions
-		RenderableShaderNode(RepositoryPanel& panel) : SceneReaderTypeNode(panel) {};
+		RenderableShaderNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "RenderableShader"; };
 	protected:
 		virtual void draw(const std::string& key) override
@@ -320,10 +320,10 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::CompositeAnimatorNode : public RepositoryPanel::SceneReaderTypeNode<CompositeAnimator>
+	class RepositoryPanel::CompositeAnimatorNode : public RepositoryPanel::SceneImporterTypeNode<CompositeAnimator>
 	{
 	public:		// Functions
-		CompositeAnimatorNode(RepositoryPanel& panel) : SceneReaderTypeNode(panel) {};
+		CompositeAnimatorNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "CompositeAnimator"; };
 	protected:
 		virtual void draw(const std::string& key) override
@@ -625,10 +625,10 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::MeshNode : public RepositoryPanel::SceneReaderTypeNode<Mesh>
+	class RepositoryPanel::MeshNode : public RepositoryPanel::SceneImporterTypeNode<Mesh>
 	{
 	public:		// Functions
-		MeshNode(RepositoryPanel& panel) : SceneReaderTypeNode(panel) {};
+		MeshNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Mesh"; };
 	protected:
 		virtual void draw(const std::string& key) override

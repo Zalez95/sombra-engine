@@ -1,6 +1,6 @@
 #include <array>
 #include <glm/gtc/constants.hpp>
-#include "se/app/loaders/MeshLoader.h"
+#include "se/app/io/MeshLoader.h"
 #include "se/graphics/core/VertexBuffer.h"
 #include "se/graphics/core/IndexBuffer.h"
 #include "se/graphics/core/VertexArray.h"
