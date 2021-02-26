@@ -79,6 +79,14 @@ namespace se::app {
 				mEventQueue.push_back(new ResizeEvent(x, y));
 			}
 		});
+
+		mApplication.getEventManager().subscribe(this, Topic::SetMousePos);
+	}
+
+
+	InputSystem::~InputSystem()
+	{
+		mApplication.getEventManager().unsubscribe(this, Topic::SetMousePos);
 	}
 
 
@@ -95,6 +103,19 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "InputSystem updated";
+	}
+
+
+	void InputSystem::notify(const IEvent& event)
+	{
+		tryCall(&InputSystem::onSetMousePosEvent, event);
+	}
+
+// Private functions
+	void InputSystem::onSetMousePosEvent(const SetMousePosEvent& event)
+	{
+		mApplication.getExternalTools().windowManager->setMousePosition(event.getX(), event.getY());
+		mEventQueue.push_back(new MouseMoveEvent(event.getX(), event.getY()));
 	}
 
 }

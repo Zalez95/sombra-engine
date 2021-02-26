@@ -6,10 +6,10 @@
 namespace se::app {
 
 	/**
-	 * Class MouseMoveEvent, it's an Event used for notifying of a mouse
-	 * movement by the InputManager
-	*/
-	class MouseMoveEvent : public Event<Topic::MouseMove>
+	 * Class MousePositionEvent, it's an Event that holds the mouse position
+	 */
+	template <Topic t>
+	class MousePositionEvent : public Event<t>
 	{
 	private:	// Attributes
 		/** The mouse X position */
@@ -19,11 +19,11 @@ namespace se::app {
 		double mY;
 
 	public:		// Functions
-		/** Creates a new MouseMoveEvent
+		/** Creates a new MousePositionEvent
 		 *
 		 * @param	x the mouse X position
 		 * @param	y the mouse Y position */
-		MouseMoveEvent(double x, double y) : mX(x), mY(y) {};
+		MousePositionEvent(double x, double y) : mX(x), mY(y) {};
 
 		/** @return	the mouse X position */
 		double getX() const { return mX; };
@@ -52,6 +52,10 @@ namespace se::app {
 				<< ", mX : " << mX << ", mY : " << mY << " }";
 		};
 	};
+
+
+	using MouseMoveEvent = MousePositionEvent<Topic::MouseMove>;
+	using SetMousePosEvent = MousePositionEvent<Topic::SetMousePos>;
 
 
 	/**

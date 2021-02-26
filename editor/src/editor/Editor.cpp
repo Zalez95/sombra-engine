@@ -12,6 +12,7 @@
 #include <se/app/MeshComponent.h>
 #include <se/app/events/ContainerEvent.h>
 #include "Editor.h"
+#include "ViewportControl.h"
 
 namespace editor {
 
@@ -26,8 +27,8 @@ namespace editor {
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),
 		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr),
 		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr),
-		mViewportEntity(se::app::kNullEntity), mViewportControl(nullptr),
-		mGridEntity(se::app::kNullEntity), mScene(nullptr)
+		mViewportEntity(se::app::kNullEntity), mGridEntity(se::app::kNullEntity),
+		mScene(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the editor";
 
@@ -63,13 +64,13 @@ namespace editor {
 			auto vTransforms = mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
 			vTransforms->position = { 14.727f, 8.018f, -6.505f };
 
+			mEntityDatabase->addComponent<se::app::ScriptComponent>(mViewportEntity, std::make_unique<ViewportControl>());
+
 			se::app::CameraComponent camera;
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
 			mEntityDatabase->addComponent(mViewportEntity, std::move(camera));
 
 			mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
-
-			mViewportControl = new ViewportControl(*this, mViewportEntity);
 
 			// Create the viewport grid
 			mGridEntity = mEntityDatabase->addEntity();
@@ -108,7 +109,6 @@ namespace editor {
 		}
 
 		if (mGridEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mGridEntity); }
-		if (mViewportControl) { delete mViewportControl; }
 		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
 
 		if (mSceneNodesPanel) { delete mSceneNodesPanel; }
@@ -243,23 +243,14 @@ namespace editor {
 	}
 
 // Private functions
-	void Editor::onInput()
-	{
-		Application::onInput();
-		mViewportControl->update();
-	}
-
-
 	void Editor::onUpdate(float deltaTime)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
 		Application::onUpdate(deltaTime);
 
-		const auto& windowData = mExternalTools->windowManager->getWindowData();
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = deltaTime;
-		io.DisplaySize = ImVec2(static_cast<float>(windowData.width), static_cast<float>(windowData.height));
 	}
 
 

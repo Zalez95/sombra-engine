@@ -83,7 +83,12 @@ namespace se::app {
 		}
 
 		mApplication.getExternalTools().graphicsEngine->removeRenderable(&terrain->get());
-		mEntityUniforms.erase(mEntityUniforms.find(entity));
+
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
+		}
+
 		SOMBRA_INFO_LOG << "Terrain Entity " << entity << " removed successfully";
 	}
 

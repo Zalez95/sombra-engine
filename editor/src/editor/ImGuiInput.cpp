@@ -12,6 +12,7 @@ namespace editor {
 		mEventManager.subscribe(this, se::app::Topic::MouseMove);
 		mEventManager.subscribe(this, se::app::Topic::MouseScroll);
 		mEventManager.subscribe(this, se::app::Topic::MouseButton);
+		mEventManager.subscribe(this, se::app::Topic::Resize);
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.KeyMap[ImGuiKey_Tab] = SE_KEY_TAB;
@@ -40,6 +41,7 @@ namespace editor {
 
 	ImGuiInput::~ImGuiInput()
 	{
+		mEventManager.unsubscribe(this, se::app::Topic::Resize);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseButton);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseScroll);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseMove);
@@ -55,6 +57,7 @@ namespace editor {
 		tryCall(&ImGuiInput::onMouseMoveEvent, event);
 		tryCall(&ImGuiInput::onMouseScrollEvent, event);
 		tryCall(&ImGuiInput::onMouseButtonEvent, event);
+		tryCall(&ImGuiInput::onResizeEvent, event);
 	}
 
 // Private functions
@@ -100,7 +103,24 @@ namespace editor {
 	void ImGuiInput::onMouseButtonEvent(const se::app::MouseButtonEvent& event)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.MouseDown[event.getButtonCode()] = (event.getState() == se::app::MouseButtonEvent::State::Pressed);
+		switch (event.getButtonCode()) {
+			case SE_MOUSE_BUTTON_LEFT:
+				io.MouseDown[ImGuiMouseButton_Left] = (event.getState() == se::app::MouseButtonEvent::State::Pressed);
+				break;
+			case SE_MOUSE_BUTTON_RIGHT:
+				io.MouseDown[ImGuiMouseButton_Right] = (event.getState() == se::app::MouseButtonEvent::State::Pressed);
+				break;
+			case SE_MOUSE_BUTTON_MIDDLE:
+				io.MouseDown[ImGuiMouseButton_Middle] = (event.getState() == se::app::MouseButtonEvent::State::Pressed);
+				break;
+		}
+	}
+
+
+	void ImGuiInput::onResizeEvent(const se::app::ResizeEvent& event)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2(static_cast<float>(event.getWidth()), static_cast<float>(event.getHeight()));
 	}
 
 }

@@ -3,6 +3,7 @@
 
 #include <deque>
 #include "ISystem.h"
+#include "events/MouseEvents.h"
 
 namespace se::app {
 
@@ -31,8 +32,21 @@ namespace se::app {
 		 *			current System */
 		InputSystem(Application& application);
 
+		/** Class destructor */
+		~InputSystem();
+
 		/** Submits all the user input events */
 		virtual void update() override;
+
+		/** Notifies the ImGuiInput of the given event
+		 *
+		 * @param	event the IEvent to notify */
+		virtual void notify(const IEvent& event) override;
+	private:
+		/** Handles the given event
+		 *
+		 * @param	event the SetMousePosEvent to handle */
+		void onSetMousePosEvent(const SetMousePosEvent& event);
 	};
 
 }

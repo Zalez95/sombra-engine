@@ -26,13 +26,6 @@ namespace game {
 
 		/** Class destructor, it clears all the resources from the Game */
 		virtual ~IGameScreen() = default;
-
-		/** Used for updating the GameScreen at the same time than the Game does
-		 * it
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void update(float deltaTime) = 0;
 	};
 
 }

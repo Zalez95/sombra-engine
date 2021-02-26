@@ -169,10 +169,6 @@ namespace game {
 		}
 
 		mStateMachine->handleEvents();
-		for (auto& screen : mCurrentGameScreens) {
-			screen->update(deltaTime);
-		}
-
 		Application::onUpdate(deltaTime);
 	}
 

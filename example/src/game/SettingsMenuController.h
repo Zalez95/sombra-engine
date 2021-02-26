@@ -34,13 +34,6 @@ namespace game {
 		 * GameData */
 		virtual ~SettingsMenuController();
 
-		/** Used for updating the SettingsMenuController at the same time than
-		 * the Game does it
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void update(float deltaTime) override;
-
 		/** Implements the back Button action */
 		void onBack();
 

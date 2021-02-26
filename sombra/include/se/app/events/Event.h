@@ -10,6 +10,7 @@ namespace se::app {
 	{
 		Close = 0,		// Notifies window close button pressed
 		MouseMove,		// Notifies mouse movement input events
+		SetMousePos,	// Changes the mouse location
 		MouseScroll,	// Notifies mouse scroll input events
 		MouseButton,	// Notifies mouse button input events
 		Resize,			// Notifies Window resize input events
@@ -36,6 +37,7 @@ namespace se::app {
 		switch (t) {
 			case Topic::Close:			return os << "Topic::Close";
 			case Topic::MouseMove:		return os << "Topic::MouseMove";
+			case Topic::SetMousePos:	return os << "Topic::SetMousePos";
 			case Topic::MouseScroll:	return os << "Topic::MouseScroll";
 			case Topic::MouseButton:	return os << "Topic::MouseButton";
 			case Topic::Resize:			return os << "Topic::Resize";

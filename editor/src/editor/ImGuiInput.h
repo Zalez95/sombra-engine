@@ -4,6 +4,7 @@
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
 #include <se/app/events/MouseEvents.h>
+#include <se/app/events/ResizeEvent.h>
 
 namespace editor {
 
@@ -57,6 +58,11 @@ namespace editor {
 		 *
 		 * @param	event the MouseButtonEvent to handle */
 		void onMouseButtonEvent(const se::app::MouseButtonEvent& event);
+
+		/** Handles the given event
+		 *
+		 * @param	event the ResizeEvent to handle */
+		void onResizeEvent(const se::app::ResizeEvent& event);
 	};
 
 }

@@ -30,13 +30,6 @@ namespace game {
 		 * GameData */
 		virtual ~MainMenuController();
 
-		/** Used for updating the MainMenuController at the same time than the
-		 * Game does it
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void update(float deltaTime) override;
-
 		/** Implements the start Button action */
 		void onStart();
 

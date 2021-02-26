@@ -58,6 +58,7 @@
 
 #include "Game.h"
 #include "Level.h"
+#include "PlayerController.h"
 
 namespace game {
 
@@ -207,7 +208,7 @@ namespace game {
 	Level::Level(Game& game) :
 		IGameScreen(game),
 		mGame(game), mScene("Level", game), mPlayerEntity(se::app::kNullEntity),
-		mPlayerController(nullptr), mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
+		mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
 	{
 		mGame.getEventManager().subscribe(this, se::app::Topic::Key);
 
@@ -835,36 +836,22 @@ namespace game {
 	}
 
 
-	void Level::update(float deltaTime)
-	{
-		if (mPlayerController) {
-			mPlayerController->update(deltaTime);
-		}
-	}
-
-
 	void Level::notify(const se::app::IEvent& event)
 	{
-		// Check if we shouldn't handle the input
-		if (mPlayerController) {
-			tryCall(&Level::onKeyEvent, event);
-		}
+		tryCall(&Level::onKeyEvent, event);
 	}
 
 
 	void Level::setHandleInput(bool handle)
 	{
-		if (handle && !mPlayerController) {
-			mPlayerController = new PlayerController(*this, *mPickText);
-			mPlayerController->resetMousePosition();
+		auto [control] = mGame.getEntityDatabase().getComponents<se::app::ScriptComponent>(mPlayerEntity);
+
+		if (handle && !control) {
+			mGame.getEntityDatabase().addComponent<se::app::ScriptComponent>(mPlayerEntity, std::make_unique<PlayerController>(*this, *mPickText));
 			mGame.getExternalTools().windowManager->setCursorVisibility(false);
 		}
-
-		if (!handle && mPlayerController) {
-			mPlayerController->resetMousePosition();
-			delete mPlayerController;
-			mPlayerController = nullptr;
-
+		else if (!handle && control) {
+			mGame.getEntityDatabase().removeComponent<se::app::ScriptComponent>(mPlayerEntity);
 			mGame.getExternalTools().windowManager->setCursorVisibility(true);
 		}
 	}

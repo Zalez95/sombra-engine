@@ -3,18 +3,14 @@
 
 #include <se/app/events/EventManager.h>
 #include <se/app/events/KeyEvent.h>
-
 #include <se/graphics/2D/RenderableSprite.h>
 #include <se/graphics/2D/RenderableText.h>
-
 #include <se/app/Scene.h>
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Force.h>
 #include <se/physics/constraints/Constraint.h>
 #include <se/animation/IAnimator.h>
-
 #include "IGameScreen.h"
-#include "PlayerController.h"
 
 namespace game {
 
@@ -32,7 +28,6 @@ namespace game {
 		Game& mGame;
 		se::app::Scene mScene;
 		se::app::Entity mPlayerEntity;
-		PlayerController* mPlayerController;
 		se::graphics::RenderableSprite *mLogoTexture, *mReticleTexture;
 		se::graphics::RenderableText* mPickText;
 
@@ -56,13 +51,6 @@ namespace game {
 
 		/** @return	the player Entity of the Level */
 		se::app::Entity getPlayer() const { return mPlayerEntity; };
-
-		/** Used for updating the Level at the same time than the Game does
-		 * it
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void update(float deltaTime) override;
 
 		/** Notifies the Level of the given event
 		 *

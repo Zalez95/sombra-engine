@@ -22,9 +22,6 @@ namespace game {
 	}
 
 
-	void SettingsMenuController::update(float /*deltaTime*/) {}
-
-
 	void SettingsMenuController::onBack()
 	{
 		SOMBRA_DEBUG_LOG << "start";

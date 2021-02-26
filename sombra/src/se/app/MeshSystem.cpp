@@ -80,7 +80,12 @@ namespace se::app {
 		for (std::size_t i = 0; i < mesh->size(); ++i) {
 			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
 		}
-		mEntityUniforms.erase(mEntityUniforms.find(entity));
+
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
+		}
+
 		SOMBRA_INFO_LOG << "Mesh Entity " << entity << " removed successfully";
 	}
 

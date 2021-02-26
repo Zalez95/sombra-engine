@@ -1,21 +1,21 @@
+#include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
 #include <se/utils/Repository.h>
-#include <se/window/WindowManager.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
-#include <se/app/CameraSystem.h>
 #include <se/app/CollisionSystem.h>
 #include <se/app/Scene.h>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
+#include <se/app/events/MouseEvents.h>
 #include "PlayerController.h"
 #include "Game.h"
 #include "Level.h"
@@ -25,13 +25,8 @@ extern bool PRINT;
 namespace game {
 
 	PlayerController::PlayerController(Level& level, se::graphics::RenderableText& pickText) :
-		mLevel(level), mPickText(pickText),
-		mYaw(0.0f), mPitch(0.0f), mMovement{}, mClicked(false)
+		mLevel(level), mPickText(pickText)
 	{
-		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::Key);
-		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::MouseMove);
-		mLevel.getGame().getEventManager().subscribe(this, se::app::Topic::MouseButton);
-
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
 			{ 0.0f, 0.5f, 0.0f },
@@ -76,27 +71,39 @@ namespace game {
 	}
 
 
-	PlayerController::~PlayerController()
+	void PlayerController::onCreate(const se::app::UserInput& userInput)
 	{
-		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::MouseButton);
-		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::MouseMove);
-		mLevel.getGame().getEventManager().unsubscribe(this, se::app::Topic::Key);
+		resetMousePosition(userInput.mouseX, userInput.mouseY);
 	}
 
 
-	void PlayerController::update(float deltaTime)
+	void PlayerController::onDestroy(const se::app::UserInput& userInput)
+	{
+		resetMousePosition(userInput.mouseX, userInput.mouseY);
+	}
+
+
+	void PlayerController::onUpdate(float elapsedTime, const se::app::UserInput& userInput)
 	{
 		auto [transforms] = mLevel.getGame().getEntityDatabase().getComponents<se::app::TransformsComponent>(mLevel.getPlayer());
+		if (!transforms) { return; }
+
+		// Get the mouse movement from the center of the screen in the range [-1, 1]
+		double mouseDeltaX = 2.0 * userInput.mouseX / userInput.windowWidth - 1.0;
+		double mouseDeltaY = 1.0 - 2.0 * userInput.mouseY / userInput.windowHeight;	// note that the Y position is upsidedown
+
 		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation;
 		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
 		glm::vec3 right		= glm::cross(forward, up);
 
 		// Set the pitch and yaw
-		if ((mYaw != 0.0f) || (mPitch != 0.0f)) {
-			float yaw = mYaw * deltaTime;
-			float pitch = mPitch * deltaTime;
-			mYaw = mPitch = 0.0f;
+		if ((mouseDeltaX != 0.0) || (mouseDeltaY != 0.0)) {
+			resetMousePosition(userInput.windowWidth, userInput.windowHeight);
+
+			// Multiply the values by the mouse speed
+			float yaw = kMouseSpeed * elapsedTime * static_cast<float>(mouseDeltaX);
+			float pitch = kMouseSpeed * elapsedTime * static_cast<float>(mouseDeltaY);
 
 			// Clamp the pitch
 			float currentPitch = std::asin(forward.y);
@@ -114,10 +121,10 @@ namespace game {
 
 		// Add WASD movement
 		glm::vec3 direction(0.0f);
-		if (mMovement[static_cast<int>(Direction::Front)]) { direction += forward; }
-		if (mMovement[static_cast<int>(Direction::Back)]) { direction -= forward; }
-		if (mMovement[static_cast<int>(Direction::Right)]) { direction += right; }
-		if (mMovement[static_cast<int>(Direction::Left)]) { direction -= right; }
+		if (userInput.keys[SE_KEY_W]) { direction += forward; }
+		if (userInput.keys[SE_KEY_S]) { direction -= forward; }
+		if (userInput.keys[SE_KEY_D]) { direction += right; }
+		if (userInput.keys[SE_KEY_A]) { direction -= right; }
 		float length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kRunSpeed * direction / length;
@@ -127,8 +134,8 @@ namespace game {
 
 		// Add the world Y velocity
 		direction = glm::vec3(0.0f);
-		if (mMovement[static_cast<int>(Direction::Up)]) { direction += up; }
-		if (mMovement[static_cast<int>(Direction::Down)]) { direction -= up; }
+		if (userInput.keys[SE_KEY_SPACE]) { direction += up; }
+		if (userInput.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
 		length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kJumpSpeed * direction;
@@ -136,7 +143,12 @@ namespace game {
 			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		}
 
-		/*if (mClicked) {
+		// Other
+		if (userInput.keys[SE_KEY_P]) {
+			PRINT = !PRINT;
+		}
+
+		/*if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
 			std::string names;
 			for (const auto& [entity, rayCast] : mGame.getExternalTools(). collisionSystem->getEntities(transforms->position, forward)) {
 				// Blue tetrahedron = separation direction from collider 1 to collider 0
@@ -160,83 +172,14 @@ namespace game {
 			}
 
 			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
-			mClicked = false;
 		}*/
 	}
 
 
-	void PlayerController::resetMousePosition()
+	void PlayerController::resetMousePosition(double width, double height)
 	{
 		SOMBRA_DEBUG_LOG << "Changing the mouse position to the center of the window";
-
-		auto windowManager = mLevel.getGame().getExternalTools().windowManager;
-		const se::window::WindowData& data = windowManager->getWindowData();
-		windowManager->setMousePosition(data.width / 2.0, data.height / 2.0);
-	}
-
-
-	void PlayerController::notify(const se::app::IEvent& event)
-	{
-		tryCall(&PlayerController::onKeyEvent, event);
-		tryCall(&PlayerController::onMouseMoveEvent, event);
-		tryCall(&PlayerController::onMouseButtonEvent, event);
-	}
-
-// Private functions
-	void PlayerController::onKeyEvent(const se::app::KeyEvent& event)
-	{
-		switch (event.getKeyCode()) {
-			case SE_KEY_W:
-				mMovement[static_cast<int>(Direction::Front)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			case SE_KEY_A:
-				mMovement[static_cast<int>(Direction::Left)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			case SE_KEY_S:
-				mMovement[static_cast<int>(Direction::Back)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			case SE_KEY_D:
-				mMovement[static_cast<int>(Direction::Right)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			case SE_KEY_SPACE:
-				mMovement[static_cast<int>(Direction::Up)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			case SE_KEY_P:
-				if (event.getState() != se::app::KeyEvent::State::Released) {
-					PRINT = !PRINT;
-				}
-				break;
-			case SE_KEY_LEFT_CONTROL:
-				mMovement[static_cast<int>(Direction::Down)] = (event.getState() != se::app::KeyEvent::State::Released);
-				break;
-			default:
-				break;
-		}
-	}
-
-
-	void PlayerController::onMouseMoveEvent(const se::app::MouseMoveEvent& event)
-	{
-		// Get the mouse movement from the center of the screen in the range [-1, 1]
-		const se::window::WindowData& data = mLevel.getGame().getExternalTools().windowManager->getWindowData();
-		double mouseDeltaX = 2.0 * event.getX() / data.width - 1.0;
-		double mouseDeltaY = 1.0 - 2.0 * event.getY() / data.height;	// note that the Y position is upsidedown
-
-		// Multiply the values by the mouse speed
-		mYaw = kMouseSpeed * static_cast<float>(mouseDeltaX);
-		mPitch = kMouseSpeed * static_cast<float>(mouseDeltaY);
-
-		resetMousePosition();
-	}
-
-
-	void PlayerController::onMouseButtonEvent(const se::app::MouseButtonEvent& event)
-	{
-		if ((event.getState() == se::app::MouseButtonEvent::State::Pressed)
-			&& (event.getButtonCode() == SE_MOUSE_BUTTON_LEFT)
-		) {
-			mClicked = true;
-		}
+		mEventManager->publish(new se::app::SetMousePosEvent(0.5 * width, 0.5 * height));
 	}
 
 }

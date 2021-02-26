@@ -10,7 +10,6 @@
 #include "ComponentPanel.h"
 #include "RepositoryPanel.h"
 #include "SceneNodesPanel.h"
-#include "ViewportControl.h"
 
 namespace editor {
 
@@ -44,7 +43,6 @@ namespace editor {
 		SceneNodesPanel* mSceneNodesPanel;
 
 		se::app::Entity mViewportEntity;
-		ViewportControl* mViewportControl;
 		se::app::Entity mGridEntity;
 
 		se::app::Scene* mScene;
@@ -73,9 +71,6 @@ namespace editor {
 		/** @copydoc se::app::Application::notify(const IEvent&) */
 		virtual void notify(const se::app::IEvent&) override;
 	protected:
-		/** Updates the Editor Viewport Entity */
-		virtual void onInput() override;
-
 		/** Updates the Editor managers and systems each main loop
 		 * iteration
 		 *
