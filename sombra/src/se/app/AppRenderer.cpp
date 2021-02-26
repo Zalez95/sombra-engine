@@ -74,8 +74,9 @@ namespace se::app {
 
 
 	AppRenderer::AppRenderer(Application& application, const ShadowData& shadowData, std::size_t width, std::size_t height) :
-		ISystem(application.getEntityDatabase()), mApplication(application), mShadowData(shadowData),
-		mShadowEntity(kNullEntity)
+		ISystem(application.getEntityDatabase()), mApplication(application),
+		mDeferredLightRenderer(nullptr), mResources(nullptr), mShadowData(shadowData),
+		mShadowEntity(kNullEntity), mLightProbeEntity(kNullEntity)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Resize);
 		mApplication.getEventManager().subscribe(this, Topic::Shadow);
@@ -113,18 +114,7 @@ namespace se::app {
 	{
 		auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(entity);
 		if (lightProbe) {
-			auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
-			auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
-
-			if (lightProbe->irradianceMap) {
-				lightProbe->irradianceMap->setTextureUnit(DeferredLightRenderer::TexUnits::kIrradianceMap);
-				resources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap);
-			}
-			if (lightProbe->prefilterMap) {
-				lightProbe->prefilterMap->setTextureUnit(DeferredLightRenderer::TexUnits::kPrefilterMap);
-				resources->setBindable(mPrefilterTextureResource, lightProbe->prefilterMap);
-			}
-
+			mLightProbeEntity = entity;
 			SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
 		}
 	}
@@ -137,14 +127,12 @@ namespace se::app {
 			SOMBRA_INFO_LOG << "Shadow Entity " << entity << " removed successfully";
 		}
 
-		auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(entity);
-		if (lightProbe) {
-			auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
-			auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
+		if (mLightProbeEntity == entity) {
+			mLightProbeEntity = kNullEntity;
+			mResources->setBindable(mIrradianceTextureResource, nullptr);
+			mResources->setBindable(mPrefilterTextureResource, nullptr);
 
-			resources->setBindable(mIrradianceTextureResource, nullptr);
-			resources->setBindable(mPrefilterTextureResource, nullptr);
-
+			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(entity);
 			SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";
 		}
 	}
@@ -154,6 +142,18 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the LightComponents";
 
+		// Update light probe
+		if (mLightProbeEntity != kNullEntity) {
+			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(mLightProbeEntity);
+			if (mResources->getBindable(mIrradianceTextureResource) != lightProbe->irradianceMap) {
+				mResources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap);
+			}
+			if (mResources->getBindable(mPrefilterTextureResource) != lightProbe->prefilterMap) {
+				mResources->setBindable(mPrefilterTextureResource, lightProbe->prefilterMap);
+			}
+		}
+
+		// Update light sources and shadows
 		unsigned int i = 0, iShadowLight = DeferredLightRenderer::kMaxLights;
 		std::array<DeferredLightRenderer::ShaderLightSource, DeferredLightRenderer::kMaxLights> uBaseLights;
 		mEntityDatabase.iterateComponents<TransformsComponent, LightComponent>(
@@ -206,34 +206,34 @@ namespace se::app {
 	bool AppRenderer::addResources(std::size_t width, std::size_t height)
 	{
 		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;
-		auto resources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
+		mResources = dynamic_cast<BindableRenderNode*>(graphicsEngine.getRenderGraph().getNode("resources"));
 
 		RawMesh planeRawMesh;
 		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
-		planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+		planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 		auto planeMesh = std::make_unique<Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
 		mPlaneRenderable = std::make_shared<RenderableMesh>(std::move(planeMesh));
 
-		mIrradianceTextureResource = resources->addBindable();
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("irradianceTexture", resources, mIrradianceTextureResource) )) {
+		mIrradianceTextureResource = mResources->addBindable();
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("irradianceTexture", mResources, mIrradianceTextureResource) )) {
 			return false;
 		}
 
-		mPrefilterTextureResource = resources->addBindable();
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("prefilterTexture", resources, mPrefilterTextureResource) )) {
+		mPrefilterTextureResource = mResources->addBindable();
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("prefilterTexture", mResources, mPrefilterTextureResource) )) {
 			return false;
 		}
 
 		auto brdfTexture = TextureUtils::precomputeBRDF(512);
 		brdfTexture->setTextureUnit(DeferredLightRenderer::TexUnits::kBRDFMap);
-		auto iBRDFTextureResource = resources->addBindable(brdfTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", resources, iBRDFTextureResource) )) {
+		auto iBRDFTextureResource = mResources->addBindable(brdfTexture);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", mResources, iBRDFTextureResource) )) {
 			return false;
 		}
 
 		auto deferredBuffer = std::make_shared<FrameBuffer>();
-		auto iDeferredBufferResource = resources->addBindable(deferredBuffer);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("deferredBuffer", resources, iDeferredBufferResource) )) {
+		auto iDeferredBufferResource = mResources->addBindable(deferredBuffer);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("deferredBuffer", mResources, iDeferredBufferResource) )) {
 			return false;
 		}
 
@@ -242,8 +242,8 @@ namespace se::app {
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
 		deferredBuffer->attach(*depthTexture, FrameBufferAttachment::kDepth);
-		auto iDepthTextureResource = resources->addBindable(depthTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("depthTexture", resources, iDepthTextureResource) )) {
+		auto iDepthTextureResource = mResources->addBindable(depthTexture);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("depthTexture", mResources, iDepthTextureResource) )) {
 			return false;
 		}
 
@@ -252,8 +252,8 @@ namespace se::app {
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
 		deferredBuffer->attach(*colorTexture, FrameBufferAttachment::kColor0);
-		auto iColorTextureResource = resources->addBindable(colorTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("colorTexture", resources, iColorTextureResource) )) {
+		auto iColorTextureResource = mResources->addBindable(colorTexture);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("colorTexture", mResources, iColorTextureResource) )) {
 			return false;
 		}
 
@@ -262,8 +262,8 @@ namespace se::app {
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
 		deferredBuffer->attach(*brightTexture, FrameBufferAttachment::kColor0 + 1);
-		auto iBrightTextureResource = resources->addBindable(brightTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brightTexture", resources, iBrightTextureResource) )) {
+		auto iBrightTextureResource = mResources->addBindable(brightTexture);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brightTexture", mResources, iBrightTextureResource) )) {
 			return false;
 		}
 
@@ -287,6 +287,10 @@ namespace se::app {
 		auto defaultFBClear = std::make_unique<FBClearNode>("defaultFBClear", clearMask);
 		auto deferredFBClear = std::make_unique<FBClearNode>("deferredFBClear", clearMask);
 
+		// Node used for setting the irradiance and prefilter textures of the renderers
+		auto irradianceTexUnitNode = std::make_unique<TextureUnitNode>("irradianceTexUnitNode", DeferredLightRenderer::TexUnits::kIrradianceMap);
+		auto prefilterTexUnitNode = std::make_unique<TextureUnitNode>("prefilterTexUnitNode", DeferredLightRenderer::TexUnits::kPrefilterMap);
+
 		// Node used for combining the shadow map and the forward and deferred renderers
 		auto texUnitNodeShadow = std::make_unique<TextureUnitNode>("texUnitNodeShadow", DeferredLightRenderer::TexUnits::kShadowMap);
 
@@ -309,29 +313,30 @@ namespace se::app {
 		auto renderer2D = std::make_unique<Renderer2D>("renderer2D");
 
 		// Link the render graph nodes
-		auto resources = renderGraph.getNode("resources"),
-			shadowRenderer = renderGraph.getNode("shadowRenderer"),
+		auto shadowRenderer = renderGraph.getNode("shadowRenderer"),
 			gBufferRenderer = renderGraph.getNode("gBufferRenderer"),
 			deferredLightRenderer = renderGraph.getNode("deferredLightRenderer"),
 			forwardRenderer = renderGraph.getNode("forwardRenderer");
 
-		return defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") )
-			&& deferredFBClear->findInput("input")->connect( resources->findOutput("deferredBuffer") )
+		return defaultFBClear->findInput("input")->connect( mResources->findOutput("defaultFB") )
+			&& deferredFBClear->findInput("input")->connect( mResources->findOutput("deferredBuffer") )
+			&& irradianceTexUnitNode->findInput("input")->connect( mResources->findOutput("irradianceTexture") )
+			&& prefilterTexUnitNode->findInput("input")->connect( mResources->findOutput("prefilterTexture") )
 			&& texUnitNodeShadow->findInput("input")->connect( shadowRenderer->findOutput("shadow") )
 			&& deferredLightRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
-			&& deferredLightRenderer->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") )
-			&& deferredLightRenderer->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") )
-			&& deferredLightRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
+			&& deferredLightRenderer->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
+			&& deferredLightRenderer->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
+			&& deferredLightRenderer->findInput("brdf")->connect( mResources->findOutput("brdfTexture") )
 			&& deferredLightRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
 			&& zBufferCopy->findInput("input1")->connect( deferredLightRenderer->findOutput("target") )
 			&& zBufferCopy->findInput("input2")->connect( gBufferRenderer->findOutput("target") )
 			&& forwardRenderer->findInput("target")->connect( zBufferCopy->findOutput("output") )
-			&& forwardRenderer->findInput("irradiance")->connect( resources->findOutput("irradianceTexture") )
-			&& forwardRenderer->findInput("prefilter")->connect( resources->findOutput("prefilterTexture") )
-			&& forwardRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
+			&& forwardRenderer->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
+			&& forwardRenderer->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
+			&& forwardRenderer->findInput("brdf")->connect( mResources->findOutput("brdfTexture") )
 			&& forwardRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
-			&& forwardRenderer->findInput("color")->connect( resources->findOutput("colorTexture") )
-			&& forwardRenderer->findInput("bright")->connect( resources->findOutput("brightTexture") )
+			&& forwardRenderer->findInput("color")->connect( mResources->findOutput("colorTexture") )
+			&& forwardRenderer->findInput("bright")->connect( mResources->findOutput("brightTexture") )
 			&& hBlurTexUnitNode->findInput("input")->connect( forwardRenderer->findOutput("bright") )
 			&& hBlurNode->findInput("input")->connect( hBlurTexUnitNode->findOutput("output") )
 			&& vBlurTexUnitNode->findInput("input")->connect( hBlurNode->findOutput("output") )
@@ -344,6 +349,8 @@ namespace se::app {
 			&& renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") )
 			&& renderGraph.addNode( std::move(defaultFBClear) )
 			&& renderGraph.addNode( std::move(deferredFBClear) )
+			&& renderGraph.addNode( std::move(irradianceTexUnitNode) )
+			&& renderGraph.addNode( std::move(prefilterTexUnitNode) )
 			&& renderGraph.addNode( std::move(texUnitNodeShadow) )
 			&& renderGraph.addNode( std::move(zBufferCopy) )
 			&& renderGraph.addNode( std::move(hBlurNode) )
@@ -359,12 +366,10 @@ namespace se::app {
 
 	bool AppRenderer::addDeferredRenderer(graphics::RenderGraph& renderGraph, std::size_t width, std::size_t height)
 	{
-		auto resources = dynamic_cast<BindableRenderNode*>(renderGraph.getNode("resources"));
-
 		// Create the gBuffer FB
 		auto gBuffer = std::make_shared<FrameBuffer>();
-		auto iGBufferResource = resources->addBindable(gBuffer);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("gBuffer", resources, iGBufferResource) )) {
+		auto iGBufferResource = mResources->addBindable(gBuffer);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("gBuffer", mResources, iGBufferResource) )) {
 			return false;
 		}
 
@@ -435,7 +440,7 @@ namespace se::app {
 		auto texUnitNodeEmissive = std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredLightRenderer::TexUnits::kEmissive);
 
 		// Add the nodes and their connections
-		return gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") )
+		return gFBClear->findInput("input")->connect( mResources->findOutput("gBuffer") )
 			&& gBufferRenderer->findInput("target")->connect( gFBClear->findOutput("output") )
 			&& texUnitNodePosition->findInput("input")->connect( gBufferRenderer->findOutput("position") )
 			&& texUnitNodeNormal->findInput("input")->connect( gBufferRenderer->findOutput("normal") )
@@ -486,24 +491,22 @@ namespace se::app {
 
 	bool AppRenderer::addShadowRenderer(graphics::RenderGraph& renderGraph)
 	{
-		auto resources = dynamic_cast<BindableRenderNode*>(renderGraph.getNode("resources"));
-
 		// Create the shadow FB
 		auto shadowTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
 		shadowTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth, mShadowData.resolution, mShadowData.resolution)
 		.setWrapping(TextureWrap::ClampToBorder, TextureWrap::ClampToBorder)
 			.setBorderColor(1.0f, 1.0f, 1.0f, 1.0f)
 			.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest);
-		auto iShadowTextureResource = resources->addBindable(shadowTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadowTexture", resources, iShadowTextureResource) )) {
+		auto iShadowTextureResource = mResources->addBindable(shadowTexture);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("shadowTexture", mResources, iShadowTextureResource) )) {
 			return false;
 		}
 
 		auto shadowBuffer = std::make_shared<FrameBuffer>();
 		shadowBuffer->setColorBuffer(false)
 			.attach(*shadowTexture, FrameBufferAttachment::kDepth);
-		auto iShadowBufferResource = resources->addBindable(shadowBuffer);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("shadowBuffer", resources, iShadowBufferResource) )) {
+		auto iShadowBufferResource = mResources->addBindable(shadowBuffer);
+		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("shadowBuffer", mResources, iShadowBufferResource) )) {
 			return false;
 		}
 
@@ -512,9 +515,9 @@ namespace se::app {
 		auto shadowRenderer = std::make_unique<ShadowRenderer3D>("shadowRenderer");
 
 		// Add the nodes and their connections
-		return shadowFBClear->findInput("input")->connect( resources->findOutput("shadowBuffer") )
+		return shadowFBClear->findInput("input")->connect( mResources->findOutput("shadowBuffer") )
 			&& shadowRenderer->findInput("target")->connect( shadowFBClear->findOutput("output") )
-			&& shadowRenderer->findInput("shadow")->connect( resources->findOutput("shadowTexture") )
+			&& shadowRenderer->findInput("shadow")->connect( mResources->findOutput("shadowTexture") )
 			&& renderGraph.addNode( std::move(shadowRenderer) )
 			&& renderGraph.addNode( std::move(shadowFBClear) );
 	}

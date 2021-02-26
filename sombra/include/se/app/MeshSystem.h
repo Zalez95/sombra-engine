@@ -35,7 +35,7 @@ namespace se::app {
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 				modelMatrix;
 			std::shared_ptr<graphics::UniformVariableValueVector<
-				glm::mat4, Skin::kMaxJoints
+				glm::mat3x4, Skin::kMaxJoints
 			>> jointMatrices;
 		};
 

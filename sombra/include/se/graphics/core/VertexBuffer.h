@@ -32,6 +32,14 @@ namespace se::graphics {
 		VertexBuffer& operator=(const VertexBuffer& other) = delete;
 		VertexBuffer& operator=(VertexBuffer&& other);
 
+		/** @return	the size of the contents of the buffer in number of
+		 *			elements */
+		template <typename T>
+		std::size_t size() const;
+
+		/** @return	the size of the contents of the buffer in bytes */
+		std::size_t size() const;
+
 		/** Resizes and sets the buffer data
 		 *
 		 * @param	data a pointer to the data of the buffer
@@ -62,12 +70,36 @@ namespace se::graphics {
 		 *			copied */
 		void copy(const void* data, std::size_t size, std::size_t offset = 0);
 
+		/** Returns the buffer data
+		 *
+		 * @param	data the pointer where the buffer contents will be written
+		 * @param	size the number of elements to read
+		 * @param	offset the offset from the start of the buffer from which
+		 *			the data will be returned */
+		template <typename T>
+		void read(void** data, std::size_t size, std::size_t offset = 0);
+
+		/** Returns the buffer data
+		 *
+		 * @param	data the pointer where the buffer contents will be written
+		 * @param	size the size in bytes of the data to read
+		 * @param	offset the offset from the start of the buffer from which
+		 *			the data will be returned */
+		void read(void** data, std::size_t size, std::size_t offset = 0);
+
 		/** Binds the Vertex Buffer Object */
 		void bind() const override;
 
 		/** Unbinds the Vertex Buffer Object */
 		void unbind() const override;
 	};
+
+
+	template <typename T>
+	std::size_t VertexBuffer::size() const
+	{
+		return size() / sizeof(T);
+	}
 
 
 	template <typename T>
@@ -82,6 +114,16 @@ namespace se::graphics {
 		const T* data, std::size_t count, std::size_t offset
 	) {
 		copy(
+			static_cast<const void*>(data), count * sizeof(T),
+			offset * sizeof(T)
+		);
+	}
+
+
+	template <typename T>
+	void VertexBuffer::read(void** data, std::size_t size, std::size_t offset)
+	{
+		read(
 			static_cast<const void*>(data), count * sizeof(T),
 			offset * sizeof(T)
 		);

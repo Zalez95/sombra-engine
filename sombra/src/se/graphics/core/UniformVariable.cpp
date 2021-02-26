@@ -190,4 +190,18 @@ namespace se::graphics {
 		setUniformV(&value, 1);
 	}
 
+
+	template <>
+	void IUniformVariable::setUniformV<glm::mat3x4>(const glm::mat3x4* valuePtr, std::size_t count) const
+	{
+		GL_WRAP( glUniformMatrix3x4fv(mUniformLocation, static_cast<GLsizei>(count), GL_FALSE, glm::value_ptr(*valuePtr)) );
+	}
+
+
+	template <>
+	void IUniformVariable::setUniform<glm::mat3x4>(const glm::mat3x4& value) const
+	{
+		setUniformV(&value, 1);
+	}
+
 }

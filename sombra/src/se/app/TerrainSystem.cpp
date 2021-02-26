@@ -57,6 +57,11 @@ namespace se::app {
 			terrain->get().setModelMatrix(modelMatrix);
 		}
 
+		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
+		if (camTransforms) {
+			terrain->get().setHighestLodLocation(camTransforms->position);
+		}
+
 		mEntityUniforms.emplace(entity, EntityUniformsVector());
 		terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
 			shader->getTechnique()->processPasses([&](const PassSPtr& pass) {

@@ -6,13 +6,23 @@
 
 namespace se::collision {
 
-	TerrainCollider::TerrainCollider(
-		const std::vector<float>& heights, std::size_t xSize, std::size_t zSize
-	) : mHeights(heights), mXSize(xSize), mZSize(zSize),
+	TerrainCollider::TerrainCollider() :
+		mXSize(0), mZSize(0),
 		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f),
 		mUpdated(true)
 	{
+		calculateAABB();
+	}
+
+
+	void TerrainCollider::setHeights(
+		const std::vector<float>& heights, std::size_t xSize, std::size_t zSize
+	) {
 		assert(mHeights.size() >= mXSize * mZSize && "There aren't enough heights");
+
+		mHeights = heights;
+		mXSize = xSize;
+		mZSize = zSize;
 		calculateAABB();
 	}
 
@@ -77,6 +87,11 @@ namespace se::collision {
 // Private functions
 	void TerrainCollider::calculateAABB()
 	{
+		if ((mXSize == 0) || (mZSize == 0)) {
+			mAABB = {};
+			return;
+		}
+
 		mAABB = {
 			glm::vec3( std::numeric_limits<float>::max()),
 			glm::vec3(-std::numeric_limits<float>::max())

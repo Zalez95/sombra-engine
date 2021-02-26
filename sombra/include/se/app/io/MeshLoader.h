@@ -59,6 +59,17 @@ namespace se::app {
 			const std::string& name, glm::vec3 lengths
 		);
 
+		/** Creates a Grid mesh from the given data. The generated RawMesh
+		 * will only have setted the positions and edge indices.
+		 *
+		 * @param	name the name of the mesh
+		 * @param	numSquares the number of squares in each axis (XZ)
+		 * @param	length the length of each axis (XZ) of the Grid
+		 * @return	the new RawMesh */
+		static RawMesh createGridMesh(
+			const std::string& name, std::size_t numSquares, float length
+		);
+
 		/** Creates a Sphere mesh from the given data. The generated RawMesh
 		 * will only have setted the positions and face indices.
 		 *
@@ -108,6 +119,16 @@ namespace se::app {
 			const std::vector<glm::vec3>& positions,
 			const std::vector<glm::vec2>& texCoords,
 			const std::vector<unsigned short>& faceIndices
+		);
+
+		/** Calculate the heights from the given data in the range [-0.5, 0.5]
+		 *
+		 * @param	data the buffer that holds the heightMap in the R channel
+		 * @param	xSize the size in the X axis of the heightMap
+		 * @param	zSize the size in the Z axis of the heightMap
+		 * @return	the heights */
+		static std::vector<float> calculateHeights(
+			unsigned char* data, std::size_t xSize, std::size_t zSize
 		);
 	};
 

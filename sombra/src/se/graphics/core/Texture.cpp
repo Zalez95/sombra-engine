@@ -71,6 +71,22 @@ namespace se::graphics {
 	}
 
 
+	const Texture& Texture::getFiltering(TextureFilter* minification, TextureFilter* magnification) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		int glMinFilter, glMagFilter;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexParameteriv(glTarget, GL_TEXTURE_MIN_FILTER, &glMinFilter) );
+		GL_WRAP( glGetTexParameteriv(glTarget, GL_TEXTURE_MAG_FILTER, &glMagFilter) );
+
+		*minification = fromGLFilter(glMinFilter);
+		*magnification = fromGLFilter(glMagFilter);
+
+		return *this;
+	}
+
+
 	Texture& Texture::setFiltering(TextureFilter minification, TextureFilter magnification)
 	{
 		GLenum glTarget = toGLTextureTarget(mTarget);
@@ -80,6 +96,36 @@ namespace se::graphics {
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
 		GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, glMinFilter) );
 		GL_WRAP( glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, glMagFilter) );
+
+		return *this;
+	}
+
+
+	const Texture& Texture::getWrapping(TextureWrap* wrapS, TextureWrap* wrapT, TextureWrap* wrapR) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		int glWrapS, glWrapT, glWrapR;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+
+		GL_WRAP( glGetTexParameteriv(glTarget, GL_TEXTURE_WRAP_S, &glWrapS) );
+		if (wrapS) {
+			*wrapS = fromGLWrap(glWrapS);
+		}
+
+		if (mTarget != TextureTarget::Texture1D) {
+			GL_WRAP( glGetTexParameteriv(glTarget, GL_TEXTURE_WRAP_T, &glWrapT) );
+			if (wrapT) {
+				*wrapT = fromGLWrap(glWrapT);
+			}
+
+			if (mTarget != TextureTarget::Texture2D) {
+				GL_WRAP( glGetTexParameteriv(glTarget, GL_TEXTURE_WRAP_R, &glWrapR) );
+				if (wrapR) {
+					*wrapR = fromGLWrap(glWrapR);
+				}
+			}
+		}
 
 		return *this;
 	}
@@ -105,6 +151,22 @@ namespace se::graphics {
 	}
 
 
+	const Texture& Texture::getBorderColor(float* r, float* g, float* b, float* a) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+
+		float color[4];
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexParameterfv(GL_TEXTURE_BORDER_COLOR, GL_TEXTURE_BORDER_COLOR, color) );
+		*r = color[0];
+		*g = color[1];
+		*b = color[2];
+		*a = color[3];
+
+		return *this;
+	}
+
+
 	Texture& Texture::setBorderColor(float r, float g, float b, float a)
 	{
 		GLenum glTarget = toGLTextureTarget(mTarget);
@@ -112,6 +174,19 @@ namespace se::graphics {
 
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
 		GL_WRAP( glTexParameterfv(glTarget, GL_TEXTURE_BORDER_COLOR, color) );
+
+		return *this;
+	}
+
+
+	const Texture& Texture::getImage(TypeId textureType, ColorFormat textureFormat, void* buffer) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLenum glType = toGLType(textureType);
+		GLenum glFormat = toGLColorFormat(textureFormat);
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexImage(glTarget, 0, glFormat, glType, buffer) );
 
 		return *this;
 	}

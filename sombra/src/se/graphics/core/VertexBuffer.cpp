@@ -39,6 +39,15 @@ namespace se::graphics {
 	}
 
 
+	std::size_t VertexBuffer::size() const
+	{
+		int ret = 0;
+		bind();
+		GL_WRAP( glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &ret) );
+		return ret;
+	}
+
+
 	void VertexBuffer::resizeAndCopy(const void* data, std::size_t size)
 	{
 		bind();
@@ -50,6 +59,13 @@ namespace se::graphics {
 	{
 		bind();
 		GL_WRAP( glBufferSubData(GL_ARRAY_BUFFER, offset, size, data) );
+	}
+
+
+	void VertexBuffer::read(void** data, std::size_t size, std::size_t offset)
+	{
+		bind();
+		GL_WRAP( glGetBufferSubData(GL_ARRAY_BUFFER, offset, static_cast<GLsizeiptr>(size), *data) );
 	}
 
 

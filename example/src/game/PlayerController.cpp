@@ -45,14 +45,14 @@ namespace game {
 			{ 0.0f, 1.0f },
 			{ 0.0f, 1.0f }
 		};
-		rawMesh2.faceIndices = {
+		rawMesh2.indices = {
 			0, 1, 2,
 			3, 1, 0,
 			3, 2, 1,
 			3, 0, 2
 		};
-		rawMesh2.normals = se::app::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.faceIndices);
-		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.faceIndices);
+		rawMesh2.normals = se::app::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.indices);
+		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.indices);
 		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
 
 		auto& scene = mLevel.getScene();

@@ -2,6 +2,7 @@
 #define TEXTURE_UTILS_H
 
 #include <memory>
+#include "Image.h"
 #include "../../graphics/core/Texture.h"
 
 namespace se::app {
@@ -60,6 +61,21 @@ namespace se::app {
 		 * @return	the new normal map Texture */
 		static TextureSPtr heightmapToNormalMapLocal(
 			TextureSPtr source, std::size_t width, std::size_t height
+		);
+
+		/** Generates an image from the given texture
+		 *
+		 * @param	source the source texture
+		 * @param	type the type of the source texture values
+		 * @param	color the color format of the source texture values
+		 * @param	width the width of the new image
+		 * @param	height the height of the new image
+		 * @return	the new Image */
+		template <typename T>
+		static Image<T> textureToImage(
+			const graphics::Texture& source, graphics::TypeId type,
+			graphics::ColorFormat color,
+			std::size_t width, std::size_t height
 		);
 	};
 

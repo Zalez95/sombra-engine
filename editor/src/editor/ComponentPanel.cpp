@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <se/app/io/MeshLoader.h>
 #include <se/app/Scene.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/TagComponent.h>
@@ -9,13 +10,16 @@
 #include <se/app/LightComponent.h>
 #include <se/app/LightProbe.h>
 #include <se/app/MeshComponent.h>
+#include <se/app/TerrainComponent.h>
 #include <se/app/TransformsComponent.h>
+#include <se/app/graphics/TextureUtils.h>
 #include <se/animation/AnimationNode.h>
 #include <se/physics/RigidBody.h>
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/Capsule.h>
 #include <se/collision/TriangleCollider.h>
+#include <se/collision/TerrainCollider.h>
 #include "ComponentPanel.h"
 #include "Editor.h"
 #include "ImGuiUtils.h"
@@ -83,8 +87,11 @@ namespace editor {
 
 	class ComponentPanel::TransformsComponentNode : public ComponentPanel::ComponentNode<TransformsComponent>
 	{
+	private:	// Orientation type
+		int mOrientationType;
+
 	public:		// Functions
-		TransformsComponentNode(Editor& editor) : ComponentNode(editor) {};
+		TransformsComponentNode(Editor& editor) : ComponentNode(editor), mOrientationType(0) {};
 		virtual const char* getName() const override
 		{ return "Transforms"; };
 		virtual void create(Entity entity) override
@@ -97,7 +104,7 @@ namespace editor {
 			bool updated = false;
 			updated |= ImGui::DragFloat3("Position", glm::value_ptr(transforms->position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			updated |= ImGui::DragFloat3("Velocity", glm::value_ptr(transforms->velocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			updated |= ImGui::DragFloat4("Orientation", glm::value_ptr(transforms->orientation), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			updated |= drawOrientation("Orientation##TransformsOrientation", transforms->orientation, mOrientationType);
 			updated |= ImGui::DragFloat3("Scale", glm::value_ptr(transforms->scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 
 			if (updated) {
@@ -109,24 +116,39 @@ namespace editor {
 
 	class ComponentPanel::AnimationNodeComponentNode : public ComponentPanel::ComponentNode<AnimationNode*>
 	{
+	private:	// Functions
+		std::array<char, NodeData::kMaxLength> mName = {};
+
 	public:		// Functions
 		AnimationNodeComponentNode(Editor& editor) : ComponentNode(editor) {};
 		virtual const char* getName() const override
 		{ return "Animation Node"; };
 		virtual void create(Entity entity) override
-		{ mEditor.getEntityDatabase().emplaceComponent<AnimationNode*>(entity, new AnimationNode()); };
+		{ mEditor.getEntityDatabase().emplaceComponent<AnimationNode*>(entity, nullptr); };
 		virtual void draw(Entity entity) override
 		{
 			auto [animationNode] = mEditor.getEntityDatabase().getComponents<AnimationNode*>(entity);
-			auto& animationData = (*animationNode)->getData();
-			ImGui::InputText("Name##NodeName", animationData.name.data(), animationData.name.size());
+			if (*animationNode) {
+				auto& animationData = (*animationNode)->getData();
+				ImGui::InputText("Name##NodeName", animationData.name.data(), animationData.name.size());
+			}
+			else {
+				ImGui::Text("No node setted");
+			}
 
-			ImGui::Text("Local transforms:");
-			bool updated = false;
-			updated |= ImGui::DragFloat3("Position", glm::value_ptr(animationData.localTransforms.position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			updated |= ImGui::DragFloat4("Orientation", glm::value_ptr(animationData.localTransforms.orientation), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			updated |= ImGui::DragFloat3("Scale", glm::value_ptr(animationData.localTransforms.scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			animationData.animated = updated;
+			if (ImGui::TreeNode("Change node:")) {
+				ImGui::InputText("Name##NodeChangeName", mName.data(), mName.size());
+				if (ImGui::Button("Change##ChangeNode")) {
+					AnimationNode& root = mEditor.getScene()->rootNode;
+					auto it = std::find_if(root.begin(), root.end(), [&](const AnimationNode& node) {
+						return std::strcmp(node.getData().name.data(), mName.data()) == 0;
+					});
+					if (it != root.end()) {
+						*animationNode = &(*it);
+					}
+				}
+				ImGui::TreePop();
+			}
 		};
 	};
 
@@ -203,6 +225,13 @@ namespace editor {
 
 	class ComponentPanel::LightProbeComponentNode : public ComponentPanel::ComponentNode<LightProbe>
 	{
+	private:	// Attributes
+		std::shared_ptr<Texture> mEnvironmentTexture;
+		bool mIsCubeMap = false;
+		int mCubeMapSize = 512;
+		int mIrradianceMapSize = 32;
+		int mPrefilterMapSize = 128;
+
 	public:		// Functions
 		LightProbeComponentNode(Editor& editor) : ComponentNode(editor) {};
 		virtual const char* getName() const override
@@ -213,20 +242,43 @@ namespace editor {
 		{
 			auto [lightProbe] = mEditor.getEntityDatabase().getComponents<LightProbe>(entity);
 
-			// TODO: update in apprenderer
-			ImGui::Text("Irradiance Map:");
-			ImGui::SameLine();
-			addRepoDropdownShowSelected("##IrradianceMap", mEditor.getScene()->repository, lightProbe->irradianceMap);
+			addRepoDropdownShowSelected("Irradiance map##IrradianceMap", mEditor.getScene()->repository, lightProbe->irradianceMap);
+			addRepoDropdownShowSelected("Prefilter map##PrefilterMap", mEditor.getScene()->repository, lightProbe->prefilterMap);
 
-			ImGui::Text("Prefilter Map:");
-			ImGui::SameLine();
-			addRepoDropdownShowSelected("##PrefilterMap", mEditor.getScene()->repository, lightProbe->prefilterMap);
+			if (ImGui::TreeNode("Create from texture")) {
+				addRepoDropdownShowSelected("Environment Map##EnvironmentMap", mEditor.getScene()->repository, mEnvironmentTexture);
+				ImGui::Checkbox("Is cube map", &mIsCubeMap);
+				if (!mIsCubeMap) {
+					ImGui::DragInt("New cube map resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
+				}
+
+				ImGui::DragInt("Irradiance map resolution", &mIrradianceMapSize, 0.01f, 0, INT_MAX);
+				ImGui::DragInt("Prefilter map resolution", &mPrefilterMapSize, 0.01f, 0, INT_MAX);
+
+				if (ImGui::Button("Build probe##BuildProbe")) {
+					auto cubeMap = mEnvironmentTexture;
+					if (!mIsCubeMap) {
+						cubeMap = TextureUtils::equirectangularToCubeMap(mEnvironmentTexture, mCubeMapSize);
+						for (std::size_t i = 0; !mEditor.getScene()->repository.add("cubeMap" + std::to_string(i), cubeMap); ++i);
+					}
+
+					lightProbe->irradianceMap = TextureUtils::convoluteCubeMap(cubeMap, mIrradianceMapSize);
+					lightProbe->prefilterMap = TextureUtils::prefilterCubeMap(cubeMap, mPrefilterMapSize);
+
+					for (std::size_t i = 0; !mEditor.getScene()->repository.add("irradianceMap" + std::to_string(i), lightProbe->irradianceMap); ++i);
+					for (std::size_t i = 0; !mEditor.getScene()->repository.add("prefilterMap" + std::to_string(i), lightProbe->prefilterMap); ++i);
+				}
+				ImGui::TreePop();
+			}
 		};
 	};
 
 
 	class ComponentPanel::MeshComponentNode : public ComponentPanel::ComponentNode<MeshComponent>
 	{
+	private:	// Attributes
+		bool mHasSkinning = false;
+
 	public:		// Functions
 		MeshComponentNode(Editor& editor) : ComponentNode(editor) {};
 		virtual const char* getName() const override
@@ -244,11 +296,10 @@ namespace editor {
 			}
 			std::shared_ptr<Mesh> gMesh;
 			if (addRepoDropdownButton("##MeshComponent::gMesh", "Add RenderableMesh", mEditor.getScene()->repository, gMesh)) {
-				mesh->add(false, gMesh);
+				mesh->add(mHasSkinning, gMesh);
 			}
-			if (addRepoDropdownButton("##MeshComponent::gMeshSkinned", "Add Skinned RenderableMesh", mEditor.getScene()->repository, gMesh)) {
-				mesh->add(true, gMesh);
-			}
+			ImGui::SameLine();
+			ImGui::Checkbox("Has Skinning", &mHasSkinning);
 			if (!canAddRMesh) {
 				ImGui::PopItemFlag();
 				ImGui::PopStyleVar();
@@ -292,6 +343,46 @@ namespace editor {
 	};
 
 
+	class ComponentPanel::TerrainComponentNode : public ComponentPanel::ComponentNode<TerrainComponent>
+	{
+	public:		// Functions
+		TerrainComponentNode(Editor& editor) : ComponentNode(editor) {};
+		virtual const char* getName() const override
+		{ return "Terrain"; };
+		virtual void create(Entity entity) override
+		{
+			const float size = 500.0f, maxHeight = 10.0f;
+			const std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
+			mEditor.getEntityDatabase().emplaceComponent<TerrainComponent>(entity, mEditor.getEventManager(), entity, size, maxHeight, lodDistances);
+		};
+		virtual void draw(Entity entity) override
+		{
+			auto [terrain] = mEditor.getEntityDatabase().getComponents<TerrainComponent>(entity);
+
+			// TODO: lod and size
+
+			if (ImGui::TreeNode("Shaders:")) {
+				std::shared_ptr<se::app::RenderableShader> shader;
+				if (addRepoDropdownButton("##TerrainComponent::Shader", "Add Shader", mEditor.getScene()->repository, shader)) {
+					terrain->addRenderableShader(shader);
+				}
+
+				terrain->processRenderableShaders([&](const auto& shader1) {
+					ImGui::Text("Shader:");
+					ImGui::SameLine();
+					ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
+					std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
+					if (addRepoDropdownShowSelected("##TerrainComponent::Shader2", mEditor.getScene()->repository, shader2)) {
+						terrain->removeRenderableShader(shader1);
+						terrain->addRenderableShader(shader2);
+					}
+				});
+				ImGui::TreePop();
+			}
+		};
+	};
+
+
 	class ComponentPanel::RigidBodyComponentNode : public ComponentPanel::ComponentNode<RigidBody>
 	{
 	public:		// Functions
@@ -306,14 +397,11 @@ namespace editor {
 			auto& rbConfig = rigidBody->getConfig();
 
 			bool infiniteMass = (rbConfig.invertedMass == 0);
-			if (ImGui::BeginCombo("Mass##mass", infiniteMass? "infinite" : "custom")) {
-				if (ImGui::Selectable("infinite", infiniteMass)) {
-					infiniteMass = true;
-				}
-				if (ImGui::Selectable("custom", !infiniteMass)) {
-					infiniteMass = false;
-				}
-				ImGui::EndCombo();
+
+			static const char* massTypes[] = { "infinite", "custom" };
+			std::size_t currentType = infiniteMass? 0 : 1;
+			if (addDropdown("Mass##mass", massTypes, IM_ARRAYSIZE(massTypes), currentType)) {
+				infiniteMass = (currentType == 0);
 			}
 
 			if (infiniteMass) {
@@ -347,6 +435,11 @@ namespace editor {
 
 	class ComponentPanel::ColliderComponentNode : public ComponentPanel::ComponentNode<Collider>
 	{
+	private:	// Attributes
+		std::shared_ptr<Texture> mHeightTexture;
+		int mSize1 = 128;
+		int mSize2 = 128;
+
 	public:		// Functions
 		ColliderComponentNode(Editor& editor) : ComponentNode(editor) {};
 		virtual const char* getName() const override
@@ -361,21 +454,11 @@ namespace editor {
 			auto bSphere	= dynamic_cast<BoundingSphere*>(collider);
 			auto capsule	= dynamic_cast<Capsule*>(collider);
 			auto triangle	= dynamic_cast<TriangleCollider*>(collider);
+			auto terrain	= dynamic_cast<TerrainCollider*>(collider);
 
-			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle" };
-			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : 3;
-			if (ImGui::BeginCombo("Type##ColliderType", types[currentType])) {
-				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
-					bool isSelected = (i == currentType);
-					if (ImGui::Selectable(types[i], isSelected)) {
-						currentType = i;
-					}
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
+			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain" };
+			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : 4;
+			addDropdown("Type##ColliderType", types, IM_ARRAYSIZE(types), currentType);
 
 			if (currentType == 0) {
 				if (!bBox) {
@@ -408,6 +491,14 @@ namespace editor {
 					triangle = dynamic_cast<TriangleCollider*>(c);
 				}
 				drawTriangle(*triangle);
+			}
+			else if (currentType == 4) {
+				if (!terrain) {
+					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TerrainCollider>());
+					terrain = dynamic_cast<TerrainCollider*>(c);
+				}
+				drawTerrain(*terrain);
 			}
 		};
 	protected:
@@ -450,6 +541,23 @@ namespace editor {
 				triangle.setLocalVertices(vertices);
 			}
 		}
+		void drawTerrain(TerrainCollider& terrain)
+		{
+			if (ImGui::TreeNode("Create from texture")) {
+				addRepoDropdownShowSelected("Height Map##HeightMap", mEditor.getScene()->repository, mHeightTexture);
+				ImGui::DragInt("Size X", &mSize1, 0.01f, 0, INT_MAX);
+				ImGui::DragInt("Size Z", &mSize2, 0.01f, 0, INT_MAX);
+
+				if (ImGui::Button("Build terrain##BuildTerrain")) {
+					auto image = TextureUtils::textureToImage<unsigned char>(
+						*mHeightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
+					);
+					auto heights = se::app::MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
+					terrain.setHeights(heights, image.width, image.height);
+				}
+				ImGui::TreePop();
+			}
+		}
 	};
 
 
@@ -462,6 +570,7 @@ namespace editor {
 		mNodes.emplace_back(new LightComponentNode(mEditor));
 		mNodes.emplace_back(new LightProbeComponentNode(mEditor));
 		mNodes.emplace_back(new MeshComponentNode(mEditor));
+		mNodes.emplace_back(new TerrainComponentNode(mEditor));
 		mNodes.emplace_back(new RigidBodyComponentNode(mEditor));
 		mNodes.emplace_back(new ColliderComponentNode(mEditor));
 	}
@@ -482,14 +591,16 @@ namespace editor {
 			if (selectedEntity != kNullEntity) {
 				ImGui::Text("Entity #%u selected", selectedEntity);
 				ImGui::SameLine();
-				ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
-				if (ImGui::BeginCombo("##AddComponent", "Add component")) {
+				if (ImGui::SmallButton("Add")) {
+					ImGui::OpenPopup("add_component");
+				}
+				if (ImGui::BeginPopup("add_component")) {
 					for (IComponentNode* node : mNodes) {
 						if (!node->check(selectedEntity) && ImGui::Selectable(node->getName(), false)) {
 							node->create(selectedEntity);
 						}
 					}
-					ImGui::EndCombo();
+					ImGui::EndPopup();
 				}
 
 				for (IComponentNode* node : mNodes) {

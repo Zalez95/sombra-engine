@@ -44,6 +44,15 @@ namespace se::graphics {
 	}
 
 
+	std::size_t IndexBuffer::size() const
+	{
+		int ret = 0;
+		bind();
+		GL_WRAP( glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &ret) );
+		return ret;
+	}
+
+
 	void IndexBuffer::resizeAndCopy(const void* data, std::size_t size, TypeId type, std::size_t count)
 	{
 		mIndexType = type;
@@ -58,6 +67,13 @@ namespace se::graphics {
 	{
 		bind();
 		GL_WRAP( glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data) );
+	}
+
+
+	void IndexBuffer::read(void** data, std::size_t size, std::size_t offset)
+	{
+		bind();
+		GL_WRAP( glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, static_cast<GLsizeiptr>(size), *data) );
 	}
 
 

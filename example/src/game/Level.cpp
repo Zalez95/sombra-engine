@@ -14,7 +14,6 @@
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ImageReader.h>
 #include <se/app/io/FontReader.h>
-#include <se/app/io/TerrainLoader.h>
 #include <se/app/io/SceneImporter.h>
 #include <se/app/io/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
@@ -23,6 +22,7 @@
 #include <se/app/AppRenderer.h>
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
+#include "se/app/TerrainComponent.h"
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
 #include <se/app/LightProbe.h>
@@ -37,6 +37,7 @@
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/ConvexPolyhedron.h>
 #include <se/collision/CompositeCollider.h>
+#include "se/collision/TerrainCollider.h"
 #include <se/collision/HalfEdgeMeshExt.h>
 #include <se/collision/QuickHull.h>
 #include <se/collision/HACD.h>
@@ -213,7 +214,6 @@ namespace game {
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::app::TerrainLoader terrainLoader(mGame.getEntityDatabase(), mGame.getEventManager(), mScene);
 		se::collision::QuickHull qh(0.0001f);
 		se::collision::HACD hacd(0.002f, 0.0002f);
 
@@ -228,16 +228,16 @@ namespace game {
 		try {
 			// Meshes
 			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
-			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.faceIndices);
-			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.faceIndices);
+			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
+			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
 			cubeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(cubeRawMesh));
 
 			se::app::RawMesh planeRawMesh("Plane");
 			planeRawMesh.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
 			planeRawMesh.texCoords = { {0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f} };
-			planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
-			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.faceIndices);
-			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.faceIndices);
+			planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
+			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.indices);
+			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.indices);
 			planeMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh));
 
 			// Programs
@@ -253,7 +253,7 @@ namespace game {
 			if (!programShadowSkinning) {
 				throw std::runtime_error("programShadowSkinning not found");
 			}
-			mScene.repository.add(std::string("programShadow"), programShadowSkinning);
+			mScene.repository.add(std::string("programShadowSkinning"), programShadowSkinning);
 
 			std::shared_ptr<se::graphics::Program> programShadowTerrain;
 			programShadowTerrain = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
@@ -302,7 +302,7 @@ namespace game {
 			// Readers
 			AudioFile<float> audioFile;
 			MyShaderBuilder shaderBuilder(mGame, mScene);
-			auto SceneImporter = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
+			auto sceneImporter = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
 
 			// Fonts
 			arial = mGame.getRepository().find<std::string, se::graphics::Font>("arial");
@@ -311,7 +311,7 @@ namespace game {
 			}
 
 			// GLTF scenes
-			se::app::Result result = SceneImporter->load("res/meshes/test.gltf", mScene);
+			se::app::Result result = sceneImporter->load("res/meshes/test.gltf", mScene);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -500,7 +500,18 @@ namespace game {
 
 		// Terrain
 		{
+			auto terrain = mGame.getEntityDatabase().addEntity();
+			mScene.entities.push_back(terrain);
+
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(terrain, "terrain");
+
 			float size = 500.0f, maxHeight = 10.0f;
+			glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
+
+			se::app::TransformsComponent transforms;
+			transforms.scale = scaleVector;
+			mGame.getEntityDatabase().addComponent(terrain, std::move(transforms));
+
 			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
 
 			se::app::SplatmapMaterial terrainMaterial;
@@ -523,7 +534,23 @@ namespace game {
 				.addPass(terrainPass);
 			mScene.repository.add(std::string("shaderSplatmap"), terrainShader);
 
-			terrainLoader.createTerrain("terrain", size, maxHeight, heightMap1, lodDistances, "shaderSplatmap");
+			auto terrainComponent = mGame.getEntityDatabase().emplaceComponent<se::app::TerrainComponent>(
+				terrain, mGame.getEventManager(), terrain, size, maxHeight, lodDistances
+			);
+			terrainComponent->addRenderableShader(terrainShader);
+
+			// Physics data
+			se::physics::RigidBodyConfig config;
+			config.frictionCoefficient = 1.0f;
+			config.sleepMotion = 0.2f;
+			mGame.getEntityDatabase().emplaceComponent<se::physics::RigidBody>(terrain, config);
+
+			// Collider data
+			auto heights = se::app::MeshLoader::calculateHeights(heightMap1.pixels.get(), heightMap1.width, heightMap1.height);
+			auto collider = std::make_unique<se::collision::TerrainCollider>();
+			collider->setHeights(heights, heightMap1.width, heightMap1.height);
+			collider->setTransforms(glm::scale(glm::mat4(1.0f), scaleVector));
+			mGame.getEntityDatabase().addComponent<se::collision::Collider>(terrain, std::move(collider));
 		}
 
 		// Plane

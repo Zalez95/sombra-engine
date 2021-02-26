@@ -48,9 +48,11 @@ namespace se::utils {
 		 *
 		 * @param	numElements the initial number of elements stored inside
 		 *			the FixedVector. If it's larger than the maximum number of
-		 *			elements the FixedVector can store, it will be set to 0 */
-		FixedVector(size_type numElements) : mNumElements(0)
-		{ resize(numElements); };
+		 *			elements the FixedVector can store, it will be set to 0
+		 * @param	value the initial value with which the new values will be
+		 *			intialized */
+		FixedVector(size_type numElements, const T& value = T()) :
+			mNumElements(0) { resize(numElements, value); };
 
 		/** Creates a new FixedVector
 		 *
@@ -184,15 +186,17 @@ namespace se::utils {
 		 *
 		 * @param	numElements the new number of elements stored inside the
 		 *			FixedVector
+		 * @param	value the initial value with which the new values will be
+		 *			intialized
 		 * @note	the new number of elements will be set to @tparam N if
 		 *			numElements is larger */
-		void resize(size_type numElements);
+		void resize(size_type numElements, const T& value = T());
 
 		/** Adds a new Element at the back of the FixedVector
 		 *
 		 * @param	element the Element to push at the back of the FixedVector
 		 * @note	if the FixedVector is full, it causes undefined behavior */
-		void push_back(T element);
+		void push_back(const T& element);
 
 		/** Adds a new Element at the back of the FixedVector
 		 *

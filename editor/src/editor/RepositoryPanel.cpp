@@ -90,6 +90,10 @@ namespace editor {
 
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::CollapsingHeader("Selected element")) {
+				if (!mPanel.mEditor.getScene()->repository.find<std::string, T>(mSelected)) {
+					mSelected = "";
+				}
+
 				if (!mSelected.empty()) {
 					std::array<char, kMaxNameSize> nameBuffer = {};
 					std::copy(mSelected.begin(), mSelected.end(), nameBuffer.data());
@@ -184,18 +188,8 @@ namespace editor {
 		{
 			static const char* types[] = { "GLTF" };
 			std::size_t currentType = static_cast<std::size_t>(mFileType);
-			if (ImGui::BeginCombo("Type:##SceneImporter", types[currentType])) {
-				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
-					bool isSelected = (i == currentType);
-					if (ImGui::Selectable(types[i], isSelected)) {
-						currentType = i;
-						mFileType = static_cast<SceneImporter::FileType>(currentType);
-					}
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
+			if (addDropdown("Type:##SceneImporter", types, IM_ARRAYSIZE(types), currentType)) {
+				mFileType = static_cast<SceneImporter::FileType>(currentType);
 			}
 
 			return true;
@@ -243,18 +237,8 @@ namespace editor {
 
 			static const char* types[] = { "Directional", "Point", "Spot" };
 			std::size_t currentType = static_cast<std::size_t>(source->type);
-			if (ImGui::BeginCombo("Type:##LightSource", types[currentType])) {
-				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
-					bool isSelected = (i == currentType);
-					if (ImGui::Selectable(types[i], isSelected)) {
-						currentType = i;
-						source->type = static_cast<LightSource::Type>(currentType);
-					}
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
+			if (addDropdown("Type:##LightSource", types, IM_ARRAYSIZE(types), currentType)) {
+				source->type = static_cast<LightSource::Type>(currentType);
 			}
 			ImGui::ColorPicker3("Color", glm::value_ptr(source->color));
 			ImGui::DragFloat("Intensity", &source->intensity, 0.005f, 0, FLT_MAX, "%.3f", 1.0f);
@@ -388,18 +372,7 @@ namespace editor {
 
 			const char* types[] = { "Gravity" };
 			std::size_t currentType = gravity? 0 : 0;
-			if (ImGui::BeginCombo("Type##ForceNode", types[currentType])) {
-				for (std::size_t i = 0; i < IM_ARRAYSIZE(types); ++i) {
-					bool isSelected = (i == currentType);
-					if (ImGui::Selectable(types[i], isSelected)) {
-						currentType = i;
-					}
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
+			addDropdown("Type##ForceNode", types, IM_ARRAYSIZE(types), currentType);
 
 			if (currentType == 0) {
 				if (!gravity) {
@@ -567,6 +540,7 @@ namespace editor {
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
 		ColorFormat mColorType = ColorFormat::RGB;
+		bool mIsHDR = false;
 
 	public:		// Functions
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
@@ -576,6 +550,51 @@ namespace editor {
 		{
 			auto texture = mPanel.mEditor.getScene()->repository.find<std::string, Texture>(key);
 			ImGui::Image(static_cast<void*>(texture.get()), ImVec2{ 200.0f, 200.0f });
+
+			TextureFilter min, mag;
+			texture->getFiltering(&min, &mag);
+			std::size_t iMin = static_cast<std::size_t>(min);
+			std::size_t iMag = static_cast<std::size_t>(mag);
+
+			static const char* filterType[] = { "Nearest", "Linear", "Nearest MipMap Nearest", "Linear MipMap Nearest", "Nearest MipMap Linear", "Linear MipMap Linear" };
+			if (addDropdown("Minification##TextureMinFilter", filterType, IM_ARRAYSIZE(filterType), iMin)) {
+				min = static_cast<TextureFilter>(iMin);
+				texture->setFiltering(min, mag);
+			}
+			if (addDropdown("Magnification##TextureMagFilter", filterType, IM_ARRAYSIZE(filterType), iMag)) {
+				mag = static_cast<TextureFilter>(iMag);
+				texture->setFiltering(min, mag);
+			}
+
+			TextureWrap wrapS, wrapT, wrapR;
+			texture->getWrapping(&wrapS, &wrapT, &wrapR);
+			std::size_t iWrapS = static_cast<std::size_t>(wrapS);
+			std::size_t iWrapT = static_cast<std::size_t>(wrapT);
+			std::size_t iWrapR = static_cast<std::size_t>(wrapR);
+
+			static const char* wrapType[] = { "Repeat", "Mirrored Repeat", "Clamp to Edge", "Clamp to Border" };
+			bool set = false;
+			if (addDropdown("Wrap S##TextureWrapS", wrapType, IM_ARRAYSIZE(wrapType), iWrapS)) {
+				wrapS = static_cast<TextureWrap>(iWrapS);
+				set = true;
+			}
+			if (texture->getTarget() != TextureTarget::Texture1D) {
+				if (addDropdown("Wrap T##TextureWrapT", wrapType, IM_ARRAYSIZE(wrapType), iWrapT)) {
+					wrapT = static_cast<TextureWrap>(iWrapT);
+					set = true;
+				}
+
+				if (texture->getTarget() != TextureTarget::Texture2D) {
+					if (addDropdown("Wrap R##TextureWrapR", wrapType, IM_ARRAYSIZE(wrapType), iWrapR)) {
+						wrapR = static_cast<TextureWrap>(iWrapR);
+						set = true;
+					}
+				}
+			}
+
+			if (set) {
+				texture->setWrapping(wrapS, wrapT, wrapR);
+			}
 		};
 
 		virtual bool options() override
@@ -583,20 +602,12 @@ namespace editor {
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
 			bool validKey = !mPanel.mEditor.getScene()->repository.has<std::string, LightSource>(mNameBuffer.data());
 
+			ImGui::Checkbox("Is HDR", &mIsHDR);
+
 			static const char* colorType[] = { "Red", "RG", "RGB", "RGBA" };
 			std::size_t currentType = static_cast<std::size_t>(mColorType);
-			if (ImGui::BeginCombo("Type:##Texture", colorType[currentType])) {
-				for (std::size_t i = 0; i < IM_ARRAYSIZE(colorType); ++i) {
-					bool isSelected = (i == currentType);
-					if (ImGui::Selectable(colorType[i], isSelected)) {
-						currentType = i;
-						mColorType = static_cast<ColorFormat>(currentType);
-					}
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
+			if (addDropdown("Type:##Texture", colorType, IM_ARRAYSIZE(colorType), currentType)) {
+				mColorType = static_cast<ColorFormat>(currentType);
 			}
 
 			return validKey;
@@ -604,18 +615,35 @@ namespace editor {
 
 		virtual bool load(const char* path) override
 		{
-			Image<unsigned char> image;
-			auto result = ImageReader::read(path, image);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return false;
+			auto texture = std::make_shared<Texture>(TextureTarget::Texture2D);
+
+			if (mIsHDR) {
+				Image<float> image;
+				auto result = ImageReader::readHDR(path, image);
+				if (!result) {
+					SOMBRA_ERROR_LOG << result.description();
+					return false;
+				}
+
+				texture->setImage(
+					image.pixels.get(), TypeId::Float, mColorType, mColorType,
+					image.width, image.height
+				);
+			}
+			else {
+				Image<unsigned char> image;
+				auto result = ImageReader::read(path, image);
+				if (!result) {
+					SOMBRA_ERROR_LOG << result.description();
+					return false;
+				}
+
+				texture->setImage(
+					image.pixels.get(), TypeId::UnsignedByte, mColorType, mColorType,
+					image.width, image.height
+				);
 			}
 
-			auto texture = std::make_shared<Texture>(TextureTarget::Texture2D);
-			texture->setImage(
-				image.pixels.get(), TypeId::UnsignedByte, mColorType, mColorType,
-				image.width, image.height
-			);
 			if (!mPanel.mEditor.getScene()->repository.add(std::string(mNameBuffer.data()), texture)) {
 				return false;
 			}

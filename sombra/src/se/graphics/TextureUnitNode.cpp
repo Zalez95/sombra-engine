@@ -14,7 +14,10 @@ namespace se::graphics {
 
 	void TextureUnitNode::execute()
 	{
-		std::dynamic_pointer_cast<Texture>(getBindable(mBindableIndex))->setTextureUnit(mUnit);
+		BindableSPtr bindable = getBindable(mBindableIndex);
+		if (bindable) {
+			std::dynamic_pointer_cast<Texture>(bindable)->setTextureUnit(mUnit);
+		}
 	}
 
 }

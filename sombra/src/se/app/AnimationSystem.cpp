@@ -28,7 +28,7 @@ namespace se::app {
 			return;
 		}
 
-		if (transforms) {
+		if (transforms && *node) {
 			// The Entity initial data is overridden by the AnimationNode one
 			transforms->position = (*node)->getData().worldTransforms.position;
 			transforms->orientation = (*node)->getData().worldTransforms.orientation;
@@ -48,22 +48,7 @@ namespace se::app {
 			return;
 		}
 
-		// Remove the descendant entities and nodes first
-		for (auto itNode = ++((*node)->begin()); itNode != (*node)->end(); ++itNode) {
-			animation::AnimationNode* node2 = &(*itNode);
-			Entity descendantEntity = mEntityDatabase.getEntity(&node2);
-			if (descendantEntity != kNullEntity) {
-				mEntityDatabase.removeEntity(descendantEntity);
-			}
-		}
-
-		// Remove the AnimationNode
-		auto parentNode = (*node)->getParent();
-		auto itNode = std::find(parentNode->begin(), parentNode->end(), **node);
-		if (itNode != parentNode->end()) {
-			SOMBRA_INFO_LOG << "Node " << *node << " of Entity " << entity << " removed successfully";
-			parentNode->erase(itNode);
-		}
+		SOMBRA_INFO_LOG << "Node " << *node << " of Entity " << entity << " removed successfully";
 	}
 
 
@@ -102,12 +87,14 @@ namespace se::app {
 		// Update the Entities with the changes made to the AnimationNode
 		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode*>(
 			[this](Entity, TransformsComponent* transforms, animation::AnimationNode** node) {
-				animation::NodeData& nodeData = (*node)->getData();
-				if (nodeData.animated) {
-					transforms->position = nodeData.worldTransforms.position;
-					transforms->orientation = nodeData.worldTransforms.orientation;
-					transforms->scale = nodeData.worldTransforms.scale;
-					transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
+				if (*node) {
+					animation::NodeData& nodeData = (*node)->getData();
+					if (nodeData.animated) {
+						transforms->position = nodeData.worldTransforms.position;
+						transforms->orientation = nodeData.worldTransforms.orientation;
+						transforms->scale = nodeData.worldTransforms.scale;
+						transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
+					}
 				}
 			}
 		);

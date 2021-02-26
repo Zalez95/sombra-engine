@@ -88,10 +88,38 @@ namespace se::utils {
 	template <Traversal t>
 	TreeNode<T>::const_iterator<t> TreeNode<T>::find(const T& data) const
 	{
-		auto it = begin<t>();
+		auto it = cbegin<t>();
 
-		while (it != end<t>()) {
+		while (it != cend<t>()) {
 			if (it->mData == data) {
+				break;
+			}
+			else {
+				++it;
+			}
+		}
+
+		return it;
+	}
+
+
+	template <typename T>
+	template <Traversal t>
+	TreeNode<T>::iterator<t> TreeNode<T>::find(const TreeNode& node)
+	{
+		const TreeNode<T>* cThis = this;
+		return cThis->find<t>(node);
+	}
+
+
+	template <typename T>
+	template <Traversal t>
+	TreeNode<T>::const_iterator<t> TreeNode<T>::find(const TreeNode& node) const
+	{
+		auto it = cbegin<t>();
+
+		while (it != cend<t>()) {
+			if (&(*it) == &node) {
 				break;
 			}
 			else {
@@ -108,24 +136,14 @@ namespace se::utils {
 	TreeNode<T>::iterator<t> TreeNode<T>::insert(
 		const_iterator<t> parentIt, std::unique_ptr<TreeNode> descendant
 	) {
-		auto ret = end<t>();
-
+		auto parentNode = this;
 		if (parentIt != cend<t>()) {
-			auto parentNode = const_cast<TreeNode*>( &(*parentIt) );
-
-			descendant->mParent = parentNode;
-			auto currentChild = std::move(parentNode->mChild);
-			parentNode->mChild = std::move(descendant);
-			parentNode->mChild->mSibling = std::move(currentChild);
-
-			ret = parentIt;
-			do {
-				++ret;
-			}
-			while (&(*ret) != parentIt->mChild.get());
+			parentNode = const_cast<TreeNode*>( &(*parentIt) );
 		}
 
-		return ret;
+		TreeNode& descendantRef = *descendant;
+		setNodesParent(std::move(descendant), parentNode);
+		return find(descendantRef);
 	}
 
 
@@ -141,34 +159,85 @@ namespace se::utils {
 
 	template <typename T>
 	template <Traversal t>
-	TreeNode<T>::iterator<t> TreeNode<T>::erase(iterator<t> it)
+	TreeNode<T>::iterator<t> TreeNode<T>::erase(iterator<t> it, bool eraseDescendants)
 	{
-		auto ret = end<t>();
+		auto nextIt = ++iterator<t>(it);
+		auto parent = it->mParent;
 
-		if (it != end<t>()) {
-			ret = it++;
-			std::swap(it, ret);
+		std::unique_ptr<TreeNode> nodeUPtr = removeNode(&(*it));
+		if (!eraseDescendants) {
+			setNodesParent(std::move(nodeUPtr->mChild), parent);
+		}
 
-			if (it->mParent->mChild.get() == &(*it)) {
-				// Update parent child with sibling
-				it->mParent->mChild = std::move(it->mSibling);
-			}
-			else {
-				// Update left sibling
-				TreeNode* child = it->mParent->mChild.get();
-				while (child) {
-					if (child->mSibling.get() == &(*it)) {
-						child->mSibling = std::move(it->mSibling);
-						child = nullptr;
-					}
-					else {
-						child = child->mSibling.get();
-					}
+		iterator<t> ret;
+		if (nextIt != end<t>()) {
+			ret = find(*nextIt);
+		}
+		return ret;
+	}
+
+
+	template <typename T>
+	template <Traversal t>
+	TreeNode<T>::iterator<t> TreeNode<T>::move(iterator<t> it, const_iterator<t> parentIt, bool moveDescendants)
+	{
+		TreeNode* oldParent = it->mParent;
+
+		std::unique_ptr<TreeNode> nodeUPtr = removeNode(&(*it));
+		if (!moveDescendants) {
+			setNodesParent(std::move(nodeUPtr->mChild), oldParent);
+		}
+
+		return insert(parentIt, std::move(nodeUPtr));
+	}
+
+
+	template <typename T>
+	std::unique_ptr<TreeNode<T>> TreeNode<T>::removeNode(TreeNode* node)
+	{
+		std::unique_ptr<TreeNode<T>> ret;
+
+		if (node->mParent->mChild.get() == node) {
+			ret = std::move(node->mParent->mChild);
+			node->mParent->mChild = std::move(ret->mSibling);
+		}
+		else {
+			TreeNode* parentChild = node->mParent->mChild.get();
+			while (parentChild) {
+				if (parentChild->mSibling.get() == node) {
+					ret = std::move(parentChild->mSibling);
+					parentChild->mSibling = std::move(ret->mSibling);
+					break;
 				}
+				parentChild = parentChild->mSibling.get();
 			}
 		}
 
+		ret->mParent = nullptr;
 		return ret;
+	}
+
+
+	template <typename T>
+	void TreeNode<T>::setNodesParent(std::unique_ptr<TreeNode> first, TreeNode* parent)
+	{
+		TreeNode* child = first.get();
+		while (child) {
+			child->mParent = parent;
+			child = child->mSibling.get();
+		}
+
+		TreeNode* parentChild = parent->mChild.get();
+		if (parentChild) {
+			while (parentChild->mSibling) {
+				parentChild = parentChild->mSibling.get();
+			}
+
+			parentChild->mSibling = std::move(first);
+		}
+		else {
+			parent->mChild = std::move(first);
+		}
 	}
 
 
@@ -177,7 +246,18 @@ namespace se::utils {
 	TreeNode<T>::TNIterator<isConst, t>::TNIterator(TreeNodeType* treeNode)
 	{
 		if (treeNode) {
-			mTreeNodeDeque = { treeNode };
+			if constexpr ((t == Traversal::BFS) || (t == Traversal::DFSPreOrder)) {
+				if (treeNode->mChild) {
+					mTreeNodeDeque = { treeNode->mChild.get() };
+				}
+			}
+			else {
+				treeNode = treeNode->mChild.get();
+				while (treeNode) {
+					mTreeNodeDeque.push_back(treeNode);
+					treeNode = treeNode->mChild.get();
+				}
+			}
 		}
 	}
 
@@ -214,6 +294,9 @@ namespace se::utils {
 		}
 		else if constexpr (t == Traversal::DFSPreOrder) {
 			nextDFSPreOrder();
+		}
+		else if constexpr (t == Traversal::DFSPostOrder) {
+			nextDFSPostOrder();
 		}
 
 		return *this;
@@ -271,6 +354,24 @@ namespace se::utils {
 						mTreeNodeDeque.push_back(node->mSibling.get());
 						break;
 					}
+				}
+			}
+		}
+	}
+
+
+	template <typename T>
+	template <bool isConst, Traversal t>
+	void TreeNode<T>::TNIterator<isConst, t>::nextDFSPostOrder()
+	{
+		if (!mTreeNodeDeque.empty()) {
+			TreeNodeType* node = mTreeNodeDeque.back();
+			mTreeNodeDeque.pop_back();
+			if (node->mSibling) {
+				node = node->mSibling.get();
+				while (node) {
+					mTreeNodeDeque.push_back(node);
+					node = node->mChild.get();
 				}
 			}
 		}

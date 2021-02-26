@@ -62,7 +62,9 @@ namespace se::graphics {
 	{
 		switch (primitive) {
 			case PrimitiveType::Point:			return GL_POINT;
-			case PrimitiveType::Line:			return GL_LINE;
+			case PrimitiveType::Line:			return GL_LINES;
+			case PrimitiveType::LineLoop:		return GL_LINE_LOOP;
+			case PrimitiveType::LineStrip:		return GL_LINE_STRIP;
 			case PrimitiveType::Triangle:		return GL_TRIANGLES;
 			case PrimitiveType::TriangleFan:	return GL_TRIANGLE_FAN;
 			case PrimitiveType::TriangleStrip:	return GL_TRIANGLE_STRIP;
@@ -201,6 +203,19 @@ namespace se::graphics {
 	}
 
 
+	constexpr TextureFilter fromGLFilter(int filter)
+	{
+		switch (filter) {
+			case GL_NEAREST:				return TextureFilter::Nearest;
+			case GL_LINEAR:					return TextureFilter::Linear;
+			case GL_NEAREST_MIPMAP_NEAREST:	return TextureFilter::NearestMipMapNearest;
+			case GL_LINEAR_MIPMAP_NEAREST:	return TextureFilter::LinearMipMapNearest;
+			case GL_NEAREST_MIPMAP_LINEAR:	return TextureFilter::NearestMipMapLinear;
+			default:						return TextureFilter::LinearMipMapLinear;
+		}
+	}
+
+
 	constexpr int toGLWrap(TextureWrap wrap)
 	{
 		switch (wrap) {
@@ -209,6 +224,17 @@ namespace se::graphics {
 			case TextureWrap::ClampToEdge:		return GL_CLAMP_TO_EDGE;
 			case TextureWrap::ClampToBorder:	return GL_CLAMP_TO_BORDER;
 			default:							return GL_NONE;
+		}
+	}
+
+
+	constexpr TextureWrap fromGLWrap(int wrap)
+	{
+		switch (wrap) {
+			case GL_REPEAT:				return TextureWrap::Repeat;
+			case GL_MIRRORED_REPEAT:	return TextureWrap::MirroredRepeat;
+			case GL_CLAMP_TO_EDGE:		return TextureWrap::ClampToEdge;
+			default:					return TextureWrap::ClampToBorder;
 		}
 	}
 

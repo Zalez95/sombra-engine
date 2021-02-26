@@ -97,7 +97,7 @@ namespace se::utils {
 
 
 	template <typename T, std::size_t N>
-	void FixedVector<T, N>::resize(size_type numElements)
+	void FixedVector<T, N>::resize(size_type numElements, const T& value)
 	{
 		if (numElements > N) {
 			numElements = N;
@@ -108,13 +108,13 @@ namespace se::utils {
 		}
 
 		while (numElements > mNumElements) {
-			emplace_back();
+			emplace_back(value);
 		}
 	}
 
 
 	template <typename T, std::size_t N>
-	void FixedVector<T, N>::push_back(T element)
+	void FixedVector<T, N>::push_back(const T& element)
 	{
 		emplace_back(element);
 	}

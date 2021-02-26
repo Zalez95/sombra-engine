@@ -84,6 +84,11 @@ namespace se::graphics {
 		/** @return	the size of the QuadTree in the XZ plane */
 		float getSize() const { return mSize; };
 
+		/** @return	the the minimum distance to the highestLodLocation
+		 *			at each level of detail */
+		const std::vector<float>& getLodDistances() const
+		{ return mLodDistances; };
+
 		/** @return	the root Node of the QuadTree */
 		const Node& getRootNode() const { return mRootNode; };
 

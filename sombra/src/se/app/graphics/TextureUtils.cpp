@@ -270,7 +270,7 @@ namespace se::app {
 		// Create the plane
 		RawMesh planeRawMesh;
 		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
-		planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+		planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 		auto planeMesh = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
 		auto planeRenderable = std::make_unique<graphics::RenderableMesh>(std::move(planeMesh));
 		planeRenderable->addTechnique(technique);
@@ -325,7 +325,7 @@ namespace se::app {
 		// Create the plane
 		RawMesh planeRawMesh;
 		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
-		planeRawMesh.faceIndices = { 0, 1, 2, 1, 3, 2, };
+		planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 		auto planeMesh = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
 		auto planeRenderable = std::make_unique<graphics::RenderableMesh>(std::move(planeMesh));
 		planeRenderable->addTechnique(technique);
@@ -344,5 +344,37 @@ namespace se::app {
 
 		return ret;
 	}
+
+
+	template <typename T>
+	Image<T> TextureUtils::textureToImage(
+		const graphics::Texture& source, graphics::TypeId type,
+		graphics::ColorFormat color,
+		std::size_t width, std::size_t height
+	) {
+		Image<T> ret;
+		ret.pixels = std::unique_ptr<T>(new T[width * height * ret.channels]);
+		ret.width = width;
+		ret.height = height;
+		switch (color) {
+			case graphics::ColorFormat::Red:	ret.channels = 1;	break;
+			case graphics::ColorFormat::RG:		ret.channels = 2;	break;
+			case graphics::ColorFormat::RGB:	ret.channels = 3;	break;
+			case graphics::ColorFormat::RGBA:	ret.channels = 4;	break;
+			default:							ret.channels = 1;	break;
+		}
+
+		source.getImage(type, color, ret.pixels.get());
+
+		return ret;
+	}
+
+
+	template Image<unsigned char> TextureUtils::textureToImage<unsigned char>(
+		const graphics::Texture&, graphics::TypeId, graphics::ColorFormat, std::size_t, std::size_t
+	);
+	template Image<float> TextureUtils::textureToImage<float>(
+		const graphics::Texture&, graphics::TypeId, graphics::ColorFormat, std::size_t, std::size_t
+	);
 
 }

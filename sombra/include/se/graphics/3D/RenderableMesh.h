@@ -19,11 +19,18 @@ namespace se::graphics {
 		/** The Mesh of the RenderableMesh */
 		MeshSPtr mMesh;
 
+		/** The type of primitive used for rendering @see mMesh */
+		PrimitiveType mPrimitiveType;
+
 	public:		// Functions
 		/** Creates a new RenderableMesh
 		 *
-		 * @param	mesh a pointer to the Mesh of the RenderableMesh */
-		RenderableMesh(MeshSPtr mesh);
+		 * @param	mesh a pointer to the Mesh of the RenderableMesh
+		 * @param	primitiveMesh the type of primitive used for rendering */
+		RenderableMesh(
+			MeshSPtr mesh,
+			PrimitiveType primitiveType = PrimitiveType::Triangle
+		);
 
 		/** @return	the Mesh pointed by the RenderableMesh */
 		MeshSPtr getMesh() const { return mMesh; };

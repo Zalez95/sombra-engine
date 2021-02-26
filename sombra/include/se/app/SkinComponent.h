@@ -13,8 +13,10 @@ namespace se::app {
 	 */
 	struct Skin
 	{
-		/** The maximum number of joints in the skin */
-		static constexpr std::size_t kMaxJoints = 64;
+		/** The maximum number of joints in the skin
+		 * @note	We want 84 joints because it allows us to have less than 256
+		 *			vec4s in the vertex shader using mat3x4 as joints */
+		static constexpr std::size_t kMaxJoints = 84;
 
 		/** The inverse bind matrices of the joints, they're used for
 		 * transforming the mesh to the local space of each joint */
@@ -75,11 +77,12 @@ namespace se::app {
 		 *
 		 * @param	modelMatrix the model matrix that transforms from the local
 		 *			space of a Renderable3D to the global space
-		* @return	a vector with the joint matrices of the SkinComponent in the
-		*			local space of the Renderable3D */
-		utils::FixedVector<glm::mat4, Skin::kMaxJoints> calculateJointMatrices(
-			const glm::mat4& modelMatrix
-		);
+		 * @return	a vector with the transposed joint matrices of the
+		 *			SkinComponent in the local space of the Renderable3D
+		 *			stored as mat3x4s*/
+		utils::FixedVector<
+			glm::mat3x4, Skin::kMaxJoints
+		> calculateJointMatrices(const glm::mat4& modelMatrix);
 	};
 
 }

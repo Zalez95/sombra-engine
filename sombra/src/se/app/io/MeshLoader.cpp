@@ -64,7 +64,7 @@ namespace se::app {
 		}
 
 		IndexBuffer ibo;
-		ibo.resizeAndCopy(rawMesh.faceIndices.data(), TypeId::UnsignedShort, rawMesh.faceIndices.size());
+		ibo.resizeAndCopy(rawMesh.indices.data(), TypeId::UnsignedShort, rawMesh.indices.size());
 
 		ibo.bind();
 
@@ -106,11 +106,11 @@ namespace se::app {
 
 		// Add the HEFaces
 		bool allFacesLoaded = true;
-		for (std::size_t i = 0; i < rawMesh.faceIndices.size(); i += 3) {
+		for (std::size_t i = 0; i < rawMesh.indices.size(); i += 3) {
 			std::array<int, 3> vertexIndices = {
-				heVertexIndices[ rawMesh.faceIndices[i] ],
-				heVertexIndices[ rawMesh.faceIndices[i+1] ],
-				heVertexIndices[ rawMesh.faceIndices[i+2] ]
+				heVertexIndices[ rawMesh.indices[i] ],
+				heVertexIndices[ rawMesh.indices[i+1] ],
+				heVertexIndices[ rawMesh.indices[i+2] ]
 			};
 			if (collision::addFace(heMesh, vertexIndices.begin(), vertexIndices.end()) < 0) {
 				allFacesLoaded = false;
@@ -135,7 +135,7 @@ namespace se::app {
 
 		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
 		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
-		rawMesh.faceIndices.reserve(3 * heMeshTriangles.faces.size());
+		rawMesh.indices.reserve(3 * heMeshTriangles.faces.size());
 
 		std::unordered_map<std::size_t, std::size_t> vertexMap;
 		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
@@ -155,7 +155,7 @@ namespace se::app {
 			utils::FixedVector<int, 3> faceIndices;
 			collision::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
 			for (int iVertex : faceIndices) {
-				rawMesh.faceIndices.push_back(static_cast<unsigned short>(vertexMap[iVertex]));
+				rawMesh.indices.push_back(static_cast<unsigned short>(vertexMap[iVertex]));
 			}
 		}
 
@@ -196,7 +196,7 @@ namespace se::app {
 			{0.000199770f, 0.666866540f},	{0.666866540f, 0.000199799f},
 			{0.666866540f, 0.333133578f},	{0.666466891f, 0.000199760f}
 		};
-		ret.faceIndices = {
+		ret.indices = {
 			16, 20, 18,		5, 21, 1,
 			2, 23, 19,		0, 7, 4,
 			10, 9, 8,		15, 13, 12,
@@ -209,20 +209,49 @@ namespace se::app {
 	}
 
 
+	RawMesh MeshLoader::createGridMesh(const std::string& name, std::size_t numSquares, float length)
+	{
+		se::app::RawMesh ret(name);
+
+		float halfL = 0.5f * length;
+		float stepL = length / numSquares;
+
+		ret.positions.reserve((numSquares + 1) * (numSquares + 1));
+		ret.indices.reserve(6 * numSquares * numSquares);
+		for (unsigned short i = 0; i < static_cast<unsigned short>(numSquares + 1); ++i) {
+			for (unsigned short j = 0; j < static_cast<unsigned short>(numSquares + 1); ++j) {
+				ret.positions.emplace_back(j * stepL - halfL, 0.0f, i * stepL - halfL);
+
+				if ((i > 0) && (j > 0)) {
+					unsigned short topLeft = (i - 1) * (numSquares + 1) + j - 1;
+					unsigned short topRight = (i - 1) * (numSquares + 1) + j;
+					unsigned short bottomLeft = i * (numSquares + 1) + j - 1;
+					unsigned short bottomRight = i * (numSquares + 1) + j;
+					ret.indices.insert(ret.indices.end(), {
+						topLeft, bottomLeft, bottomLeft, bottomRight, bottomRight, topRight, topRight, topLeft
+					});
+				}
+			}
+		}
+
+		return ret;
+	}
+
+
 	RawMesh MeshLoader::createSphereMesh(
 		const std::string& name,
 		std::size_t segments, std::size_t rings, float radius
 	) {
 		RawMesh rawMesh(name);
 		rawMesh.positions.reserve((rings - 1) * segments + 2);
-		rawMesh.faceIndices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+		rawMesh.indices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
 
 		// Creates the bottom skullcap
 		rawMesh.positions.push_back({ 0.0f, -radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.faceIndices.push_back(0);
-			rawMesh.faceIndices.push_back(j + 1);
-			rawMesh.faceIndices.push_back((j + 1 < segments)? j + 2 : 1);
+			rawMesh.indices.push_back(0);
+			rawMesh.indices.push_back(j + 1);
+			rawMesh.indices.push_back((j + 1 < segments)? j + 2 : 1);
 		}
 
 		// Creates the internal rings
@@ -232,9 +261,9 @@ namespace se::app {
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 2 - segments + j);
-			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 1);
-			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+			rawMesh.indices.push_back(rawMesh.positions.size() - 2 - segments + j);
+			rawMesh.indices.push_back(rawMesh.positions.size() - 1);
+			rawMesh.indices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
 		}
 
 		return rawMesh;
@@ -247,7 +276,7 @@ namespace se::app {
 	) {
 		RawMesh rawMesh(name);
 		rawMesh.positions.reserve(rings * segments + 1);
-		rawMesh.faceIndices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+		rawMesh.indices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
 
 		// Creates the internal rings
 		float ringAngle = glm::pi<float>() / rings;
@@ -256,9 +285,9 @@ namespace se::app {
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 2 - segments + j);
-			rawMesh.faceIndices.push_back(rawMesh.positions.size() - 1);
-			rawMesh.faceIndices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+			rawMesh.indices.push_back(rawMesh.positions.size() - 2 - segments + j);
+			rawMesh.indices.push_back(rawMesh.positions.size() - 1);
+			rawMesh.indices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
 		}
 
 		return rawMesh;
@@ -327,6 +356,21 @@ namespace se::app {
 	}
 
 
+	std::vector<float> MeshLoader::calculateHeights(
+		unsigned char* data, std::size_t xSize, std::size_t zSize
+	) {
+		std::vector<float> heights;
+		heights.reserve(xSize * zSize);
+		for (std::size_t z = 0; z < zSize; ++z) {
+			for (std::size_t x = 0; x < xSize; ++x) {
+				unsigned char h = data[z * xSize + x];
+				heights.push_back(h / static_cast<float>(255) - 0.5f);
+			}
+		}
+		return heights;
+	}
+
+
 	void createInternalRingsMesh(
 		RawMesh& rawMesh,
 		std::size_t segments, std::size_t rings, float radius,
@@ -357,12 +401,12 @@ namespace se::app {
 			currentRingIndex += segments;
 
 			for (std::size_t j = 0; j < segments; ++j) {
-				rawMesh.faceIndices.push_back(previousRingIndex + j);
-				rawMesh.faceIndices.push_back(currentRingIndex + j);
-				rawMesh.faceIndices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
-				rawMesh.faceIndices.push_back(previousRingIndex + j);
-				rawMesh.faceIndices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
-				rawMesh.faceIndices.push_back((j + 1 < segments)? previousRingIndex + j + 1 : previousRingIndex);
+				rawMesh.indices.push_back(previousRingIndex + j);
+				rawMesh.indices.push_back(currentRingIndex + j);
+				rawMesh.indices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
+				rawMesh.indices.push_back(previousRingIndex + j);
+				rawMesh.indices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
+				rawMesh.indices.push_back((j + 1 < segments)? previousRingIndex + j + 1 : previousRingIndex);
 			}
 		}
 	}

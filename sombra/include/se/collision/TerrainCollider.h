@@ -20,7 +20,7 @@ namespace se::collision {
 	private:	// Attributes
 		/** The positions in the Y axis of the TerrainCollider's vertices in
 		 * the range [-0.5, 0.5] */
-		const std::vector<float> mHeights;
+		std::vector<float> mHeights;
 
 		/** The number of vertices of the Terrain in the X axis */
 		std::size_t mXSize;
@@ -42,13 +42,16 @@ namespace se::collision {
 
 	public:		// Functions
 		/** Creates a new TerrainCollider located at the origin of
-		 * coordinates
+		 * coordinates */
+		TerrainCollider();
+
+		/** Sets the height data of the TerrainCollider
 		 *
 		 * @param	heights the heights (Y axis) of the TerrainCollider's
 		 *			vertices in the range [-0.5, 0.5]
 		 * @param	xSize the number of vertices in the X axis
 		 * @param	zSize the number of vertices in the Z axis */
-		TerrainCollider(
+		void setHeights(
 			const std::vector<float>& heights,
 			std::size_t xSize, std::size_t zSize
 		);

@@ -68,7 +68,7 @@ namespace se::animation {
 	/** Updates the world transforms of the given AnimationNode and its
 	 * descendants with the changes made to their parents or local transforms
 	 *
-	 * @param	node the root AnimationNode of the hierarchy of Nodes to
+	 * @param	rootNode the root AnimationNode of the hierarchy of Nodes to
 	 *			update */
 	void updateWorldTransforms(AnimationNode& rootNode);
 

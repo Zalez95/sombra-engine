@@ -24,13 +24,41 @@ namespace editor {
 	bool drawMat4ImGui(const char* name, glm::mat4& matrix);
 
 
+	/** Draws the given orientation
+	 *
+	 * @param	name the name of the orientation to draw
+	 * @param	orientation the orientation stored as a Quaternion
+	 * @param	orientationType the type of orientation to show:
+	 *			0 = quaternion, 1 = angle axis, 2 = euler angles
+	 * @return	true if the orientation was updated, false otherwise */
+	bool drawOrientation(
+		const char* name, glm::quat& orientation, int& orientationType
+	);
+
+
+	/** Creates a dropdown button used for selecting a value from the given
+	 * options
+	 *
+	 * @param	name the name of the Dropdown
+	 * @param	options the different options
+	 * @param	options the number of options
+	 * @param	selected the current selected value (it will be modified on
+	 *			user selection)
+	 * @return	true if the dropdown was updated, false otherwise */
+	bool addDropdown(
+		const char* name, const char* options[], std::size_t numOptions,
+		std::size_t& selected
+	);
+
+
 	/** Creates a dropdown button used for selecting a value with type @tparam T
 	 * from the given Repository
 	 *
 	 * @param	tag the tag of the button
 	 * @param	buttonName the string to show
 	 * @param	repository the Repository that holds the values
-	 * @param	selectedValue return parameter */
+	 * @param	selectedValue return parameter
+	 * @return	true if the dropdown was updated, false otherwise */
 	template <typename T>
 	bool addRepoDropdownButton(
 		const char* tag, const char* buttonName,
@@ -43,7 +71,8 @@ namespace editor {
 	 *
 	 * @param	tag the tag of the button
 	 * @param	repository the Repository that holds the values
-	 * @param	selectedValue return parameter */
+	 * @param	selectedValue return parameter
+	 * @return	true if the dropdown was updated, false otherwise */
 	template <typename T>
 	bool addRepoDropdownShowSelected(
 		const char* tag,

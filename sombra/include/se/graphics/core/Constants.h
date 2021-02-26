@@ -30,6 +30,8 @@ namespace se::graphics {
 	{
 		Point,
 		Line,
+		LineLoop,
+		LineStrip,
 		Triangle,
 		TriangleFan,
 		TriangleStrip

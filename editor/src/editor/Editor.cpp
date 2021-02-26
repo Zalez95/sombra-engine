@@ -1,12 +1,15 @@
 #include <se/utils/Log.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
+#include <se/graphics/core/UniformVariable.h>
+#include <se/graphics/core/GraphicsOperations.h>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
 #include <se/app/EntityDatabase.h>
 #include <se/app/RenderableShader.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraComponent.h>
+#include <se/app/MeshComponent.h>
 #include <se/app/events/ContainerEvent.h>
 #include "Editor.h"
 
@@ -21,9 +24,10 @@ namespace editor {
 			kUpdateTime
 		),
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),
-		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr), mRepositoryPanel(nullptr),
+		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr),
+		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr),
 		mViewportEntity(se::app::kNullEntity), mViewportControl(nullptr),
-		mScene(nullptr)
+		mGridEntity(se::app::kNullEntity), mScene(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the editor";
 
@@ -52,10 +56,12 @@ namespace editor {
 			mEntityPanel = new EntityPanel(*this);
 			mComponentPanel = new ComponentPanel(*this);
 			mRepositoryPanel = new RepositoryPanel(*this);
+			mSceneNodesPanel = new SceneNodesPanel(*this);
 
 			// Create the Entity used for controlling the viewport
 			mViewportEntity = mEntityDatabase->addEntity();
-			mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
+			auto vTransforms = mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
+			vTransforms->position = { 14.727f, 8.018f, -6.505f };
 
 			se::app::CameraComponent camera;
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
@@ -64,6 +70,26 @@ namespace editor {
 			mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
 
 			mViewportControl = new ViewportControl(*this, mViewportEntity);
+
+			// Create the viewport grid
+			mGridEntity = mEntityDatabase->addEntity();
+
+			auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity, *mEventManager, mGridEntity);
+			auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
+			auto gridMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
+			std::size_t gridIndex = mesh->add(false, gridMesh, se::graphics::PrimitiveType::Line);
+
+			std::shared_ptr<se::graphics::Program> program = se::app::ShaderLoader::createProgram(
+				"res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl"
+			);
+			auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
+			auto pass = std::make_shared<se::graphics::Pass>(*renderer);
+			pass->addBindable(program)
+				.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", *program, glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
+			auto rShader = std::make_shared<se::app::RenderableShader>(*mEventManager);
+			rShader->addPass(pass);
+			mesh->addRenderableShader(gridIndex, rShader);
 
 			SOMBRA_INFO_LOG << "Editor created";
 		}
@@ -81,9 +107,11 @@ namespace editor {
 			destroyScene();
 		}
 
+		if (mGridEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mGridEntity); }
 		if (mViewportControl) { delete mViewportControl; }
 		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
 
+		if (mSceneNodesPanel) { delete mSceneNodesPanel; }
 		if (mRepositoryPanel) { delete mRepositoryPanel; }
 		if (mComponentPanel) { delete mComponentPanel; }
 		if (mEntityPanel) { delete mEntityPanel; }
@@ -129,7 +157,7 @@ namespace editor {
 		if (!programShadowSkinning) {
 			throw std::runtime_error("programShadowSkinning not found");
 		}
-		mScene->repository.add(std::string("programShadow"), programShadowSkinning);
+		mScene->repository.add(std::string("programShadowSkinning"), programShadowSkinning);
 
 		std::shared_ptr<se::graphics::Program> programShadowTerrain;
 		programShadowTerrain = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
@@ -248,6 +276,7 @@ namespace editor {
 		mEntityPanel->render();
 		mComponentPanel->render();
 		mRepositoryPanel->render();
+		mSceneNodesPanel->render();
 
 		Application::onRender();
 	}

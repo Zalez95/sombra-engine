@@ -95,7 +95,7 @@ namespace se::app {
 				glm::mat4 modelMatrix	= getModelMatrix(*transforms);
 
 				//FIXME: joints updated but no transforms
-				utils::FixedVector<glm::mat4, Skin::kMaxJoints> jointMatrices;
+				utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 				if (skin) {
 					jointMatrices = skin->calculateJointMatrices(modelMatrix);
 				}
@@ -239,13 +239,13 @@ namespace se::app {
 			mesh->get(rIndex).addPassBindable(pass.get(), uniforms.modelMatrix);
 		}
 		if (mesh->hasSkinning(rIndex)) {
-			utils::FixedVector<glm::mat4, Skin::kMaxJoints> jointMatrices;
+			utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 			if (skin) {
 				jointMatrices = skin->calculateJointMatrices(modelMatrix);
 			}
 			std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
 
-			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4, Skin::kMaxJoints>>(
+			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4, Skin::kMaxJoints>>(
 				"uJointMatrices", *program, jointMatrices.data(), numJoints
 			);
 			if (uniforms.jointMatrices->found()) {

@@ -23,7 +23,8 @@ TEST(TerrainCollider, getAABB)
 	const glm::vec3 expectedMinimum(-0.5f, -0.427923002f, -0.5f);
 	const glm::vec3 expectedMaximum(0.5f, 0.49946191f, 0.5f);
 
-	TerrainCollider tc1(heights, xSize, zSize);
+	TerrainCollider tc1;
+	tc1.setHeights(heights, xSize, zSize);
 	AABB aabb1 = tc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
 		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], kTolerance);
@@ -51,7 +52,8 @@ TEST(TerrainCollider, getAABBTransforms)
 	const glm::vec3 expectedMinimum(-9.358484268f, -8.048053741f, -2.782845735f);
 	const glm::vec3 expectedMaximum(3.376655340f, 4.209253787f, 11.290613174f);
 
-	TerrainCollider tc1(heights, xSize, zSize);
+	TerrainCollider tc1;
+	tc1.setHeights(heights, xSize, zSize);
 	glm::mat4 s = glm::scale(glm::mat4(1.0f), scale);
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
@@ -86,7 +88,8 @@ TEST(TerrainCollider, getOverlapingParts1)
 		glm::vec3(-6.620086193f,-7.647461891f, 5.396442413f)
 	};
 
-	TerrainCollider tc1(heights, xSize, zSize);
+	TerrainCollider tc1;
+	tc1.setHeights(heights, xSize, zSize);
 	glm::mat4 s = glm::scale(glm::mat4(1.0f), scale);
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
@@ -115,7 +118,8 @@ TEST(TerrainCollider, updated)
 		-0.283075078f, 0.129306909f, 0.134741993f,-0.250951479f, 0.104189257f,-0.422417659f
 	};
 	const int xSize = 6, zSize = 8;
-	TerrainCollider tc1(heights, xSize, zSize);
+	TerrainCollider tc1;
+	tc1.setHeights(heights, xSize, zSize);
 	EXPECT_TRUE(tc1.updated());
 	tc1.resetUpdatedState();
 	EXPECT_FALSE(tc1.updated());
@@ -147,7 +151,8 @@ TEST(TerrainCollider, getOverlapingParts2)
 		glm::vec3(-2.536325216f, 0.565185368f, 1.558086156f)
 	};
 
-	TerrainCollider tc1(heights, xSize, zSize);
+	TerrainCollider tc1;
+	tc1.setHeights(heights, xSize, zSize);
 	glm::mat4 s = glm::scale(glm::mat4(1.0f), scale);
 	glm::mat4 r = glm::mat4_cast(rotation);
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);

@@ -60,6 +60,72 @@ namespace editor {
 	}
 
 
+	bool drawOrientation(const char* name, glm::quat& orientation, int& orientationType)
+	{
+		bool ret = false;
+
+		static const char* orientationTypes[] = { "Quaternion", "Angle Axis", "Euler angles" };
+		if (ImGui::BeginCombo(name, orientationTypes[orientationType])) {
+			for (std::size_t i = 0; i < IM_ARRAYSIZE(orientationTypes); ++i) {
+				bool isSelected = (static_cast<int>(i) == orientationType);
+				if (ImGui::Selectable(orientationTypes[i], isSelected)) {
+					orientationType = static_cast<int>(i);
+				}
+				if (isSelected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		switch (orientationType) {
+			case 0: {
+				ret |= ImGui::DragFloat4("Quat", glm::value_ptr(orientation), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			} break;
+			case 1: {
+				float angle = glm::angle(orientation);
+				glm::vec3 axis = glm::axis(orientation);
+				ret |= ImGui::DragFloat("Angle", &angle, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				ret |= ImGui::DragFloat3("Axis", glm::value_ptr(axis), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				if (ret) {
+					orientation = glm::angleAxis(angle, axis);
+				}
+			} break;
+			case 2: {
+				glm::vec3 eulerAngles = glm::eulerAngles(orientation);
+				ret |= ImGui::DragFloat3("Euler angles", glm::value_ptr(eulerAngles), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				if (ret) {
+					orientation = glm::quat(eulerAngles);
+				}
+			} break;
+		}
+
+		return ret;
+	}
+
+
+	bool addDropdown(const char* name, const char* options[], std::size_t numOptions, std::size_t& selected)
+	{
+		bool ret = false;
+
+		if (ImGui::BeginCombo(name, options[selected])) {
+			for (std::size_t i = 0; i < numOptions; ++i) {
+				bool isSelected = (i == selected);
+				if (ImGui::Selectable(options[i], isSelected)) {
+					selected = i;
+					ret = true;
+				}
+				if (isSelected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		return ret;
+	}
+
+
 	bool Alert::execute()
 	{
 		bool ret = false;

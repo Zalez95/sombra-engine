@@ -13,11 +13,11 @@ namespace se::collision {
 	{
 		/** The minimum coordinates in each axis of the Mesh's vertices in
 		 * World Space */
-		glm::vec3 minimum;
+		glm::vec3 minimum = glm::vec3(0.0f);
 
 		/** The maximum coordinates in each Axis of the Mesh's vertices in
 		 * World Space */
-		glm::vec3 maximum;
+		glm::vec3 maximum = glm::vec3(0.0f);
 	};
 
 

@@ -7,7 +7,7 @@
 namespace se::utils {
 
 	/** The algorithms to use for visiting the TreeNodes */
-	enum class Traversal { BFS, DFSPreOrder };
+	enum class Traversal { BFS, DFSPreOrder, DFSPostOrder };
 
 
 	/**
@@ -87,11 +87,11 @@ namespace se::utils {
 		template <typename U>
 		friend bool operator!=(const TreeNode<U>& tn1, const TreeNode<U>& tn2);
 
-		/** @return	the initial iterator of the TreeNode */
+		/** @return	the initial iterator of the TreeNode descendants */
 		template <Traversal t = Traversal::BFS>
 		iterator<t> begin() { return iterator<t>(this); }
 
-		/** @return	the initial iterator of the TreeNode */
+		/** @return	the initial iterator of the TreeNode descendants */
 		template <Traversal t = Traversal::BFS>
 		const_iterator<t> cbegin() const { return const_iterator<t>(this); }
 
@@ -111,6 +111,18 @@ namespace se::utils {
 
 		/** @return	a pointer to the parent TreeNode of the current one */
 		const TreeNode* getParent() const { return mParent; };
+
+		/** @return	a pointer to the child TreeNode of the current one */
+		TreeNode* getChild() { return mChild.get(); };
+
+		/** @return	a pointer to the child TreeNode of the current one */
+		const TreeNode* getChild() const { return mChild.get(); };
+
+		/** @return	a pointer to the sibling TreeNode of the current one */
+		TreeNode* getSibling() { return mSibling.get(); };
+
+		/** @return	a pointer to the sibling TreeNode of the current one */
+		const TreeNode* getSibling() const { return mSibling.get(); };
 
 		/** @return	the data of the TreeNode */
 		T& getData() { return mData; };
@@ -139,11 +151,27 @@ namespace se::utils {
 		template <Traversal t = Traversal::BFS>
 		const_iterator<t> find(const T& data) const;
 
+		/** Searchs a descendant TreeNode
+		 *
+		 * @param	node the TreeNode to search
+		 * @return	an iterator to the TreeNode or to end if it wasn't found */
+		template <Traversal t = Traversal::BFS>
+		iterator<t> find(const TreeNode& node);
+
+		/** Searchs a descendant TreeNode
+		 *
+		 * @param	node the TreeNode to search
+		 * @return	a const_iterator to the TreeNode or to end if it wasn't
+		 *			found */
+		template <Traversal t = Traversal::BFS>
+		const_iterator<t> find(const TreeNode& node) const;
+
 		/** Adds a descendant TreeNode as a child of the TreeNode pointed by
 		 * the given iterator
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
-		 *			add
+		 *			add. If it's the end iterator, the node will be inserted as
+		 *			a child of the current TreeNode
 		 * @param	descendant a pointer to the TreeNode to insert
 		 * @return	an iterator to the new TreeNode, end if the TreeNode
 		 *			couldn't be added
@@ -158,7 +186,8 @@ namespace se::utils {
 		 * the given iterator
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
-		 *			add
+		 *			add. If it's the end iterator, the node will be inserted as
+		 *			a child of the current TreeNode
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
 		 * @return	an iterator to the new TreeNode, end if the TreeNode
@@ -170,15 +199,46 @@ namespace se::utils {
 		/** Removes the TreeNode pointed by the given iterator
 		 *
 		 * @param	it an iterator to the TreeNode to remove
+		 * @param	eraseDescendants if the descendant TreeNodes must be erased
+		 *			or not
 		 * @return	an iterator to the following TreeNode of the one erased */
 		template <Traversal t = Traversal::BFS>
-		iterator<t> erase(iterator<t> it);
+		iterator<t> erase(iterator<t> it, bool eraseDescendants = false);
+
+		/** Moves the given TreeNode to another position in the hierarchy
+		 *
+		 * @param	it an iterator to the TreeNode to move
+		 * @param	parentIt an iterator to the new parent TreeNode. If it's
+		 *			the end iterator, the node will be moved as child of the
+		 *			current TreeNode
+		 * @param	moveDescendants if the descendant TreeNodes must be moved
+		 *			or not
+		 * @return	an iterator to the TreeNode moved */
+		template <Traversal t = Traversal::BFS>
+		iterator<t> move(
+			iterator<t> it, const_iterator<t> parentIt,
+			bool moveDescendants = false
+		);
+	private:
+		/** Removes the given node and returns it
+		 *
+		 * @param	node a pointer to the node to remove
+		 * @return	the removed node */
+		std::unique_ptr<TreeNode> removeNode(TreeNode* node);
+
+		/** Sets the first node and its siblings as children of the given
+		 * parent TreeNode
+		 *
+		 * @param	first the pointer of the first TreeNode
+		 * @param	parent the new parent TreeNode */
+		void setNodesParent(std::unique_ptr<TreeNode> first, TreeNode* parent);
 	};
 
 
 	/**
 	 * Class TNIterator, the class used to iterate through the
-	 * descendant TreeNodes of a TreeNode
+	 * descendant TreeNodes of a TreeNode. If a node is removed/added while
+	 * iterating, the iterator will be invalidated
 	 */
 	template <typename T>
 	template <bool isConst, Traversal t>
@@ -257,6 +317,10 @@ namespace se::utils {
 		/** Calculates the next TreeNode to point using the DFS pre-order
 		 * algorithm */
 		void nextDFSPreOrder();
+
+		/** Calculates the next TreeNode to point using the DFS post-order
+		 * algorithm */
+		void nextDFSPostOrder();
 	};
 
 }

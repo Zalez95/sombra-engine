@@ -9,6 +9,7 @@
 #include "EntityPanel.h"
 #include "ComponentPanel.h"
 #include "RepositoryPanel.h"
+#include "SceneNodesPanel.h"
 #include "ViewportControl.h"
 
 namespace editor {
@@ -40,9 +41,11 @@ namespace editor {
 		EntityPanel* mEntityPanel;
 		ComponentPanel* mComponentPanel;
 		RepositoryPanel* mRepositoryPanel;
+		SceneNodesPanel* mSceneNodesPanel;
 
 		se::app::Entity mViewportEntity;
 		ViewportControl* mViewportControl;
+		se::app::Entity mGridEntity;
 
 		se::app::Scene* mScene;
 

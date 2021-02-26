@@ -1,7 +1,7 @@
 #version 330 core
 
 // ____ CONSTANTS ____
-const uint MAX_JOINTS = 64u;
+const uint MAX_JOINTS = 84u;
 
 
 // ____ GLOBAL VARIABLES ____
@@ -15,7 +15,7 @@ uniform mat4 uModelMatrix;							// Model space to World space Matrix
 uniform mat4 uViewMatrix;							// World space to View space Matrix
 uniform mat4 uProjectionMatrix;						// View space to NDC space Matrix
 
-uniform mat4 uJointMatrices[MAX_JOINTS];			// The joint matrices of the Skeleton
+uniform mat3x4 uJointMatrices[MAX_JOINTS];			// The joint matrices of the Skeleton
 
 // Output data
 out vec3 vsPosition;								// Global Vertex position for the Fragment Shader
@@ -25,10 +25,12 @@ out vec3 vsPosition;								// Global Vertex position for the Fragment Shader
 void main()
 {
 	// Calculate the skeleton pose matrix
-	mat4 poseMatrix = aVertexWeights.x * uJointMatrices[aVertexJoints.x]
+	mat3x4 poseMat3x4 = aVertexWeights.x * uJointMatrices[aVertexJoints.x]
 					+ aVertexWeights.y * uJointMatrices[aVertexJoints.y]
 					+ aVertexWeights.z * uJointMatrices[aVertexJoints.z]
 					+ aVertexWeights.w * uJointMatrices[aVertexJoints.w];
+	mat4 poseMatrix = mat4(poseMat3x4[0], poseMat3x4[1], poseMat3x4[2], vec4(0.0, 0.0, 0.0, 1.0));
+	poseMatrix = transpose(poseMatrix);
 
 	// Calculate the model matrix with the pose
 	mat4 modelPoseMatrix = uModelMatrix * poseMatrix;

@@ -26,6 +26,7 @@ namespace editor {
 		class LightComponentNode;
 		class LightProbeComponentNode;
 		class MeshComponentNode;
+		class TerrainComponentNode;
 		class RigidBodyComponentNode;
 		class ColliderComponentNode;
 

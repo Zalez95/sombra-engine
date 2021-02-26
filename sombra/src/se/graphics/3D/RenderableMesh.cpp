@@ -4,7 +4,8 @@
 
 namespace se::graphics {
 
-	RenderableMesh::RenderableMesh(MeshSPtr mesh) : mMesh(mesh)
+	RenderableMesh::RenderableMesh(MeshSPtr mesh, PrimitiveType primitiveType) :
+		mMesh(mesh), mPrimitiveType(primitiveType)
 	{
 		if (mMesh) {
 			std::tie(mMinimum, mMaximum) = mMesh->getBounds();
@@ -54,7 +55,7 @@ namespace se::graphics {
 	{
 		mMesh->bind();
 		GraphicsOperations::drawIndexed(
-			PrimitiveType::Triangle,
+			mPrimitiveType,
 			mMesh->getIBO().getIndexCount(), mMesh->getIBO().getIndexType()
 		);
 	}

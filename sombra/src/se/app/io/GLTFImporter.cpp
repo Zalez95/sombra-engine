@@ -96,6 +96,7 @@ namespace se::app {
 	struct GLTFImporter::PrimitiveData
 	{
 		MeshSPtr mesh;
+		graphics::PrimitiveType primitiveType = graphics::PrimitiveType::Triangle;
 		bool hasSkin = false;
 		ShaderSPtr shader;
 	};
@@ -204,6 +205,22 @@ namespace se::app {
 		else if (text == "JOINTS_0")	{ meshAttribute = MeshAttributes::JointIndexAttribute; }
 		else if (text == "WEIGHTS_0")	{ meshAttribute = MeshAttributes::JointWeightAttribute; }
 		else { ret = false; }
+		return ret;
+	}
+
+	inline bool toPrimitiveType(int mode, graphics::PrimitiveType& primitiveType)
+	{
+		bool ret = true;
+		switch (mode) {
+			case 0:	primitiveType = graphics::PrimitiveType::Point;			break;
+			case 1:	primitiveType = graphics::PrimitiveType::Line;			break;
+			case 2:	primitiveType = graphics::PrimitiveType::LineLoop;		break;
+			case 3:	primitiveType = graphics::PrimitiveType::LineStrip;		break;
+			case 4:	primitiveType = graphics::PrimitiveType::Triangle;		break;
+			case 5:	primitiveType = graphics::PrimitiveType::TriangleStrip;	break;
+			case 6:	primitiveType = graphics::PrimitiveType::TriangleFan;	break;
+			default:	ret = false;
+		}
 		return ret;
 	}
 
@@ -962,8 +979,8 @@ namespace se::app {
 			if (out.hasSkin) {
 				if (!materialShader.shaderSkin) {
 					materialShader.shaderSkin = mShaderBuilder.createShader(materialShader.material, true);
-					if (!mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shader)) {
-						return Result(false, "Can't add MaterialShader with name " + materialShader.name);
+					if (!mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shaderSkin)) {
+						return Result(false, "Can't add MaterialShader with name " + materialShader.name + "Skin");
 					}
 				}
 				out.shader = materialShader.shaderSkin;
@@ -982,6 +999,13 @@ namespace se::app {
 			// Use the default shader
 			std::string shaderKey = out.hasSkin? "defaultShaderSkin" : "defaultShader";
 			out.shader = mGLTFData->scene.repository.find<std::string, RenderableShader>(shaderKey);
+		}
+
+		auto itMode = jsonPrimitive.find("mode");
+		if (itMode != jsonPrimitive.end()) {
+			if (!toPrimitiveType(*itMode, out.primitiveType)) {
+				return Result(false, "Invalid primitive type " + std::to_string(itMode->get<int>()));
+			}
 		}
 
 		return Result();
@@ -1528,7 +1552,7 @@ namespace se::app {
 				if (meshIndex < mGLTFData->primitives.size()) {
 					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity, eventManager, node.entity);
 					for (auto& primitive : mGLTFData->primitives[meshIndex]) {
-						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh);
+						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh, primitive.primitiveType);
 						mesh->addRenderableShader(rIndex, primitive.shader);
 					}
 				}
@@ -1592,7 +1616,7 @@ namespace se::app {
 
 				// Create the AnimationNode of the root node
 				Node& rootNode = mGLTFData->nodes[rootNodeId];
-				auto itRootNode = mGLTFData->scene.rootNode.emplace(mGLTFData->scene.rootNode.cbegin(), rootNode.nodeData);
+				auto itRootNode = mGLTFData->scene.rootNode.emplace(mGLTFData->scene.rootNode.cend(), rootNode.nodeData);
 				if (itRootNode == mGLTFData->scene.rootNode.end()) {
 					return Result(false, "Failed to create an AnimationNode for the node " + std::to_string(rootNodeId));
 				}
@@ -1620,7 +1644,7 @@ namespace se::app {
 
 						// Create the AnimationNode of the child node
 						Node& child = mGLTFData->nodes[childId];
-						auto itChild = node.animationNode->emplace(node.animationNode->cbegin(), child.nodeData);
+						auto itChild = node.animationNode->emplace(node.animationNode->cend(), child.nodeData);
 						if (itChild == node.animationNode->end()) {
 							return Result(false, "Failed to create an AnimationNode for the node " + std::to_string(childId));
 						}

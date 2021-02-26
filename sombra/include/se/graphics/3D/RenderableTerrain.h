@@ -106,6 +106,13 @@ namespace se::graphics {
 			const glm::mat4& modelMatrix
 		) override;
 
+		/** @return	the size of the RenderableTerrain in the XZ plane */
+		float getSize() const { return mQuadTree.getSize(); };
+
+		/** @return	the minimum distance to the camera at each level of detail */
+		const std::vector<float>& getLodDistances() const
+		{ return mQuadTree.getLodDistances(); };
+
 		/** Updates the terrain QuadTree according to the given highest lod
 		 * location and the configured level of detail distances
 		 *

@@ -43,6 +43,9 @@ namespace se::graphics {
 		GL_WRAP( const char* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION)) );
 		GL_WRAP( const char* glslVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)) );
 
+		int maxVertexVectors = -1;
+		GL_WRAP( glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexVectors) );
+
 		int maxVertexUniforms = -1;
 		GL_WRAP( glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVertexUniforms) );
 
@@ -64,6 +67,7 @@ namespace se::graphics {
 		return	std::string("OpenGL Renderer: ") + glRenderer + "\n"
 				+ "OpenGL version supported: " + glVersion + "\n"
 				+ "GLSL version supported: " + glslVersion + "\n"
+				+ "Max vertex vec4s: " + std::to_string(maxVertexVectors) + "\n"
 				+ "Max vertex uniforms: " + std::to_string(maxVertexUniforms) + "\n"
 				+ "Max geometry uniforms: " + std::to_string(maxGeometryUniforms) + "\n"
 				+ "Max fragment uniforms: " + std::to_string(maxFragmentUniforms) + "\n"

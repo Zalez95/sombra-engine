@@ -37,7 +37,7 @@ namespace se::app {
 		std::vector<glm::u16vec4> jointIndices;
 		std::vector<glm::vec4> jointWeights;
 
-		std::vector<unsigned short> faceIndices;
+		std::vector<unsigned short> indices;
 
 		RawMesh(const std::string& name = "") : name(name) {};
 	};

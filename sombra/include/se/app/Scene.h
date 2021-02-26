@@ -45,6 +45,14 @@ namespace se::app {
 		Scene& operator=(Scene&& other) = default;
 	};
 
+
+	/** Removes the given Entity hierarchy from the given Scene
+	 *
+	 * @param	scene the Scene that holds the Entity hierarchy
+	 * @param	entity the Entity that has the root AnimationNode of the
+	 *			hierarchy to remove */
+	void removeEntityHierarchy(Scene& scene, Entity entity);
+
 }
 
 #endif		// SCENE_H

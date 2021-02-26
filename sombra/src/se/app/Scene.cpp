@@ -41,4 +41,38 @@ namespace se::app {
 		}
 	}
 
+
+	void removeEntityHierarchy(Scene& scene, Entity entity)
+	{
+		if (entity == kNullEntity) {
+			return;
+		}
+
+		auto [node] = scene.application.getEntityDatabase().getComponents<animation::AnimationNode*>(entity);
+		if (node) {
+			animation::AnimationNode& nodeRef = **node;
+
+			// Remove the descendant entities
+			for (auto it = nodeRef.begin<utils::Traversal::DFSPostOrder>(); it != nodeRef.end<utils::Traversal::DFSPostOrder>(); ++it) {
+				animation::AnimationNode* descendantNode = &(*it);
+				Entity descendantEntity = scene.application.getEntityDatabase().getEntity<animation::AnimationNode*>(&descendantNode);
+				if (descendantEntity != kNullEntity) {
+					scene.application.getEntityDatabase().removeEntity(descendantEntity);
+				}
+			}
+
+			// Remove the entity
+			scene.application.getEntityDatabase().removeEntity(entity);
+
+			// Remove the AnimationNodes
+			auto parentNode = nodeRef.getParent();
+			if (parentNode) {
+				auto itNode = parentNode->find(nodeRef);
+				if (itNode != parentNode->end()) {
+					parentNode->erase(itNode);
+				}
+			}
+		}
+	}
+
 }

@@ -45,7 +45,7 @@ namespace se::app {
 			{ 1.0f, 1.0f, 0.0f },
 			{ 0.0f, 1.0f, 0.0f }
 		};
-		rawMesh.faceIndices = {
+		rawMesh.indices = {
 			0, 1, 2,	2, 3, 0,
 			1, 5, 6,	6, 2, 1,
 			7, 6, 5,	5, 4, 7,

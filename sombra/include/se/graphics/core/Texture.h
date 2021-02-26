@@ -52,17 +52,34 @@ namespace se::graphics {
 		/** @return the id of the Texture */
 		inline unsigned int getTextureId() const { return mTextureId; };
 
+		/** @return	the current texture unit where the Texture will be bound */
+		int getTextureUnit() const { return mTextureUnit; };
+
 		/** Sets the texture unit where the texture will be bound
 		 *
 		 * @param	unit the texture unit where we want to bind the texture
 		 * @return	a reference to the current Texture object */
 		Texture& setTextureUnit(int unit);
 
+		/** @return	the current image unit where the Texture will be bound */
+		int getImageUnit() const { return mImageUnit; };
+
 		/** Sets the image unit where the texture will be bound
 		 *
 		 * @param	unit the image unit where we want to bind the texture
 		 * @return	a reference to the current Texture object */
 		Texture& setImageUnit(int unit);
+
+		/** Returns the filtering method used by the texture
+		 *
+		 * @param	minification a pointer to the method used in the
+		 *			minification process (return parameter)
+		 * @param	magnification a pointer to the method used in the
+		 *			magnification process (return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getFiltering(
+			TextureFilter* minification, TextureFilter* magnification
+		) const;
 
 		/** Sets the filtering method used by the texture
 		 *
@@ -73,6 +90,22 @@ namespace se::graphics {
 		Texture& setFiltering(
 			TextureFilter minification, TextureFilter magnification
 		);
+
+		/** Returns the behavior of the texture in each axis when a requested
+		 * position falls out of the [0.0, 1.0] range.
+		 *
+		 * @param	wrapS a pointer to the the TextureWrap in the x axis
+		 *			(return parameter)
+		 * @param	wrapT a pointer to the the TextureWrap in the y axis
+		 *			(return parameter)
+		 * @param	wrapR a pointer to the the TextureWrap in the z axis
+		 *			(return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getWrapping(
+			TextureWrap* wrapS = nullptr,
+			TextureWrap* wrapT = nullptr,
+			TextureWrap* wrapR = nullptr
+		) const;
 
 		/** Sets the behavior of the texture in each axis when a requested
 		 * position falls out of the [0.0, 1.0] range.
@@ -87,6 +120,17 @@ namespace se::graphics {
 			TextureWrap wrapR = TextureWrap::Repeat
 		);
 
+		/** Returns the border color of the Texture
+		 *
+		 * @param	r a pointer to the red value (return parameter)
+		 * @param	g a pointer to the green value (return parameter)
+		 * @param	b a pointer to the blue value (return parameter)
+		 * @param	a a pointer to the alpha value (return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getBorderColor(
+			float* r, float* g, float* b, float* a
+		) const;
+
 		/** Sets the border color of the Texture
 		 *
 		 * @param	r the red value of the new color
@@ -95,6 +139,17 @@ namespace se::graphics {
 		 * @param	a the alpha value of the new color
 		 * @return	a reference to the current Texture object */
 		Texture& setBorderColor(float r, float g, float b, float a);
+
+		/** Returns the image data of the Texture
+		 *
+		 * @param	textureType the type of the texture data
+		 * @param	textureFormat the ColorFormat of the texture
+		 * @param	buffer a pointer to the buffer where the image data will
+		 *			be stored
+		 * @return	a reference to the current Texture object */
+		const Texture& getImage(
+			TypeId textureType, ColorFormat textureFormat, void* buffer
+		) const;
 
 		/** Sets the image data of the Texture
 		 *

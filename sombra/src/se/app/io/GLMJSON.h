@@ -10,7 +10,7 @@ namespace se::app {
 	inline nlohmann::json toJson(const glm::vec2& v)
 	{
 		return { v.x, v.y };
-	};
+	}
 
 
 	inline bool toVec2(const nlohmann::json& json, glm::vec2& v)
@@ -20,13 +20,13 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::vec3& v)
 	{
 		return { v.x, v.y, v.z };
-	};
+	}
 
 
 	inline bool toVec3(const nlohmann::json& json, glm::vec3& v)
@@ -36,13 +36,13 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::vec4& v)
 	{
 		return { v.x, v.y, v.z, v.w };
-	};
+	}
 
 
 	inline bool toVec4(const nlohmann::json& json, glm::vec4& v)
@@ -52,13 +52,13 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::quat& q)
 	{
 		return { q.x, q.y, q.z, q.w };
-	};
+	}
 
 
 	inline bool toQuat(const nlohmann::json& json, glm::quat& q)
@@ -69,7 +69,7 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::mat2& m)
@@ -78,7 +78,7 @@ namespace se::app {
 			m[0][0], m[0][1],
 			m[1][0], m[1][1]
 		};
-	};
+	}
 
 
 	inline bool toMat2(const nlohmann::json& json, glm::mat2& m)
@@ -89,7 +89,7 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::mat3& m)
@@ -99,7 +99,7 @@ namespace se::app {
 			m[1][0], m[1][1], m[1][2],
 			m[2][0], m[2][1], m[2][2]
 		};
-	};
+	}
 
 
 	inline bool toMat3(const nlohmann::json& json, glm::mat3& m)
@@ -110,7 +110,7 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 
 	inline nlohmann::json toJson(const glm::mat4& m)
@@ -121,7 +121,7 @@ namespace se::app {
 			m[2][0], m[2][1], m[2][2], m[2][3],
 			m[3][0], m[3][1], m[3][2], m[3][3]
 		};
-	};
+	}
 
 
 	inline bool toMat4(const nlohmann::json& json, glm::mat4& m)
@@ -132,7 +132,7 @@ namespace se::app {
 			return true;
 		}
 		return false;
-	};
+	}
 
 }
 

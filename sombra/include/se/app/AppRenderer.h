@@ -44,6 +44,9 @@ namespace se::app {
 		/** A pointer to the renderer used for deferred lighting */
 		DeferredLightRenderer* mDeferredLightRenderer;
 
+		/** A pointer to the resources node of the render graph */
+		graphics::BindableRenderNode* mResources;
+
 		/** The configuration used for rendering the shadows */
 		ShadowData mShadowData;
 
@@ -58,6 +61,9 @@ namespace se::app {
 
 		/** The light source Entity used for shadow mapping */
 		Entity mShadowEntity;
+
+		/** The light Probe Entity used for rendering */
+		Entity mLightProbeEntity;
 
 	public:		// Functions
 		/** Creates a new AppRenderer
