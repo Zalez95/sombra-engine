@@ -7,13 +7,15 @@
 #include "se/app/EntityDatabase.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
+#include "se/app/AnimationComponent.h"
 #include "se/app/io/ImageReader.h"
 #include "se/app/graphics/RawMesh.h"
 #include "se/app/events/ContainerEvent.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
 #include "se/animation/CubicSplineAnimations.h"
-#include "se/animation/TransformationAnimators.h"
+#include "se/animation/TransformationAnimator.h"
+#include "se/animation/AnimationEngine.h"
 
 namespace se::app {
 
@@ -127,7 +129,7 @@ namespace se::app {
 		std::vector<CameraComponent> cameraComponents;
 		std::vector<Node> nodes;
 		std::vector<SceneUPtr> scenes;
-		std::vector<CAnimatorSPtr> compositeAnimators;
+		std::vector<SAnimatorSPtr> skeletonAnimators;
 
 		GLTFData(Scene& scene) : scene(scene) {};
 	};
@@ -457,7 +459,7 @@ namespace se::app {
 		}
 
 		if (auto itAnimations = jsonGLTF.find("animations"); itAnimations != jsonGLTF.end()) {
-			mGLTFData->compositeAnimators.reserve(itAnimations->size());
+			mGLTFData->skeletonAnimators.reserve(itAnimations->size());
 			for (std::size_t animationId = 0; animationId < itAnimations->size(); ++animationId) {
 				Result result = parseAnimation((*itAnimations)[animationId]);
 				if (!result) {
@@ -477,7 +479,7 @@ namespace se::app {
 
 				mGLTFData->scene.application.getEntityDatabase().emplaceComponent<SkinComponent>(
 					node.entity,
-					mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
+					node.animationNode, mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
 				);
 			}
 		}
@@ -1282,9 +1284,9 @@ namespace se::app {
 
 	Result GLTFImporter::parseAnimationChannel(
 		const nlohmann::json& jsonChannel,
-		const std::map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
-		const std::map<std::size_t, QuatAnimationSPtr>& quatAnimations,
-		IAnimatorUPtr& out
+		const std::unordered_map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
+		const std::unordered_map<std::size_t, QuatAnimationSPtr>& quatAnimations,
+		animation::SkeletonAnimator& sAnimator
 	) const
 	{
 		auto itSampler = jsonChannel.find("sampler");
@@ -1304,21 +1306,23 @@ namespace se::app {
 				}
 
 				std::size_t samplerId = *itSampler;
-				std::unique_ptr<animation::TransformationAnimator> animator = nullptr;
+				std::unique_ptr<animation::TransformationAnimator> tAnimator = nullptr;
 				auto itVec3Animation = vec3Animations.find(samplerId);
 				auto itQuatAnimation = quatAnimations.find(samplerId);
 				if (itVec3Animation != vec3Animations.end()) {
-					animator = std::make_unique<animation::Vec3Animator>(itVec3Animation->second);
+					tAnimator = std::make_unique<animation::Vec3Animator>(itVec3Animation->second);
 				}
 				else if (itQuatAnimation != quatAnimations.end()) {
-					animator = std::make_unique<animation::QuatAnimator>(itQuatAnimation->second);
+					tAnimator = std::make_unique<animation::QuatAnimator>(itQuatAnimation->second);
 				}
 				else {
 					return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
 				}
 
-				animator->addNode(transformationType, mGLTFData->nodes[nodeId].animationNode);
-				out = std::move(animator);
+				if (sAnimator.getLoopTime() < tAnimator->getLoopTime()) {
+					sAnimator.setLoopTime(tAnimator->getLoopTime());
+				}
+				sAnimator.addAnimator(mGLTFData->nodes[nodeId].nodeData.name, transformationType, std::move(tAnimator));
 				return Result();
 			}
 			else {
@@ -1333,7 +1337,7 @@ namespace se::app {
 
 	Result GLTFImporter::parseAnimation(const nlohmann::json& jsonAnimation)
 	{
-		std::string name = mGLTFData->fileName + "_animator" + std::to_string(mGLTFData->compositeAnimators.size());
+		std::string name = mGLTFData->fileName + "_animator" + std::to_string(mGLTFData->skeletonAnimators.size());
 		auto itName = jsonAnimation.find("name");
 		if (itName != jsonAnimation.end()) {
 			name = mGLTFData->fileName + "_" + itName->get<std::string>();
@@ -1349,8 +1353,10 @@ namespace se::app {
 			return Result(false, "Missing \"channels\" property");
 		}
 
-		std::map<std::size_t, Vec3AnimationSPtr> vec3Animations;
-		std::map<std::size_t, QuatAnimationSPtr> quatAnimations;
+		std::unordered_map<std::size_t, Vec3AnimationSPtr> vec3Animations;
+		std::unordered_map<std::size_t, QuatAnimationSPtr> quatAnimations;
+		vec3Animations.reserve(itSamplers->size());
+		quatAnimations.reserve(itSamplers->size());
 		for (std::size_t samplerId = 0; samplerId < itSamplers->size(); ++samplerId) {
 			std::unique_ptr<Vec3Animation> out1;
 			std::unique_ptr<QuatAnimation> out2;
@@ -1367,24 +1373,20 @@ namespace se::app {
 			}
 		}
 
-		auto compositeAnimator = std::make_shared<animation::CompositeAnimator>();
+		auto skeletonAnimator = std::make_shared<animation::SkeletonAnimator>();
 
-		float maxLoopTime = 0.0f;
 		for (std::size_t channelId = 0; channelId < itChannels->size(); ++channelId) {
 			IAnimatorUPtr out;
-			Result result = parseAnimationChannel((*itChannels)[channelId], vec3Animations, quatAnimations, out);
+			Result result = parseAnimationChannel((*itChannels)[channelId], vec3Animations, quatAnimations, *skeletonAnimator);
 			if (!result) {
 				return Result(false, "Failed to read the samplers property at channel " + std::to_string(channelId) + ": " + result.description());
 			}
-
-			maxLoopTime = std::max(maxLoopTime, out->getLoopTime());
-			compositeAnimator->addAnimator(std::move(out));
 		}
-		compositeAnimator->setLoopTime(maxLoopTime);
 
-		mGLTFData->compositeAnimators.emplace_back(compositeAnimator);
-		if (!mGLTFData->scene.repository.add(name, compositeAnimator)) {
-			return Result(false, "Can't add CompositeAnimator with name " + name);
+		mGLTFData->skeletonAnimators.emplace_back(skeletonAnimator);
+		mGLTFData->scene.application.getExternalTools().animationEngine->addAnimator(skeletonAnimator.get());
+		if (!mGLTFData->scene.repository.add(name, skeletonAnimator)) {
+			return Result(false, "Can't add SkeletonAnimator with name " + name);
 		}
 
 		return Result();
@@ -1607,6 +1609,8 @@ namespace se::app {
 
 	Result GLTFImporter::parseScene(const nlohmann::json& jsonScene)
 	{
+		se::app::EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
+
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {
 			for (std::size_t rootNodeId : itNodes->get< std::vector<std::size_t> >()) {
@@ -1624,9 +1628,13 @@ namespace se::app {
 				rootNode.animationNode = &(*itRootNode);
 				animation::updateWorldTransforms(*rootNode.animationNode);
 				if (rootNode.entity != kNullEntity) {
-					mGLTFData->scene.application.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(
-						rootNode.entity, rootNode.animationNode
-					);
+					auto [transforms] = entityDB.getComponents<TransformsComponent>(rootNode.entity);
+					if (transforms) {
+						transforms->position = rootNode.animationNode->getData().worldTransforms.position;
+						transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
+						transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
+					}
+					entityDB.emplaceComponent<AnimationComponent>(rootNode.entity, rootNode.animationNode);
 				}
 
 				// Build the tree
@@ -1652,9 +1660,13 @@ namespace se::app {
 						child.animationNode = &(*itChild);
 						animation::updateWorldTransforms(*child.animationNode);
 						if (child.entity != kNullEntity) {
-							mGLTFData->scene.application.getEntityDatabase().emplaceComponent<animation::AnimationNode*>(
-								child.entity, child.animationNode
-							);
+							auto [transforms] = entityDB.getComponents<TransformsComponent>(child.entity);
+							if (transforms) {
+								transforms->position = rootNode.animationNode->getData().worldTransforms.position;
+								transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
+								transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
+							}
+							entityDB.emplaceComponent<AnimationComponent>(child.entity, child.animationNode);
 						}
 
 						nodesToProcess.push_back(childId);

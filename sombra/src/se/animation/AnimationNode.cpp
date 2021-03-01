@@ -16,6 +16,15 @@ namespace se::animation {
 	}
 
 
+	void updateAnimatedState(AnimationNode& rootNode, bool animated)
+	{
+		rootNode.getData().animated = animated;
+		for (auto itNode = rootNode.begin(); itNode != rootNode.end(); ++itNode) {
+			itNode->getData().animated = animated;
+		}
+	}
+
+
 	void updateWorldTransformsSingle(AnimationNode& node)
 	{
 		NodeData& currentData = node.getData();
@@ -29,13 +38,11 @@ namespace se::animation {
 		if (parent) {
 			// Update the current world transforms with the parent
 			// world transforms
-			currentData.worldMatrix = parent->getData().worldMatrix * localMatrix;
-			utils::decompose(
-				currentData.worldMatrix,
-				currentData.worldTransforms.position,
-				currentData.worldTransforms.orientation,
-				currentData.worldTransforms.scale
-			);
+			NodeData& parentData = parent->getData();
+			currentData.worldMatrix = parentData.worldMatrix * localMatrix;
+			currentData.worldTransforms.position = parentData.worldTransforms.position + currentData.localTransforms.position;
+			currentData.worldTransforms.orientation = parentData.worldTransforms.orientation * currentData.localTransforms.orientation;
+			currentData.worldTransforms.scale = parentData.worldTransforms.scale * currentData.localTransforms.scale;
 		}
 		else {
 			currentData.worldMatrix = localMatrix;

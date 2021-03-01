@@ -31,11 +31,11 @@ namespace se::app {
 		 * window */
 		float mouseY = 0.0f;
 
-		/** The Mouse horizontal scroll */
-		float scrollX = 0.0f;
+		/** The Mouse horizontal scroll offset */
+		float scrollOffsetX = 0.0f;
 
-		/** The Mouse vertical scroll */
-		float scrollY = 0.0f;
+		/** The Mouse vertical scroll offset */
+		float scrollOffsetY = 0.0f;
 
 		/** The width of the window */
 		float windowWidth = 0.0f;

@@ -101,26 +101,19 @@ namespace se::app {
 
 		if (camera) {
 			if (transforms) {
-				// The Camera initial data is overridden by the entity one
-				glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-				glm::vec3 right = glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f));
-				glm::vec3 up = glm::cross(right, front);
-
-				camera->setPosition(transforms->position);
-				camera->setTarget(transforms->position + front);
-				camera->setUp(up);
+				transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Camera));
 			}
 
 			SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
 		}
 
 		if (mesh) {
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				mCameraUniformsUpdater->addRenderable(mesh->get(i));
 				mesh->processRenderableShaders(i, [&](const auto& shader) {
 					mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader);
 				});
-			}
+			});
 		}
 		if (terrain) {
 			mCameraUniformsUpdater->addRenderable(terrain->get());
@@ -138,9 +131,9 @@ namespace se::app {
 		>(entity);
 
 		if (mesh) {
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				mCameraUniformsUpdater->removeRenderable(mesh->get(i));
-			}
+			});
 		}
 		if (terrain) {
 			mCameraUniformsUpdater->removeRenderable(terrain->get());
@@ -160,14 +153,10 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 		mEntityDatabase.iterateComponents<TransformsComponent, CameraComponent>(
 			[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
-				if (transforms->updated.any()) {
-					glm::vec3 front = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-					glm::vec3 right = glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f));
-					glm::vec3 up = glm::cross(right, front);
-
+				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Camera)]) {
 					camera->setPosition(transforms->position);
-					camera->setTarget(transforms->position + front);
-					camera->setUp(up);
+					camera->setOrientation(transforms->orientation);
+					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Camera));
 				}
 			}
 		);

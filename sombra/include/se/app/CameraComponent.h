@@ -3,6 +3,7 @@
 
 #include <array>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace se::app {
 
@@ -28,11 +29,9 @@ namespace se::app {
 		/** The position coordinates of the CameraComponent in world space */
 		glm::vec3 mPosition = { 0.0f, 0.0f, 0.0f };
 
-		/** The point where the CameraComponent is pointing to in world space */
-		glm::vec3 mTarget = { 0.0f, 0.0f, 1.0f };
-
-		/** The Up vector of the CameraComponent in world space */
-		glm::vec3 mUp = { 0.0f, 1.0f, 0.0f };
+		/** The orientation where the CameraComponent is pointing to in world
+		 * space */
+		glm::quat mOrientation = glm::quat(1.0f, glm::vec3(0.0f));
 
 	public:		// Functions
 		/** @return	true if the Camera has orthographic projection, false if
@@ -108,25 +107,15 @@ namespace se::app {
 		inline void setPosition(const glm::vec3& position)
 		{ mPosition = position; };
 
-		/** @return the target point of the CameraComponent in world space */
-		inline glm::vec3 getTarget() const { return mTarget; };
+		/** @return the orientation of the CameraComponent in world space */
+		inline glm::quat getOrientation() const { return mOrientation; };
 
-		/** Sets the target point of the CameraComponent
+		/** Sets the orientation of the CameraComponent
 		 *
-		 * @param	target the new point where the CameraComponent is pointing
-		 *			to in world space */
-		inline void setTarget(const glm::vec3& target)
-		{ mTarget = target; };
-
-		/** @return	the up vector of the CameraComponent in world space */
-		inline glm::vec3 getUp() const { return mUp; };
-
-		/** Sets the up vector of the CameraComponent
-		 *
-		 * @param	up the new up vector of the CameraComponent in world
-		 *			space */
-		inline void setUp(const glm::vec3& up)
-		{ mUp = up; };
+		 * @param	orientation the new orientation where the CameraComponent is
+		 *			pointing to in world space */
+		inline void setOrientation(const glm::quat& orientation)
+		{ mOrientation = orientation; };
 
 		/** @return	the view matrix of the CameraComponent that transforms from
 		 *			world space to view space */

@@ -89,8 +89,8 @@ namespace se::app {
 
 	void ScriptSystem::onMouseScrollEvent(const MouseScrollEvent& event)
 	{
-		mUserInput.scrollX += static_cast<float>(event.getXOffset());
-		mUserInput.scrollY += static_cast<float>(event.getYOffset());
+		mUserInput.scrollOffsetX = static_cast<float>(event.getXOffset());
+		mUserInput.scrollOffsetY = static_cast<float>(event.getYOffset());
 	}
 
 

@@ -84,11 +84,11 @@ namespace se::graphics {
 		/** Returns the buffer data
 		 *
 		 * @param	data the pointer where the buffer contents will be written
-		 * @param	size the number of elements to read
+		 * @param	count the number of elements to read
 		 * @param	offset the offset from the start of the buffer from which
 		 *			the data will be returned */
 		template <typename T>
-		void read(void** data, std::size_t size, std::size_t offset = 0);
+		void read(T* data, std::size_t count, std::size_t offset = 0);
 
 		/** Returns the buffer data
 		 *
@@ -96,7 +96,7 @@ namespace se::graphics {
 		 * @param	size the size in bytes of the data to read
 		 * @param	offset the offset from the start of the buffer from which
 		 *			the data will be returned */
-		void read(void** data, std::size_t size, std::size_t offset = 0);
+		void read(void* data, std::size_t size, std::size_t offset = 0);
 
 		/** @return	the TypeId of the indices of the buffer */
 		TypeId getIndexType() const { return mIndexType; };
@@ -140,10 +140,10 @@ namespace se::graphics {
 
 
 	template <typename T>
-	void IndexBuffer::read(void** data, std::size_t size, std::size_t offset)
+	void IndexBuffer::read(T* data, std::size_t count, std::size_t offset)
 	{
 		read(
-			static_cast<const void*>(data), count * sizeof(T),
+			static_cast<void*>(data), count * sizeof(T),
 			offset * sizeof(T)
 		);
 	}

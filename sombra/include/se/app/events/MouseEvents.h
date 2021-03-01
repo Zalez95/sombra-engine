@@ -48,7 +48,7 @@ namespace se::app {
 		 *			current MouseMoveEvent */
 		virtual void printTo(std::ostream& os) const override
 		{
-			os	<< "{ kTopic : " << kTopic
+			os	<< "{ kTopic : " << t
 				<< ", mX : " << mX << ", mY : " << mY << " }";
 		};
 	};

@@ -16,7 +16,6 @@
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/LightProbe.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
 #include "se/app/graphics/ShadowRenderer3D.h"

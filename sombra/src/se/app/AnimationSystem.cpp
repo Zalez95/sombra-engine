@@ -4,13 +4,15 @@
 #include "se/app/Application.h"
 #include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
+#include "se/app/AnimationComponent.h"
+#include "se/app/SkinComponent.h"
 
 namespace se::app {
 
 	AnimationSystem::AnimationSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<animation::AnimationNode*>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<AnimationComponent>());
 	}
 
 
@@ -22,33 +24,29 @@ namespace se::app {
 
 	void AnimationSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, node] = mEntityDatabase.getComponents<TransformsComponent, animation::AnimationNode*>(entity);
-		if (!node) {
+		auto [transforms, animation] = mEntityDatabase.getComponents<TransformsComponent, AnimationComponent>(entity);
+		if (!animation) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
 			return;
 		}
 
-		if (transforms && *node) {
-			// The Entity initial data is overridden by the AnimationNode one
-			transforms->position = (*node)->getData().worldTransforms.position;
-			transforms->orientation = (*node)->getData().worldTransforms.orientation;
-			transforms->scale = (*node)->getData().worldTransforms.scale;
-			transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
+		if (transforms) {
+			transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Animation) );
 		}
 
-		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << *node << " added successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << animation << " added successfully";
 	}
 
 
 	void AnimationSystem::onRemoveEntity(Entity entity)
 	{
-		auto [node] = mEntityDatabase.getComponents<animation::AnimationNode*>(entity);
-		if (!node) {
+		auto [animation] = mEntityDatabase.getComponents<AnimationComponent>(entity);
+		if (!animation) {
 			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be removed";
 			return;
 		}
 
-		SOMBRA_INFO_LOG << "Node " << *node << " of Entity " << entity << " removed successfully";
+		SOMBRA_INFO_LOG << "Animation " << animation << " of Entity " << entity << " removed successfully";
 	}
 
 
@@ -57,16 +55,14 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		/* FIXME: first update changes arent't notified
-		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode*>(
-			[this](Entity, TransformsComponent* transforms, animation::AnimationNode** node) {
-				// Reset the Entity animation update
-				transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Animation) );
-
-				if (transforms->updated.any()) {
-					animation::NodeData& nodeData = (*node)->getData();
-					animation::AnimationNode* parentNode = (*node)->getParent();
+		mEntityDatabase.iterateComponents<TransformsComponent, AnimationComponent>(
+			[this](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
+				if (animation->getRootNode() && !transforms->updated[static_cast<int>(TransformsComponent::Update::Animation)]) {
+					animation::NodeData& nodeData = animation->getRootNode()->getData();
+					animation::AnimationNode* parentNode = animation->getRootNode()->getParent();
 					if (parentNode) {
+						// FIXME: order matters!!! -> if children nodes are updated first than
+						// the parents, the final node transforms are wrong
 						animation::NodeData& parentData = parentNode->getData();
 						nodeData.localTransforms.position = transforms->position - parentData.worldTransforms.position;
 						nodeData.localTransforms.orientation = glm::inverse(parentData.worldTransforms.orientation) * transforms->orientation;
@@ -77,25 +73,34 @@ namespace se::app {
 						nodeData.localTransforms.orientation = transforms->orientation;
 						nodeData.localTransforms.scale = transforms->scale;
 					}
-					animation::updateWorldTransforms(**node);
+					animation::updateWorldTransforms(*animation->getRootNode());
+
+					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Animation));
 				}
 			}
-		);*/
+		);
 
 		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
 
-		// Update the Entities with the changes made to the AnimationNode
-		mEntityDatabase.iterateComponents<TransformsComponent, animation::AnimationNode*>(
-			[this](Entity, TransformsComponent* transforms, animation::AnimationNode** node) {
-				if (*node) {
-					animation::NodeData& nodeData = (*node)->getData();
-					if (nodeData.animated) {
-						transforms->position = nodeData.worldTransforms.position;
-						transforms->orientation = nodeData.worldTransforms.orientation;
-						transforms->scale = nodeData.worldTransforms.scale;
-						transforms->updated.set( static_cast<int>(TransformsComponent::Update::Animation) );
-					}
+		// Update the Entities with the changes made to the AnimationNodes
+		mEntityDatabase.iterateComponents<TransformsComponent, AnimationComponent>(
+			[this](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
+				if (animation->getRootNode() && animation->getRootNode()->getData().animated) {
+					animation::NodeData& nodeData = animation->getRootNode()->getData();
+					transforms->position = nodeData.worldTransforms.position;
+					transforms->orientation = nodeData.worldTransforms.orientation;
+					transforms->scale = nodeData.worldTransforms.scale;
+					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::Animation));
 				}
+			}
+		);
+		mEntityDatabase.iterateComponents<TransformsComponent, SkinComponent>(
+			[this](Entity, TransformsComponent* transforms, SkinComponent* skin) {
+				skin->processNodes([&](const animation::AnimationNode& node) {
+					if (node.getData().animated) {
+						transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Skin));
+					}
+				});
 			}
 		);
 

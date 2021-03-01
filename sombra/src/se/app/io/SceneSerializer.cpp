@@ -15,10 +15,11 @@
 #include "se/app/CameraComponent.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
-#include "se/app/LightProbe.h"
 
+using namespace se::utils;
 using namespace se::physics;
 using namespace se::collision;
+using namespace se::animation;
 
 namespace se::app
 {
@@ -299,22 +300,146 @@ namespace se::app
 	}
 
 
+	inline void serializeAnimationNode(
+		const AnimationNode& node, const std::unordered_map<const AnimationNode*, std::size_t>& nodeIndices,
+		nlohmann::json& json
+	) {
+		auto& nodeData = node.getData();
+
+		json["name"] = nodeData.name.data();
+
+		nlohmann::json nodeLocalJson;
+		nodeLocalJson["position"] = toJson(nodeData.localTransforms.position);
+		nodeLocalJson["orientation"] = toJson(nodeData.localTransforms.orientation);
+		nodeLocalJson["scale"] = toJson(nodeData.localTransforms.scale);
+		json["localTransforms"] = nodeLocalJson;
+
+		nlohmann::json nodeWorldJson;
+		nodeWorldJson["position"] = toJson(nodeData.worldTransforms.position);
+		nodeWorldJson["orientation"] = toJson(nodeData.worldTransforms.orientation);
+		nodeWorldJson["scale"] = toJson(nodeData.worldTransforms.scale);
+		json["worldTransforms"] = nodeWorldJson;
+
+		json["worldMatrix"] = toJson(nodeData.worldMatrix);
+
+		auto childrenJson = nlohmann::json::array();
+		for (auto it = node.cbegin<Traversal::Children>(); it != node.cend<Traversal::Children>(); ++it) {
+			childrenJson.push_back(nodeIndices.find(&(*it))->second);
+		}
+		json["children"] = std::move(childrenJson);
+	}
+
+
+	inline Result deserializeAnimationNode(
+		const nlohmann::json& json,
+		AnimationNode& node, std::vector<std::size_t>& childrenIndices
+	) {
+		auto& nodeData = node.getData();
+
+		auto itName = json.find("name");
+		if (itName != json.end()) {
+			std::string name = *itName;
+			std::copy(name.begin(), name.end(), nodeData.name.begin());
+		}
+		else {
+			return Result(false, "Missing name");
+		}
+
+		auto itLocal = json.find("localTransforms");
+		if (itLocal != json.end()) {
+			auto itPosition = itLocal->find("position");
+			if (itPosition != itLocal->end()) {
+				toVec3(*itPosition, nodeData.localTransforms.position);
+			}
+			auto itOrientation = itLocal->find("orientation");
+			if (itOrientation != itLocal->end()) {
+				toQuat(*itOrientation, nodeData.localTransforms.orientation);
+			}
+			auto itScale = itLocal->find("scale");
+			if (itScale != itLocal->end()) {
+				toVec3(*itScale, nodeData.localTransforms.scale);
+			}
+		}
+		else {
+			return Result(false, "Missing local transforms");
+		}
+
+		auto itWorld = json.find("worldTransforms");
+		if (itWorld != json.end()) {
+			auto itPosition = itWorld->find("position");
+			if (itPosition != itWorld->end()) {
+				toVec3(*itPosition, nodeData.worldTransforms.position);
+			}
+			auto itOrientation = itWorld->find("orientation");
+			if (itOrientation != itWorld->end()) {
+				toQuat(*itOrientation, nodeData.worldTransforms.orientation);
+			}
+			auto itScale = itWorld->find("scale");
+			if (itScale != itWorld->end()) {
+				toVec3(*itScale, nodeData.worldTransforms.scale);
+			}
+		}
+		else {
+			return Result(false, "Missing world transforms");
+		}
+
+		auto itWorldMatrix = json.find("worldMatrix");
+		if (itWorldMatrix != json.end()) {
+			toMat4(*itWorldMatrix, nodeData.worldMatrix);
+		}
+		else {
+			return Result(false, "Missing world matrix");
+		}
+
+		auto itChildren = json.find("children");
+		if (itChildren != json.end()) {
+			childrenIndices = itChildren->get<std::vector<std::size_t>>();
+		}
+		else {
+			return Result(false, "Missing children");
+		}
+
+		return Result();
+	}
+
+
 	Result SceneSerializer::serialize(const std::string& path, const Scene& scene)
 	{
 		nlohmann::json outputJson;
-		outputJson["numEntities"] = scene.entities.size();
 
-		auto tagsVJson = nlohmann::json::array();
-		auto transformsVJson = nlohmann::json::array();
-		auto camerasVJson = nlohmann::json::array();
-		auto collidersVJson = nlohmann::json::array();
-		auto rigidBodiesVJson = nlohmann::json::array();
+		// Scene nodes
+		std::size_t numNodes = 0;
+		std::unordered_map<const AnimationNode*, std::size_t> nodeIndices;
+		for (auto itNode = scene.rootNode.cbegin(); itNode != scene.rootNode.cend(); ++itNode) {
+			nodeIndices.emplace(&(*itNode), numNodes++);
+		}
+
+		auto nodesVJson = nlohmann::json::array();
+		for (auto itNode = scene.rootNode.cbegin(); itNode != scene.rootNode.cend(); ++itNode) {
+			nlohmann::json nodeJson;
+			serializeAnimationNode(*itNode, nodeIndices, nodeJson);
+			nodesVJson.push_back(nodeJson);
+		}
+
+		if (!nodesVJson.empty()) {
+			outputJson["nodes"] = std::move(nodesVJson);
+		}
+
+		// Entities
+		outputJson["numEntities"] = scene.entities.size();
 
 		std::unordered_map<Entity, std::size_t> entityIndexMap;
 		entityIndexMap.reserve(mEntityDatabase.getMaxEntities());
 		for (std::size_t i = 0; i < scene.entities.size(); ++i) {
 			entityIndexMap.emplace(scene.entities[i], i);
 		}
+
+		// Components
+		auto tagsVJson = nlohmann::json::array();
+		auto transformsVJson = nlohmann::json::array();
+		auto camerasVJson = nlohmann::json::array();
+		auto collidersVJson = nlohmann::json::array();
+		auto rigidBodiesVJson = nlohmann::json::array();
 
 		for (Entity entity : scene.entities) {
 			std::size_t index = entityIndexMap[entity];
@@ -355,19 +480,19 @@ namespace se::app
 		}
 
 		if (!tagsVJson.empty()) {
-			outputJson["tags"] = tagsVJson;
+			outputJson["tags"] = std::move(tagsVJson);
 		}
 		if (!transformsVJson.empty()) {
-			outputJson["transforms"] = transformsVJson;
+			outputJson["transforms"] = std::move(transformsVJson);
 		}
 		if (!camerasVJson.empty()) {
-			outputJson["cameras"] = camerasVJson;
+			outputJson["cameras"] = std::move(camerasVJson);
 		}
 		if (!rigidBodiesVJson.empty()) {
-			outputJson["rigidBodies"] = rigidBodiesVJson;
+			outputJson["rigidBodies"] = std::move(rigidBodiesVJson);
 		}
 		if (!collidersVJson.empty()) {
-			outputJson["colliders"] = collidersVJson;
+			outputJson["colliders"] = std::move(collidersVJson);
 		}
 
 		std::ofstream outputstream(path);
@@ -399,6 +524,44 @@ namespace se::app
 			return Result(false, "Failed to parse the JSON file: " + std::string(e.what()));
 		}
 
+		// Scene nodes
+		std::vector<const AnimationNode*> nodePointers;
+		auto itNodes = inputJson.find("nodes");
+		if (itNodes != inputJson.end()) {
+			nodePointers.reserve(itNodes->size());
+
+			std::vector<std::unique_ptr<AnimationNode>> nodes;
+			nodes.reserve(itNodes->size());
+
+			std::unordered_map<AnimationNode*, std::vector<std::size_t>> childrenIndicesMap;
+			childrenIndicesMap.reserve(itNodes->size());
+
+			for (std::size_t i = 0; i < itNodes->size(); ++i) {
+				auto& node = nodes.emplace_back(std::make_unique<AnimationNode>());
+				auto& childrenIndices = childrenIndicesMap[node.get()];
+
+				auto result = deserializeAnimationNode((*itNodes)[i], *node, childrenIndices);
+				if (!result) {
+					return Result(false, "Failed to parse the node " + std::to_string(i) + ": " + result.description());
+				}
+
+				nodePointers.push_back(node.get());
+			}
+
+			for (auto& [node, childrenIndices] : childrenIndicesMap) {
+				for (auto childIndex : childrenIndices) {
+					node->insert(node->cend(), std::move(nodes[childIndex]));
+				}
+			}
+
+			for (auto& node : nodes) {
+				if (node) {
+					output.rootNode.insert(output.rootNode.cend(), std::move(node));
+				}
+			}
+		}
+
+		// Entities
 		auto itNumEntities = inputJson.find("numEntities");
 		if (itNumEntities == inputJson.end()) {
 			return Result(false, "Missing numEntities property");
@@ -419,6 +582,7 @@ namespace se::app
 			}
 		}
 
+		// Components
 		auto itTags = inputJson.find("tags");
 		if (itTags != inputJson.end()) {
 			for (std::size_t i = 0; i < itTags->size(); ++i) {

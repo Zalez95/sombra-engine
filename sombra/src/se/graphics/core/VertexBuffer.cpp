@@ -62,10 +62,10 @@ namespace se::graphics {
 	}
 
 
-	void VertexBuffer::read(void** data, std::size_t size, std::size_t offset)
+	void VertexBuffer::read(void* data, std::size_t size, std::size_t offset)
 	{
 		bind();
-		GL_WRAP( glGetBufferSubData(GL_ARRAY_BUFFER, offset, static_cast<GLsizeiptr>(size), *data) );
+		GL_WRAP( glGetBufferSubData(GL_ARRAY_BUFFER, offset, static_cast<GLsizeiptr>(size), data) );
 	}
 
 

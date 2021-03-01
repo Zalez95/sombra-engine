@@ -50,11 +50,7 @@ namespace se::app {
 		}
 
 		if (transforms) {
-			glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-			glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-			glm::mat4 modelMatrix	= translation * rotation;
-
-			terrain->get().setModelMatrix(modelMatrix);
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
 		}
 
 		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
@@ -106,16 +102,17 @@ namespace se::app {
 
 		for (auto& [entity, entityUniforms] : mEntityUniforms) {
 			auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity);
-			if (transforms && transforms->updated.any()) {
+			if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Terrain)]) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
 				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
 				glm::mat4 modelMatrix	= translation * rotation;
 
 				terrain->get().setModelMatrix(modelMatrix);
-
 				for (auto& uniforms : entityUniforms) {
 					uniforms.modelMatrix->setValue(modelMatrix);
 				}
+
+				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Terrain));
 			}
 
 			if (mCameraUpdated) {
@@ -211,18 +208,16 @@ namespace se::app {
 		}
 
 		// Create and add the uniforms to the terrain
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-		glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-		glm::mat4 modelMatrix	= translation * rotation;
-
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
 		uniforms.pass = pass;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-			"uModelMatrix", *program, modelMatrix
-		);
+		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program);
 		if (uniforms.modelMatrix->found()) {
 			terrain->get().addPassBindable(pass.get(), uniforms.modelMatrix);
+		}
+
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
 		}
 	}
 

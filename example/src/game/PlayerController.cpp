@@ -85,14 +85,13 @@ namespace game {
 
 	void PlayerController::onUpdate(float elapsedTime, const se::app::UserInput& userInput)
 	{
-		auto [transforms] = mLevel.getGame().getEntityDatabase().getComponents<se::app::TransformsComponent>(mLevel.getPlayer());
+		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
 		if (!transforms) { return; }
 
 		// Get the mouse movement from the center of the screen in the range [-1, 1]
 		double mouseDeltaX = 2.0 * userInput.mouseX / userInput.windowWidth - 1.0;
 		double mouseDeltaY = 1.0 - 2.0 * userInput.mouseY / userInput.windowHeight;	// note that the Y position is upsidedown
 
-		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
 		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation;
 		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
 		glm::vec3 right		= glm::cross(forward, up);
@@ -110,13 +109,13 @@ namespace game {
 			float nextPitch = currentPitch + pitch;
 			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
 			pitch = nextPitch - currentPitch;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " orientation (" << pitch << ", " << yaw << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " orientation (" << pitch << ", " << yaw << ")";
 
 			// Apply the rotation
 			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
 			transforms->orientation = glm::normalize(qPitch * transforms->orientation * qYaw);
-			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+			transforms->updated.reset();
 		}
 
 		// Add WASD movement
@@ -128,8 +127,8 @@ namespace game {
 		float length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kRunSpeed * direction / length;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " run velocity (" << glm::to_string(transforms->velocity) << ")";
-			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
+			transforms->updated.reset();
 		}
 
 		// Add the world Y velocity
@@ -139,8 +138,8 @@ namespace game {
 		length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kJumpSpeed * direction;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mLevel.getPlayer() << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
-			transforms->updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
+			transforms->updated.reset();
 		}
 
 		// Other

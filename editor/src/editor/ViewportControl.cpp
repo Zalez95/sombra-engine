@@ -12,8 +12,6 @@ namespace editor {
 		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
 		if (!transforms) { return; }
 
-		transforms->updated.reset( static_cast<int>(se::app::TransformsComponent::Update::Input) );
-
 		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
 			if (userInput.keys[SE_KEY_LEFT_CONTROL] && userInput.keys[SE_KEY_LEFT_ALT]) {
 				zoom(userInput, *transforms);
@@ -40,7 +38,7 @@ namespace editor {
 
 		mZoom = nextZoom;
 		transforms.position -= zoomDelta * (transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-		transforms.updated.set(static_cast<int>(se::app::TransformsComponent::Update::Input));
+		transforms.updated.reset();
 	}
 
 
@@ -57,7 +55,7 @@ namespace editor {
 			up = glm::cross(right, front);
 
 			transforms.position += moveDelta.x * right + moveDelta.y * up;
-			transforms.updated.set(static_cast<int>(se::app::TransformsComponent::Update::Input));
+			transforms.updated.reset();
 	}
 
 
@@ -87,7 +85,7 @@ namespace editor {
 		front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 		transforms.position -= mZoom * front;
 
-		transforms.updated.set( static_cast<int>(se::app::TransformsComponent::Update::Input) );
+		transforms.updated.reset();
 	}
 
 }

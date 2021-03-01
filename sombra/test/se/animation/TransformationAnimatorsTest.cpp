@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <se/animation/TransformationAnimators.h>
+#include <se/animation/TransformationAnimator.h>
 #include <se/animation/LinearAnimations.h>
 
 using namespace se::animation;
@@ -41,9 +41,9 @@ TEST(TransformationAnimator, animate1)
 	Vec3Animator atrT1(at1);
 	Vec3Animator atrT2(at2);
 	Vec3Animator atrT3(at3);
-	atrT1.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[0]);
-	atrT2.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[1]);
-	atrT3.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[2]);
+	atrT1.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[0]);
+	atrT2.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[1]);
+	atrT3.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[2]);
 	atrT1.animate(3.2f);
 	atrT2.animate(3.2f);
 	atrT3.animate(2.0f);
@@ -59,9 +59,9 @@ TEST(TransformationAnimator, animate1)
 	QuatAnimator atrR1(ar1);
 	QuatAnimator atrR2(ar2);
 	QuatAnimator atrR3(ar3);
-	atrR1.addNode(TransformationAnimator::TransformationType::Rotation, &originalNodes[0]);
-	atrR2.addNode(TransformationAnimator::TransformationType::Rotation, &originalNodes[1]);
-	atrR3.addNode(TransformationAnimator::TransformationType::Rotation, &originalNodes[2]);
+	atrR1.addNode(TransformationAnimator::TransformationType::Rotation, originalNodes[0]);
+	atrR2.addNode(TransformationAnimator::TransformationType::Rotation, originalNodes[1]);
+	atrR3.addNode(TransformationAnimator::TransformationType::Rotation, originalNodes[2]);
 	atrR1.animate(3.2f);
 	atrR2.animate(3.2f);
 	atrR3.animate(2.0f);
@@ -77,16 +77,15 @@ TEST(TransformationAnimator, animate1)
 	Vec3Animator atrS1(as1);
 	Vec3Animator atrS2(as2);
 	Vec3Animator atrS3(as3);
-	atrS1.addNode(TransformationAnimator::TransformationType::Scale, &originalNodes[0]);
-	atrS2.addNode(TransformationAnimator::TransformationType::Scale, &originalNodes[1]);
-	atrS3.addNode(TransformationAnimator::TransformationType::Scale, &originalNodes[2]);
+	atrS1.addNode(TransformationAnimator::TransformationType::Scale, originalNodes[0]);
+	atrS2.addNode(TransformationAnimator::TransformationType::Scale, originalNodes[1]);
+	atrS3.addNode(TransformationAnimator::TransformationType::Scale, originalNodes[2]);
 	atrS1.animate(3.2f);
 	atrS2.animate(3.2f);
 	atrS3.animate(2.0f);
 	atrS3.animate(1.2f);
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
-		EXPECT_TRUE(originalNodes[i].getData().animated);
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(originalNodes[i].getData().localTransforms.position[j], expectedNodes[i].getData().localTransforms.position[j], kTolerance);
 		}
@@ -103,30 +102,35 @@ TEST(TransformationAnimator, animate1)
 TEST(TransformationAnimator, resetNodesAnimatedState1)
 {
 	std::vector<AnimationNode> originalNodes(3);
+	originalNodes[0].emplace(originalNodes[0].cend(), NodeData());
 
 	auto at1 = std::make_shared<AnimationVec3Linear>();
 	Vec3Animator atrT1(at1);
-	atrT1.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[0]);
-	atrT1.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[1]);
-	atrT1.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[2]);
+	atrT1.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[0]);
+	atrT1.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[1]);
+	atrT1.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[2]);
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
 		EXPECT_FALSE(originalNodes[i].getData().animated);
 	}
+	EXPECT_FALSE(originalNodes[0].begin()->getData().animated);
 
 	atrT1.animate(3.2f);
+	atrT1.updateNodesHierarchy();
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
 		EXPECT_TRUE(originalNodes[i].getData().animated);
 	}
+	EXPECT_TRUE(originalNodes[0].begin()->getData().animated);
 
 	atrT1.resetNodesAnimatedState();
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
 		EXPECT_FALSE(originalNodes[i].getData().animated);
 	}
+	EXPECT_FALSE(originalNodes[0].begin()->getData().animated);
 }
 
 
-TEST(TransformationAnimator, updateNodesWorldTransforms1)
+TEST(TransformationAnimator, updateNodesHierarchy1)
 {
 	std::vector<AnimationNode> expectedNodes(1);
 	expectedNodes[0].getData().worldTransforms = { {-3.182263720f, 8.633092795f, 8.014790691f }, { 0.634908735f, 0.734051764f, 0.169194266f,-0.171558305f }, { 4.445192337f,-4.281722545f, 2.230783700f } };
@@ -136,12 +140,13 @@ TEST(TransformationAnimator, updateNodesWorldTransforms1)
 	auto at1 = std::make_shared<AnimationVec3Linear>();
 	at1->addKeyFrame({ {-3.182263720f, 8.633092795f, 8.014790691f }, 0.650173135f });
 	Vec3Animator atrT1(at1);
-	atrT1.addNode(TransformationAnimator::TransformationType::Translation, &originalNodes[0]);
+	atrT1.addNode(TransformationAnimator::TransformationType::Translation, originalNodes[0]);
 
 	atrT1.animate(3.2f);
-	atrT1.updateNodesWorldTransforms();
+	atrT1.updateNodesHierarchy();
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
+		EXPECT_TRUE(originalNodes[i].getData().animated);
 		EXPECT_TRUE(originalNodes[i].getData().worldTransformsUpdated);
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(originalNodes[i].getData().worldTransforms.position[j], expectedNodes[i].getData().worldTransforms.position[j], kTolerance);

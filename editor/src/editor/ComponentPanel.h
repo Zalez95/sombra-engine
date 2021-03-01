@@ -21,7 +21,7 @@ namespace editor {
 		template <typename T> class ComponentNode;
 		class TagComponentNode;
 		class TransformsComponentNode;
-		class AnimationNodeComponentNode;
+		class AnimationComponentNode;
 		class CameraComponentNode;
 		class LightComponentNode;
 		class LightProbeComponentNode;

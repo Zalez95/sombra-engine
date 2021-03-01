@@ -41,11 +41,7 @@ namespace se::app {
 		}
 
 		if (transforms) {
-			// The RigidBody initial data is overridden by the entity one
-			rb->getData().position			= transforms->position;
-			rb->getData().linearVelocity	= transforms->velocity;
-			rb->getData().orientation		= transforms->orientation;
-			rb->synchWithData();
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
@@ -85,14 +81,13 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
 			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
-				// Skip the Entity physics change in the doDynamics step
-				auto updatedWithoutPhysics = transforms->updated;
-				updatedWithoutPhysics.reset( static_cast<int>(TransformsComponent::Update::Physics) );
-				if (updatedWithoutPhysics.any()) {
+				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
 					rigidBody->getData().position		= transforms->position;
 					rigidBody->getData().linearVelocity	= transforms->velocity;
 					rigidBody->getData().orientation	= transforms->orientation;
 					rigidBody->synchWithData();
+
+					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
 			}
 		);
@@ -114,7 +109,8 @@ namespace se::app {
 					transforms->position	= rigidBody->getData().position;
 					transforms->velocity	= rigidBody->getData().linearVelocity;
 					transforms->orientation	= rigidBody->getData().orientation;
-					transforms->updated.set( static_cast<int>(TransformsComponent::Update::Physics) );
+
+					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
 			}
 		);

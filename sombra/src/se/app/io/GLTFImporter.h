@@ -5,7 +5,7 @@
 #include <nlohmann/json_fwd.hpp>
 #include "se/graphics/3D/RenderableMesh.h"
 #include "se/animation/IAnimation.h"
-#include "se/animation/CompositeAnimator.h"
+#include "se/animation/SkeletonAnimator.h"
 #include "se/animation/AnimationNode.h"
 #include "se/app/io/SceneImporter.h"
 #include "se/app/graphics/Image.h"
@@ -36,7 +36,7 @@ namespace se::app {
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
-		using CAnimatorSPtr = std::shared_ptr<animation::CompositeAnimator>;
+		using SAnimatorSPtr = std::shared_ptr<animation::SkeletonAnimator>;
 		using IndexVector = std::vector<std::size_t>;
 		struct Accessor;
 		struct BufferView;
@@ -196,20 +196,25 @@ namespace se::app {
 		) const;
 
 		/** Creates a new TransformationAnimation from the given GLTF JSON
-		 * Animation Channel and returns it in the given output parameters
+		 * Animation Channel and adds it to the given SkeletonAnimator
+		 * parameters
 		 *
 		 * @param	jsonChannel the JSON object with the Animation Channel to
 		 *			parse
 		 * @param	vec3Animations a map with the Vec3 IAnimations
 		 * @param	quatAnimations a map with the Quat IAnimations
-		 * @param	out the pointer used for returning the
-		 *			TransformationAnimation
+		 * @param	sAnimator the SkeletonAnimator where the
+		 *			TransformationAnimator will be added
 		 * @return	a Result object with the result of the parse operation */
 		Result parseAnimationChannel(
 			const nlohmann::json& jsonChannel,
-			const std::map<std::size_t, Vec3AnimationSPtr>& vec3Animations,
-			const std::map<std::size_t, QuatAnimationSPtr>& quatAnimations,
-			IAnimatorUPtr& out
+			const std::unordered_map<
+				std::size_t, Vec3AnimationSPtr
+			>& vec3Animations,
+			const std::unordered_map<
+				std::size_t, QuatAnimationSPtr
+			>& quatAnimations,
+			animation::SkeletonAnimator& sAnimator
 		) const;
 
 		/** Creates a new Animation from the given GLTF JSON Animation and

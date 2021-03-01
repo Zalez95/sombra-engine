@@ -56,7 +56,9 @@ namespace se::app {
 
 	glm::mat4 CameraComponent::getViewMatrix() const
 	{
-		return glm::lookAt(mPosition, mTarget, mUp);
+		glm::mat4 invTranslation = glm::translate(glm::mat4(1.0f), -mPosition);
+		glm::mat4 invRotation = glm::mat4_cast(glm::conjugate(mOrientation));
+		return invRotation * invTranslation;
 	}
 
 }

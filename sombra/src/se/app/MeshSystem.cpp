@@ -49,23 +49,26 @@ namespace se::app {
 			return;
 		}
 
-		glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
-
-		auto itEntity = mEntityUniforms.emplace(entity, EntityUniformsVector()).first;
-		for (std::size_t i = 0; i < mesh->size(); ++i) {
-			mesh->get(i).setModelMatrix(modelMatrix);
-
-			itEntity->second.emplace_back();
-			mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
-				shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-					addPass(entity, i, pass);
-				});
-			});
-
-			mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
 		}
 
-		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
+		if (mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>()).second) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
+					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
+						addPass(entity, i, pass);
+					});
+				});
+
+				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
+			});
+
+			SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
+		}
+		else {
+			SOMBRA_ERROR_LOG << "Failed to add Entity " << entity << " with MeshComponent " << mesh << " to the map";
+		}
 	}
 
 
@@ -77,9 +80,9 @@ namespace se::app {
 			return;
 		}
 
-		for (std::size_t i = 0; i < mesh->size(); ++i) {
+		mesh->processRenderableIndices([this, mesh = mesh](std::size_t i) {
 			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
-		}
+		});
 
 		auto it = mEntityUniforms.find(entity);
 		if (it != mEntityUniforms.end()) {
@@ -94,28 +97,36 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 
+		utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
+
 		for (auto& [entity, entityUniforms] : mEntityUniforms) {
 			auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
-			if (transforms && transforms->updated.any()) {
-				glm::mat4 modelMatrix	= getModelMatrix(*transforms);
+			if (transforms
+				&& (!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
+					|| !transforms->updated[static_cast<int>(TransformsComponent::Update::Skin)])
+			) {
+				glm::mat4 modelMatrix = getModelMatrix(*transforms);
 
-				//FIXME: joints updated but no transforms
-				utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 				if (skin) {
 					jointMatrices = skin->calculateJointMatrices(modelMatrix);
 				}
-				std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
+				else {
+					jointMatrices.clear();
+				}
 
-				for (std::size_t i = 0; i < mesh->size(); ++i) {
+				mesh->processRenderableIndices([&, entityUniforms = entityUniforms, mesh = mesh](std::size_t i) {
 					mesh->get(i).setModelMatrix(modelMatrix);
 
 					for (auto& meshUniforms : entityUniforms[i]) {
 						meshUniforms.modelMatrix->setValue(modelMatrix);
 						if (meshUniforms.jointMatrices) {
-							meshUniforms.jointMatrices->setValue(jointMatrices.data(), numJoints);
+							meshUniforms.jointMatrices->setValue(jointMatrices.data(), jointMatrices.size());
 						}
 					}
-				}
+				});
+
+				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Mesh));
+				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Skin));
 			}
 		}
 
@@ -137,7 +148,6 @@ namespace se::app {
 				glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
 				mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
 
-				itEntity->second.emplace_back();
 				mesh->processRenderableShaders(event.getRIndex(), [&](const RenderableShaderSPtr& shader) {
 					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
 						addPass(event.getEntity(), event.getRIndex(), pass);
@@ -145,11 +155,10 @@ namespace se::app {
 				});
 
 				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(event.getRIndex()));
-				assert(itEntity->second.size() - 1 == event.getRIndex() && "rIndex doesn't match");
 			} break;
 			case RMeshEvent::Operation::Remove: {
 				mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
-				itEntity->second.erase(itEntity->second.begin() + event.getRIndex());
+				itEntity->second[event.getRIndex()].clear();
 			} break;
 		}
 	}
@@ -180,7 +189,7 @@ namespace se::app {
 	void MeshSystem::onShaderEvent(const ShaderEvent& event)
 	{
 		mEntityDatabase.iterateComponents<MeshComponent>([&](Entity entity, MeshComponent* mesh) {
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
+			mesh->processRenderableIndices([&](std::size_t i) {
 				bool hasShader = false;
 				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
 					hasShader |= (shader == event.getShader());
@@ -196,7 +205,7 @@ namespace se::app {
 						} break;
 					}
 				}
-			}
+			});
 		});
 	}
 
@@ -209,7 +218,7 @@ namespace se::app {
 		}
 
 		// Check if the MeshComponent has the Pass already added
-		auto& entityUniforms = mEntityUniforms.find(entity)->second[rIndex];
+		auto& entityUniforms = mEntityUniforms[entity][rIndex];
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
 			return uniforms.pass == pass;
 		});
@@ -232,30 +241,24 @@ namespace se::app {
 		}
 
 		// Create and add the uniforms to the mesh
-		glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
-
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
 		uniforms.pass = pass;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-			"uModelMatrix", *program, modelMatrix
-		);
+		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program);
 		if (uniforms.modelMatrix->found()) {
 			mesh->get(rIndex).addPassBindable(pass.get(), uniforms.modelMatrix);
 		}
 		if (mesh->hasSkinning(rIndex)) {
-			utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
-			if (skin) {
-				jointMatrices = skin->calculateJointMatrices(modelMatrix);
-			}
-			std::size_t numJoints = std::min(jointMatrices.size(), static_cast<std::size_t>(Skin::kMaxJoints));
-
 			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4, Skin::kMaxJoints>>(
-				"uJointMatrices", *program, jointMatrices.data(), numJoints
+				"uJointMatrices", *program
 			);
 			if (uniforms.jointMatrices->found()) {
 				mesh->get(rIndex).addPassBindable(pass.get(), uniforms.jointMatrices);
 			}
+		}
+
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
 		}
 	}
 

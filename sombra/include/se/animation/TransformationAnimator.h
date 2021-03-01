@@ -1,5 +1,5 @@
-#ifndef TRANSFORMATION_ANIMATORS_H
-#define TRANSFORMATION_ANIMATORS_H
+#ifndef TRANSFORMATION_ANIMATOR_H
+#define TRANSFORMATION_ANIMATOR_H
 
 #include <memory>
 #include <vector>
@@ -41,62 +41,56 @@ namespace se::animation {
 	protected:	// Attributes
 		/** The elapsed time in seconds since the start of the animation before
 		 * it starts from the begining */
-		float mLoopTime;
+		float mLoopTime = 0.0f;
 
 		/** The nodes to apply the animation transformations */
 		std::vector<AnimatedNode> mNodes;
 
 	public:		// Functions
-		/** Creates a new TransformationAnimator */
-		TransformationAnimator() : mLoopTime(0.0f) {};
-
 		/** Class destructor */
 		virtual ~TransformationAnimator() = default;
 
-		/** @return	the elapsed time in seconds since the start of the animation
-		 *			before the animation starts from the begining */
+		/** @copydoc IAnimator::getLoopTime() */
 		virtual float getLoopTime() const;
 
-		/** Sets the loop time of the IAnimator
-		 *
-		 * @param	loopTime the time in seconds since the start of the
-		 *			animation before it starts again */
+		/** @copydoc IAnimator::setLoopTime(float) */
 		virtual void setLoopTime(float loopTime);
 
-		/** Applies the animation to the nodes of the Animator
-		 *
-		 * @param	elapsedTime the time elapsed since the last call to the
-		 *			function
-		 * @note	the world space transformation of the nodes won't be
-		 *			updated. */
-		virtual void animate(float elapsedTime) = 0;
+		/** @copydoc IAnimator::animate(float) */
+		virtual void animate(float elapsedTime) override;
 
-		/** Resets the animate state of every added node */
+		/** @copydoc IAnimator::resetNodesAnimatedState() */
 		virtual void resetNodesAnimatedState() override;
 
-		/** Updates the added nodes world transforms (and their descendants)
-		 * with the changes made by the animation */
-		virtual void updateNodesWorldTransforms() override;
+		/** @copydoc IAnimator::updateNodesHierarchy() */
+		virtual void updateNodesHierarchy() override;
 
 		/** Adds a Node to animate
 		 *
 		 * @param	type the type of transformation to apply to the node
-		 * @param	node a pointer to the AnimatioNode to apply the
-		 *			transforms */
-		void addNode(TransformationType type, AnimationNode* node);
+		 * @param	node the AnimatioNode to apply the transforms */
+		void addNode(TransformationType type, AnimationNode& node);
 
-		/** Iterates through all the Nodes of the TransformationAnimator
-		 * calling the given callback function
+		/** Rewinds the Animation applied to the given AnimationNode to the
+		 * start, so the next time we call @see animate the AnimationNode
+		 * will move like the first time
 		 *
-		 * @param	callback the function to call for each AnimationNode */
-		template <typename F>
-		void processNodes(F callback) const;
+		 * @param	type the type of transformation to rewind
+		 * @param	node the AnimationNode to rewind its Animation */
+		void rewindNode(TransformationType type, AnimationNode& node);
 
-		/** Removes a Node from the TransformationAnimator
+		/** Removes a Node from the IAnimator
 		 *
-		 * @param	node a pointer to the AnimatioNode to remove from the
-		 *			TransformationAnimator */
-		void removeNode(AnimationNode* node);
+		 * @param	type the type of transformation to remove
+		 * @param	node the AnimatioNode to remove from the IAnimator */
+		void removeNode(TransformationType type, AnimationNode& node);
+	protected:
+		/** Animates the given AnimatedNode
+		 *
+		 * @param	aNode the AnimatedNode to update
+		 * @param	elpasedTime the elpased time in seconds since the last
+		 *			update */
+		virtual void animateNode(AnimatedNode& aNode, float elapsedTime) = 0;
 	};
 
 
@@ -121,13 +115,15 @@ namespace se::animation {
 		 *			length of the given Animation */
 		Vec3Animator(Vec3AnimationSPtr animation);
 
-		/** Applies the animation to the nodes of the Animator
-		 *
-		 * @param	elapsedTime the time elapsed since the last call to the
-		 *			function
+		/** Class destructor */
+		virtual ~Vec3Animator();
+	protected:
+		/** @copydoc TransformationAnimator::animateNode(AnimatedNode&, float)
 		 * @note	the animation will be applied only to the AnimationNodes
 		 *			added with a Translation or Scale transformation */
-		virtual void animate(float elapsedTime) override;
+		virtual void animateNode(
+			AnimatedNode& aNode, float elapsedTime
+		) override;
 	};
 
 
@@ -152,24 +148,17 @@ namespace se::animation {
 		 *			length of the given Animation */
 		QuatAnimator(QuatAnimationSPtr animation);
 
-		/** Applies the animation to the nodes of the Animator
-		 *
-		 * @param	elapsedTime the time elapsed since the last call to the
-		 *			function
+		/** Class destructor */
+		virtual ~QuatAnimator();
+	protected:
+		/** @copydoc TransformationAnimator::animateNode(AnimatedNode&, float)
 		 * @note	the animation will be applied only to the AnimationNodes
 		 *			added with a Rotation transformation */
-		virtual void animate(float elapsedTime) override;
+		virtual void animateNode(
+			AnimatedNode& aNode, float elapsedTime
+		) override;
 	};
-
-
-	template <typename F>
-	void TransformationAnimator::processNodes(F callback) const
-	{
-		for (AnimatedNode& animatedNode : mNodes) {
-			callback(animatedNode.node);
-		}
-	}
 
 }
 
-#endif		// TRANSFORMATION_ANIMATORS_H
+#endif		// TRANSFORMATION_ANIMATOR_H

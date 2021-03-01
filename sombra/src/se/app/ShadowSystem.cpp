@@ -107,14 +107,14 @@ namespace se::app {
 	{
 		auto [mesh, terrain] = mEntityDatabase.getComponents<MeshComponent, TerrainComponent>(entity);
 		if (mesh) {
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				for (auto& shadow : mShadows) {
 					shadow.uniformUpdater->addRenderable(mesh->get(i));
 					mesh->processRenderableShaders(i, [&](const auto& shader) {
 						shadow.uniformUpdater->addRenderableShader(mesh->get(i), shader);
 					});
 				}
-			}
+			});
 		}
 		if (terrain) {
 			for (auto& shadow : mShadows) {
@@ -131,11 +131,11 @@ namespace se::app {
 	{
 		auto [mesh, terrain] = mEntityDatabase.getComponents<MeshComponent, TerrainComponent>(entity);
 		if (mesh) {
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				for (auto& shadow : mShadows) {
 					shadow.uniformUpdater->removeRenderable(mesh->get(i));
 				}
-			}
+			});
 		}
 		if (terrain) {
 			for (auto& shadow : mShadows) {
@@ -152,10 +152,10 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mShadowEntity);
-		if (transforms && transforms->updated.any()) {
+		if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Shadow)]) {
 			mShadows[0].camera.setPosition(transforms->position);
-			mShadows[0].camera.setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-			mShadows[0].camera.setUp({ 0.0f, 1.0f, 0.0f });
+			mShadows[0].camera.setOrientation(transforms->orientation);
+			transforms->updated.set(static_cast<int>(TransformsComponent::Update::Shadow));
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
@@ -176,9 +176,7 @@ namespace se::app {
 		if (transforms && light && light->source) {
 			mShadowEntity = event.getValue();
 
-			mShadows[0].camera.setPosition(transforms->position);
-			mShadows[0].camera.setTarget(transforms->position + glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-			mShadows[0].camera.setUp({ 0.0f, 1.0f, 0.0f });
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Shadow));
 
 			if (light->source->type == LightSource::Type::Directional) {
 				mShadows[0].camera.setOrthographicProjection(

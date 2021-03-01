@@ -1,7 +1,7 @@
 #ifndef MESH_COMPONENT_H
 #define MESH_COMPONENT_H
 
-#include "../utils/FixedVector.h"
+#include <array>
 #include "../graphics/3D/RenderableMesh.h"
 #include "RenderableShader.h"
 #include "events/EventManager.h"
@@ -21,14 +21,10 @@ namespace se::app {
 
 		struct RMesh
 		{
-			bool hasSkinning;
+			bool active = false;
+			bool hasSkinning = false;
 			graphics::RenderableMesh renderable;
 			std::vector<RenderableShaderSPtr> shaders;
-
-			template <typename... Args>
-			RMesh(bool hasSkinning, Args&&... args) :
-				hasSkinning(hasSkinning),
-				renderable(std::forward<Args>(args)...) {}
 		};
 
 	public:		// Attributes
@@ -43,7 +39,7 @@ namespace se::app {
 		Entity mEntity;
 
 		/** All the RenderableMeshes added to the MeshComponent */
-		utils::FixedVector<RMesh, kMaxMeshes> mRMeshes;
+		std::array<RMesh, kMaxMeshes> mRMeshes;
 
 	public:		// Functions
 		/** Creates a new MeshComponent
@@ -54,9 +50,9 @@ namespace se::app {
 		MeshComponent(EventManager& eventManager, Entity entity) :
 			mEventManager(eventManager), mEntity(entity) {};
 
-		/** @return	the number of RenderableMeshes added to the
-		 *			RenderableComponent */
-		std::size_t size() const { return mRMeshes.size(); };
+		/** @return	true if no more RenderableMeshes can be added, false
+		 *			otherwise */
+		bool full() const;
 
 		/** Returns the selected RenderableMesh
 		 *
@@ -75,11 +71,23 @@ namespace se::app {
 		/** Adds a new RenderableMesh to the RenderableComponent
 		 *
 		 * @param	hasSkinning if the new mesh has skinning or not
-		 * @param	args the arguments needed for calling the constructor of
-		 *			the new RenderableMesh
-		 * @return	the index used for accesing the new RenderableMeshe */
-		template <typename... Args>
-		std::size_t add(bool hasSkinning, Args&&... args);
+		 * @param	mesh a pointer to the Mesh of the RenderableMesh
+		 * @param	primitiveMesh the type of primitive used for rendering
+		 * @return	the index used for accesing the new RenderableMesh */
+		std::size_t add(
+			bool hasSkinning,
+			std::shared_ptr<graphics::Mesh> mesh = nullptr,
+			graphics::PrimitiveType primitiveType =
+				graphics::PrimitiveType::Triangle
+		);
+
+		/** Iterates through all the RenderableMesh indices calling the given
+		 * callback function
+		 *
+		 * @param	callback the function to call for each RenderableMesh
+		 *			index */
+		template <typename F>
+		void processRenderableIndices(F callback) const;
 
 		/** Removes the selected RenderableMesh
 		 *
@@ -112,15 +120,14 @@ namespace se::app {
 	};
 
 
-	template <typename... Args>
-	std::size_t MeshComponent::add(bool hasSkinning, Args&&... args)
+	template <typename F>
+	void MeshComponent::processRenderableIndices(F callback) const
 	{
-		mRMeshes.emplace_back(hasSkinning, std::forward<Args>(args)...);
-		std::size_t ret = mRMeshes.size() - 1;
-		mEventManager.publish(
-			new RMeshEvent(RMeshEvent::Operation::Add, mEntity, ret)
-		);
-		return ret;
+		for (std::size_t i = 0; i < mRMeshes.size(); ++i) {
+			if (mRMeshes[i].active) {
+				callback(i);
+			}
+		}
 	}
 
 

@@ -39,9 +39,7 @@ namespace se::app {
 			>> jointMatrices;
 		};
 
-		using EntityUniformsVector = std::vector<utils::FixedVector<
-			EntityUniforms, MeshComponent::kMaxMeshes
-		>>;
+		using EntityUniformsVector = std::vector<EntityUniforms>;
 
 	private:	// Attributes
 		/** The Application that holds the GraphicsEngine used for rendering
@@ -49,7 +47,10 @@ namespace se::app {
 		Application& mApplication;
 
 		/** All the uniforms to update of each Entity */
-		std::unordered_map<Entity, EntityUniformsVector> mEntityUniforms;
+		std::unordered_map<
+			Entity,
+			std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>
+		> mEntityUniforms;
 
 	public:		// Functions
 		/** Creates a new MeshSystem

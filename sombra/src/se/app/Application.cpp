@@ -12,7 +12,6 @@
 #include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/collision/Collider.h"
-#include "se/animation/AnimationNode.h"
 #include "se/animation/AnimationEngine.h"
 #include "se/audio/Source.h"
 #include "se/audio/AudioEngine.h"
@@ -37,9 +36,9 @@
 #include "se/app/TerrainComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/CameraComponent.h"
+#include "se/app/AnimationComponent.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
-#include "se/app/LightProbe.h"
 
 namespace se::app {
 
@@ -86,6 +85,7 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AnimationComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras);
 			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
@@ -94,7 +94,6 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
 			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
 			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
-			mEntityDatabase->addComponentTable<animation::AnimationNode*>(kMaxEntities);
 			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
 
 			// Systems

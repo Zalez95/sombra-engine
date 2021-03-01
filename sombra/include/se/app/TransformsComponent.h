@@ -13,13 +13,19 @@ namespace se::app {
 	 */
 	struct TransformsComponent
 	{
-		/** The indices of the managers that can update the Entity's state
-		 * in the updated bitset */
+		/** The indices of the Components that can be updated using the
+		 * TransformsComponent */
 		enum class Update : int
 		{
-			Input,		///< The Entity has changed due to the Input
-			Physics,	///< The Entity has changed due to the Physics
-			Animation,	///< The Entity has changed due to the Animation
+			Camera = 0,
+			Mesh,
+			Terrain,
+			RigidBody,
+			Collider,
+			Animation,
+			Source,
+			Skin,
+			Shadow,
 			Count		///< The number of indices
 		};
 
@@ -35,7 +41,7 @@ namespace se::app {
 		/** The Entity scale in world space */
 		glm::vec3 scale = glm::vec3(1.0f);
 
-		/** If the Entity has been updated by any manager */
+		/** The Components that has been updated with the TransformsComponent */
 		std::bitset< static_cast<int>(Update::Count) > updated;
 	};
 

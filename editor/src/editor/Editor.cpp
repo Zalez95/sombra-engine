@@ -75,6 +75,8 @@ namespace editor {
 			// Create the viewport grid
 			mGridEntity = mEntityDatabase->addEntity();
 
+			mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mGridEntity);
+
 			auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity, *mEventManager, mGridEntity);
 			auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
 			auto gridMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));

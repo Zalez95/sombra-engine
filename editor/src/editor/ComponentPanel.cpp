@@ -1,3 +1,4 @@
+#include <sstream>
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -8,18 +9,18 @@
 #include <se/app/TagComponent.h>
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
-#include <se/app/LightProbe.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TerrainComponent.h>
 #include <se/app/TransformsComponent.h>
+#include <se/app/AnimationComponent.h>
 #include <se/app/graphics/TextureUtils.h>
-#include <se/animation/AnimationNode.h>
 #include <se/physics/RigidBody.h>
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/Capsule.h>
 #include <se/collision/TriangleCollider.h>
 #include <se/collision/TerrainCollider.h>
+#include <se/animation/SkeletonAnimator.h>
 #include "ComponentPanel.h"
 #include "Editor.h"
 #include "ImGuiUtils.h"
@@ -99,7 +100,6 @@ namespace editor {
 		virtual void draw(Entity entity) override
 		{
 			auto [transforms] = mEditor.getEntityDatabase().getComponents<TransformsComponent>(entity);
-			transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Input) );
 
 			bool updated = false;
 			updated |= ImGui::DragFloat3("Position", glm::value_ptr(transforms->position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
@@ -108,43 +108,72 @@ namespace editor {
 			updated |= ImGui::DragFloat3("Scale", glm::value_ptr(transforms->scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 
 			if (updated) {
-				transforms->updated.set( static_cast<int>(TransformsComponent::Update::Input) );
+				transforms->updated.reset();
 			}
 		};
 	};
 
 
-	class ComponentPanel::AnimationNodeComponentNode : public ComponentPanel::ComponentNode<AnimationNode*>
+	class ComponentPanel::AnimationComponentNode : public ComponentPanel::ComponentNode<AnimationComponent>
 	{
 	private:	// Functions
 		std::array<char, NodeData::kMaxLength> mName = {};
 
 	public:		// Functions
-		AnimationNodeComponentNode(Editor& editor) : ComponentNode(editor) {};
+		AnimationComponentNode(Editor& editor) : ComponentNode(editor) {};
 		virtual const char* getName() const override
-		{ return "Animation Node"; };
+		{ return "Animation"; };
 		virtual void create(Entity entity) override
-		{ mEditor.getEntityDatabase().emplaceComponent<AnimationNode*>(entity, nullptr); };
+		{ mEditor.getEntityDatabase().emplaceComponent<AnimationComponent>(entity); };
 		virtual void draw(Entity entity) override
 		{
-			auto [animationNode] = mEditor.getEntityDatabase().getComponents<AnimationNode*>(entity);
-			if (*animationNode) {
-				auto& animationData = (*animationNode)->getData();
-				ImGui::InputText("Name##NodeName", animationData.name.data(), animationData.name.size());
+			auto [animation] = mEditor.getEntityDatabase().getComponents<AnimationComponent>(entity);
+			auto node = animation->getRootNode();
+			if (node) {
+				ImGui::Text("%s (0x%p)", node->getData().name.data(), static_cast<void*>(node));
 			}
 			else {
 				ImGui::Text("No node setted");
 			}
 
+			if (ImGui::TreeNode("Animators:")) {
+				std::shared_ptr<SkeletonAnimator> sAnimator;
+				if (addRepoDropdownButton("##AnimationComponent::AddSkeletonAnimator", "Add Animator", mEditor.getScene()->repository, sAnimator)) {
+					animation->addAnimator(sAnimator);
+				}
+
+				std::size_t sAnimatorIndex = 0;
+				animation->processSAnimators([&, animation = animation](std::shared_ptr<SkeletonAnimator> sAnimator2) {
+					std::string buttonName = "x##AnimationComponent::RemoveSAnimator" + std::to_string(sAnimatorIndex++);
+					if (ImGui::Button(buttonName.c_str())) {
+						animation->removeAnimator(sAnimator2);
+					}
+					else {
+						ImGui::SameLine();
+
+						auto oldSAnimator2 = sAnimator2;
+						std::string dropDownName = "##AnimationComponent::SelectSAnimator" + std::to_string(sAnimatorIndex++);
+						if (addRepoDropdownShowSelected(dropDownName.c_str(), mEditor.getScene()->repository, sAnimator2)) {
+							animation->removeAnimator(oldSAnimator2);
+							animation->addAnimator(sAnimator2);
+						}
+					}
+				});
+				ImGui::TreePop();
+			}
+
 			if (ImGui::TreeNode("Change node:")) {
-				ImGui::InputText("Name##NodeChangeName", mName.data(), mName.size());
-				if (ImGui::Button("Change##ChangeNode")) {
+				ImGui::InputText("Name##AnimationComponent::NodeChangeName", mName.data(), mName.size());
+				if (ImGui::Button("Change##AnimationComponent::ChangeNode")) {
+					void* nodePtr = nullptr;
+					std::istringstream(mName.data()) >> nodePtr;
+
 					AnimationNode& root = mEditor.getScene()->rootNode;
 					auto it = std::find_if(root.begin(), root.end(), [&](const AnimationNode& node) {
-						return std::strcmp(node.getData().name.data(), mName.data()) == 0;
+						return static_cast<const void*>(&node) == nodePtr;
 					});
 					if (it != root.end()) {
-						*animationNode = &(*it);
+						animation->setRootNode(&(*it));
 					}
 				}
 				ImGui::TreePop();
@@ -289,13 +318,13 @@ namespace editor {
 		{
 			auto [mesh] = mEditor.getEntityDatabase().getComponents<MeshComponent>(entity);
 
-			bool canAddRMesh = (mesh->size() < MeshComponent::kMaxMeshes);
+			bool canAddRMesh = !mesh->full();
 			if (!canAddRMesh) {
 				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 			}
 			std::shared_ptr<Mesh> gMesh;
-			if (addRepoDropdownButton("##MeshComponent::gMesh", "Add RenderableMesh", mEditor.getScene()->repository, gMesh)) {
+			if (addRepoDropdownButton("##MeshComponent::AddGMesh", "Add RenderableMesh", mEditor.getScene()->repository, gMesh)) {
 				mesh->add(mHasSkinning, gMesh);
 			}
 			ImGui::SameLine();
@@ -305,40 +334,56 @@ namespace editor {
 				ImGui::PopStyleVar();
 			}
 
-			for (std::size_t i = 0; i < mesh->size(); ++i) {
-				std::string rMeshName = "RenderableMesh #" + std::to_string(i);
-				if (ImGui::TreeNode(rMeshName.c_str())) {
-					ImGui::BulletText("Has Skin: %s", mesh->hasSkinning(i)? "yes" : "no");
-
-					ImGui::BulletText("Mesh:");
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+				std::string buttonName = "x##MeshComponent::RemoveGMesh" + std::to_string(i);
+				if (ImGui::Button(buttonName.c_str())) {
+					mesh->remove(i);
+				}
+				else {
 					ImGui::SameLine();
-					ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
-					gMesh = mesh->get(i).getMesh();
-					if (addRepoDropdownShowSelected("##MeshComponent::gMesh2", mEditor.getScene()->repository, gMesh)) {
-						mesh->get(i).setMesh(gMesh);
-					}
+					std::string treeNodeName = "RenderableMesh #" + std::to_string(i);
+					if (ImGui::TreeNode(treeNodeName.c_str())) {
+						ImGui::BulletText("Has Skin: %s", mesh->hasSkinning(i)? "yes" : "no");
 
-					if (ImGui::TreeNode("Shaders:")) {
-						std::shared_ptr<se::app::RenderableShader> shader;
-						if (addRepoDropdownButton("##MeshComponent::Shader", "Add Shader", mEditor.getScene()->repository, shader)) {
-							mesh->addRenderableShader(i, shader);
+						ImGui::BulletText("Mesh:");
+						ImGui::SameLine();
+						ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
+
+						gMesh = mesh->get(i).getMesh();
+						std::string dropdownName = "##MeshComponent::SelectGMesh" + std::to_string(i);
+						if (addRepoDropdownShowSelected(dropdownName.c_str(), mEditor.getScene()->repository, gMesh)) {
+							mesh->get(i).setMesh(gMesh);
 						}
 
-						mesh->processRenderableShaders(i, [&](const auto& shader1) {
-							ImGui::Text("Shader:");
-							ImGui::SameLine();
-							ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
-							std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
-							if (addRepoDropdownShowSelected("##MeshComponent::Shader2", mEditor.getScene()->repository, shader2)) {
-								mesh->removeRenderableShader(i, shader1);
-								mesh->addRenderableShader(i, shader2);
+						if (ImGui::TreeNode("Shaders:")) {
+							std::shared_ptr<se::app::RenderableShader> shader;
+							std::string buttonName2 = "##MeshComponent::AddShaderMesh" + std::to_string(i);
+							if (addRepoDropdownButton(buttonName2.c_str(), "Add Shader", mEditor.getScene()->repository, shader)) {
+								mesh->addRenderableShader(i, shader);
 							}
-						});
+
+							std::size_t shaderIndex = 0;
+							mesh->processRenderableShaders(i, [&](const auto& shader1) {
+								std::string buttonName = "x##MeshComponent::RemoveShader" + std::to_string(shaderIndex++) + "Mesh" + std::to_string(i);
+								if (ImGui::Button(buttonName.c_str())) {
+									mesh->removeRenderableShader(i, shader1);
+								}
+								else {
+									ImGui::SameLine();
+									std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
+									std::string dropdownName2 = "##MeshComponent::SelectShader" + std::to_string(shaderIndex++) + "Mesh" + std::to_string(i);
+									if (addRepoDropdownShowSelected(dropdownName2.c_str(), mEditor.getScene()->repository, shader2)) {
+										mesh->removeRenderableShader(i, shader1);
+										mesh->addRenderableShader(i, shader2);
+									}
+								}
+							});
+							ImGui::TreePop();
+						}
 						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-			}
+			});
 		};
 	};
 
@@ -439,6 +484,7 @@ namespace editor {
 		std::shared_ptr<Texture> mHeightTexture;
 		int mSize1 = 128;
 		int mSize2 = 128;
+		std::shared_ptr<Mesh> mMesh;
 
 	public:		// Functions
 		ColliderComponentNode(Editor& editor) : ComponentNode(editor) {};
@@ -455,9 +501,10 @@ namespace editor {
 			auto capsule	= dynamic_cast<Capsule*>(collider);
 			auto triangle	= dynamic_cast<TriangleCollider*>(collider);
 			auto terrain	= dynamic_cast<TerrainCollider*>(collider);
+			auto cPoly		= dynamic_cast<ConvexPolyhedron*>(collider);
 
-			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain" };
-			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : 4;
+			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain", "Convex Polyhedron" };
+			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : terrain? 4 : 5;
 			addDropdown("Type##ColliderType", types, IM_ARRAYSIZE(types), currentType);
 
 			if (currentType == 0) {
@@ -499,6 +546,14 @@ namespace editor {
 					terrain = dynamic_cast<TerrainCollider*>(c);
 				}
 				drawTerrain(*terrain);
+			}
+			else if (currentType == 5) {
+				if (!cPoly) {
+					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<ConvexPolyhedron>());
+					cPoly = dynamic_cast<ConvexPolyhedron*>(c);
+				}
+				drawCPoly(*cPoly);
 			}
 		};
 	protected:
@@ -558,6 +613,17 @@ namespace editor {
 				ImGui::TreePop();
 			}
 		}
+		void drawCPoly(ConvexPolyhedron& cPoly)
+		{
+			if (ImGui::TreeNode("Create from mesh")) {
+				addRepoDropdownShowSelected("Mesh##MeshToCPoly", mEditor.getScene()->repository, mMesh);
+
+				if (ImGui::Button("Build Convex Polyhedron##BuildCPoly")) {
+					//TODO:
+				}
+				ImGui::TreePop();
+			}
+		}
 	};
 
 
@@ -565,7 +631,7 @@ namespace editor {
 	{
 		mNodes.emplace_back(new TagComponentNode(mEditor));
 		mNodes.emplace_back(new TransformsComponentNode(mEditor));
-		mNodes.emplace_back(new AnimationNodeComponentNode(mEditor));
+		mNodes.emplace_back(new AnimationComponentNode(mEditor));
 		mNodes.emplace_back(new CameraComponentNode(mEditor));
 		mNodes.emplace_back(new LightComponentNode(mEditor));
 		mNodes.emplace_back(new LightProbeComponentNode(mEditor));

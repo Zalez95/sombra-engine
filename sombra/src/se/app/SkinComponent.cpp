@@ -4,37 +4,21 @@
 
 namespace se::app {
 
-	SkinComponent SkinComponent::duplicateSkinComponent(
-		animation::AnimationNode* sourceRootNode,
-		animation::AnimationNode* copyRootNode
-	) {
-		SkinComponent ret(mSkin);
-		ret.mJointIndices.resize(mJointIndices.size());
-
-		// Duplicate the Root Node
-		auto itJointIndex = std::find_if(mJointIndices.begin(), mJointIndices.end(), [&](const auto& pair) {
-			return pair.first == sourceRootNode;
-		});
-		if (itJointIndex != mJointIndices.end()) {
-			auto pos = std::distance(mJointIndices.begin(), itJointIndex);
-			ret.mJointIndices[pos] = { copyRootNode, itJointIndex->second };
-		}
-
-		// Duplicate the Descendant Nodes
-		auto itS = sourceRootNode->begin(), itC = copyRootNode->begin();
-		while (itS != sourceRootNode->end()) {
-			itJointIndex = std::find_if(mJointIndices.begin(), mJointIndices.end(), [&](const auto& pair) {
-				return pair.first == &(*itS);
-			});
-			if (itJointIndex != mJointIndices.end()) {
-				auto pos = std::distance(mJointIndices.begin(), itJointIndex);
-				ret.mJointIndices[pos] = { &(*itC), itJointIndex->second };
+	SkinComponent SkinComponent::duplicateSkinComponent(animation::AnimationNode* otherRootNode) const
+	{
+		MapNodeJoint otherJointIndices;
+		for (auto [myNode, index] : mJointIndices) {
+			auto it = std::find_if(otherRootNode->begin(), otherRootNode->end(),
+				[&, myNode = myNode](const animation::AnimationNode& otherNode) {
+					return std::strcmp(myNode->getData().name.data(), otherNode.getData().name.data());
+				}
+			);
+			if (it != otherRootNode->end()) {
+				otherJointIndices.emplace_back(&(*it), index);
 			}
-
-			++itS; ++itC;
 		}
 
-		return ret;
+		return SkinComponent(otherRootNode, mSkin, otherJointIndices);
 	}
 
 

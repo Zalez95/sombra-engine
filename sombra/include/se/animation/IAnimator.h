@@ -1,6 +1,9 @@
 #ifndef I_ANIMATOR_H
 #define I_ANIMATOR_H
 
+#include <functional>
+#include "AnimationNode.h"
+
 namespace se::animation {
 
 	/**
@@ -8,6 +11,10 @@ namespace se::animation {
 	 */
 	class IAnimator
 	{
+	public:		// Nested types
+		using AnimationNodeCallback =
+			std::function<void(IAnimator&, AnimationNode&)>;
+
 	public:		// Functions
 		/** Class destructor */
 		virtual ~IAnimator() = default;
@@ -30,12 +37,12 @@ namespace se::animation {
 		 *			updated. */
 		virtual void animate(float elapsedTime) = 0;
 
-		/** Resets the animate state of every node */
+		/** Resets the animated state of every node */
 		virtual void resetNodesAnimatedState() = 0;
 
-		/** Updates the IAnimator's nodes world transforms (and their
-		 * descendants) with the changes made by the animations */
-		virtual void updateNodesWorldTransforms() = 0;
+		/** Updates the IAnimator's nodes (and their descendants) with the
+		 * changes made by the animations */
+		virtual void updateNodesHierarchy() = 0;
 	};
 
 }

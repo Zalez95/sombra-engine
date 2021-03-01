@@ -38,7 +38,7 @@ namespace se::animation {
 
 		// Update the world transforms of all the nodes
 		for (IAnimator* animator : mAnimators) {
-			animator->updateNodesWorldTransforms();
+			animator->updateNodesHierarchy();
 		}
 	}
 

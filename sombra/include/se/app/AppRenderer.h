@@ -12,7 +12,6 @@
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
 #include "graphics/DeferredLightRenderer.h"
-#include "CameraComponent.h"
 #include "LightComponent.h"
 
 namespace se::app {

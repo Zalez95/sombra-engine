@@ -39,6 +39,9 @@ namespace se::app {
 		>;
 
 	private:	// Attributes
+		/** A pointer to the root AnimationNode of the joint hierarchy */
+		animation::AnimationNode* mRoot;
+
 		/** A pointer to the Skin that is going to be used for the Skinning
 		 * animation */
 		SkinSPtr mSkin;
@@ -50,28 +53,38 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new SkinComponent
 		 *
+		 * @param	root a pointer to the root AnimationNode of the joint
+		 *			hierarchy
 		 * @param	skin a pointer to the Skin used by the SkinComponent
 		 * @param	jointIndices maps each AnimationNode with its respective
 		 *			joint index in the skin */
-		SkinComponent(SkinSPtr skin, MapNodeJoint jointIndices = {}) :
-			mSkin(skin), mJointIndices(jointIndices) {};
+		SkinComponent(
+			animation::AnimationNode* root, SkinSPtr skin,
+			MapNodeJoint jointIndices = {}
+		) : mRoot(root), mSkin(skin), mJointIndices(jointIndices) {};
+
+		/** @return	a pointer to the root AnimationNode of the SkinComponent */
+		animation::AnimationNode* getRoot() const { return mRoot; };
 
 		/** @return	a pointer to the Skin used by the SkinComponent */
 		SkinSPtr getSkin() const { return mSkin; };
 
+		/** Iterates through all the SkinComponent AnimationNodes calling the
+		 * given callback function
+		 *
+		 * @param	callback the function to call for each AnimationNode */
+		template <typename F>
+		void processNodes(F callback) const
+		{ for (const auto& pair : mJointIndices) { callback(*pair.first); } }
+
 		/** Creates a new SkinComponent from the current one
 		 *
-		 * @param	sourceRootNode a pointer to the root node of the hierarchy
-		 *			that the current SkinComponent references to
-		 * @param	copyRootNode a pointer to the root node of the hierarchy
+		 * @param	otherRootNode a pointer to the root node of the hierarchy
 		 *			that the new SkinComponent will reference to
-		 * @return	the new SkinComponent
-		 * @note	the hierarchy of the descendants of both nodes must be the
-		 *			same */
+		 * @return	the new SkinComponent */
 		SkinComponent duplicateSkinComponent(
-			animation::AnimationNode* sourceRootNode,
-			animation::AnimationNode* copyRootNode
-		);
+			animation::AnimationNode* otherRootNode
+		) const;
 
 		/** Calculates the joint matrices of the current SkinComponent
 		 *

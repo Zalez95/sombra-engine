@@ -23,9 +23,6 @@ namespace se::app {
 		/** The listener Entity*/
 		Entity mListenerEntity;
 
-		/** If the listener has been updated or not */
-		bool mListenerUpdated;
-
 	public:		// Functions
 		/** Creates a new AudioSystem
 		 *

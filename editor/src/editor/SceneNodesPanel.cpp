@@ -43,6 +43,8 @@ namespace editor {
 			bool updated = false;
 
 			ImGui::Separator();
+			ImGui::Text("Node selected: 0x%p", static_cast<void*>(&(*mSelectedNode)));
+			ImGui::InputText("Name##AnimationNodeName", animationData.name.data(), animationData.name.size());
 			ImGui::Text("Local transforms:");
 			updated |= ImGui::DragFloat3("Position", glm::value_ptr(animationData.localTransforms.position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			updated |= drawOrientation("Orientation##AnimationNodeOrientation", animationData.localTransforms.orientation, mOrientationType);
@@ -87,24 +89,6 @@ namespace editor {
 				ImGui::SameLine();
 				if (ImGui::Button("Cancel")) {
 					mAdd = false;
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::EndPopup();
-			}
-		}
-		if (mRename) {
-			ImGui::OpenPopup("renamePopup");
-			if (ImGui::BeginPopup("renamePopup")) {
-				ImGui::InputText("Name##renameName", mWorkingData.name.data(), mWorkingData.name.size());
-				if (ImGui::Button("Rename")) {
-					mRename = false;
-					fixWorkingDataName();
-					mSelectedNode->getData() = mWorkingData;
-					ImGui::CloseCurrentPopup();
-				}
-				ImGui::SameLine();
-				if (ImGui::Button("Cancel")) {
-					mRename = false;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
@@ -173,7 +157,6 @@ namespace editor {
 			mWorkingData = itNode->getData();
 
 			mAdd |= ImGui::MenuItem("Add");
-			mRename |= ImGui::MenuItem("Rename");
 			mRemove |= ImGui::MenuItem("Remove");
 			mRemoveHierarchy |= ImGui::MenuItem("Remove hierarchy");
 			mChangeParent |= ImGui::MenuItem("Change parent");

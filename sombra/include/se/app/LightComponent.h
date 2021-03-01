@@ -2,9 +2,9 @@
 #define LIGHT_COMPONENT_H
 
 #include <memory>
-#include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include "../graphics/core/Texture.h"
 
 namespace se::app {
 
@@ -46,8 +46,31 @@ namespace se::app {
 	};
 
 
+	/** Struct LightComponent, holds a pointer to the LightSource that is
+	 * going to be used by the Entity */
+	struct LightComponent
+	{
+		/** A pointer to the LightSource that is going to be used */
+		std::shared_ptr<LightSource> source;
+	};
+
+
 	/**
-	 * Struct ShadowData, holds the configuration used for renfering the shadows
+	 * Struct LightProbe, it holds all the environment lighting textures
+	 */
+	struct LightProbe
+	{
+		/** The irradiance texture */
+		std::shared_ptr<graphics::Texture> irradianceMap;
+
+		/** The prefiltered environment map texture */
+		std::shared_ptr<graphics::Texture> prefilterMap;
+	};
+
+
+	/**
+	 * Struct ShadowData, it holds the configuration used for renfering the
+	 * Shadows
 	 */
 	struct ShadowData
 	{
@@ -65,15 +88,6 @@ namespace se::app {
 		/** The distance to the far plane of the camera used for rendering the
 		 * shadows */
 		float zFar = 10.0f;
-	};
-
-
-	/** Struct LightComponent, holds a pointer to the LightSource that is
-	 * going to be used by the Entity */
-	struct LightComponent
-	{
-		/** A pointer to the LightSource that is going to be used */
-		std::shared_ptr<LightSource> source;
 	};
 
 }

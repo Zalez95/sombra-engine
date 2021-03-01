@@ -25,7 +25,6 @@
 #include "se/app/TerrainComponent.h"
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
-#include <se/app/LightProbe.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/Scene.h>
 
@@ -48,7 +47,7 @@
 #include <se/physics/constraints/DistanceConstraint.h>
 
 #include <se/animation/AnimationEngine.h>
-#include <se/animation/CompositeAnimator.h>
+#include <se/animation/SkeletonAnimator.h>
 
 #include <se/audio/Buffer.h>
 #include <se/audio/Source.h>

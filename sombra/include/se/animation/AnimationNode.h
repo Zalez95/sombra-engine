@@ -72,6 +72,15 @@ namespace se::animation {
 	 *			update */
 	void updateWorldTransforms(AnimationNode& rootNode);
 
+
+	/** Updates the animated state of the given AnimationNode and its
+	 * descendants
+	 *
+	 * @param	rootNode the root AnimationNode of the hierarchy of Nodes to
+	 *			update
+	 * @param	animated the new animated state of the nodes */
+	void updateAnimatedState(AnimationNode& rootNode, bool animated);
+
 }
 
 #endif		// ANIMATION_NODE_H

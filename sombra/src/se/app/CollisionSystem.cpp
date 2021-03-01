@@ -33,8 +33,7 @@ namespace se::app {
 		}
 
 		if (transforms) {
-			// The Collider initial data is overridden by the entity one
-			collider->setTransforms( getModelMatrix(*transforms) );
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Collider));
 		}
 
 		mApplication.getExternalTools().collisionWorld->addCollider(collider);
@@ -63,11 +62,9 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating Colliders";
 		mEntityDatabase.iterateComponents<TransformsComponent, collision::Collider>(
 			[this](Entity, TransformsComponent* transforms, collision::Collider* collider) {
-				if (transforms->updated.any()) {
-					glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-					glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-					glm::mat4 scale			= glm::scale(glm::mat4(1.0f), transforms->scale);
-					collider->setTransforms(translation * rotation * scale);
+				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Collider)]) {
+					collider->setTransforms(getModelMatrix(*transforms));
+					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Collider));
 				}
 			}
 		);

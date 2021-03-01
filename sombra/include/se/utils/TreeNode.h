@@ -7,7 +7,7 @@
 namespace se::utils {
 
 	/** The algorithms to use for visiting the TreeNodes */
-	enum class Traversal { BFS, DFSPreOrder, DFSPostOrder };
+	enum class Traversal { BFS, DFSPreOrder, DFSPostOrder, Children };
 
 
 	/**
@@ -166,8 +166,8 @@ namespace se::utils {
 		template <Traversal t = Traversal::BFS>
 		const_iterator<t> find(const TreeNode& node) const;
 
-		/** Adds a descendant TreeNode as a child of the TreeNode pointed by
-		 * the given iterator
+		/** Adds a descendant TreeNode as the last child of the TreeNode
+		 * pointed by the given iterator
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
 		 *			add. If it's the end iterator, the node will be inserted as
@@ -182,8 +182,8 @@ namespace se::utils {
 			std::unique_ptr<TreeNode> descendant
 		);
 
-		/** Adds a descendant TreeNode as a child of the TreeNode pointed by
-		 * the given iterator
+		/** Adds a descendant TreeNode as the last child of the TreeNode
+		 * pointed by the given iterator
 		 *
 		 * @param	parentIt an iterator to the parent TreeNode of the one to
 		 *			add. If it's the end iterator, the node will be inserted as
@@ -220,18 +220,17 @@ namespace se::utils {
 			bool moveDescendants = false
 		);
 	private:
+		/** Moves the child nodes of the given one as siblings (next to it) with
+		 * their descendants
+		 *
+		 * @param	node a pointer to the node that has the childs to move */
+		void moveChildNodesUp(TreeNode* node);
+
 		/** Removes the given node and returns it
 		 *
 		 * @param	node a pointer to the node to remove
 		 * @return	the removed node */
 		std::unique_ptr<TreeNode> removeNode(TreeNode* node);
-
-		/** Sets the first node and its siblings as children of the given
-		 * parent TreeNode
-		 *
-		 * @param	first the pointer of the first TreeNode
-		 * @param	parent the new parent TreeNode */
-		void setNodesParent(std::unique_ptr<TreeNode> first, TreeNode* parent);
 	};
 
 
@@ -321,6 +320,9 @@ namespace se::utils {
 		/** Calculates the next TreeNode to point using the DFS post-order
 		 * algorithm */
 		void nextDFSPostOrder();
+
+		/** Calculates the next Children TreeNode to point */
+		void nextChildren();
 	};
 
 }

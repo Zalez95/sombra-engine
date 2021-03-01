@@ -2,7 +2,7 @@
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <AudioFile.h>
-#include <se/animation/CompositeAnimator.h>
+#include <se/animation/SkeletonAnimator.h>
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Gravity.h>
 #include <se/graphics/core/Program.h>
@@ -304,15 +304,15 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::CompositeAnimatorNode : public RepositoryPanel::SceneImporterTypeNode<CompositeAnimator>
+	class RepositoryPanel::SkeletonAnimatorNode : public RepositoryPanel::SceneImporterTypeNode<SkeletonAnimator>
 	{
 	public:		// Functions
-		CompositeAnimatorNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
-		virtual const char* getName() const override { return "CompositeAnimator"; };
+		SkeletonAnimatorNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
+		virtual const char* getName() const override { return "SkeletonAnimator"; };
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto animator = mPanel.mEditor.getScene()->repository.find<std::string, CompositeAnimator>(key);
+			auto animator = mPanel.mEditor.getScene()->repository.find<std::string, SkeletonAnimator>(key);
 			ImGui::Text("Loop time: %.3f seconds", animator->getLoopTime());
 		};
 	};
@@ -676,7 +676,7 @@ namespace editor {
 		mTypes.emplace_back(new SkinNode(*this));
 		mTypes.emplace_back(new LightSourceNode(*this));
 		mTypes.emplace_back(new RenderableShaderNode(*this));
-		mTypes.emplace_back(new CompositeAnimatorNode(*this));
+		mTypes.emplace_back(new SkeletonAnimatorNode(*this));
 		mTypes.emplace_back(new AudioBufferNode(*this));
 		mTypes.emplace_back(new ForceNode(*this));
 		mTypes.emplace_back(new ProgramNode(*this));

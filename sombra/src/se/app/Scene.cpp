@@ -1,4 +1,4 @@
-#include "se/animation/CompositeAnimator.h"
+#include "se/animation/SkeletonAnimator.h"
 #include "se/audio/Buffer.h"
 #include "se/physics/forces/Force.h"
 #include "se/physics/constraints/Constraint.h"
@@ -20,7 +20,7 @@ namespace se::app {
 		repository.init<std::string, Skin>();
 		repository.init<std::string, LightSource>();
 		repository.init<std::string, RenderableShader>();
-		repository.init<std::string, animation::CompositeAnimator>();
+		repository.init<std::string, animation::SkeletonAnimator>();
 		repository.init<std::string, audio::Buffer>();
 		repository.init<std::string, physics::Force>();
 		repository.init<std::string, physics::Constraint>();

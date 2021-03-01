@@ -83,19 +83,19 @@ namespace editor {
 				ret |= ImGui::DragFloat4("Quat", glm::value_ptr(orientation), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			} break;
 			case 1: {
-				float angle = glm::angle(orientation);
+				float angle = glm::degrees(glm::angle(orientation));
 				glm::vec3 axis = glm::axis(orientation);
 				ret |= ImGui::DragFloat("Angle", &angle, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 				ret |= ImGui::DragFloat3("Axis", glm::value_ptr(axis), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 				if (ret) {
-					orientation = glm::angleAxis(angle, axis);
+					orientation = glm::angleAxis(glm::radians(angle), axis);
 				}
 			} break;
 			case 2: {
-				glm::vec3 eulerAngles = glm::eulerAngles(orientation);
+				glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(orientation));
 				ret |= ImGui::DragFloat3("Euler angles", glm::value_ptr(eulerAngles), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 				if (ret) {
-					orientation = glm::quat(eulerAngles);
+					orientation = glm::quat(glm::radians(eulerAngles));
 				}
 			} break;
 		}

@@ -32,7 +32,7 @@ namespace editor {
 		se::animation::NodeData mWorkingData;
 
 		/** The operations to execute */
-		bool mRemove, mAdd, mRename, mRemoveHierarchy, mChangeParent;
+		bool mRemove, mAdd, mRemoveHierarchy, mChangeParent;
 
 		/** If the operation should affect the descendant nodes or not */
 		bool mDescendants;
@@ -46,9 +46,8 @@ namespace editor {
 		 * @param	editor a reference to the Editor that holds the Entities */
 		SceneNodesPanel(Editor& editor) :
 			mEditor(editor), mSelectedNode(nullptr), mOrientationType(0),
-			mRemove(false), mAdd(false), mRename(false),
-			mRemoveHierarchy(false), mChangeParent(false),
-			mDescendants(false), mRoot(false) {};
+			mRemove(false), mAdd(false), mRemoveHierarchy(false),
+			mChangeParent(false), mDescendants(false), mRoot(false) {};
 
 		/** Draws the current panel */
 		void render();
