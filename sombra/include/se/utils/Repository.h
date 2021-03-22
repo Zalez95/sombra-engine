@@ -33,6 +33,16 @@ namespace se::utils {
 		template <typename KeyType, typename ValueType>
 		void init();
 
+		/** Adds a new element to the Repository
+		 *
+		 * @param	key the Key with which the new element can be identified in
+		 *			the Repository
+		 * @param	args the arguments used for creating the element
+		 * @return	a pointer to the new element, nullptr if it wasn't
+		 *			inserted */
+		template <typename KeyType, typename ValueType, typename... Args>
+		std::shared_ptr<ValueType> emplace(const KeyType& key, Args&&... args);
+
 		/** Adds the given element to the Repository
 		 *
 		 * @param	key the Key with which the new element can be identified in
@@ -51,7 +61,15 @@ namespace se::utils {
 		 * @return	a pointer to the element found, nullptr if it wasn't
 		 *			found */
 		template <typename KeyType, typename ValueType>
-		std::shared_ptr<ValueType> find(const KeyType& key);
+		std::shared_ptr<ValueType> find(const KeyType& key) const;
+
+		/** Searchs the key of the given Element
+		 *
+		 * @param	value a pointer to the element to search its key
+		 * @param	key where the key will be stored
+		 * @return	true if the key was found, false otherwise */
+		template <typename KeyType, typename ValueType>
+		bool findKey(std::shared_ptr<ValueType> value, KeyType& key) const;
 
 		/** Checks if there is an element with the given key
 		 *
@@ -60,6 +78,14 @@ namespace se::utils {
 		 *			otherwise */
 		template <typename KeyType, typename ValueType>
 		bool has(const KeyType& key);
+
+		/** Iterates through all the elements of the Repository with the given
+		 * @tparam KeyType and @tparam ValueType calling the given
+		 * callback function
+		 *
+		 * @param	callback the function to call for each element */
+		template <typename KeyType, typename ValueType, typename F>
+		void iterate(F&& callback) const;
 
 		/** Iterates through all the elements of the Repository with the given
 		 * @tparam KeyType and @tparam ValueType calling the given
@@ -84,7 +110,7 @@ namespace se::utils {
 		/** @return	a reference to the RepoTable with the given @tparam KeyType
 		 *			and @tparam ValueType */
 		template <typename KeyType, typename ValueType>
-		RepoTable<KeyType, ValueType>& getRepoTable();
+		RepoTable<KeyType, ValueType>& getRepoTable() const;
 	};
 
 }

@@ -16,7 +16,6 @@
 #include "se/audio/Source.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/InputSystem.h"
 #include "se/app/ScriptSystem.h"
 #include "se/app/CameraSystem.h"

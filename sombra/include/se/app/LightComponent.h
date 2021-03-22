@@ -42,7 +42,7 @@ namespace se::app {
 		/** Creates a new LightSource
 		 *
 		 * @param	type the Type of the LightSource */
-		LightSource(Type type) : type(type) {};
+		LightSource(Type type = Type::Directional) : type(type) {};
 	};
 
 

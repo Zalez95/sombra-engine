@@ -136,6 +136,19 @@ namespace se::utils {
 	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
 
 
+	/** Calculates the Bounds in world space
+	 *
+	 * @param	localMin the minimum value in each axis in local space
+	 * @param	localMax the maximum value in each axis in local space
+	 * @param	worldMatrix the matrix used for transforming from local space
+	 *			to world space
+	 * @return	a pair with the minimum and maximum in world space */
+	std::pair<glm::vec3, glm::vec3> getBoundsWorld(
+		const glm::vec3& localMin, const glm::vec3& localMax,
+		const glm::mat4& worldMatrix
+	);
+
+
 	/** Decomposes the given transforms matrix into a translation vector, a
 	 * quaternion orientation and a scale vector
 	 *

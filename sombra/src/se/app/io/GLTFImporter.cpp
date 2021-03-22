@@ -4,7 +4,6 @@
 #include "GLMJSON.h"
 #include "GLTFImporter.h"
 #include "se/utils/MathUtils.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/AnimationComponent.h"
@@ -1322,7 +1321,7 @@ namespace se::app {
 				if (sAnimator.getLoopTime() < tAnimator->getLoopTime()) {
 					sAnimator.setLoopTime(tAnimator->getLoopTime());
 				}
-				sAnimator.addAnimator(mGLTFData->nodes[nodeId].nodeData.name, transformationType, std::move(tAnimator));
+				sAnimator.addAnimator(mGLTFData->nodes[nodeId].nodeData.name.data(), transformationType, std::move(tAnimator));
 				return Result();
 			}
 			else {

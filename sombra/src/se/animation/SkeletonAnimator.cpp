@@ -55,20 +55,26 @@ namespace se::animation {
 
 
 	void SkeletonAnimator::addAnimator(
-		const std::array<char, NodeData::kMaxLength>& nodeName,
-		TransformationAnimator::TransformationType type,
+		const char* nodeName, TransformationAnimator::TransformationType type,
 		TransformationAnimatorUPtr animator
 	) {
 		animator->setLoopTime(mLoopTime);
 
-		NodeAnimator nodeAnimator = { nodeName, type, std::move(animator) };
-		auto it = std::lower_bound(
-			mNAnimators.begin(), mNAnimators.end(), nodeAnimator,
-			[](const NodeAnimator &lhs, const NodeAnimator &rhs) {
-				return std::strcmp(lhs.nodeName.data(), rhs.nodeName.data()) < 0;
-			}
-		);
+		NodeAnimator nodeAnimator = { {}, type, std::move(animator) };
+		std::copy(nodeName, nodeName + std::strlen(nodeName), nodeAnimator.nodeName.begin());
+		auto it = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), nodeAnimator.nodeName.data(), compareLessLo);
 		mNAnimators.emplace(it, std::move(nodeAnimator));
+	}
+
+
+	void SkeletonAnimator::removeAnimator(const char* nodeName, TransformationAnimator::TransformationType type)
+	{
+		auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), nodeName, compareLessLo);
+		auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), nodeName, compareLessUp);
+		mNAnimators.erase(
+			std::remove_if(itL, itU, [&](const NodeAnimator& nodeAnimator) { return nodeAnimator.type == type; }),
+			itU
+		);
 	}
 
 
@@ -76,8 +82,8 @@ namespace se::animation {
 	{
 		mRootNodes.push_back(&rootNode);
 		for (auto& descendant : rootNode) {
-			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessLo);
-			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessUp);
+			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessLo);
+			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessUp);
 			for (auto it = itL; it != itU; ++it) {
 				it->animator->addNode(it->type, descendant);
 			}
@@ -88,8 +94,8 @@ namespace se::animation {
 	void SkeletonAnimator::rewindNodeHierarchy(AnimationNode& rootNode)
 	{
 		for (auto& descendant : rootNode) {
-			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessLo);
-			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessUp);
+			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessLo);
+			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessUp);
 			for (auto it = itL; it != itU; ++it) {
 				it->animator->rewindNode(it->type, descendant);
 			}
@@ -104,8 +110,8 @@ namespace se::animation {
 			mRootNodes.end()
 		);
 		for (auto& descendant : rootNode) {
-			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessLo);
-			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant, compareLessUp);
+			auto itL = std::lower_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessLo);
+			auto itU = std::upper_bound(mNAnimators.begin(), mNAnimators.end(), descendant.getData().name.data(), compareLessUp);
 			for (auto it = itL; it != itU; ++it) {
 				it->animator->removeNode(it->type, descendant);
 			}
@@ -113,15 +119,15 @@ namespace se::animation {
 	}
 
 // Private function
-	bool SkeletonAnimator::compareLessLo(const NodeAnimator& lhs, const AnimationNode& rhs)
+	bool SkeletonAnimator::compareLessLo(const NodeAnimator& lhs, const char* rhs)
 	{
-		return std::strcmp(lhs.nodeName.data(), rhs.getData().name.data()) < 0;
+		return std::strcmp(lhs.nodeName.data(), rhs) < 0;
 	}
 
 
-	bool SkeletonAnimator::compareLessUp(const AnimationNode& lhs, const NodeAnimator& rhs)
+	bool SkeletonAnimator::compareLessUp(const char* lhs, const NodeAnimator& rhs)
 	{
-		return std::strcmp(lhs.getData().name.data(), rhs.nodeName.data()) < 0;
+		return std::strcmp(lhs, rhs.nodeName.data()) < 0;
 	}
 
 }

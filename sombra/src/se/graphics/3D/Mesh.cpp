@@ -20,9 +20,21 @@ namespace se::graphics {
 	}
 
 
+	const std::vector<VertexBuffer>& Mesh::getVBOs() const
+	{
+		return mVBOs;
+	}
+
+
 	const IndexBuffer& Mesh::getIBO() const
 	{
 		return mIBO;
+	}
+
+
+	const VertexArray& Mesh::getVAO() const
+	{
+		return mVAO;
 	}
 
 

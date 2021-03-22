@@ -4,7 +4,6 @@
 #include "se/physics/PhysicsEngine.h"
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/events/CollisionEvent.h"
 
@@ -228,7 +227,7 @@ namespace se::app {
 			glm::vec3 vAxis(0.0f);
 			auto absCompare = [](float f1, float f2) { return std::abs(f1) < std::abs(f2); };
 			std::size_t iAxis = std::distance(&contact.normal.x, std::min_element(&contact.normal.x, &contact.normal.x + 3, absCompare));
-			vAxis[iAxis] = 1.0f;
+			vAxis[static_cast<glm::vec3::length_type>(iAxis)] = 1.0f;
 
 			glm::vec3 tangent1 = glm::normalize(glm::cross(contact.normal, vAxis));
 			glm::vec3 tangent2 = glm::normalize(glm::cross(contact.normal, tangent1));

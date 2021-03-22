@@ -3,7 +3,6 @@
 #include "se/utils/Log.h"
 #include "se/collision/Collider.h"
 #include "se/collision/CollisionWorld.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/CollisionSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"

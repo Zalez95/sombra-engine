@@ -113,6 +113,73 @@ namespace se::app {
 	}
 
 
+	void ShaderLoader::readMaterialBindables(const PassSPtr pass, Material& material)
+	{
+		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
+			if (auto operation = std::dynamic_pointer_cast<graphics::SetOperation>(bindable); operation) {
+				switch (operation->getOperation()) {
+					case graphics::Operation::Blending:
+						material.alphaMode = operation->enableOperation()? graphics::AlphaMode::Blend : graphics::AlphaMode::Opaque;
+						break;
+					case graphics::Operation::DepthTest:
+						material.alphaMode = operation->enableOperation()? graphics::AlphaMode::Opaque : graphics::AlphaMode::Blend;
+						break;
+					case graphics::Operation::Culling:
+						material.doubleSided = !operation->enableOperation();
+						break;
+				}
+			}
+			else if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
+				switch (texture->getTextureUnit()) {
+					case Material::TextureUnits::kBaseColor:
+						material.pbrMetallicRoughness.baseColorTexture = texture;
+						break;
+					case Material::TextureUnits::kMetallicRoughness:
+						material.pbrMetallicRoughness.metallicRoughnessTexture = texture;
+						break;
+					case Material::TextureUnits::kNormal:
+						material.normalTexture = texture;
+						break;
+					case Material::TextureUnits::kOcclusion:
+						material.occlusionTexture = texture;
+						break;
+					case Material::TextureUnits::kEmissive:
+						material.emissiveTexture = texture;
+						break;
+				}
+			}
+			else if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+				if (uniform->getName() == "uMaterial.pbrMetallicRoughness.baseColorFactor") {
+					material.pbrMetallicRoughness.baseColorFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<glm::vec4>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.pbrMetallicRoughness.metallicFactor") {
+					material.pbrMetallicRoughness.metallicFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.pbrMetallicRoughness.roughnessFactor") {
+					material.pbrMetallicRoughness.roughnessFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.normalScale") {
+					material.normalScale = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.occlusionStrength") {
+					material.occlusionStrength = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.emissiveFactor") {
+					material.emissiveFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<glm::vec3>>(uniform)->getValue();
+				}
+				else if (uniform->getName() == "uMaterial.checkAlphaCutoff") {
+					if (std::dynamic_pointer_cast<graphics::UniformVariableValue<bool>>(uniform)->getValue()) {
+						material.alphaMode = graphics::AlphaMode::Mask;
+					}
+				}
+				else if (uniform->getName() == "uMaterial.alphaCutoff") {
+					material.alphaCutoff = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+				}
+			}
+		});
+	}
+
+
 	void ShaderLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
 	{
 		// Set the material alphaMode
@@ -222,6 +289,68 @@ namespace se::app {
 	}
 
 
+	void ShaderLoader::readSplatmapMaterialBindables(const PassSPtr pass, SplatmapMaterial& material)
+	{
+		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
+			if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
+				if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kSplatmap) {
+					material.splatmapTexture = texture;
+				}
+			}
+			else if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+				if (uniform->getName() == "uSMaterial.numMaterials") {
+					material.materials.resize(std::dynamic_pointer_cast<graphics::UniformVariableValue<int>>(uniform)->getValue());
+				}
+			}
+		});
+
+		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
+			for (std::size_t i = 0; i < material.materials.size(); ++i) {
+				if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
+					if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i) {
+						material.materials[i].pbrMetallicRoughness.baseColorTexture = texture;
+					}
+					else if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kMetallicRoughness0 + BasicMaterial::kMaxTextures * i) {
+						material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture = texture;
+					}
+					else if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kNormal0 + BasicMaterial::kMaxTextures * i) {
+						material.materials[i].normalTexture = texture;
+					}
+				}
+				else if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+					utils::ArrayStreambuf<char, 128> aStreambuf;
+					std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorFactor";
+					if (uniform->getName() == aStreambuf.data()) {
+						material.materials[i].pbrMetallicRoughness.baseColorFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<glm::vec4>>(uniform)->getValue();
+						continue;
+					}
+
+					aStreambuf = {};
+					std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.metallicFactor";
+					if (uniform->getName() == aStreambuf.data()) {
+						material.materials[i].pbrMetallicRoughness.metallicFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+						continue;
+					}
+
+					aStreambuf = {};
+					std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.roughnessFactor";
+					if (uniform->getName() == aStreambuf.data()) {
+						material.materials[i].pbrMetallicRoughness.roughnessFactor = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+						continue;
+					}
+
+					aStreambuf = {};
+					std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].normalScale";
+					if (uniform->getName() == aStreambuf.data()) {
+						material.materials[i].normalScale = std::dynamic_pointer_cast<graphics::UniformVariableValue<float>>(uniform)->getValue();
+						continue;
+					}
+				}
+			}
+		});
+	}
+
+
 	void ShaderLoader::addHeightMapBindables(
 		PassSPtr pass, const Image<unsigned char>& heightMap, float size, float maxHeight, const ProgramSPtr program
 	) {
@@ -254,10 +383,9 @@ namespace se::app {
 	}
 
 
-	ShaderLoader::ProgramUPtr ShaderLoader::createProgram(
-		const char* vertexShaderPath,
-		const char* geometryShaderPath,
-		const char* fragmentShaderPath
+	Result ShaderLoader::createProgram(
+		const char* vertexShaderPath, const char* geometryShaderPath, const char* fragmentShaderPath,
+		ProgramSPtr& program
 	) {
 		// 1. Read the shader text from the shader files
 		std::string vertexShaderText;
@@ -266,8 +394,7 @@ namespace se::app {
 				vertexShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 			}
 			else {
-				SOMBRA_ERROR_LOG << "Vertex shader not found";
-				return nullptr;
+				return Result(false, "Vertex shader not found");
 			}
 		}
 
@@ -277,8 +404,7 @@ namespace se::app {
 				geometryShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 			}
 			else {
-				SOMBRA_ERROR_LOG << "Geometry shader not found";
-				return nullptr;
+				return Result(false, "Geometry shader not found");
 			}
 		}
 
@@ -288,8 +414,7 @@ namespace se::app {
 				fragmentShaderText.assign((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 			}
 			else {
-				SOMBRA_ERROR_LOG << "Fragment shader not found";
-				return nullptr;
+				return Result(false, "Fragment shader not found");
 			}
 		}
 
@@ -305,12 +430,13 @@ namespace se::app {
 				shaderPtrs.push_back(&shader);
 			}
 
-			return std::make_unique<graphics::Program>(shaderPtrs.data(), shaderPtrs.size());
+			program = std::make_shared<graphics::Program>(shaderPtrs.data(), shaderPtrs.size());
 		}
 		catch (std::exception& e) {
-			SOMBRA_ERROR_LOG << e.what();
-			return nullptr;
+			return Result(false, "Exception: " + std::string(e.what()));
 		}
+
+		return Result();
 	}
 
 }

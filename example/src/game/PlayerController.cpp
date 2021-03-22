@@ -7,7 +7,6 @@
 #include <se/utils/Repository.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
-#include <se/app/EntityDatabase.h>
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
@@ -73,13 +72,8 @@ namespace game {
 
 	void PlayerController::onCreate(const se::app::UserInput& userInput)
 	{
-		resetMousePosition(userInput.mouseX, userInput.mouseY);
-	}
-
-
-	void PlayerController::onDestroy(const se::app::UserInput& userInput)
-	{
-		resetMousePosition(userInput.mouseX, userInput.mouseY);
+		mLastMouseX = 0.5f * userInput.windowWidth;
+		mLastMouseY = 0.5f * userInput.windowHeight;
 	}
 
 
@@ -88,35 +82,41 @@ namespace game {
 		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
 		if (!transforms) { return; }
 
-		// Get the mouse movement from the center of the screen in the range [-1, 1]
-		double mouseDeltaX = 2.0 * userInput.mouseX / userInput.windowWidth - 1.0;
-		double mouseDeltaY = 1.0 - 2.0 * userInput.mouseY / userInput.windowHeight;	// note that the Y position is upsidedown
+		// Get the mouse movement
+		glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
+		glm::vec2 mouseMove = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+		mouseMove /= windowSize;
 
-		glm::vec3 forward	= glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation;
-		glm::vec3 up		= glm::vec3(0.0f, 1.0f, 0.0f);
-		glm::vec3 right		= glm::cross(forward, up);
+		glm::vec3 forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
 
 		// Set the pitch and yaw
-		if ((mouseDeltaX != 0.0) || (mouseDeltaY != 0.0)) {
-			resetMousePosition(userInput.windowWidth, userInput.windowHeight);
+		if (mouseMove != glm::vec2(0.0)) {
+			mLastMouseX = userInput.mouseX;
+			mLastMouseY = userInput.mouseY;
 
 			// Multiply the values by the mouse speed
-			float yaw = kMouseSpeed * elapsedTime * static_cast<float>(mouseDeltaX);
-			float pitch = kMouseSpeed * elapsedTime * static_cast<float>(mouseDeltaY);
+			float yaw = kMouseSpeed * -elapsedTime * static_cast<float>(mouseMove.x);
+			float pitch = -kMouseSpeed * elapsedTime * static_cast<float>(mouseMove.y);
 
 			// Clamp the pitch
 			float currentPitch = std::asin(forward.y);
 			float nextPitch = currentPitch + pitch;
 			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
 			pitch = nextPitch - currentPitch;
+
 			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " orientation (" << pitch << ", " << yaw << ")";
 
 			// Apply the rotation
 			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-			transforms->orientation = glm::normalize(qPitch * transforms->orientation * qYaw);
+			transforms->orientation = glm::normalize(qYaw * transforms->orientation * qPitch);
 			transforms->updated.reset();
+
+			forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
 		}
+
+		glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+		glm::vec3 right = glm::cross(forward, up);
 
 		// Add WASD movement
 		glm::vec3 direction(0.0f);
@@ -172,13 +172,6 @@ namespace game {
 
 			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
 		}*/
-	}
-
-
-	void PlayerController::resetMousePosition(double width, double height)
-	{
-		SOMBRA_DEBUG_LOG << "Changing the mouse position to the center of the window";
-		mEventManager->publish(new se::app::SetMousePosEvent(0.5 * width, 0.5 * height));
 	}
 
 }

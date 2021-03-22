@@ -162,9 +162,15 @@ namespace se::graphics {
 		/** Creates a new SetOperation
 		 *
 		 * @param	operation the operation to enable/disable
-		 * @param	active if the depth-testing should be enabled or not */
+		 * @param	active if the operation should be enabled or not */
 		SetOperation(Operation operation, bool active = true) :
 			mOperation(operation), mActive(active), mLastActive(false) {};
+
+		/** @return	the Operation to enable/disable */
+		Operation getOperation() const { return mOperation; };
+
+		/** @return	true if the operation should be enabled, false otherwise */
+		bool enableOperation() const { return mActive; };
 
 		/** Enables the Operation if mActive is true, disables it otherwise */
 		virtual void bind() const override;

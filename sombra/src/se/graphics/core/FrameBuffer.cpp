@@ -110,7 +110,7 @@ namespace se::graphics {
 					glAttachments.push_back( toGLFrameBufferAttachment(FrameBufferAttachment::kColor0 + i) );
 				}
 			}
-			GL_WRAP( glDrawBuffers(glAttachments.size(), glAttachments.data()) );
+			GL_WRAP( glDrawBuffers(static_cast<GLsizei>(glAttachments.size()), glAttachments.data()) );
 		}
 
 		unbind();
@@ -134,8 +134,8 @@ namespace se::graphics {
 		bind();
 		other.bind();
 		GL_WRAP( glBlitFramebuffer(
-			x0, y0, x0 + w0, y0 + h0,
-			x1, y1, x1 + w1, y1 + h1,
+			static_cast<GLint>(x0), static_cast<GLint>(y0), static_cast<GLint>(x0 + w0), static_cast<GLint>(y0 + h0),
+			static_cast<GLint>(x1), static_cast<GLint>(y1), static_cast<GLint>(x1 + w1), static_cast<GLint>(y1 + h1),
 			toGLFrameBufferMask(mask),
 			toGLFilter(filter)
 		) );

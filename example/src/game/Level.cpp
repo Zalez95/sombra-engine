@@ -16,7 +16,6 @@
 #include <se/app/io/FontReader.h>
 #include <se/app/io/SceneImporter.h>
 #include <se/app/io/ShaderLoader.h>
-#include <se/app/EntityDatabase.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/AudioSystem.h>
 #include <se/app/AppRenderer.h>
@@ -242,51 +241,51 @@ namespace game {
 
 			// Programs
 			std::shared_ptr<se::graphics::Program> programShadow;
-			programShadow = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr);
-			if (!programShadow) {
-				throw std::runtime_error("programShadow not found");
+			se::app::Result result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, programShadow);
+			if (!result) {
+				throw std::runtime_error("programShadow error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programShadow"), programShadow);
 
 			std::shared_ptr<se::graphics::Program> programShadowSkinning;
-			programShadowSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr);
-			if (!programShadowSkinning) {
-				throw std::runtime_error("programShadowSkinning not found");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr, programShadowSkinning);
+			if (!result) {
+				throw std::runtime_error("programShadowSkinning error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programShadowSkinning"), programShadowSkinning);
 
 			std::shared_ptr<se::graphics::Program> programShadowTerrain;
-			programShadowTerrain = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr);
-			if (!programShadowTerrain) {
-				throw std::runtime_error("programShadowTerrain not found");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr, programShadowTerrain);
+			if (!result) {
+				throw std::runtime_error("programShadowTerrain error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programShadowTerrain"), std::move(programShadowTerrain));
 
 			std::shared_ptr<se::graphics::Program> programSky;
-			programSky = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", programSky);
 			if (!programSky) {
-				throw std::runtime_error("programSky not found");
+				throw std::runtime_error("programSky error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programSky"), programSky);
 
 			std::shared_ptr<se::graphics::Program> programGBufMaterial;
-			programGBufMaterial = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
-			if (!programGBufMaterial) {
-				throw std::runtime_error("programGBufMaterial not found");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterial);
+			if (!result) {
+				throw std::runtime_error("programGBufMaterial error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programGBufMaterial"), programGBufMaterial);
 
 			std::shared_ptr<se::graphics::Program> programGBufMaterialSkinning;
-			programGBufMaterialSkinning = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl");
-			if (!programGBufMaterialSkinning) {
-				throw std::runtime_error("programGBufMaterialSkinning not found");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterialSkinning);
+			if (!result) {
+				throw std::runtime_error("programGBufMaterialSkinning error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programGBufMaterialSkinning"), std::move(programGBufMaterialSkinning));
 
 			std::shared_ptr<se::graphics::Program> programGBufSplatmap;
-			programGBufSplatmap = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl");
-			if (!programGBufSplatmap) {
-				throw std::runtime_error("programGBufSplatmap not found");
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl", programGBufSplatmap);
+			if (!result) {
+				throw std::runtime_error("programGBufSplatmap error: " + std::string(result.description()));
 			}
 			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
@@ -311,7 +310,7 @@ namespace game {
 			}
 
 			// GLTF scenes
-			se::app::Result result = sceneImporter->load("res/meshes/test.gltf", mScene);
+			result = sceneImporter->load("res/meshes/test.gltf", mScene);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -440,7 +439,6 @@ namespace game {
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(0.0f, 1.0f, 10.0f);
-			transforms.orientation = glm::quat(glm::vec3(0.0f, glm::pi<float>(), 0.0f));
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
 
 			se::physics::RigidBodyConfig config;
@@ -847,11 +845,11 @@ namespace game {
 
 		if (handle && !control) {
 			mGame.getEntityDatabase().addComponent<se::app::ScriptComponent>(mPlayerEntity, std::make_unique<PlayerController>(*this, *mPickText));
-			mGame.getExternalTools().windowManager->setCursorVisibility(false);
+			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
 		}
 		else if (!handle && control) {
 			mGame.getEntityDatabase().removeComponent<se::app::ScriptComponent>(mPlayerEntity);
-			mGame.getExternalTools().windowManager->setCursorVisibility(true);
+			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
 		}
 	}
 

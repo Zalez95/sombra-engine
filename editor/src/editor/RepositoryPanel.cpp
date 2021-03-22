@@ -81,7 +81,7 @@ namespace editor {
 					mShowCreate = true;
 				}
 
-				mPanel.mEditor.getScene()->repository.iterate<std::string, T>([&](const std::string& key, std::shared_ptr<T>) {
+				mPanel.mEditor.getScene()->repository.iterate<Scene::Key, T>([&](const std::string& key, std::shared_ptr<T>) {
 					if (ImGui::Selectable(key.c_str(), key == mSelected)) {
 						mSelected = key;
 					}
@@ -90,7 +90,7 @@ namespace editor {
 
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::CollapsingHeader("Selected element")) {
-				if (!mPanel.mEditor.getScene()->repository.find<std::string, T>(mSelected)) {
+				if (!mPanel.mEditor.getScene()->repository.find<Scene::Key, T>(mSelected)) {
 					mSelected = "";
 				}
 
@@ -98,11 +98,11 @@ namespace editor {
 					std::array<char, kMaxNameSize> nameBuffer = {};
 					std::copy(mSelected.begin(), mSelected.end(), nameBuffer.data());
 					if (ImGui::InputText("Name##SelectedName", nameBuffer.data(), nameBuffer.size())) {
-						auto element = mPanel.mEditor.getScene()->repository.find<std::string, T>(mSelected);
-						mPanel.mEditor.getScene()->repository.remove<std::string, T>(mSelected);
+						auto element = mPanel.mEditor.getScene()->repository.find<Scene::Key, T>(mSelected);
+						mPanel.mEditor.getScene()->repository.remove<Scene::Key, T>(mSelected);
 
 						mSelected = nameBuffer.data();
-						mPanel.mEditor.getScene()->repository.add<std::string, T>(mSelected, std::move(element));
+						mPanel.mEditor.getScene()->repository.add<Scene::Key, T>(mSelected, std::move(element));
 					}
 
 					draw(mSelected);
@@ -216,7 +216,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto skin = mPanel.mEditor.getScene()->repository.find<std::string, Skin>(key);
+			auto skin = mPanel.mEditor.getScene()->repository.find<Scene::Key, Skin>(key);
 			ImGui::Text("Inverse bind matrices: %lu", skin->inverseBindMatrices.size());
 		};
 	};
@@ -233,7 +233,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto source = mPanel.mEditor.getScene()->repository.find<std::string, LightSource>(key);
+			auto source = mPanel.mEditor.getScene()->repository.find<Scene::Key, LightSource>(key);
 
 			static const char* types[] = { "Directional", "Point", "Spot" };
 			std::size_t currentType = static_cast<std::size_t>(source->type);
@@ -256,7 +256,7 @@ namespace editor {
 			bool ret = false;
 
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !mPanel.mEditor.getScene()->repository.has<std::string, LightSource>(mNameBuffer.data());
+			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, LightSource>(mNameBuffer.data());
 
 			ImGui::Separator();
 			if (cancelButton()) {
@@ -266,7 +266,7 @@ namespace editor {
 			ImGui::SameLine();
 
 			if (confirmButton(validKey)) {
-				mPanel.mEditor.getScene()->repository.add(std::string(mNameBuffer.data()), std::make_shared<LightSource>(LightSource::Type::Directional));
+				mPanel.mEditor.getScene()->repository.add(Scene::Key(mNameBuffer.data()), std::make_shared<LightSource>(LightSource::Type::Directional));
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -284,19 +284,17 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto renderable = mPanel.mEditor.getScene()->repository.find<std::string, RenderableShader>(key);
+			auto renderable = mPanel.mEditor.getScene()->repository.find<Scene::Key, RenderableShader>(key);
 			renderable->getTechnique()->processPasses([&](const auto& pass) {
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Pass:");
 				ImGui::SameLine();
-				bool found = false;
-				mPanel.mEditor.getScene()->repository.iterate<std::string, Pass>([&](const auto& key, const auto& pass2) {
-					if (pass == pass2) {
-						ImGui::Text("%s", key.c_str());
-						found = true;
-					}
-				});
-				if (!found) {
+
+				std::string key2;
+				if (mPanel.mEditor.getScene()->repository.findKey<Scene::Key, Pass>(pass, key2)) {
+					ImGui::Text("%s", key2.c_str());
+				}
+				else {
 					ImGui::Text("[Not found]");
 				}
 			});
@@ -312,7 +310,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto animator = mPanel.mEditor.getScene()->repository.find<std::string, SkeletonAnimator>(key);
+			auto animator = mPanel.mEditor.getScene()->repository.find<Scene::Key, SkeletonAnimator>(key);
 			ImGui::Text("Loop time: %.3f seconds", animator->getLoopTime());
 		};
 	};
@@ -330,7 +328,7 @@ namespace editor {
 		virtual bool options() override
 		{
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !mPanel.mEditor.getScene()->repository.has<std::string, LightSource>(mNameBuffer.data());
+			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, LightSource>(mNameBuffer.data());
 			return validKey;
 		};
 
@@ -347,7 +345,9 @@ namespace editor {
 				FormatId::MonoFloat, audioFile.getSampleRate()
 			);
 
-			if (!mPanel.mEditor.getScene()->repository.add(std::string(mNameBuffer.data()), buffer)) {
+			if (!mPanel.mEditor.getScene()->repository.add(Scene::Key(mNameBuffer.data()), buffer)
+				|| !mPanel.mEditor.getScene()->repository.emplace<Scene::Key, ResourcePath<Buffer>>(mNameBuffer.data(), path)
+			) {
 				return false;
 			}
 
@@ -367,7 +367,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto force = mPanel.mEditor.getScene()->repository.find<std::string, Force>(key);
+			auto force = mPanel.mEditor.getScene()->repository.find<Scene::Key, Force>(key);
 			auto gravity = std::dynamic_pointer_cast<Gravity>(force);
 
 			const char* types[] = { "Gravity" };
@@ -377,8 +377,8 @@ namespace editor {
 			if (currentType == 0) {
 				if (!gravity) {
 					gravity = std::make_shared<Gravity>();
-					mPanel.mEditor.getScene()->repository.remove<std::string, Force>(key);
-					mPanel.mEditor.getScene()->repository.add<std::string, Force>(key, gravity);
+					mPanel.mEditor.getScene()->repository.remove<Scene::Key, Force>(key);
+					mPanel.mEditor.getScene()->repository.add<Scene::Key, Force>(key, gravity);
 				}
 				drawGravity(*gravity);
 			}
@@ -389,7 +389,7 @@ namespace editor {
 			bool ret = false;
 
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !mPanel.mEditor.getScene()->repository.has<std::string, Force>(mNameBuffer.data());
+			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, Force>(mNameBuffer.data());
 
 			ImGui::Separator();
 			if (cancelButton()) {
@@ -398,7 +398,7 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validKey)) {
-				mPanel.mEditor.getScene()->repository.add<std::string, Force>(mNameBuffer.data(), std::make_shared<Gravity>());
+				mPanel.mEditor.getScene()->repository.add<Scene::Key, Force>(mNameBuffer.data(), std::make_shared<Gravity>());
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -434,7 +434,7 @@ namespace editor {
 			Alert importErrorPopUp("Error", "Failed to import, see logs for more details", "Close");
 
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
-			bool validOptions = !mPanel.mEditor.getScene()->repository.has<std::string, LightSource>(mNameBuffer.data());
+			bool validOptions = !mPanel.mEditor.getScene()->repository.has<Scene::Key, LightSource>(mNameBuffer.data());
 
 			ImGui::TextDisabled("(?)");
 			if (ImGui::IsItemHovered())
@@ -475,17 +475,28 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validOptions)) {
-				std::shared_ptr<Program> program = ShaderLoader::createProgram(
+				std::shared_ptr<Program> program;
+				auto result = ShaderLoader::createProgram(
 					mPathVertex.empty()? nullptr : mPathVertex.c_str(),
 					mPathGeometry.empty()? nullptr : mPathGeometry.c_str(),
-					mPathFragment.empty()? nullptr : mPathFragment.c_str()
+					mPathFragment.empty()? nullptr : mPathFragment.c_str(),
+					program
 				);
-
-				if (program && mPanel.mEditor.getScene()->repository.add(std::string(mNameBuffer.data()), program)) {
-					mNameBuffer.fill(0);
-					ret = true;
+				if (result) {
+					std::string resourcePath = mPathVertex + "," + mPathGeometry + "," + mPathFragment;
+					if (mPanel.mEditor.getScene()->repository.add<Scene::Key, Program>(mNameBuffer.data(), std::move(program))
+						&& mPanel.mEditor.getScene()->repository.emplace<Scene::Key, ResourcePath<Program>>(mNameBuffer.data(), resourcePath)
+					) {
+						mNameBuffer.fill(0);
+						ret = true;
+					}
+					else {
+						SOMBRA_ERROR_LOG << "Failed to add the program";
+						importErrorPopUp.show();
+					}
 				}
 				else {
+					SOMBRA_ERROR_LOG << result.description();
 					importErrorPopUp.show();
 				}
 			}
@@ -548,7 +559,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto texture = mPanel.mEditor.getScene()->repository.find<std::string, Texture>(key);
+			auto texture = mPanel.mEditor.getScene()->repository.find<Scene::Key, Texture>(key);
 			ImGui::Image(static_cast<void*>(texture.get()), ImVec2{ 200.0f, 200.0f });
 
 			TextureFilter min, mag;
@@ -600,7 +611,7 @@ namespace editor {
 		virtual bool options() override
 		{
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !mPanel.mEditor.getScene()->repository.has<std::string, LightSource>(mNameBuffer.data());
+			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, LightSource>(mNameBuffer.data());
 
 			ImGui::Checkbox("Is HDR", &mIsHDR);
 
@@ -644,7 +655,9 @@ namespace editor {
 				);
 			}
 
-			if (!mPanel.mEditor.getScene()->repository.add(std::string(mNameBuffer.data()), texture)) {
+			if (!mPanel.mEditor.getScene()->repository.add(Scene::Key(mNameBuffer.data()), texture)
+				|| !mPanel.mEditor.getScene()->repository.emplace<Scene::Key, ResourcePath<Texture>>(mNameBuffer.data(), path)
+			) {
 				return false;
 			}
 
@@ -661,7 +674,7 @@ namespace editor {
 	protected:
 		virtual void draw(const std::string& key) override
 		{
-			auto mesh = mPanel.mEditor.getScene()->repository.find<std::string, Mesh>(key);
+			auto mesh = mPanel.mEditor.getScene()->repository.find<Scene::Key, Mesh>(key);
 			auto [min, max] = mesh->getBounds();
 
 			ImGui::Text("Bounds:");

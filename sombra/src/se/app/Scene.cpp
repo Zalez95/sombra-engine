@@ -1,3 +1,4 @@
+#include "se/animation/AnimationEngine.h"
 #include "se/animation/SkeletonAnimator.h"
 #include "se/audio/Buffer.h"
 #include "se/physics/forces/Force.h"
@@ -11,24 +12,26 @@
 #include "se/app/LightComponent.h"
 #include "se/app/RenderableShader.h"
 #include "se/app/Scene.h"
-#include "se/app/EntityDatabase.h"
 
 namespace se::app {
 
 	Scene::Scene(const char* name, Application& application) : name(name), application(application)
 	{
-		repository.init<std::string, Skin>();
-		repository.init<std::string, LightSource>();
-		repository.init<std::string, RenderableShader>();
-		repository.init<std::string, animation::SkeletonAnimator>();
-		repository.init<std::string, audio::Buffer>();
-		repository.init<std::string, physics::Force>();
-		repository.init<std::string, physics::Constraint>();
-		repository.init<std::string, graphics::Program>();
-		repository.init<std::string, graphics::Pass>();
-		repository.init<std::string, graphics::Technique>();
-		repository.init<std::string, graphics::Texture>();
-		repository.init<std::string, graphics::Mesh>();
+		repository.init<Key, Skin>();
+		repository.init<Key, LightSource>();
+		repository.init<Key, RenderableShader>();
+		repository.init<Key, animation::SkeletonAnimator>();
+		repository.init<Key, audio::Buffer>();
+		repository.init<Key, physics::Force>();
+		repository.init<Key, physics::Constraint>();
+		repository.init<Key, graphics::Program>();
+		repository.init<Key, graphics::Pass>();
+		repository.init<Key, graphics::Technique>();
+		repository.init<Key, graphics::Texture>();
+		repository.init<Key, graphics::Mesh>();
+		repository.init<Key, ResourcePath<audio::Buffer>>();
+		repository.init<Key, ResourcePath<graphics::Program>>();
+		repository.init<Key, ResourcePath<graphics::Texture>>();
 
 		entities.reserve(application.getEntityDatabase().getMaxEntities());
 	}
@@ -39,6 +42,10 @@ namespace se::app {
 		for (auto entity : entities) {
 			application.getEntityDatabase().removeEntity(entity);
 		}
+
+		repository.iterate<Key, animation::SkeletonAnimator>([this](const Key&, std::shared_ptr<animation::SkeletonAnimator> v) {
+			application.getExternalTools().animationEngine->removeAnimator(v.get());
+		});
 	}
 
 

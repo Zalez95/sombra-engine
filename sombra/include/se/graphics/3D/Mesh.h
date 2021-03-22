@@ -56,8 +56,14 @@ namespace se::graphics {
 		 *			direction */
 		std::pair<glm::vec3, glm::vec3> getBounds() const;
 
+		/** @return a reference to the VertexBuffers of the Mesh */
+		const std::vector<VertexBuffer>& getVBOs() const;
+
 		/** @return a reference to the IndexBuffer of the Mesh */
 		const IndexBuffer& getIBO() const;
+
+		/** @return a reference to the VertexArray of the Mesh */
+		const VertexArray& getVAO() const;
 
 		/** Binds the VAO of the Mesh */
 		virtual void bind() const override;

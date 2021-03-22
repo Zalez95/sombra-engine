@@ -96,9 +96,22 @@ namespace se::window {
 	}
 
 
-	void WindowManager::setCursorVisibility(bool isVisible)
+	void WindowManager::setCursorMode(CursorMode mode)
 	{
-		glfwSetInputMode(mWindow, GLFW_CURSOR, isVisible? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
+		int glfwMode;
+		switch (mode) {
+			case CursorMode::Hidden:
+				glfwMode = GLFW_CURSOR_HIDDEN;
+				break;
+			case CursorMode::Camera:
+				glfwMode = GLFW_CURSOR_DISABLED;
+				break;
+			default:
+				glfwMode = GLFW_CURSOR_NORMAL;
+				break;
+		}
+
+		glfwSetInputMode(mWindow, GLFW_CURSOR, glfwMode);
 	}
 
 
@@ -175,13 +188,18 @@ namespace se::window {
 			onKeyCB = callback;
 
 			glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
-				auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
-				userWindow->onKeyCB(
-					key,
-					(action == GLFW_PRESS)? ButtonState::Pressed :
-					(action == GLFW_REPEAT)? ButtonState::Repeated :
-					ButtonState::Released
-				);
+				if (key >= 0) {
+					auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
+					userWindow->onKeyCB(
+						key,
+						(action == GLFW_PRESS)? ButtonState::Pressed :
+						(action == GLFW_REPEAT)? ButtonState::Repeated :
+						ButtonState::Released
+					);
+				}
+				else {
+					SOMBRA_WARN_LOG << "Unknown key pressed";
+				}
 			});
 		}
 	}

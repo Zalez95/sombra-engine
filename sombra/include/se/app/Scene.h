@@ -10,12 +10,30 @@
 
 namespace se::app {
 
+	/** Struct ResourcePath, it holds a path to a Repository element of type
+	 * @tparam T */
+	template <typename T>
+	struct ResourcePath
+	{
+		/** The path value, if there are multiple paths they will be
+		 * separarated by commas */
+		std::string path;
+
+		/** Creates a new ResourcePath
+		 *
+		 * @param	path the path of the ResourcePath */
+		ResourcePath(const std::string& path = "") : path(path) {};
+	};
+
+
 	/**
 	 * Struct Scene, holds all the common data shared by the Entities of an App
 	 * and other data needed for simulating the 3D scene
 	 */
 	struct Scene
 	{
+		using Key = std::string;
+
 		/** The name of the Scene */
 		std::string name;
 

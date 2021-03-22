@@ -1,6 +1,7 @@
 #ifndef UNIFORM_VARIABLE_H
 #define UNIFORM_VARIABLE_H
 
+#include <string>
 #include <functional>
 #include "../../utils/FixedVector.h"
 #include "Bindable.h"
@@ -17,6 +18,9 @@ namespace se::graphics {
 	class IUniformVariable : public Bindable
 	{
 	private:	// Attributes
+		/** The name of the IUniformVariable */
+		std::string mName;
+
 		/** The location of the variable in the Shader source code */
 		int mUniformLocation;
 
@@ -30,6 +34,9 @@ namespace se::graphics {
 
 		/** Class destructor */
 		virtual ~IUniformVariable() = default;
+
+		/** @return	the name of the IUniformVariable */
+		const std::string& getName() const;
 
 		/** @return	true if the IUniformVariable was found inside the Program,
 		 *			false otherwise */

@@ -51,20 +51,54 @@ namespace se::graphics {
 		void setVertexAttribute(
 			unsigned int index, TypeId type, bool normalized, int componentSize,
 			std::size_t stride, std::size_t offset = 0
-		) const;
+		);
 
 		/** Behaves like @see setVertexAttribute with the difference that the
 		 * shader attribute will be treated as doubles */
 		void setVertexDoubleAttribute(
 			unsigned int index, TypeId type, int componentSize,
 			std::size_t stride, std::size_t offset = 0
-		) const;
+		);
 
 		/** Behaves like @see setVertexAttribute with the difference that the
 		 * shader attribute will be treated as integers */
 		void setVertexIntegerAttribute(
 			unsigned int index, TypeId type, int componentSize,
 			std::size_t stride, std::size_t offset = 0
+		);
+
+		/** Returns if the given vertex attribute is enabled or not
+		 *
+		 * @param	index the index of the attribute to check
+		 * @return	true if it's enabled, false otherwise */
+		bool hasVertexAttribute(unsigned int index) const;
+
+		/** Returns the attribute configuration
+		 *
+		 * @param	index the index of the attribute to check
+		 * @param	type the TypeId of the data stored in the VBO
+		 *			(return parameter)
+		 * @param	normalized specifies if the vertexBuffer has been
+		 *			normalized or not (return parameter)
+		 * @param	componentSize the number of components per vertex attribute
+		 *			(return parameter)
+		 * @param	stride the byte offset between each vertex attribute
+		 *			(return parameter)
+		 * @param	offset the byte offset from the start of the buffer that
+		 *			contains the vertex data where attribute starts
+		 *			(return parameter) */
+		void getVertexAttribute(
+			unsigned int index, TypeId& type, bool& normalized,
+			int& componentSize, std::size_t& stride, std::size_t& offset
+		) const;
+
+		/** Returns if the given VertexBuffer is bound to the given attribute
+		 *
+		 * @param	index the index of the attribute to check
+		 * @param	vbo the Vertex Buffer to check
+		 * @return	true if vbo is bound to the index, false otherwise */
+		bool checkVertexAttributeVBOBound(
+			unsigned int index, const VertexBuffer& vbo
 		) const;
 
 		/** Sets rate that a vertex attribute advance each time a instance is
@@ -73,9 +107,14 @@ namespace se::graphics {
 		 * @param	index the index of the attribute to set the divisor
 		 * @param	divisor the rate that the attribute advances for each
 		 *			instance */
-		void setAttributeDivisor(
-			unsigned int index, unsigned int divisor
-		) const;
+		void setAttributeDivisor(unsigned int index, unsigned int divisor);
+
+		/** Returns rate that a vertex attribute advance each time a instance is
+		 * drawn
+		 *
+		 * @param	index the index of the attribute to check
+		 * @return	the rate that the attribute advances for each instance */
+		unsigned int getAttributeDivisor(unsigned int index) const;
 
 		/** Binds the Vertex Array Object */
 		void bind() const override;

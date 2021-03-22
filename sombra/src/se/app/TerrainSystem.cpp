@@ -3,7 +3,6 @@
 #include "se/graphics/core/Program.h"
 #include "se/app/TerrainSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/TerrainComponent.h"
 

@@ -70,7 +70,7 @@ namespace se::graphics {
 	}
 
 
-	void IndexBuffer::read(void* data, std::size_t size, std::size_t offset)
+	void IndexBuffer::read(void* data, std::size_t size, std::size_t offset) const
 	{
 		bind();
 		GL_WRAP( glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, static_cast<GLsizeiptr>(size), data) );

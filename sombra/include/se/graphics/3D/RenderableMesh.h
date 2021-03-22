@@ -35,6 +35,10 @@ namespace se::graphics {
 		/** @return	the Mesh pointed by the RenderableMesh */
 		MeshSPtr getMesh() const { return mMesh; };
 
+		/** @return	the primitive type used for rendering by the
+		 *			RenderableMesh */
+		PrimitiveType getPrimitiveType() const { return mPrimitiveType; };
+
 		/** Sets the Mesh pointed by the RenderableMesh
 		 *
 		 * @param	mesh a pointer to the new Mesh pointed by the

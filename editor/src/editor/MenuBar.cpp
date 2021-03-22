@@ -1,6 +1,7 @@
 #include <se/utils/Log.h>
 #include <se/app/io/SceneSerializer.h>
 #include "DefaultShaderBuilder.h"
+#include "DefaultScene.h"
 #include "MenuBar.h"
 #include "Editor.h"
 
@@ -26,6 +27,7 @@ namespace editor {
 					}
 					else {
 						mEditor.createScene();
+						buildDefaultScene(*mEditor.getScene());
 					}
 				}
 				if (ImGui::MenuItem("Open")) {
@@ -97,6 +99,7 @@ namespace editor {
 			}
 			else {
 				mEditor.createScene();
+				buildDefaultScene(*mEditor.getScene());
 			}
 		}
 

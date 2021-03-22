@@ -19,7 +19,7 @@ TEST(SkeletonAnimator, loopTime1)
 
 	EXPECT_NEAR(atrSkeleton.getLoopTime(), 0.0f, kTolerance);
 
-	atrSkeleton.addAnimator({}, TransformationAnimator::TransformationType::Translation, std::move(atrT1));
+	atrSkeleton.addAnimator("", TransformationAnimator::TransformationType::Translation, std::move(atrT1));
 
 	EXPECT_NEAR(atrSkeleton.getLoopTime(), 0.0f, kTolerance);
 	EXPECT_NEAR(atrT1Ptr->getLoopTime(), 0.0f, kTolerance);
@@ -91,15 +91,15 @@ TEST(SkeletonAnimator, animate1)
 	auto atrS3 = std::make_unique<Vec3Animator>(as3);
 
 	SkeletonAnimator atrSkeleton(4.0f);
-	atrSkeleton.addAnimator(n1, TransformationAnimator::TransformationType::Translation, std::move(atrT1));
-	atrSkeleton.addAnimator(n2, TransformationAnimator::TransformationType::Translation, std::move(atrT2));
-	atrSkeleton.addAnimator(n3, TransformationAnimator::TransformationType::Translation, std::move(atrT3));
-	atrSkeleton.addAnimator(n1, TransformationAnimator::TransformationType::Rotation, std::move(atrR1));
-	atrSkeleton.addAnimator(n2, TransformationAnimator::TransformationType::Rotation, std::move(atrR2));
-	atrSkeleton.addAnimator(n3, TransformationAnimator::TransformationType::Rotation, std::move(atrR3));
-	atrSkeleton.addAnimator(n1, TransformationAnimator::TransformationType::Scale, std::move(atrS1));
-	atrSkeleton.addAnimator(n2, TransformationAnimator::TransformationType::Scale, std::move(atrS2));
-	atrSkeleton.addAnimator(n3, TransformationAnimator::TransformationType::Scale, std::move(atrS3));
+	atrSkeleton.addAnimator(n1Str.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT1));
+	atrSkeleton.addAnimator(n2Str.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT2));
+	atrSkeleton.addAnimator(n3Str.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT3));
+	atrSkeleton.addAnimator(n1Str.c_str(), TransformationAnimator::TransformationType::Rotation, std::move(atrR1));
+	atrSkeleton.addAnimator(n2Str.c_str(), TransformationAnimator::TransformationType::Rotation, std::move(atrR2));
+	atrSkeleton.addAnimator(n3Str.c_str(), TransformationAnimator::TransformationType::Rotation, std::move(atrR3));
+	atrSkeleton.addAnimator(n1Str.c_str(), TransformationAnimator::TransformationType::Scale, std::move(atrS1));
+	atrSkeleton.addAnimator(n2Str.c_str(), TransformationAnimator::TransformationType::Scale, std::move(atrS2));
+	atrSkeleton.addAnimator(n3Str.c_str(), TransformationAnimator::TransformationType::Scale, std::move(atrS3));
 
 	atrSkeleton.addNodeHierarchy(root);
 
@@ -146,8 +146,8 @@ TEST(SkeletonAnimator, resetNodesAnimatedState1)
 	auto atrT2 = std::make_unique<Vec3Animator>(at1);
 	atrT2->addNode(TransformationAnimator::TransformationType::Translation, originalNodes[2]);
 	SkeletonAnimator atrSkeleton;
-	atrSkeleton.addAnimator(n1, TransformationAnimator::TransformationType::Translation, std::move(atrT1));
-	atrSkeleton.addAnimator(n4, TransformationAnimator::TransformationType::Translation, std::move(atrT2));
+	atrSkeleton.addAnimator(n1Str.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT1));
+	atrSkeleton.addAnimator(n4Str.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT2));
 	atrSkeleton.addNodeHierarchy(originalNodes[0]);
 
 	for (std::size_t i = 0; i < originalNodes.size(); ++i) {
@@ -191,7 +191,7 @@ TEST(SkeletonAnimator, updateNodesHierarchy1)
 	at1->addKeyFrame({ {-3.182263720f, 8.633092795f, 8.014790691f }, 0.650173135f });
 	auto atrT1 = std::make_unique<Vec3Animator>(at1);
 	SkeletonAnimator atrSkeleton(4.0f);
-	atrSkeleton.addAnimator(name, TransformationAnimator::TransformationType::Translation, std::move(atrT1));
+	atrSkeleton.addAnimator(nameStr.c_str(), TransformationAnimator::TransformationType::Translation, std::move(atrT1));
 
 	atrSkeleton.addNodeHierarchy(root);
 

@@ -3,7 +3,6 @@
 #include "se/physics/PhysicsEngine.h"
 #include "se/app/DynamicsSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {

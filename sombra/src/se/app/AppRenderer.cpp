@@ -14,7 +14,6 @@
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/AppRenderer.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
@@ -52,7 +51,11 @@ namespace se::app {
 
 			auto program = repository.find<std::string, Program>("fragmentCombineHDR");
 			if (!program) {
-				program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl");
+				auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl", program);
+				if (!result) {
+					SOMBRA_ERROR_LOG << result.description();
+					return;
+				}
 				repository.add("programCombineHDR"s, program);
 			}
 

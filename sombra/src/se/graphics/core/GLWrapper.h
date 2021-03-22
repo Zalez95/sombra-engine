@@ -58,6 +58,23 @@ namespace se::graphics {
 	}
 
 
+	constexpr TypeId fromGLType(GLenum type)
+	{
+		switch (type) {
+			case GL_BYTE:			return TypeId::Byte;
+			case GL_UNSIGNED_BYTE:	return TypeId::UnsignedByte;
+			case GL_SHORT:			return TypeId::Short;
+			case GL_UNSIGNED_SHORT:	return TypeId::UnsignedShort;
+			case GL_INT:			return TypeId::Int;
+			case GL_UNSIGNED_INT:	return TypeId::UnsignedInt;
+			case GL_FLOAT:			return TypeId::Float;
+			case GL_HALF_FLOAT:		return TypeId::HalfFloat;
+			case GL_DOUBLE:			return TypeId::Double;
+			default:				return TypeId::Byte;
+		}
+	}
+
+
 	constexpr GLenum toGLPrimitive(PrimitiveType primitive)
 	{
 		switch (primitive) {
@@ -185,6 +202,42 @@ namespace se::graphics {
 			case ColorFormat::RGBA32ui:		return GL_RGBA32UI;
 			case ColorFormat::RGBA32f:		return GL_RGBA32F;
 			default:						return GL_NONE;
+		}
+	}
+
+
+	constexpr ColorFormat fromGLColorFormat(GLenum format)
+	{
+		switch (format) {
+			case GL_RG:					return ColorFormat::RG;
+			case GL_RGB:				return ColorFormat::RGB;
+			case GL_RGBA:				return ColorFormat::RGBA;
+			case GL_DEPTH_COMPONENT:	return ColorFormat::Depth;
+			case GL_DEPTH_COMPONENT16:	return ColorFormat::Depth16;
+			case GL_DEPTH_COMPONENT24:	return ColorFormat::Depth24;
+			case GL_DEPTH_COMPONENT32F:	return ColorFormat::Depth32;
+			case GL_DEPTH_STENCIL:		return ColorFormat::DepthStencil;
+			case GL_RED_INTEGER:		return ColorFormat::RedInteger;
+			case GL_RG_INTEGER:			return ColorFormat::RGInteger;
+			case GL_RGB_INTEGER:		return ColorFormat::RGBInteger;
+			case GL_RGBA_INTEGER:		return ColorFormat::RGBAInteger;
+			case GL_R32UI:				return ColorFormat::Red32ui;
+			case GL_RG8:				return ColorFormat::RG8;
+			case GL_RG16UI:				return ColorFormat::RG16ui;
+			case GL_RG16F:				return ColorFormat::RG16f;
+			case GL_RG32UI:				return ColorFormat::RG32ui;
+			case GL_RG32F:				return ColorFormat::RG32f;
+			case GL_RGB8:				return ColorFormat::RGB8;
+			case GL_RGB16UI:			return ColorFormat::RGB16ui;
+			case GL_RGB16F:				return ColorFormat::RGB16f;
+			case GL_RGB32UI:			return ColorFormat::RGB32ui;
+			case GL_RGB32F:				return ColorFormat::RGB32f;
+			case GL_RGBA8:				return ColorFormat::RGBA8;
+			case GL_RGBA16UI:			return ColorFormat::RGBA16ui;
+			case GL_RGBA16F:			return ColorFormat::RGBA16f;
+			case GL_RGBA32UI:			return ColorFormat::RGBA32ui;
+			case GL_RGBA32F:			return ColorFormat::RGBA32f;
+			default:					return ColorFormat::Red;
 		}
 	}
 

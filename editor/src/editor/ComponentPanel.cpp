@@ -5,7 +5,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/Scene.h>
-#include <se/app/EntityDatabase.h>
 #include <se/app/TagComponent.h>
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>

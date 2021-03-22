@@ -36,6 +36,15 @@ namespace se::window {
 	};
 
 
+	/** The different cursor modes tha tcan be enabled */
+	enum class CursorMode : int
+	{
+		Normal = 0,
+		Hidden,
+		Camera
+	};
+
+
 	/**
 	 * Class WindowManager, It's used to create and manage windows and checking
 	 * the user input data (polling)
@@ -115,14 +124,18 @@ namespace se::window {
 
 		/** Sets the mouse position in the window
 		 *
-		 * @param	x the position of the mouse in the X axis
-		 * @param	y the position of the mouse in the Y axis */
+		 * @param	x the position of the mouse in the X axis relative to the
+		 *			left edge
+		 * @param	y the position of the mouse in the Y axis relative to the
+		 *			top edge
+		 * @note	for implementing 3D cameras don't use this function for
+		 *			recentering the cursor, @see setCursorMode */
 		void setMousePosition(double x, double y);
 
-		/** Sets the cursor visibility on/off
+		/** Sets the cursor mode (normal by default)
 		 *
-		 * @param	isVisible if the cursor must be shown or not */
-		void setCursorVisibility(bool isVisible);
+		 * @param	mode the new CursorMode to set */
+		void setCursorMode(CursorMode mode);
 
 		/** Sets the callback function to execute when the window close
 		 * button is pressed

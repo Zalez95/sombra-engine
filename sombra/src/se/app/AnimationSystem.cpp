@@ -2,7 +2,6 @@
 #include "se/animation/AnimationEngine.h"
 #include "se/app/AnimationSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/AnimationComponent.h"
 #include "se/app/SkinComponent.h"

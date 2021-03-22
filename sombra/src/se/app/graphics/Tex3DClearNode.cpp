@@ -12,9 +12,11 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DClear");
 		if (!program) {
-			program = ShaderLoader::createProgram(
-				"res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl"
-			);
+			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl", program);
+			if (!result) {
+				SOMBRA_ERROR_LOG << result.description();
+				return;
+			}
 			repository.add(std::string("programTex3DClear"), program);
 		}
 		addBindable(program);

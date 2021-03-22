@@ -4,7 +4,6 @@
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/ShadowSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"

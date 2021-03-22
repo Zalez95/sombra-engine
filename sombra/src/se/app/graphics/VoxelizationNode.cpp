@@ -13,10 +13,14 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programVoxelization");
 		if (!program) {
-			program = ShaderLoader::createProgram(
+			auto result = ShaderLoader::createProgram(
 				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
-				"res/shaders/fragmentVoxelization.glsl"
+				"res/shaders/fragmentVoxelization.glsl", program
 			);
+			if (!result) {
+				SOMBRA_ERROR_LOG << result.description();
+				return;
+			}
 			repository.add(std::string("programVoxelization"), program);
 		}
 		addBindable(program);

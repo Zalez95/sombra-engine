@@ -251,16 +251,16 @@ namespace se::utils {
 	TreeNode<T>::TNIterator<isConst, t>::TNIterator(TreeNodeType* treeNode)
 	{
 		if (treeNode) {
-			if constexpr ((t == Traversal::BFS) || (t == Traversal::DFSPreOrder)) {
-				if (treeNode->mChild) {
-					mTreeNodeDeque = { treeNode->mChild.get() };
-				}
-			}
-			else {
+			if constexpr (t == Traversal::DFSPostOrder) {
 				treeNode = treeNode->mChild.get();
 				while (treeNode) {
 					mTreeNodeDeque.push_back(treeNode);
 					treeNode = treeNode->mChild.get();
+				}
+			}
+			else {
+				if (treeNode->mChild) {
+					mTreeNodeDeque = { treeNode->mChild.get() };
 				}
 			}
 		}

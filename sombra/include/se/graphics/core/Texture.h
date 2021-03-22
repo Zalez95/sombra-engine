@@ -46,10 +46,10 @@ namespace se::graphics {
 		Texture& operator=(const Texture& other) = delete;
 		Texture& operator=(Texture&& other);
 
-		/** @return the target of the Texture */
+		/** @return	the target of the Texture */
 		inline TextureTarget getTarget() const { return mTarget; };
 
-		/** @return the id of the Texture */
+		/** @return	the id of the Texture */
 		inline unsigned int getTextureId() const { return mTextureId; };
 
 		/** @return	the current texture unit where the Texture will be bound */
@@ -69,6 +69,9 @@ namespace se::graphics {
 		 * @param	unit the image unit where we want to bind the texture
 		 * @return	a reference to the current Texture object */
 		Texture& setImageUnit(int unit);
+
+		/** @return	the ColorFormat of the Texture */
+		inline ColorFormat getColorFormat() const { return mColorFormat; };
 
 		/** Returns the filtering method used by the texture
 		 *
@@ -170,6 +173,24 @@ namespace se::graphics {
 			std::size_t width = 0, std::size_t height = 0,
 			std::size_t depth = 0, int orientation = 0
 		);
+
+		/** Returns the width of the Texture
+		 *
+		 * @param	width a pointer to the width (return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getWidth(std::size_t* width) const;
+
+		/** Returns the height of the Texture
+		 *
+		 * @param	height a pointer to the height (return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getHeight(std::size_t* height) const;
+
+		/** Returns the depth of the Texture
+		 *
+		 * @param	depth a pointer to the depth (return parameter)
+		 * @return	a reference to the current Texture object */
+		const Texture& getDepth(std::size_t* depth) const;
 
 		/** Generate mipmaps for the current texture
 		 *

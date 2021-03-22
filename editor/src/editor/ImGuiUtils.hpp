@@ -34,11 +34,7 @@ namespace editor {
 		bool ret = false;
 
 		std::string selectedValueName = "";
-		repository.iterate<std::string, T>([&](const std::string& k, std::shared_ptr<T>& v) {
-			if (selectedValue == v) {
-				selectedValueName = k;
-			}
-		});
+		repository.findKey<std::string, T>(selectedValue, selectedValueName);
 
 		if (ImGui::BeginCombo(tag, selectedValueName.c_str())) {
 			repository.iterate<std::string, T>([&](const std::string& k, std::shared_ptr<T>& v) {

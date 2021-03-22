@@ -12,10 +12,10 @@ namespace se::app {
 	class MousePositionEvent : public Event<t>
 	{
 	private:	// Attributes
-		/** The mouse X position */
+		/** The mouse X position relative to the left edge */
 		double mX;
 
-		/** The mouse Y position */
+		/** The mouse Y position relative to the top edge */
 		double mY;
 
 	public:		// Functions

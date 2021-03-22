@@ -13,9 +13,11 @@ namespace se::app {
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DViewer");
 		if (!program) {
-			program = ShaderLoader::createProgram(
-				"res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl"
-			);
+			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl", program);
+			if (!result) {
+				SOMBRA_ERROR_LOG << result.description();
+				return;
+			}
 			repository.add(std::string("programTex3DViewer"), program);
 		}
 		addBindable(program);

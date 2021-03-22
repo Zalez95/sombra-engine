@@ -23,7 +23,11 @@ namespace se::app {
 
 			auto program = mApplication.getRepository().find<std::string, graphics::Program>("program2D");
 			if (!program) {
-				program = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl");
+				auto result = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl", program);
+				if (!result) {
+					SOMBRA_ERROR_LOG << result.description();
+					return;
+				}
 				mApplication.getRepository().add(std::string("program2D"), program);
 			}
 

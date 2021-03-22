@@ -51,10 +51,20 @@ namespace se::animation {
 		/** Class destructor */
 		virtual ~Animation() = default;
 
+		/** @return	the KeyFrames of the Animation */
+		const std::vector<KeyFrame>& getKeyFrames() const;
+
 		/** Adds a new KeyFrame to the Animation
 		 *
 		 * @param	keyFrame the KeyFrame to add to the Animation */
 		void addKeyFrame(const KeyFrame& keyFrame);
+
+		/** Sets the KeyFrames of the Animation
+		 *
+		 * @param	keyFrames a pointer to the KeyFrame array with the
+		 *			KeyFrames to add to the Animation
+		 * @param	numKeyFrames the number of KeyFrames to add */
+		void setKeyFrames(const KeyFrame* keyFrames, std::size_t numKeyFrames);
 
 		/** Calculates an interpolated transformation by applying an
 		 * interpolation function to the data of the KeyFrames

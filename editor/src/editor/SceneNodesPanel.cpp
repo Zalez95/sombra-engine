@@ -2,7 +2,6 @@
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <se/app/Scene.h>
-#include <se/app/EntityDatabase.h>
 #include "SceneNodesPanel.h"
 #include "Editor.h"
 

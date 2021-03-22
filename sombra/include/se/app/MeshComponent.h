@@ -61,6 +61,13 @@ namespace se::app {
 		graphics::RenderableMesh& get(std::size_t rIndex)
 		{ return mRMeshes[rIndex].renderable; };
 
+		/** Returns the selected RenderableMesh
+		 *
+		 * @param	rIndex the index of the RenderableMesh
+		 * @return	the RenderableMesh */
+		const graphics::RenderableMesh& get(std::size_t rIndex) const
+		{ return mRMeshes[rIndex].renderable; };
+
 		/** Returns if the selected RenderableMesh has skinning or not
 		 *
 		 * @param	rIndex the index of the RenderableMesh

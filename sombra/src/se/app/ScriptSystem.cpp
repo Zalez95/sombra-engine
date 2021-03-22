@@ -1,7 +1,6 @@
 #include "se/utils/Log.h"
 #include "se/app/ScriptSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/ScriptComponent.h"
 
 namespace se::app {

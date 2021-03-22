@@ -3,7 +3,6 @@
 #include "se/audio/AudioEngine.h"
 #include "se/app/AudioSystem.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {

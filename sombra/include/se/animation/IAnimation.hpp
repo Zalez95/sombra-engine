@@ -6,6 +6,13 @@
 namespace se::animation {
 
 	template <typename T, typename U>
+	const std::vector<typename Animation<T, U>::KeyFrame>& Animation<T, U>::getKeyFrames() const
+	{
+		return mKeyFrames;
+	}
+
+
+	template <typename T, typename U>
 	void Animation<T, U>::addKeyFrame(const KeyFrame& keyFrame)
 	{
 		mKeyFrames.insert(
@@ -14,6 +21,18 @@ namespace se::animation {
 				[this](const KeyFrame& k1, const KeyFrame& k2) { return getTimeInSeconds(k1) < getTimeInSeconds(k2); }
 			),
 			keyFrame
+		);
+	}
+
+
+	template <typename T, typename U>
+	void Animation<T, U>::setKeyFrames(const KeyFrame* keyFrames, std::size_t numKeyFrames)
+	{
+		mKeyFrames.reserve(numKeyFrames);
+		std::copy(keyFrames, keyFrames + numKeyFrames, std::back_inserter(mKeyFrames));
+		std::sort(
+			mKeyFrames.begin(), mKeyFrames.end(),
+			[this](const KeyFrame& k1, const KeyFrame& k2) { return getTimeInSeconds(k1) < getTimeInSeconds(k2); }
 		);
 	}
 

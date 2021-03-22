@@ -25,16 +25,16 @@ namespace se::app {
 			{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), graphics::AlphaMode::Opaque, 0.5f, false
 		};
 
-		auto defaultShader = scene.repository.find<std::string, RenderableShader>("defaultShader");
+		auto defaultShader = scene.repository.find<Scene::Key, RenderableShader>("defaultShader");
 		if (!defaultShader) {
 			defaultShader = mShaderBuilder.createShader(defaultMaterial, false);
-			scene.repository.add(std::string("defaultShader"), defaultShader);
+			scene.repository.add(Scene::Key("defaultShader"), defaultShader);
 		}
 
-		auto defaultShaderSkin = scene.repository.find<std::string, RenderableShader>("defaultShaderSkin");
+		auto defaultShaderSkin = scene.repository.find<Scene::Key, RenderableShader>("defaultShaderSkin");
 		if (!defaultShaderSkin) {
 			defaultShaderSkin = mShaderBuilder.createShader(defaultMaterial, false);
-			scene.repository.add(std::string("defaultShaderSkin"), defaultShaderSkin);
+			scene.repository.add(Scene::Key("defaultShaderSkin"), defaultShaderSkin);
 		}
 	}
 

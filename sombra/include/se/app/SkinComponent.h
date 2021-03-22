@@ -69,6 +69,10 @@ namespace se::app {
 		/** @return	a pointer to the Skin used by the SkinComponent */
 		SkinSPtr getSkin() const { return mSkin; };
 
+		/** @return	a vector that maps each AnimationNode with its respective
+		 *			joint index in the skin */
+		const MapNodeJoint& getMapNodeJoint() const { return mJointIndices; };
+
 		/** Iterates through all the SkinComponent AnimationNodes calling the
 		 * given callback function
 		 *

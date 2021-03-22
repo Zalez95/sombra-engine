@@ -115,6 +115,9 @@ namespace se::animation {
 		 *			length of the given Animation */
 		Vec3Animator(Vec3AnimationSPtr animation);
 
+		/** @return	a pointer to the Vec3Animation of the Vec3Animator */
+		Vec3AnimationSPtr getAnimation() const { return mAnimation; };
+
 		/** Class destructor */
 		virtual ~Vec3Animator();
 	protected:
@@ -147,6 +150,9 @@ namespace se::animation {
 		 * @note	the initial loopTime of the QuatAnimator is always the
 		 *			length of the given Animation */
 		QuatAnimator(QuatAnimationSPtr animation);
+
+		/** @return	a pointer to the QuatAnimation of the QuatAnimator */
+		QuatAnimationSPtr getAnimation() const { return mAnimation; };
 
 		/** Class destructor */
 		virtual ~QuatAnimator();

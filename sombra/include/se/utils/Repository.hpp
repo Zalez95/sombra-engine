@@ -38,6 +38,14 @@ namespace se::utils {
 	}
 
 
+	template <typename KeyType, typename ValueType, typename... Args>
+	std::shared_ptr<ValueType> Repository::emplace(const KeyType& key, Args&&... args)
+	{
+		auto value = std::make_unique<ValueType>(std::forward<Args>(args)...);
+		return add<KeyType, ValueType>(key, std::move(value));
+	}
+
+
 	template <typename KeyType, typename ValueType>
 	std::shared_ptr<ValueType> Repository::add(const KeyType& key, std::shared_ptr<ValueType> value)
 	{
@@ -51,7 +59,7 @@ namespace se::utils {
 
 
 	template <typename KeyType, typename ValueType>
-	std::shared_ptr<ValueType> Repository::find(const KeyType& key)
+	std::shared_ptr<ValueType> Repository::find(const KeyType& key) const
 	{
 		auto& table = getRepoTable<KeyType, ValueType>();
 		auto it = table.data.find(key);
@@ -60,6 +68,20 @@ namespace se::utils {
 		}
 
 		return nullptr;
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	bool Repository::findKey(std::shared_ptr<ValueType> value, KeyType& key) const
+	{
+		const auto& table = getRepoTable<KeyType, ValueType>();
+		for (const auto& [key2, value2] : table.data) {
+			if (value2 == value) {
+				key = key2;
+				return true;
+			}
+		}
+		return false;
 	}
 
 
@@ -73,6 +95,16 @@ namespace se::utils {
 		}
 
 		return false;
+	}
+
+
+	template <typename KeyType, typename ValueType, typename F>
+	void Repository::iterate(F&& callback) const
+	{
+		const auto& table = getRepoTable<KeyType, ValueType>();
+		for (const auto& [key, value] : table.data) {
+			callback(key, value);
+		}
 	}
 
 
@@ -106,7 +138,7 @@ namespace se::utils {
 
 
 	template <typename KeyType, typename ValueType>
-	Repository::RepoTable<KeyType, ValueType>& Repository::getRepoTable()
+	Repository::RepoTable<KeyType, ValueType>& Repository::getRepoTable() const
 	{
 		return *static_cast<RepoTable<KeyType, ValueType>*>(
 			mRepoTables[getRepoTableTypeId<KeyType, ValueType>()].get()

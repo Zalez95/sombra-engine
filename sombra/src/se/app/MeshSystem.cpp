@@ -5,7 +5,6 @@
 #include "se/app/MeshSystem.h"
 #include "se/app/Application.h"
 #include "se/app/MeshComponent.h"
-#include "se/app/EntityDatabase.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {

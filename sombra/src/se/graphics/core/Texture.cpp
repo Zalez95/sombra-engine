@@ -238,6 +238,46 @@ namespace se::graphics {
 	}
 
 
+	const Texture& Texture::getWidth(std::size_t* width) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glWidth;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glWidth) );
+		*width = glWidth;
+
+		return *this;
+	}
+
+
+	const Texture& Texture::getHeight(std::size_t* height) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glHeight;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glHeight) );
+		*height = glHeight;
+
+		return *this;
+	}
+
+
+	const Texture& Texture::getDepth(std::size_t* depth) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glDepth;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glDepth) );
+		*depth = glDepth;
+
+		return *this;
+
+	}
+
+
 	Texture& Texture::generateMipMap()
 	{
 		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), mTextureId) );

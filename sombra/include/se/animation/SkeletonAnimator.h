@@ -67,9 +67,28 @@ namespace se::animation {
 		 *			with the given TransformationAnimator
 		 * @param	animator a pointer to the TransformationAnimator to add */
 		void addAnimator(
-			const std::array<char, NodeData::kMaxLength>& nodeName,
+			const char* nodeName,
 			TransformationAnimator::TransformationType type,
 			TransformationAnimatorUPtr animator
+		);
+
+		/** Iterates through all the TransformationAnimators added to the
+		 * SkeletonAnimator calling the given callback function
+		 *
+		 * @param	callback the function to call for each
+		 *			TransformationAnimator */
+		template <typename F>
+		void processAnimators(F callback) const;
+
+		/** Removes the given TransformationAnimator to the SkeletonAnimator
+		 *
+		 * @param	nodeName the name of the AnimationNodes affected by the
+		 *			animator to remove
+		 * @param	type the TransformationType that TransformationAnimator to
+		 *			remove is applying to the AnimationNodes */
+		void removeAnimator(
+			const char* nodeName,
+			TransformationAnimator::TransformationType type
 		);
 
 		/** Adds the given node hierarchy to the SkeletonAnimator, so the nodes
@@ -92,24 +111,36 @@ namespace se::animation {
 		 * @param	rootNode the root AnimationNode of the skeleton to remove */
 		void removeNodeHierarchy(AnimationNode& rootNode);
 	private:
-		/** Compare the names of the animator and the node
+		/** Compares the name of the animator and the given one
 		 *
 		 * @param	lhs the NodeAnimator to compare
-		 * @param	rhs the AnimationNode to compare
-		 * @return	true if the NodeAnimator is less than the AnimationNode,
+		 * @param	rhs the name to compare
+		 * @return	true if the NodeAnimator is less than the name,
 		 *			false otherwise */
 		static
-		bool compareLessLo(const NodeAnimator& lhs, const AnimationNode& rhs);
+		bool compareLessLo(const NodeAnimator& lhs, const char* rhs);
 
-		/** Compare the names of the node and the animator
+		/** Compares the given name and the animator one
 		 *
-		 * @param	lhs the AnimationNode to compare
+		 * @param	lhs the name to compare
 		 * @param	rhs the NodeAnimator to compare
-		 * @return	true if the AnimationNode is less than the NodeAnimator,
+		 * @return	true if the name is less than the NodeAnimator,
 		 *			false otherwise */
 		static
-		bool compareLessUp(const AnimationNode& lhs, const NodeAnimator& rhs);
+		bool compareLessUp(const char* lhs, const NodeAnimator& rhs);
 	};
+
+
+	template <typename F>
+	void SkeletonAnimator::processAnimators(F callback) const
+	{
+		for (const NodeAnimator& nAnimator : mNAnimators) {
+			callback(
+				nAnimator.nodeName.data(), nAnimator.type,
+				nAnimator.animator.get()
+			);
+		}
+	}
 
 }
 

@@ -32,6 +32,9 @@ namespace se::graphics {
 		VertexBuffer& operator=(const VertexBuffer& other) = delete;
 		VertexBuffer& operator=(VertexBuffer&& other);
 
+		/** @return the id of the VertexBuffer */
+		inline unsigned int getVertexBufferId() const { return mBufferId; };
+
 		/** @return	the size of the contents of the buffer in number of
 		 *			elements */
 		template <typename T>
@@ -77,7 +80,7 @@ namespace se::graphics {
 		 * @param	offset the offset from the start of the buffer from which
 		 *			the data will be returned */
 		template <typename T>
-		void read(T* data, std::size_t count, std::size_t offset = 0);
+		void read(T* data, std::size_t count, std::size_t offset = 0) const;
 
 		/** Returns the buffer data
 		 *
@@ -85,7 +88,7 @@ namespace se::graphics {
 		 * @param	size the size in bytes of the data to read
 		 * @param	offset the offset from the start of the buffer from which
 		 *			the data will be returned */
-		void read(void* data, std::size_t size, std::size_t offset = 0);
+		void read(void* data, std::size_t size, std::size_t offset = 0) const;
 
 		/** Binds the Vertex Buffer Object */
 		void bind() const override;
@@ -121,7 +124,9 @@ namespace se::graphics {
 
 
 	template <typename T>
-	void VertexBuffer::read(T* data, std::size_t count, std::size_t offset)
+	void VertexBuffer::read(
+		T* data, std::size_t count, std::size_t offset
+	) const
 	{
 		read(
 			static_cast<void*>(data), count * sizeof(T),

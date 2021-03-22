@@ -4,6 +4,7 @@
 #include "events/EventManager.h"
 #include "../window/WindowManager.h"
 #include "../collision/CollisionWorld.h"
+#include "EntityDatabase.h"
 
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
@@ -13,7 +14,6 @@ namespace se::utils { class TaskManager; class Repository; }
 
 namespace se::app {
 
-	class EntityDatabase;
 	class InputSystem;
 	class ScriptSystem;
 	class CameraSystem;

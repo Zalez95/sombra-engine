@@ -30,7 +30,11 @@ namespace se::app {
 
 		auto program = repository.find<std::string, Program>("programDeferredLighting");
 		if (!program) {
-			program = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl");
+			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl", program);
+			if (!result) {
+				SOMBRA_ERROR_LOG << result.description();
+				return;
+			}
 			repository.add(std::string("programDeferredLighting"), program);
 		}
 

@@ -37,25 +37,24 @@ namespace editor {
 		zoomDelta = nextZoom - currentZoom;
 
 		mZoom = nextZoom;
-		transforms.position -= zoomDelta * (transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+		transforms.position += zoomDelta * (transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 		transforms.updated.reset();
 	}
 
 
 	void ViewportControl::move(const se::app::UserInput& userInput, se::app::TransformsComponent& transforms)
 	{
-			glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
-			glm::vec2 speed = {-kMoveSpeed, kMoveSpeed };
-			glm::vec2 moveDelta = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
-			moveDelta = speed * moveDelta / windowSize;
+		glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
+		glm::vec2 speed = { kMoveSpeed, kMoveSpeed };
+		glm::vec2 moveDelta = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+		moveDelta = speed * moveDelta / windowSize;
 
-			glm::vec3 front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-			glm::vec3 up = { 0.0f, 1.0f, 0.0f };
-			glm::vec3 right = glm::cross(front, up);
-			up = glm::cross(right, front);
+		glm::vec3 front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::vec3 up = glm::normalize(transforms.orientation * glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::vec3 right = glm::cross(front, up);
 
-			transforms.position += moveDelta.x * right + moveDelta.y * up;
-			transforms.updated.reset();
+		transforms.position += moveDelta.x * right + moveDelta.y * up;
+		transforms.updated.reset();
 	}
 
 
@@ -66,24 +65,17 @@ namespace editor {
 		mouseMove /= windowSize;
 		glm::vec3 front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 
-		// Yaw
-		float yaw = -kRotationSpeed * mouseMove.x;
-
-		// Pitch
-		float currentPitch = std::asin(front.y);
-		float nextPitch = currentPitch + kRotationSpeed * mouseMove.y;
-		nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
-		float pitch = nextPitch - currentPitch;
-
 		// Apply the rotation
+		float yaw = -kRotationSpeed * mouseMove.x;
+		float pitch = -kRotationSpeed * mouseMove.y;
 		glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-		transforms.orientation = glm::normalize(transforms.orientation * qPitch * qYaw);
+		transforms.orientation = glm::normalize(qYaw * transforms.orientation * qPitch);
 
 		// Apply the position
-		transforms.position += mZoom * front;
-		front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 		transforms.position -= mZoom * front;
+		front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+		transforms.position += mZoom * front;
 
 		transforms.updated.reset();
 	}

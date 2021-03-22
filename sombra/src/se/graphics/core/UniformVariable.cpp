@@ -6,13 +6,19 @@
 
 namespace se::graphics {
 
-	IUniformVariable::IUniformVariable(const char* name, const Program& program) : mUniformLocation(-1)
+	IUniformVariable::IUniformVariable(const char* name, const Program& program) : mName(name), mUniformLocation(-1)
 	{
 		GL_WRAP( mUniformLocation = glGetUniformLocation(program.mProgramId, name) );
 
 		if (mUniformLocation == -1) {
 			SOMBRA_WARN_LOG << "Uniform variable \"" << name << "\" wasn't found in Program " << program.mProgramId;
 		}
+	}
+
+
+	const std::string& IUniformVariable::getName() const
+	{
+		return mName;
 	}
 
 
