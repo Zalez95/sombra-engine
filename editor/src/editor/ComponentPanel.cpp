@@ -19,7 +19,9 @@
 #include <se/collision/Capsule.h>
 #include <se/collision/TriangleCollider.h>
 #include <se/collision/TerrainCollider.h>
+#include <se/collision/CompositeCollider.h>
 #include <se/animation/SkeletonAnimator.h>
+#include <se/utils/StringUtils.h>
 #include "ComponentPanel.h"
 #include "Editor.h"
 #include "ImGuiUtils.h"
@@ -439,6 +441,7 @@ namespace editor {
 		{
 			auto [rigidBody] = mEditor.getEntityDatabase().getComponents<RigidBody>(entity);
 			auto& rbConfig = rigidBody->getConfig();
+			auto& rbData = rigidBody->getData();
 
 			bool infiniteMass = (rbConfig.invertedMass == 0);
 
@@ -459,6 +462,10 @@ namespace editor {
 					mass = 1.0f / rbConfig.invertedMass;
 					inertiaTensor = glm::inverse(rbConfig.invertedInertiaTensor);
 				}
+				else {
+					rbConfig.invertedMass = mass;
+					rbConfig.invertedInertiaTensor = inertiaTensor;
+				}
 
 				if (ImGui::DragFloat("Mass", &mass, 0.005f, FLT_MIN, FLT_MAX, "%.3f", 1.0f)) {
 					rbConfig.invertedMass = 1.0f / mass;
@@ -473,6 +480,30 @@ namespace editor {
 			ImGui::DragFloat("Angular drag", &rbConfig.angularDrag, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
 			ImGui::DragFloat("Friction coefficient", &rbConfig.frictionCoefficient, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
 			ImGui::DragFloat("Sleep motion", &rbConfig.sleepMotion, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat3("Linear Velocity", glm::value_ptr(rbData.linearVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			ImGui::DragFloat3("Angular Velocity", glm::value_ptr(rbData.angularVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+
+			std::shared_ptr<Force> force;
+			if (addRepoDropdownButton("##RigidBodyComponent::AddForce", "Add Force", mEditor.getScene()->repository, force)) {
+				rigidBody->addForce(force);
+			}
+			std::size_t i = 0;
+			rigidBody->processForces([&, rigidBody = rigidBody](std::shared_ptr<Force> force2) {
+				std::string buttonName = "x##RigidBodyComponent::RemoveForce" + std::to_string(i++);
+				if (ImGui::Button(buttonName.c_str())) {
+					rigidBody->removeForce(force2);
+				}
+				else {
+					ImGui::SameLine();
+
+					auto oldForce2 = force2;
+					std::string dropdownName = "##RigidBodyComponent::SelectForce" + std::to_string(i);
+					if (addRepoDropdownShowSelected(dropdownName.c_str(), mEditor.getScene()->repository, force2)) {
+						rigidBody->removeForce(oldForce2);
+						rigidBody->addForce(force2);
+					}
+				}
+			});
 		};
 	};
 
@@ -501,61 +532,83 @@ namespace editor {
 			auto triangle	= dynamic_cast<TriangleCollider*>(collider);
 			auto terrain	= dynamic_cast<TerrainCollider*>(collider);
 			auto cPoly		= dynamic_cast<ConvexPolyhedron*>(collider);
+			auto composite	= dynamic_cast<CompositeCollider*>(collider);
 
-			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain", "Convex Polyhedron" };
-			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : terrain? 4 : 5;
+			static const char* types[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain", "Convex Polyhedron", "Composite" };
+			std::size_t currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : terrain? 4 : cPoly? 5 : 6;
 			addDropdown("Type##ColliderType", types, IM_ARRAYSIZE(types), currentType);
 
-			if (currentType == 0) {
-				if (!bBox) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingBox>());
-					bBox = dynamic_cast<BoundingBox*>(c);
-				}
-				drawBBox(*bBox);
+			switch (currentType) {
+				case 0:
+					if (!bBox) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingBox>());
+					}
+					break;
+				case 1:
+					if (!bSphere) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingSphere>());
+					}
+					break;
+				case 2:
+					if (!capsule) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<Capsule>());
+					}
+					break;
+				case 3:
+					if (!triangle) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TriangleCollider>());
+					}
+					break;
+				case 4:
+					if (!terrain) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TerrainCollider>());
+					}
+					break;
+				case 5:
+					if (!cPoly || bBox) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<ConvexPolyhedron>());
+					}
+					break;
+				case 6:
+					if (!composite) {
+						mEditor.getEntityDatabase().removeComponent<Collider>(entity);
+						collider = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<CompositeCollider>());
+					}
+					break;
 			}
-			else if (currentType == 1) {
-				if (!bSphere) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingSphere>());
-					bSphere = dynamic_cast<BoundingSphere*>(c);
-				}
-				drawBSphere(*bSphere);
-			}
-			else if (currentType == 2) {
-				if (!capsule) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<Capsule>());
-					capsule = dynamic_cast<Capsule*>(c);
-				}
-				drawCapsule(*capsule);
-			}
-			else if (currentType == 3) {
-				if (!triangle) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TriangleCollider>());
-					triangle = dynamic_cast<TriangleCollider*>(c);
-				}
-				drawTriangle(*triangle);
-			}
-			else if (currentType == 4) {
-				if (!terrain) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TerrainCollider>());
-					terrain = dynamic_cast<TerrainCollider*>(c);
-				}
-				drawTerrain(*terrain);
-			}
-			else if (currentType == 5) {
-				if (!cPoly) {
-					mEditor.getEntityDatabase().removeComponent<Collider>(entity);
-					Collider* c = mEditor.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<ConvexPolyhedron>());
-					cPoly = dynamic_cast<ConvexPolyhedron*>(c);
-				}
-				drawCPoly(*cPoly);
-			}
+			drawCollider(*collider);
 		};
 	protected:
+		void drawCollider(Collider& collider)
+		{
+			if (auto bBox = dynamic_cast<BoundingBox*>(&collider)) {
+				drawBBox(*bBox);
+			}
+			else if (auto bSphere = dynamic_cast<BoundingSphere*>(&collider)) {
+				drawBSphere(*bSphere);
+			}
+			else if (auto capsule = dynamic_cast<Capsule*>(&collider)) {
+				drawCapsule(*capsule);
+			}
+			else if (auto triangle = dynamic_cast<TriangleCollider*>(&collider)) {
+				drawTriangle(*triangle);
+			}
+			else if (auto terrain = dynamic_cast<TerrainCollider*>(&collider)) {
+				drawTerrain(*terrain);
+			}
+			else if (auto cPoly = dynamic_cast<ConvexPolyhedron*>(&collider)) {
+				drawCPoly(*cPoly);
+			}
+			else if (auto composite = dynamic_cast<CompositeCollider*>(&collider)) {
+				drawComposite(*composite);
+			}
+		}
 		void drawBBox(BoundingBox& bBox)
 		{
 			glm::vec3 lengths = bBox.getLengths();
@@ -607,21 +660,88 @@ namespace editor {
 						*mHeightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
 					);
 					auto heights = se::app::MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
-					terrain.setHeights(heights, image.width, image.height);
+					terrain.setHeights(heights.data(), image.width, image.height);
 				}
 				ImGui::TreePop();
 			}
 		}
 		void drawCPoly(ConvexPolyhedron& cPoly)
 		{
+			ImGui::Text("Number of vertices: %u", cPoly.getLocalMesh().vertices.size());
+			ImGui::Text("Number of edges: %u", cPoly.getLocalMesh().edges.size());
+			ImGui::Text("Number of faces: %u", cPoly.getLocalMesh().faces.size());
+
 			if (ImGui::TreeNode("Create from mesh")) {
 				addRepoDropdownShowSelected("Mesh##MeshToCPoly", mEditor.getScene()->repository, mMesh);
 
 				if (ImGui::Button("Build Convex Polyhedron##BuildCPoly")) {
-					//TODO:
+					auto [heMesh, loaded] = MeshLoader::createHalfEdgeMesh(MeshLoader::createRawMesh(*mMesh));
+					if (loaded) {
+						cPoly.setLocalMesh(heMesh);
+					}
+					else {
+						SOMBRA_ERROR_LOG << "Failed to Load the HalfEdgeMesh";
+					}
 				}
 				ImGui::TreePop();
 			}
+		}
+		void drawComposite(CompositeCollider& composite)
+		{
+			if (!ImGui::TreeNode("Parts")) { return; }
+
+			if (ImGui::SmallButton("Add")) {
+				ImGui::OpenPopup("add_composite_part");
+			}
+			if (ImGui::BeginPopup("add_composite_part")) {
+				if (ImGui::MenuItem("Add BoundingBox")) {
+					composite.addPart(std::make_unique<BoundingBox>());
+				}
+				if (ImGui::MenuItem("Add BoundingSphere")) {
+					composite.addPart(std::make_unique<BoundingSphere>());
+				}
+				if (ImGui::MenuItem("Add Capsule")) {
+					composite.addPart(std::make_unique<Capsule>());
+				}
+				if (ImGui::MenuItem("Add TriangleCollider")) {
+					composite.addPart(std::make_unique<TriangleCollider>());
+				}
+				if (ImGui::MenuItem("Add TerrainCollider")) {
+					composite.addPart(std::make_unique<TerrainCollider>());
+				}
+				if (ImGui::MenuItem("Add ConvexPolyhedron")) {
+					composite.addPart(std::make_unique<ConvexPolyhedron>());
+				}
+				if (ImGui::MenuItem("Add CompositeCollider")) {
+					composite.addPart(std::make_unique<CompositeCollider>());
+				}
+				ImGui::EndPopup();
+			}
+
+			std::size_t i = 0;
+			Collider* colliderToRemove = nullptr;
+
+			composite.processParts([&](Collider& collider) {
+				bool partOpened = ImGui::TreeNode(("Part " + std::to_string(i++)).c_str());
+
+				se::utils::ArrayStreambuf<char, 128> aStreambuf;
+				std::ostream(&aStreambuf) << "CompositeColliderPart_" << static_cast<void*>(&collider);
+				if (ImGui::BeginPopupContextItem(aStreambuf.data())) {
+					if (ImGui::MenuItem("Remove")) {
+						colliderToRemove = &collider;
+					}
+					ImGui::EndPopup();
+				}
+
+				if (partOpened) {
+					drawCollider(collider);
+					ImGui::TreePop();
+				}
+			});
+
+			composite.removePart(colliderToRemove);
+
+			ImGui::TreePop();
 		}
 	};
 

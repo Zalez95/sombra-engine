@@ -33,6 +33,9 @@ namespace se::collision {
 		 * @note	the Mesh must be convex */
 		ConvexPolyhedron(const HalfEdgeMesh& meshData = HalfEdgeMesh());
 
+		/** Class destructor */
+		virtual ~ConvexPolyhedron() = default;
+
 		/** @return	the convex 3D HalfEdgeMesh of the ConvexPolyhedron in local
 		 *			space */
 		HalfEdgeMesh getLocalMesh() const;

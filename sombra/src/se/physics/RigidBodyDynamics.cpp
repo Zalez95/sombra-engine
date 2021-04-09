@@ -4,6 +4,16 @@
 
 namespace se::physics {
 
+	void RigidBodyDynamics::processForces(RigidBody& rigidBody)
+	{
+		rigidBody.getData().forceSum = glm::vec3(0.0f);
+		rigidBody.getData().torqueSum = glm::vec3(0.0f);
+		rigidBody.processForces([&](std::shared_ptr<Force> force) {
+			force->apply(rigidBody);
+		});
+	}
+
+
 	void RigidBodyDynamics::integrate(RigidBody& rigidBody, float deltaTime)
 	{
 		// Update the linear attributes

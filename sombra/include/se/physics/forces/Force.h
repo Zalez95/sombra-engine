@@ -16,16 +16,11 @@ namespace se::physics {
 		/** Class destructor */
 		virtual ~Force() = default;
 
-		/** @return	true if the Force has a constant value that will always be
-		 *			applied to the RigidBodies through all its existence (like
-		 *			gravity), false otherwise */
-		virtual bool isConstant() const = 0;
-
 		/** Applyes the force to the given RigidBody
 		 *
-		 * @param	rigidBody a pointer to the RigidBody to which we want to
-		 *			apply the Force */
-		virtual void apply(RigidBody* rigidBody) = 0;
+		 * @param	rigidBody the RigidBody to which we want to apply the
+		 *			Force */
+		virtual void apply(RigidBody& rigidBody) = 0;
 	};
 
 }

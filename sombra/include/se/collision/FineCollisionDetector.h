@@ -61,7 +61,7 @@ namespace se::collision {
 		 *			contact data will be updated.
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise */
-		bool collide(Manifold& manifold) const;
+		bool collide(Manifold& manifold);
 	private:
 		/** Calculates the contact data of the collision that happened between
 		 * the given ConvexColliders
@@ -79,7 +79,7 @@ namespace se::collision {
 		bool collideConvex(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Manifold& manifold
-		) const;
+		);
 
 		/** Calculates the contact data of the collision that happened between
 		 * a ConvexCollider and a ConcaveCollider
@@ -98,7 +98,7 @@ namespace se::collision {
 			const ConvexCollider& convexCollider,
 			const ConcaveCollider& concaveCollider,
 			Manifold& manifold, bool convexFirst
-		) const;
+		);
 
 		/** Calculates the contact data of the collision that happened between
 		 * the given ConcaveColliders
@@ -116,7 +116,7 @@ namespace se::collision {
 		bool collideConcave(
 			const ConcaveCollider& collider1, const ConcaveCollider& collider2,
 			Manifold& manifold
-		) const;
+		);
 
 		/** Tries to add the given Contact to the Manifold
 		 *

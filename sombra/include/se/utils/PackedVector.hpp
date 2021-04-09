@@ -1,6 +1,8 @@
 #ifndef PACKED_VECTOR_HPP
 #define PACKED_VECTOR_HPP
 
+#include <algorithm>
+
 namespace se::utils {
 
 	template <typename T, typename A>
@@ -23,6 +25,19 @@ namespace se::utils {
 		other.mElements = nullptr;
 		other.mCapacity = 0;
 		other.mUsedElements = 0;
+	}
+
+
+	template <typename T, typename A>
+	PackedVector<T, A>::PackedVector(
+		const T* elements, std::size_t capacity, std::size_t size,
+		const std::size_t* releasedIndices, std::size_t numReleasedIndices
+	) : mElements(nullptr), mCapacity(0), mUsedElements(0)
+	{
+		reserve(capacity);
+		mUsedElements = size + numReleasedIndices;
+		std::copy(elements, elements + mUsedElements, mElements);
+		std::copy(releasedIndices, releasedIndices + numReleasedIndices, std::back_inserter(mReleasedIndices));
 	}
 
 
@@ -129,9 +144,8 @@ namespace se::utils {
 			index = mUsedElements++;
 		}
 		else {
-			auto it = mReleasedIndices.begin();
-			index = *it;
-			mReleasedIndices.erase(it);
+			index = mReleasedIndices.back();
+			mReleasedIndices.pop_back();
 		}
 
 		new (&mElements[index]) T(std::forward<Args>(args)...);
@@ -148,7 +162,7 @@ namespace se::utils {
 		size_type index = it.getIndex();
 		if (isActive(index)) {
 			mElements[index].~T();
-			mReleasedIndices.insert(index);
+			mReleasedIndices.push_back(index);
 		}
 
 		return ret;
@@ -158,7 +172,8 @@ namespace se::utils {
 	template <typename T, typename A>
 	bool PackedVector<T, A>::isActive(size_type i) const
 	{
-		return (i < mUsedElements) && (mReleasedIndices.find(i) == mReleasedIndices.end());
+		return (i < mUsedElements)
+			&& (std::find(mReleasedIndices.begin(), mReleasedIndices.end(), i) == mReleasedIndices.end());
 	}
 
 

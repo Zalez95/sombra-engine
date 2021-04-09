@@ -1,8 +1,7 @@
 #ifndef PACKED_VECTOR_H
 #define PACKED_VECTOR_H
 
-#include <memory>
-#include <unordered_set>
+#include <vector>
 
 namespace se::utils {
 
@@ -146,7 +145,7 @@ namespace se::utils {
 		size_type mUsedElements;
 
 		/** The indices to the released Elements of the PackedVector */
-		std::unordered_set<size_type> mReleasedIndices;
+		std::vector<size_type> mReleasedIndices;
 
 		/** The allocator used for creating objects of type T */
 		A mAllocator;
@@ -156,6 +155,10 @@ namespace se::utils {
 		PackedVector() : mElements(nullptr), mCapacity(0), mUsedElements(0) {};
 		PackedVector(const PackedVector& other);
 		PackedVector(PackedVector&& other);
+		PackedVector(
+			const T* elements, std::size_t capacity, std::size_t size,
+			const std::size_t* releasedIndices, std::size_t numReleasedIndices
+		);
 
 		/** Class destructor */
 		~PackedVector();
@@ -231,6 +234,20 @@ namespace se::utils {
 
 		/** Removes all the elements in the PackedVector */
 		void clear();
+
+		/** @return	a pointer to the internal buffer of the PackedVector */
+		T* data() { return mElements; };
+
+		/** @return	a pointer to the internal buffer of the PackedVector */
+		const T* data() const { return mElements; };
+
+		/** @return	a pointer to the indices that has been released */
+		const size_type* releasedIndices() const
+		{ return mReleasedIndices.data(); };
+
+		/** @return	the number of indices that has been released */
+		size_type numReleasedIndices() const
+		{ return mReleasedIndices.size(); };
 
 		/** Creates a new Element in the vector or reuses an already released
 		 * one

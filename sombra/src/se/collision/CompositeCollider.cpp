@@ -4,13 +4,9 @@
 
 namespace se::collision {
 
-	CompositeCollider::CompositeCollider(std::vector<ColliderUPtr>& parts) :
-		mTransformsMatrix(1.0f)
+	CompositeCollider::CompositeCollider(std::vector<ColliderUPtr> parts) :
+		mParts(std::move(parts)), mTransformsMatrix(1.0f)
 	{
-		for (ColliderUPtr& part : parts) {
-			mParts.emplace_back(std::move(part));
-		}
-
 		calculateAABB();
 	}
 
@@ -19,7 +15,7 @@ namespace se::collision {
 	{
 		mTransformsMatrix = transforms;
 
-		for (ColliderSPtr& part : mParts) {
+		for (ColliderUPtr& part : mParts) {
 			part->setTransforms(transforms);
 		}
 
@@ -31,7 +27,7 @@ namespace se::collision {
 	{
 		bool ret = false;
 
-		for (const ColliderSPtr& part : mParts) {
+		for (const ColliderUPtr& part : mParts) {
 			if (part->updated()) {
 				ret = true;
 			}
@@ -41,9 +37,18 @@ namespace se::collision {
 	}
 
 
+	CompositeCollider& CompositeCollider::addPart(ColliderUPtr part)
+	{
+		mParts.emplace_back(std::move(part));
+		calculateAABB();
+
+		return *this;
+	}
+
+
 	void CompositeCollider::resetUpdatedState()
 	{
-		for (ColliderSPtr& part : mParts) {
+		for (ColliderUPtr& part : mParts) {
 			part->resetUpdatedState();
 		}
 	}
@@ -51,16 +56,28 @@ namespace se::collision {
 
 	void CompositeCollider::processOverlapingParts(const AABB& aabb, const ConvexShapeCallback& callback) const
 	{
-		for (const ColliderSPtr& part : mParts) {
+		for (const ColliderUPtr& part : mParts) {
 			if (overlaps(aabb, part->getAABB())) {
-				if (auto convexPart = std::dynamic_pointer_cast<ConvexCollider>(part)) {
+				if (auto convexPart = dynamic_cast<const ConvexCollider*>(part.get())) {
 					callback(*convexPart);
 				}
-				else if (auto concavePart = std::dynamic_pointer_cast<ConcaveCollider>(part)) {
+				else if (auto concavePart = dynamic_cast<const ConcaveCollider*>(part.get())) {
 					concavePart->processOverlapingParts(aabb, callback);
 				}
 			}
 		}
+	}
+
+
+	CompositeCollider& CompositeCollider::removePart(Collider* part)
+	{
+		mParts.erase(
+			std::remove_if(mParts.begin(), mParts.end(), [&](const ColliderUPtr& p) { return p.get() == part; }),
+			mParts.end()
+		);
+		calculateAABB();
+
+		return *this;
 	}
 
 // Private functions
@@ -71,7 +88,7 @@ namespace se::collision {
 			glm::vec3(-std::numeric_limits<float>::max())
 		};
 
-		for (ColliderSPtr& part : mParts) {
+		for (ColliderUPtr& part : mParts) {
 			AABB partAABB = part->getAABB();
 			mAABB.minimum = glm::min(mAABB.minimum, partAABB.minimum);
 			mAABB.maximum = glm::max(mAABB.maximum, partAABB.maximum);

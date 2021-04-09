@@ -1,7 +1,6 @@
 #ifndef PHYSICS_SYSTEM_H
 #define PHYSICS_SYSTEM_H
 
-#include "forces/ForceManager.h"
 #include "constraints/ConstraintManager.h"
 #include "RigidBody.h"
 
@@ -18,10 +17,9 @@ namespace se::physics {
 		 * value */
 		const float mBaseBias;
 
-		/** The ForceManager of the PhysicsEngine. It's used to store the
-		 * relationships between the RigidBodies and the Forces and
-		 * applying them */
-		ForceManager mForceManager;
+		/** The bounds of the World, any object that is located outside the
+		 * bounds won't be simulated */
+		const glm::vec3 mMinWorldAABB, mMaxWorldAABB;
 
 		/** The ConstraintManager of the PhysicsEngine. We will delegate all
 		 * the constraint resolution to it */
@@ -34,11 +32,14 @@ namespace se::physics {
 		/** Creates a new PhysicsEngine
 		 *
 		 * @param	baseBias the bias value used for updating the RigidBodies'
-		 *			motion value */
-		PhysicsEngine(float baseBias) : mBaseBias(baseBias) {};
-
-		/** @return	the ForceManager of the PhysicsEngine */
-		ForceManager& getForceManager() { return mForceManager; };
+		 *			motion value
+		 * @param	minWorldBounds the minimum bounds of the World
+		 * @param	maxWorldBounds the maximum bounds of the World */
+		PhysicsEngine(
+			float baseBias,
+			const glm::vec3& minWorldAABB, const glm::vec3& maxWorldAABB
+		) : mBaseBias(baseBias),
+			mMinWorldAABB(minWorldAABB), mMaxWorldAABB(maxWorldAABB) {};
 
 		/** @return	the ConstraintManager of the PhysicsEngine */
 		ConstraintManager& getConstraintManager()

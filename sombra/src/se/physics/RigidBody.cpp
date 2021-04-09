@@ -1,32 +1,17 @@
 #include <cassert>
-#include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 #include "se/physics/RigidBody.h"
 #include "RigidBodyDynamics.h"
 
 namespace se::physics {
 
-	RigidBodyConfig::RigidBodyConfig() :
-		invertedMass(0.0f), invertedInertiaTensor(0.0f),
-		linearDrag(0.0f), angularDrag(0.0f),
-		frictionCoefficient(0.0f), sleepMotion(0.001f) {}
-
-
-	RigidBodyConfig::RigidBodyConfig(float mass, const glm::mat3& inertiaTensor) :
-		linearDrag(0.0f), angularDrag(0.0f),
-		frictionCoefficient(0.0f), sleepMotion(0.001f)
+	RigidBodyConfig::RigidBodyConfig(float mass, const glm::mat3& inertiaTensor)
 	{
 		assert(mass > 0.0f && "The mass must be larger than zero");
 
 		invertedMass			= 1.0f / mass;
 		invertedInertiaTensor	= glm::inverse(inertiaTensor);
 	}
-
-
-	RigidBodyData::RigidBodyData() :
-		position(0.0f), orientation(1.0f, glm::vec3(0.0f)),
-		linearVelocity(0.0), angularVelocity(0.0),
-		linearAcceleration(0.0f), angularAcceleration(0.0f),
-		forceSum(0.0f), torqueSum(0.0f) {}
 
 
 	RigidBody::RigidBody(const RigidBodyConfig& config, const RigidBodyData& data) :
@@ -36,6 +21,22 @@ namespace se::physics {
 		mMotion(0.0f)
 	{
 		synchWithData();
+	}
+
+
+	RigidBody& RigidBody::addForce(ForceSPtr force)
+	{
+		mForces.emplace_back(std::move(force));
+		RigidBodyDynamics::setState(*this, RigidBodyState::Sleeping, false);
+		return *this;
+	}
+
+
+	RigidBody& RigidBody::removeForce(ForceSPtr force)
+	{
+		mForces.erase(std::remove(mForces.begin(), mForces.end(), force), mForces.end());
+		RigidBodyDynamics::setState(*this, RigidBodyState::Sleeping, false);
+		return *this;
 	}
 
 

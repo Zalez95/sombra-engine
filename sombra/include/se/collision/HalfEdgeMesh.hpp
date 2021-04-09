@@ -9,7 +9,7 @@ namespace se::collision {
 		if (std::distance(begin, end) < 3) { return -1; }
 
 		// Create a new HEFace
-		int iFace = meshData.faces.emplace().getIndex();
+		int iFace = static_cast<int>(meshData.faces.emplace().getIndex());
 
 		// Set the HEFace and HEVertices data and recover all the HEEdges
 		bool fail = false;

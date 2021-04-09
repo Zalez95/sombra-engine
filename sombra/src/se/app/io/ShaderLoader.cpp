@@ -127,6 +127,8 @@ namespace se::app {
 					case graphics::Operation::Culling:
 						material.doubleSided = !operation->enableOperation();
 						break;
+					default:
+						break;
 				}
 			}
 			else if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
@@ -145,6 +147,8 @@ namespace se::app {
 						break;
 					case Material::TextureUnits::kEmissive:
 						material.emissiveTexture = texture;
+						break;
+					default:
 						break;
 				}
 			}
@@ -305,7 +309,7 @@ namespace se::app {
 		});
 
 		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
-			for (std::size_t i = 0; i < material.materials.size(); ++i) {
+			for (int i = 0; i < static_cast<int>(material.materials.size()); ++i) {
 				if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
 					if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i) {
 						material.materials[i].pbrMetallicRoughness.baseColorTexture = texture;

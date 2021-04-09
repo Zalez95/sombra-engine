@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <se/physics/RigidBody.h>
 #include <se/physics/PhysicsEngine.h>
+#include <se/physics/forces/PunctualForce.h>
+#include <se/physics/forces/DirectionalForce.h>
 #include <se/physics/constraints/DistanceConstraint.h>
 
 using namespace se::physics;
@@ -26,7 +28,7 @@ TEST(PhysicsEngine, velocityIntegration)
 	data.angularVelocity = glm::vec3(-0.13f, -3.6f, 10.125f);
 
 	RigidBody rb(config, data);
-	PhysicsEngine ps(0.2f);
+	PhysicsEngine ps(0.2f, glm::vec3(-1000.0f), glm::vec3(1000.0f));
 	ps.addRigidBody(&rb);
 
 	ps.resetRigidBodiesState();
@@ -60,10 +62,11 @@ TEST(PhysicsEngine, forceIntegration)
 	RigidBodyData data;
 	data.position = glm::vec3(-3.146f, 2.95f, -5.2f);
 	data.linearVelocity = glm::vec3(-0.13f, -3.6f, 10.125f);
-	data.forceSum = glm::vec3(8.11f, -10.31f, -6.8124f);
 
 	RigidBody rb(config, data);
-	PhysicsEngine ps(0.2f);
+	rb.addForce(std::make_shared<se::physics::DirectionalForce>(glm::vec3(8.11f, -10.31f, -6.8124f)));
+
+	PhysicsEngine ps(0.2f, glm::vec3(-1000.0f), glm::vec3(1000.0f));
 	ps.addRigidBody(&rb);
 
 	ps.resetRigidBodiesState();
@@ -99,11 +102,13 @@ TEST(PhysicsEngine, torqueIntegration)
 	data.orientation = glm::quat(0.812893509f, 0.441731840f, -0.347656339f, 0.152355521f);
 	data.linearVelocity = glm::vec3(-0.13f, -3.6f, 10.125f);
 	data.angularVelocity = glm::vec3(0.965f, -2.0154f, -7.849f);
-	data.forceSum = glm::vec3(6.541f, -12.451f, 1.568f);
-	data.torqueSum = glm::vec3(31.461647033f, 11.237240791f, -42.012607574f);
 
 	RigidBody rb(config, data);
-	PhysicsEngine ps(0.2f);
+	rb.addForce(std::make_shared<se::physics::PunctualForce>(
+		glm::vec3(6.541f, -12.451f, 1.568f), glm::vec3(7.897511959f, -4.030708312f, 6.069702148f)
+	));
+
+	PhysicsEngine ps(0.2f, glm::vec3(-1000.0f), glm::vec3(1000.0f));
 	ps.addRigidBody(&rb);
 
 	ps.resetRigidBodiesState();
@@ -130,7 +135,7 @@ TEST(PhysicsEngine, transformsIntegration)
 	const glm::vec3 expectedPosition(-1.462884187f, 11.208745956f, -14.201886177f);
 	const glm::quat expectedOrientation(-0.601788520f, 0.309684604f, 0.276499629f, -0.682271182f);
 	const glm::vec3 expectedLinearVelocity(1.977337837f, 5.294228553f, -6.772780418f);
-	const glm::vec3 expectedAngularVelocity(0.434944272f, -11.159923553f, -4.147571086f);
+	const glm::vec3 expectedAngularVelocity(0.434945272f, -11.159923553f, -4.147571086f);
 	const glm::vec3 expectedLinearAcceleration(1.188229441f, 0.751120924f, -0.517487585f);
 	const glm::vec3 expectedAngularAcceleration(1.072137355f, -3.708540916f, -2.921071290f);
 	RigidBodyConfig config(6.1781f, glm::mat3(6.1781f * static_cast<float>(std::pow(3.21f, 2) / 6.0f)));
@@ -143,11 +148,13 @@ TEST(PhysicsEngine, transformsIntegration)
 	data.orientation = glm::quat(-0.074506878f, -0.676165580f, -0.448467493f, -0.579763472f);
 	data.linearVelocity = glm::vec3(0.1237f, 4.12248f, -5.9655f);
 	data.angularVelocity = glm::vec3(-1.23759f, -5.3746f, 0.4093f);
-	data.forceSum = glm::vec3(7.341f, 4.6405f, -3.19709f);
-	data.torqueSum = glm::vec3(11.375326156f, -39.347465515f, -30.992446899f);
 
 	RigidBody rb(config, data);
-	PhysicsEngine ps(0.2f);
+	rb.addForce(std::make_shared<se::physics::PunctualForce>(
+		glm::vec3(7.341f, 4.6405f, -3.19709f), glm::vec3(-7.695583820f, 5.181585311f, -7.625295639f)
+	));
+
+	PhysicsEngine ps(0.2f, glm::vec3(-1000.0f), glm::vec3(1000.0f));
 	ps.addRigidBody(&rb);
 
 	ps.resetRigidBodiesState();
@@ -198,7 +205,7 @@ TEST(PhysicsEngine, rigidBodyState)
 	DistanceConstraint distanceConstraint({ &rb1, &rb2 });
 	distanceConstraint.setAnchorPoints({ glm::vec3(0.5f, 1.0f, 0.0f ), glm::vec3(-1.0f, 1.0f, 0.0f) });
 
-	PhysicsEngine ps(0.5f);
+	PhysicsEngine ps(0.5f, glm::vec3(-1000.0f), glm::vec3(1000.0f));
 	ps.addRigidBody(&rb1);
 	ps.addRigidBody(&rb2);
 	ps.getConstraintManager().addConstraint(&distanceConstraint);

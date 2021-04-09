@@ -17,7 +17,7 @@ namespace se::collision {
 		mContactSeparation2(contactSeparation * contactSeparation) {}
 
 
-	bool FineCollisionDetector::collide(Manifold& manifold) const
+	bool FineCollisionDetector::collide(Manifold& manifold)
 	{
 		const Collider* collider1 = manifold.colliders[0];
 		const Collider* collider2 = manifold.colliders[1];
@@ -55,8 +55,7 @@ namespace se::collision {
 	bool FineCollisionDetector::collideConvex(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Manifold& manifold
-	) const
-	{
+	) {
 		// GJK algorithm
 		auto [collides, simplex] = mGJKCollisionDetector.calculateIntersection(collider1, collider2);
 		if (!collides) {
@@ -93,8 +92,7 @@ namespace se::collision {
 	bool FineCollisionDetector::collideConvexConcave(
 		const ConvexCollider& convexCollider, const ConcaveCollider& concaveCollider,
 		Manifold& manifold, bool convexFirst
-	) const
-	{
+	) {
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of the concave collider with the
@@ -146,8 +144,7 @@ namespace se::collision {
 	bool FineCollisionDetector::collideConcave(
 		const ConcaveCollider& collider1, const ConcaveCollider& collider2,
 		Manifold& manifold
-	) const
-	{
+	) {
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider

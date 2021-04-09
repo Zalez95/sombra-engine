@@ -1,7 +1,7 @@
 #ifndef CONSTRAINTS_SYSTEM_H
 #define CONSTRAINTS_SYSTEM_H
 
-#include <map>
+#include <unordered_map>
 #include "../physics/constraints/NormalConstraint.h"
 #include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
@@ -56,7 +56,7 @@ namespace se::app {
 
 		/** The NormalConstraints generated as a consecuence of the
 		 * PhysicsEntities collisions */
-		std::map<const collision::Manifold*, ManifoldConstraints>
+		std::unordered_map<const collision::Manifold*, ManifoldConstraints>
 			mManifoldConstraintsMap;
 
 	public:		// Functions

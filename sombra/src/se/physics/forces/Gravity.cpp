@@ -3,21 +3,15 @@
 
 namespace se::physics {
 
-	Gravity::Gravity(const glm::vec3& gravity) : mGravity(gravity) {}
+	Gravity::Gravity(const float& gravity) : mGravity(gravity) {}
 
 
-	bool Gravity::isConstant() const
+	void Gravity::apply(RigidBody& rigidBody)
 	{
-		return true;
-	}
-
-
-	void Gravity::apply(RigidBody* rigidBody)
-	{
-		float invertedMass = rigidBody->getConfig().invertedMass;
+		float invertedMass = rigidBody.getConfig().invertedMass;
 
 		if (invertedMass > 0.0f) {
-			rigidBody->getData().forceSum += mGravity / invertedMass;
+			rigidBody.getData().forceSum += glm::vec3(0.0f, mGravity / invertedMass, 0.0f);
 		}
 	}
 

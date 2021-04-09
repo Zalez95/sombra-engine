@@ -13,6 +13,12 @@ namespace se::physics {
 	class RigidBodyDynamics
 	{
 	public:		// Functions
+		/** Processes the Forces stored in the given RigidBody and calculates
+		 * its sum
+		 *
+		 * @param	rigidBody the RigidBody to update */
+		static void processForces(RigidBody& rigidBody);
+
 		/** Integrates the position and orientation of the given RigidBody, with
 		 * its velocities, accelerations and forces, by the given amount of time
 		 *

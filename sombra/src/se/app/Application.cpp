@@ -38,6 +38,7 @@
 #include "se/app/AnimationComponent.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/utils/Profiler.h"
 
 namespace se::app {
 
@@ -64,7 +65,7 @@ namespace se::app {
 			mExternalTools = new ExternalTools();
 			mExternalTools->windowManager = new window::WindowManager(windowConfig);
 			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
-			mExternalTools->physicsEngine = new physics::PhysicsEngine(kBaseBias);
+			mExternalTools->physicsEngine = new physics::PhysicsEngine(kBaseBias, kMinPhysicsAABB, kMaxPhysicsAABB);
 			mExternalTools->collisionWorld = new collision::CollisionWorld(collisionConfig);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
 			mExternalTools->audioEngine = new audio::AudioEngine();
@@ -189,6 +190,8 @@ namespace se::app {
 		mStopRunning = false;
 		auto lastTP = std::chrono::high_resolution_clock::now();
 		while (!mStopRunning) {
+			utils::TimeGuard tf("frame");
+
 			// Calculate the elapsed time since the last update
 			auto currentTP = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
@@ -222,6 +225,7 @@ namespace se::app {
 
 	void Application::onInput()
 	{
+		utils::TimeGuard t0("onInput");
 		SOMBRA_DEBUG_LOG << "Init";
 		mExternalTools->windowManager->update();
 		mInputSystem->update();
@@ -231,31 +235,54 @@ namespace se::app {
 
 	void Application::onUpdate(float deltaTime)
 	{
+		utils::TimeGuard t0("onUpdate");
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
 		utils::TaskSet taskSet(*mTaskManager);
 		auto scriptTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("scriptsys");
 			mScriptSystem->setDeltaTime(deltaTime);
 			mScriptSystem->update();
 		});
 		auto animationTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("animsys");
 			mAnimationSystem->setDeltaTime(deltaTime);
 			mAnimationSystem->update();
 		});
 		auto dynamicsTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("dynamicssys");
 			mDynamicsSystem->setDeltaTime(deltaTime);
 			mDynamicsSystem->update();
 		});
-		auto collisionTask = taskSet.createTask([&]() { mCollisionSystem->update(); });
+		auto collisionTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("collisionsys");
+			mCollisionSystem->update();
+		});
 		auto constraintsTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("constraintssys");
 			mConstraintsSystem->setDeltaTime(deltaTime);
 			mConstraintsSystem->update();
 		});
-		auto audioTask = taskSet.createTask([&]() { mAudioSystem->update(); });
-		auto cameraTask = taskSet.createTask([&]() { mCameraSystem->update(); });
-		auto shadowTask = taskSet.createTask([&]() { mShadowSystem->update(); });
-		auto rmeshTask = taskSet.createTask([&]() { mMeshSystem->update(); });
-		auto rterrainTask = taskSet.createTask([&]() { mTerrainSystem->update(); });
+		auto audioTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("audiosys");
+			mAudioSystem->update();
+		});
+		auto cameraTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("camerasys");
+			mCameraSystem->update();
+		});
+		auto shadowTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("shadowsys");
+			mShadowSystem->update();
+		});
+		auto rmeshTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("meshsys");
+			mMeshSystem->update();
+		});
+		auto rterrainTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("terrainsys");
+			mTerrainSystem->update();
+		});
 
 		taskSet.depends(dynamicsTask, scriptTask);
 		taskSet.depends(animationTask, scriptTask);
@@ -271,7 +298,9 @@ namespace se::app {
 		taskSet.submitAndWait();
 
 		// The GraphicsSystem update function must be called from thread 0
+		{ utils::TimeGuard t("mAppRenderer");
 		mAppRenderer->update();
+		}
 
 		SOMBRA_DEBUG_LOG << "End";
 	}
@@ -279,6 +308,7 @@ namespace se::app {
 
 	void Application::onRender()
 	{
+		utils::TimeGuard t0("onRender");
 		SOMBRA_DEBUG_LOG << "Init";
 		mAppRenderer->render();
 		mExternalTools->windowManager->swapBuffers();

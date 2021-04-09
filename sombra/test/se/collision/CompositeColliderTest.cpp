@@ -15,9 +15,8 @@ TEST(CompositeCollider, getAABB1)
 	const glm::vec3 expectedMaximum(1.25f, 1.0, 2.75f);
 	const HalfEdgeMesh meshData = createTestMesh2().first;
 
-	std::vector<std::unique_ptr<Collider>> colliders;
-	colliders.emplace_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider cc1(colliders);
+	CompositeCollider cc1;
+	cc1.addPart( std::make_unique<ConvexPolyhedron>(meshData) );
 
 	AABB aabb1 = cc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
@@ -40,9 +39,8 @@ TEST(CompositeCollider, getAABBTransforms1)
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 transforms = t * r;
 
-	std::vector<std::unique_ptr<Collider>> colliders;
-	colliders.emplace_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider cc1(colliders);
+	CompositeCollider cc1;
+	cc1.addPart( std::make_unique<ConvexPolyhedron>(meshData) );
 	cc1.setTransforms(transforms);
 
 	AABB aabb1 = cc1.getAABB();
@@ -64,7 +62,7 @@ TEST(CompositeCollider, updated)
 	std::vector<std::unique_ptr<Collider>> colliders;
 	colliders.emplace_back( std::move(bs1) );
 	colliders.emplace_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider cc1(colliders);
+	CompositeCollider cc1( std::move(colliders) );
 
 	EXPECT_TRUE(cc1.updated());
 	cc1.resetUpdatedState();
@@ -94,9 +92,8 @@ TEST(CompositeCollider, getOverlapingPartsQH1)
 	glm::mat4 t = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 transforms = t * r;
 
-	std::vector<std::unique_ptr<Collider>> colliders;
-	colliders.emplace_back( std::make_unique<ConvexPolyhedron>(meshData) );
-	CompositeCollider cc1(colliders);
+	CompositeCollider cc1;
+	cc1.addPart( std::make_unique<ConvexPolyhedron>(meshData) );
 	cc1.setTransforms(transforms);
 
 	auto expectedRes = std::make_unique<ConvexPolyhedron>(meshData);

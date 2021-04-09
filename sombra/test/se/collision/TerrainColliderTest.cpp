@@ -9,7 +9,7 @@ static constexpr float kTolerance = 0.000001f;
 
 TEST(TerrainCollider, getAABB)
 {
-	const std::vector<float> heights = {
+	float heights[] = {
 		-0.224407124f, -0.182230042f, -0.063670491f, -0.063680544f, -0.274178390f, -0.002076677f,
 		0.240925990f, -0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
 		-0.225947124f, -0.101790362f, -0.419971141f, -0.278538079f, 0.044960733f, -0.266057232f,
@@ -38,7 +38,7 @@ TEST(TerrainCollider, getAABBTransforms)
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);
 	const glm::vec3 translation(-3.24586f, -1.559f, 4.78164f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
-	const std::vector<float> heights = {
+	float heights[] = {
 		-0.224407124f, -0.182230042f, -0.063670491f, -0.063680544f, -0.274178390f, -0.002076677f,
 		0.240925990f, -0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
 		-0.225947124f, -0.101790362f, -0.419971141f, -0.278538079f, 0.044960733f, -0.266057232f,
@@ -72,7 +72,7 @@ TEST(TerrainCollider, getOverlapingParts1)
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);
 	const glm::vec3 translation(-3.24586f, -1.559f, 4.78164f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
-	const std::vector<float> heights = {
+	float heights[] = {
 		-0.224407124f,-0.182230042f,-0.063670491f,-0.063680544f,-0.274178390f,-0.002076677f,
 		 0.240925990f,-0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
 		-0.225947124f,-0.101790362f,-0.419971141f,-0.278538079f, 0.044960733f,-0.266057232f,
@@ -107,7 +107,7 @@ TEST(TerrainCollider, getOverlapingParts1)
 
 TEST(TerrainCollider, updated)
 {
-	const std::vector<float> heights = {
+	float heights[] = {
 		-0.224407124f,-0.182230042f,-0.063670491f,-0.063680544f,-0.274178390f,-0.002076677f,
 		 0.240925990f,-0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
 		-0.225947124f,-0.101790362f,-0.419971141f,-0.278538079f, 0.044960733f,-0.266057232f,
@@ -135,7 +135,7 @@ TEST(TerrainCollider, getOverlapingParts2)
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);
 	const glm::vec3 translation(-3.24586f, -1.559f, 4.78164f);
 	const glm::quat rotation = glm::angleAxis(glm::pi<float>()/3, glm::vec3(2/3.0f, -2/3.0f, 1/3.0f));
-	const std::vector<float> heights = {
+	float heights[] = {
 		-0.224407124f,-0.182230042f,-0.063670491f,-0.063680544f,-0.274178390f,-0.002076677f,
 		 0.240925990f,-0.427923002f, 0.499461910f, 0.320841177f, 0.431347578f, 0.199959035f,
 		-0.225947124f,-0.101790362f,-0.419971141f,-0.278538079f, 0.044960733f,-0.266057232f,

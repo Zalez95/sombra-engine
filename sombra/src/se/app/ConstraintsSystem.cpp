@@ -12,7 +12,9 @@ namespace se::app {
 	ConstraintsSystem::ConstraintsSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		// TODO: reserve max contact constraints
+		std::size_t maxRBs = mEntityDatabase.getMaxComponents<physics::RigidBody>();
+		mManifoldConstraintsMap.reserve(maxRBs * maxRBs);
+
 		mApplication.getEventManager().subscribe(this, Topic::Collision);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
 	}
@@ -162,7 +164,7 @@ namespace se::app {
 		bool updateFrictionMasses = true;
 		if (manifold->contacts.size() > manifoldConstraints.size()) {
 			float mu1 = rb1->getConfig().frictionCoefficient, mu2 = rb2->getConfig().frictionCoefficient;
-			float mu = std::sqrt((mu1 * mu1 + mu2 * mu2) / 2.0f);
+			float mu = std::sqrt(0.5f * (mu1 * mu1 + mu2 * mu2));
 			SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
 
 			// Increase the number of constraints up to the number of contacts
@@ -203,7 +205,7 @@ namespace se::app {
 
 		if (updateFrictionMasses) {
 			// Update the friction constraint masses
-			float averageMass = 2.0f / (rb1->getConfig().invertedMass + rb2->getConfig().invertedMass);
+			float averageMass = 0.5f * (1.0f / rb1->getConfig().invertedMass + 1.0f / rb2->getConfig().invertedMass);
 			float perContactMass = averageMass / manifoldConstraints.size();
 
 			for (ContactConstraints& contactConstraints : manifoldConstraints) {

@@ -16,14 +16,17 @@ namespace se::collision {
 	{
 		assert(minFDifference >= 0.0f && "The minimum face difference must be at least 0");
 		assert(projectionPrecision >= 0.0f && "The precision of the projected points must be at least 0");
+
+		mOverlappingFaces.reserve(2 * mMaxIterations);
+		mHorizon.reserve(2 * mMaxIterations);
+		mFacesToRemove.reserve(2 * mMaxIterations);
 	}
 
 
 	std::pair<bool, Contact> EPACollisionDetector::calculate(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Simplex& simplex
-	) const
-	{
+	) {
 		std::pair<bool, Contact> ret = { false, Contact{} };
 
 		if (simplex.size() == 1) {
@@ -142,8 +145,7 @@ namespace se::collision {
 	int EPACollisionDetector::expandPolytope(
 		const ConvexCollider& collider1, const ConvexCollider& collider2,
 		Polytope& polytope
-	) const
-	{
+	) {
 		auto compareDistances = [&](int iF1, int iF2) {
 			return (polytope.getDistanceData(iF1).distance > polytope.getDistanceData(iF2).distance);
 		};
@@ -178,11 +180,14 @@ namespace se::collision {
 		}
 
 		// Expand the polytope until the closest HEFace is found
+		mOverlappingFaces.clear();
+		mHorizon.clear();
+		mFacesToRemove.clear();
+
 		std::size_t iteration = 0;
 		int iClosestFace = -1;
 		float closestSeparation = std::numeric_limits<float>::max();
 		utils::FixedVector<int, 3> closestFaceIndices;
-		std::vector<int> overlappingFaces;
 		do {
 			// 1. Search a new SupportPoint along the HEFace's closest point
 			// direction
@@ -203,21 +208,20 @@ namespace se::collision {
 
 				// 3.2. Calculate the horizon HEEdges and HEFaces to remove
 				// from the current eyePoint perspective
-				auto [horizon, facesToRemove] = calculateHorizon(
-					meshData, polytope.getNormals(),
-					sp.getCSOPosition(), iCurrentFace
-				);
+				mHorizon.clear();
+				mFacesToRemove.clear();
+				calculateHorizon(meshData, polytope.getNormals(), sp.getCSOPosition(), iCurrentFace, mHorizon, mFacesToRemove);
 
 				// 3.3. Remove all the HEFaces that can be seen from the new
 				// SupportPoint
-				for (int iFaceToRemove : facesToRemove) {
+				for (int iFaceToRemove : mFacesToRemove) {
 					// If we are going to remove the closest HEFace then we
 					// store its indices for recoving it later if necessary
 					if (iClosestFace == iFaceToRemove) {
 						closestFaceIndices.clear();
 						getFaceIndices(polytope.getMesh(), iClosestFace, std::back_inserter(closestFaceIndices));
 						iClosestFace = -1;
-						overlappingFaces.clear();
+						mOverlappingFaces.clear();
 					}
 
 					polytope.removeFace(iFaceToRemove);
@@ -229,7 +233,7 @@ namespace se::collision {
 
 				// 3.4. Add new HEFaces to the Polytope by connecting the
 				// HEEdges of the horizon to the new SupportPoint
-				for (int iHorizonEdge : horizon) {
+				for (int iHorizonEdge : mHorizon) {
 					const HEEdge& currentEdge = meshData.edges[iHorizonEdge];
 					const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
 
@@ -239,7 +243,7 @@ namespace se::collision {
 
 					// Store the HEFace index if we removed the closest HEFace
 					if (iClosestFace < 0) {
-						overlappingFaces.push_back(iNewFace);
+						mOverlappingFaces.push_back(iNewFace);
 					}
 
 					// Add the HEFace to the facesByDistance vector if its
@@ -271,7 +275,7 @@ namespace se::collision {
 
 		// If we removed the closest HEFace then we have to recover it
 		if (iClosestFace < 0) {
-			for (int iFace : overlappingFaces) {
+			for (int iFace : mOverlappingFaces) {
 				polytope.removeFace(iFace);
 			}
 			iClosestFace = polytope.addFace(closestFaceIndices);

@@ -285,7 +285,8 @@ namespace se::collision {
 			if (itVertex == mVertexIndexMap.end()) {
 				// 3.1. Calculate the convex hull's horizon HEEdges and HEFaces
 				// to remove from the current eyePoint perspective
-				auto [horizon, facesToRemove] = calculateHorizon(mConvexHullMesh, mConvexHullNormals, eyePoint, itFace.getIndex());
+				std::vector<int> horizon, facesToRemove;
+				calculateHorizon(mConvexHullMesh, mConvexHullNormals, eyePoint, itFace.getIndex(), horizon, facesToRemove);
 
 				// 3.2. Remove the convex hull's HEFaces seen from the current
 				// eyePoint perspective and collect all their outside HEVertices

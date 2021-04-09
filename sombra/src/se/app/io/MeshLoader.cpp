@@ -76,6 +76,58 @@ namespace se::app {
 	}
 
 
+	RawMesh MeshLoader::createRawMesh(const graphics::Mesh& gMesh)
+	{
+		RawMesh ret;
+
+		for (const auto& vbo : gMesh.getVBOs()) {
+			if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::PositionAttribute)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::PositionAttribute, vbo)
+			) {
+				ret.positions.resize(vbo.size() / sizeof(glm::vec3));
+				vbo.read(ret.positions.data(), ret.positions.size());
+			}
+			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::NormalAttribute)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::NormalAttribute, vbo)
+			) {
+				ret.normals.resize(vbo.size() / sizeof(glm::vec3));
+				vbo.read(ret.normals.data(), ret.normals.size());
+			}
+			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::TangentAttribute)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TangentAttribute, vbo)
+			) {
+				ret.tangents.resize(vbo.size() / sizeof(glm::vec3));
+				vbo.read(ret.tangents.data(), ret.tangents.size());
+			}
+			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::TexCoordAttribute0)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TexCoordAttribute0, vbo)
+			) {
+				ret.texCoords.resize(vbo.size() / sizeof(glm::vec2));
+				vbo.read(ret.texCoords.data(), ret.texCoords.size());
+			}
+			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::JointIndexAttribute)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointIndexAttribute, vbo)
+			) {
+				ret.jointIndices.resize(vbo.size() / sizeof(glm::u16vec4));
+				vbo.read(ret.jointIndices.data(), ret.jointIndices.size());
+			}
+			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::JointWeightAttribute)
+				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointWeightAttribute, vbo)
+			) {
+				ret.jointWeights.resize(vbo.size() / sizeof(glm::vec4));
+				vbo.read(ret.jointWeights.data(), ret.jointWeights.size());
+			}
+		}
+
+		if (gMesh.getIBO().getIndexType() == graphics::TypeId::UnsignedShort) {
+			ret.indices.resize(gMesh.getIBO().getIndexCount());
+			gMesh.getIBO().read(ret.indices.data(), ret.indices.size());
+		}
+
+		return ret;
+	}
+
+
 	std::pair<glm::vec3, glm::vec3> MeshLoader::calculateBounds(
 		const RawMesh& rawMesh
 	) {

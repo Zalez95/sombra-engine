@@ -54,6 +54,12 @@ namespace se::physics {
 		 * the size of (number of Constraints). */
 		std::vector<float> mBiasMatrix;
 
+		/** A matrix with the jacobians of all the Constraints. It's a matrix
+		 * with a size of (number of Constraints) by 6*(number of RigidBodies),
+		 * but in our case it's represented by 12*(number of Constraints)
+		 * floats so we can access to its data with the ConstraintRBMap. */
+		std::vector<vec12> mJacobianMatrix;
+
 		/** A matrix that tells which RigidBody Constraints needs to be solved
 		 * or has been solved. It's a row matrix with the size of
 		 * (number of RigidBodies). */
@@ -74,12 +80,6 @@ namespace se::physics {
 		 * RigidBodies. It's a column matrix with a size of
 		 * 2*(number of RigidBodies) vec3s. */
 		std::vector<glm::vec3> mForceExtMatrix;
-
-		/** A matrix with the jacobians of all the Constraints. It's a matrix
-		 * with a size of (number of Constraints) by 6*(number of RigidBodies),
-		 * but in our case it's represented by 12*(number of Constraints)
-		 * floats so we can access to its data with the ConstraintRBMap. */
-		std::vector<vec12> mJacobianMatrix;
 
 	public:		// Constraints
 		/** Registers the given Constraint in the ConstraintManager, so the
@@ -116,6 +116,9 @@ namespace se::physics {
 		/** Updates the bias matrix value */
 		void updateBiasMatrix();
 
+		/** Updates the jacobian matrix value */
+		void updateJacobianMatrix();
+
 		/** Updates the inverse mass matrix value */
 		void updateInverseMassMatrix();
 
@@ -127,9 +130,6 @@ namespace se::physics {
 
 		/** Updates the external forces matrix value */
 		void updateForceExtMatrix();
-
-		/** Updates the jacobian matrix value */
-		void updateJacobianMatrix();
 
 		/** Runs the Gauss-Seidel algorithm for solving the mLambdaMatrix in:
 		 * mJacobianMatrix * mInverseMassMatrix * transpose(mJacobianMatrix)

@@ -13,12 +13,18 @@ namespace se::app {
 	class MeshLoader
 	{
 	public:		// Functions
-		/** creates a Graphics Mesh with the given mesh data
+		/** Creates a Graphics Mesh with the given RawMesh
 		 *
 		 * @param	rawMesh the data with which we will create the graphics
 		 *			mesh
 		 * @return	the new Graphics Mesh */
 		static graphics::Mesh createGraphicsMesh(const RawMesh& rawMesh);
+
+		/** Creates a RawMesh with the given Graphics Mesh data
+		 *
+		 * @param	gMesh the GraphicsMesh with which we will create the RawMesh
+		 * @return	the new RawMesh */
+		static RawMesh createRawMesh(const graphics::Mesh& gMesh);
 
 		/** Calculates the Bounds of the given RawMesh
 		 *

@@ -317,7 +317,8 @@ TEST(HalfEdgeMesh, calculateHorizon1)
 	const std::vector<int> expectedHorizonVertices = { 2, 13, 8, 0, 11, 17 };
 	const std::vector<int> expectedFaces = { 4, 25, 26, 31, 32, 33 };
 
-	auto [horizon, facesToRemove] = calculateHorizon(meshData, normals, eyePoint, 4);
+	std::vector<int> horizon, facesToRemove;
+	calculateHorizon(meshData, normals, eyePoint, 4, horizon, facesToRemove);
 	EXPECT_EQ(horizon.size(), expectedHorizonVertices.size());
 	for (int iEdge : horizon) {
 		int iCurrentVertex = meshData.edges[iEdge].vertex;

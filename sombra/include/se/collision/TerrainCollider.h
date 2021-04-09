@@ -45,6 +45,15 @@ namespace se::collision {
 		 * coordinates */
 		TerrainCollider();
 
+		/** @return	the number of vertices in the X axis */
+		std::size_t getXSize() const { return mXSize; };
+
+		/** @return	the number of vertices in the Z axis */
+		std::size_t getZSize() const { return mZSize; };
+
+		/** @return	the Heights of the TerrainCollider */
+		const float* getHeights() const { return mHeights.data(); };
+
 		/** Sets the height data of the TerrainCollider
 		 *
 		 * @param	heights the heights (Y axis) of the TerrainCollider's
@@ -52,7 +61,7 @@ namespace se::collision {
 		 * @param	xSize the number of vertices in the X axis
 		 * @param	zSize the number of vertices in the Z axis */
 		void setHeights(
-			const std::vector<float>& heights,
+			const float* heights,
 			std::size_t xSize, std::size_t zSize
 		);
 
@@ -61,22 +70,23 @@ namespace se::collision {
 		 *
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the TerrainCollider */
-		void setTransforms(const glm::mat4& transforms) override;
+		virtual void setTransforms(const glm::mat4& transforms) override;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			TerrainCollider */
-		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
+		virtual glm::mat4 getTransforms() const override
+		{ return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			TerrainCollider */
-		AABB getAABB() const override { return mAABB; };
+		virtual AABB getAABB() const override { return mAABB; };
 
 		/** @return	true if the TerrainCollider has been updated since the last
 		 *			call to the resetUpdatedState function, false otherwise */
-		bool updated() const override { return mUpdated; };
+		virtual bool updated() const override { return mUpdated; };
 
 		/** Resets the updated state of the TerrainCollider */
-		void resetUpdatedState() override { mUpdated = false; };
+		virtual void resetUpdatedState() override { mUpdated = false; };
 
 		/** Calls the given callback for each of the overlaping convex parts of
 		 * the TerrainCollider with the given AABB

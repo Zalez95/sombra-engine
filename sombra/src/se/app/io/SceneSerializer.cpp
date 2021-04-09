@@ -1,12 +1,19 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <optional>
 #include "GLMJSON.h"
 #include "se/physics/RigidBody.h"
+#include "se/physics/forces/Gravity.h"
+#include "se/physics/forces/PunctualForce.h"
+#include "se/physics/forces/DirectionalForce.h"
+#include "se/physics/forces/Gravity.h"
 #include "se/collision/BoundingBox.h"
 #include "se/collision/BoundingSphere.h"
 #include "se/collision/Capsule.h"
 #include "se/collision/TriangleCollider.h"
+#include "se/collision/TerrainCollider.h"
+#include "se/collision/CompositeCollider.h"
 #include "se/animation/SkeletonAnimator.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
@@ -62,6 +69,9 @@ namespace se::app {
 		nlohmann::json& buffersJson;
 		nlohmann::json& accessorsJson;
 	};
+
+	template <typename T>
+	using ResultOptional = std::pair<Result, std::optional<T>>;
 
 // Repository
 	void serializeBuffer(const std::byte* data, size_t size, nlohmann::json& json, std::ostream& dataStream)
@@ -176,7 +186,7 @@ namespace se::app {
 
 					nlohmann::json bufferJson;
 					serializeBuffer(buffer.data(), bufferSize, bufferJson, dataStream);
-					data.buffersJson.push_back(bufferJson);
+					data.buffersJson.emplace_back(std::move(bufferJson));
 
 					Accessor accessor;
 					accessor.buffer = data.buffersJson.size() - 1;
@@ -187,12 +197,12 @@ namespace se::app {
 
 					nlohmann::json accessorJson;
 					serializeAccessor(accessor, accessorJson);
-					data.accessorsJson.push_back(accessorJson);
+					data.accessorsJson.emplace_back(std::move(accessorJson));
 
 					nlohmann::json jsonVBO;
 					jsonVBO["accessor"] = data.accessorsJson.size() - 1;
 					jsonVBO["attribute"] = i;
-					jsonVBOs.push_back(jsonVBO);
+					jsonVBOs.emplace_back(std::move(jsonVBO));
 				}
 			}
 		}
@@ -207,7 +217,7 @@ namespace se::app {
 
 		nlohmann::json bufferJson;
 		serializeBuffer(buffer.data(), bufferSize, bufferJson, dataStream);
-		data.buffersJson.push_back(bufferJson);
+		data.buffersJson.emplace_back(std::move(bufferJson));
 
 		nlohmann::json jsonIBO;
 		jsonIBO["buffer"] = data.buffersJson.size() - 1;
@@ -355,7 +365,7 @@ namespace se::app {
 			reinterpret_cast<const std::byte*>(skin.inverseBindMatrices.data()),
 			skin.inverseBindMatrices.size() * sizeof(glm::mat4), bufferJson, dataStream
 		);
-		data.buffersJson.push_back(bufferJson);
+		data.buffersJson.emplace_back(std::move(bufferJson));
 
 		json["inverseBindMatrices"] = data.buffersJson.size() - 1;
 	}
@@ -436,7 +446,7 @@ namespace se::app {
 
 			nlohmann::json bufferJson;
 			serializeBuffer(bufferData, bufferDataSize, bufferJson, dataStream);
-			data.buffersJson.push_back(bufferJson);
+			data.buffersJson.emplace_back(std::move(bufferJson));
 
 			nlohmann::json nodeAnimatorJson;
 			nodeAnimatorJson["nodeName"] = nodeName;
@@ -444,7 +454,7 @@ namespace se::app {
 			nodeAnimatorJson["animationType"] = animationType;
 			nodeAnimatorJson["keyFrameType"] = keyFrameType;
 			nodeAnimatorJson["keyFrames"] = data.buffersJson.size() - 1;
-			nodeAnimatorsVJson.push_back(std::move(nodeAnimatorJson));
+			nodeAnimatorsVJson.emplace_back(std::move(nodeAnimatorJson));
 		});
 
 		json["loopTime"] = animator.getLoopTime();
@@ -750,38 +760,123 @@ namespace se::app {
 		return Result();
 	}
 
-// Components
-	template <typename T>
-	void serializeComponent(const T& component, SerializeData& data, nlohmann::json& json, std::ostream& dataStream);
-
-	template <typename T>
-	Result deserializeComponent(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene);
-
 
 	template <>
-	void serializeComponent<TagComponent>(const TagComponent& tag, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<Force>(const Force& force, const Scene::Key&, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		json["name"] = tag.getName();
+		if (auto gravity = dynamic_cast<const Gravity*>(&force); gravity) {
+			json["type"] = "Gravity";
+			json["value"] = gravity->getValue();
+		}
+		else if (auto directional = dynamic_cast<const DirectionalForce*>(&force); directional) {
+			json["type"] = "DirectionalForce";
+			json["value"] = toJson(directional->getValue());
+		}
+		else if (auto punctual = dynamic_cast<const PunctualForce*>(&force); punctual) {
+			json["type"] = "PunctualForce";
+			json["value"] = toJson(punctual->getValue());
+			json["point"] = toJson(punctual->getPoint());
+		}
 	}
 
 	template <>
-	Result deserializeComponent<TagComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	Result deserializeResource<Force>(const nlohmann::json& json, const std::string& key, DeserializeData&, Scene& scene)
 	{
-		auto itName = json.find("name");
+		std::shared_ptr<Force> force;
 
-		if (itName != json.end()) {
-			scene.application.getEntityDatabase().emplaceComponent<TagComponent>(entity, itName->get<std::string>());
-			return Result();
+		auto itType = json.find("type");
+		if (itType == json.end()) {
+			return Result(false, "Missing \"type\" property");
+		}
+
+		std::string type = *itType;
+		if (type == "Gravity") {
+			auto itValue = json.find("value");
+			if (itValue == json.end()) {
+				return Result(false, "Gravity missing \"value\" property");
+			}
+
+			force = std::make_shared<Gravity>(itValue->get<float>());
+		}
+		else if (type == "DirectionalForce") {
+			auto itValue = json.find("value");
+			if (itValue == json.end()) {
+				return Result(false, "DirectionalForce missing \"value\" property");
+			}
+
+			glm::vec3 value;
+			if (!toVec3(*itValue, value)) {
+				return Result(false, "Wrong \"value\" property");
+			}
+
+			force = std::make_shared<DirectionalForce>(value);
+		}
+		else if (type == "PunctualForce") {
+			auto itValue = json.find("value");
+			if (itValue == json.end()) {
+				return Result(false, "PunctualForce missing \"value\" property");
+			}
+
+			glm::vec3 value;
+			if (!toVec3(*itValue, value)) {
+				return Result(false, "Wrong \"value\" property");
+			}
+
+			auto itPoint = json.find("point");
+			if (itPoint == json.end()) {
+				return Result(false, "PunctualForce missing \"point\" property");
+			}
+
+			glm::vec3 point;
+			if (!toVec3(*itPoint, point)) {
+				return Result(false, "Wrong \"point\" property");
+			}
+
+			force = std::make_shared<PunctualForce>(value, point);
 		}
 		else {
-			return Result("Missing name property");
+			return Result(false, "Wrong \"type\" value = " + type);
+		}
+
+		scene.repository.add(key, force);
+
+		return Result();
+	}
+
+// Components
+	template <typename T>
+	nlohmann::json serializeComponent(const T& component, SerializeData& data, std::ostream& dataStream);
+
+	template <typename T>
+	ResultOptional<T> deserializeComponent(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene);
+
+
+	template <>
+	nlohmann::json serializeComponent<TagComponent>(const TagComponent& tag, SerializeData&, std::ostream&)
+	{
+		nlohmann::json json;
+		json["name"] = tag.getName();
+		return json;
+	}
+
+	template <>
+	ResultOptional<TagComponent> deserializeComponent<TagComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
+	{
+		auto itName = json.find("name");
+		if (itName != json.end()) {
+			return { Result(), TagComponent(itName->get<std::string>()) };
+		}
+		else {
+			return { Result("Missing name property"), std::nullopt };
 		}
 	}
 
 
 	template <>
-	void serializeComponent<TransformsComponent>(const TransformsComponent& transforms, SerializeData&, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<TransformsComponent>(const TransformsComponent& transforms, SerializeData&, std::ostream&)
 	{
+		nlohmann::json json;
+
 		if (transforms.position != glm::vec3(0.0f)) {
 			json["position"] = toJson(transforms.position);
 		}
@@ -797,40 +892,44 @@ namespace se::app {
 		if (transforms.scale != glm::vec3(1.0f)) {
 			json["scale"] = toJson(transforms.scale);
 		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<TransformsComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<TransformsComponent> deserializeComponent<TransformsComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
 	{
-		auto transforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(entity);
+		TransformsComponent transforms;
 
 		auto itPosition = json.find("position");
 		if (itPosition != json.end()) {
-			toVec3(*itPosition, transforms->position);
+			toVec3(*itPosition, transforms.position);
 		}
 
 		auto itVelocity = json.find("velocity");
 		if (itVelocity != json.end()) {
-			toVec3(*itVelocity, transforms->velocity);
+			toVec3(*itVelocity, transforms.velocity);
 		}
 
 		auto itOrientation = json.find("orientation");
 		if (itOrientation != json.end()) {
-			toQuat(*itOrientation, transforms->orientation);
+			toQuat(*itOrientation, transforms.orientation);
 		}
 
 		auto itScale = json.find("scale");
 		if (itScale != json.end()) {
-			toVec3(*itScale, transforms->scale);
+			toVec3(*itScale, transforms.scale);
 		}
 
-		return Result();
+		return { Result(), std::move(transforms) };
 	}
 
 
 	template <>
-	void serializeComponent<CameraComponent>(const CameraComponent& camera, SerializeData&, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<CameraComponent>(const CameraComponent& camera, SerializeData&, std::ostream&)
 	{
+		nlohmann::json json;
+
 		json["isOrthographic"] = camera.hasOrthographicProjection();
 		if (camera.hasOrthographicProjection()) {
 			float left, right, bottom, top, zNear, zFar;
@@ -852,16 +951,18 @@ namespace se::app {
 			json["zNear"] = zNear;
 			json["zFar"] = zFar;
 		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<CameraComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<CameraComponent> deserializeComponent<CameraComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
 	{
-		auto camera = scene.application.getEntityDatabase().emplaceComponent<CameraComponent>(entity);
+		CameraComponent camera;
 
 		auto itIsOrtho = json.find("isOrthographic");
 		if (itIsOrtho == json.end()) {
-			return Result(false, "Missing isOrthographic property");
+			return { Result(false, "Missing isOrthographic property"), std::nullopt };
 		}
 
 		if (*itIsOrtho) {
@@ -871,30 +972,31 @@ namespace se::app {
 			if ((itLeft == json.end()) || (itRight == json.end()) || (itBottom == json.end()) || (itTop == json.end())
 				|| (itZNear == json.end()) || (itZFar == json.end())
 			) {
-				return Result(false, "Missing orthographic properties");
+				return { Result(false, "Missing orthographic properties"), std::nullopt };
 			}
 
-			camera->setOrthographicProjection(*itLeft, *itRight, *itBottom, *itTop, *itZNear, *itZFar);
+			camera.setOrthographicProjection(*itLeft, *itRight, *itBottom, *itTop, *itZNear, *itZFar);
 		}
 		else {
 			auto itFovy = json.find("fovy"), itAspectRatio = json.find("aspectRatio"), itZNear = json.find("zNear"), itZFar = json.find("zFar");
 
 			if ((itFovy == json.end()) || (itAspectRatio == json.end()) || (itZNear == json.end()) || (itZFar == json.end())) {
-				return Result(false, "Missing projection properties");
+				return { Result(false, "Missing projection properties"), std::nullopt };
 			}
 
-			camera->setPerspectiveProjection(*itFovy, *itAspectRatio, *itZNear, *itZFar);
+			camera.setPerspectiveProjection(*itFovy, *itAspectRatio, *itZNear, *itZFar);
 		}
 
-		return Result();
+		return { Result(), std::move(camera) };
 	}
 
 
 	template <>
-	void serializeComponent<MeshComponent>(const MeshComponent& mesh, SerializeData& data, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<MeshComponent>(const MeshComponent& mesh, SerializeData& data, std::ostream&)
 	{
-		nlohmann::json rMeshesJson;
+		nlohmann::json json;
 
+		auto rMeshesJson = nlohmann::json::array();
 		mesh.processRenderableIndices([&](std::size_t iMesh) {
 			Scene::Key key;
 			auto value = mesh.get(iMesh).getMesh();
@@ -906,18 +1008,19 @@ namespace se::app {
 				rMeshesJson.emplace_back(std::move(meshJson));
 			}
 		});
+		json["rMeshes"] = std::move(rMeshesJson);
 
-		json["rMeshes"] = rMeshesJson;
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<MeshComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<MeshComponent> deserializeComponent<MeshComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
 	{
-		auto mesh = scene.application.getEntityDatabase().emplaceComponent<MeshComponent>(entity, scene.application.getEventManager(), entity);
+		MeshComponent mesh(scene.application.getEventManager(), entity);
 
 		auto itRMeshes = json.find("rMeshes");
 		if (itRMeshes == json.end()) {
-			return Result(false, "Missing \"rMeshes\" property");
+			return { Result(false, "Missing \"rMeshes\" property"), std::nullopt };
 		}
 
 		for (std::size_t i = 0; i < itRMeshes->size(); ++i) {
@@ -927,13 +1030,13 @@ namespace se::app {
 			auto itHasSkinning = rMesh.find("hasSkinning");
 			auto itPrimitive = rMesh.find("primitive");
 			if (itKey == rMesh.end()) {
-				return Result(false, "Missing \"key\" property at mesh " + std::to_string(i));
+				return { Result(false, "Missing \"key\" property at mesh " + std::to_string(i)), std::nullopt };
 			}
 			if (itHasSkinning == rMesh.end()) {
-				return Result(false, "Missing \"hasSkinning\" property at mesh " + std::to_string(i));
+				return { Result(false, "Missing \"hasSkinning\" property at mesh " + std::to_string(i)), std::nullopt };
 			}
 			if (itPrimitive == rMesh.end()) {
-				return Result(false, "Missing \"primitive\" property at mesh " + std::to_string(i));
+				return { Result(false, "Missing \"primitive\" property at mesh " + std::to_string(i)), std::nullopt };
 			}
 
 			Scene::Key key = *itKey;
@@ -942,89 +1045,119 @@ namespace se::app {
 
 			auto value = scene.repository.find<Scene::Key, Mesh>(key);
 			if (!value) {
-				return Result(false, "Value not found with key " + key);
+				return { Result(false, "Value not found with key " + key), std::nullopt };
 			}
 
-			mesh->add(hasSkinning, value, primitive);
+			mesh.add(hasSkinning, value, primitive);
 		}
 
-		return Result();
+		return { Result(), std::move(mesh) };
 	}
 
 
 	template <>
-	void serializeComponent<LightComponent>(const LightComponent& light, SerializeData& data, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<LightComponent>(const LightComponent& light, SerializeData& data, std::ostream&)
 	{
+		nlohmann::json json;
+
 		Scene::Key key;
 		if (data.scene.repository.findKey(light.source, key)) {
 			json["sourceKey"] = key;
 		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<LightComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<LightComponent> deserializeComponent<LightComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
 	{
-		auto light = scene.application.getEntityDatabase().emplaceComponent<LightComponent>(entity);
+		LightComponent light;
 
 		auto itSourceKey = json.find("sourceKey");
 		if (itSourceKey != json.end()) {
 			Scene::Key key = *itSourceKey;
 			if (auto source = scene.repository.find<Scene::Key, LightSource>(key)) {
-				light->source = source;
+				light.source = source;
 			}
 			else {
-				return Result(false, "Key \"" + key + "\" not found");
+				return { Result(false, "Key \"" + key + "\" not found"), std::nullopt };
 			}
 		}
 
-		return Result();
+		return { Result(), std::move(light) };
 	}
 
 
 	template <>
-	void serializeComponent<RigidBody>(const RigidBody& rigidBody, SerializeData&, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<RigidBody>(const RigidBody& rigidBody, SerializeData& data, std::ostream&)
 	{
+		auto forces = nlohmann::json::array();
+		rigidBody.processForces([&](std::shared_ptr<Force> force) {
+			Scene::Key key;
+			if (data.scene.repository.findKey(force, key)) {
+				forces.push_back(key);
+			}
+		});
+
+		nlohmann::json json;
 		json["invertedMass"] = rigidBody.getConfig().invertedMass;
 		json["invertedInertiaTensor"] = toJson(rigidBody.getConfig().invertedInertiaTensor);
 		json["linearDrag"] = rigidBody.getConfig().linearDrag;
 		json["angularDrag"] = rigidBody.getConfig().angularDrag;
 		json["frictionCoefficient"] = rigidBody.getConfig().frictionCoefficient;
 		json["sleepMotion"] = rigidBody.getConfig().sleepMotion;
+		json["forces"] = std::move(forces);
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<RigidBody>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<RigidBody> deserializeComponent<RigidBody>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
 	{
-		auto rigidBody = scene.application.getEntityDatabase().emplaceComponent<RigidBody>(entity);
+		RigidBody rigidBody;
 
 		auto itInvertedMass = json.find("invertedMass"), itInvertedInertiaTensor = json.find("invertedInertiaTensor"),
 			itLinearDrag = json.find("linearDrag"), itAngularDrag = json.find("angularDrag"),
-			itFrictionCoefficient = json.find("frictionCoefficient"), itSleepMotion = json.find("sleepMotion");
+			itFrictionCoefficient = json.find("frictionCoefficient"), itSleepMotion = json.find("sleepMotion"),
+			itForces = json.find("forces");
 
 		if ((itInvertedMass == json.end()) || (itInvertedInertiaTensor == json.end())
 			|| (itLinearDrag == json.end()) || (itAngularDrag == json.end())
 			|| (itFrictionCoefficient == json.end()) || (itSleepMotion == json.end())
+			|| (itForces == json.end())
 		) {
-			return Result(false, "Missing properties");
+			return { Result(false, "Missing properties"), std::nullopt };
 		}
 
-		rigidBody->getConfig().invertedMass = *itInvertedMass;
-		if (!toMat3(*itInvertedInertiaTensor, rigidBody->getConfig().invertedInertiaTensor)) {
-			return Result(false, "Failed to parse the invertedInertiaTensor");
+		rigidBody.getConfig().invertedMass = *itInvertedMass;
+		if (!toMat3(*itInvertedInertiaTensor, rigidBody.getConfig().invertedInertiaTensor)) {
+			return { Result(false, "Failed to parse the invertedInertiaTensor"), std::nullopt };
 		}
 
-		rigidBody->getConfig().linearDrag = *itLinearDrag;
-		rigidBody->getConfig().angularDrag = *itAngularDrag;
-		rigidBody->getConfig().frictionCoefficient = *itFrictionCoefficient;
-		rigidBody->getConfig().sleepMotion = *itSleepMotion;
+		rigidBody.getConfig().linearDrag = *itLinearDrag;
+		rigidBody.getConfig().angularDrag = *itAngularDrag;
+		rigidBody.getConfig().frictionCoefficient = *itFrictionCoefficient;
+		rigidBody.getConfig().sleepMotion = *itSleepMotion;
 
-		return Result();
+		for (std::size_t i = 0; i < itForces->size(); ++i) {
+			auto forceJson = (*itForces)[i];
+			auto force = scene.repository.find<Scene::Key, Force>(forceJson.get<std::string>());
+			if (force) {
+				rigidBody.addForce(force);
+			}
+			else {
+				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Key " + forceJson.get<std::string>() + " not found"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(rigidBody) };
 	}
 
 
 	template <>
-	void serializeComponent<Collider>(const Collider& collider, SerializeData&, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<Collider>(const Collider& collider, SerializeData& data, std::ostream& dataStream)
 	{
+		nlohmann::json json;
+
 		if (auto bbox = dynamic_cast<const BoundingBox*>(&collider)) {
 			json["type"] = "BoundingBox";
 			json["lengths"] = toJson(bbox->getLengths());
@@ -1046,79 +1179,314 @@ namespace se::app {
 				toJson(triangle->getLocalVertices()[2])
 			};
 		}
+		else if (auto cPoly = dynamic_cast<const ConvexPolyhedron*>(&collider)) {
+			json["type"] = "ConvexPolyhedron";
+
+			HalfEdgeMesh mesh = cPoly->getLocalMesh();
+
+			json["vertices_size"] = mesh.vertices.size();
+
+			nlohmann::json verticesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.vertices.data()),
+				(mesh.vertices.size() + mesh.vertices.numReleasedIndices()) * sizeof(HEVertex), verticesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(verticesBuffer));
+			json["vertices_elements"] = data.buffersJson.size() - 1;
+
+			nlohmann::json releasedVerticesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.vertices.releasedIndices()),
+				mesh.vertices.numReleasedIndices() * sizeof(std::size_t), releasedVerticesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(releasedVerticesBuffer));
+			json["vertices_released"] = data.buffersJson.size() - 1;
+
+			json["edges_size"] = mesh.edges.size();
+
+			nlohmann::json edgesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.edges.data()),
+				(mesh.edges.size() + mesh.edges.numReleasedIndices()) * sizeof(HEEdge), edgesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(edgesBuffer));
+			json["edges_elements"] = data.buffersJson.size() - 1;
+
+			nlohmann::json releasedEdgesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.edges.releasedIndices()),
+				mesh.edges.numReleasedIndices() * sizeof(std::size_t), releasedEdgesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(releasedEdgesBuffer));
+			json["edges_released"] = data.buffersJson.size() - 1;
+
+			json["faces_size"] = mesh.faces.size();
+
+			nlohmann::json facesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.faces.data()),
+				(mesh.faces.size() + mesh.faces.numReleasedIndices()) * sizeof(HEFace), facesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(facesBuffer));
+			json["faces_elements"] = data.buffersJson.size() - 1;
+
+			nlohmann::json releasedFacesBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(mesh.faces.releasedIndices()),
+				mesh.faces.numReleasedIndices() * sizeof(std::size_t), releasedFacesBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(releasedFacesBuffer));
+			json["faces_released"] = data.buffersJson.size() - 1;
+
+			std::vector<int> vertexEdgeMap;
+			vertexEdgeMap.reserve(3 * mesh.vertexEdgeMap.size());
+			for (const auto& [vertices, edge] : mesh.vertexEdgeMap) {
+				vertexEdgeMap.push_back(vertices.first);
+				vertexEdgeMap.push_back(vertices.second);
+				vertexEdgeMap.push_back(edge);
+			}
+
+			nlohmann::json vertexEdgeBuffer;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(vertexEdgeMap.data()),
+				vertexEdgeMap.size() * sizeof(int), vertexEdgeBuffer, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(vertexEdgeBuffer));
+			json["vertexEdgeMap"] = data.buffersJson.size() - 1;
+		}
+		else if (auto terrain = dynamic_cast<const TerrainCollider*>(&collider)) {
+			nlohmann::json bufferJson;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(terrain->getHeights()),
+				terrain->getXSize() * terrain->getZSize() * sizeof(float),
+				bufferJson, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(bufferJson));
+
+			json["type"] = "TerrainCollider";
+			json["xSize"] = terrain->getXSize();
+			json["zSize"] = terrain->getZSize();
+			json["heights"] = data.buffersJson.size() - 1;
+		}
+		else if (auto composite = dynamic_cast<const CompositeCollider*>(&collider)) {
+			auto colliderPartsJson = nlohmann::json::array();
+			composite->processParts([&](const Collider& part) {
+				colliderPartsJson.emplace_back( serializeComponent<Collider>(part, data, dataStream) );
+			});
+
+			json["type"] = "CompositeCollider";
+			json["parts"] = std::move(colliderPartsJson);
+		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<Collider>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<std::unique_ptr<Collider>> deserializeComponent<std::unique_ptr<Collider>>(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene)
 	{
+		std::unique_ptr<Collider> collider;
+
 		auto itType = json.find("type");
 		if (itType == json.end()) {
-			return Result(false, "Missing type property");
+			return { Result(false, "Missing \"type\" property"), std::nullopt };
 		}
 
 		if (*itType == "BoundingBox") {
 			auto itLengths = json.find("lengths");
 			if (itLengths == json.end()) {
-				return Result(false, "Missing BoundingBox lengths property");
+				return { Result(false, "Missing BoundingBox \"lengths\" property"), std::nullopt };
 			}
 
 			glm::vec3 lengths;
 			if (!toVec3(*itLengths, lengths)) {
-				return Result(false, "Failed to parse BoundingBox lengths property");
+				return { Result(false, "Failed to parse BoundingBox \"lengths\" property"), std::nullopt };
 			}
 
-			scene.application.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingBox>(lengths));
+			collider = std::make_unique<BoundingBox>(lengths);
 		}
 		else if (*itType == "BoundingSphere") {
 			auto itRadius = json.find("radius");
 			if (itRadius == json.end()) {
-				return Result(false, "Missing BoundingSphere radius property");
+				return { Result(false, "Missing BoundingSphere \"radius\" property"), std::nullopt };
 			}
 
-			scene.application.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<BoundingSphere>(itRadius->get<float>()));
+			collider = std::make_unique<BoundingSphere>(itRadius->get<float>());
 		}
 		else if (*itType == "Capsule") {
 			auto itRadius = json.find("radius");
 			if (itRadius == json.end()) {
-				return Result(false, "Missing Capsule radius property");
+				return { Result(false, "Missing Capsule \"radius\" property"), std::nullopt };
 			}
 			auto itHeight = json.find("height");
 			if (itHeight == json.end()) {
-				return Result(false, "Missing Capsule height property");
+				return { Result(false, "Missing Capsule \"height\" property"), std::nullopt };
 			}
 
-			scene.application.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<Capsule>(itRadius->get<float>(), itHeight->get<float>()));
+			collider = std::make_unique<Capsule>(itRadius->get<float>(), itHeight->get<float>());
 		}
 		else if (*itType == "TriangleCollider") {
 			auto itVertices = json.find("localVertices");
 			if (itVertices == json.end()) {
-				return Result(false, "Missing TriangleCollider localVertices property");
+				return { Result(false, "Missing TriangleCollider \"localVertices\" property"), std::nullopt };
 			}
 
 			if (itVertices->size() < 3) {
-				return Result(false, "Not enough localVertices");
+				return { Result(false, "Not enough localVertices"), std::nullopt };
 			}
 
 			std::array<glm::vec3, 3> vertices;
 			for (std::size_t i = 0; i < 3; ++i) {
 				if (!toVec3((*itVertices)[i], vertices[i])) {
-					return Result(false, "Failed to parse the localVertices property");
+					return { Result(false, "Failed to parse the \"localVertices\" property"), std::nullopt };
 				}
 			}
 
-			scene.application.getEntityDatabase().addComponent<Collider>(entity, std::make_unique<TriangleCollider>(vertices));
+			collider = std::make_unique<TriangleCollider>(vertices);
+		}
+		else if (*itType == "ConvexPolyhedron") {
+			auto itVerticesSize = json.find("vertices_size");
+			auto itVerticesElements = json.find("vertices_elements");
+			auto itVerticesReleased = json.find("vertices_released");
+			if ((itVerticesSize == json.end()) || (itVerticesElements == json.end()) || (itVerticesReleased == json.end())) {
+				return { Result(false, "Missing vertices properties"), std::nullopt };
+			}
+
+			std::size_t verticesSize = *itVerticesSize;
+			std::size_t verticesElements = *itVerticesElements;
+			std::size_t verticesReleased = *itVerticesReleased;
+			if ((verticesElements >= data.buffersJson.size()) || (verticesReleased >= data.buffersJson.size())) {
+				return { Result(false, "Vertices properties out of bounds"), std::nullopt };
+			}
+
+			std::vector<std::byte> vElementsBuffer, vReleasedBuffer;
+			deserializeBuffer(data.buffersJson[verticesElements], data.dataStream, vElementsBuffer);
+			deserializeBuffer(data.buffersJson[verticesReleased], data.dataStream, vReleasedBuffer);
+
+			auto itEdgesSize = json.find("edges_size");
+			auto itEdgesElements = json.find("edges_elements");
+			auto itEdgesReleased = json.find("edges_released");
+			if ((itEdgesSize == json.end()) || (itEdgesElements == json.end()) || (itEdgesReleased == json.end())) {
+				return { Result(false, "Missing edges properties"), std::nullopt };
+			}
+
+			std::size_t edgesSize = *itEdgesSize;
+			std::size_t edgesElements = *itEdgesElements;
+			std::size_t edgesReleased = *itEdgesReleased;
+			if ((edgesElements >= data.buffersJson.size()) || (edgesReleased >= data.buffersJson.size())) {
+				return { Result(false, "Edges properties out of bounds"), std::nullopt };
+			}
+
+			std::vector<std::byte> eElementsBuffer, eReleasedBuffer;
+			deserializeBuffer(data.buffersJson[edgesElements], data.dataStream, eElementsBuffer);
+			deserializeBuffer(data.buffersJson[edgesReleased], data.dataStream, eReleasedBuffer);
+
+			auto itFacesSize = json.find("faces_size");
+			auto itFacesElements = json.find("faces_elements");
+			auto itFacesReleased = json.find("faces_released");
+			if ((itFacesSize == json.end()) || (itFacesElements == json.end()) || (itFacesReleased == json.end())) {
+				return { Result(false, "Missing faces properties"), std::nullopt };
+			}
+
+			std::size_t facesSize = *itFacesSize;
+			std::size_t facesElements = *itFacesElements;
+			std::size_t facesReleased = *itFacesReleased;
+			if ((facesElements >= data.buffersJson.size()) || (facesReleased >= data.buffersJson.size())) {
+				return { Result(false, "Faces properties out of bounds"), std::nullopt };
+			}
+
+			std::vector<std::byte> fElementsBuffer, fReleasedBuffer;
+			deserializeBuffer(data.buffersJson[facesElements], data.dataStream, fElementsBuffer);
+			deserializeBuffer(data.buffersJson[facesReleased], data.dataStream, fReleasedBuffer);
+
+			auto itVertexEdgeMap = json.find("vertexEdgeMap");
+			if (itVertexEdgeMap == json.end()) {
+				return { Result(false, "Missing \"vertexEdgeMap\" property"), std::nullopt };
+			}
+
+			std::size_t vertexEdgeMap = *itVertexEdgeMap;
+
+			std::vector<std::byte> veMapBuffer;
+			deserializeBuffer(data.buffersJson[vertexEdgeMap], data.dataStream, veMapBuffer);
+			auto intBuff = reinterpret_cast<const int*>(veMapBuffer.data());
+
+			HalfEdgeMesh mesh;
+			mesh.vertices = utils::PackedVector<HEVertex>(
+				reinterpret_cast<const HEVertex*>(vElementsBuffer.data()), vElementsBuffer.size() / sizeof(HEVertex), verticesSize,
+				reinterpret_cast<const std::size_t*>(vReleasedBuffer.data()), vReleasedBuffer.size() / sizeof(std::size_t)
+			);
+			mesh.edges = utils::PackedVector<HEEdge>(
+				reinterpret_cast<const HEEdge*>(eElementsBuffer.data()), eElementsBuffer.size() / sizeof(HEEdge), edgesSize,
+				reinterpret_cast<const std::size_t*>(eReleasedBuffer.data()), eReleasedBuffer.size() / sizeof(std::size_t)
+			);
+			mesh.faces = utils::PackedVector<HEFace>(
+				reinterpret_cast<const HEFace*>(fElementsBuffer.data()), fElementsBuffer.size() / sizeof(HEFace), facesSize,
+				reinterpret_cast<const std::size_t*>(fReleasedBuffer.data()), fReleasedBuffer.size() / sizeof(std::size_t)
+			);
+			mesh.vertexEdgeMap.reserve(veMapBuffer.size() / sizeof(int));
+			for (std::size_t i = 0; i < veMapBuffer.size() / sizeof(int); i+=3) {
+				mesh.vertexEdgeMap.emplace(std::make_pair(intBuff[i], intBuff[i+1]), intBuff[i+2]);
+			}
+
+			collider = std::make_unique<ConvexPolyhedron>(std::move(mesh));
+		}
+		else if (*itType == "TerrainCollider") {
+			auto itHeights = json.find("heights");
+			if (itHeights == json.end()) {
+				return { Result(false, "Missing TriangleCollider \"heights\" property"), std::nullopt };
+			}
+
+			std::size_t heights = *itHeights;
+			if (*itHeights >= data.buffersJson.size()) {
+				return { Result(false, "Heights buffer " + std::to_string(heights) + " out of bounds"), std::nullopt };
+			}
+
+			auto itXSize = json.find("xSize");
+			if (itXSize == json.end()) {
+				return { Result(false, "Missing TriangleCollider \"xSize\" property"), std::nullopt };
+			}
+
+			auto itZSize = json.find("zSize");
+			if (itZSize == json.end()) {
+				return { Result(false, "Missing TriangleCollider \"zSize\" property"), std::nullopt };
+			}
+
+			std::vector<std::byte> buffer;
+			deserializeBuffer(data.buffersJson[heights], data.dataStream, buffer);
+
+			auto terrain = std::make_unique<TerrainCollider>();
+			terrain->setHeights(reinterpret_cast<const float*>(buffer.data()), *itXSize, *itZSize);
+			collider = std::move(collider);
+		}
+		else if (*itType == "CompositeCollider") {
+			auto itParts = json.find("parts");
+			if (itParts == json.end()) {
+				return { Result(false, "Missing CompositeCollider \"parts\" property"), std::nullopt };
+			}
+
+			std::vector<std::unique_ptr<Collider>> parts;
+			for (std::size_t i = 0; i < itParts->size(); ++i) {
+				auto jsonPart = (*itParts)[i];
+				auto [result, part] = deserializeComponent<std::unique_ptr<Collider>>(jsonPart, entity, data, scene);
+				if (!result) {
+					return { Result(false, "Failed to parse CompositeCollider at parts[" + std::to_string(i) + "]:" + result.description()), std::nullopt };
+				}
+				parts.emplace_back(std::move(*part));
+			}
+			collider = std::make_unique<CompositeCollider>(std::move(parts));
 		}
 		else {
-			return Result(false, "Wrong type: " + itType->get<std::string>());
+			return { Result(false, "Wrong type: " + itType->get<std::string>()), std::nullopt };
 		}
 
-		return Result();
+		return { Result(), std::move(collider) };
 	}
 
 
 	template <>
-	void serializeComponent<SkinComponent>(const SkinComponent& skin, SerializeData& data, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<SkinComponent>(const SkinComponent& skin, SerializeData& data, std::ostream&)
 	{
+		nlohmann::json json;
+
 		Scene::Key key;
 		auto itNodeIndex = data.nodeIndexMap.find(skin.getRoot());
 		if ((itNodeIndex != data.nodeIndexMap.end()) && data.scene.repository.findKey(skin.getSkin(), key)) {
@@ -1129,7 +1497,7 @@ namespace se::app {
 					nlohmann::json pairJson;
 					pairJson["node"] = itNode->second;
 					pairJson["joint"] = jointIndex;
-					mapNodeJointJson.push_back(std::move(pairJson));
+					mapNodeJointJson.emplace_back(std::move(pairJson));
 				}
 			}
 
@@ -1137,109 +1505,112 @@ namespace se::app {
 			json["mapNodeJoint"] = std::move(mapNodeJointJson);
 			json["skin"] = key;
 		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<SkinComponent>(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene)
+	ResultOptional<SkinComponent> deserializeComponent<SkinComponent>(const nlohmann::json& json, Entity, DeserializeData& data, Scene& scene)
 	{
 		auto itRoot = json.find("root");
 		if (itRoot == json.end()) {
-			return Result(false, "Missing \"root\" property");
+			return { Result(false, "Missing \"root\" property"), std::nullopt };
 		}
 
 		auto itSkin = json.find("skin");
 		if (itSkin == json.end()) {
-			return Result(false, "Missing \"skin\" property");
+			return { Result(false, "Missing \"skin\" property"), std::nullopt };
 		}
 
 		auto itMapNodeJoint = json.find("mapNodeJoint");
 		if (itMapNodeJoint == json.end()) {
-			return Result(false, "Missing \"mapNodeJoint\" property");
+			return { Result(false, "Missing \"mapNodeJoint\" property"), std::nullopt };
 		}
 
 		auto itRoot2 = data.indexNodeMap.find(*itRoot);
 		if (itRoot2 == data.indexNodeMap.end()) {
-			return Result(false, "Node " + std::to_string(itRoot->get<std::size_t>()) + " not found");
+			return { Result(false, "Node " + std::to_string(itRoot->get<std::size_t>()) + " not found"), std::nullopt };
 		}
 
 		auto skin = scene.repository.find<Scene::Key, Skin>(*itSkin);
 		if (!skin) {
-			return Result(false, "Skin \"" + itSkin->get<std::string>() + "\" not found");
+			return { Result(false, "Skin \"" + itSkin->get<std::string>() + "\" not found"), std::nullopt };
 		}
 
 		SkinComponent::MapNodeJoint mapNodeJoint;
 		for (std::size_t i = 0; i < itMapNodeJoint->size(); ++i) {
 			auto itNode = (*itMapNodeJoint)[i].find("node");
 			if (itNode == (*itMapNodeJoint)[i].end()) {
-				return Result(false, "Missing \"node\" property on mapNodeJoint[" + std::to_string(i) + "]");
+				return { Result(false, "Missing \"node\" property on mapNodeJoint[" + std::to_string(i) + "]"), std::nullopt };
 			}
 
 			auto itJoint = (*itMapNodeJoint)[i].find("joint");
 			if (itJoint == (*itMapNodeJoint)[i].end()) {
-				return Result(false, "Missing \"joint\" property on mapNodeJoint[" + std::to_string(i) + "]");
+				return { Result(false, "Missing \"joint\" property on mapNodeJoint[" + std::to_string(i) + "]"), std::nullopt };
 			}
 
 			auto itNode2 = data.indexNodeMap.find(*itNode);
 			if (itNode2 == data.indexNodeMap.end()) {
-				return Result(false, "Node " + std::to_string(itNode->get<std::size_t>()) + " not found on mapNodeJoint[" + std::to_string(i) + "]");
+				return { Result(false, "Node " + std::to_string(itNode->get<std::size_t>()) + " not found on mapNodeJoint[" + std::to_string(i) + "]"), std::nullopt };
 			}
 
 			mapNodeJoint.emplace_back(itNode2->second, itJoint->get<std::size_t>());
 		}
 
-		scene.application.getEntityDatabase().emplaceComponent<SkinComponent>(entity, itRoot2->second, std::move(skin), std::move(mapNodeJoint));
-
-		return Result();
+		return { Result(), SkinComponent(itRoot2->second, std::move(skin), std::move(mapNodeJoint)) };
 	}
 
 
 	template <>
-	void serializeComponent<AnimationComponent>(const AnimationComponent& animation, SerializeData& data, nlohmann::json& json, std::ostream&)
+	nlohmann::json serializeComponent<AnimationComponent>(const AnimationComponent& animation, SerializeData& data, std::ostream&)
 	{
+		nlohmann::json json;
+
 		auto itNodeIndex = data.nodeIndexMap.find(animation.getRootNode());
 		if (itNodeIndex != data.nodeIndexMap.end()) {
 			auto animatorsJson = nlohmann::json::array();
 			animation.processSAnimators([&](std::shared_ptr<SkeletonAnimator> sAnimator) {
 				Scene::Key key;
 				if (data.scene.repository.findKey(sAnimator, key)) {
-					animatorsJson.push_back(key);
+					animatorsJson.emplace_back(key);
 				}
 			});
 
 			json["root"] = itNodeIndex->second;
 			json["animators"] = std::move(animatorsJson);
 		}
+
+		return json;
 	}
 
 	template <>
-	Result deserializeComponent<AnimationComponent>(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene)
+	ResultOptional<AnimationComponent> deserializeComponent<AnimationComponent>(const nlohmann::json& json, Entity, DeserializeData& data, Scene& scene)
 	{
 		auto itRoot = json.find("root");
 		if (itRoot == json.end()) {
-			return Result(false, "Missing \"root\" property");
+			return { Result(false, "Missing \"root\" property"), std::nullopt };
 		}
 
 		auto itAnimators = json.find("animators");
 		if (itAnimators == json.end()) {
-			return Result(false, "Missing \"animators\" property");
+			return { Result(false, "Missing \"animators\" property"), std::nullopt };
 		}
 
 		auto itRoot2 = data.indexNodeMap.find(*itRoot);
 		if (itRoot2 == data.indexNodeMap.end()) {
-			return Result(false, "Node " + std::to_string(itRoot->get<std::size_t>()) + " not found");
+			return { Result(false, "Node " + std::to_string(itRoot->get<std::size_t>()) + " not found"), std::nullopt };
 		}
 
-		auto animation = scene.application.getEntityDatabase().emplaceComponent<AnimationComponent>(entity, itRoot2->second);
+		AnimationComponent animation(itRoot2->second);
 		for (std::size_t i = 0; i < itAnimators->size(); ++i) {
 			auto animator = scene.repository.find<Scene::Key, SkeletonAnimator>((*itAnimators)[i]);
 			if (!animator) {
-				return Result(false, "SkeletonAnimator " + (*itAnimators)[i].get<std::string>() + " not found");
+				return { Result(false, "SkeletonAnimator " + (*itAnimators)[i].get<std::string>() + " not found"), std::nullopt };
 			}
 
-			animation->addAnimator(animator);
+			animation.addAnimator(animator);
 		}
-
-		return Result();
+		return { Result(), std::move(animation) };
 	}
 
 // Other
@@ -1259,7 +1630,7 @@ namespace se::app {
 
 		auto childrenJson = nlohmann::json::array();
 		for (auto it = node.cbegin<Traversal::Children>(); it != node.cend<Traversal::Children>(); ++it) {
-			childrenJson.push_back(nodeIndexMap.find(&(*it))->second);
+			childrenJson.emplace_back(nodeIndexMap.find(&(*it))->second);
 		}
 		json["children"] = std::move(childrenJson);
 	}
@@ -1319,7 +1690,7 @@ namespace se::app {
 			nlohmann::json resourceJson;
 			resourceJson["key"] = k;
 			serializeResource<T>(*v, k, data, resourceJson, dataStream);
-			resourcesVJson.push_back(resourceJson);
+			resourcesVJson.emplace_back(std::move(resourceJson));
 		});
 
 		if (!resourcesVJson.empty()) {
@@ -1360,10 +1731,9 @@ namespace se::app {
 			auto [component] = data.scene.application.getEntityDatabase().getComponents<T>(entity);
 
 			if (component) {
-				nlohmann::json componentJson;
+				nlohmann::json componentJson = serializeComponent<T>(*component, data, dataStream);
 				componentJson["entity"] = index;
-				serializeComponent<T>(*component, data, componentJson, dataStream);
-				componentsVJson.push_back(componentJson);
+				componentsVJson.emplace_back(std::move(componentJson));
 			}
 		}
 
@@ -1372,7 +1742,7 @@ namespace se::app {
 		}
 	}
 
-	template <typename T>
+	template <typename T, bool hasDerived = false>
 	Result deserializeCVector(const std::string& tag, DeserializeData& data, Scene& scene)
 	{
 		auto it = data.json.find(tag);
@@ -1391,8 +1761,19 @@ namespace se::app {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Entity " + std::to_string(iEntity) + " not found");
 				}
 
-				if (auto result = deserializeComponent<T>(componentJson, itEntity2->second, data, scene); !result) {
-					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
+				if constexpr (hasDerived) {
+					auto [result, component] = deserializeComponent<std::unique_ptr<T>>(componentJson, itEntity2->second, data, scene);
+					if (!result) {
+						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
+					}
+					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
+				}
+				else {
+					auto [result, component] = deserializeComponent<T>(componentJson, itEntity2->second, data, scene);
+					if (!result) {
+						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
+					}
+					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
 				}
 			}
 		}
@@ -1409,6 +1790,7 @@ namespace se::app {
 		serializeRVector<LightSource>("lightSources", data, json, dataStream);
 		serializeRVector<Program>("programs", data, json, dataStream);
 		serializeRVector<Texture>("textures", data, json, dataStream);
+		serializeRVector<Force>("forces", data, json, dataStream);
 	}
 
 	Result deserializeRepository(DeserializeData& data, Scene& scene)
@@ -1419,6 +1801,7 @@ namespace se::app {
 		if (auto result = deserializeRVector<LightSource>("lightSources", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Program>("programs", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Texture>("textures", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<Force>("forces", data, scene); !result) { return result; }
 		return Result();
 	}
 
@@ -1434,7 +1817,7 @@ namespace se::app {
 		for (auto itNode = data.scene.rootNode.cbegin(); itNode != data.scene.rootNode.cend(); ++itNode) {
 			nlohmann::json nodeJson;
 			serializeAnimationNode(*itNode, data.nodeIndexMap, nodeJson);
-			nodesVJson.push_back(nodeJson);
+			nodesVJson.emplace_back(std::move(nodeJson));
 		}
 
 		if (!nodesVJson.empty()) {
@@ -1538,7 +1921,7 @@ namespace se::app {
 		if (auto result = deserializeCVector<MeshComponent>("meshComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<RigidBody>("rigidBodies", data, scene); !result) { return result; }
-		if (auto result = deserializeCVector<Collider>("colliders", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<Collider, true>("colliders", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
 		return Result();
@@ -1554,7 +1937,7 @@ namespace se::app {
 		}
 
 		nlohmann::json outputJson;
-		SerializeData data = { scene, {}, {} };
+		SerializeData data = { scene, {}, {}, {}, {} };
 
 		serializeRepository(data, outputJson, outputDATAStream);
 		serializeNodes(data, outputJson);

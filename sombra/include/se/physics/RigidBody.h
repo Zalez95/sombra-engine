@@ -2,8 +2,11 @@
 #define RIGID_BODY_H
 
 #include <bitset>
+#include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "forces/Force.h"
 
 namespace se::physics {
 
@@ -25,33 +28,33 @@ namespace se::physics {
 		/** The inverse of the mass of the RigidBody
 		 * @note	We store the mass inverted because it's more useful for
 		 *			storing RigidBodies with infinite mass */
-		float invertedMass;
+		float invertedMass = 0.0f;
 
 		/** The inertia tensor of the RigidBody. It's a 3x3 matrix in local
 		 * space that stores all the moments of inertia of the RigidBody.
 		 * @note	is a mat3 because it doesn't matter the location, only
 		 *			the orientation. The inertia tensor is stored inverted
 		 *			so we don't need to inverse the matrix in later calculus. */
-		glm::mat3 invertedInertiaTensor;
+		glm::mat3 invertedInertiaTensor = glm::mat3(0.0f);
 
 		/** The factor by which the linear velocity of the RigidBody is going to
 		 * be slowed down over time */
-		float linearDrag;
+		float linearDrag = 0.0f;
 
 		/** The factor by which the angular velocity of a RigidBody is going to
 		 * be slowed down over time */
-		float angularDrag;
+		float angularDrag = 0.0f;
 
 		/** The friction coefficient for the friction constraints (we use the
 		 * same coefficient for both static and dynamic friction) */
-		float frictionCoefficient;
+		float frictionCoefficient = 0.0f;
 
 		/** The maximum motion value that the RigidBody can have before being
 		 * put to Sleeping state */
-		float sleepMotion;
+		float sleepMotion = 0.001f;
 
 		/** Creates a new RigidBodyConfig with infinite mass */
-		RigidBodyConfig();
+		RigidBodyConfig() {};
 
 		/** Creates a new RigidBodyConfig
 		 *
@@ -72,35 +75,32 @@ namespace se::physics {
 	{
 		/** The linear position of the origin (center of mass) of the RigidBody
 		 * in world space */
-		glm::vec3 position;
+		glm::vec3 position = glm::vec3(0.0f);
 
 		/** The orientation of the RigidBody in world space */
-		glm::quat orientation;
+		glm::quat orientation = glm::quat(1.0f, glm::vec3(0.0f));
 
 		/** The linear velocity of the RigidBody in world space */
-		glm::vec3 linearVelocity;
+		glm::vec3 linearVelocity = glm::vec3(0.0f);
 
 		/** The angular velocity of the RigidBody in world space represented as
 		 * a scaled vector, where the magnitude is the rotation rate around the
 		 * normalized axis */
-		glm::vec3 angularVelocity;
+		glm::vec3 angularVelocity = glm::vec3(0.0f);
 
 		/** The linear acceleration of the RigidBody in world space */
-		glm::vec3 linearAcceleration;
+		glm::vec3 linearAcceleration = glm::vec3(0.0f);
 
 		/** The angular acceleration of the RigidBody in world space */
-		glm::vec3 angularAcceleration;
+		glm::vec3 angularAcceleration = glm::vec3(0.0f);
 
 		/** A vector with the sum of all the forces currently applied to
 		 * the RigidBody */
-		glm::vec3 forceSum;
+		glm::vec3 forceSum = glm::vec3(0.0f);
 
 		/** A vector with the sum of all the torques currently applied to
 		 * the RigidBody */
-		glm::vec3 torqueSum;
-
-		/** Creates a new RigidBodyData */
-		RigidBodyData();
+		glm::vec3 torqueSum = glm::vec3(0.0f);
 	};
 
 
@@ -110,6 +110,7 @@ namespace se::physics {
 	class RigidBody
 	{
 	private:	// Nested types
+		using ForceSPtr = std::shared_ptr<Force>;
 		friend class RigidBodyDynamics;
 
 	private:	// Attributes
@@ -121,6 +122,9 @@ namespace se::physics {
 
 		/** The current movement data of the RigidBody */
 		RigidBodyData mData;
+
+		/** The forces to apply to the RigidBody */
+		std::vector<ForceSPtr> mForces;
 
 		/** The matrix that holds all the current tranformations of the
 		 * RigidBody (translation and orientation) in world space */
@@ -164,6 +168,25 @@ namespace se::physics {
 		/** @return	the current RigidBodyData of the RigidBody */
 		RigidBodyData& getData() { return mData; };
 
+		/** Adds the given Force to the RigidBody
+		 *
+		 * @param	force the new Force
+		 * @return	the current RigidBody object */
+		RigidBody& addForce(ForceSPtr force);
+
+		/** Iterates through all the Forces of the RigidBody calling the given
+		 * callback function
+		 *
+		 * @param	callback the function to call for each Force */
+		template <typename F>
+		void processForces(F callback) const;
+
+		/** Removes the given Force from the RigidBody
+		 *
+		 * @param	force the Force to remove
+		 * @return	the current RigidBody object */
+		RigidBody& removeForce(ForceSPtr force);
+
 		/** @return	the current transformation matrix of the RigidBody */
 		const glm::mat4& getTransformsMatrix() const
 		{ return mTransformsMatrix; };
@@ -183,6 +206,15 @@ namespace se::physics {
 		 *			RigidBodyData is changed */
 		void synchWithData();
 	};
+
+
+	template <typename F>
+	void RigidBody::processForces(F callback) const
+	{
+		for (auto& force : mForces) {
+			callback(force);
+		}
+	}
 
 }
 

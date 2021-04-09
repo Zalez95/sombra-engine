@@ -127,15 +127,17 @@ namespace se::collision {
 	 * @param	eyePoint the 3D coordinates of the eye point
 	 * @param	iInitialFace the index of the initial HEFace from which we will
 	 *			start searching
-	 * @return	a pair with the list of HEEdge indices that represents the
-	 *			boundary of the mesh horizon and the list of HEFace indices
-	 *			with the visible HEFaces
+	 * @param	horizonEdges the indices of the HEEdges that are part of the
+	 *			boundary of the mesh horizon will be stored (return parameter)
+	 * @param	visibleFaces the indices of the HEFaces that are visible from
+	 *			the given point will be stored (return parameter)
 	 * @note	the meshData must be convex and the initial HEFace must be
 	 *			visible from the eyePoint perspective */
-	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
+	void calculateHorizon(
 		const HalfEdgeMesh& meshData,
 		const utils::PackedVector<glm::vec3>& faceNormals,
-		const glm::vec3& eyePoint, int iInitialFace
+		const glm::vec3& eyePoint, int iInitialFace,
+		std::vector<int>& horizonEdges, std::vector<int>& visibleFaces
 	);
 
 }

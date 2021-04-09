@@ -29,6 +29,9 @@ namespace se::collision {
 		/** The precision of the projected point onto a triangle */
 		const float mProjectionPrecision;
 
+		/** The vectors needed for expanding the polytope */
+		std::vector<int> mOverlappingFaces, mHorizon, mFacesToRemove;
+
 	public:		// Functions
 		/** Creates a new EPACollisionDetector
 		 * @param	minFThreshold a threshold value needed for checking if we
@@ -54,7 +57,7 @@ namespace se::collision {
 		std::pair<bool, Contact> calculate(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Simplex& simplex
-		) const;
+		);
 	private:
 		/** Creates an initial polytope from the given simplex
 		 *
@@ -113,7 +116,7 @@ namespace se::collision {
 		int expandPolytope(
 			const ConvexCollider& collider1, const ConvexCollider& collider2,
 			Polytope& polytope
-		) const;
+		);
 
 		/** Calculates the Contact data with the normal of closest face in the
 		 * Polytope to the origin, and the distance and coordinates of the

@@ -5,6 +5,8 @@
 #include <se/animation/SkeletonAnimator.h>
 #include <se/audio/Buffer.h>
 #include <se/physics/forces/Gravity.h>
+#include <se/physics/forces/PunctualForce.h>
+#include <se/physics/forces/DirectionalForce.h>
 #include <se/graphics/core/Program.h>
 #include <se/graphics/Pass.h>
 #include <se/graphics/Technique.h>
@@ -117,7 +119,7 @@ namespace editor {
 			}
 		};
 	protected:
-		virtual void draw(const std::string& /*key*/) {};
+		virtual void draw(const Scene::Key& /*key*/) {};
 		/** @return	true if the create menu must be shown, false otherwise */
 		virtual bool create() { return false; };
 	};
@@ -214,7 +216,7 @@ namespace editor {
 		SkinNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Skin"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto skin = mPanel.mEditor.getScene()->repository.find<Scene::Key, Skin>(key);
 			ImGui::Text("Inverse bind matrices: %lu", skin->inverseBindMatrices.size());
@@ -231,7 +233,7 @@ namespace editor {
 		LightSourceNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "LightSource"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto source = mPanel.mEditor.getScene()->repository.find<Scene::Key, LightSource>(key);
 
@@ -282,7 +284,7 @@ namespace editor {
 		RenderableShaderNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "RenderableShader"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto renderable = mPanel.mEditor.getScene()->repository.find<Scene::Key, RenderableShader>(key);
 			renderable->getTechnique()->processPasses([&](const auto& pass) {
@@ -308,7 +310,7 @@ namespace editor {
 		SkeletonAnimatorNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "SkeletonAnimator"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto animator = mPanel.mEditor.getScene()->repository.find<Scene::Key, SkeletonAnimator>(key);
 			ImGui::Text("Loop time: %.3f seconds", animator->getLoopTime());
@@ -365,13 +367,15 @@ namespace editor {
 		ForceNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Force"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto force = mPanel.mEditor.getScene()->repository.find<Scene::Key, Force>(key);
 			auto gravity = std::dynamic_pointer_cast<Gravity>(force);
+			auto punctual = std::dynamic_pointer_cast<PunctualForce>(force);
+			auto directional = std::dynamic_pointer_cast<DirectionalForce>(force);
 
-			const char* types[] = { "Gravity" };
-			std::size_t currentType = gravity? 0 : 0;
+			static const char* types[] = { "Gravity", "Punctual", "Directional" };
+			std::size_t currentType = gravity? 0 : punctual? 1 : 2;
 			addDropdown("Type##ForceNode", types, IM_ARRAYSIZE(types), currentType);
 
 			if (currentType == 0) {
@@ -381,6 +385,22 @@ namespace editor {
 					mPanel.mEditor.getScene()->repository.add<Scene::Key, Force>(key, gravity);
 				}
 				drawGravity(*gravity);
+			}
+			else if (currentType == 1) {
+				if (!punctual) {
+					punctual = std::make_shared<PunctualForce>();
+					mPanel.mEditor.getScene()->repository.remove<Scene::Key, Force>(key);
+					mPanel.mEditor.getScene()->repository.add<Scene::Key, Force>(key, punctual);
+				}
+				drawPunctualForce(*punctual);
+			}
+			else if (currentType == 2) {
+				if (!directional) {
+					directional = std::make_shared<DirectionalForce>();
+					mPanel.mEditor.getScene()->repository.remove<Scene::Key, Force>(key);
+					mPanel.mEditor.getScene()->repository.add<Scene::Key, Force>(key, directional);
+				}
+				drawDirectionalForce(*directional);
 			}
 		};
 
@@ -408,9 +428,30 @@ namespace editor {
 
 		void drawGravity(Gravity& gravity)
 		{
-			glm::vec3 value = gravity.getValue();
-			if (ImGui::DragFloat3("Gravity", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+			float value = gravity.getValue();
+			if (ImGui::DragFloat("Gravity", &value, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
 				gravity.setValue(value);
+			}
+		};
+
+		void drawPunctualForce(PunctualForce& force)
+		{
+			glm::vec3 value = force.getValue();
+			if (ImGui::DragFloat3("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+				force.setValue(value);
+			}
+
+			glm::vec3 point = force.getPoint();
+			if (ImGui::DragFloat3("Point", glm::value_ptr(point), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+				force.setPoint(point);
+			}
+		};
+
+		void drawDirectionalForce(DirectionalForce& force)
+		{
+			glm::vec3 value = force.getValue();
+			if (ImGui::DragFloat3("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+				force.setValue(value);
 			}
 		};
 	};
@@ -512,7 +553,7 @@ namespace editor {
 	public:		// Functions
 		virtual const char* getName() const override { return "Pass"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			std::size_t bindableCount = 0;
 			element->processBindables([&](const auto&) { ++bindableCount; });
@@ -531,7 +572,7 @@ namespace editor {
 	public:		// Functions
 		virtual const char* getName() const override { return "Technique"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			std::size_t passCount = 0;
 			element->processPasses([&](const auto&) { ++passCount; });
@@ -557,7 +598,7 @@ namespace editor {
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Texture"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto texture = mPanel.mEditor.getScene()->repository.find<Scene::Key, Texture>(key);
 			ImGui::Image(static_cast<void*>(texture.get()), ImVec2{ 200.0f, 200.0f });
@@ -672,7 +713,7 @@ namespace editor {
 		MeshNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Mesh"; };
 	protected:
-		virtual void draw(const std::string& key) override
+		virtual void draw(const Scene::Key& key) override
 		{
 			auto mesh = mPanel.mEditor.getScene()->repository.find<Scene::Key, Mesh>(key);
 			auto [min, max] = mesh->getBounds();

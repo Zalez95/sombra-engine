@@ -347,12 +347,11 @@ namespace se::collision {
 	}
 
 
-	std::pair<std::vector<int>, std::vector<int>> calculateHorizon(
+	void calculateHorizon(
 		const HalfEdgeMesh& meshData, const utils::PackedVector<glm::vec3>& faceNormals,
-		const glm::vec3& eyePoint, int iInitialFace
+		const glm::vec3& eyePoint, int iInitialFace,
+		std::vector<int>& horizonEdges, std::vector<int>& visibleFaces
 	) {
-		std::vector<int> horizonEdges, visibleFaces;
-
 		// Test the visibility of the initial HEFace
 		const HEFace& initialFace = meshData.faces[iInitialFace];
 		const HEVertex& initialFaceVertex = meshData.vertices[ meshData.edges[initialFace.edge].vertex ];
@@ -425,8 +424,6 @@ namespace se::collision {
 			}
 			while (edgesToEvaluate.top() != initialFace.edge);
 		}
-
-		return std::make_pair(horizonEdges, visibleFaces);
 	}
 
 }

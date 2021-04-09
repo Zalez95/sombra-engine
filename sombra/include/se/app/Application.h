@@ -1,6 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include <glm/glm.hpp>
 #include "events/EventManager.h"
 #include "../window/WindowManager.h"
 #include "../collision/CollisionWorld.h"
@@ -65,6 +66,8 @@ namespace se::app {
 		static constexpr int kMaxTasks				= 1024;
 		static constexpr int kShadowResolution		= 1024;
 		static constexpr float kBaseBias			= 0.1f;
+		const glm::vec3 kMinPhysicsAABB = glm::vec3(-1000.0f);
+		const glm::vec3 kMaxPhysicsAABB = glm::vec3( 1000.0f);
 
 		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;

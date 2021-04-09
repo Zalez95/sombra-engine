@@ -19,22 +19,32 @@ namespace se::physics {
 			// it if it isn't yet
 			auto it = std::find(mRigidBodies.begin(), mRigidBodies.end(), rb);
 			if (it != mRigidBodies.end()) {
-				rbIndices[i] = std::distance(mRigidBodies.begin(), it);
+				std::size_t iRB = std::distance(mRigidBodies.begin(), it);
+				mShouldSolveMatrix[iRB] = true;
+				rbIndices[i] = iRB;
 			}
 			else {
-				mRigidBodies.push_back(rb);
+				mRigidBodies.emplace_back(rb);
+				mShouldSolveMatrix.emplace_back(true);
+				mInverseMassMatrix.emplace_back(rb->getConfig().invertedMass);
+				mInverseMassMatrix.emplace_back(rb->getInvertedInertiaTensorWorld());
+				mVelocityMatrix.emplace_back(rb->getData().linearVelocity);
+				mVelocityMatrix.emplace_back(rb->getData().angularVelocity);
+				mForceExtMatrix.emplace_back(rb->getData().forceSum);
+				mForceExtMatrix.emplace_back(rb->getData().torqueSum);
 				rbIndices[i] = mRigidBodies.size() - 1;
 			}
-
-			// Change the Sleeping state to force to solve all its Constraints
-			// in the next update
-			RigidBodyDynamics::setState(*rb, RigidBodyState::Sleeping, false);
 		}
 
 		// Add the constraint and its data
-		mConstraints.push_back(constraint);
-		mConstraintRBMap.push_back(rbIndices);
-		mLambdaMatrix.push_back(0.0f);
+		auto cb = constraint->getConstraintBounds();
+		mConstraints.emplace_back(constraint);
+		mConstraintRBMap.emplace_back(rbIndices);
+		mLambdaMatrix.emplace_back(0.0f);
+		mLambdaMinMatrix.emplace_back(cb.lambdaMin);
+		mLambdaMaxMatrix.emplace_back(cb.lambdaMax);
+		mBiasMatrix.emplace_back(constraint->getBias());
+		mJacobianMatrix.emplace_back(constraint->getJacobianMatrix());
 	}
 
 
@@ -49,9 +59,9 @@ namespace se::physics {
 		// that uses them
 		for (std::size_t iRB : mConstraintRBMap[iConstraint]) {
 			if (!tryRemoveRigidBody(iRB)) {
-				// Change the Sleeping state to force to solve the rest of the
-				// Constraints in the next update
-				RigidBodyDynamics::setState(*mRigidBodies[iRB], RigidBodyState::Sleeping, false);
+				// Change the mShouldSolveMatrix to solve the rest of
+				// the Constraints in the next update
+				mShouldSolveMatrix[iRB] = true;
 			}
 		}
 
@@ -59,6 +69,10 @@ namespace se::physics {
 		mConstraints.erase(itConstraint);
 		mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
 		mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
+		mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
+		mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
+		mBiasMatrix.erase(mBiasMatrix.begin() + iConstraint);
+		mJacobianMatrix.erase(mJacobianMatrix.begin() + iConstraint);
 	}
 
 
@@ -68,13 +82,11 @@ namespace se::physics {
 		if (itRigidBody == mRigidBodies.end()) { return; }
 
 		std::size_t iRB = std::distance(mRigidBodies.begin(), itRigidBody);
-		for (auto itConstraint = mConstraints.begin(); itConstraint != mConstraints.end();) {
-			std::size_t iConstraint = std::distance(mConstraints.begin(), itConstraint);
-
+		for (std::size_t iConstraint = 0; iConstraint < mConstraints.size();) {
 			// Check if any of the Constraint RigidBodies is the RigidBody to
 			// remove
 			bool shouldRemove = false;
-			std::size_t iiRB = -1, iRB2 = -1;
+			std::size_t iiRB = 0, iRB2 = 0;
 			if (iRB == mConstraintRBMap[iConstraint][0]) {
 				shouldRemove = true;
 				iiRB = 0;
@@ -90,9 +102,9 @@ namespace se::physics {
 				// Remove the other RigidBody if the constraint to remove is
 				// the only one that uses it
 				if (!tryRemoveRigidBody(iRB2)) {
-					// Change the Sleeping state to force to solve the rest of
+					// Change the mShouldSolveMatrix to solve the rest of
 					// the Constraints in the next update
-					RigidBodyDynamics::setState(*mRigidBodies[iRB2], RigidBodyState::Sleeping, false);
+					mShouldSolveMatrix[iRB2] = true;
 				}
 				else {
 					// Update the iRB index with its new value due to the
@@ -101,12 +113,16 @@ namespace se::physics {
 				}
 
 				// Remove the constraint and its cached data
-				itConstraint = mConstraints.erase(itConstraint);
+				mConstraints.erase(mConstraints.begin() + iConstraint);
 				mConstraintRBMap.erase(mConstraintRBMap.begin() + iConstraint);
 				mLambdaMatrix.erase(mLambdaMatrix.begin() + iConstraint);
+				mLambdaMinMatrix.erase(mLambdaMinMatrix.begin() + iConstraint);
+				mLambdaMaxMatrix.erase(mLambdaMaxMatrix.begin() + iConstraint);
+				mBiasMatrix.erase(mBiasMatrix.begin() + iConstraint);
+				mJacobianMatrix.erase(mJacobianMatrix.begin() + iConstraint);
 			}
 			else {
-				++itConstraint;
+				++iConstraint;
 			}
 		}
 
@@ -120,11 +136,11 @@ namespace se::physics {
 		// 1. Update the matrices
 		updateLambdaBoundsMatrices();
 		updateBiasMatrix();
+		updateJacobianMatrix();
 		updateShouldSolveMatrix();
 		updateInverseMassMatrix();
 		updateVelocityMatrix();
 		updateForceExtMatrix();
-		updateJacobianMatrix();
 
 		// 2. Solve the lambda values in:
 		// mJacobianMatrix * mInverseMassMatrix * transpose(mJacobianMatrix)
@@ -139,88 +155,63 @@ namespace se::physics {
 // Private functions
 	void ConstraintManager::updateLambdaBoundsMatrices()
 	{
-		mLambdaMinMatrix = std::vector<float>();
-		mLambdaMinMatrix.reserve(mConstraints.size());
-
-		mLambdaMaxMatrix = std::vector<float>();
-		mLambdaMaxMatrix.reserve(mConstraints.size());
-
-		for (const Constraint* c : mConstraints) {
-			auto cb = c->getConstraintBounds();
-			mLambdaMinMatrix.push_back(cb.lambdaMin);
-			mLambdaMaxMatrix.push_back(cb.lambdaMax);
+		for (std::size_t iConstraint = 0; iConstraint < mConstraints.size(); ++iConstraint) {
+			auto cb = mConstraints[iConstraint]->getConstraintBounds();
+			mLambdaMinMatrix[iConstraint] = cb.lambdaMin;
+			mLambdaMaxMatrix[iConstraint] = cb.lambdaMax;
 		}
 	}
 
 
 	void ConstraintManager::updateBiasMatrix()
 	{
-		mBiasMatrix = std::vector<float>();
-		mBiasMatrix.reserve(mConstraints.size());
-
-		for (const Constraint* c : mConstraints) {
-			mBiasMatrix.push_back(c->getBias());
-		}
-	}
-
-
-	void ConstraintManager::updateShouldSolveMatrix()
-	{
-		mShouldSolveMatrix = std::vector<bool>();
-		mShouldSolveMatrix.reserve(mRigidBodies.size());
-
-		for (const RigidBody* rb : mRigidBodies) {
-			mShouldSolveMatrix.push_back(
-				!rb->checkState(RigidBodyState::Sleeping)
-				|| rb->checkState(RigidBodyState::Integrated)
-			);
-		}
-	}
-
-
-	void ConstraintManager::updateInverseMassMatrix()
-	{
-		mInverseMassMatrix = std::vector<glm::mat3>();
-		mInverseMassMatrix.reserve(2 * mRigidBodies.size());
-
-		for (const RigidBody* rb : mRigidBodies) {
-			mInverseMassMatrix.emplace_back(rb->getConfig().invertedMass);
-			mInverseMassMatrix.push_back(rb->getInvertedInertiaTensorWorld());
-		}
-	}
-
-
-	void ConstraintManager::updateVelocityMatrix()
-	{
-		mVelocityMatrix = std::vector<glm::vec3>();
-		mVelocityMatrix.reserve(2 * mRigidBodies.size());
-
-		for (const RigidBody* rb : mRigidBodies) {
-			mVelocityMatrix.push_back(rb->getData().linearVelocity);
-			mVelocityMatrix.push_back(rb->getData().angularVelocity);
-		}
-	}
-
-
-	void ConstraintManager::updateForceExtMatrix()
-	{
-		mForceExtMatrix = std::vector<glm::vec3>();
-		mForceExtMatrix.reserve(2 * mRigidBodies.size());
-
-		for (const RigidBody* rb : mRigidBodies) {
-			mForceExtMatrix.push_back(rb->getData().forceSum);
-			mForceExtMatrix.push_back(rb->getData().torqueSum);
+		for (std::size_t iConstraint = 0; iConstraint < mConstraints.size(); ++iConstraint) {
+			mBiasMatrix[iConstraint] = mConstraints[iConstraint]->getBias();
 		}
 	}
 
 
 	void ConstraintManager::updateJacobianMatrix()
 	{
-		mJacobianMatrix = std::vector<vec12>();
-		mJacobianMatrix.reserve(mConstraints.size());
+		for (std::size_t iConstraint = 0; iConstraint < mConstraints.size(); ++iConstraint) {
+			mJacobianMatrix[iConstraint] = mConstraints[iConstraint]->getJacobianMatrix();
+		}
+	}
 
-		for (const Constraint* c : mConstraints) {
-			mJacobianMatrix.push_back(c->getJacobianMatrix());
+
+	void ConstraintManager::updateShouldSolveMatrix()
+	{
+		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
+			mShouldSolveMatrix[iRB] = mShouldSolveMatrix[iRB]
+				|| mRigidBodies[iRB]->checkState(RigidBodyState::Integrated)
+				|| !mRigidBodies[iRB]->checkState(RigidBodyState::Sleeping);
+		}
+	}
+
+
+	void ConstraintManager::updateInverseMassMatrix()
+	{
+		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
+			mInverseMassMatrix[2*iRB] = glm::mat3(mRigidBodies[iRB]->getConfig().invertedMass);
+			mInverseMassMatrix[2*iRB + 1] = mRigidBodies[iRB]->getInvertedInertiaTensorWorld();
+		}
+	}
+
+
+	void ConstraintManager::updateVelocityMatrix()
+	{
+		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
+			mVelocityMatrix[2*iRB] = mRigidBodies[iRB]->getData().linearVelocity;
+			mVelocityMatrix[2*iRB + 1] = mRigidBodies[iRB]->getData().angularVelocity;
+		}
+	}
+
+
+	void ConstraintManager::updateForceExtMatrix()
+	{
+		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
+			mForceExtMatrix[2*iRB] = mRigidBodies[iRB]->getData().forceSum;
+			mForceExtMatrix[2*iRB + 1] = mRigidBodies[iRB]->getData().torqueSum;
 		}
 	}
 
@@ -394,8 +385,9 @@ namespace se::physics {
 		}
 
 		for (std::size_t i = 0; i < mRigidBodies.size(); ++i) {
-			// Check if the RigidBody constraints has been solved
-			if (!mShouldSolveMatrix[i]) { continue; }
+			// Check if the RigidBody constraints has been solved or if it has
+			// infinite mass
+			if (!mShouldSolveMatrix[i] || (mRigidBodies[i]->getConfig().invertedMass == 0)) { continue; }
 
 			// Update the RigidBody motion data
 			for (std::size_t j = 0; j < 2; ++j) {
@@ -425,14 +417,24 @@ namespace se::physics {
 
 	bool ConstraintManager::tryRemoveRigidBody(std::size_t iRB)
 	{
-		std::size_t count = 0;
-		if (std::none_of(
-				mConstraintRBMap.begin(), mConstraintRBMap.end(),
-				[&](const IndexPair& item) { return ((item[0] == iRB) || (item[1] == iRB)) && (count++ > 0); }
-			)
-		) {
+		bool remove = true, first = true;
+		for (IndexPair& pair : mConstraintRBMap) {
+			if ((pair[0] == iRB) || (pair[1] == iRB)) {
+				if (!first) {
+					remove = false;
+					break;
+				}
+				first = false;
+			}
+		}
+
+		if (remove) {
 			// Remove the RigidBody
 			mRigidBodies.erase(mRigidBodies.begin() + iRB);
+			mShouldSolveMatrix.erase(mShouldSolveMatrix.begin() + iRB);
+			mInverseMassMatrix.erase(mInverseMassMatrix.begin() + 2*iRB, mInverseMassMatrix.begin() + 2*iRB + 1);
+			mVelocityMatrix.erase(mVelocityMatrix.begin() + 2*iRB, mVelocityMatrix.begin() + 2*iRB + 1);
+			mForceExtMatrix.erase(mForceExtMatrix.begin() + 2*iRB, mForceExtMatrix.begin() + 2*iRB + 1);
 
 			// Shift the mConstraintRBMap RigidBody indices left
 			for (IndexPair& pair : mConstraintRBMap) {

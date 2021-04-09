@@ -390,7 +390,7 @@ namespace game {
 			));
 
 			// Forces
-			mScene.repository.add<std::string, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(glm::vec3(0.0f, -9.8f, 0.0f)));
+			mScene.repository.add<std::string, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(-9.8f));
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
@@ -546,7 +546,7 @@ namespace game {
 			// Collider data
 			auto heights = se::app::MeshLoader::calculateHeights(heightMap1.pixels.get(), heightMap1.width, heightMap1.height);
 			auto collider = std::make_unique<se::collision::TerrainCollider>();
-			collider->setHeights(heights, heightMap1.width, heightMap1.height);
+			collider->setHeights(heights.data(), heightMap1.width, heightMap1.height);
 			collider->setTransforms(glm::scale(glm::mat4(1.0f), scaleVector));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(terrain, std::move(collider));
 		}
@@ -712,7 +712,7 @@ namespace game {
 			se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
 			mGame.getEntityDatabase().addComponent(gravityCube, std::move(rigidBody));
 			auto [rb] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(gravityCube);
-			mGame.getExternalTools().physicsEngine->getForceManager().addRBForce(rb, gravity.get());
+			rb->addForce(gravity);
 
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
@@ -803,7 +803,7 @@ namespace game {
 				se::physics::RigidBody rigidBody(config, se::physics::RigidBodyData());
 				mGame.getEntityDatabase().addComponent(cube, std::move(rigidBody));
 				auto [rb] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(cube);
-				mGame.getExternalTools().physicsEngine->getForceManager().addRBForce(rb, gravity.get());
+				rb->addForce(gravity);
 
 				auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 				mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));

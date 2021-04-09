@@ -16,11 +16,10 @@ namespace se::collision {
 	{
 	private:	// Nested types
 		using ColliderUPtr = std::unique_ptr<Collider>;
-		using ColliderSPtr = std::shared_ptr<Collider>;
 
 	private:	// Attributes
 		/** The multiple pieces in which the CompositeCollider is splited */
-		std::vector<ColliderSPtr> mParts;
+		std::vector<ColliderUPtr> mParts;
 
 		/** The transformation matrix of the CompositeCollider */
 		glm::mat4 mTransformsMatrix;
@@ -34,7 +33,7 @@ namespace se::collision {
 		 *
 		 * @param	parts the multiple colliders in which the CompositeCollider
 		 *			is splitted */
-		CompositeCollider(std::vector<ColliderUPtr>& parts);
+		CompositeCollider(std::vector<ColliderUPtr> parts = {});
 
 		/** Updates the scale, translation and orientation of the
 		 * CompositeCollider with the given transformations matrix
@@ -42,22 +41,38 @@ namespace se::collision {
 		 * @param	transforms the transformations matrix used to update the
 		 *			scale, translation and orientation of the
 		 *			CompositeCollider */
-		void setTransforms(const glm::mat4& transforms) override;
+		virtual void setTransforms(const glm::mat4& transforms) override;
 
 		/** @return	the transformations matrix currently applied to the
 		 *			CompositeCollider */
-		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
+		virtual glm::mat4 getTransforms() const override
+		{ return mTransformsMatrix; };
 
 		/** @return the Axis Aligned Bounding Box that contains the
 		 *			CompositeCollider */
-		AABB getAABB() const override { return mAABB; };
+		virtual AABB getAABB() const override { return mAABB; };
 
 		/** @return	true if the CompositeCollider has been updated since the last
 		 *			call to the resetUpdatedState function, false otherwise */
-		bool updated() const override;
+		virtual bool updated() const override;
 
 		/** Resets the updated state of the CompositeCollider */
-		void resetUpdatedState() override;
+		virtual void resetUpdatedState() override;
+
+		/** Adds the given Collider to the CompositeCollider
+		 *
+		 * @param	part a pointer to the Collider to add to the
+		 *			CompositeCollider
+		 * @return	a reference to the current CompositeCollider object */
+		CompositeCollider& addPart(ColliderUPtr part);
+
+		/** Calls the given callback for each of the parts of the
+		 * CompositeCollider
+		 *
+		 * @param	callback the function to call */
+		template <typename F>
+		void processParts(F callback) const
+		{ for (const auto& part : mParts) { callback(*part); } }
 
 		/** Calls the given callback for each of the overlaping convex parts of
 		 * the CompositeCollider with the given AABB
@@ -67,6 +82,12 @@ namespace se::collision {
 		virtual void processOverlapingParts(
 			const AABB& aabb, const ConvexShapeCallback& callback
 		) const override;
+
+		/** Removes a Collider from the current CompositeCollider
+		 *
+		 * @param	part a pointer to the Collider to remove
+		 * @return	a reference to the current CompositeCollider object */
+		CompositeCollider& removePart(Collider* part);
 	private:
 		/** Calculates the AABB of the CompositeCollider with its Convex
 		 * parts */

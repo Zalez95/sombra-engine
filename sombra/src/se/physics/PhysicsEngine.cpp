@@ -16,7 +16,6 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		mForceManager.removeRigidBody(rigidBody);
 		mConstraintManager.removeRigidBody(rigidBody);
 
 		mRigidBodies.erase(
@@ -37,12 +36,12 @@ namespace se::physics {
 
 	void PhysicsEngine::integrate(float deltaTime)
 	{
-		// Apply all the forces
-		mForceManager.applyForces();
-
-		// Simulate the RigidBody motion
 		for (RigidBody* rigidBody : mRigidBodies) {
-			if (!rigidBody->checkState(RigidBodyState::Sleeping)) {
+			if (glm::all(glm::greaterThan(rigidBody->getData().position, mMinWorldAABB))
+				&& glm::all(glm::lessThan(rigidBody->getData().position, mMaxWorldAABB))
+				&& !rigidBody->checkState(RigidBodyState::Sleeping)
+			) {
+				RigidBodyDynamics::processForces(*rigidBody);
 				RigidBodyDynamics::integrate(*rigidBody, deltaTime);
 				RigidBodyDynamics::updateTransformsMatrix(*rigidBody);
 				RigidBodyDynamics::setState(*rigidBody, RigidBodyState::Integrated, true);
