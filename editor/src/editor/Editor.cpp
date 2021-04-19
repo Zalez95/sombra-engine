@@ -97,7 +97,7 @@ namespace editor {
 		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
 		auto pass = std::make_shared<se::graphics::Pass>(*renderer);
 		pass->addBindable(program)
-			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", *program, glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
+			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program, glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
 			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
 		auto rShader = std::make_shared<se::app::RenderableShader>(*mEventManager);
 		rShader->addPass(pass);

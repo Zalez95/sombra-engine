@@ -16,12 +16,12 @@ namespace editor {
 
 	struct ImGuiRenderer::Impl
 	{
-		se::graphics::Texture* fontTexture = nullptr;
-		se::graphics::Program* program = nullptr;
-		se::graphics::UniformVariableValue<int>* uTextureUniform = nullptr;
-		se::graphics::UniformVariableValue<glm::mat4>* uProjectionMatrix = nullptr;
-		se::graphics::VertexBuffer* vbo = nullptr;
-		se::graphics::IndexBuffer* ibo = nullptr;
+		std::shared_ptr<se::graphics::Texture> fontTexture;
+		std::shared_ptr<se::graphics::Program> program;
+		std::shared_ptr<se::graphics::UniformVariableValue<int>> uTextureUniform;
+		std::shared_ptr<se::graphics::UniformVariableValue<glm::mat4>> uProjectionMatrix;
+		std::shared_ptr<se::graphics::VertexBuffer> vbo;
+		std::shared_ptr<se::graphics::IndexBuffer> ibo;
 	};
 
 
@@ -175,14 +175,14 @@ namespace editor {
 			se::graphics::Shader vertexShader(vertexShaderStr, se::graphics::ShaderType::Vertex);
 			se::graphics::Shader fragmentShader(fragmentShaderStr, se::graphics::ShaderType::Fragment);
 			se::graphics::Shader* shaders[] = { &vertexShader, &fragmentShader };
-			mImpl->program = new se::graphics::Program(shaders, 2);
+			mImpl->program = std::make_shared<se::graphics::Program>(shaders, 2);
 
-			mImpl->uTextureUniform = new se::graphics::UniformVariableValue<int>("Texture", *mImpl->program);
-			mImpl->uProjectionMatrix = new se::graphics::UniformVariableValue<glm::mat4>("ProjMtx", *mImpl->program);
+			mImpl->uTextureUniform = std::make_shared<se::graphics::UniformVariableValue<int>>("Texture", mImpl->program);
+			mImpl->uProjectionMatrix = std::make_shared<se::graphics::UniformVariableValue<glm::mat4>>("ProjMtx", mImpl->program);
 
 			// Create buffers
-			mImpl->vbo = new se::graphics::VertexBuffer();
-			mImpl->ibo = new se::graphics::IndexBuffer();
+			mImpl->vbo = std::make_shared<se::graphics::VertexBuffer>();
+			mImpl->ibo = std::make_shared<se::graphics::IndexBuffer>();
 
 			ret = createFontsTexture();
 		}
@@ -197,12 +197,6 @@ namespace editor {
 
 	void ImGuiRenderer::destroyDeviceObjects()
 	{
-		if (mImpl->vbo) { delete mImpl->vbo; }
-		if (mImpl->ibo) { delete mImpl->ibo; }
-		if (mImpl->uTextureUniform) { delete mImpl->uTextureUniform; }
-		if (mImpl->uProjectionMatrix) { delete mImpl->uProjectionMatrix; }
-		if (mImpl->program) { delete mImpl->program; }
-
 		destroyFontsTexture();
 
 		delete mImpl;
@@ -219,12 +213,12 @@ namespace editor {
 		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
 		// Upload texture to graphics system
-		mImpl->fontTexture = new se::graphics::Texture(se::graphics::TextureTarget::Texture2D);
+		mImpl->fontTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
 		mImpl->fontTexture->setImage(pixels, se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA, width, height);
 		mImpl->fontTexture->setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear);
 		mImpl->fontTexture->setTextureUnit(0);
 
-		io.Fonts->TexID = static_cast<ImTextureID>(mImpl->fontTexture);
+		io.Fonts->TexID = static_cast<ImTextureID>(mImpl->fontTexture.get());
 
 		return true;
 	}
@@ -235,7 +229,7 @@ namespace editor {
 		if (mImpl->fontTexture) {
 			ImGuiIO& io = ImGui::GetIO();
 			io.Fonts->TexID = 0;
-			delete mImpl->fontTexture;
+			mImpl->fontTexture = nullptr;
 		}
 	}
 

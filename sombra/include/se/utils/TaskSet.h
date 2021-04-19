@@ -116,7 +116,10 @@ namespace se::utils {
 	class TaskSet : public SubTaskSet
 	{
 	private:
-		/** Mutex used in conjunction with @see mCV for waiting */
+		/** If all the tasks have finished */
+		bool mEnd;
+
+		/** Mutex used for accessing @see mEnd */
 		std::mutex mMutex;
 
 		/** The condition variable used for waiting until all the tasks

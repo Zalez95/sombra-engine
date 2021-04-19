@@ -210,7 +210,7 @@ namespace se::app {
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
 		uniforms.pass = pass;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program);
+		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
 		if (uniforms.modelMatrix->found()) {
 			terrain->get().addPassBindable(pass.get(), uniforms.modelMatrix);
 		}

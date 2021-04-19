@@ -1,6 +1,7 @@
 #ifndef UNIFORM_BLOCK_H
 #define UNIFORM_BLOCK_H
 
+#include <memory>
 #include "Bindable.h"
 
 namespace se::graphics {
@@ -16,7 +17,7 @@ namespace se::graphics {
 	{
 	private:	// Attributes
 		/** The program that the UniformBlock belongs to */
-		const Program& mProgram;
+		std::shared_ptr<Program> mProgram;
 
 		/** The location of the UniformBlock in the Shader source code */
 		int mUniformLocation;
@@ -30,7 +31,7 @@ namespace se::graphics {
 		 * @param	name the name of the UniformBlock
 		 * @param	program the Program used for retrieving the Uniform
 		 *			Location of the UniformBlock */
-		UniformBlock(const char* name, const Program& program);
+		UniformBlock(const char* name, std::shared_ptr<Program> program);
 
 		/** Sets the binding point of the UniformBlock
 		 *

@@ -60,11 +60,11 @@ namespace se::app {
 			}
 
 			addBindable(program);
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uColor0", *program, kColor0));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uColor1", *program, kColor1));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uColor0", program, kColor0));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uColor1", program, kColor1));
 		};
 
 		virtual void execute() override

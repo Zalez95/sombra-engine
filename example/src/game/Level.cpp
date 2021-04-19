@@ -384,10 +384,10 @@ namespace game {
 				throw std::runtime_error("Error reading the audio file");
 			}
 
-			mScene.repository.add(std::string("sound"), std::make_shared<se::audio::Buffer>(
+			/*mScene.repository.add(std::string("sound"), std::make_shared<se::audio::Buffer>(
 				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 				se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
-			));
+			));*/
 
 			// Forces
 			mScene.repository.add<std::string, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(-9.8f));
@@ -482,7 +482,7 @@ namespace game {
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(programSky)
 				.addBindable(skyTexture)
-				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", *programSky, 0))
+				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", programSky, 0))
 				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
 
 			auto shaderSky = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
@@ -610,11 +610,11 @@ namespace game {
 				e1 = cube;
 			}
 			if (i == 2) {
-				se::audio::Source source1;
+				/*se::audio::Source source1;
 				source1.bind(*mScene.repository.find<std::string, se::audio::Buffer>("sound"));
 				source1.setLooping(true);
 				source1.play();
-				mGame.getEntityDatabase().addComponent(cube, std::move(source1));
+				mGame.getEntityDatabase().addComponent(cube, std::move(source1));*/
 			}
 			if (i == 3) {
 				rigidBody.getData().angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);

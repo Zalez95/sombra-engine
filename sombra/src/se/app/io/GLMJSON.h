@@ -3,132 +3,59 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <nlohmann/json.hpp>
 
 namespace se::app {
 
-	inline nlohmann::json toJson(const glm::vec2& v)
+	template <int l, typename T, glm::qualifier Q>
+	inline nlohmann::json toJson(const glm::vec<l, T , Q>& v)
 	{
-		return { v.x, v.y };
+		return *reinterpret_cast<const std::array<T, l>*>( glm::value_ptr(v) );
 	}
 
-
-	inline bool toVec2(const nlohmann::json& json, glm::vec2& v)
+	template <int l, typename T, glm::qualifier Q>
+	inline bool toVec(const nlohmann::json& json, glm::vec<l, T, Q>& v)
 	{
-		if (json.is_array() && (json.size() >= 2)) {
-			v = { json[0], json[1] };
+		if (json.is_array() && (json.size() >= l)) {
+			std::array<T, l> vArray = json;
+			v = *reinterpret_cast<glm::vec<l, T, Q>*>(vArray.data());
 			return true;
 		}
 		return false;
 	}
 
 
-	inline nlohmann::json toJson(const glm::vec3& v)
-	{
-		return { v.x, v.y, v.z };
-	}
-
-
-	inline bool toVec3(const nlohmann::json& json, glm::vec3& v)
-	{
-		if (json.is_array() && (json.size() >= 3)) {
-			v = { json[0], json[1], json[2] };
-			return true;
-		}
-		return false;
-	}
-
-
-	inline nlohmann::json toJson(const glm::vec4& v)
-	{
-		return { v.x, v.y, v.z, v.w };
-	}
-
-
-	inline bool toVec4(const nlohmann::json& json, glm::vec4& v)
-	{
-		if (json.is_array() && (json.size() >= 4)) {
-			v = { json[0], json[1], json[2], json[3] };
-			return true;
-		}
-		return false;
-	}
-
-
-	inline nlohmann::json toJson(const glm::quat& q)
+	template <typename T, glm::qualifier Q>
+	inline nlohmann::json toJson(const glm::qua<T, Q>& q)
 	{
 		return { q.x, q.y, q.z, q.w };
 	}
 
-
-	inline bool toQuat(const nlohmann::json& json, glm::quat& q)
+	template <typename T, glm::qualifier Q>
+	inline bool toQuat(const nlohmann::json& json, glm::qua<T, Q>& q)
 	{
 		if (json.is_array() && (json.size() >= 4)) {
-			std::array<float, 4> fArray = json;
-			q = *reinterpret_cast<glm::quat*>(fArray.data());
+			std::array<T, 4> qArray = json;
+			q = *reinterpret_cast<glm::quat*>(qArray.data());
 			return true;
 		}
 		return false;
 	}
 
 
-	inline nlohmann::json toJson(const glm::mat2& m)
+	template <int c, int r, typename T, glm::qualifier Q>
+	inline nlohmann::json toJson(const glm::mat<c, r, T , Q>& m)
 	{
-		return {
-			m[0][0], m[0][1],
-			m[1][0], m[1][1]
-		};
+		return *reinterpret_cast<const std::array<T, c * r>*>( glm::value_ptr(m) );
 	}
 
-
-	inline bool toMat2(const nlohmann::json& json, glm::mat2& m)
+	template <int c, int r, typename T, glm::qualifier Q>
+	inline bool toMat(const nlohmann::json& json, glm::mat<c, r, T, Q>& m)
 	{
-		if (json.is_array() && (json.size() >= 4)) {
-			std::array<float, 4> fArray = json;
-			m = *reinterpret_cast<glm::mat2*>(fArray.data());
-			return true;
-		}
-		return false;
-	}
-
-
-	inline nlohmann::json toJson(const glm::mat3& m)
-	{
-		return {
-			m[0][0], m[0][1], m[0][2],
-			m[1][0], m[1][1], m[1][2],
-			m[2][0], m[2][1], m[2][2]
-		};
-	}
-
-
-	inline bool toMat3(const nlohmann::json& json, glm::mat3& m)
-	{
-		if (json.is_array() && (json.size() >= 9)) {
-			std::array<float, 9> fArray = json;
-			m = *reinterpret_cast<glm::mat3*>(fArray.data());
-			return true;
-		}
-		return false;
-	}
-
-
-	inline nlohmann::json toJson(const glm::mat4& m)
-	{
-		return {
-			m[0][0], m[0][1], m[0][2], m[0][3],
-			m[1][0], m[1][1], m[1][2], m[1][3],
-			m[2][0], m[2][1], m[2][2], m[2][3],
-			m[3][0], m[3][1], m[3][2], m[3][3]
-		};
-	}
-
-
-	inline bool toMat4(const nlohmann::json& json, glm::mat4& m)
-	{
-		if (json.is_array() && (json.size() >= 16)) {
-			std::array<float, 16> fArray = json;
-			m = *reinterpret_cast<glm::mat4*>(fArray.data());
+		if (json.is_array() && (json.size() >= c * r)) {
+			std::array<T, c * r> mArray = json;
+			m = *reinterpret_cast<glm::mat<c, r, T, Q>*>(mArray.data());
 			return true;
 		}
 		return false;

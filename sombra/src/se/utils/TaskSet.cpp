@@ -105,9 +105,16 @@ namespace se::utils {
 		SubTaskSet(
 			taskManager,
 			FuncSTS(),
-			[](SubTaskSet& set) { dynamic_cast<TaskSet*>(&set)->mCV.notify_all(); },
+			[](SubTaskSet& set) {
+				auto pThis = dynamic_cast<TaskSet*>(&set);
+				std::unique_lock lck(pThis->mMutex);
+				pThis->mEnd = true;
+				lck.unlock();
+				pThis->mCV.notify_all();
+			},
 			true
-		) {}
+		),
+		mEnd(false) {}
 
 
 	void TaskSet::submit()
@@ -122,8 +129,10 @@ namespace se::utils {
 
 		SubTaskSet::submitSubTaskSetTasks();
 
-		std::unique_lock<std::mutex> lock(mMutex);
-		mCV.wait(lock);
+		std::unique_lock<std::mutex> lck(mMutex);
+		while (!mEnd) {
+			mCV.wait(lck);
+		}
 
 		SOMBRA_TRACE_LOG << "Set[" << this << "] End";
 	}

@@ -797,7 +797,7 @@ namespace se::app {
 		if (itPBRMetallicRoughness != jsonMaterial.end()) {
 			auto itBaseColorFactor = itPBRMetallicRoughness->find("baseColorFactor");
 			if (itBaseColorFactor != itPBRMetallicRoughness->end()) {
-				toVec4(*itBaseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
+				toVec(*itBaseColorFactor, material.pbrMetallicRoughness.baseColorFactor);
 			}
 
 			auto itBaseColorTexture = itPBRMetallicRoughness->find("baseColorTexture");
@@ -901,7 +901,7 @@ namespace se::app {
 		material.emissiveFactor = glm::vec3(0.0f);
 		auto itEmissiveFactor = jsonMaterial.find("emissiveFactor");
 		if (itEmissiveFactor != jsonMaterial.end()) {
-			toVec3(*itEmissiveFactor, material.emissiveFactor);
+			toVec(*itEmissiveFactor, material.emissiveFactor);
 		}
 
 		material.alphaMode = graphics::AlphaMode::Opaque;
@@ -1460,7 +1460,7 @@ namespace se::app {
 		lightSource->color = glm::vec3(1.0f);
 		auto itColor = jsonLight.find("color");
 		if (itColor != jsonLight.end()) {
-			toVec3(*itColor, lightSource->color);
+			toVec(*itColor, lightSource->color);
 		}
 
 		auto itIntensity = jsonLight.find("intensity");
@@ -1492,7 +1492,7 @@ namespace se::app {
 		auto itMatrix = jsonNode.find("matrix");
 		if (itMatrix != jsonNode.end()) {
 			glm::mat4 matrix;
-			if (toMat4(*itMatrix, matrix)) {
+			if (toMat(*itMatrix, matrix)) {
 				utils::decompose(
 					matrix,
 					node.nodeData.localTransforms.position,
@@ -1509,12 +1509,12 @@ namespace se::app {
 
 			auto itScale = jsonNode.find("scale");
 			if (itScale != jsonNode.end()) {
-				toVec3(*itScale, node.nodeData.localTransforms.scale);
+				toVec(*itScale, node.nodeData.localTransforms.scale);
 			}
 
 			auto itTranslation = jsonNode.find("translation");
 			if (itTranslation != jsonNode.end()) {
-				toVec3(*itTranslation, node.nodeData.localTransforms.position);
+				toVec(*itTranslation, node.nodeData.localTransforms.position);
 			}
 		}
 

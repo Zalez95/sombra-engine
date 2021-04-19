@@ -27,12 +27,12 @@ namespace se::app {
 
 		for (std::size_t i = 0; i < 3; ++i) {
 			mProjectionMatrices[i] = addBindable(
-				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), *program)
+				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), program)
 			);
 		}
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", *program, static_cast<int>(mMaxVoxels)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", *program, kVoxelImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", program, static_cast<int>(mMaxVoxels)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", program, kVoxelImageUnit) );
 
 		mVoxelImage = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, mVoxelImage) );

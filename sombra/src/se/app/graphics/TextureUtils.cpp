@@ -76,15 +76,15 @@ namespace se::app {
 			return nullptr;
 		}
 
-		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
+		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, kCubeMapProjectionMatrix))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, kCubeMapProjectionMatrix))
 			.addBindable(source)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uEquirectangularMap", *program, 0));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uEquirectangularMap", program, 0));
 		auto technique = std::make_shared<graphics::Technique>();
 		technique->addPass(pass);
 
@@ -142,15 +142,15 @@ namespace se::app {
 			return nullptr;
 		}
 
-		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
+		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, kCubeMapProjectionMatrix))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, kCubeMapProjectionMatrix))
 			.addBindable(source)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uCubeMap", *program, 0));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uCubeMap", program, 0));
 		auto technique = std::make_shared<graphics::Technique>();
 		technique->addPass(pass);
 
@@ -208,17 +208,17 @@ namespace se::app {
 			return nullptr;
 		}
 
-		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program);
-		auto roughnessUniform = std::make_shared<graphics::UniformVariableValue<float>>("uRoughness", *program);
+		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
+		auto roughnessUniform = std::make_shared<graphics::UniformVariableValue<float>>("uRoughness", program);
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, kCubeMapProjectionMatrix))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, kCubeMapProjectionMatrix))
 			.addBindable(roughnessUniform)
 			.addBindable(source)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uCubeMap", *program, 0));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uCubeMap", program, 0));
 		auto technique = std::make_shared<graphics::Technique>();
 		technique->addPass(pass);
 
@@ -285,9 +285,9 @@ namespace se::app {
 
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
 		auto technique = std::make_shared<graphics::Technique>();
 		technique->addPass(pass);
 
@@ -343,12 +343,12 @@ namespace se::app {
 		source->setTextureUnit(0);
 		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
 		pass->addBindable(program)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec2>>("uResolution", *program, glm::vec2(width, height)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec2>>("uResolution", program, glm::vec2(width, height)))
 			.addBindable(source)
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHeightMap", *program, 0));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHeightMap", program, 0));
 		auto technique = std::make_shared<graphics::Technique>();
 		technique->addPass(pass);
 

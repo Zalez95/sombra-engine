@@ -22,9 +22,9 @@ namespace se::app {
 		}
 		addBindable(program);
 
-		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(0.0f)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", *program, kTextureUnit) );
-		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", *program) );
+		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(0.0f)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", program, kTextureUnit) );
+		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", program) );
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, tex3DIndex) );

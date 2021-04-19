@@ -31,7 +31,7 @@ namespace se::app {
 				mApplication.getRepository().add(std::string("program2D"), program);
 			}
 
-			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program,
+			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program,
 				glm::ortho(0.0f, initialWindowSize.x, initialWindowSize.y, 0.0f, -1.0f, 1.0f)
 			);
 
@@ -44,7 +44,7 @@ namespace se::app {
 			for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
 				utils::ArrayStreambuf<char, 64> aStreambuf;
 				std::ostream(&aStreambuf) << "uTextures[" << i << "]";
-				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), *program, i));
+				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), program, i));
 			}
 
 			auto technique2D = std::make_shared<graphics::Technique>();

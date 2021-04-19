@@ -667,9 +667,9 @@ namespace editor {
 		}
 		void drawCPoly(ConvexPolyhedron& cPoly)
 		{
-			ImGui::Text("Number of vertices: %u", cPoly.getLocalMesh().vertices.size());
-			ImGui::Text("Number of edges: %u", cPoly.getLocalMesh().edges.size());
-			ImGui::Text("Number of faces: %u", cPoly.getLocalMesh().faces.size());
+			ImGui::Text("Number of vertices: %lu", cPoly.getLocalMesh().vertices.size());
+			ImGui::Text("Number of edges: %lu", cPoly.getLocalMesh().edges.size());
+			ImGui::Text("Number of faces: %lu", cPoly.getLocalMesh().faces.size());
 
 			if (ImGui::TreeNode("Create from mesh")) {
 				addRepoDropdownShowSelected("Mesh##MeshToCPoly", mEditor.getScene()->repository, mMesh);

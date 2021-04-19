@@ -4,7 +4,7 @@
 #include "se/graphics/core/Program.h"
 #include "se/app/MeshSystem.h"
 #include "se/app/Application.h"
-#include "se/app/MeshComponent.h"
+#include "se/app/SkinComponent.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {
@@ -243,15 +243,14 @@ namespace se::app {
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
 		uniforms.pass = pass;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program);
+		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
 		if (uniforms.modelMatrix->found()) {
 			mesh->get(rIndex).addPassBindable(pass.get(), uniforms.modelMatrix);
 		}
 		if (mesh->hasSkinning(rIndex)) {
-			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4, Skin::kMaxJoints>>(
-				"uJointMatrices", *program
-			);
+			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4>>("uJointMatrices", program);
 			if (uniforms.jointMatrices->found()) {
+				uniforms.jointMatrices->reserve(Skin::kMaxJoints);
 				mesh->get(rIndex).addPassBindable(pass.get(), uniforms.jointMatrices);
 			}
 		}

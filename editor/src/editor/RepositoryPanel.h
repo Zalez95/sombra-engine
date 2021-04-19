@@ -19,13 +19,12 @@ namespace editor {
 		template <typename T> class SceneImporterTypeNode;
 		class SkinNode;
 		class LightSourceNode;
-		class RenderableShaderNode;
 		class SkeletonAnimatorNode;
 		class AudioBufferNode;
 		class ForceNode;
 		class ProgramNode;
 		class PassNode;
-		class TechniqueNode;
+		class RenderableShaderNode;
 		class TextureNode;
 		class MeshNode;
 

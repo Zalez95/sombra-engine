@@ -8,7 +8,6 @@
 #include "../graphics/core/UniformVariable.h"
 #include "ISystem.h"
 #include "MeshComponent.h"
-#include "SkinComponent.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
@@ -34,9 +33,8 @@ namespace se::app {
 			PassSPtr pass;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 				modelMatrix;
-			std::shared_ptr<graphics::UniformVariableValueVector<
-				glm::mat3x4, Skin::kMaxJoints
-			>> jointMatrices;
+			std::shared_ptr<graphics::UniformVariableValueVector<glm::mat3x4>>
+				jointMatrices;
 		};
 
 		using EntityUniformsVector = std::vector<EntityUniforms>;

@@ -21,8 +21,8 @@ namespace se::app {
 		}
 		addBindable(program);
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", *program, static_cast<int>(mMaxSize)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", *program, kImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", program, static_cast<int>(mMaxSize)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", program, kImageUnit) );
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, tex3DIndex) );

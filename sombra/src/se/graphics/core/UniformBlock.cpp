@@ -4,10 +4,10 @@
 
 namespace se::graphics {
 
-	UniformBlock::UniformBlock(const char* name, const Program& program) :
+	UniformBlock::UniformBlock(const char* name, std::shared_ptr<Program> program) :
 		mProgram(program), mUniformLocation(-1), mSlot(0)
 	{
-		GL_WRAP( mUniformLocation = glGetUniformBlockIndex(mProgram.mProgramId, name) );
+		GL_WRAP( mUniformLocation = glGetUniformBlockIndex(mProgram->mProgramId, name) );
 
 		if (mUniformLocation == -1) {
 			SOMBRA_WARN_LOG << "Uniform block \"" << name << "\" wasn't found";
@@ -17,13 +17,13 @@ namespace se::graphics {
 
 	void UniformBlock::bind() const
 	{
-		GL_WRAP( glUniformBlockBinding(mProgram.mProgramId, mSlot, mUniformLocation) );
+		GL_WRAP( glUniformBlockBinding(mProgram->mProgramId, mSlot, mUniformLocation) );
 	}
 
 
 	void UniformBlock::unbind() const
 	{
-		GL_WRAP( glUniformBlockBinding(mProgram.mProgramId, 0, mUniformLocation) );
+		GL_WRAP( glUniformBlockBinding(mProgram->mProgramId, 0, mUniformLocation) );
 	}
 
 }

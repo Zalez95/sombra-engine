@@ -24,6 +24,14 @@ namespace editor {
 	bool drawMat4ImGui(const char* name, glm::mat4& matrix);
 
 
+	/** Draws a 3x4 matrix
+	 *
+	 * @param	name the name of the ImGui component
+	 * @param	matrix the matrix to update
+	 * @return	true if any matrix value was updated, false otherwise */
+	bool drawMat3x4ImGui(const char* name, glm::mat3x4& matrix);
+
+
 	/** Draws the given orientation
 	 *
 	 * @param	name the name of the orientation to draw

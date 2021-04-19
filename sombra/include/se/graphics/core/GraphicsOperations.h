@@ -202,6 +202,10 @@ namespace se::graphics {
 		SetDepthMask(bool active = true) :
 			mActive(active), mLastActive(false) {};
 
+		/** @return	true if we can write to the depth buffer on bind, false
+		 *			otherwise */
+		bool isActive() const { return mActive; };
+
 		/** Enables writing to the depth buffer if mActive is true, disables
 		 * it otherwise */
 		virtual void bind() const override;

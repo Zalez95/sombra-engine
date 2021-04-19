@@ -38,6 +38,9 @@ namespace se::graphics {
 		/** @return	the Renderer used by the Pass for submitting the meshes */
 		Renderer& getRenderer() { return mRenderer; };
 
+		/** @return	the Renderer used by the Pass for submitting the meshes */
+		const Renderer& getRenderer() const { return mRenderer; };
+
 		/** Submits the given Renderable for rendering with the current Pass
 		 *
 		 * @param	renderable the Renderable to submit */

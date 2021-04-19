@@ -26,7 +26,6 @@ namespace se::app {
 		repository.init<Key, physics::Constraint>();
 		repository.init<Key, graphics::Program>();
 		repository.init<Key, graphics::Pass>();
-		repository.init<Key, graphics::Technique>();
 		repository.init<Key, graphics::Texture>();
 		repository.init<Key, graphics::Mesh>();
 		repository.init<Key, ResourcePath<audio::Buffer>>();

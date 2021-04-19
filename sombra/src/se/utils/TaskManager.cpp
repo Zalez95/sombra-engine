@@ -24,10 +24,9 @@ namespace se::utils {
 	{
 		SOMBRA_INFO_LOG << "Destroying TaskManager";
 
-		{
-			std::unique_lock lck(mMutex);
-			mEnd = true;
-		}
+		std::unique_lock lck(mMutex);
+		mEnd = true;
+		lck.unlock();
 		mCV.notify_all();
 
 		for (auto& th : mThreads) {

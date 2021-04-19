@@ -1,9 +1,10 @@
 #ifndef UNIFORM_VARIABLE_H
 #define UNIFORM_VARIABLE_H
 
+#include <memory>
+#include <vector>
 #include <string>
 #include <functional>
-#include "../../utils/FixedVector.h"
 #include "Bindable.h"
 
 namespace se::graphics {
@@ -17,9 +18,12 @@ namespace se::graphics {
 	 */
 	class IUniformVariable : public Bindable
 	{
-	private:	// Attributes
+	protected:	// Attributes
 		/** The name of the IUniformVariable */
 		std::string mName;
+
+		/** The program of the IUniformVariable */
+		std::shared_ptr<Program> mProgram;
 
 		/** The location of the variable in the Shader source code */
 		int mUniformLocation;
@@ -30,39 +34,61 @@ namespace se::graphics {
 		 * @param	name the name of the IUniformVariable
 		 * @param	program the Program used for retrieving the Uniform
 		 *			Location of the IUniformVariable */
-		IUniformVariable(const char* name, const Program& program);
+		IUniformVariable(const char* name, std::shared_ptr<Program> program);
 
 		/** Class destructor */
 		virtual ~IUniformVariable() = default;
 
 		/** @return	the name of the IUniformVariable */
-		const std::string& getName() const;
+		const std::string& getName() const { return mName; };
+
+		/** @return	the Program of the IUniformVariable */
+		std::shared_ptr<Program> getProgram() const { return mProgram; };
 
 		/** @return	true if the IUniformVariable was found inside the Program,
 		 *			false otherwise */
 		bool found() const;
+	};
+
+
+	/**
+	 * Class UniformVariable, it's the templated class used for managing the
+	 * uniform variables of type @tparam T used in the shaders
+	 */
+	template <typename T>
+	class UniformVariable : public IUniformVariable
+	{
+	public:		// Functions
+		/** Creates a new UniformVariable
+		 *
+		 * @param	name the name of the UniformVariable
+		 * @param	program the Program used for retrieving the Uniform
+		 *			Location of the UniformVariable */
+		UniformVariable(const char* name, std::shared_ptr<Program> program) :
+			IUniformVariable(name, program) {};
+
+		/** Class destructor */
+		virtual ~UniformVariable() = default;
 	protected:
 		/** Sets the value of the given uniform variable
 		 *
 		 * @param	value the new value of the variable */
-		template <typename T>
 		void setUniform(const T& value) const;
 
 		/** Sets the values of the given array of values uniform variable
 		 *
 		 * @param	valuePtr a pointer to the vector of values
 		 * @param	count the number of elements to set */
-		template <typename T>
 		void setUniformV(const T* valuePtr, std::size_t count) const;
 	};
 
 
 	/**
-	 * Class UniformVariableValue, it's a IUniformVariable that holds the value
+	 * Class UniformVariableValue, it's a UniformVariable that holds the value
 	 * to set on bind.
 	 */
 	template <typename T>
-	class UniformVariableValue : public IUniformVariable
+	class UniformVariableValue : public UniformVariable<T>
 	{
 	private:	// Attributes
 		/** The value to bind of the UniformVariable */
@@ -76,8 +102,9 @@ namespace se::graphics {
 		 *			Location of the UniformVariableValue
 		 * @param	value the value of the UniformVariableValue to bind */
 		UniformVariableValue(
-			const char* name, const Program& program, const T& value = T()
-		) : IUniformVariable(name, program), mValue(value) {};
+			const char* name, std::shared_ptr<Program> program,
+			const T& value = T()
+		) : UniformVariable<T>(name, program), mValue(value) {};
 
 		/** Sets the value of the UniformVariableValue
 		 *
@@ -89,7 +116,7 @@ namespace se::graphics {
 
 		/** Binds the current UniformVariableValue for using it in the following
 		 * operations */
-		virtual void bind() const override { setUniform(mValue); };
+		virtual void bind() const override { this->setUniform(mValue); };
 
 		/** Unbinds the current UniformVariableValue so it can't be used in the
 		 * following operations */
@@ -98,19 +125,15 @@ namespace se::graphics {
 
 
 	/**
-	 * Class UniformVariableValueVector, it's a IUniformVariable that holds a
+	 * Class UniformVariableValueVector, it's a UniformVariable that holds a
 	 * vector of values to set on bind.
-	 * @tparam VectorSize is the maximum number of elements that can be set
 	 */
-	template <typename T, std::size_t VectorSize>
-	class UniformVariableValueVector : public IUniformVariable
+	template <typename T>
+	class UniformVariableValueVector : public UniformVariable<T>
 	{
-	private:	// Nested types
-		using Vector = utils::FixedVector<T, VectorSize>;
-
 	private:	// Attributes
 		/** The vector with all the values to bind of the UniformVariable */
-		Vector mValue;
+		std::vector<T> mValue;
 
 	public:		// Functions
 		/** Creates a new UniformVariableValueVector
@@ -122,9 +145,9 @@ namespace se::graphics {
 		 *			values
 		 * @param	count the number of elements in valuePtr */
 		UniformVariableValueVector(
-			const char* name, const Program& program,
+			const char* name, std::shared_ptr<Program> program,
 			const T* valuePtr = nullptr, std::size_t count = 0
-		) : IUniformVariable(name, program)
+		) : UniformVariable<T>(name, program)
 		{ setValue(valuePtr, count); };
 
 		/** Sets the value of the UniformVariableValueVector
@@ -133,7 +156,10 @@ namespace se::graphics {
 		 *			values
 		 * @param	count the number of elements in valuePtr */
 		void setValue(const T* valuePtr, std::size_t count)
-		{ mValue = Vector(valuePtr, valuePtr + count); };
+		{
+			mValue.clear();
+			mValue.insert(mValue.end(), valuePtr, valuePtr + count);
+		};
 
 		/** Function used for retrieving the values stored in the
 		 * UniformVariableValueVector
@@ -142,13 +168,26 @@ namespace se::graphics {
 		 *			values (return parameter)
 		 * @param	retCount the number of elements in retValuePtr
 		 *			(return parameter) */
-		void getValue(const T*& retValuePtr, std::size_t& retCount)
+		void getValue(const T*& retValuePtr, std::size_t& retCount) const
 		{ retValuePtr = mValue.data(); retCount = mValue.size(); };
+
+		/** @return	the number of variables that the UniformVariableValueVector
+		 *			holds */
+		std::size_t size() const { return mValue.size(); };
+
+		/** @return	the maximum number of variables that the
+		 *			UniformVariableValueVector can hold */
+		std::size_t capacity() const { return mValue.capacity(); };
+
+		/** Reserves the given number of variables
+		 *
+		 * @param	capacity the number of variables to reserve */
+		void reserve(std::size_t capacity) { mValue.reserve(capacity); };
 
 		/** Binds the current UniformVariableValueVector for using it in the
 		 * following operations */
 		virtual void bind() const override
-		{ setUniformV(mValue.data(), mValue.size()); };
+		{ this->setUniformV(mValue.data(), mValue.size()); };
 
 		/** Unbinds the current UniformVariableValueVector so it can't be used
 		 * in the following operations */
@@ -157,11 +196,11 @@ namespace se::graphics {
 
 
 	/**
-	 * Class UniformVariableCallback, it's a IUniformVariable that holds a
+	 * Class UniformVariableCallback, it's a UniformVariable that holds a
 	 * callback function to retrieve the value to set on bind
 	 */
 	template <typename T, bool isVector = false>
-	class UniformVariableCallback : public IUniformVariable
+	class UniformVariableCallback : public UniformVariable<T>
 	{
 	private:	// Nested types
 		using Callback = std::conditional_t<isVector,
@@ -177,31 +216,31 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new UniformVariableCallback
 		 *
-		 * @param	name the name of the IUniformVariable
+		 * @param	name the name of the UniformVariableCallback
 		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the IUniformVariable
+		 *			Location of the UniformVariableCallback
 		 * @param	callback the callback function used for retrieving the
-		 *			value of the IUniformVariable to bind */
+		 *			value of the UniformVariableCallback to bind */
 		UniformVariableCallback(
-			const char* name, const Program& program,
+			const char* name, std::shared_ptr<Program> program,
 			const Callback& callback
-		) : IUniformVariable(name, program), mCallback(callback) {};
+		) : UniformVariable<T>(name, program), mCallback(callback) {};
 
-		/** Binds the current IUniformVariable for using it in the following
-		 * operations */
+		/** Binds the current UniformVariableCallback for using it in the
+		 * following operations */
 		virtual void bind() const override
 		{
 			if constexpr (isVector) {
 				const auto& [valuePtr, count] = mCallback();
-				setUniformV(valuePtr, count);
+				this->setUniformV(valuePtr, count);
 			}
 			else {
-				setUniform(mCallback());
+				this->setUniform(mCallback());
 			}
 		};
 
-		/** Unbinds the current IUniformVariable so it can't be used in the
-		 * following operations */
+		/** Unbinds the current IUniformUniformVariableCallbackVariable so it
+		 * can't be used in the following operations */
 		virtual void unbind() const override {};
 	};
 

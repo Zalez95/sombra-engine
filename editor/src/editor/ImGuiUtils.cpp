@@ -60,6 +60,33 @@ namespace editor {
 	}
 
 
+	bool drawMat3x4ImGui(const char* name, glm::mat3x4& matrix)
+	{
+		bool ret = false;
+
+		glm::vec3 row0 = glm::row(matrix, 0);
+		glm::vec3 row1 = glm::row(matrix, 1);
+		glm::vec3 row2 = glm::row(matrix, 2);
+		glm::vec3 row3 = glm::row(matrix, 3);
+
+		auto r0 = std::string(name) + "##" + std::string(name) + "_r0";
+		auto r1 = "##" + std::string(name) + "_r1";
+		auto r2 = "##" + std::string(name) + "_r2";
+		auto r3 = "##" + std::string(name) + "_r3";
+		ret |= ImGui::DragFloat3(r0.c_str(), glm::value_ptr(row0), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat3(r1.c_str(), glm::value_ptr(row1), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat3(r2.c_str(), glm::value_ptr(row2), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		ret |= ImGui::DragFloat3(r3.c_str(), glm::value_ptr(row3), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+
+		matrix = glm::row(matrix, 0, row0);
+		matrix = glm::row(matrix, 1, row1);
+		matrix = glm::row(matrix, 2, row2);
+		matrix = glm::row(matrix, 3, row3);
+
+		return ret;
+	}
+
+
 	bool drawOrientation(const char* name, glm::quat& orientation, int& orientationType)
 	{
 		bool ret = false;

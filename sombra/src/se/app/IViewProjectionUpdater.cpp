@@ -162,10 +162,10 @@ namespace se::app {
 			itPass = mPassesData.emplace();
 			itPass->pass = pass;
 			itPass->viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-				mViewMatUniformName.c_str(), *program
+				mViewMatUniformName.c_str(), program
 			);
 			itPass->projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-				mProjectionMatUniformName.c_str(), *program
+				mProjectionMatUniformName.c_str(), program
 			);
 
 			if (itPass->viewMatrix->found()) {

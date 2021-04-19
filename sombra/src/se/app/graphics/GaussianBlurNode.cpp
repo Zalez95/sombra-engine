@@ -38,11 +38,11 @@ namespace se::app {
 
 		addBindable(std::move(frameBuffer));
 		addBindable(program);
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", *program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", *program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", *program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<bool>>("uHorizontal", *program, horizontal));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", *program, kColorTextureUnit));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHorizontal", program, horizontal));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", program, kColorTextureUnit));
 	}
 
 
