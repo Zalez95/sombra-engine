@@ -46,9 +46,10 @@ endif()
 target_link_libraries(Sombra PUBLIC glm AudioFile NlohmannJSON FreeType PRIVATE OpenAL stb glfw glew OpenGL)
 
 # Install the target
-install(TARGETS Sombra
+install(TARGETS Sombra EXPORT SombraTargets
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Create the tests

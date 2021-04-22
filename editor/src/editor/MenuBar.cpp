@@ -19,7 +19,7 @@ namespace editor {
 		Alert createPopUp("Close first?", "The current scene must be closed first, are you sure that you want to close the current Scene?", "Close");
 		Alert errorPopUp("Error", "Operation failed, check logs for more details", "Close");
 
-		if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenuBar()) {
 			if (ImGui::BeginMenu("File")) {
 				if (ImGui::MenuItem("New")) {
 					if (mEditor.getScene()) {
@@ -55,7 +55,12 @@ namespace editor {
 				}
 				ImGui::EndMenu();
 			}
-			ImGui::EndMainMenuBar();
+
+			auto io = ImGui::GetIO();
+			ImGui::SameLine(ImGui::GetWindowWidth() - 150.0f);
+			ImGui::Text("%.1f FPS (%.3f ms)", io.Framerate, 1000.0f / io.Framerate);
+
+			ImGui::EndMenuBar();
 		}
 
 		std::string file;

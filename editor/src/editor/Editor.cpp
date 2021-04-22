@@ -48,6 +48,7 @@ namespace editor {
 		io.DisplaySize = ImVec2(kWidth, kHeight);
 		io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 		io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 		mImGuiInput = new ImGuiInput(*mEventManager);
 
@@ -177,6 +178,20 @@ namespace editor {
 		ImGui::SetCurrentContext(mImGuiContext);
 		ImGui::NewFrame();
 
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar
+			| ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground
+			| ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize
+			| ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoDocking
+			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
+		ImGui::Begin("EditorWindow", nullptr, windowFlags);
+
+		static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+		ImGui::DockSpace(ImGui::GetID("EditorDockSpace"), ImVec2(0.0f, 0.0f), dockspaceFlags);
+
 		// TODO: Remove ImGui demo window
 		static bool show = true;
 		ImGui::ShowDemoWindow(&show);
@@ -186,6 +201,8 @@ namespace editor {
 		mComponentPanel->render();
 		mRepositoryPanel->render();
 		mSceneNodesPanel->render();
+
+		ImGui::End();
 
 		Application::onRender();
 	}

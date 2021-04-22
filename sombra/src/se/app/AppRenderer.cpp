@@ -227,6 +227,10 @@ namespace se::app {
 		}
 
 		auto brdfTexture = TextureUtils::precomputeBRDF(512);
+		if (!brdfTexture) {
+			return false;
+		}
+
 		brdfTexture->setTextureUnit(DeferredLightRenderer::TexUnits::kBRDFMap);
 		auto iBRDFTextureResource = mResources->addBindable(brdfTexture);
 		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", mResources, iBRDFTextureResource) )) {

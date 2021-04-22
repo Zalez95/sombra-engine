@@ -31,7 +31,6 @@
 [submodule "sombra/ext/stb"]
 	path = sombra/ext/stb
 	url = https://github.com/Zalez95/stb.git
-	shallow = true
 [submodule "editor/ext/imgui"]
 	path = editor/ext/imgui
 	url = https://github.com/Zalez95/imgui.git
