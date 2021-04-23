@@ -28,8 +28,8 @@ find_package_handle_standard_args(
 
 if(GTEST_FOUND)
 	# Create the dependency target
-	add_library(GTest UNKNOWN IMPORTED)
-	set_target_properties(GTest PROPERTIES
+	add_library(gtest UNKNOWN IMPORTED)
+	set_target_properties(gtest PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${GTEST_INCLUDE_DIR}
 		IMPORTED_LOCATION ${GTEST_LIBRARY}
 	)

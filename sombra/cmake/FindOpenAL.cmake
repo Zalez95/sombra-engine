@@ -28,8 +28,8 @@ find_package_handle_standard_args(
 
 if(OPENAL_FOUND)
 	# Create the dependency target
-	add_library(OpenAL::OpenAL UNKNOWN IMPORTED)
-	set_target_properties(OpenAL::OpenAL PROPERTIES
+	add_library(OpenAL UNKNOWN IMPORTED)
+	set_target_properties(OpenAL PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES ${OPENAL_INCLUDE_DIR}
 		IMPORTED_LOCATION ${OPENAL_LIBRARY}
 	)

@@ -1,45 +1,27 @@
-include(ExternalProject)
+include(FetchContent)
 
-set(GTEST_WARNING_FLAGS "")
-if(CMAKE_CXX_COMPILER MATCHES "MSVC")
-	set(GTEST_WARNING_FLAGS "/D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
-endif()
-
-# Download the project
-ExternalProject_Add(GTestDownload
-	DOWNLOAD_COMMAND	git submodule update --init "${SOMBRA_EXT_PATH}/gtest"
-	SOURCE_DIR			"${SOMBRA_EXT_PATH}/gtest"
-	INSTALL_DIR			"${SOMBRA_EXT_INSTALL_PATH}/gtest"
-	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-						-DCMAKE_BUILD_TYPE=$<CONFIG>
-						-DCMAKE_DEBUG_POSTFIX=${MY_DEBUG_POSTFIX}
-						-DCMAKE_CXX_FLAGS=${GTEST_WARNING_FLAGS}
-						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-						-DBUILD_GTEST=ON
-						-DBUILD_GMOCK=OFF
-						-Dgtest_force_shared_crt=$<NOT:$<BOOL:${FORCE_STATIC_VCRT}>>
-						-Wno-dev
+FetchContent_Declare(
+	GTest
+	GIT_REPOSITORY https://github.com/google/googletest.git
+	GIT_TAG release-1.10.0
+	GIT_SHALLOW TRUE
 )
+FetchContent_GetProperties(GTest)
+if(NOT gtest_POPULATED)
+	FetchContent_Populate(GTest)
 
-# Get the properties from the downloaded target
-ExternalProject_Get_Property(GTestDownload INSTALL_DIR)
+	set(BUILD_GTEST ON CACHE INTERNAL "")
+	set(BUILD_GMOCK OFF CACHE INTERNAL "")
+	if(FORCE_STATIC_VCRT)
+		set(gtest_force_shared_crt OFF CACHE INTERNAL "")
+	else()
+		set(gtest_force_shared_crt ON CACHE INTERNAL "")
+	endif()
+	set(FORCE_STATIC_VCRT ${FORCE_STATIC_VCRT} CACHE INTERNAL "")
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
+	set(CMAKE_DEBUG_POSTFIX ${MY_DEBUG_POSTFIX} CACHE INTERNAL "")
+	set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE INTERNAL "")
 
-set(GTEST_FOUND TRUE)
-set(GTEST_INCLUDE_DIR "${INSTALL_DIR}/include/")
-set(GTEST_LIBRARY_DIR "${INSTALL_DIR}/lib/")
-if(BUILD_SHARED_LIBS)
-	set(GTEST_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}gtest${CMAKE_SHARED_LIBRARY_SUFFIX}")
-	set(GTEST_DEBUG_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}gtest${MY_DEBUG_POSTFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-else()
-	set(GTEST_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
-	set(GTEST_DEBUG_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}gtest${MY_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	add_subdirectory(${gtest_SOURCE_DIR} ${gtest_BINARY_DIR})
 endif()
-
-# Create the target and add its properties
-add_library(GTest INTERFACE)
-target_include_directories(GTest INTERFACE ${GTEST_INCLUDE_DIR})
-target_link_libraries(GTest INTERFACE
-	optimized "${GTEST_LIBRARY_DIR}${GTEST_LIBRARY}"
-	debug "${GTEST_LIBRARY_DIR}${GTEST_DEBUG_LIBRARY}"
-)
-add_dependencies(GTest GTestDownload)

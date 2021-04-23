@@ -22,7 +22,7 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	glew
+	GLEW
 	REQUIRED_VARS GLEW_INCLUDE_DIR GLEW_LIBRARY
 )
 

@@ -28,8 +28,8 @@ find_package_handle_standard_args(
 
 if(FREETYPE_FOUND)
 	# Create the dependency target
-	add_library(FreeType UNKNOWN IMPORTED)
-	set_target_properties(FreeType PROPERTIES
+	add_library(freetype UNKNOWN IMPORTED)
+	set_target_properties(freetype PROPERTIES
 		INTERFACE_INCLUDE_DIRECTORIES "${FREETYPE_INCLUDE_DIR}/freetype2"
 		IMPORTED_LOCATION ${FREETYPE_LIBRARY}
 	)

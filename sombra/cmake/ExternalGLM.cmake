@@ -1,22 +1,18 @@
-include(ExternalProject)
+include(FetchContent)
 
-# Download the project
-ExternalProject_Add(glmDownload
-	DOWNLOAD_COMMAND	git submodule update --init -- "${SOMBRA_EXT_PATH}/glm"
-	SOURCE_DIR			"${SOMBRA_EXT_PATH}/glm"
-	INSTALL_DIR			"${SOMBRA_EXT_INSTALL_PATH}/glm"
-	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-						-DCMAKE_BUILD_TYPE=$<CONFIG>
-						-DGLM_TEST_ENABLE=OFF
+FetchContent_Declare(
+	GLM
+	GIT_REPOSITORY https://github.com/g-truc/glm.git
+	GIT_TAG 0.9.9.8
+	GIT_SHALLOW TRUE
 )
+FetchContent_GetProperties(GLM)
+if(NOT glm_POPULATED)
+	FetchContent_Populate(GLM)
 
-# Get the properties from the downloaded target
-ExternalProject_Get_Property(glmDownload INSTALL_DIR)
+	set(GLM_TEST_ENABLE OFF CACHE INTERNAL "")
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
 
-set(GLM_FOUND TRUE)
-set(GLM_INCLUDE_DIR "${INSTALL_DIR}/include")
-
-# Create the target and add its properties
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE ${GLM_INCLUDE_DIR})
-add_dependencies(glm glmDownload)
+	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
+endif()

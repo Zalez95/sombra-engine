@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.8.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 ###############################################################################
 # 								SOMBRA ENGINE
 ###############################################################################
 # Project name and version
-project(SombraEngine VERSION 0.5.0 LANGUAGES CXX)
+project(SombraEngine LANGUAGES CXX)
+set(SOMBRA_ENGINE_VERSION_MAJOR "1")
+set(SOMBRA_ENGINE_VERSION_MINOR "1")
+set(SOMBRA_ENGINE_VERSION "${SOMBRA_ENGINE_VERSION_MAJOR}.${SOMBRA_ENGINE_VERSION_MINOR}")
 
 # Project options
 option(SOMBRA_ENGINE_BUILD_EDITOR "Build the SombraEngine editor program" ON)

@@ -1,3 +1,4 @@
+#include <cstring>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/SkinComponent.h"

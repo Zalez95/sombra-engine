@@ -5,8 +5,6 @@ option(SOMBRA_BUILD_DOC "Generate the Sombra documentation" ON)
 option(SOMBRA_BUILD_TESTS "Build the Sombra test programs" ON)
 
 # Include the dependencies
-set(SOMBRA_EXT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext")
-set(SOMBRA_EXT_INSTALL_PATH "${CMAKE_BINARY_DIR}/sombra/ext")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(Dependencies)
 
@@ -31,9 +29,9 @@ set_target_properties(Sombra PROPERTIES
 	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 )
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	target_compile_options(Sombra PRIVATE -Wall -Wextra -Wpedantic)
+	target_compile_options(Sombra PRIVATE "-Wall" "-Wextra" "-Wpedantic")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options(Sombra PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(Sombra PRIVATE "/W4" "-D_CRT_SECURE_NO_WARNINGS")
 endif()
 
 # Add the compiler definitions
@@ -43,7 +41,10 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 # Link the dependencies
-target_link_libraries(Sombra PUBLIC glm AudioFile NlohmannJSON FreeType PRIVATE OpenAL stb glfw glew OpenGL)
+target_link_libraries(Sombra
+	PUBLIC glm AudioFile nlohmann_json::nlohmann_json freetype
+	PRIVATE OpenAL stb glfw glew OpenGL
+)
 
 # Install the target
 install(TARGETS Sombra EXPORT SombraTargets
@@ -70,13 +71,13 @@ if(SOMBRA_BUILD_TESTS)
 		DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 	)
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		target_compile_options(SombraTest PRIVATE -Wall -Wextra -Werror)
+		target_compile_options(SombraTest PRIVATE "-Wall" "-Wextra" "-Werror")
 	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-		target_compile_options(SombraTest PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
+		target_compile_options(SombraTest PRIVATE "/W4" "-D_CRT_SECURE_NO_WARNINGS")
 	endif()
 
 	# Link the dependencies
-	target_link_libraries(SombraTest PRIVATE GTest Sombra)
+	target_link_libraries(SombraTest PRIVATE gtest Sombra)
 
 	# Add the test
 	add_test(SombraTest SombraTest)

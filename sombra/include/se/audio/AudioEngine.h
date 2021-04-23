@@ -3,8 +3,8 @@
 
 #include <glm/glm.hpp>
 
-typedef struct ALCdevice_struct ALCdevice;
-typedef struct ALCcontext_struct ALCcontext;
+typedef struct ALCdevice ALCdevice;
+typedef struct ALCcontext ALCcontext;
 
 namespace se::audio {
 

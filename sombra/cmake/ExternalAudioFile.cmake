@@ -1,38 +1,25 @@
-include(ExternalProject)
+include(FetchContent)
 
-# Download the project
-ExternalProject_Add(AudioFileDownload
-	DOWNLOAD_COMMAND	git submodule update --init "${SOMBRA_EXT_PATH}/audiofile"
-	SOURCE_DIR			"${SOMBRA_EXT_PATH}/audiofile"
-	INSTALL_DIR			"${SOMBRA_EXT_INSTALL_PATH}/audiofile"
-	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-						-DCMAKE_BUILD_TYPE=$<CONFIG>
-						-DCMAKE_DEBUG_POSTFIX=${MY_DEBUG_POSTFIX}
-						-DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-						-DAUDIOFILE_BUILD_TESTS=OFF
-						-DFORCE_STATIC_VCRT=${FORCE_STATIC_VCRT}
-						--no-warn-unused-cli
+FetchContent_Declare(
+	AudioFile
+	GIT_REPOSITORY https://github.com/Zalez95/audiofile.git
+	GIT_TAG v1.0.2-cmake
+	GIT_SHALLOW TRUE
 )
+FetchContent_GetProperties(AudioFile)
+if(NOT audiofile_POPULATED)
+	FetchContent_Populate(AudioFile)
 
-# Get the properties from the downloaded target
-ExternalProject_Get_Property(AudioFileDownload INSTALL_DIR)
+	set(AUDIOFILE_BUILD_TESTS OFF CACHE INTERNAL "")
+	if(FORCE_STATIC_VCRT)
+		set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE INTERNAL "")
+	else()
+		set(USE_MSVC_RUNTIME_LIBRARY_DLL ON CACHE INTERNAL "")
+	endif()
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
+	set(CMAKE_DEBUG_POSTFIX ${MY_DEBUG_POSTFIX} CACHE INTERNAL "")
+	set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE INTERNAL "")
 
-set(AUDIOFILE_FOUND TRUE)
-set(AUDIOFILE_INCLUDE_DIR "${INSTALL_DIR}/include")
-set(AUDIOFILE_LIBRARY_DIR "${INSTALL_DIR}/lib/")
-if(BUILD_SHARED_LIBS)
-	set(AUDIOFILE_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}audioFile${CMAKE_SHARED_LIBRARY_SUFFIX}")
-	set(AUDIOFILE_DEBUG_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}audioFile${MY_DEBUG_POSTFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-else()
-	set(AUDIOFILE_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}audioFile${CMAKE_STATIC_LIBRARY_SUFFIX}")
-	set(AUDIOFILE_DEBUG_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}audioFile${MY_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	add_subdirectory(${audiofile_SOURCE_DIR} ${audiofile_BINARY_DIR})
 endif()
-
-# Create the target and add its properties
-add_library(AudioFile INTERFACE)
-target_include_directories(AudioFile INTERFACE ${AUDIOFILE_INCLUDE_DIR})
-target_link_libraries(AudioFile INTERFACE
-	optimized "${AUDIOFILE_LIBRARY_DIR}${AUDIOFILE_LIBRARY}"
-	debug "${AUDIOFILE_LIBRARY_DIR}${AUDIOFILE_DEBUG_LIBRARY}"
-)
-add_dependencies(AudioFile AudioFileDownload)

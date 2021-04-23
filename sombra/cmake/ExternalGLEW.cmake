@@ -1,38 +1,36 @@
-include(ExternalProject)
+include(FetchContent)
 
-# Download the project
-ExternalProject_Add(glewDownload
-	DOWNLOAD_COMMAND	git submodule update --init "${SOMBRA_EXT_PATH}/glew"
-	SOURCE_DIR			"${SOMBRA_EXT_PATH}/glew"
-	INSTALL_DIR			"${SOMBRA_EXT_INSTALL_PATH}/glew"
-	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-						-DCMAKE_BUILD_TYPE=$<CONFIG>
-						-DCMAKE_DEBUG_POSTFIX=${MY_DEBUG_POSTFIX}
-						-Dglew-cmake_BUILD_MULTI_CONTEXT=OFF
-						-Dglew-cmake_BUILD_SHARED=$<BOOL:${BUILD_SHARED_LIBS}>
-						-Dglew-cmake_BUILD_STATIC=$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>
-						-DONLY_LIBS=ON
+FetchContent_Declare(
+	GLEW
+	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
+	GIT_TAG glew-cmake-2.2.0
+	GIT_SHALLOW TRUE
 )
+FetchContent_GetProperties(GLEW)
+if(NOT glew_POPULATED)
+	FetchContent_Populate(GLEW)
 
-# Get the properties from the downloaded target
-ExternalProject_Get_Property(glewDownload INSTALL_DIR)
+	set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE INTERNAL "")
+	set(glew-cmake_BUILD_SHARED ${BUILD_SHARED_LIBS} CACHE INTERNAL "")
+	if(BUILD_SHARED_LIBS)
+		set(glew-cmake_BUILD_STATIC OFF CACHE INTERNAL "")
+	else()
+		set(glew-cmake_BUILD_STATIC ON CACHE INTERNAL "")
+	endif()
+	set(ONLY_LIBS ON CACHE INTERNAL "")
+	set(FORCE_STATIC_VCRT ${FORCE_STATIC_VCRT} CACHE INTERNAL "")
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
+	set(CMAKE_DEBUG_POSTFIX ${MY_DEBUG_POSTFIX} CACHE INTERNAL "")
 
-set(GLEW_FOUND TRUE)
-set(GLEW_INCLUDE_DIR "${INSTALL_DIR}/include/")
-set(GLEW_LIBRARY_DIR "${INSTALL_DIR}/lib/")
-if(BUILD_SHARED_LIBS)
-	set(GLEW_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}glew${CMAKE_SHARED_LIBRARY_SUFFIX}")
-	set(GLEW_DEBUG_LIBRARY "${CMAKE_SHARED_LIBRARY_PREFIX}glew${MY_DEBUG_POSTFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-else()
-	set(GLEW_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}glew${CMAKE_STATIC_LIBRARY_SUFFIX}")
-	set(GLEW_DEBUG_LIBRARY "${CMAKE_STATIC_LIBRARY_PREFIX}glew${MY_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
+
+	add_library(glew INTERFACE)
+	if(BUILD_SHARED_LIBS)
+		add_dependencies(glew libglew_shared)
+		target_link_libraries(glew INTERFACE libglew_shared)
+	else()
+		add_dependencies(glew libglew_static)
+		target_link_libraries(glew INTERFACE libglew_static)
+	endif()
 endif()
-
-# Create the target and add its properties
-add_library(glew INTERFACE)
-target_include_directories(glew INTERFACE ${GLEW_INCLUDE_DIR})
-target_link_libraries(glew INTERFACE
-	optimized "${GLEW_LIBRARY_DIR}${GLEW_LIBRARY}"
-	debug "${GLEW_LIBRARY_DIR}${GLEW_DEBUG_LIBRARY}"
-)
-add_dependencies(glew glewDownload)

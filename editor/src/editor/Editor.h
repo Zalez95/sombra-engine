@@ -10,6 +10,7 @@
 #include "ComponentPanel.h"
 #include "RepositoryPanel.h"
 #include "SceneNodesPanel.h"
+#include "Gizmo.h"
 
 namespace editor {
 
@@ -41,6 +42,7 @@ namespace editor {
 		ComponentPanel* mComponentPanel;
 		RepositoryPanel* mRepositoryPanel;
 		SceneNodesPanel* mSceneNodesPanel;
+		Gizmo* mGizmo;
 
 		se::app::Entity mViewportEntity;
 		se::app::Entity mGridEntity;
@@ -61,6 +63,10 @@ namespace editor {
 		/** @return	the selected entity to work with */
 		se::app::Entity getActiveEntity() const
 		{ return mEntityPanel->getActiveEntity(); };
+
+		/** @return	the Entity that controls the Editor camera */
+		se::app::Entity getViewportEntity() const
+		{ return mViewportEntity; };
 
 		/** Creates a new Scene */
 		void createScene(const char* name = "");

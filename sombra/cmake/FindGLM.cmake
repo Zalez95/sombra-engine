@@ -14,7 +14,7 @@ find_path(
 )
 
 find_package_handle_standard_args(
-	glm
+	GLM
 	REQUIRED_VARS GLM_INCLUDE_DIR
 )
 

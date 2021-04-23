@@ -22,7 +22,7 @@ find_library(
 )
 
 find_package_handle_standard_args(
-	glfw
+	GLFW
 	REQUIRED_VARS GLFW_INCLUDE_DIR GLFW_LIBRARY
 )
 

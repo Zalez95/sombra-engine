@@ -1,3 +1,6 @@
+#include <imgui.h>
+#include <ImGuizmo.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <se/utils/Log.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
@@ -26,7 +29,7 @@ namespace editor {
 		),
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),
 		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr),
-		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr),
+		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr), mGizmo(nullptr),
 		mViewportEntity(se::app::kNullEntity), mGridEntity(se::app::kNullEntity),
 		mScene(nullptr)
 	{
@@ -63,6 +66,7 @@ namespace editor {
 		mComponentPanel = new ComponentPanel(*this);
 		mRepositoryPanel = new RepositoryPanel(*this);
 		mSceneNodesPanel = new SceneNodesPanel(*this);
+		mGizmo = new Gizmo(*this);
 
 		// Create the Entity used for controlling the viewport
 		mViewportEntity = mEntityDatabase->addEntity();
@@ -119,6 +123,7 @@ namespace editor {
 		if (mGridEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mGridEntity); }
 		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
 
+		if (mGizmo) { delete mGizmo; }
 		if (mSceneNodesPanel) { delete mSceneNodesPanel; }
 		if (mRepositoryPanel) { delete mRepositoryPanel; }
 		if (mComponentPanel) { delete mComponentPanel; }
@@ -175,10 +180,13 @@ namespace editor {
 
 	void Editor::onRender()
 	{
-		ImGui::SetCurrentContext(mImGuiContext);
-		ImGui::NewFrame();
-
+		ImGuiIO& io = ImGui::GetIO();
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+		ImGuizmo::SetImGuiContext(mImGuiContext);
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+
 		ImGui::SetNextWindowPos(viewport->WorkPos);
 		ImGui::SetNextWindowSize(viewport->WorkSize);
 		ImGui::SetNextWindowViewport(viewport->ID);
@@ -189,8 +197,8 @@ namespace editor {
 			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
 		ImGui::Begin("EditorWindow", nullptr, windowFlags);
 
-		static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_PassthruCentralNode;
-		ImGui::DockSpace(ImGui::GetID("EditorDockSpace"), ImVec2(0.0f, 0.0f), dockspaceFlags);
+		ImGui::DockSpace(ImGui::GetID("EditorDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+		ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, io.DisplaySize.x, io.DisplaySize.y);
 
 		// TODO: Remove ImGui demo window
 		static bool show = true;
@@ -201,6 +209,7 @@ namespace editor {
 		mComponentPanel->render();
 		mRepositoryPanel->render();
 		mSceneNodesPanel->render();
+		mGizmo->render();
 
 		ImGui::End();
 

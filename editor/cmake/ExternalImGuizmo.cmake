@@ -1,16 +1,16 @@
 include(FetchContent)
 
 FetchContent_Declare(
-	ImGui
-	GIT_REPOSITORY https://github.com/Zalez95/imgui.git
-	GIT_TAG docking-cmake
+	ImGuizmo
+	GIT_REPOSITORY https://github.com/Zalez95/imguizmo.git
+	GIT_TAG cmake
 	GIT_SHALLOW TRUE
 )
-FetchContent_GetProperties(ImGui)
-if(NOT imgui_POPULATED)
-	FetchContent_Populate(ImGui)
+FetchContent_GetProperties(ImGuizmo)
+if(NOT imguizmo_POPULATED)
+	FetchContent_Populate(ImGuizmo)
 
-	set(IMGUI_BUILD_EXAMPLES OFF CACHE INTERNAL "")
+	set(IMGUIZMO_BUILD_EXAMPLES OFF CACHE INTERNAL "")
 	if(FORCE_STATIC_VCRT)
 		set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE INTERNAL "")
 	else()
@@ -21,5 +21,5 @@ if(NOT imgui_POPULATED)
 	set(CMAKE_DEBUG_POSTFIX ${MY_DEBUG_POSTFIX} CACHE INTERNAL "")
 	set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE INTERNAL "")
 
-	add_subdirectory(${imgui_SOURCE_DIR} ${imgui_BINARY_DIR})
+	add_subdirectory(${imguizmo_SOURCE_DIR} ${imguizmo_BINARY_DIR})
 endif()

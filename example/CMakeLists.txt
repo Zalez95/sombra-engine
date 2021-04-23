@@ -19,9 +19,9 @@ set_target_properties(Example PROPERTIES
 	DEBUG_POSTFIX			${MY_DEBUG_POSTFIX}
 )
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	target_compile_options(Example PRIVATE -Wall -Wextra -Wpedantic)
+	target_compile_options(Example PRIVATE "-Wall" "-Wextra" "-Wpedantic")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options(Example PRIVATE /W4 -D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(Example PRIVATE "/W4" "-D_CRT_SECURE_NO_WARNINGS")
 endif()
 
 # Link the dependencies

@@ -1,21 +1,17 @@
-include(ExternalProject)
+include(FetchContent)
 
-# Download the project
-ExternalProject_Add(stbDownload
-	DOWNLOAD_COMMAND	git submodule update --init -- "${SOMBRA_EXT_PATH}/stb"
-	SOURCE_DIR			"${SOMBRA_EXT_PATH}/stb"
-	INSTALL_DIR			"${SOMBRA_EXT_INSTALL_PATH}/stb"
-	CMAKE_ARGS			-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-						-DCMAKE_BUILD_TYPE=$<CONFIG>
+FetchContent_Declare(
+	STB
+	GIT_REPOSITORY https://github.com/Zalez95/stb.git
+	GIT_TAG v1.0-cmake
+	GIT_SHALLOW TRUE
 )
+FetchContent_GetProperties(STB)
+if(NOT stb_POPULATED)
+	FetchContent_Populate(STB)
 
-# Get the properties from the downloaded target
-ExternalProject_Get_Property(stbDownload INSTALL_DIR)
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
 
-set(STB_FOUND TRUE)
-set(STB_INCLUDE_DIR "${INSTALL_DIR}/include")
-
-# Create the target and add its properties
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${STB_INCLUDE_DIR})
-add_dependencies(stb stbDownload)
+	add_subdirectory(${stb_SOURCE_DIR} ${stb_BINARY_DIR})
+endif()
