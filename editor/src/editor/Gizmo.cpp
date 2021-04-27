@@ -12,7 +12,7 @@ namespace editor {
 	void Gizmo::render()
 	{
 		if (ImGui::Begin("Gizmo Panel")) {
-			if (ImGui::BeginTable("table_padding", 2, ImGuiTableFlags_BordersV)) {
+			if (ImGui::BeginTable("GizmoTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				ImGui::Text("Operation");

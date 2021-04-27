@@ -25,14 +25,16 @@ namespace editor {
 		if (scene) {
 			if (ImGui::BeginPopupContextItem()) {
 				if (ImGui::MenuItem("Add")) {
-					mSelectedEntity = mEditor.getEntityDatabase().addEntity();
-					scene->entities.push_back(mSelectedEntity);
+					se::app::Entity newEntity = mEditor.getEntityDatabase().addEntity();
+					scene->entities.push_back(newEntity);
+					mEditor.setActiveEntity(newEntity);
 				}
 				if (ImGui::MenuItem("Remove")) {
-					auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), mSelectedEntity);
+					se::app::Entity entity = mEditor.getActiveEntity();
+					auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
 					if (itEntity != scene->entities.end()) {
 						scene->entities.erase(itEntity);
-						mEditor.getEntityDatabase().removeEntity(mSelectedEntity);
+						mEditor.getEntityDatabase().removeEntity(entity);
 					}
 				}
 				ImGui::EndPopup();
@@ -49,14 +51,11 @@ namespace editor {
 
 				ImGui::Bullet();
 				ImGui::SameLine();
-				if (ImGui::Selectable(name.c_str(), mSelectedEntity == entity)) {
-					mSelectedEntity = entity;
+				if (ImGui::Selectable(name.c_str(), mEditor.getActiveEntity() == entity)) {
+					mEditor.setActiveEntity(entity);
 				}
 			}
 			ImGui::EndChild();
-		}
-		else {
-			mSelectedEntity = se::app::kNullEntity;
 		}
 
 		if (!scene) {

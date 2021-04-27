@@ -14,26 +14,14 @@ namespace se::app {
 	 */
 	class SceneSerializer
 	{
-	protected:	// Attributes
-		/** A reference to the EntityDatabase used for storing the Entities and
-		 * their components */
-		EntityDatabase& mEntityDatabase;
-
 	public:		// Functions
-		/** Creates a new Scene
-		 *
-		 * @param	entityDatabase the EntityDatabase used for storing the
-		 *			Entities and their components */
-		SceneSerializer(EntityDatabase& entityDatabase) :
-			mEntityDatabase(entityDatabase) {};
-
 		/** Stores the given scene in the given file
 		 *
 		 * @param	path the path of the file where the Scene is going to be
 		 *			stored
 		 * @param	scene the Scene to store
 		 * @return	a Result object with the result of the load operation */
-		Result serialize(const std::string& path, const Scene& scene);
+		static Result serialize(const std::string& path, const Scene& scene);
 
 		/** Reads the given file and loads the result in the given Scene
 		 * object
@@ -41,7 +29,7 @@ namespace se::app {
 		 * @param	path the path to the file to parse
 		 * @param	output the Scene where the file data will be stored
 		 * @return	a Result object with the result of the load operation */
-		Result deserialize(const std::string& path, Scene& output);
+		static Result deserialize(const std::string& path, Scene& output);
 	};
 
 }

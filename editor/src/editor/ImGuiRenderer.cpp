@@ -118,7 +118,7 @@ namespace editor {
 
 						// Bind texture, Draw
 						se::graphics::Texture* texture = static_cast<se::graphics::Texture*>(pcmd->TextureId);
-						texture->setTextureUnit(0);
+						mImpl->uTextureUniform->setValue(texture->getTextureUnit()).bind();
 						texture->bind();
 						se::graphics::GraphicsOperations::drawIndexed(se::graphics::PrimitiveType::Triangle, pcmd->ElemCount,
 							(sizeof(ImDrawIdx) == 2)? se::graphics::TypeId::UnsignedShort : se::graphics::TypeId::UnsignedInt,
@@ -254,9 +254,7 @@ namespace editor {
 			{ (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
 		};
 		mImpl->program->bind();
-		mImpl->uTextureUniform->setValue(0);
 		mImpl->uProjectionMatrix->setValue(ortho_projection);
-		mImpl->uTextureUniform->bind();
 		mImpl->uProjectionMatrix->bind();
 
 		// Bind vertex/index buffers and setup attributes for ImDrawVert

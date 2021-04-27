@@ -15,7 +15,9 @@
 namespace editor {
 
 	/**
-	 * Class Editor, TODO:
+	 * Class Editor, it's an Application used for creating, editing and
+	 * removing entities and their Components from Scenes. It also allows
+	 * modifiyng Scene Resources
 	 */
 	class Editor : public se::app::Application
 	{
@@ -46,6 +48,7 @@ namespace editor {
 
 		se::app::Entity mViewportEntity;
 		se::app::Entity mGridEntity;
+		se::app::Entity mActiveEntity;
 
 		se::app::Scene* mScene;
 
@@ -57,16 +60,19 @@ namespace editor {
 		virtual ~Editor();
 
 		/** @return	a pointer to the Scene of the Editor */
-		se::app::Scene* getScene() const
-		{ return mScene; };
+		se::app::Scene* getScene() const { return mScene; };
 
 		/** @return	the selected entity to work with */
-		se::app::Entity getActiveEntity() const
-		{ return mEntityPanel->getActiveEntity(); };
+		se::app::Entity getActiveEntity() const { return mActiveEntity; };
+
+		/** Sets the selected entity to work with
+		 *
+		 * @param	entity the new active entity */
+		void setActiveEntity(se::app::Entity entity)
+		{ mActiveEntity = entity; };
 
 		/** @return	the Entity that controls the Editor camera */
-		se::app::Entity getViewportEntity() const
-		{ return mViewportEntity; };
+		se::app::Entity getViewportEntity() const { return mViewportEntity; };
 
 		/** Creates a new Scene */
 		void createScene(const char* name = "");

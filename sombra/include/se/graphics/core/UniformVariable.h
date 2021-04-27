@@ -108,8 +108,13 @@ namespace se::graphics {
 
 		/** Sets the value of the UniformVariableValue
 		 *
-		 * @param	value the new Value */
-		void setValue(const T& value) { mValue = value; };
+		 * @param	value the new Value
+		 * @return	the current UniformVariableValue object */
+		UniformVariableValue& setValue(const T& value)
+		{
+			mValue = value;
+			return *this;
+		};
 
 		/** @return	the value stored in the UniformVariableValue */
 		const T& getValue() const { return mValue; };
@@ -147,18 +152,20 @@ namespace se::graphics {
 		UniformVariableValueVector(
 			const char* name, std::shared_ptr<Program> program,
 			const T* valuePtr = nullptr, std::size_t count = 0
-		) : UniformVariable<T>(name, program)
-		{ setValue(valuePtr, count); };
+		) : UniformVariable<T>(name, program) { setValue(valuePtr, count); };
 
 		/** Sets the value of the UniformVariableValueVector
 		 *
 		 * @param	valuePtr a pointer to the first element of the vector of
 		 *			values
-		 * @param	count the number of elements in valuePtr */
-		void setValue(const T* valuePtr, std::size_t count)
-		{
+		 * @param	count the number of elements in valuePtr
+		 * @return	the current UniformVariableValueVector object */
+		UniformVariableValueVector& setValue(
+			const T* valuePtr, std::size_t count
+		) {
 			mValue.clear();
 			mValue.insert(mValue.end(), valuePtr, valuePtr + count);
+			return *this;
 		};
 
 		/** Function used for retrieving the values stored in the

@@ -71,7 +71,7 @@ namespace editor {
 		static constexpr std::size_t kMaxNameSize = 128;
 		RepositoryPanel& mPanel;
 	private:
-		std::string mSelected;
+		Scene::Key mSelected;
 		bool mShowCreate;
 
 	public:		// Functions
@@ -84,8 +84,13 @@ namespace editor {
 				if (ImGui::SmallButton("Add")) {
 					mShowCreate = true;
 				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton("Remove")) {
+					mPanel.mEditor.getScene()->repository.remove<Scene::Key, T>(mSelected);
+					mSelected = "";
+				}
 
-				mPanel.mEditor.getScene()->repository.iterate<Scene::Key, T>([&](const std::string& key, std::shared_ptr<T>) {
+				mPanel.mEditor.getScene()->repository.iterate<Scene::Key, T>([&](const Scene::Key& key, std::shared_ptr<T>) {
 					if (ImGui::Selectable(key.c_str(), key == mSelected)) {
 						mSelected = key;
 					}
@@ -1138,31 +1143,26 @@ namespace editor {
 
 	void RepositoryPanel::render()
 	{
-		if (!ImGui::Begin("Scene Repository")) {
-			ImGui::End();
-			return;
-		}
+		if (ImGui::Begin("Scene Repository")) {
+			if (ImGui::BeginTable("RepositoryTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+				ImGui::TableNextRow();
 
-		const char* selectedTypeLabel = (mTypeSelected >= 0)? mTypes[mTypeSelected]->getName() : nullptr;
-		if (ImGui::BeginCombo("Type:##RepositoryPanel", selectedTypeLabel)) {
-			for (std::size_t i = 0; i < mTypes.size(); ++i) {
-				bool isSelected = (static_cast<int>(i) == mTypeSelected);
-				if (ImGui::Selectable(mTypes[i]->getName(), isSelected)) {
-					mTypeSelected = static_cast<int>(i);
+				ImGui::TableSetColumnIndex(0);
+				for (std::size_t i = 0; i < mTypes.size(); ++i) {
+					if (ImGui::Selectable(mTypes[i]->getName(), (static_cast<int>(i) == mTypeSelected))) {
+						mTypeSelected = static_cast<int>(i);
+					}
 				}
-				if (isSelected) {
-					ImGui::SetItemDefaultFocus();
+
+				ImGui::TableSetColumnIndex(1);
+				auto scene = mEditor.getScene();
+				if (scene && (mTypeSelected >= 0)) {
+					mTypes[mTypeSelected]->draw();
 				}
+
+				ImGui::EndTable();
 			}
-			ImGui::EndCombo();
 		}
-		ImGui::Separator();
-
-		auto scene = mEditor.getScene();
-		if (scene && (mTypeSelected >= 0)) {
-			mTypes[mTypeSelected]->draw();
-		}
-
 		ImGui::End();
 	}
 

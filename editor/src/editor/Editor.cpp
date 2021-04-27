@@ -31,6 +31,7 @@ namespace editor {
 		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr),
 		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr), mGizmo(nullptr),
 		mViewportEntity(se::app::kNullEntity), mGridEntity(se::app::kNullEntity),
+		mActiveEntity(se::app::kNullEntity),
 		mScene(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the editor";
@@ -154,6 +155,8 @@ namespace editor {
 	{
 		SOMBRA_INFO_LOG << "Destroying the scene";
 
+		mActiveEntity = se::app::kNullEntity;
+
 		delete mScene;
 		mScene = nullptr;
 
@@ -187,6 +190,7 @@ namespace editor {
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
+		// Window
 		ImGui::SetNextWindowPos(viewport->WorkPos);
 		ImGui::SetNextWindowSize(viewport->WorkSize);
 		ImGui::SetNextWindowViewport(viewport->ID);
@@ -195,8 +199,11 @@ namespace editor {
 			| ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoDocking
 			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ImGui::Begin("EditorWindow", nullptr, windowFlags);
+		ImGui::PopStyleVar();
 
+		// Dockspace
 		ImGui::DockSpace(ImGui::GetID("EditorDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 		ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, io.DisplaySize.x, io.DisplaySize.y);
 

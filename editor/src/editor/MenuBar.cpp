@@ -69,7 +69,7 @@ namespace editor {
 			if (mOpen) {
 				SOMBRA_INFO_LOG << "Opening " << file << "...";
 				mEditor.createScene();
-				result = SceneSerializer(mEditor.getEntityDatabase()).deserialize(file, *mEditor.getScene());
+				result = SceneSerializer::deserialize(file, *mEditor.getScene());
 				SOMBRA_INFO_LOG << "Open finished";
 			}
 			else if (mImport) {
@@ -81,7 +81,7 @@ namespace editor {
 			}
 			else if (mSave) {
 				SOMBRA_INFO_LOG << "Saving to " << file << "...";
-				result = SceneSerializer(mEditor.getEntityDatabase()).serialize(file, *mEditor.getScene());
+				result = SceneSerializer::serialize(file, *mEditor.getScene());
 				SOMBRA_INFO_LOG << "Save finished";
 			}
 
