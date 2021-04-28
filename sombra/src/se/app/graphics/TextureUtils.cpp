@@ -9,7 +9,7 @@
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/3D/RenderableMesh.h"
 #include "se/graphics/FBClearNode.h"
-#include "se/graphics/3D/Renderer3D.h"
+#include "se/graphics/3D/RendererMesh.h"
 
 namespace se::app {
 
@@ -37,11 +37,11 @@ namespace se::app {
 			auto clearMask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor).set(graphics::FrameBufferMask::kDepth);
 			auto fbClearNode = std::make_unique<graphics::FBClearNode>("fbClearNode", clearMask);
 
-			auto renderer3D = std::make_unique<graphics::Renderer3D>("renderer3D");
+			auto rendererMesh = std::make_unique<graphics::RendererMesh>("rendererMesh");
 
 			fbClearNode->findInput("input")->connect(resources->findOutput("frameBuffer"));
-			renderer3D->findInput("target")->connect(fbClearNode->findOutput("output"));
-			addNode(std::move(renderer3D));
+			rendererMesh->findInput("target")->connect(fbClearNode->findOutput("output"));
+			addNode(std::move(rendererMesh));
 			addNode(std::move(fbClearNode));
 
 			prepareGraph();
@@ -78,7 +78,7 @@ namespace se::app {
 
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
 		source->setTextureUnit(0);
-		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
+		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer*>(graph.getNode("rendererMesh")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
@@ -144,7 +144,7 @@ namespace se::app {
 
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
 		source->setTextureUnit(0);
-		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
+		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer*>(graph.getNode("rendererMesh")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
@@ -211,7 +211,7 @@ namespace se::app {
 		auto viewMatrixUniform = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program);
 		auto roughnessUniform = std::make_shared<graphics::UniformVariableValue<float>>("uRoughness", program);
 		source->setTextureUnit(0);
-		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
+		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer*>(graph.getNode("rendererMesh")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(viewMatrixUniform)
@@ -283,7 +283,7 @@ namespace se::app {
 			return nullptr;
 		}
 
-		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
+		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer*>(graph.getNode("rendererMesh")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)))
@@ -341,7 +341,7 @@ namespace se::app {
 		}
 
 		source->setTextureUnit(0);
-		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer3D*>(graph.getNode("renderer3D")) );
+		auto pass = std::make_shared<graphics::Pass>( *dynamic_cast<graphics::Renderer*>(graph.getNode("rendererMesh")) );
 		pass->addBindable(program)
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)))

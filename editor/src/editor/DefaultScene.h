@@ -79,16 +79,16 @@ namespace editor {
 			throw std::runtime_error("Couldn't create programGBufSplatmap: " + std::string(result.description()));
 		}
 
-		auto shadowRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRenderer"));
-		auto gBufferRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto shadowRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
+		auto gBufferRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 
-		auto passShadow = std::make_shared<Pass>(*shadowRenderer);
+		auto passShadow = std::make_shared<Pass>(*shadowRendererMesh);
 		passShadow->addBindable(programShadow);
 
-		auto passShadowSkinning = std::make_shared<Pass>(*shadowRenderer);
+		auto passShadowSkinning = std::make_shared<Pass>(*shadowRendererMesh);
 		passShadowSkinning->addBindable(programShadowSkinning);
 
-		auto passDefault = std::make_shared<Pass>(*gBufferRenderer);
+		auto passDefault = std::make_shared<Pass>(*gBufferRendererMesh);
 		passDefault->addBindable(programGBufMaterial);
 		ShaderLoader::addMaterialBindables(
 			passDefault,

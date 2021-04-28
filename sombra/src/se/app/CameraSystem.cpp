@@ -1,5 +1,5 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Renderer.h"
+#include "se/graphics/3D/Renderer3D.h"
 #include "se/graphics/RenderGraph.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/CameraSystem.h"
@@ -15,13 +15,14 @@ namespace se::app {
 	{
 	private:
 		CameraSystem* mParent;
+		std::vector<graphics::Renderer*> mRenderers;
 
 	public:		// Functions
-		CameraUniformsUpdater(CameraSystem* parent,
-			const std::string& viewMatUniformName,
-			const std::string& projectionMatUniformName
+		CameraUniformsUpdater(
+			CameraSystem* parent, std::vector<graphics::Renderer*> renderers,
+			const char* viewMatUniformName, const char* projectionMatUniformName
 		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName),
-			mParent(parent) {};
+			mParent(parent), mRenderers(renderers) {};
 
 		virtual glm::mat4 getViewMatrix() const override
 		{
@@ -41,8 +42,7 @@ namespace se::app {
 
 		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
 		{
-			return (&pass->getRenderer() == mParent->mForwardRenderer)
-				|| (&pass->getRenderer() == mParent->mGBufferRenderer);
+			return std::find(mRenderers.begin(), mRenderers.end(), &pass->getRenderer()) != mRenderers.end();
 		};
 	};
 
@@ -61,12 +61,20 @@ namespace se::app {
 			.set<TerrainComponent>()
 		);
 
-		mCameraUniformsUpdater = new CameraUniformsUpdater(this, "uViewMatrix", "uProjectionMatrix");
-
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-		mForwardRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("forwardRenderer"));
-		mGBufferRenderer = dynamic_cast<FrustumRenderer3D*>(renderGraph.getNode("gBufferRenderer"));
+		auto forwardRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("forwardRendererMesh"));
+		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
+		auto gBufferRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererTerrain"));
 		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
+
+		mCameraUniformsUpdater = new CameraUniformsUpdater(
+			this, { forwardRendererMesh, gBufferRendererMesh, gBufferRendererTerrain }, "uViewMatrix", "uProjectionMatrix"
+		);
+
+		mFrustumFilter = std::make_shared<graphics::FrustumFilter>();
+		forwardRendererMesh->addFilter(mFrustumFilter);
+		gBufferRendererMesh->addFilter(mFrustumFilter);
+		gBufferRendererTerrain->addFilter(mFrustumFilter);
 	}
 
 
@@ -166,8 +174,7 @@ namespace se::app {
 		if (mCamera) {
 			SOMBRA_DEBUG_LOG << "Updating the Renderers";
 			glm::mat4 viewProjectionMatrix = mCamera->getProjectionMatrix() * mCamera->getViewMatrix();
-			mForwardRenderer->updateFrustum(viewProjectionMatrix);
-			mGBufferRenderer->updateFrustum(viewProjectionMatrix);
+			mFrustumFilter->updateFrustum(viewProjectionMatrix);
 			mDeferredLightRenderer->setViewPosition(mCamera->getPosition());
 		}
 

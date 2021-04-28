@@ -16,36 +16,29 @@ namespace se::graphics {
 	 */
 	class BindableRNodeConnector
 	{
-	protected:	// Nested types
+	public:		// Nested types
 		using BindableSPtr = std::shared_ptr<Bindable>;
 
 	protected:	// Attributes
-		/** A pointer to the BindableRenderNode where the BindableRNodeConnector
-		 * is located */
-		BindableRenderNode* mParentNode;
-
 		/** The index of the Bindable resource inside @see mParentNode */
 		std::size_t mBindableIndex;
 
 	public:		// Functions
 		/** Creates a new BindableRNodeConnector
 		 *
-		 * @param	parentNode a pointer to the parent BindableRenderNode that
-		 *			holds the Bindable
 		 * @param	bindableIndex the index of the Bindable inside the
-		 *			BindableRenderNode */
-		BindableRNodeConnector(
-			BindableRenderNode* parentNode, std::size_t bindableIndex
-		) : mParentNode(parentNode), mBindableIndex(bindableIndex) {};
+		 *			parent RenderNode */
+		BindableRNodeConnector(std::size_t bindableIndex) :
+			mBindableIndex(bindableIndex) {};
 
 		/** Class destructor */
 		virtual ~BindableRNodeConnector() = default;
 
 		/** The index of the Bindable resource inside @see mParentNode */
-		std::size_t getBindableIndex() const;
+		std::size_t getBindableIndex() const { return mBindableIndex; };
 
 		/** @return	a pointer to the Bindable resource */
-		BindableSPtr getBindable() const;
+		virtual BindableSPtr getBindable() const = 0;
 
 		/** Notifies the BindableRNodeConnector of a change in the Bindable
 		 * value */
@@ -78,11 +71,10 @@ namespace se::graphics {
 		BindableRNodeOutput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		) : RNodeOutput(name),
-			BindableRNodeConnector(parentNode, bindableIndex) {};
+		);
 
-		/** @copydoc RNodeConnector::getParentNode() const */
-		virtual RenderNode* getParentNode() const override;
+		/** @copydoc BindableRNodeConnector::getBindable() */
+		virtual BindableSPtr getBindable() const override;
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;
@@ -101,11 +93,6 @@ namespace se::graphics {
 	class BindableRNodeInput :
 		public RNodeInput, public BindableRNodeConnector
 	{
-	private:	// Attributes
-		/** The BindableRNodeOutput connected to the current
-		 * BindableRNodeInput */
-		BindableRNodeOutput<T>* mConnectedOutput;
-
 	public:		// Functions
 		/** Creates a new BindableRNodeInput
 		 *
@@ -117,20 +104,15 @@ namespace se::graphics {
 		BindableRNodeInput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		) : RNodeInput(name),
-			BindableRNodeConnector(parentNode, bindableIndex),
-			mConnectedOutput(nullptr) {};
-
-		/** @copydoc RNodeConnector::getParentNode() const */
-		virtual RenderNode* getParentNode() const override;
-
-		/** @copydoc RNodeInput::getConnectedOutput() const */
-		virtual RNodeOutput* getConnectedOutput() const override;
+		);
 
 		/** @copydoc RNodeInput::connect(RNodeOutput* output)
 		 * @note It will also append the RNodeOutput's Bindable to the parent
 		 * BindableRenderNode */
 		virtual bool connect(RNodeOutput* output) override;
+
+		/** @copydoc BindableRNodeConnector::getBindable() */
+		virtual BindableSPtr getBindable() const override;
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;

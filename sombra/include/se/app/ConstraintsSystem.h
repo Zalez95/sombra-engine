@@ -5,7 +5,7 @@
 #include "../physics/constraints/NormalConstraint.h"
 #include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
-#include "../utils/FixedVector.h"
+#include "../utils/PackedVector.h"
 #include "ISystem.h"
 
 namespace se::app {
@@ -21,15 +21,15 @@ namespace se::app {
 	class ConstraintsSystem : public ISystem
 	{
 	private:	// Nested types
-		/** Holds all the Constraints per Contact */
-		struct ContactConstraints
+		/** Holds the indices of all the Constraints per Contact */
+		struct ContactConstraintIndices
 		{
-			physics::NormalConstraint normalConstraint;
-			physics::FrictionConstraint frictionConstraints[2];
+			std::size_t iNormalConstraint;
+			std::size_t iFrictionConstraints[2];
 		};
 
-		using ManifoldConstraints = utils::FixedVector<
-			ContactConstraints, collision::Manifold::kMaxContacts
+		using ManifoldConstraintIndices = utils::FixedVector<
+			ContactConstraintIndices, collision::Manifold::kMaxContacts
 		>;
 
 	private:	// Attributes
@@ -49,15 +49,30 @@ namespace se::app {
 		/** The gravity acceleration value of all the FrictionConstraints */
 		static constexpr float kFrictionGravityAcceleration = 9.8f;
 
+		/** The maximum number of Contacts that can be solved at a single
+		 * time */
+		static constexpr std::size_t kMaxContacts = 64000;
+
 		/** The Application that holds the PhysicsEngine and the EventManager
 		 * used for updating Entities' RigidBodies and being notified of the
 		 * Collisions */
 		Application& mApplication;
 
-		/** The NormalConstraints generated as a consecuence of the
-		 * PhysicsEntities collisions */
-		std::unordered_map<const collision::Manifold*, ManifoldConstraints>
-			mManifoldConstraintsMap;
+		/** Maps each Manifold with the indices of the Constraints generated
+		 * as a consecuence of the collisions */
+		std::unordered_map<
+			const collision::Manifold*, ManifoldConstraintIndices
+		> mManifoldConstraintIndicesMap;
+
+		/** The NormalConstraints of all the Contacts */
+		utils::PackedVector<
+			physics::NormalConstraint
+		> mContactNormalConstraints;
+
+		/** The FrictionConstraints of all the Contacts */
+		utils::PackedVector<
+			physics::FrictionConstraint
+		> mContactFrictionConstraints;
 
 	public:		// Functions
 		/** Creates a new ConstraintsSystem

@@ -69,8 +69,8 @@ namespace se::app {
 		 * @param	projectionMatUniform Name te name of the Projection matrix
 		 *			uniform variable */
 		IViewProjectionUpdater(
-			const std::string& viewMatUniformName,
-			const std::string& projectionMatUniformName
+			const char* viewMatUniformName,
+			const char* projectionMatUniformName
 		);
 
 		/** Class destructor */

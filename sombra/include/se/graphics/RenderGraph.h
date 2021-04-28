@@ -15,6 +15,10 @@ namespace se::graphics {
 	 * all the global Bindable resources can be accessed from other RenderNodes.
 	 * This "resources" RenderNode also has a "defaultFB" output with the
 	 * default FrameBuffer to draw to.
+	 * The RenderGraph nodes will be executed from top to bottom, this means
+	 * that the parent nodes will be executed prior to the child ones. If some
+	 * nodes are at the same level, they will be executed in the same order
+	 * that they've added to the RenderGraph.
 	 */
 	class RenderGraph
 	{
@@ -41,6 +45,13 @@ namespace se::graphics {
 		 *			otherwise */
 		bool addNode(RenderNodeUPtr node);
 
+		/** Iterates through all the RenderNodes of the RenderGraph calling
+		 * the given callback function
+		 *
+		 * @param	callback the function to call for each RenderNode */
+		template <typename F>
+		void processNodes(F callback) const;
+
 		/** Removes the given RenderNode from the RenderGraph
 		 *
 		 * @param	node a pointer to the RenderNode to remove
@@ -64,6 +75,15 @@ namespace se::graphics {
 		/** Executes the RenderNodes added to the RenderGraph */
 		void execute();
 	};
+
+
+	template <typename F>
+	void RenderGraph::processNodes(F callback) const
+	{
+		for (auto& node : mRenderNodes) {
+			callback(node.get());
+		}
+	}
 
 }
 

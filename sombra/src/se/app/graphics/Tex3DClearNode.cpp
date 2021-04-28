@@ -28,23 +28,7 @@ namespace se::app {
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, tex3DIndex) );
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, tex3DIndex) );
 
-		// Create the plane
-		graphics::VertexArray vao;
-		vao.bind();
-
-		std::vector<graphics::VertexBuffer> vbos;
-		auto& vbo = vbos.emplace_back();
-		glm::vec2 positions[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
-		vbo.resizeAndCopy(positions, 4);
-		vbo.bind();
-		vao.setVertexAttribute(0, graphics::TypeId::Float, false, 2, 0);
-
-		graphics::IndexBuffer ibo;
-		unsigned short faceIndices[] = { 0, 1, 2, 2, 3, 0 };
-		ibo.resizeAndCopy(faceIndices, graphics::TypeId::UnsignedShort, 6);
-		ibo.bind();
-
-		mPlane = std::make_unique<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+		mPlane = repository.find<std::string, graphics::Mesh>("plane");
 	}
 
 

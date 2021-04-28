@@ -9,9 +9,8 @@
 
 namespace se::app {
 
-	IViewProjectionUpdater::IViewProjectionUpdater(
-		const std::string& viewMatUniformName, const std::string& projectionMatUniformName
-	) : mViewMatUniformName(viewMatUniformName), mProjectionMatUniformName(projectionMatUniformName) {}
+	IViewProjectionUpdater::IViewProjectionUpdater(const char* viewMatUniformName, const char* projectionMatUniformName) :
+		mViewMatUniformName(viewMatUniformName), mProjectionMatUniformName(projectionMatUniformName) {}
 
 
 	void IViewProjectionUpdater::addRenderable(graphics::Renderable& renderable)

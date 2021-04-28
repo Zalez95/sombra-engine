@@ -387,7 +387,7 @@ namespace se::physics {
 		for (std::size_t i = 0; i < mRigidBodies.size(); ++i) {
 			// Check if the RigidBody constraints has been solved or if it has
 			// infinite mass
-			if (!mShouldSolveMatrix[i] || (mRigidBodies[i]->getConfig().invertedMass == 0)) { continue; }
+			if (!mShouldSolveMatrix[i] || (mInverseMassMatrix[2*i][0][0] == 0.0f)) { continue; }
 
 			// Update the RigidBody motion data
 			for (std::size_t j = 0; j < 2; ++j) {

@@ -1,7 +1,9 @@
 #include "se/utils/Log.h"
-#include "se/graphics/Renderer.h"
+#include "se/graphics/3D/Renderer3D.h"
+#include "se/graphics/3D/FrustumFilter.h"
 #include "se/graphics/RenderGraph.h"
 #include "se/graphics/GraphicsEngine.h"
+#include "se/graphics/ViewportResolutionNode.h"
 #include "se/app/ShadowSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
@@ -9,16 +11,16 @@
 #include "se/app/TerrainComponent.h"
 #include "se/app/CameraComponent.h"
 #include "se/app/IViewProjectionUpdater.h"
-#include "se/app/graphics/ShadowRenderer3D.h"
 
 namespace se::app {
 
 	struct ShadowSystem::Shadow
 	{
 		ShadowData data;
-		ShadowUniformsUpdater* uniformUpdater;
 		CameraComponent camera;
-		ShadowRenderer3D* renderer;
+		std::vector<graphics::Renderer*> renderers;
+		std::shared_ptr<graphics::FrustumFilter> frustum;
+		ShadowUniformsUpdater* uniformUpdater;
 	};
 
 
@@ -31,7 +33,7 @@ namespace se::app {
 	public:		// Functions
 		ShadowUniformsUpdater(
 			ShadowSystem* parent, std::size_t shadowIndex,
-			const std::string& viewMatUniformName, const std::string& projectionMatUniformName
+			const char* viewMatUniformName, const char* projectionMatUniformName
 		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName),
 			mParent(parent), mShadowIndex(shadowIndex) {};
 
@@ -47,7 +49,10 @@ namespace se::app {
 
 		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
 		{
-			return (&pass->getRenderer() == mParent->mShadows[mShadowIndex].renderer);
+			return std::find(
+					mParent->mShadows[mShadowIndex].renderers.begin(), mParent->mShadows[mShadowIndex].renderers.end(),
+					&pass->getRenderer()
+				) != mParent->mShadows[mShadowIndex].renderers.end();
 		};
 	};
 
@@ -66,15 +71,21 @@ namespace se::app {
 			.set<TerrainComponent>()
 		);
 
+		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
+		auto startShadow = dynamic_cast<graphics::ViewportResolutionNode*>(renderGraph.getNode("startShadow"));
+		auto shadowRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("shadowRendererMesh"));
+		auto shadowRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("shadowRendererTerrain"));
+		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
+
 		auto& shadow = mShadows.emplace_back();
 		shadow.data = shadowData;
+		shadow.renderers = { shadowRendererMesh, shadowRendererTerrain };
+		shadow.frustum = std::make_shared<graphics::FrustumFilter>();
 		shadow.uniformUpdater = new ShadowUniformsUpdater(this, 0, "uViewMatrix", "uProjectionMatrix");
 
-		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-		shadow.renderer = dynamic_cast<ShadowRenderer3D*>(renderGraph.getNode("shadowRenderer"));
-		shadow.renderer->setShadowResolution(shadow.data.resolution);
-
-		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
+		startShadow->setViewportSize(0, 0, shadow.data.resolution, shadow.data.resolution);
+		shadowRendererMesh->addFilter(shadow.frustum);
+		shadowRendererTerrain->addFilter(shadow.frustum);
 	}
 
 
@@ -162,7 +173,7 @@ namespace se::app {
 
 		SOMBRA_DEBUG_LOG << "Updating the Renderers";
 		glm::mat4 viewProjectionMatrix = mShadows[0].camera.getProjectionMatrix() * mShadows[0].camera.getViewMatrix();
-		mShadows[0].renderer->updateFrustum(viewProjectionMatrix);
+		mShadows[0].frustum->updateFrustum(viewProjectionMatrix);
 		mDeferredLightRenderer->setShadowViewProjectionMatrix(viewProjectionMatrix);
 
 		SOMBRA_INFO_LOG << "Update end";

@@ -42,10 +42,10 @@ namespace editor {
 			auto shadowPass = mRepository.find<std::string, se::graphics::Pass>(shadowPassKey);
 
 			auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-			auto gBufferRenderer = static_cast<se::graphics::Renderer*>(renderGraph.getNode("gBufferRenderer"));
+			auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(renderGraph.getNode("gBufferRendererMesh"));
 			std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
 			auto program = mRepository.find<std::string, se::graphics::Program>(programKey);
-			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			pass->addBindable(program);
 			se::app::ShaderLoader::addMaterialBindables(pass, material, program);
 

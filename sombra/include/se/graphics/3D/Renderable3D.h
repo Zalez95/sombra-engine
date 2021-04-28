@@ -89,9 +89,6 @@ namespace se::graphics {
 		 *
 		 * @param	pass a pointer to the Pass used for binding the Bindables */
 		void unbind(Pass* pass) const;
-
-		/** Draws the current Renderable3D (drawcall) */
-		virtual void draw() = 0;
 	};
 
 }

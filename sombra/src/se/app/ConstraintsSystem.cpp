@@ -12,8 +12,9 @@ namespace se::app {
 	ConstraintsSystem::ConstraintsSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		std::size_t maxRBs = mEntityDatabase.getMaxComponents<physics::RigidBody>();
-		mManifoldConstraintsMap.reserve(maxRBs * maxRBs);
+		mManifoldConstraintIndicesMap.reserve(kMaxContacts / collision::Manifold::kMaxContacts);
+		mContactNormalConstraints.reserve(kMaxContacts);
+		mContactFrictionConstraints.reserve(2 * kMaxContacts);
 
 		mApplication.getEventManager().subscribe(this, Topic::Collision);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
@@ -22,6 +23,14 @@ namespace se::app {
 
 	ConstraintsSystem::~ConstraintsSystem()
 	{
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+		for (auto& normalConstraint : mContactNormalConstraints) {
+			physicsEngine.getConstraintManager().removeConstraint(&normalConstraint);
+		}
+		for (auto& frictionConstraint : mContactFrictionConstraints) {
+			physicsEngine.getConstraintManager().removeConstraint(&frictionConstraint);
+		}
+
 		mEntityDatabase.removeSystem(this);
 		mApplication.getEventManager().unsubscribe(this, Topic::Collision);
 	}
@@ -57,11 +66,22 @@ namespace se::app {
 			return;
 		}
 
-		for (auto it = mManifoldConstraintsMap.begin(); it != mManifoldConstraintsMap.end();) {
-			if ((it->second[0].normalConstraint.getRigidBody(0) == rb)
-				|| (it->second[0].normalConstraint.getRigidBody(1) == rb)
+		// Remove the Constraints from the ConstraintManager
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+		physicsEngine.getConstraintManager().removeRigidBody(rb);
+
+		// Remove the Constraint indices
+		for (auto it = mManifoldConstraintIndicesMap.begin(); it != mManifoldConstraintIndicesMap.end();) {
+			if ((mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(0) == rb)
+				|| (mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(1) == rb)
 			) {
-				it = mManifoldConstraintsMap.erase(it);
+				for (const auto& constraintIndices : it->second) {
+					mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
+					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
+					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
+				}
+
+				it = mManifoldConstraintIndicesMap.erase(it);
 			}
 			else {
 				++it;
@@ -94,10 +114,8 @@ namespace se::app {
 		);
 
 		SOMBRA_DEBUG_LOG << "Updating the NormalConstraints time";
-		for (auto& pair : mManifoldConstraintsMap) {
-			for (ContactConstraints& contactConstraints : pair.second) {
-				contactConstraints.normalConstraint.setDeltaTime(mDeltaTime);
-			}
+		for (auto& normalConstraint : mContactNormalConstraints) {
+			normalConstraint.setDeltaTime(mDeltaTime);
 		}
 
 		SOMBRA_DEBUG_LOG << "Solving the Constraints";
@@ -159,44 +177,55 @@ namespace se::app {
 		const collision::Manifold* manifold
 	) {
 		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
-		auto& manifoldConstraints = mManifoldConstraintsMap[manifold];
-
+		auto& manifoldConstraintIndices = mManifoldConstraintIndicesMap[manifold];
 		bool updateFrictionMasses = true;
-		if (manifold->contacts.size() > manifoldConstraints.size()) {
-			float mu1 = rb1->getConfig().frictionCoefficient, mu2 = rb2->getConfig().frictionCoefficient;
-			float mu = std::sqrt(0.5f * (mu1 * mu1 + mu2 * mu2));
-			SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
 
-			// Increase the number of constraints up to the number of contacts
-			for (std::size_t i = manifoldConstraints.size(); i < manifold->contacts.size(); ++i) {
-				auto& constraints = manifoldConstraints.emplace_back(ContactConstraints{
-					physics::NormalConstraint(
-						{ rb1, rb2 }, kCollisionBeta, kCollisionRestitutionFactor,
+		int contactsDiff = static_cast<int>(manifold->contacts.size()) - static_cast<int>(manifoldConstraintIndices.size());
+		if (contactsDiff > 0) {
+			if (mContactNormalConstraints.size() + contactsDiff <= kMaxContacts) {
+				float mu1 = rb1->getConfig().frictionCoefficient, mu2 = rb2->getConfig().frictionCoefficient;
+				float mu = std::sqrt(0.5f * (mu1 * mu1 + mu2 * mu2));
+				SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
+
+				// Increase the number of constraints up to the number of contacts
+				for (std::size_t i = manifoldConstraintIndices.size(); i < manifold->contacts.size(); ++i) {
+					auto itNormalConstraint = mContactNormalConstraints.emplace(
+						std::array{ rb1, rb2 }, kCollisionBeta, kCollisionRestitutionFactor,
 						kCollisionSlopPenetration, kCollisionSlopRestitution
-					),
-					{
-						physics::FrictionConstraint({ rb1, rb2 }, kFrictionGravityAcceleration, mu),
-						physics::FrictionConstraint({ rb1, rb2 }, kFrictionGravityAcceleration, mu)
-					}
-				});
+					);
+					auto itFrictionConstraint0 = mContactFrictionConstraints.emplace(std::array{ rb1, rb2 }, kFrictionGravityAcceleration, mu);
+					auto itFrictionConstraint1 = mContactFrictionConstraints.emplace(std::array{ rb1, rb2 }, kFrictionGravityAcceleration, mu);
 
-				physicsEngine.getConstraintManager().addConstraint(&constraints.normalConstraint);
-				physicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[0]);
-				physicsEngine.getConstraintManager().addConstraint(&constraints.frictionConstraints[1]);
+					physicsEngine.getConstraintManager().addConstraint(&(*itNormalConstraint));
+					physicsEngine.getConstraintManager().addConstraint(&(*itFrictionConstraint0));
+					physicsEngine.getConstraintManager().addConstraint(&(*itFrictionConstraint1));
 
-				SOMBRA_DEBUG_LOG << "Added ContactConstraint[" << i << "]";
+					manifoldConstraintIndices.emplace_back(ContactConstraintIndices{
+						itNormalConstraint.getIndex(), { itFrictionConstraint0.getIndex(), itFrictionConstraint1.getIndex() }
+					});
+
+					SOMBRA_DEBUG_LOG << "Added contact Constraints [" << i << "]";
+				}
+			}
+			else {
+				SOMBRA_WARN_LOG << "Maximum number of Contacts reached";
 			}
 		}
-		else if (manifold->contacts.size() < manifoldConstraints.size()) {
+		else if (contactsDiff < 0) {
 			// Decrease the number of constraints down to the number of contacts
-			for (std::size_t i = manifoldConstraints.size(); i > manifold->contacts.size(); --i) {
-				ContactConstraints& lastConstraints = manifoldConstraints.back();
-				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.normalConstraint);
-				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[0]);
-				physicsEngine.getConstraintManager().removeConstraint(&lastConstraints.frictionConstraints[1]);
-				manifoldConstraints.pop_back();
+			for (std::size_t i = manifoldConstraintIndices.size(); i > manifold->contacts.size(); --i) {
+				ContactConstraintIndices& constraintIndices = manifoldConstraintIndices.back();
+				physicsEngine.getConstraintManager().removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
+				physicsEngine.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
+				physicsEngine.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
 
-				SOMBRA_DEBUG_LOG << "Removed ContactConstraint[" << i-1 << "]";
+				mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
+				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
+				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
+
+				manifoldConstraintIndices.pop_back();
+
+				SOMBRA_DEBUG_LOG << "Removed contact Constraints [" << i-1 << "]";
 			}
 		}
 		else {
@@ -206,11 +235,11 @@ namespace se::app {
 		if (updateFrictionMasses) {
 			// Update the friction constraint masses
 			float averageMass = 0.5f * (1.0f / rb1->getConfig().invertedMass + 1.0f / rb2->getConfig().invertedMass);
-			float perContactMass = averageMass / manifoldConstraints.size();
+			float perContactMass = averageMass / manifoldConstraintIndices.size();
 
-			for (ContactConstraints& contactConstraints : manifoldConstraints) {
-				contactConstraints.frictionConstraints[0].calculateConstraintBounds(perContactMass);
-				contactConstraints.frictionConstraints[1].calculateConstraintBounds(perContactMass);
+			for (ContactConstraintIndices& constraintIndices : manifoldConstraintIndices) {
+				mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]].calculateConstraintBounds(perContactMass);
+				mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]].calculateConstraintBounds(perContactMass);
 			}
 
 			SOMBRA_DEBUG_LOG << "Updated FrictionConstraint masses to " << perContactMass;
@@ -234,14 +263,14 @@ namespace se::app {
 			glm::vec3 tangent1 = glm::normalize(glm::cross(contact.normal, vAxis));
 			glm::vec3 tangent2 = glm::normalize(glm::cross(contact.normal, tangent1));
 
-			manifoldConstraints[i].normalConstraint.setNormal(contact.normal);
-			manifoldConstraints[i].normalConstraint.setConstraintVectors({ r1, r2 });
-			manifoldConstraints[i].frictionConstraints[0].setTangent(tangent1);
-			manifoldConstraints[i].frictionConstraints[0].setConstraintVectors({ r1, r2 });
-			manifoldConstraints[i].frictionConstraints[1].setTangent(tangent2);
-			manifoldConstraints[i].frictionConstraints[1].setConstraintVectors({ r1, r2 });
+			mContactNormalConstraints[manifoldConstraintIndices[i].iNormalConstraint].setNormal(contact.normal);
+			mContactNormalConstraints[manifoldConstraintIndices[i].iNormalConstraint].setConstraintVectors({ r1, r2 });
+			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[0]].setTangent(tangent1);
+			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[0]].setConstraintVectors({ r1, r2 });
+			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[1]].setTangent(tangent2);
+			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[1]].setConstraintVectors({ r1, r2 });
 
-			SOMBRA_DEBUG_LOG << "Updated ContactConstraints[" << i << "]: "
+			SOMBRA_DEBUG_LOG << "Updated contact Constraints [" << i << "]: "
 				<< "r1=" << glm::to_string(r1) << ", " << "r2=" << glm::to_string(r2) << ", "
 				<< "normal=" << glm::to_string(contact.normal) << ", "
 				<< "tangent1=" << glm::to_string(tangent1) << " and tangent2=" << glm::to_string(tangent2);
@@ -251,20 +280,25 @@ namespace se::app {
 
 	void ConstraintsSystem::handleDisjointManifold(const collision::Manifold* manifold)
 	{
-		auto itPair = mManifoldConstraintsMap.find(manifold);
-		if (itPair != mManifoldConstraintsMap.end()) {
-			for (ContactConstraints& constraints : itPair->second) {
-				auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
-				physicsEngine.getConstraintManager().removeConstraint(&constraints.normalConstraint);
-				physicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[0]);
-				physicsEngine.getConstraintManager().removeConstraint(&constraints.frictionConstraints[1]);
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+
+		auto itPair = mManifoldConstraintIndicesMap.find(manifold);
+		if (itPair != mManifoldConstraintIndicesMap.end()) {
+			for (auto& constraintIndices : itPair->second) {
+				physicsEngine.getConstraintManager().removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
+				physicsEngine.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
+				physicsEngine.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
+
+				mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
+				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
+				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
 			}
 
-			SOMBRA_DEBUG_LOG << "Removed all the ContactConstraints (" << itPair->second.size() << ")";
-			mManifoldConstraintsMap.erase(itPair);
+			SOMBRA_DEBUG_LOG << "Removed all the contact Constraints (" << itPair->second.size() << ")";
+			mManifoldConstraintIndicesMap.erase(itPair);
 		}
 		else {
-			SOMBRA_WARN_LOG << "Doesn't exists any ContactConstraints";
+			SOMBRA_WARN_LOG << "Doesn't exists any contact Constraints";
 		}
 	}
 

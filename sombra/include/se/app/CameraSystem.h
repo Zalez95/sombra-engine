@@ -1,7 +1,7 @@
 #ifndef CAMERA_SYSTEM_H
 #define CAMERA_SYSTEM_H
 
-#include "graphics/FrustumRenderer3D.h"
+#include "../graphics/3D/FrustumFilter.h"
 #include "graphics/DeferredLightRenderer.h"
 #include "events/ContainerEvent.h"
 #include "events/RMeshEvent.h"
@@ -25,6 +25,7 @@ namespace se::app {
 	class CameraSystem : public ISystem
 	{
 	private:	// Nested Types
+		using FrustumFilterSPtr = std::shared_ptr<graphics::FrustumFilter>;
 		class CameraUniformsUpdater;
 
 	private:	// Attributes
@@ -38,11 +39,9 @@ namespace se::app {
 		 * passes */
 		CameraUniformsUpdater* mCameraUniformsUpdater;
 
-		/** A pointer to the forward renderer used for rendering Entities */
-		FrustumRenderer3D* mForwardRenderer;
-
-		/** A pointer to the g-buffer renderer used for rendering Entities */
-		FrustumRenderer3D* mGBufferRenderer;
+		/** A pointer to the frustum filter shared between all the
+		 * Renderer3Ds */
+		FrustumFilterSPtr mFrustumFilter;
 
 		/** A pointer to the deferred light renderer used for computing the
 		 * lighting */

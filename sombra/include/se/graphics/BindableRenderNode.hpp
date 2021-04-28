@@ -6,9 +6,17 @@
 namespace se::graphics {
 
 	template <typename T>
-	RenderNode* BindableRNodeOutput<T>::getParentNode() const
+	BindableRNodeOutput<T>::BindableRNodeOutput(
+		const std::string& name, BindableRenderNode* parentNode,
+		std::size_t bindableIndex
+	) : RNodeOutput(name, parentNode),
+		BindableRNodeConnector(bindableIndex) {}
+
+
+	template <typename T>
+	typename BindableRNodeOutput<T>::BindableSPtr BindableRNodeOutput<T>::getBindable() const
 	{
-		return mParentNode;
+		return static_cast<const BindableRenderNode*>(mParentNode)->getBindable(mBindableIndex);
 	}
 
 
@@ -29,44 +37,49 @@ namespace se::graphics {
 
 
 	template <typename T>
-	RenderNode* BindableRNodeInput<T>::getParentNode() const
-	{
-		return mParentNode;
-	}
-
-
-	template <typename T>
-	RNodeOutput* BindableRNodeInput<T>::getConnectedOutput() const
-	{
-		return mConnectedOutput;
-	}
+	BindableRNodeInput<T>::BindableRNodeInput(
+		const std::string& name, BindableRenderNode* parentNode,
+		std::size_t bindableIndex
+	) : RNodeInput(name, parentNode),
+		BindableRNodeConnector(bindableIndex) {}
 
 
 	template <typename T>
 	bool BindableRNodeInput<T>::connect(RNodeOutput* output)
 	{
-		if (auto tmp = dynamic_cast<BindableRNodeOutput<T>*>(output)) {
-			if (mConnectedOutput) {
-				SOMBRA_ERROR_LOG << "Can't replace older connection";
+		if (auto tOutput = dynamic_cast<BindableRNodeOutput<T>*>(output)) {
+			if (RNodeInput::connect(tOutput)) {
+				auto parent = static_cast<BindableRenderNode*>(mParentNode);
+
+				tOutput->addInput(this);
+				parent->setBindable(mBindableIndex, tOutput->getBindable());
+				return true;
+			}
+			else {
 				return false;
 			}
-
-			mConnectedOutput = tmp;
-			mConnectedOutput->addInput(this);
-			mParentNode->setBindable(mBindableIndex, mConnectedOutput->getBindable());
-			return true;
 		}
 		else {
-			SOMBRA_ERROR_LOG << "Invalid type";
+			SOMBRA_ERROR_LOG << "Trying to attach " << output->getParentNode()->getName() << "[" << output->getName() << "]"
+				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
 			return false;
 		}
 	}
 
 
 	template <typename T>
+	typename BindableRNodeInput<T>::BindableSPtr BindableRNodeInput<T>::getBindable() const
+	{
+		return static_cast<const BindableRenderNode*>(mParentNode)->getBindable(mBindableIndex);
+	}
+
+
+	template <typename T>
 	void BindableRNodeInput<T>::onBindableUpdate()
 	{
-		mParentNode->setBindable(mBindableIndex, mConnectedOutput->getBindable());
+		auto parent = static_cast<BindableRenderNode*>(mParentNode);
+		auto output = static_cast<BindableRNodeOutput<T>*>(mConnectedOutput);
+		parent->setBindable(mBindableIndex, output->getBindable());
 	}
 
 }

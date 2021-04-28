@@ -105,10 +105,14 @@ namespace se::graphics {
 					if (itNode != mRenderNodes.end()) {
 						leafNodes[std::distance(mRenderNodes.begin(), itNode)] = false;
 					}
+					else {
+						SOMBRA_WARN_LOG << "There is a RNodeOutput connected to the \"" << input.getName()
+							<< "\" input of the \"" << node->getName() << "\" node that hasn't been added to the RenderGraph";
+					}
 				}
 				else {
-					SOMBRA_WARN_LOG << "There isn't any RNodeOutput connected to the \""
-						<< input.getName() << "\" input of the \"" << node->getName() << "\" node";
+					SOMBRA_WARN_LOG << "There isn't any RNodeOutput connected to the \"" << input.getName()
+						<< "\" input of the \"" << node->getName() << "\" node";
 				}
 			});
 		}

@@ -12,6 +12,9 @@ namespace se::app {
 	/**
 	 * Class DeferredLightRenderer, It's the renderer used for calculating the
 	 * lighting with the given g-buffer framebuffers.
+	 * It has a Framebuffer "target" input and output, and "irradiance",
+	 * "prefilter", "brdf", "shadow", "position", "normal", "albedo",
+	 * "material" and "emissive" Texture inputs
 	 */
 	class DeferredLightRenderer : public graphics::BindableRenderNode
 	{
@@ -75,11 +78,9 @@ namespace se::app {
 		/** Creates a new DeferredLightRenderer
 		 *
 		 * @param	name the name of the RenderNode
-		 * @param	repository the Repository that holds the programs
-		 * @param	plane the Plane used for rendering */
+		 * @param	repository the Repository that holds the programs */
 		DeferredLightRenderer(
-			const std::string& name, utils::Repository& repository,
-			std::shared_ptr<graphics::RenderableMesh> plane
+			const std::string& name, utils::Repository& repository
 		);
 
 		/** Class destructor */

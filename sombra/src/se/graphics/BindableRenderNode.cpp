@@ -2,18 +2,6 @@
 
 namespace se::graphics {
 
-	std::size_t BindableRNodeConnector::getBindableIndex() const
-	{
-		return mBindableIndex;
-	}
-
-
-	BindableRNodeConnector::BindableSPtr BindableRNodeConnector::getBindable() const
-	{
-		return mParentNode->getBindable(mBindableIndex);
-	}
-
-
 	std::size_t BindableRenderNode::addBindable(BindableSPtr bindable, bool mustBind)
 	{
 		mBindables.emplace_back(bindable, mustBind);

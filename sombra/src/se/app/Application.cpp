@@ -9,6 +9,7 @@
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/2D/Font.h"
+#include "se/graphics/3D/Mesh.h"
 #include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/collision/Collider.h"
@@ -79,6 +80,7 @@ namespace se::app {
 			mRepository->init<std::string, graphics::Program>();
 			mRepository->init<std::string, graphics::Texture>();
 			mRepository->init<std::string, graphics::Font>();
+			mRepository->init<std::string, graphics::Mesh>();
 
 			// Entities
 			mEntityDatabase = new EntityDatabase(kMaxEntities);

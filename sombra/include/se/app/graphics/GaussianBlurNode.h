@@ -27,16 +27,14 @@ namespace se::app {
 		/** Creates a new GaussianBlurNode
 		 *
 		 * @param	name the name of the new GaussianBlurNode
-		 * @param	repository the Repository that holds all the Programs
-		 * @param	plane the RenderableMesh used for rendering to the
-		 *			FrameBuffers
+		 * @param	repository the Repository that holds all the Programs and
+		 *			a "plane" Mesh
 		 * @param	width the width of the output Texture
 		 * @param	height the height of the output Texture
 		 * @param	horizontal if the blur is going to be applied in the
 		 *			horizontal direction or the vertical one */
 		GaussianBlurNode(
 			const std::string& name, utils::Repository& repository,
-			std::shared_ptr<graphics::RenderableMesh> plane,
 			std::size_t width, std::size_t height, bool horizontal
 		);
 

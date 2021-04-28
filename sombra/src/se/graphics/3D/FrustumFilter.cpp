@@ -1,10 +1,11 @@
 #include <glm/gtc/matrix_access.hpp>
-#include "se/app/graphics/FrustumRenderer3D.h"
 #include "se/utils/MathUtils.h"
+#include "se/graphics/3D/FrustumFilter.h"
+#include "se/graphics/3D/Renderable3D.h"
 
-namespace se::app {
+namespace se::graphics {
 
-	FrustumRenderer3D& FrustumRenderer3D::updateFrustum(const glm::mat4& viewProjectionMatrix)
+	FrustumFilter& FrustumFilter::updateFrustum(const glm::mat4& viewProjectionMatrix)
 	{
 		// See https://cgvr.cs.uni-bremen.de/teaching/cg_literatur/lighthouse3d_view_frustum_culling/index.html
 
@@ -36,10 +37,9 @@ namespace se::app {
 	}
 
 
-	void FrustumRenderer3D::submit(graphics::Renderable& renderable, graphics::Pass& pass)
+	bool FrustumFilter::shouldBeRendered(Renderable3D& renderable)
 	{
-		auto renderable3D = dynamic_cast<graphics::Renderable3D*>(&renderable);
-		auto [minAABB, maxAABB] = renderable3D->getBounds();
+		auto [minAABB, maxAABB] = renderable.getBounds();
 
 		for (auto& plane : mFrustumPlanes) {
 			// Pick the AABB positive vertex, aka the furthest vertex along
@@ -54,11 +54,11 @@ namespace se::app {
 			// the plane, if it's negative the renderable AABB is outside the
 			// frustum and should be culled
 			if (utils::signedDistancePlanePoint(plane, pVertex) < 0.0f) {
-				return;
+				return false;
 			}
 		}
 
-		Renderer3D::submit(renderable, pass);
+		return true;
 	}
 
 }

@@ -6,10 +6,10 @@
 namespace se::graphics {
 
 	/**
-	 * Class TextureUnitNode, it's RenderNode that can change the texure unit
-	 * to bind a Texture. It has an "input" BindableRNodeInput where the
-	 * Texture to update can be inserted and an "output" BindableRNodeOutput
-	 * where the same Texture can be recovered
+	 * Class TextureUnitNode, it's BindableRenderNode that can change the
+	 * texture unit where a Texture must be bound. It has an "input"
+	 * BindableRNodeInput where the Texture to update can be inserted and an
+	 * "output" BindableRNodeOutput where the same Texture can be recovered
 	 */
 	class TextureUnitNode : public BindableRenderNode
 	{
@@ -30,7 +30,7 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~TextureUnitNode() = default;
 
-		/** Executes the current RenderNode */
+		/** @copydoc RenderNode::execute() */
 		virtual void execute() override;
 	};
 

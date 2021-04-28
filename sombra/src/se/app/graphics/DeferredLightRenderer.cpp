@@ -7,10 +7,8 @@
 
 namespace se::app {
 
-	DeferredLightRenderer::DeferredLightRenderer(
-		const std::string& name, utils::Repository& repository,
-		std::shared_ptr<graphics::RenderableMesh> plane
-	) : BindableRenderNode(name), mPlane(plane)
+	DeferredLightRenderer::DeferredLightRenderer(const std::string& name, utils::Repository& repository) :
+		BindableRenderNode(name)
 	{
 		using namespace graphics;
 
@@ -27,6 +25,8 @@ namespace se::app {
 		addInput( std::make_unique<BindableRNodeInput<Texture>>("albedo", this, addBindable()) );
 		addInput( std::make_unique<BindableRNodeInput<Texture>>("material", this, addBindable()) );
 		addInput( std::make_unique<BindableRNodeInput<Texture>>("emissive", this, addBindable()) );
+
+		mPlane = std::make_shared<RenderableMesh>( repository.find<std::string, Mesh>("plane") );
 
 		auto program = repository.find<std::string, Program>("programDeferredLighting");
 		if (!program) {

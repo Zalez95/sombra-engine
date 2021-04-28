@@ -89,6 +89,17 @@ namespace se::physics {
 		 *			register */
 		void addConstraint(Constraint* constraint);
 
+		/** @return	true if the ConstraintManager has any constraints inside,
+		 *			false otherwise */
+		bool hasConstraints() const { return !mConstraints.empty(); };
+
+		/** Iterates through all the ConstraintManager Constraints calling the
+		 * given callback function
+		 *
+		 * @param	callback the function to call for each Constraint */
+		template <typename F>
+		void processConstraints(F callback) const;
+
 		/** Removes the given Constraint from the ConstraintManager, so the
 		 * movement of the RigidBodies that it holds won't longer be
 		 * restricted.
@@ -96,6 +107,13 @@ namespace se::physics {
 		 * @param	constraint a pointer to the Constraint that we want to
 		 *			remove */
 		void removeConstraint(Constraint* constraint);
+
+		/** Iterates through all the ConstraintManager RigidBodies calling the
+		 * given callback function
+		 *
+		 * @param	callback the function to call for each RigidBody */
+		template <typename F>
+		void processRigidBodies(F callback) const;
 
 		/** Removes all the Constraints that constains the given RigidBody
 		 * from the ConstraintManager.
@@ -196,6 +214,24 @@ namespace se::physics {
 		 * @return	true if the RigidBody was removed, false otherwise */
 		bool tryRemoveRigidBody(std::size_t iRB);
 	};
+
+
+	template <typename F>
+	void ConstraintManager::processConstraints(F callback) const
+	{
+		for (Constraint* constraint : mConstraints) {
+			callback(*constraint);
+		}
+	}
+
+
+	template <typename F>
+	void ConstraintManager::processRigidBodies(F callback) const
+	{
+		for (RigidBody* rigidBody : mRigidBodies) {
+			callback(*rigidBody);
+		}
+	}
 
 }
 

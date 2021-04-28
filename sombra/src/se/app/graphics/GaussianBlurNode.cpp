@@ -10,9 +10,8 @@ namespace se::app {
 
 	GaussianBlurNode::GaussianBlurNode(
 		const std::string& name, utils::Repository& repository,
-		std::shared_ptr<graphics::RenderableMesh> plane,
 		std::size_t width, std::size_t height, bool horizontal
-	) : BindableRenderNode(name), mPlane(plane)
+	) : BindableRenderNode(name)
 	{
 		auto iColorTexBindable = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, iColorTexBindable) );
@@ -25,6 +24,8 @@ namespace se::app {
 		frameBuffer->attach(*outputTexture, graphics::FrameBufferAttachment::kColor0);
 		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
+
+		mPlane = std::make_shared<graphics::RenderableMesh>( repository.find<std::string, graphics::Mesh>("plane") );
 
 		auto program = repository.find<std::string, graphics::Program>("programGaussianBlur");
 		if (!program) {

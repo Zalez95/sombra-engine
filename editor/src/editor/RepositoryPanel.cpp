@@ -548,15 +548,18 @@ namespace editor {
 	class RepositoryPanel::PassNode : public RepositoryPanel::TypeNode<Pass>
 	{
 	private:	// Attributes
-		std::array<char, kMaxNameSize> mNameBuffer, mRendererNameBuffer;
+		std::array<char, kMaxNameSize> mNameBuffer;
+		int mRendererSelected;
 
 	public:		// Functions
-		PassNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{}, mRendererNameBuffer{} {};
+		PassNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{}, mRendererSelected(-1) {};
 		virtual const char* getName() const override { return "Pass"; };
 	protected:
 		virtual void draw(const Scene::Key& key) override
 		{
 			auto pass = mPanel.mEditor.getScene()->repository.find<Scene::Key, Pass>(key);
+
+			ImGui::Text("Renderer: %s", pass->getRenderer().getName().c_str());
 
 			std::size_t numBindables = 0;
 			pass->processBindables([&](std::shared_ptr<Bindable> bindable) {
@@ -889,9 +892,27 @@ namespace editor {
 			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
 			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, Pass>(mNameBuffer.data());
 
-			ImGui::InputText("Renderer##CreateRendererName", mRendererNameBuffer.data(), mRendererNameBuffer.size());
-			auto node = mPanel.mEditor.getExternalTools().graphicsEngine->getRenderGraph().getNode(mRendererNameBuffer.data());
-			Renderer* renderer = dynamic_cast<Renderer*>(node);
+			std::vector<Renderer*> renderers;
+			mPanel.mEditor.getExternalTools().graphicsEngine->getRenderGraph().processNodes([&](RenderNode* node) {
+				if (Renderer* renderer = dynamic_cast<Renderer*>(node)) {
+					renderers.push_back(renderer);
+				}
+			});
+
+			bool isRendererSelected = (mRendererSelected >= 0) && (mRendererSelected < static_cast<int>(renderers.size()));
+			const char* rendererLabel = isRendererSelected? renderers[mRendererSelected]->getName().c_str() : nullptr;
+			if (ImGui::BeginCombo("Renderer:##PassNode::Renderer", rendererLabel)) {
+				for (std::size_t i = 0; i < renderers.size(); ++i) {
+					bool isSelected = (static_cast<int>(i) == mRendererSelected);
+					if (ImGui::Selectable(renderers[i]->getName().c_str(), isSelected)) {
+						mRendererSelected = static_cast<int>(i);
+					}
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
 
 			ImGui::Separator();
 			if (cancelButton()) {
@@ -899,8 +920,8 @@ namespace editor {
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validKey && renderer)) {
-				mPanel.mEditor.getScene()->repository.emplace<Scene::Key, Pass>(mNameBuffer.data(), *renderer);
+			if (confirmButton(validKey && isRendererSelected)) {
+				mPanel.mEditor.getScene()->repository.emplace<Scene::Key, Pass>(mNameBuffer.data(), *renderers[mRendererSelected]);
 				mNameBuffer.fill(0);
 				ret = true;
 			}

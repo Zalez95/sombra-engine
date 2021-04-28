@@ -4,6 +4,20 @@
 
 namespace se::graphics {
 
+	bool RNodeInput::connect(RNodeOutput* output)
+	{
+		if (mConnectedOutput) {
+			SOMBRA_ERROR_LOG << mParentNode->getName() << "[" << mName << "] is already connected to "
+				<< mConnectedOutput->getParentNode()->getName() + "[" + mConnectedOutput->getName() << "]"
+				<< ": Can't create new connection with " << output->getParentNode()->getName() << "[" << output->getName() << "]";
+			return false;
+		}
+
+		mConnectedOutput = output;
+		return true;
+	}
+
+
 	bool RenderNode::addInput(InputUPtr input)
 	{
 		if (std::none_of(

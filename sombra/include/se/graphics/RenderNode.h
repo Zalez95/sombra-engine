@@ -16,15 +16,21 @@ namespace se::graphics {
 	 */
 	class RNodeConnector
 	{
-	private:	// Attributes
+	protected:	// Attributes
 		/** The name used for identifying the current RNodeConnector */
 		const std::string mName;
+
+		/** A pointer to the RenderNode where the RNodeConnector is located */
+		RenderNode* mParentNode;
 
 	public:		// Functions
 		/** Creates a new RNodeConnector
 		 *
-		 * @param	name the name of the new RNodeConnector */
-		RNodeConnector(const std::string& name) : mName(name) {};
+		 * @param	name the name of the new RNodeConnector
+		 * @param	parentNode a pointer to the parent RenderNode where the
+		 *			RNodeConnector is located */
+		RNodeConnector(const std::string& name, RenderNode* parentNode) :
+			mName(name), mParentNode(parentNode) {};
 
 		/** Class destructor */
 		virtual ~RNodeConnector() = default;
@@ -32,9 +38,8 @@ namespace se::graphics {
 		/** @return	the name of the current RNodeConnector */
 		const std::string& getName() const { return mName; };
 
-		/** @return	the RenderNode where the RNodeConnector resource is
-		 *			located */
-		virtual RenderNode* getParentNode() const = 0;
+		/** @return	the RenderNode where the RNodeConnector is located */
+		RenderNode* getParentNode() const { return mParentNode; };
 	};
 
 
@@ -47,8 +52,11 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new RNodeOutput
 		 *
-		 * @param	name the name of the new RNodeOutput */
-		RNodeOutput(const std::string& name) : RNodeConnector(name) {};
+		 * @param	name the name of the new RNodeOutput
+		 * @param	parentNode a pointer to the parent RenderNode where the
+		 *			RNodeOutput is located */
+		RNodeOutput(const std::string& name, RenderNode* parentNode) :
+			RNodeConnector(name, parentNode) {};
 
 		/** Class destructor */
 		virtual ~RNodeOutput() = default;
@@ -56,23 +64,30 @@ namespace se::graphics {
 
 
 	/**
-	 * Class RNodeInput, its an incoming RNodeConnector that can be connected
+	 * Class RNodeInput, it's an incoming RNodeConnector that can be connected
 	 * to a single RNodeOutput
 	 */
 	class RNodeInput : public RNodeConnector
 	{
+	protected:	// Attributes
+		/** The RNodeOutput connected to the current RNodeInput */
+		RNodeOutput* mConnectedOutput;
+
 	public:		// Functions
 		/** Creates a new RNodeInput
 		 *
-		 * @param	name the name of the new RNodeInput */
-		RNodeInput(const std::string& name) : RNodeConnector(name) {};
+		 * @param	name the name of the new RNodeInput
+		 * @param	parentNode a pointer to the parent RenderNode where the
+		 *			RNodeInput is located */
+		RNodeInput(const std::string& name, RenderNode* parentNode) :
+			RNodeConnector(name, parentNode), mConnectedOutput(nullptr) {};
 
 		/** Class destructor */
 		virtual ~RNodeInput() = default;
 
 		/** @return	the RNodeOutput connected to the current RNodeInput,
 		 *			nullptr if there is no connection */
-		virtual RNodeOutput* getConnectedOutput() const = 0;
+		RNodeOutput* getConnectedOutput() const { return mConnectedOutput; };
 
 		/** Connects the current RNodeInput to the given RNodeOutput
 		 *
@@ -80,7 +95,7 @@ namespace se::graphics {
 		 * @return	true if the RNodeOutput was connected succesfully, false
 		 *			otherwise
 		 * @note	you can't connect the same RNodeInput more than one time */
-		virtual bool connect(RNodeOutput* output) = 0;
+		virtual bool connect(RNodeOutput* output);
 	};
 
 

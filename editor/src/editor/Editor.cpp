@@ -100,7 +100,7 @@ namespace editor {
 			return;
 		}
 
-		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
+		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 		auto pass = std::make_shared<se::graphics::Pass>(*renderer);
 		pass->addBindable(program)
 			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program, glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))

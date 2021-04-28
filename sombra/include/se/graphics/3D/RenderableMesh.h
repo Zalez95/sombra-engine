@@ -51,8 +51,8 @@ namespace se::graphics {
 			const glm::mat4& modelMatrix
 		) override;
 
-		/** @copydoc Renderable3D::draw() */
-		virtual void draw() override;
+		/** Draws the current RenderableMesh (drawcall) */
+		void draw();
 	};
 
 }

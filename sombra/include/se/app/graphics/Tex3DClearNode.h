@@ -23,7 +23,7 @@ namespace se::app {
 		std::size_t mMaxSize;
 
 		/** The plane Mesh used for clearing the Texture */
-		std::unique_ptr<graphics::Mesh> mPlane;
+		std::shared_ptr<graphics::Mesh> mPlane;
 
 	public:		// Functions
 		/** Creates a new Tex3DClearNode

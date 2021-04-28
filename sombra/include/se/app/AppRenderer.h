@@ -33,6 +33,8 @@ namespace se::app {
 	class AppRenderer : public ISystem
 	{
 	private:	// Nested types
+		class StartShadowNode;
+		class EndShadowNode;
 		class CombineNode;
 
 	private:	// Attributes
@@ -54,9 +56,6 @@ namespace se::app {
 
 		/** The bindable index of the prefilter Texture to render with */
 		std::size_t mPrefilterTextureResource;
-
-		/** The plane RenderableMesh used for rendering */
-		std::shared_ptr<graphics::RenderableMesh> mPlaneRenderable;
 
 		/** The light source Entity used for shadow mapping */
 		Entity mShadowEntity;
@@ -121,7 +120,10 @@ namespace se::app {
 		 *			false otherwise */
 		virtual bool addResources(std::size_t width, std::size_t height);
 
-		/** Adds nodes to the RenderGraph and links them
+		/** Adds nodes to the RenderGraph and links them. It will add:
+		 *  - "renderer2D" - renders Renderable2Ds
+		 *  - the renderers of @see addShadowRenderers,
+		 *    @see addDeferredRenderers and @see addForwardRenderers
 		 *
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
@@ -131,20 +133,36 @@ namespace se::app {
 		 *			false otherwise */
 		virtual bool addNodes(std::size_t width, std::size_t height);
 
-		/** Creates a shadow renderer with name "shadowRenderer" and adds it to
-		 * the given RenderGraph. It will have a texture output called "shadow"
-		 * and a Framebuffer to write to output called "target"
-		 * @param	renderGraph the RenderGraph where the nodes will be added
-		 * @return	true if the nodes where added successfully, false
-		 *			otherwise */
-		bool addShadowRenderer(graphics::RenderGraph& renderGraph);
-
-		/** Creates a deferred renderer with name "rendererDeferredLight".
-		 * It will have texture inputs "irradiance", "prefilter", "brdf" and
-		 * "shadow", and a Framebuffer to write to as input and output called
-		 * "target". It will also add a "gBufferRenderer" with texture outputs
-		 * "zBuffer", "position", "normal", "albedo", "material" and
-		 * "emissive"
+		/** Creates the Renderer3Ds used for rendering shadows with the names
+		 *	"shadowRendererMesh" - renders RenderableMeshes
+		 *	"shadowRendererTerrain" - renders RenderableTerrains
+		 * The nodes and connections that will be added to the graph looks like
+		 * the following (the resource node already exists):
+		 *
+		 *  [    "resources"    ]                   |attach
+		 *     |shadowBuffer  |shadowTexture   ["startShadow"]
+		 *     |              |                     |attach
+		 *     |input         |                     |
+		 *  ["shadowFBClear"] |           __________|
+		 *     |output        |          |
+		 *     |              |          |
+		 *     |target        |shadow    |attach
+		 *  [    "shadowRendererTerrain"    ]
+		 *     |target        |shadow
+		 *     |              |
+		 *     |target        |shadow
+		 *  [    "shadowRendererMesh"    ]
+		 *     |target        |shadow  |attach
+		 *     |              |        |
+		 *     |              |        |attach
+		 *     |              |   ["endShadow"]
+		 *     |              |        |attach
+		 *
+		 * @note	Any node that should be executed prior to the shadow
+		 *			Renderer3Ds must be attached to the "startShadow" "input"
+		 *			and any node that should be executed after them should be
+		 *			attached to the "endShadow" "output"
+		 *
 		 * @param	renderGraph the RenderGraph where the nodes will be added
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
@@ -152,20 +170,59 @@ namespace se::app {
 		 *			Entities are going to be rendered
 		 * @return	true if the nodes where added successfully, false
 		 *			otherwise */
-		bool addDeferredRenderer(
+		bool addShadowRenderers(
 			graphics::RenderGraph& renderGraph,
 			std::size_t width, std::size_t height
 		);
 
-		/** Creates a forward renderer with name "forwardRenderer" and adds it
-		 * to the given RenderGraph. It will have two textures inputs and
-		 * outputs called "color" and "bright", texture inputs "irradiance",
-		 * "prefilter", "brdf" and "shadow", and a Framebuffer to write to
-		 * input and output called "target"
+		/** Creates a deferred renderer with the following GBuffer Renderer3Ds:
+		 *	"gBufferRendererMesh" - renders RenderableMeshes
+		 *	"gBufferRendererTerrain" - renders RenderableTerrains
+		 * The nodes and connections that will be added to the graph looks like
+		 * the following (the resource node already exists):
+		 *
+		 *  [                            "resources"                        ]
+		 *   |gBuffer  |deferredBuffer             |positionTexture
+		 *    \        |_______________            |
+		 *    |input                   |           |
+		 *  ["gFBClear"]               |           |
+		 *    |output                  |           |
+		 *    |                        |   ["texUnitNodePosition"]
+		 *    |target                  |           |
+		 *  ["gBufferRendererTerrain"] |           |
+		 *    |target                  |           |
+		 *    |                        |           |
+		 *     |target                 |           |
+		 *  ["gBufferRendererMesh"]    |           |
+		 *    |target |attach__________|           |____________________
+		 *    |    ___|    |                                           |
+		 *    |   |attach |target |irradiance |prefilter |brdf |shadow |position
+		 *    |  [                "deferredLightRenderer"                ]
+		 *    |                             |target
+		 *
+		 * @note	where position appears, there will be also similar nodes
+		 *			and connections for the normal, albedo, material
+		 *			and emissive textures
+		 *
 		 * @param	renderGraph the RenderGraph where the nodes will be added
 		 * @return	true if the nodes where added successfully, false
 		 *			otherwise */
-		bool addForwardRenderer(graphics::RenderGraph& renderGraph);
+		bool addDeferredRenderers(graphics::RenderGraph& renderGraph);
+
+		/** Creates the following forward renderers and adds them to the given
+		 * RenderGraph:
+		 *	"forwardRendererMesh" - renders RenderableMeshes
+		 * The nodes and connections that will be added to the graph looks like
+		 * the following (the resource node already exists):
+		 *
+		 *    |target  |irradiance  |prefilter  |brdf  |shadow  |color  |bright
+		 *  [                    "forwardRendererMesh"                    ]
+		 *                 |target      |color      |bright
+		 *
+		 * @param	renderGraph the RenderGraph where the nodes will be added
+		 * @return	true if the nodes where added successfully, false
+		 *			otherwise */
+		bool addForwardRenderers(graphics::RenderGraph& renderGraph);
 
 		/** Handles the given ContainerEvent by updating the Shadow Entity with
 		 * which the shadow will be rendered

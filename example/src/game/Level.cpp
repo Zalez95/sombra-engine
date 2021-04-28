@@ -75,10 +75,10 @@ namespace game {
 			std::string shadowPassKey = hasSkin? "passShadowSkinning" : "passShadow";
 			auto shadowPass = mScene.repository.find<std::string, se::graphics::Pass>(shadowPassKey);
 
-			auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+			auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 			std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
 			auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
-			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			pass->addBindable(program);
 			se::app::ShaderLoader::addMaterialBindables(pass, material, program);
 
@@ -289,12 +289,12 @@ namespace game {
 			}
 			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
-			auto shadowRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRenderer"));
-			auto passShadow = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			auto shadowRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
+			auto passShadow = std::make_shared<se::graphics::Pass>(*shadowRendererMesh);
 			passShadow->addBindable(programShadow);
 			mScene.repository.add(std::string("passShadow"), std::move(passShadow));
 
-			auto passShadowSkinning = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			auto passShadowSkinning = std::make_shared<se::graphics::Pass>(*shadowRendererMesh);
 			passShadowSkinning->addBindable(programShadowSkinning);
 			mScene.repository.add(std::string("passShadowSkinning"), std::move(passShadowSkinning));
 
@@ -397,9 +397,10 @@ namespace game {
 			return;
 		}
 
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
-		auto forwardRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRenderer"));
-		auto shadowRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRenderer"));
+		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+		auto gBufferRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));
+		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
+		auto shadowRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererTerrain"));
 		auto programSky = mScene.repository.find<std::string, se::graphics::Program>("programSky");
 		auto programShadow = mScene.repository.find<std::string, se::graphics::Program>("programShadow");
 		auto programShadowSkinning = mScene.repository.find<std::string, se::graphics::Program>("programShadowSkinning");
@@ -478,7 +479,7 @@ namespace game {
 			transforms.scale = glm::vec3(kZFar / 2.0f);
 			mGame.getEntityDatabase().addComponent(skyEntity, std::move(transforms));
 
-			auto passSky = std::make_shared<se::graphics::Pass>(*forwardRenderer);
+			auto passSky = std::make_shared<se::graphics::Pass>(*forwardRendererMesh);
 			skyTexture->setTextureUnit(0);
 			passSky->addBindable(programSky)
 				.addBindable(skyTexture)
@@ -518,11 +519,11 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
-			auto terrainShadowPass = std::make_shared<se::graphics::Pass>(*shadowRenderer);
+			auto terrainShadowPass = std::make_shared<se::graphics::Pass>(*shadowRendererTerrain);
 			terrainShadowPass->addBindable(programShadowTerrain);
 			se::app::ShaderLoader::addHeightMapBindables(terrainShadowPass, heightMap1, size, maxHeight, programShadowTerrain);
 
-			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRendererTerrain);
 			terrainPass->addBindable(programGBufSplatmap);
 			se::app::ShaderLoader::addHeightMapBindables(terrainPass, heightMap1, size, maxHeight, programGBufSplatmap);
 			se::app::ShaderLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
@@ -562,7 +563,7 @@ namespace game {
 			transforms.position = glm::vec3(-15.0f, 1.0f, -5.0f);
 			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
 
-			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto passPlane = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			passPlane->addBindable(programGBufMaterial);
 			se::app::ShaderLoader::addMaterialBindables(
 				passPlane,
@@ -630,7 +631,7 @@ namespace game {
 			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
-			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto passCube = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			passCube->addBindable(programGBufMaterial);
 			se::app::ShaderLoader::addMaterialBindables(
 				passCube,
@@ -656,7 +657,7 @@ namespace game {
 		mScene.repository.add(std::string("distance"), constraint);
 		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(constraint.get());
 
-		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 		passRed->addBindable(programGBufMaterial);
 		se::app::ShaderLoader::addMaterialBindables(
 			passRed,
@@ -744,7 +745,7 @@ namespace game {
 			transforms.position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(transforms));
 
-			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto passSlice = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			passSlice->addBindable(programGBufMaterial);
 			se::app::ShaderLoader::addMaterialBindables(
 				passSlice,
@@ -771,7 +772,7 @@ namespace game {
 
 		// Random cubes
 		{
-			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
+			auto passRandom = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			passRandom->addBindable(programGBufMaterial);
 			se::app::ShaderLoader::addMaterialBindables(
 				passRandom,
