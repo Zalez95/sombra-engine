@@ -41,6 +41,15 @@ namespace se::graphics {
 	}
 
 
+	std::size_t UniformBuffer::size() const
+	{
+		int ret = 0;
+		bind();
+		GL_WRAP( glGetBufferParameteriv(GL_UNIFORM_BUFFER, GL_BUFFER_SIZE, &ret) );
+		return ret;
+	}
+
+
 	void UniformBuffer::resizeAndCopy(const void* data, std::size_t size)
 	{
 		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, mBufferId) );

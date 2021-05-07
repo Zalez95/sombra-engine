@@ -14,9 +14,9 @@ namespace editor {
 	{
 	private:	// Nested types
 		class ITypeNode;
-		template <typename T> class TypeNode;
-		template <typename T> class ImportTypeNode;
-		template <typename T> class SceneImporterTypeNode;
+		template <typename T, bool hasPath = false> class TypeNode;
+		template <typename T, bool hasPath = false> class ImportTypeNode;
+		template <typename T, bool hasPath = false> class SceneImporterTypeNode;
 		class SkinNode;
 		class LightSourceNode;
 		class SkeletonAnimatorNode;
@@ -27,6 +27,7 @@ namespace editor {
 		class RenderableShaderNode;
 		class TextureNode;
 		class MeshNode;
+		class ParticleEmitterNode;
 
 	private:	// Attributes
 		/** A reference to the Editor that holds the RepositoryPanel */

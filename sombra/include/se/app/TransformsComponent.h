@@ -20,6 +20,7 @@ namespace se::app {
 			Camera = 0,
 			Mesh,
 			Terrain,
+			ParticleSystem,
 			RigidBody,
 			Collider,
 			Animation,

@@ -22,9 +22,9 @@ namespace se::graphics {
 	}
 
 
-	Renderable3D& RenderableMesh::setModelMatrix(const glm::mat4& modelMatrix)
+	RenderableMesh& RenderableMesh::setModelMatrix(const glm::mat4& modelMatrix)
 	{
-		Renderable3D::setModelMatrix(modelMatrix);
+		mModelMatrix = modelMatrix;
 
 		if (mMesh) {
 			auto [localMin, localMax] = mMesh->getBounds();

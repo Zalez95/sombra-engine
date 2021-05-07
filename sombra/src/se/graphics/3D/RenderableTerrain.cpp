@@ -26,9 +26,9 @@ namespace se::graphics {
 	}
 
 
-	Renderable3D& RenderableTerrain::setModelMatrix(const glm::mat4& modelMatrix)
+	RenderableTerrain& RenderableTerrain::setModelMatrix(const glm::mat4& modelMatrix)
 	{
-		Renderable3D::setModelMatrix(modelMatrix);
+		mModelMatrix = modelMatrix;
 
 		float size = mQuadTree.getSize();
 		std::array<glm::vec3, 8> localAABBVertices = {

@@ -21,9 +21,8 @@ namespace se::app {
 		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
 		using IndexVector = std::vector<std::size_t>;
-		using Mat4Uniform = std::shared_ptr<
-			graphics::UniformVariableValue<glm::mat4>
-		>;
+		using Mat4Uniform = graphics::UniformVariableValue<glm::mat4>;
+		using Mat4UniformSPtr = std::shared_ptr<Mat4Uniform>;
 
 		/** Struct PassData, holds the shared Pass uniform variables between the
 		 * Shaders */
@@ -31,8 +30,8 @@ namespace se::app {
 		{
 			std::size_t userCount = 0;
 			PassSPtr pass;
-			Mat4Uniform viewMatrix;
-			Mat4Uniform projectionMatrix;
+			Mat4UniformSPtr viewMatrix;
+			Mat4UniformSPtr projectionMatrix;
 		};
 
 		/** Struct ShaderData, holds the shared Shader data between the

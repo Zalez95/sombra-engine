@@ -27,14 +27,12 @@ namespace se::app {
 
 		auto defaultShader = scene.repository.find<Scene::Key, RenderableShader>("defaultShader");
 		if (!defaultShader) {
-			defaultShader = mShaderBuilder.createShader(defaultMaterial, false);
-			scene.repository.add(Scene::Key("defaultShader"), defaultShader);
+			mShaderBuilder.createShader("defaultShader", defaultMaterial, false);
 		}
 
 		auto defaultShaderSkin = scene.repository.find<Scene::Key, RenderableShader>("defaultShaderSkin");
 		if (!defaultShaderSkin) {
-			defaultShaderSkin = mShaderBuilder.createShader(defaultMaterial, false);
-			scene.repository.add(Scene::Key("defaultShaderSkin"), defaultShaderSkin);
+			mShaderBuilder.createShader("defaultShaderSkin", defaultMaterial, false);
 		}
 	}
 

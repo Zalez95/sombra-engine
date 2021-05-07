@@ -9,10 +9,6 @@ using namespace se::app;
 
 namespace editor {
 
-	MenuBar::MenuBar(Editor& editor) :
-		mEditor(editor), mOpen(false), mImport(false), mSave(false) {}
-
-
 	void MenuBar::render()
 	{
 		Alert closePopUp("Close?", "Are you sure that you want to close the current Scene?", "Close");
@@ -52,6 +48,15 @@ namespace editor {
 				}
 				if (ImGui::MenuItem("Close", "", false, mEditor.getScene())) {
 					closePopUp.show();
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Help")) {
+				if (ImGui::MenuItem("Controls", "", false, true)) {
+					mShowControlsWindow = true;
+				}
+				if (ImGui::MenuItem("About Sombra", "", false, true)) {
+					mShowAboutWindow = true;
 				}
 				ImGui::EndMenu();
 			}
@@ -106,6 +111,47 @@ namespace editor {
 				mEditor.createScene();
 				buildDefaultScene(*mEditor.getScene());
 			}
+		}
+
+		if (mShowControlsWindow) {
+			if (ImGui::Begin("Controls", &mShowControlsWindow, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
+				if (ImGui::BeginTable("controls_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+					ImGui::TableSetupColumn("Action");
+					ImGui::TableSetupColumn("Shortcut");
+					ImGui::TableHeadersRow();
+
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Move Sideways");
+					ImGui::TableSetColumnIndex(1);
+					ImGui::Text("<Left Shift> + <Alt> + <click>");
+
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Move forward");
+					ImGui::TableSetColumnIndex(1);
+					ImGui::Text("<Left Ctrl> + <Alt> + <click>");
+
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Rotate");
+					ImGui::TableSetColumnIndex(1);
+					ImGui::Text("<Alt> + <click>");
+
+					ImGui::EndTable();
+				}
+			}
+			ImGui::End();
+		}
+
+		if (mShowAboutWindow) {
+			if (ImGui::Begin("About", &mShowAboutWindow, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
+				ImGui::Text("Sombra Engine Editor Pre-Alpha");
+				ImGui::Separator();
+				ImGui::Text("By your Anon fren.");
+				ImGui::Text("Sombra Engine is licensed under the MPL2 License, see LICENSE.txt for more information.");
+			}
+			ImGui::End();
 		}
 
 		errorPopUp.execute();

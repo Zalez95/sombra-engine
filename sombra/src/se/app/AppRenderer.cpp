@@ -12,6 +12,7 @@
 #include "se/graphics/2D/Renderer2D.h"
 #include "se/graphics/3D/RendererMesh.h"
 #include "se/graphics/3D/RendererTerrain.h"
+#include "se/graphics/3D/RendererParticles.h"
 #include "se/graphics/3D/FrustumFilter.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformBlock.h"
@@ -436,7 +437,7 @@ namespace se::app {
 
 		// Link the render graph nodes
 		auto endShadow = renderGraph.getNode("endShadow"),
-			gBufferRendererMesh = renderGraph.getNode("gBufferRendererMesh"),
+			gBufferRendererParticles = renderGraph.getNode("gBufferRendererParticles"),
 			deferredLightRenderer = renderGraph.getNode("deferredLightRenderer"),
 			forwardRendererMesh = renderGraph.getNode("forwardRendererMesh");
 
@@ -450,7 +451,7 @@ namespace se::app {
 			&& deferredLightRenderer->findInput("brdf")->connect( mResources->findOutput("brdfTexture") )
 			&& deferredLightRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
 			&& zBufferCopy->findInput("input1")->connect( deferredLightRenderer->findOutput("target") )
-			&& zBufferCopy->findInput("input2")->connect( gBufferRendererMesh->findOutput("target") )
+			&& zBufferCopy->findInput("input2")->connect( gBufferRendererParticles->findOutput("target") )
 			&& forwardRendererMesh->findInput("target")->connect( zBufferCopy->findOutput("output") )
 			&& forwardRendererMesh->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
 			&& forwardRendererMesh->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
@@ -493,7 +494,8 @@ namespace se::app {
 
 		auto gBufferRendererTerrain = std::make_unique<RendererTerrain>("gBufferRendererTerrain");
 		auto gBufferRendererMesh = std::make_unique<RendererMesh>("gBufferRendererMesh");
-		gBufferRendererMesh->addOutput( std::make_unique<RNodeOutput>("attach", gBufferRendererMesh.get()) );
+		auto gBufferRendererParticles = std::make_unique<RendererParticles>("gBufferRendererParticles");
+		gBufferRendererParticles->addOutput( std::make_unique<RNodeOutput>("attach", gBufferRendererParticles.get()) );
 
 		auto deferredLightRenderer = std::make_unique<DeferredLightRenderer>("deferredLightRenderer", mApplication.getRepository());
 		deferredLightRenderer->addInput( std::make_unique<RNodeInput>("attach", deferredLightRenderer.get()) );
@@ -510,12 +512,13 @@ namespace se::app {
 			&& deferredFBClear->findInput("input")->connect( mResources->findOutput("deferredBuffer") )
 			&& gBufferRendererTerrain->findInput("target")->connect( gFBClear->findOutput("output") )
 			&& gBufferRendererMesh->findInput("target")->connect( gBufferRendererTerrain->findOutput("target") )
+			&& gBufferRendererParticles->findInput("target")->connect( gBufferRendererMesh->findOutput("target") )
 			&& texUnitNodePosition->findInput("input")->connect( mResources->findOutput("positionTexture") )
 			&& texUnitNodeNormal->findInput("input")->connect( mResources->findOutput("normalTexture") )
 			&& texUnitNodeAlbedo->findInput("input")->connect( mResources->findOutput("albedoTexture") )
 			&& texUnitNodeMaterial->findInput("input")->connect( mResources->findOutput("materialTexture") )
 			&& texUnitNodeEmissive->findInput("input")->connect( mResources->findOutput("emissiveTexture") )
-			&& deferredLightRenderer->findInput("attach")->connect( gBufferRendererMesh->findOutput("attach") )
+			&& deferredLightRenderer->findInput("attach")->connect( gBufferRendererParticles->findOutput("attach") )
 			&& deferredLightRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
 			&& deferredLightRenderer->findInput("position")->connect( texUnitNodePosition->findOutput("output") )
 			&& deferredLightRenderer->findInput("normal")->connect( texUnitNodeNormal->findOutput("output") )
@@ -526,6 +529,7 @@ namespace se::app {
 			&& renderGraph.addNode( std::move(deferredFBClear) )
 			&& renderGraph.addNode( std::move(gBufferRendererTerrain) )
 			&& renderGraph.addNode( std::move(gBufferRendererMesh) )
+			&& renderGraph.addNode( std::move(gBufferRendererParticles) )
 			&& renderGraph.addNode( std::move(texUnitNodePosition) )
 			&& renderGraph.addNode( std::move(texUnitNodeNormal) )
 			&& renderGraph.addNode( std::move(texUnitNodeAlbedo) )

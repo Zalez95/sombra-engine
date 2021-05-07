@@ -24,6 +24,7 @@
 #include "se/app/TerrainComponent.h"
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
+#include <se/app/ParticleSystemComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/Scene.h>
 
@@ -63,28 +64,43 @@ namespace game {
 	class MyShaderBuilder : public se::app::SceneImporter::ShaderBuilder
 	{
 	private:	// Attributes
-		se::app::Application& mApplication;
 		se::app::Scene& mScene;
 
 	public:		// Functions
-		MyShaderBuilder(se::app::Application& application, se::app::Scene& scene) :
-			mApplication(application), mScene(scene) {};
+		MyShaderBuilder(se::app::Scene& scene) : mScene(scene) {};
 
-		virtual ShaderSPtr createShader(const se::app::Material& material, bool hasSkin) override
+		virtual ShaderSPtr createShader(const char* name, const se::app::Material& material, bool hasSkin) override
 		{
 			std::string shadowPassKey = hasSkin? "passShadowSkinning" : "passShadow";
-			auto shadowPass = mScene.repository.find<std::string, se::graphics::Pass>(shadowPassKey);
+			auto shadowPass = mScene.repository.find<se::app::Scene::Key, se::graphics::Pass>(shadowPassKey);
+			if (!shadowPass) {
+				return nullptr;
+			}
 
-			auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+			auto gBufferRendererMesh = dynamic_cast<se::graphics::Renderer*>(mScene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+			if (!gBufferRendererMesh) {
+				return nullptr;
+			}
+
 			std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
-			auto program = mScene.repository.find<std::string, se::graphics::Program>(programKey);
+			auto program = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>(programKey);
+			if (!program) {
+				return nullptr;
+			}
+
 			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
 			pass->addBindable(program);
 			se::app::ShaderLoader::addMaterialBindables(pass, material, program);
+			if (!mScene.repository.add(se::app::Scene::Key(name), pass)) {
+				return nullptr;
+			}
 
-			auto shader = std::make_shared<se::app::RenderableShader>(mApplication.getEventManager());
+			auto shader = std::make_shared<se::app::RenderableShader>(mScene.application.getEventManager());
 			shader->addPass(shadowPass)
 				.addPass(pass);
+			if (!mScene.repository.add(se::app::Scene::Key(name), shader)) {
+				return nullptr;
+			}
 
 			return shader;
 		};
@@ -289,6 +305,13 @@ namespace game {
 			}
 			mScene.repository.add(std::string("programGBufSplatmap"), std::move(programGBufSplatmap));
 
+			std::shared_ptr<se::graphics::Program> programGBufParticles;
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertexParticlesFaceCamera.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufParticles);
+			if (!result) {
+				throw std::runtime_error("programGBufParticles error: " + std::string(result.description()));
+			}
+			mScene.repository.add(std::string("programGBufParticles"), std::move(programGBufParticles));
+
 			auto shadowRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
 			auto passShadow = std::make_shared<se::graphics::Pass>(*shadowRendererMesh);
 			passShadow->addBindable(programShadow);
@@ -300,7 +323,7 @@ namespace game {
 
 			// Readers
 			AudioFile<float> audioFile;
-			MyShaderBuilder shaderBuilder(mGame, mScene);
+			MyShaderBuilder shaderBuilder(mScene);
 			auto sceneImporter = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
 
 			// Fonts
@@ -379,6 +402,18 @@ namespace game {
 			environmentTexture = se::app::TextureUtils::convoluteCubeMap(skyTexture, 32);
 			prefilterTexture = se::app::TextureUtils::prefilterCubeMap(skyTexture, 128);
 
+			auto emitter = std::make_shared<se::app::ParticleEmitter>();
+			emitter->maxParticles = 2000;
+			emitter->duration = 5.0f;
+			emitter->loop = true;
+			emitter->initialVelocity = 10.0f;
+			emitter->initialVelocityRandomFactor = 1.0f;
+			emitter->initialRotationRandomFactor = 1.0f;
+			emitter->initialScaleRandomFactor = 1.0f;
+			emitter->lifeLength = 2.0f;
+			emitter->gravity = -9.8f;
+			mScene.repository.add(std::string("emitter"), emitter);
+
 			// Audio
 			if (!audioFile.load("res/audio/bounce.wav")) {
 				throw std::runtime_error("Error reading the audio file");
@@ -390,31 +425,33 @@ namespace game {
 			));
 
 			// Forces
-			mScene.repository.add<std::string, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(-9.8f));
+			mScene.repository.add<se::app::Scene::Key, se::physics::Force>("gravity", std::make_shared<se::physics::Gravity>(-9.8f));
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
 			return;
 		}
 
-		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 		auto gBufferRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));
+		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+		auto gBufferRendererParticles = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
 		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 		auto shadowRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererTerrain"));
-		auto programSky = mScene.repository.find<std::string, se::graphics::Program>("programSky");
-		auto programShadow = mScene.repository.find<std::string, se::graphics::Program>("programShadow");
-		auto programShadowSkinning = mScene.repository.find<std::string, se::graphics::Program>("programShadowSkinning");
-		auto programShadowTerrain = mScene.repository.find<std::string, se::graphics::Program>("programShadowTerrain");
-		auto programGBufMaterial = mScene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
-		auto programGBufSplatmap = mScene.repository.find<std::string, se::graphics::Program>("programGBufSplatmap");
+		auto programSky = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programSky");
+		auto programShadow = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programShadow");
+		auto programShadowSkinning = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programShadowSkinning");
+		auto programShadowTerrain = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programShadowTerrain");
+		auto programGBufMaterial = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programGBufMaterial");
+		auto programGBufSplatmap = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programGBufSplatmap");
+		auto programGBufParticles = mScene.repository.find<se::app::Scene::Key, se::graphics::Program>("programGBufParticles");
 
-		auto passShadow = mScene.repository.find<std::string, se::graphics::Pass>("passShadow");
-		auto passShadowSkinning = mScene.repository.find<std::string, se::graphics::Pass>("passShadowSkinning");
+		auto passShadow = mScene.repository.find<se::app::Scene::Key, se::graphics::Pass>("passShadow");
+		auto passShadowSkinning = mScene.repository.find<se::app::Scene::Key, se::graphics::Pass>("passShadowSkinning");
 
-		auto gravity = mScene.repository.find<std::string, se::physics::Force>("gravity");
+		auto gravity = mScene.repository.find<se::app::Scene::Key, se::physics::Force>("gravity");
 
 		// Renderable2Ds
-		auto technique2D = mGame.getRepository().find<std::string, se::graphics::Technique>("technique2D");
+		auto technique2D = mGame.getRepository().find<se::app::Scene::Key, se::graphics::Technique>("technique2D");
 		mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), logoTexture);
 		mLogoTexture->addTechnique(technique2D);
 		mLogoTexture->setZIndex(255);
@@ -612,7 +649,7 @@ namespace game {
 			}
 			if (i == 2) {
 				se::audio::Source source1;
-				source1.bind(*mScene.repository.find<std::string, se::audio::Buffer>("sound"));
+				source1.bind(*mScene.repository.find<se::app::Scene::Key, se::audio::Buffer>("sound"));
 				source1.setLooping(true);
 				source1.play();
 				mGame.getEntityDatabase().addComponent(cube, std::move(source1));
@@ -623,6 +660,28 @@ namespace game {
 			}
 			if (i == 4) {
 				transforms.velocity += glm::vec3(-1, 0, 0);
+
+				auto passParticles = std::make_shared<se::graphics::Pass>(*gBufferRendererParticles);
+				passParticles->addBindable(programGBufParticles);
+				se::app::ShaderLoader::addMaterialBindables(
+					passParticles,
+					se::app::Material{
+						se::app::PBRMetallicRoughness{
+							glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
+							{}, 0.2f, 0.5f, {}
+						},
+						{}, 1.0f, {}, 1.0f, {}, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+					},
+					programGBufParticles
+				);
+
+				auto shaderParticles = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
+				shaderParticles->addPass(passParticles);
+
+				auto particleSystem = mGame.getEntityDatabase().emplaceComponent<se::app::ParticleSystemComponent>(cube, mGame.getEventManager(), cube);
+				particleSystem->setMesh(planeMesh);
+				particleSystem->addRenderableShader(shaderParticles);
+				particleSystem->setEmitter(mScene.repository.find<se::app::Scene::Key, se::app::ParticleEmitter>("emitter"));
 			}
 
 			mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
@@ -654,7 +713,7 @@ namespace game {
 		auto [rb1] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(e1);
 		auto [rb2] = mGame.getEntityDatabase().getComponents<se::physics::RigidBody>(e2);
 		std::shared_ptr<se::physics::Constraint> constraint(new se::physics::DistanceConstraint({ rb1, rb2 }));
-		mScene.repository.add(std::string("distance"), constraint);
+		mScene.repository.add(se::app::Scene::Key("distance"), constraint);
 		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(constraint.get());
 
 		auto passRed = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);

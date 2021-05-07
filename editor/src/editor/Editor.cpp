@@ -43,7 +43,7 @@ namespace editor {
 
 		mEventManager->subscribe(this, se::app::Topic::Close);
 
-		// Create the ImGui context and renderer
+		/**** Create the ImGui context and renderer ****/
 		IMGUI_CHECKVERSION();
 		mImGuiContext = ImGui::CreateContext();
 		ImGui::StyleColorsDark();
@@ -54,6 +54,66 @@ namespace editor {
 		io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+		ImGuiStyle* style = &ImGui::GetStyle();
+		style->ChildRounding = 4.0f;
+		style->FrameBorderSize = 1.0f;
+		style->FrameRounding = 2.0f;
+		style->GrabMinSize = 7.0f;
+		style->PopupRounding = 2.0f;
+		style->ScrollbarRounding = 12.0f;
+		style->ScrollbarSize = 13.0f;
+		style->TabBorderSize = 1.0f;
+		style->TabRounding = 2.0f;
+		style->WindowRounding = 4.0f;
+		style->Colors[ImGuiCol_WindowBg]				= {0.180f, 0.180f, 0.180f, 0.75f};
+		style->Colors[ImGuiCol_ChildBg]					= {0.280f, 0.280f, 0.280f, 0.0f};
+		style->Colors[ImGuiCol_PopupBg]					= {0.313f, 0.313f, 0.313f, 1.0f};
+		style->Colors[ImGuiCol_Border]					= {0.266f, 0.266f, 0.266f, 1.0f};
+		style->Colors[ImGuiCol_BorderShadow]			= {0.0f, 0.0f, 0.0f, 0.0f};
+		style->Colors[ImGuiCol_FrameBg]					= {0.160f, 0.160f, 0.160f, 1.0f};
+		style->Colors[ImGuiCol_FrameBgHovered]			= {0.2f, 0.2f, 0.2f, 1.0f};
+		style->Colors[ImGuiCol_FrameBgActive]			= {0.280f, 0.280f, 0.280f, 1.0f};
+		style->Colors[ImGuiCol_TitleBg]					= {0.148f, 0.148f, 0.148f, 1.0f};
+		style->Colors[ImGuiCol_TitleBgActive]			= {0.148f, 0.148f, 0.148f, 1.0f};
+		style->Colors[ImGuiCol_TitleBgCollapsed]		= {0.148f, 0.148f, 0.148f, 1.0f};
+		style->Colors[ImGuiCol_MenuBarBg]				= {0.195f, 0.195f, 0.195f, 1.0f};
+		style->Colors[ImGuiCol_ScrollbarBg]				= {0.160f, 0.160f, 0.160f, 1.0f};
+		style->Colors[ImGuiCol_ScrollbarGrab]			= {0.277f, 0.277f, 0.277f, 1.0f};
+		style->Colors[ImGuiCol_ScrollbarGrabHovered]	= {0.3f, 0.3f, 0.3f, 1.0f};
+		style->Colors[ImGuiCol_ScrollbarGrabActive]		= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_CheckMark]				= {1.0f, 1.0f, 1.0f, 1.0f};
+		style->Colors[ImGuiCol_SliderGrab]				= {0.391f, 0.391f, 0.391f, 1.0f};
+		style->Colors[ImGuiCol_SliderGrabActive]		= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_Button]					= {1.0f, 1.0f, 1.0f, 0.0f};
+		style->Colors[ImGuiCol_ButtonHovered]			= {1.0f, 1.0f, 1.0f, 0.156f};
+		style->Colors[ImGuiCol_ButtonActive]			= {1.0f, 1.0f, 1.0f, 0.391f};
+		style->Colors[ImGuiCol_Header]					= {0.313f, 0.313f, 0.313f, 1.0f};
+		style->Colors[ImGuiCol_HeaderHovered]			= {0.469f, 0.469f, 0.469f, 1.0f};
+		style->Colors[ImGuiCol_HeaderActive]			= {0.469f, 0.469f, 0.469f, 1.0f};
+		style->Colors[ImGuiCol_Separator]				= style->Colors[ImGuiCol_Border];
+		style->Colors[ImGuiCol_SeparatorHovered]		= {0.391f, 0.391f, 0.391f, 1.0f};
+		style->Colors[ImGuiCol_SeparatorActive]			= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_ResizeGrip]				= {1.0f, 1.0f, 1.0f, 0.250f};
+		style->Colors[ImGuiCol_ResizeGripHovered]		= {1.0f, 1.0f, 1.0f, 0.670f};
+		style->Colors[ImGuiCol_ResizeGripActive]		= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_Tab]						= {0.098f, 0.098f, 0.098f, 1.0f};
+		style->Colors[ImGuiCol_TabHovered]				= {0.352f, 0.352f, 0.352f, 1.0f};
+		style->Colors[ImGuiCol_TabActive]				= {0.195f, 0.195f, 0.195f, 1.0f};
+		style->Colors[ImGuiCol_TabUnfocused]			= {0.098f, 0.098f, 0.098f, 1.0f};
+		style->Colors[ImGuiCol_TabUnfocusedActive]		= {0.195f, 0.195f, 0.195f, 1.0f};
+		style->Colors[ImGuiCol_DockingPreview]			= {1.0f, 0.391f, 0.0f, 0.781f};
+		style->Colors[ImGuiCol_DockingEmptyBg]			= {0.180f, 0.180f, 0.180f, 1.0f};
+		style->Colors[ImGuiCol_PlotLines]				= {0.469f, 0.469f, 0.469f, 1.0f};
+		style->Colors[ImGuiCol_PlotLinesHovered]		= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_PlotHistogram]			= {0.586f, 0.586f, 0.586f, 1.0f};
+		style->Colors[ImGuiCol_PlotHistogramHovered]	= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_TextSelectedBg]			= {1.0f, 1.0f, 1.0f, 0.156f};
+		style->Colors[ImGuiCol_DragDropTarget]			= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_NavHighlight]			= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_NavWindowingHighlight]	= {1.0f, 0.391f, 0.0f, 1.0f};
+		style->Colors[ImGuiCol_NavWindowingDimBg]		= {0.0f, 0.0f, 0.0f, 0.586f};
+		style->Colors[ImGuiCol_ModalWindowDimBg]		= {0.0f, 0.0f, 0.0f, 0.586f};
+
 		mImGuiInput = new ImGuiInput(*mEventManager);
 
 		mImGuiRenderer = new ImGuiRenderer("ImGuiRenderer");
@@ -61,7 +121,7 @@ namespace editor {
 		mImGuiRenderer->findInput("target")->connect( renderGraph.getNode("renderer2D")->findOutput("target") );
 		renderGraph.addNode( std::unique_ptr<ImGuiRenderer>(mImGuiRenderer) );
 
-		// Add the GUI components
+		/**** Add the GUI components ****/
 		mMenuBar = new MenuBar(*this);
 		mEntityPanel = new EntityPanel(*this);
 		mComponentPanel = new ComponentPanel(*this);
@@ -69,7 +129,7 @@ namespace editor {
 		mSceneNodesPanel = new SceneNodesPanel(*this);
 		mGizmo = new Gizmo(*this);
 
-		// Create the Entity used for controlling the viewport
+		/**** Create the Entity used for controlling the viewport ****/
 		mViewportEntity = mEntityDatabase->addEntity();
 		auto vTransforms = mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
 		vTransforms->position = { 10.0, 8.0f,-6.0f };
@@ -83,7 +143,7 @@ namespace editor {
 
 		mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
 
-		// Create the viewport grid
+		/**** Create the viewport grid ****/
 		mGridEntity = mEntityDatabase->addEntity();
 
 		mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mGridEntity);
@@ -212,10 +272,10 @@ namespace editor {
 		ImGui::ShowDemoWindow(&show);
 
 		mMenuBar->render();
-		mEntityPanel->render();
-		mComponentPanel->render();
 		mRepositoryPanel->render();
+		mComponentPanel->render();
 		mSceneNodesPanel->render();
+		mEntityPanel->render();
 		mGizmo->render();
 
 		ImGui::End();

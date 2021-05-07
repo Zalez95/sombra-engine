@@ -12,7 +12,7 @@ namespace se::graphics {
 	 * Renderable3Ds are outside the field of view of the camera so they won't
 	 * be submitted for rendering for improving the performance
 	 */
-	class FrustumFilter : public graphics::Renderer3D::Filter
+	class FrustumFilter : public Renderer3D::Filter
 	{
 	private:	// Attributes
 		/** The frustum planes */
@@ -27,7 +27,7 @@ namespace se::graphics {
 			const glm::mat4& viewProjectionMatrix
 		);
 
-		/** @copydoc shouldBeRendered(Renderable3D&) */
+		/** @copydoc Renderer3D::Filter::shouldBeRendered(Renderable3D&) */
 		virtual bool shouldBeRendered(Renderable3D& renderable) override;
 	};
 

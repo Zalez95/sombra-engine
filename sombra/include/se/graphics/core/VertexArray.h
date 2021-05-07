@@ -35,6 +35,20 @@ namespace se::graphics {
 		VertexArray& operator=(const VertexArray& other) = delete;
 		VertexArray& operator=(VertexArray&& other);
 
+		/** @return	the maximum number of Vertex Array Object attributes */
+		static unsigned int getMaxAttributes();
+
+		/** Enables a Vertex Array Object attribute
+		 *
+		 * @param	index the index of the VertexArray attribute to enable */
+		void enableAttribute(unsigned int index);
+
+		/** Returns if the given vertex attribute is enabled or not
+		 *
+		 * @param	index the index of the attribute to check
+		 * @return	true if it's enabled, false otherwise */
+		bool isAttributeEnabled(unsigned int index) const;
+
 		/** Sets the bound Vertex Buffer Object as an attribute of the Vertex
 		 * Array Object
 		 *
@@ -44,7 +58,8 @@ namespace se::graphics {
 		 * @param	normalized specifies if the vertexBuffer values should be
 		 *			normalized or not
 		 * @param	componentSize the number of components per vertex attribute
-		 * @param	stride the byte offset between each vertex attribute
+		 * @param	stride the byte offset between each vertex attribute, zero
+		 *			means that the data is tightly packed
 		 * @param	offset the byte offset from the start of the buffer that
 		 *			contains the vertex data where attribute starts
 		 * @note	the VAO must be bound before calling this function */
@@ -67,11 +82,13 @@ namespace se::graphics {
 			std::size_t stride, std::size_t offset = 0
 		);
 
-		/** Returns if the given vertex attribute is enabled or not
-		 *
-		 * @param	index the index of the attribute to check
-		 * @return	true if it's enabled, false otherwise */
-		bool hasVertexAttribute(unsigned int index) const;
+		/** @return	true if the given vertex attribute has a double data
+		 *			type, false otherwise */
+		bool isDoubleAttribute(unsigned int index) const;
+
+		/** @return	true if the given vertex attribute has an integer data
+		 *			type, false otherwise */
+		bool isIntegerAttribute(unsigned int index) const;
 
 		/** Returns the attribute configuration
 		 *
@@ -115,6 +132,11 @@ namespace se::graphics {
 		 * @param	index the index of the attribute to check
 		 * @return	the rate that the attribute advances for each instance */
 		unsigned int getAttributeDivisor(unsigned int index) const;
+
+		/** Disables a Vertex Array Object attribute
+		 *
+		 * @param	index the index of the VertexArray attribute to disable */
+		void disableAttribute(unsigned int index);
 
 		/** Binds the Vertex Array Object */
 		void bind() const override;

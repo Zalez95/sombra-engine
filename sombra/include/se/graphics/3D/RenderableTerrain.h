@@ -15,6 +15,9 @@ namespace se::graphics {
 	class RenderableTerrain : public Renderable3D
 	{
 	private:	// Attributes
+		/** The matrix that transforms from local space to world space */
+		glm::mat4 mModelMatrix = glm::mat4(1.0f);
+
 		/** The terrain QuadTree */
 		QuadTree mQuadTree;
 
@@ -42,10 +45,15 @@ namespace se::graphics {
 		RenderableTerrain& operator=(const RenderableTerrain& other);
 		RenderableTerrain& operator=(RenderableTerrain&& other) = default;
 
-		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
-		virtual Renderable3D& setModelMatrix(
-			const glm::mat4& modelMatrix
-		) override;
+		/** Sets the model matrix
+		 *
+		 * @param	modelMatrix local space to world space matrix
+		 * @return	a reference to the current RenderableTerrain object */
+		RenderableTerrain& setModelMatrix(const glm::mat4& modelMatrix);
+
+		/** @return	the local space to world space matrix */
+		const glm::mat4& getModelMatrix() const
+		{ return mModelMatrix; };
 
 		/** @return	the QuadTree of the RenderableTerrain */
 		QuadTree& getQuadTree() { return mQuadTree; };

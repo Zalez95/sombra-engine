@@ -24,9 +24,6 @@ namespace se::graphics {
 		/** Maps each Pass with the Bindables to bind before drawing */
 		std::unordered_map<Pass*, std::vector<BindableSPtr>> mPassBindables;
 
-		/** The matrix that transforms from local space to world space */
-		glm::mat4 mModelMatrix = glm::mat4(1.0f);
-
 		/** The minimum position of the Renderable3D at each direction in world
 		 * space */
 		glm::vec3 mMinimum = {};
@@ -47,16 +44,6 @@ namespace se::graphics {
 		/** Assignment operator */
 		Renderable3D& operator=(const Renderable3D& other) = default;
 		Renderable3D& operator=(Renderable3D&& other) = default;
-
-		/** Sets the model matrix
-		 *
-		 * @param	modelMatrix local space to world space matrix
-		 * @return	a reference to the current Renderable3D object */
-		virtual Renderable3D& setModelMatrix(const glm::mat4& modelMatrix);
-
-		/** @return	the local space to world space matrix */
-		const glm::mat4& getModelMatrix() const
-		{ return mModelMatrix; };
 
 		/** @return	the minimum and maximum position of Renderable3D in each
 		 *			direction */

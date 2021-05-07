@@ -13,6 +13,11 @@ namespace se::window {
 			throw std::runtime_error("Failed to initialize GLFW");
 		}
 
+		glfwSetErrorCallback([](int error, const char* description)
+		{
+			SOMBRA_ERROR_LOG << "GLFW Error \"" << error << "\": " << description;
+		});
+
 		// Create the window
 		glfwWindowHint(GLFW_SAMPLES, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -28,10 +33,6 @@ namespace se::window {
 
 		glfwMakeContextCurrent(mWindow);
 		glfwSetWindowUserPointer(mWindow, this);
-		glfwSetErrorCallback([](int error, const char* description)
-		{
-			SOMBRA_ERROR_LOG << "Error \"" << error << "\": " << description;
-		});
 		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height)
 		{
 			auto userWindow = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));

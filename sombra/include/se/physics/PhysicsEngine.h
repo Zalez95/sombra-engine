@@ -33,8 +33,8 @@ namespace se::physics {
 		 *
 		 * @param	baseBias the bias value used for updating the RigidBodies'
 		 *			motion value
-		 * @param	minWorldBounds the minimum bounds of the World
-		 * @param	maxWorldBounds the maximum bounds of the World */
+		 * @param	minWorldAABB the minimum bounds of the World
+		 * @param	maxWorldAABB the maximum bounds of the World */
 		PhysicsEngine(
 			float baseBias,
 			const glm::vec3& minWorldAABB, const glm::vec3& maxWorldAABB

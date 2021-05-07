@@ -193,7 +193,7 @@ namespace editor {
 			return ret;
 		}
 
-		if (!ImGui::Begin("File")) {
+		if (!ImGui::Begin("File", &mShow)) {
 			ImGui::End();
 			return ret;
 		}

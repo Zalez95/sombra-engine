@@ -23,21 +23,20 @@ namespace editor {
 		}
 
 		if (scene) {
-			if (ImGui::BeginPopupContextItem()) {
-				if (ImGui::MenuItem("Add")) {
-					se::app::Entity newEntity = mEditor.getEntityDatabase().addEntity();
-					scene->entities.push_back(newEntity);
-					mEditor.setActiveEntity(newEntity);
+			if (ImGui::SmallButton("Add")) {
+				se::app::Entity newEntity = mEditor.getEntityDatabase().addEntity();
+				scene->entities.push_back(newEntity);
+				mEditor.setActiveEntity(newEntity);
+			}
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Remove")) {
+				se::app::Entity entity = mEditor.getActiveEntity();
+				auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
+				if (itEntity != scene->entities.end()) {
+					scene->entities.erase(itEntity);
+					mEditor.setActiveEntity(se::app::kNullEntity);
+					mEditor.getEntityDatabase().removeEntity(entity);
 				}
-				if (ImGui::MenuItem("Remove")) {
-					se::app::Entity entity = mEditor.getActiveEntity();
-					auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
-					if (itEntity != scene->entities.end()) {
-						scene->entities.erase(itEntity);
-						mEditor.getEntityDatabase().removeEntity(entity);
-					}
-				}
-				ImGui::EndPopup();
 			}
 
 			ImGui::BeginChild("Entities");
@@ -46,11 +45,9 @@ namespace editor {
 
 				std::string name = "#" + std::to_string(entity);
 				if (tag) {
-					name += " \"" + std::string(tag->getName()) + "\"";
+					name += " " + std::string(tag->getName(), tag->getLength());
 				}
 
-				ImGui::Bullet();
-				ImGui::SameLine();
 				if (ImGui::Selectable(name.c_str(), mEditor.getActiveEntity() == entity)) {
 					mEditor.setActiveEntity(entity);
 				}

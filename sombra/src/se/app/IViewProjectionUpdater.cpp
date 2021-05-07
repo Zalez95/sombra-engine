@@ -147,9 +147,18 @@ namespace se::app {
 		});
 		if (itPass == mPassesData.end()) {
 			std::shared_ptr<graphics::Program> program;
+			Mat4UniformSPtr viewMatrix, projectionMatrix;
 			pass->processBindables([&](const auto& bindable) {
-				if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
-					program = tmp;
+				if (auto prog = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
+					program = prog;
+				}
+				else if (auto uMat = std::dynamic_pointer_cast<Mat4Uniform>(bindable)) {
+					if (uMat->getName() == mViewMatUniformName) {
+						viewMatrix = uMat;
+					}
+					else if (uMat->getName() == mProjectionMatUniformName) {
+						projectionMatrix = uMat;
+					}
 				}
 			});
 
@@ -158,21 +167,21 @@ namespace se::app {
 				return;
 			}
 
-			itPass = mPassesData.emplace();
-			itPass->pass = pass;
-			itPass->viewMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-				mViewMatUniformName.c_str(), program
-			);
-			itPass->projectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>(
-				mProjectionMatUniformName.c_str(), program
-			);
+			if (!viewMatrix) {
+				viewMatrix = std::make_shared<Mat4Uniform>(mViewMatUniformName.c_str(), program);
+				if (viewMatrix->found()) {
+					pass->addBindable(viewMatrix);
+				}
+			}
 
-			if (itPass->viewMatrix->found()) {
-				pass->addBindable(itPass->viewMatrix);
+			if (!projectionMatrix) {
+				projectionMatrix = std::make_shared<Mat4Uniform>(mProjectionMatUniformName.c_str(), program);
+				if (projectionMatrix->found()) {
+					pass->addBindable(projectionMatrix);
+				}
 			}
-			if (itPass->projectionMatrix->found()) {
-				pass->addBindable(itPass->projectionMatrix);
-			}
+
+			itPass = mPassesData.emplace(PassData{ 0, pass, viewMatrix, projectionMatrix });
 		}
 
 		itPass->userCount++;

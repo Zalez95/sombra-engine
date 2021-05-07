@@ -19,15 +19,19 @@ namespace se::graphics {
 		mVBOTextureIds.resizeAndCopy(mTextureIds.data(), maxVertices);
 
 		mVBOPositions.bind();
+		mVAO.enableAttribute(0);
 		mVAO.setVertexAttribute(0, TypeId::Float, false, 2, 0);
 
 		mVBOTexCoords.bind();
+		mVAO.enableAttribute(1);
 		mVAO.setVertexAttribute(1, TypeId::Float, false, 2, 0);
 
 		mVBOColors.bind();
+		mVAO.enableAttribute(2);
 		mVAO.setVertexAttribute(2, TypeId::Float, false, 4, 0);
 
 		mVBOTextureIds.bind();
+		mVAO.enableAttribute(3);
 		mVAO.setVertexIntegerAttribute(3, TypeId::UnsignedByte, 1, 0);
 
 		mIBO.bind();

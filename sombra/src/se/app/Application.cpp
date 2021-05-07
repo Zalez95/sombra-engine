@@ -24,6 +24,7 @@
 #include "se/app/AppRenderer.h"
 #include "se/app/MeshSystem.h"
 #include "se/app/TerrainSystem.h"
+#include "se/app/ParticleSystemSystem.h"
 #include "se/app/DynamicsSystem.h"
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/CollisionSystem.h"
@@ -34,6 +35,7 @@
 #include "se/app/ScriptComponent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
+#include "se/app/ParticleSystemComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/CameraComponent.h"
 #include "se/app/AnimationComponent.h"
@@ -52,7 +54,7 @@ namespace se::app {
 		mRepository(nullptr), mEntityDatabase(nullptr),
 		mInputSystem(nullptr), mScriptSystem(nullptr),
 		mCameraSystem(nullptr), mShadowSystem(nullptr), mAppRenderer(nullptr),
-		mMeshSystem(nullptr), mTerrainSystem(nullptr),
+		mMeshSystem(nullptr), mTerrainSystem(nullptr), mParticleSystemSystem(nullptr),
 		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
 		mAnimationSystem(nullptr), mAudioSystem(nullptr),
 		mGUIManager(nullptr)
@@ -93,6 +95,7 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
 			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains);
+			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
 			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
 			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
@@ -111,6 +114,7 @@ namespace se::app {
 			mShadowSystem = new ShadowSystem(*this, shadowData);
 			mMeshSystem = new MeshSystem(*this);
 			mTerrainSystem = new TerrainSystem(*this);
+			mParticleSystemSystem = new ParticleSystemSystem(*this);
 			mDynamicsSystem = new DynamicsSystem(*this);
 			mConstraintsSystem = new ConstraintsSystem(*this);
 			mCollisionSystem = new CollisionSystem(*this);
@@ -136,6 +140,7 @@ namespace se::app {
 		if (mCollisionSystem) { delete mCollisionSystem; }
 		if (mConstraintsSystem) { delete mConstraintsSystem; }
 		if (mDynamicsSystem) { delete mDynamicsSystem; }
+		if (mParticleSystemSystem) { delete mParticleSystemSystem; }
 		if (mTerrainSystem) { delete mTerrainSystem; }
 		if (mMeshSystem) { delete mMeshSystem; }
 		if (mShadowSystem) { delete mShadowSystem; }
@@ -258,6 +263,7 @@ namespace se::app {
 		});
 		auto collisionTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("collisionsys");
+			mCollisionSystem->setDeltaTime(deltaTime);
 			mCollisionSystem->update();
 		});
 		auto constraintsTask = taskSet.createTask([&]() {
@@ -267,22 +273,27 @@ namespace se::app {
 		});
 		auto audioTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("audiosys");
+			mAudioSystem->setDeltaTime(deltaTime);
 			mAudioSystem->update();
 		});
 		auto cameraTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("camerasys");
+			mCameraSystem->setDeltaTime(deltaTime);
 			mCameraSystem->update();
 		});
 		auto shadowTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("shadowsys");
+			mShadowSystem->setDeltaTime(deltaTime);
 			mShadowSystem->update();
 		});
 		auto rmeshTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("meshsys");
+			mMeshSystem->setDeltaTime(deltaTime);
 			mMeshSystem->update();
 		});
 		auto rterrainTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("terrainsys");
+			mTerrainSystem->setDeltaTime(deltaTime);
 			mTerrainSystem->update();
 		});
 
@@ -299,8 +310,15 @@ namespace se::app {
 
 		taskSet.submitAndWait();
 
-		// The GraphicsSystem update function must be called from thread 0
+		// The ParticleSystemSystem update function must be called from thread 0
+		{ utils::TimeGuard t("particlessys");
+		mParticleSystemSystem->setDeltaTime(deltaTime);
+		mParticleSystemSystem->update();
+		}
+
+		// The AppRenderer update function must be called from thread 0
 		{ utils::TimeGuard t("mAppRenderer");
+		mAppRenderer->setDeltaTime(deltaTime);
 		mAppRenderer->update();
 		}
 

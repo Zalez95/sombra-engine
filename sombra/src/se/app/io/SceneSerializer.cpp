@@ -30,6 +30,7 @@
 #include "se/app/ScriptComponent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
+#include "se/app/ParticleSystemComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/CameraComponent.h"
 #include "se/app/SkinComponent.h"
@@ -178,7 +179,7 @@ namespace se::app {
 		nlohmann::json jsonVBOs;
 		const auto& vbos = mesh.getVBOs();
 		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) {
-			if (vao.hasVertexAttribute(i)) {
+			if (vao.isAttributeEnabled(i)) {
 				auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
 					return vao.checkVertexAttributeVBOBound(i, vbo);
 				});
@@ -289,14 +290,12 @@ namespace se::app {
 			auto& vbo = vbos.emplace_back();
 			vbo.resizeAndCopy(buffer.data(), buffer.size());
 			vbo.bind();
-			if ((accessor.type == graphics::TypeId::Float) || (accessor.type == graphics::TypeId::HalfFloat)) {
-				vao.setVertexAttribute(attribute, accessor.type, accessor.normalized, accessor.componentSize, accessor.stride, accessor.offset);
-			}
-			else if (accessor.type == graphics::TypeId::Double) {
-				vao.setVertexDoubleAttribute(attribute, accessor.type, accessor.componentSize, accessor.stride, accessor.offset);
+			vao.enableAttribute(attribute);
+			if (attribute == MeshAttributes::JointIndexAttribute) {
+				vao.setVertexIntegerAttribute(attribute, accessor.type, accessor.componentSize, accessor.stride, accessor.offset);
 			}
 			else {
-				vao.setVertexIntegerAttribute(attribute, accessor.type, accessor.componentSize, accessor.stride, accessor.offset);
+				vao.setVertexAttribute(attribute, accessor.type, accessor.normalized, accessor.componentSize, accessor.stride, accessor.offset);
 			}
 		}
 
@@ -640,30 +639,65 @@ namespace se::app {
 
 
 	template <>
-	void serializeResource<Texture>(const Texture& texture, const Scene::Key& key, SerializeData& data, nlohmann::json& json, std::ostream&)
+	void serializeResource<Texture>(const Texture& texture, const Scene::Key& key, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
 		auto path = data.scene.repository.find<Scene::Key, ResourcePath<Texture>>(key);
 		if (path) {
+			// Use the path to the image file
 			json["path"] = path->path;
-
-			TextureFilter min, mag;
-			texture.getFiltering(&min, &mag);
-
-			json["min"] = static_cast<int>(min);
-			json["mag"] = static_cast<int>(mag);
-
-			TextureWrap wrapS, wrapT;
-			texture.getWrapping(&wrapS, &wrapT);
-
-			json["wrapS"] = static_cast<int>(wrapS);
-			json["wrapT"] = static_cast<int>(wrapT);
-
-			json["textureUnit"] = texture.getTextureUnit();
 		}
+		else {
+			// Save the texture to a buffer in the dataStream
+			TextureTarget target = texture.getTarget();
+			std::size_t width = texture.getWidth();
+			std::size_t height = (target != TextureTarget::Texture1D)? texture.getHeight() : 1;
+			std::size_t depth = ((target != TextureTarget::Texture1D) && (target != TextureTarget::Texture2D))? texture.getDepth() : 1;
+			TypeId type = texture.getTypeId();
+			ColorFormat color = texture.getColorFormat();
+
+			std::vector<std::byte> bufferData;
+			if (target == TextureTarget::CubeMap) {
+				std::size_t sideSize = width * height * depth * toNumberOfComponents(color) * toTypeSize(type);
+				bufferData.resize(6 * sideSize);
+				for (int i = 0; i < 6; ++i) {
+					texture.getImage(type, toUnSizedColorFormat(color), &bufferData[i * sideSize], i);
+				}
+			}
+			else {
+				bufferData.resize(width * height * depth * toNumberOfComponents(color) * toTypeSize(type));
+				texture.getImage(type, toUnSizedColorFormat(color), bufferData.data());
+			}
+
+			nlohmann::json bufferJson;
+			serializeBuffer(bufferData.data(), bufferData.size(), bufferJson, dataStream);
+			data.buffersJson.emplace_back(std::move(bufferJson));
+
+			json["target"] = static_cast<int>(target);
+			json["width"] = width;
+			json["height"] = height;
+			json["depth"] = depth;
+			json["type"] = static_cast<int>(type);
+			json["color"] = static_cast<int>(color);
+			json["buffer"] = data.buffersJson.size() - 1;
+		}
+
+		TextureFilter min, mag;
+		texture.getFiltering(&min, &mag);
+
+		json["min"] = static_cast<int>(min);
+		json["mag"] = static_cast<int>(mag);
+
+		TextureWrap wrapS, wrapT;
+		texture.getWrapping(&wrapS, &wrapT);
+
+		json["wrapS"] = static_cast<int>(wrapS);
+		json["wrapT"] = static_cast<int>(wrapT);
+
+		json["textureUnit"] = texture.getTextureUnit();
 	}
 
 	template <>
-	Result deserializeResource<Texture>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<Texture>(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene)
 	{
 		auto toColorFormat = [](int channels) {
 			switch (channels) {
@@ -674,9 +708,93 @@ namespace se::app {
 			}
 		};
 
+		std::shared_ptr<Texture> texture;
+
 		auto itPath = json.find("path");
-		if (itPath == json.end()) {
-			return Result(false, "Missing \"path\" property");
+		auto itBuffer = json.find("buffer");
+		if (itPath != json.end()) {
+			// Load from file, ONLY TEXTURE2D
+			std::string path = *itPath;
+
+			texture = std::make_shared<Texture>(TextureTarget::Texture2D);
+			if (path.substr(path.size() - 3, 3) == "hdr") {
+				Image<float> image;
+				auto result = ImageReader::readHDR(path.c_str(), image);
+				if (!result) {
+					return Result(false, "Failed to read the HDR Image: " + std::string(result.description()));
+				}
+
+				ColorFormat format = toColorFormat(image.channels);
+				texture->setImage(image.pixels.get(), TypeId::Float, format, format, image.width, image.height);
+			}
+			else {
+				Image<unsigned char> image;
+				auto result = ImageReader::read(path.c_str(), image);
+				if (!result) {
+					return Result(false, "Failed to read the Image: " + std::string(result.description()));
+				}
+
+				ColorFormat format = toColorFormat(image.channels);
+				texture->setImage(image.pixels.get(), TypeId::UnsignedByte, format, format, image.width, image.height);
+			}
+
+			scene.repository.emplace<Scene::Key, ResourcePath<Texture>>(key, path);
+		}
+		else if (itBuffer != json.end()) {
+			auto itTarget = json.find("target");
+			if (itTarget == json.end()) {
+				return Result(false, "Missing \"target\" property");
+			}
+			auto itWidth = json.find("width");
+			if (itWidth == json.end()) {
+				return Result(false, "Missing \"width\" property");
+			}
+			auto itHeight = json.find("height");
+			if (itHeight == json.end()) {
+				return Result(false, "Missing \"height\" property");
+			}
+			auto itDepth = json.find("depth");
+			if (itDepth == json.end()) {
+				return Result(false, "Missing \"depth\" property");
+			}
+			auto itType = json.find("type");
+			if (itType == json.end()) {
+				return Result(false, "Missing \"type\" property");
+			}
+			auto itColor = json.find("color");
+			if (itColor == json.end()) {
+				return Result(false, "Missing \"color\" property");
+			}
+
+			TextureTarget target = static_cast<TextureTarget>(itTarget->get<int>());
+			std::size_t width = *itWidth, height = *itHeight, depth = *itDepth;
+			TypeId type = static_cast<TypeId>(itType->get<int>());
+			ColorFormat color = static_cast<ColorFormat>(itColor->get<int>());
+			std::size_t iBuffer = *itBuffer;
+
+			if (*itBuffer >= data.buffersJson.size()) {
+				return Result(false, "Buffer " + std::to_string(iBuffer) + " out of bounds");
+			}
+
+			std::vector<std::byte> buffer;
+			auto result = deserializeBuffer(data.buffersJson[iBuffer], data.dataStream, buffer);
+			if (!result) {
+				return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
+			}
+
+			texture = std::make_shared<Texture>(target);
+			if (target == TextureTarget::CubeMap) {
+				std::size_t sideSize = width * height * toNumberOfComponents(color) * toTypeSize(type);
+				for (int i = 0; i < 6; ++i) {
+					texture->setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(color), color, width, height, 0, i);
+				}
+			}
+			else {
+				texture->setImage(buffer.data(), type, toUnSizedColorFormat(color), color, width, height, depth);
+			}
+		}
+		else {
+			return Result(false, "Missing \"path\" and \"buffer\" properties");
 		}
 
 		auto itTextureUnit = json.find("textureUnit");
@@ -694,38 +812,12 @@ namespace se::app {
 		TextureWrap wrapS = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapS->get<int>()) : TextureWrap::ClampToBorder;
 		TextureWrap wrapT = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
 
-		// ONLY TEXTURE2D
-		auto texture = std::make_shared<Texture>(TextureTarget::Texture2D);
 		texture->setTextureUnit(*itTextureUnit)
 			.setFiltering(min, mag)
-			.setWrapping(wrapS, wrapT);
-
-		std::string path = itPath->get<std::string>().c_str();
-		if (path.substr(path.size() - 3, 3) == "hdr") {
-			Image<float> image;
-			auto result = ImageReader::readHDR(itPath->get<std::string>().c_str(), image);
-			if (!result) {
-				return Result(false, "Failed to read the HDR Image: " + std::string(result.description()));
-			}
-
-			ColorFormat format = toColorFormat(image.channels);
-			texture->setImage(image.pixels.get(), TypeId::Float, format, format, image.width, image.height);
-		}
-		else {
-			Image<unsigned char> image;
-			auto result = ImageReader::read(itPath->get<std::string>().c_str(), image);
-			if (!result) {
-				return Result(false, "Failed to read the Image: " + std::string(result.description()));
-			}
-
-			ColorFormat format = toColorFormat(image.channels);
-			texture->setImage(image.pixels.get(), TypeId::UnsignedByte, format, format, image.width, image.height);
-		}
-
-		texture->generateMipMap();
+			.setWrapping(wrapS, wrapT)
+			.generateMipMap();
 
 		scene.repository.add(key, texture);
-		scene.repository.emplace<Scene::Key, ResourcePath<Texture>>(key, itPath->get<std::string>());
 
 		return Result();
 	}
@@ -906,10 +998,10 @@ namespace se::app {
 				}
 			}
 			else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
-				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->enableOperation() } };
+				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->isEnabled() } };
 			}
 			else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
-				bindableJson = { { "type", "SetDepthMask" }, { "active", setDepthMask->isActive() } };
+				bindableJson = { { "type", "SetDepthMask" }, { "active", setDepthMask->isEnabled() } };
 			}
 
 			if (!bindableJson.empty()) {
@@ -1326,6 +1418,82 @@ namespace se::app {
 		return Result();
 	}
 
+
+	template <>
+	void serializeResource<ParticleEmitter>(const ParticleEmitter& emitter, const Scene::Key&, SerializeData&, nlohmann::json& json, std::ostream&)
+	{
+		json["maxParticles"] = emitter.maxParticles;
+		json["duration"] = emitter.duration;
+		json["loop"] = emitter.loop;
+		json["initialVelocity"] = emitter.initialVelocity;
+		json["initialPositionRandomFactor"] = emitter.initialPositionRandomFactor;
+		json["initialVelocityRandomFactor"] = emitter.initialVelocityRandomFactor;
+		json["initialRotationRandomFactor"] = emitter.initialRotationRandomFactor;
+		json["scale"] = emitter.scale;
+		json["initialScaleRandomFactor"] = emitter.initialScaleRandomFactor;
+		json["lifeLength"] = emitter.lifeLength;
+		json["lifeLengthRandomFactor"] = emitter.lifeLengthRandomFactor;
+		json["gravity"] = emitter.gravity;
+	}
+
+	template <>
+	Result deserializeResource<ParticleEmitter>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	{
+		auto emitter = std::make_shared<ParticleEmitter>();
+
+		auto itMaxParticles = json.find("maxParticles");
+		if (itMaxParticles != json.end()) {
+			emitter->maxParticles = *itMaxParticles;
+		}
+		auto itDuration = json.find("duration");
+		if (itDuration != json.end()) {
+			emitter->duration = *itDuration;
+		}
+		auto itLoop = json.find("loop");
+		if (itLoop != json.end()) {
+			emitter->loop = *itLoop;
+		}
+		auto itInitialVelocity = json.find("initialVelocity");
+		if (itInitialVelocity != json.end()) {
+			emitter->initialVelocity = *itInitialVelocity;
+		}
+		auto itInitialPositionRandomFactor = json.find("initialPositionRandomFactor");
+		if (itInitialPositionRandomFactor != json.end()) {
+			emitter->initialPositionRandomFactor = *itInitialPositionRandomFactor;
+		}
+		auto itInitialVelocityRandomFactor = json.find("initialVelocityRandomFactor");
+		if (itInitialVelocityRandomFactor != json.end()) {
+			emitter->initialVelocityRandomFactor = *itInitialVelocityRandomFactor;
+		}
+		auto itInitialRotationRandomFactor = json.find("initialRotationRandomFactor");
+		if (itInitialRotationRandomFactor != json.end()) {
+			emitter->initialRotationRandomFactor = *itInitialRotationRandomFactor;
+		}
+		auto itInitialScaleRandomFactor = json.find("initialScaleRandomFactor");
+		if (itInitialScaleRandomFactor != json.end()) {
+			emitter->initialScaleRandomFactor = *itInitialScaleRandomFactor;
+		}
+		auto itScale = json.find("scale");
+		if (itScale != json.end()) {
+			emitter->scale = *itScale;
+		}
+		auto itLifeLength = json.find("lifeLength");
+		if (itLifeLength != json.end()) {
+			emitter->lifeLength = *itLifeLength;
+		}
+		auto itLifeLengthRandomFactor = json.find("lifeLengthRandomFactor");
+		if (itLifeLengthRandomFactor != json.end()) {
+			emitter->lifeLengthRandomFactor = *itLifeLengthRandomFactor;
+		}
+		auto itGravity = json.find("gravity");
+		if (itGravity != json.end()) {
+			emitter->gravity = *itGravity;
+		}
+
+		scene.repository.add(key, emitter);
+		return Result();
+	}
+
 // Components
 	template <typename T>
 	nlohmann::json serializeComponent(const T& component, SerializeData& data, std::ostream& dataStream);
@@ -1592,6 +1760,55 @@ namespace se::app {
 		}
 
 		return { Result(), std::move(light) };
+	}
+
+
+	template <>
+	nlohmann::json serializeComponent<LightProbe>(const LightProbe& lightProbe, SerializeData& data, std::ostream&)
+	{
+		nlohmann::json json;
+
+		Scene::Key keyIrradianceMap;
+		if (data.scene.repository.findKey(lightProbe.irradianceMap, keyIrradianceMap)) {
+			json["irradianceMap"] = keyIrradianceMap;
+		}
+
+		Scene::Key keyPrefilterMap;
+		if (data.scene.repository.findKey(lightProbe.prefilterMap, keyPrefilterMap)) {
+			json["prefilterMap"] = keyPrefilterMap;
+		}
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<LightProbe> deserializeComponent<LightProbe>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	{
+		LightProbe lightProbe;
+
+		auto itIrradianceMap = json.find("irradianceMap");
+		if (itIrradianceMap != json.end()) {
+			Scene::Key keyIrradianceMap = *itIrradianceMap;
+			if (auto irradianceMap = scene.repository.find<Scene::Key, Texture>(keyIrradianceMap)) {
+				lightProbe.irradianceMap = irradianceMap;
+			}
+			else {
+				return { Result(false, "irradianceMap \"" + keyIrradianceMap + "\" not found"), std::nullopt };
+			}
+		}
+
+		auto itPrefilterMap = json.find("prefilterMap");
+		if (itPrefilterMap != json.end()) {
+			Scene::Key keyPrefilterMap = *itPrefilterMap;
+			if (auto prefilterMap = scene.repository.find<Scene::Key, Texture>(keyPrefilterMap)) {
+				lightProbe.prefilterMap = prefilterMap;
+			}
+			else {
+				return { Result(false, "prefilterMap \"" + keyPrefilterMap + "\" not found"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(lightProbe) };
 	}
 
 
@@ -2120,6 +2337,76 @@ namespace se::app {
 		return { Result(), std::move(animation) };
 	}
 
+
+	template <>
+	nlohmann::json serializeComponent<ParticleSystemComponent>(const ParticleSystemComponent& particleSystem, SerializeData& data, std::ostream&)
+	{
+		nlohmann::json json;
+
+		Scene::Key meshKey;
+		if (data.scene.repository.findKey(particleSystem.getMesh(), meshKey)) {
+			json["mesh"] = meshKey;
+		}
+
+		auto shadersVJson = nlohmann::json::array();
+		particleSystem.processRenderableShaders([&](const std::shared_ptr<RenderableShader>& shader) {
+			Scene::Key shaderKey;
+			if (data.scene.repository.findKey(shader, shaderKey)) {
+				shadersVJson.push_back(shaderKey);
+			}
+		});
+		json["shaders"] = std::move(shadersVJson);
+
+		Scene::Key emitterKey;
+		if (data.scene.repository.findKey(particleSystem.getEmitter(), emitterKey)) {
+			json["emitter"] = emitterKey;
+		}
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<ParticleSystemComponent> deserializeComponent<ParticleSystemComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	{
+		ParticleSystemComponent particleSystem(scene.application.getEventManager(), entity);
+
+		auto itMesh = json.find("mesh");
+		if (itMesh == json.end()) {
+			return { Result(false, "Missing \"mesh\" property"), std::nullopt };
+		}
+
+		if (auto mesh = scene.repository.find<Scene::Key, Mesh>(*itMesh)) {
+			particleSystem.setMesh(mesh);
+		}
+
+		auto itShaders = json.find("shaders");
+		if (itShaders == json.end()) {
+			return { Result(false, "Missing \"shaders\" property"), std::nullopt };
+		}
+
+		for (std::size_t i = 0; i < itShaders->size(); ++i) {
+			Scene::Key shaderKey = (*itShaders)[i];
+
+			if (auto shader = scene.repository.find<Scene::Key, RenderableShader>(shaderKey)) {
+				particleSystem.addRenderableShader(shader);
+			}
+			else {
+				return { Result(false, "RenderableShader \"" + shaderKey + "\" not found at shaders[" + std::to_string(i) + "]"), std::nullopt };
+			}
+		}
+
+		auto itEmitter = json.find("emitter");
+		if (itEmitter == json.end()) {
+			return { Result(false, "Missing \"emitter\" property"), std::nullopt };
+		}
+
+		if (auto emitter = scene.repository.find<Scene::Key, ParticleEmitter>(*itEmitter)) {
+			particleSystem.setEmitter(emitter);
+		}
+
+		return { Result(), std::move(particleSystem) };
+	}
+
 // Other
 	void serializeAnimationNode(
 		const AnimationNode& node, const std::unordered_map<const AnimationNode*, std::size_t>& nodeIndexMap,
@@ -2300,6 +2587,7 @@ namespace se::app {
 		serializeRVector<Pass>("passes", data, json, dataStream);
 		serializeRVector<RenderableShader>("shaders", data, json, dataStream);
 		serializeRVector<Force>("forces", data, json, dataStream);
+		serializeRVector<ParticleEmitter>("particleEmitter", data, json, dataStream);
 	}
 
 	Result deserializeRepository(DeserializeData& data, Scene& scene)
@@ -2313,6 +2601,7 @@ namespace se::app {
 		if (auto result = deserializeRVector<Pass>("passes", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<RenderableShader>("shaders", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Force>("forces", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<ParticleEmitter>("particleEmitter", data, scene); !result) { return result; }
 		return Result();
 	}
 
@@ -2418,10 +2707,12 @@ namespace se::app {
 		serializeCVector<CameraComponent>("cameras", data, json, dataStream);
 		serializeCVector<MeshComponent>("meshComponents", data, json, dataStream);
 		serializeCVector<LightComponent>("lights", data, json, dataStream);
+		serializeCVector<LightProbe>("lightProbes", data, json, dataStream);
 		serializeCVector<RigidBody>("rigidBodies", data, json, dataStream);
 		serializeCVector<Collider>("colliders", data, json, dataStream);
 		serializeCVector<SkinComponent>("skinComponents", data, json, dataStream);
 		serializeCVector<AnimationComponent>("animationComponents", data, json, dataStream);
+		serializeCVector<ParticleSystemComponent>("particleSystemComponents", data, json, dataStream);
 	}
 
 	Result deserializeComponents(DeserializeData& data, Scene& scene)
@@ -2431,10 +2722,12 @@ namespace se::app {
 		if (auto result = deserializeCVector<CameraComponent>("cameras", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<MeshComponent>("meshComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<LightProbe>("lightProbes", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<RigidBody>("rigidBodies", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<Collider, true>("colliders", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<ParticleSystemComponent>("particleSystemComponents", data, scene); !result) { return result; }
 		return Result();
 	}
 

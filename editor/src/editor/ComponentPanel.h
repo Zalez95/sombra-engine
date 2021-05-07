@@ -29,6 +29,7 @@ namespace editor {
 		class TerrainComponentNode;
 		class RigidBodyComponentNode;
 		class ColliderComponentNode;
+		class ParticleSystemComponentNode;
 
 	private:	// Attributes
 		/** A reference to the Editor that holds the ComponentPanel */

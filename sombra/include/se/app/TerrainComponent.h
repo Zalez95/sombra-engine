@@ -52,7 +52,7 @@ namespace se::app {
 		 * @return	the RenderableTerrain */
 		graphics::RenderableTerrain& get() { return mRenderableTerrain; };
 
-		/** Adds the given RenderableShader to the RenderableTerrain
+		/** Adds the given RenderableShader to the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
 		void addRenderableShader(const RenderableShaderSPtr& shader);
@@ -64,7 +64,7 @@ namespace se::app {
 		template <typename F>
 		void processRenderableShaders(F callback) const;
 
-		/** Removes the given RenderableShader from the RenderableTerrain
+		/** Removes the given RenderableShader from the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
 		void removeRenderableShader(const RenderableShaderSPtr& shader);

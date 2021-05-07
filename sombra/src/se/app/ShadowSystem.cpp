@@ -73,8 +73,8 @@ namespace se::app {
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		auto startShadow = dynamic_cast<graphics::ViewportResolutionNode*>(renderGraph.getNode("startShadow"));
-		auto shadowRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("shadowRendererMesh"));
 		auto shadowRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("shadowRendererTerrain"));
+		auto shadowRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("shadowRendererMesh"));
 		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
 
 		auto& shadow = mShadows.emplace_back();
@@ -84,8 +84,8 @@ namespace se::app {
 		shadow.uniformUpdater = new ShadowUniformsUpdater(this, 0, "uViewMatrix", "uProjectionMatrix");
 
 		startShadow->setViewportSize(0, 0, shadow.data.resolution, shadow.data.resolution);
-		shadowRendererMesh->addFilter(shadow.frustum);
 		shadowRendererTerrain->addFilter(shadow.frustum);
+		shadowRendererMesh->addFilter(shadow.frustum);
 	}
 
 
@@ -229,24 +229,7 @@ namespace se::app {
 
 	void ShadowSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
-		if (event.isTerrain()) {
-			auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
-			if (terrain) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						for (auto& shadow : mShadows) {
-							shadow.uniformUpdater->addRenderableShader(terrain->get(), event.getShader());
-						}
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						for (auto& shadow : mShadows) {
-							shadow.uniformUpdater->removeRenderableShader(terrain->get(), event.getShader());
-						}
-						break;
-				}
-			}
-		}
-		else {
+		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
 			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
 			if (mesh) {
 				switch (event.getOperation()) {
@@ -258,6 +241,28 @@ namespace se::app {
 					case RenderableShaderEvent::Operation::Remove:
 						for (auto& shadow : mShadows) {
 							shadow.uniformUpdater->removeRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						}
+						break;
+				}
+			}
+		}
+		else {
+			graphics::Renderable* renderable = nullptr;
+			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
+				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
+				renderable = &terrain->get();
+			}
+
+			if (renderable) {
+				switch (event.getOperation()) {
+					case RenderableShaderEvent::Operation::Add:
+						for (auto& shadow : mShadows) {
+							shadow.uniformUpdater->addRenderableShader(*renderable, event.getShader());
+						}
+						break;
+					case RenderableShaderEvent::Operation::Remove:
+						for (auto& shadow : mShadows) {
+							shadow.uniformUpdater->removeRenderableShader(*renderable, event.getShader());
 						}
 						break;
 				}

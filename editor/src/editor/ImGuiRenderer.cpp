@@ -262,8 +262,11 @@ namespace editor {
 		mImpl->vbo->bind();
 		mImpl->ibo->bind();
 
+		vao->enableAttribute(0);
 		vao->setVertexAttribute(0, se::graphics::TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos));
+		vao->enableAttribute(1);
 		vao->setVertexAttribute(1, se::graphics::TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv));
+		vao->enableAttribute(2);
 		vao->setVertexAttribute(2, se::graphics::TypeId::UnsignedByte, true, 4, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col));
 	}
 

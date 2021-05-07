@@ -151,12 +151,15 @@ namespace se::graphics {
 	}
 
 
-	const Texture& Texture::getBorderColor(float* r, float* g, float* b, float* a) const
+	const Texture& Texture::getBorderColor(float* r, float* g, float* b, float* a, int orientation) const
 	{
 		GLenum glTarget = toGLTextureTarget(mTarget);
 
 		float color[4];
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
 		GL_WRAP( glGetTexParameterfv(GL_TEXTURE_BORDER_COLOR, GL_TEXTURE_BORDER_COLOR, color) );
 		*r = color[0];
 		*g = color[1];
@@ -167,26 +170,100 @@ namespace se::graphics {
 	}
 
 
-	Texture& Texture::setBorderColor(float r, float g, float b, float a)
+	Texture& Texture::setBorderColor(float r, float g, float b, float a, int orientation)
 	{
 		GLenum glTarget = toGLTextureTarget(mTarget);
 		float color[4] = { r, g, b, a };
 
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
 		GL_WRAP( glTexParameterfv(glTarget, GL_TEXTURE_BORDER_COLOR, color) );
 
 		return *this;
 	}
 
 
-	const Texture& Texture::getImage(TypeId textureType, ColorFormat textureFormat, void* buffer) const
+	TypeId Texture::getTypeId(int mipMapLevel, int orientation) const
 	{
 		GLenum glTarget = toGLTextureTarget(mTarget);
-		GLenum glType = toGLType(textureType);
-		GLenum glFormat = toGLColorFormat(textureFormat);
+		GLint glType;
 
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, mipMapLevel, GL_TEXTURE_RED_TYPE, &glType) );
+
+		return fromGLType(glType);
+	}
+
+
+	std::size_t Texture::getWidth(int mipMapLevel, int orientation) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glWidth;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, mipMapLevel, GL_TEXTURE_WIDTH, &glWidth) );
+
+		return glWidth;
+	}
+
+
+	std::size_t Texture::getHeight(int mipMapLevel, int orientation) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glHeight;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, mipMapLevel, GL_TEXTURE_HEIGHT, &glHeight) );
+
+		return glHeight;
+	}
+
+
+	std::size_t Texture::getDepth(int mipMapLevel, int orientation) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLint glDepth;
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
+		GL_WRAP( glGetTexLevelParameteriv(glTarget, mipMapLevel, GL_TEXTURE_DEPTH, &glDepth) );
+
+		return glDepth;
+	}
+
+
+	const Texture& Texture::getImage(TypeId destinationType, ColorFormat destinationFormat, void* buffer, int orientation) const
+	{
+		GLenum glTarget = toGLTextureTarget(mTarget);
+		GLenum glType = toGLType(destinationType);
+		GLenum glFormat = toGLColorFormat(destinationFormat);
+
+		if ((destinationFormat == ColorFormat::RGB) || (destinationFormat == ColorFormat::RGB8)) {
+			GL_WRAP( glPixelStorei(GL_PACK_ALIGNMENT, 1) );
+		}
+
+		GL_WRAP( glBindTexture(glTarget, mTextureId) );
+		if (mTarget == TextureTarget::CubeMap) {
+			glTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation;
+		}
 		GL_WRAP( glGetTexImage(glTarget, 0, glFormat, glType, buffer) );
+
+		if ((destinationFormat == ColorFormat::RGB) || (destinationFormat == ColorFormat::RGB8)) {
+			GL_WRAP( glPixelStorei(GL_PACK_ALIGNMENT, 4) );
+		}
 
 		return *this;
 	}
@@ -201,6 +278,10 @@ namespace se::graphics {
 		GLenum glType = toGLType(sourceType);
 		GLenum glFormat = toGLColorFormat(sourceFormat);
 		GLint glInternalFormat = toGLColorFormat(mColorFormat = textureFormat);
+
+		if (sourceFormat == ColorFormat::RGB) {
+			GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
+		}
 
 		GL_WRAP( glBindTexture(glTarget, mTextureId) );
 		switch (mTarget) {
@@ -234,47 +315,11 @@ namespace se::graphics {
 				break;
 		}
 
-		return *this;
-	}
-
-
-	const Texture& Texture::getWidth(std::size_t* width) const
-	{
-		GLenum glTarget = toGLTextureTarget(mTarget);
-		GLint glWidth;
-
-		GL_WRAP( glBindTexture(glTarget, mTextureId) );
-		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glWidth) );
-		*width = glWidth;
+		if (sourceFormat == ColorFormat::RGB) {
+			GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 4) );
+		}
 
 		return *this;
-	}
-
-
-	const Texture& Texture::getHeight(std::size_t* height) const
-	{
-		GLenum glTarget = toGLTextureTarget(mTarget);
-		GLint glHeight;
-
-		GL_WRAP( glBindTexture(glTarget, mTextureId) );
-		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glHeight) );
-		*height = glHeight;
-
-		return *this;
-	}
-
-
-	const Texture& Texture::getDepth(std::size_t* depth) const
-	{
-		GLenum glTarget = toGLTextureTarget(mTarget);
-		GLint glDepth;
-
-		GL_WRAP( glBindTexture(glTarget, mTextureId) );
-		GL_WRAP( glGetTexLevelParameteriv(glTarget, 0, GL_TEXTURE_HEIGHT, &glDepth) );
-		*depth = glDepth;
-
-		return *this;
-
 	}
 
 

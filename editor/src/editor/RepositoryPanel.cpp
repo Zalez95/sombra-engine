@@ -17,6 +17,7 @@
 #include <se/app/SkinComponent.h>
 #include <se/app/LightComponent.h>
 #include <se/app/RenderableShader.h>
+#include <se/app/ParticleSystemComponent.h>
 #include <se/app/Scene.h>
 #include <se/app/io/ImageReader.h>
 #include <se/app/io/SceneImporter.h>
@@ -64,7 +65,7 @@ namespace editor {
 	};
 
 
-	template <typename T>
+	template <typename T, bool hasPath>
 	class RepositoryPanel::TypeNode : public RepositoryPanel::ITypeNode
 	{
 	protected:	// Attributes
@@ -87,6 +88,9 @@ namespace editor {
 				ImGui::SameLine();
 				if (ImGui::SmallButton("Remove")) {
 					mPanel.mEditor.getScene()->repository.remove<Scene::Key, T>(mSelected);
+					if (hasPath) {
+						mPanel.mEditor.getScene()->repository.remove<Scene::Key, ResourcePath<T>>(mSelected);
+					}
 					mSelected = "";
 				}
 
@@ -107,11 +111,18 @@ namespace editor {
 					std::array<char, kMaxNameSize> nameBuffer = {};
 					std::copy(mSelected.begin(), mSelected.end(), nameBuffer.data());
 					if (ImGui::InputText("Name##SelectedName", nameBuffer.data(), nameBuffer.size())) {
-						auto element = mPanel.mEditor.getScene()->repository.find<Scene::Key, T>(mSelected);
-						mPanel.mEditor.getScene()->repository.remove<Scene::Key, T>(mSelected);
-
+						Scene::Key oldName = mSelected;
 						mSelected = nameBuffer.data();
+
+						auto element = mPanel.mEditor.getScene()->repository.find<Scene::Key, T>(oldName);
+						mPanel.mEditor.getScene()->repository.remove<Scene::Key, T>(oldName);
 						mPanel.mEditor.getScene()->repository.add<Scene::Key, T>(mSelected, std::move(element));
+
+						if (hasPath) {
+							auto elementPath = mPanel.mEditor.getScene()->repository.find<Scene::Key, ResourcePath<T>>(oldName);
+							mPanel.mEditor.getScene()->repository.remove<Scene::Key, ResourcePath<T>>(oldName);
+							mPanel.mEditor.getScene()->repository.add<Scene::Key, ResourcePath<T>>(mSelected, std::move(elementPath));
+						}
 					}
 
 					draw(mSelected);
@@ -132,15 +143,15 @@ namespace editor {
 	};
 
 
-	template <typename T>
-	class RepositoryPanel::ImportTypeNode : public RepositoryPanel::TypeNode<T>
+	template <typename T, bool hasPath>
+	class RepositoryPanel::ImportTypeNode : public RepositoryPanel::TypeNode<T, hasPath>
 	{
 	private:	// Attributes
 		std::string mPath;
 		FileWindow mFileWindow;
 
 	public:		// Functions
-		ImportTypeNode(RepositoryPanel& panel) : TypeNode<T>(panel) {};
+		ImportTypeNode(RepositoryPanel& panel) : TypeNode<T, hasPath>(panel) {};
 		virtual ~ImportTypeNode() = default;
 	protected:
 		virtual bool create() override
@@ -181,8 +192,8 @@ namespace editor {
 	};
 
 
-	template <typename T>
-	class RepositoryPanel::SceneImporterTypeNode : public RepositoryPanel::ImportTypeNode<T>
+	template <typename T, bool hasPath>
+	class RepositoryPanel::SceneImporterTypeNode : public RepositoryPanel::ImportTypeNode<T, hasPath>
 	{
 	protected:	// Attributes
 		using TypeNode<T>::mPanel;
@@ -191,7 +202,7 @@ namespace editor {
 
 	public:		// Functions
 		SceneImporterTypeNode(RepositoryPanel& panel) :
-			ImportTypeNode<T>(panel), mFileType(SceneImporter::FileType::GLTF) {};
+			ImportTypeNode<T, hasPath>(panel), mFileType(SceneImporter::FileType::GLTF) {};
 	protected:
 		virtual bool options() override
 		{
@@ -299,7 +310,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::AudioBufferNode : public RepositoryPanel::ImportTypeNode<Buffer>
+	class RepositoryPanel::AudioBufferNode : public RepositoryPanel::ImportTypeNode<Buffer, true>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -446,7 +457,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<Program>
+	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<Program, true>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -874,12 +885,18 @@ namespace editor {
 											(setOperation->getOperation() == Operation::ScissorTest)? "ScissorTest" :
 											"Blending";
 					if (!ImGui::TreeNode(treeId.c_str(), "SetOperation %s", operation)) { return; }
-					ImGui::Text("%s", setOperation->enableOperation()? "Active" : "Inactive");
+					bool isEnabled = setOperation->isEnabled();
+					if (ImGui::Checkbox("Enabled", &isEnabled)) {
+						setOperation->setEnabled(isEnabled);
+					}
 					ImGui::TreePop();
 				}
 				else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
 					if (!ImGui::TreeNode(treeId.c_str(), "SetDepthMask")) { return; }
-					ImGui::Text("%s", setDepthMask->isActive()? "Active" : "Inactive");
+					bool isEnabled = setDepthMask->isEnabled();
+					if (ImGui::Checkbox("Enabled", &isEnabled)) {
+						setDepthMask->setEnabled(isEnabled);
+					}
 					ImGui::TreePop();
 				}
 			});
@@ -991,7 +1008,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<Texture>
+	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<Texture, true>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -1007,6 +1024,9 @@ namespace editor {
 			auto path = mPanel.mEditor.getScene()->repository.find<Scene::Key, ResourcePath<Texture>>(key);
 			if (path) {
 				ImGui::Text("Path: %s", path->path.c_str());
+			}
+			else {
+				ImGui::Text("No path");
 			}
 
 			auto texture = mPanel.mEditor.getScene()->repository.find<Scene::Key, Texture>(key);
@@ -1082,6 +1102,7 @@ namespace editor {
 		virtual bool load(const char* path) override
 		{
 			auto texture = std::make_shared<Texture>(TextureTarget::Texture2D);
+			texture->setTextureUnit(0);
 
 			if (mIsHDR) {
 				Image<float> image;
@@ -1139,6 +1160,57 @@ namespace editor {
 	};
 
 
+	class RepositoryPanel::ParticleEmitterNode : public RepositoryPanel::TypeNode<ParticleEmitter>
+	{
+	private:	// Attributes
+		std::array<char, kMaxNameSize> mNameBuffer;
+
+	public:		// Functions
+		ParticleEmitterNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
+		virtual const char* getName() const override { return "ParticleEmitter"; };
+	protected:
+		virtual void draw(const Scene::Key& key) override
+		{
+			auto emitter = mPanel.mEditor.getScene()->repository.find<Scene::Key, ParticleEmitter>(key);
+
+			ImGui::DragInt("Maximum particles", reinterpret_cast<int*>(&emitter->maxParticles), 1, 0, INT_MAX);
+			ImGui::DragFloat("Particle simulation duration", &emitter->duration, 0.005f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+			ImGui::Checkbox("Loop simulation", &emitter->loop);
+			ImGui::DragFloat("Initial velocity", &emitter->initialVelocity, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+			ImGui::DragFloat("Initial position randomness", &emitter->initialPositionRandomFactor, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Initial velocity randomness", &emitter->initialVelocityRandomFactor, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Initial rotation randomness", &emitter->initialRotationRandomFactor, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Particle scale", &emitter->scale, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Initial scale randomness", &emitter->initialScaleRandomFactor, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Life length", &emitter->lifeLength, 0.005f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+			ImGui::DragFloat("Life length randomness", &emitter->lifeLengthRandomFactor, 0.005f, 0.0f, 1.0f, "%.3f", 1.0f);
+			ImGui::DragFloat("Gravity", &emitter->gravity, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+		};
+
+		virtual bool create() override
+		{
+			bool ret = false;
+
+			ImGui::InputText("Name##CreateName", mNameBuffer.data(), mNameBuffer.size());
+			bool validKey = !mPanel.mEditor.getScene()->repository.has<Scene::Key, ParticleEmitter>(mNameBuffer.data());
+
+			ImGui::Separator();
+			if (cancelButton()) {
+				mNameBuffer.fill(0);
+				ret = true;
+			}
+			ImGui::SameLine();
+			if (confirmButton(validKey)) {
+				mPanel.mEditor.getScene()->repository.emplace<Scene::Key, ParticleEmitter>(mNameBuffer.data());
+				mNameBuffer.fill(0);
+				ret = true;
+			}
+
+			return ret;
+		};
+	};
+
+
 	RepositoryPanel::RepositoryPanel(Editor& editor) : mEditor(editor), mTypeSelected(-1)
 	{
 		mTypes.emplace_back(new SkinNode(*this));
@@ -1151,6 +1223,7 @@ namespace editor {
 		mTypes.emplace_back(new RenderableShaderNode(*this));
 		mTypes.emplace_back(new TextureNode(*this));
 		mTypes.emplace_back(new MeshNode(*this));
+		mTypes.emplace_back(new ParticleEmitterNode(*this));
 	}
 
 

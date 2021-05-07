@@ -48,7 +48,8 @@ namespace se::graphics {
 
 		/** Resizes and sets the buffer data
 		 *
-		 * @param	data a pointer to the data of the buffer
+		 * @param	data a pointer to the data of the buffer, if it's nullptr
+		 *			it will only resize the buffer
 		 * @param	type the TypeId of the elements
 		 * @param	count the number of elements in the data array */
 		template <typename T>
@@ -56,7 +57,8 @@ namespace se::graphics {
 
 		/** Resizes and sets the buffer data
 		 *
-		 * @param	data a pointer to the data of the new buffer
+		 * @param	data a pointer to the data of the new buffer, if it's
+		 *			nullptr it will only resize the buffer
 		 * @param	size the size of the data buffer
 		 * @param	type the TypeId of the elements
 		 * @param	count the number of elements in the data array */

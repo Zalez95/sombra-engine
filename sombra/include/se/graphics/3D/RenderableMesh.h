@@ -16,6 +16,9 @@ namespace se::graphics {
 		using MeshSPtr = std::shared_ptr<Mesh>;
 
 	private:	// Attributes
+		/** The matrix that transforms from local space to world space */
+		glm::mat4 mModelMatrix = glm::mat4(1.0f);
+
 		/** The Mesh of the RenderableMesh */
 		MeshSPtr mMesh;
 
@@ -39,17 +42,22 @@ namespace se::graphics {
 		 *			RenderableMesh */
 		PrimitiveType getPrimitiveType() const { return mPrimitiveType; };
 
+		/** Sets the model matrix
+		 *
+		 * @param	modelMatrix local space to world space matrix
+		 * @return	a reference to the current RenderableMesh object */
+		RenderableMesh& setModelMatrix(const glm::mat4& modelMatrix);
+
+		/** @return	the local space to world space matrix */
+		const glm::mat4& getModelMatrix() const
+		{ return mModelMatrix; };
+
 		/** Sets the Mesh pointed by the RenderableMesh
 		 *
 		 * @param	mesh a pointer to the new Mesh pointed by the
 		 *			RenderableMesh
 		 * @return	a reference to the current RenderableMesh */
 		RenderableMesh& setMesh(MeshSPtr mesh);
-
-		/** @copydoc Renderable3D::setModelMatrix(const glm::mat4&) */
-		virtual Renderable3D& setModelMatrix(
-			const glm::mat4& modelMatrix
-		) override;
 
 		/** Draws the current RenderableMesh (drawcall) */
 		void draw();

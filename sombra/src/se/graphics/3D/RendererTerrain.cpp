@@ -60,13 +60,16 @@ namespace se::graphics {
 		mVBOXZPositions.resizeAndCopy(vertices, numVertices);
 
 		mVBOXZPositions.bind();
+		mVAO.enableAttribute(0);
 		mVAO.setVertexAttribute(0, TypeId::Float, false, 2, 0);
 
 		mVBOXZLocations.bind();
+		mVAO.enableAttribute(1);
 		mVAO.setVertexAttribute(1, TypeId::Float, false, 2, 0);
 		mVAO.setAttributeDivisor(1, 1);
 
 		mVBOLods.bind();
+		mVAO.enableAttribute(2);
 		mVAO.setVertexIntegerAttribute(2, TypeId::Int, 1, 0);
 		mVAO.setAttributeDivisor(2, 1);
 	}

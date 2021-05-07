@@ -22,14 +22,17 @@ namespace se::app {
 	/**
 	 * Class AppRenderer, It's a System used for creating the RenderGraph and
 	 * rendering the Entities
-	 * @note	the Passes can use either the "forwardRenderer" or the
-	 *			"gBufferRenderer" of the RenderGraph for submitting the
-	 *			Renderable3Ds. The "gBufferRenderer" is used for rendering
-	 *			geometry in a deferred pipeline, the passes that uses this it
+	 * @note	the Passes can use either the "forwardRendererMesh", or the
+	 *			"gBufferRendererTerrain", "gBufferRendererMesh" or
+	 *			"gBufferRendererTerrain" of the RenderGraph for submitting the
+	 *			Renderable3Ds. The gBufferRenderers are used for rendering
+	 *			geometry in a deferred pipeline, the passes that uses it
 	 *			must output position, normal, albedo, material and emissive
 	 *			textures in that order, later this textures will be used for
-	 *			rendering in a PBR pipeline. The "forwardRenderer" is reserved
-	 *			for special cases that can't be rendered this way */
+	 *			rendering in a PBR pipeline. The "forwardRendererMesh" is
+	 *			reserved for special cases that can't be rendered this way.
+	 *			For the Renderable2Ds, there is a "renderer2D" for submitting
+	 *			them */
 	class AppRenderer : public ISystem
 	{
 	private:	// Nested types
@@ -176,26 +179,31 @@ namespace se::app {
 		);
 
 		/** Creates a deferred renderer with the following GBuffer Renderer3Ds:
-		 *	"gBufferRendererMesh" - renders RenderableMeshes
 		 *	"gBufferRendererTerrain" - renders RenderableTerrains
+		 *	"gBufferRendererMesh" - renders RenderableMeshes
+		 *	"gBufferRendererParticles" - renders ParticleSystems
 		 * The nodes and connections that will be added to the graph looks like
 		 * the following (the resource node already exists):
 		 *
 		 *  [                            "resources"                        ]
 		 *   |gBuffer  |deferredBuffer             |positionTexture
-		 *    \        |_______________            |
-		 *    |input                   |           |
-		 *  ["gFBClear"]               |           |
-		 *    |output                  |           |
-		 *    |                        |   ["texUnitNodePosition"]
-		 *    |target                  |           |
-		 *  ["gBufferRendererTerrain"] |           |
-		 *    |target                  |           |
-		 *    |                        |           |
-		 *     |target                 |           |
-		 *  ["gBufferRendererMesh"]    |           |
-		 *    |target |attach__________|           |____________________
-		 *    |    ___|    |                                           |
+		 *    \        |________________           |
+		 *    |input                    |           |
+		 *  ["gFBClear"]                |           |
+		 *    |output                   |           |
+		 *    |                         | ["texUnitNodePosition"]
+		 *    |target                   |           |
+		 *  ["gBufferRendererTerrain"]  |           |
+		 *    |target                   |           |
+		 *    |                         |           |
+		 *    |target                   |           |
+		 *  ["gBufferRendererMesh"]     |           |
+		 *    |target                   |           |
+		 *    |                         |           |
+		 *    |target                   |           |
+		 *  ["gBufferRendererParticles"]|           |
+		 *    |target |attach___________|           |___________________
+		 *    |    ___|    /                                           |
 		 *    |   |attach |target |irradiance |prefilter |brdf |shadow |position
 		 *    |  [                "deferredLightRenderer"                ]
 		 *    |                             |target

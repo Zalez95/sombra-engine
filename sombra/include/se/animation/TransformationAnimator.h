@@ -88,7 +88,7 @@ namespace se::animation {
 		/** Animates the given AnimatedNode
 		 *
 		 * @param	aNode the AnimatedNode to update
-		 * @param	elpasedTime the elpased time in seconds since the last
+		 * @param	elapsedTime the elpased time in seconds since the last
 		 *			update */
 		virtual void animateNode(AnimatedNode& aNode, float elapsedTime) = 0;
 	};

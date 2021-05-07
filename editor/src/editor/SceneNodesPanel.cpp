@@ -2,6 +2,7 @@
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <se/app/Scene.h>
+#include <se/app/AnimationComponent.h>
 #include "SceneNodesPanel.h"
 #include "Editor.h"
 
@@ -20,44 +21,49 @@ namespace editor {
 			ImGui::End();
 			return;
 		}
-
-		// Options for adding root child nodes
 		se::animation::AnimationNode* root = &scene->rootNode;
-		if (ImGui::BeginPopupContextItem()) {
-			mSelectedNode = root->end();
-			mWorkingData = se::animation::NodeData();
 
-			mAdd |= ImGui::MenuItem("Add");
-			ImGui::EndPopup();
+		if (ImGui::CollapsingHeader("Scene Hierarchy")) {
+			// Options for adding root child nodes
+			if (ImGui::BeginPopupContextItem()) {
+				mSelectedNode = root->end();
+				mWorkingData = se::animation::NodeData();
+
+				mAdd |= ImGui::MenuItem("Add");
+				ImGui::EndPopup();
+			}
+
+			// Draw the node hierarchy
+			for (auto it = root->begin(); (it != root->end()) && (it->getParent() == root); ++it) {
+				drawNode(it);
+			}
 		}
 
-		// Draw the node hierarchy
-		for (auto it = root->begin(); (it != root->end()) && (it->getParent() == root); ++it) {
-			drawNode(it);
-		}
+		// Draw the selected node transforms
+		if (ImGui::CollapsingHeader("Current Node")) {
+			if (mSelectedNode != root->end()) {
+				auto& animationData = mSelectedNode->getData();
+				bool updated = false;
 
-		// Draw the node transforms
-		if (mSelectedNode != root->end()) {
-			auto& animationData = mSelectedNode->getData();
-			bool updated = false;
-
-			ImGui::Separator();
-			ImGui::Text("Node selected: 0x%p", static_cast<void*>(&(*mSelectedNode)));
-			ImGui::InputText("Name##AnimationNodeName", animationData.name.data(), animationData.name.size());
-			ImGui::Text("Local transforms:");
-			updated |= ImGui::DragFloat3("Position", glm::value_ptr(animationData.localTransforms.position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			updated |= drawOrientation("Orientation##AnimationNodeOrientation", animationData.localTransforms.orientation, mOrientationType);
-			updated |= ImGui::DragFloat3("Scale", glm::value_ptr(animationData.localTransforms.scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-			animationData.animated = updated;
+				ImGui::Separator();
+				ImGui::Text("Node selected: 0x%p", static_cast<void*>(&(*mSelectedNode)));
+				ImGui::InputText("Name##AnimationNodeName", animationData.name.data(), animationData.name.size());
+				ImGui::Text("Local transforms:");
+				updated |= ImGui::DragFloat3("Position", glm::value_ptr(animationData.localTransforms.position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				updated |= drawOrientation("Orientation##AnimationNodeOrientation", animationData.localTransforms.orientation, mOrientationType);
+				updated |= ImGui::DragFloat3("Scale", glm::value_ptr(animationData.localTransforms.scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				animationData.animated = updated;
+			}
 		}
 
 		// Operations
 		if (mRemove) {
 			mRemove = false;
-			mEditor.getEntityDatabase().iterateComponents<se::animation::AnimationNode*>(
-				[&](se::app::Entity, se::animation::AnimationNode** node) {
-					if (*node == &(*mSelectedNode)) {
-						*node = nullptr;
+			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
+				[&](se::app::Entity, se::app::AnimationComponent* animation) {
+					se::animation::AnimationNode* node = animation->getRootNode();
+					if (node == &(*mSelectedNode)) {
+						animation->setRootNode(nullptr);
 					}
 				}
 			);
@@ -65,10 +71,11 @@ namespace editor {
 		}
 		if (mRemoveHierarchy) {
 			mRemoveHierarchy = false;
-			mEditor.getEntityDatabase().iterateComponents<se::animation::AnimationNode*>(
-				[&](se::app::Entity, se::animation::AnimationNode** node) {
-					if (*node == &(*mSelectedNode) || (mSelectedNode->find(**node) != mSelectedNode->end())) {
-						*node = nullptr;
+			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
+				[&](se::app::Entity, se::app::AnimationComponent* animation) {
+					se::animation::AnimationNode* node = animation->getRootNode();
+					if (node == &(*mSelectedNode) || (mSelectedNode->find(*node) != mSelectedNode->end())) {
+						animation->setRootNode(nullptr);
 					}
 				}
 			);

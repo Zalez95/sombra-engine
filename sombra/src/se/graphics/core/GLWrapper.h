@@ -1,4 +1,3 @@
-#include <bitset>
 #include <GL/glew.h>
 #include "se/utils/Log.h"
 #include "se/graphics/core/Constants.h"

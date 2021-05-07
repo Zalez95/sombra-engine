@@ -16,6 +16,35 @@ namespace se::graphics {
 	};
 
 
+	/** Returns the size in bytes of the given type
+	 *
+	 * @param	type the type to check
+	 * @return	the size in bytes */
+	constexpr std::size_t toTypeSize(TypeId type)
+	{
+		switch (type) {
+			case TypeId::Byte:
+				return sizeof(char);
+			case TypeId::UnsignedByte:
+				return sizeof(unsigned char);
+			case TypeId::Short:
+				return sizeof(short);
+			case TypeId::UnsignedShort:
+				return sizeof(unsigned short);
+			case TypeId::Int:
+				return sizeof(int);
+			case TypeId::UnsignedInt:
+				return sizeof(unsigned int);
+			case TypeId::Float:
+				return sizeof(float);
+			case TypeId::HalfFloat:
+				return sizeof(unsigned short);
+			default:
+				return sizeof(double);
+		}
+	}
+
+
 	/** The different types of shaders */
 	enum class ShaderType
 	{
@@ -76,6 +105,69 @@ namespace se::graphics {
 		RGB8, RGB16ui, RGB16f, RGB32ui, RGB32f,
 		RGBA8, RGBA16ui, RGBA16f, RGBA32ui, RGBA32f
 	};
+
+
+	/** Converts the given ColorFormat to its unsized counterpart
+	 *
+	 * @param	format the ColorFormat to convert
+	 * @return	the unsized version of the ColorFormat */
+	constexpr ColorFormat toUnSizedColorFormat(ColorFormat format)
+	{
+		switch (format) {
+			case ColorFormat::Depth:
+			case ColorFormat::Depth16:
+			case ColorFormat::Depth24:
+			case ColorFormat::Depth32:
+				return ColorFormat::Depth;
+			case ColorFormat::DepthStencil:
+				return ColorFormat::DepthStencil;
+			case ColorFormat::Red:
+			case ColorFormat::RedInteger:
+			case ColorFormat::Red32ui:
+				return ColorFormat::Red;
+			case ColorFormat::RG:
+			case ColorFormat::RGInteger:
+			case ColorFormat::RG8:
+			case ColorFormat::RG16ui:
+			case ColorFormat::RG16f:
+			case ColorFormat::RG32ui:
+			case ColorFormat::RG32f:
+				return ColorFormat::RG;
+			case ColorFormat::RGB:
+			case ColorFormat::RGBInteger:
+			case ColorFormat::RGB8:
+			case ColorFormat::RGB16ui:
+			case ColorFormat::RGB16f:
+			case ColorFormat::RGB32ui:
+			case ColorFormat::RGB32f:
+				return ColorFormat::RGB;
+			default:
+				return ColorFormat::RGBA;
+		}
+	}
+
+
+	/** Returns the number of components of the given ColorFormat
+	 *
+	 * @param	format the ColorFormat to check
+	 * @return	the number of components */
+	constexpr std::size_t toNumberOfComponents(ColorFormat format)
+	{
+		switch (toUnSizedColorFormat(format)) {
+			case ColorFormat::Depth:
+				return 1;
+			case ColorFormat::DepthStencil:
+				return 2;
+			case ColorFormat::Red:
+				return 1;
+			case ColorFormat::RG:
+				return 2;
+			case ColorFormat::RGB:
+				return 3;
+			default:
+				return 4;
+		}
+	}
 
 
 	/** Defines the interpolation method used for mipmapping if enabled */

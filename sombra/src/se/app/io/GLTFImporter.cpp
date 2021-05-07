@@ -979,17 +979,18 @@ namespace se::app {
 			auto& materialShader = mGLTFData->materials[materialId];
 			if (out.hasSkin) {
 				if (!materialShader.shaderSkin) {
-					materialShader.shaderSkin = mShaderBuilder.createShader(materialShader.material, true);
-					if (!mGLTFData->scene.repository.add(materialShader.name + "Skin", materialShader.shaderSkin)) {
-						return Result(false, "Can't add MaterialShader with name " + materialShader.name + "Skin");
+					std::string materialName = materialShader.name + "_skin";
+					materialShader.shaderSkin = mShaderBuilder.createShader(materialName.c_str(), materialShader.material, true);
+					if (!materialShader.shader) {
+						return Result(false, "Can't add MaterialShader with name " + materialName);
 					}
 				}
 				out.shader = materialShader.shaderSkin;
 			}
 			else {
 				if (!materialShader.shader) {
-					materialShader.shader = mShaderBuilder.createShader(materialShader.material, false);
-					if (!mGLTFData->scene.repository.add(materialShader.name, materialShader.shader)) {
+					materialShader.shader = mShaderBuilder.createShader(materialShader.name.c_str(), materialShader.material, false);
+					if (!materialShader.shader) {
 						return Result(false, "Can't add MaterialShader with name " + materialShader.name);
 					}
 				}
@@ -1708,18 +1709,16 @@ namespace se::app {
 
 			// Add the VBO to the VAO
 			vbo.bind();
-			if ((a.componentTypeId == graphics::TypeId::Float) || (a.componentTypeId == graphics::TypeId::HalfFloat)) {
-				vao.setVertexAttribute(i, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
-			}
-			else if (a.componentTypeId == graphics::TypeId::Double) {
-				vao.setVertexDoubleAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
+			vao.enableAttribute(i);
+			if (i == MeshAttributes::JointIndexAttribute) {
+				vao.setVertexIntegerAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
 			}
 			else {
-				vao.setVertexIntegerAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
+				vao.setVertexAttribute(i, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
 			}
 
 			if (i == MeshAttributes::PositionAttribute) {
-				for (std::size_t j = 0; j < 3; ++j) {
+				for (int j = 0; j < 3; ++j) {
 					minPosition[j] = a.minimum[j].f;
 					maxPosition[j] = a.maximum[j].f;
 				}

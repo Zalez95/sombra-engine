@@ -170,7 +170,12 @@ namespace se::graphics {
 		Operation getOperation() const { return mOperation; };
 
 		/** @return	true if the operation should be enabled, false otherwise */
-		bool enableOperation() const { return mActive; };
+		bool isEnabled() const { return mActive; };
+
+		/** Enables/Disables the operation on bind
+		 *
+		 * @param	active if we want to enable the operation on bind or not */
+		void setEnabled(bool active = true) { mActive = active; };
 
 		/** Enables the Operation if mActive is true, disables it otherwise */
 		virtual void bind() const override;
@@ -204,7 +209,13 @@ namespace se::graphics {
 
 		/** @return	true if we can write to the depth buffer on bind, false
 		 *			otherwise */
-		bool isActive() const { return mActive; };
+		bool isEnabled() const { return mActive; };
+
+		/** Enables/Disables the depth buffer on bind
+		 *
+		 * @param	active if we want to write to the depth buffer on bind or
+		 *			not */
+		void setEnabled(bool active = true) { mActive = active; };
 
 		/** Enables writing to the depth buffer if mActive is true, disables
 		 * it otherwise */

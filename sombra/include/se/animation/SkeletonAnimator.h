@@ -102,7 +102,7 @@ namespace se::animation {
 		 * to the start, so the next time we call @see animate the hierarchy
 		 * will move like the first time
 		 *
-		 * @param	node the root AnimationNode to rewind its Animation */
+		 * @param	rootNode the root AnimationNode to rewind its Animation */
 		void rewindNodeHierarchy(AnimationNode& rootNode);
 
 		/** Removes the given node hierarchy from the SkeletonAnimator, so the

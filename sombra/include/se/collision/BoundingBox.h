@@ -27,7 +27,7 @@ namespace se::collision {
 
 		/** Sets the lengths of the BoundingBox
 		 *
-		 * @param	the new lenght in each axis of the BoundingBox */
+		 * @param	lengths the new lenght in each axis of the BoundingBox */
 		void setLengths(const glm::vec3& lengths);
 	private:
 		/** Calculates the HalfEdgeMesh of the BoundingBox from its lenghts in

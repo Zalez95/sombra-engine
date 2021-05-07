@@ -22,6 +22,7 @@ namespace se::app {
 	class AppRenderer;
 	class MeshSystem;
 	class TerrainSystem;
+	class ParticleSystemSystem;
 	class DynamicsSystem;
 	class ConstraintsSystem;
 	class CollisionSystem;
@@ -105,6 +106,7 @@ namespace se::app {
 		AppRenderer* mAppRenderer;
 		MeshSystem* mMeshSystem;
 		TerrainSystem* mTerrainSystem;
+		ParticleSystemSystem* mParticleSystemSystem;
 		DynamicsSystem* mDynamicsSystem;
 		ConstraintsSystem* mConstraintsSystem;
 		CollisionSystem* mCollisionSystem;

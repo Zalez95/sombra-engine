@@ -20,6 +20,10 @@ namespace se::app {
 		 * RenderableShaderEvent */
 		enum class Operation { Add, Remove };
 
+		/** The different Renderable components where a RenderableShader
+		 * can be attached */
+		enum class RComponentType { Mesh, Terrain, ParticleSystem };
+
 	private:	// Attributes
 		/** The Operation of the RenderableShaderEvent */
 		Operation mOperation;
@@ -27,12 +31,11 @@ namespace se::app {
 		/** The Entity that owns the Components updated */
 		Entity mEntity;
 
-		/** If the Component updated is a RenderableTerrain or not
-		 * (MeshComponent) */
-		bool mIsTerrain;
+		/** The type of the Renderable component to update */
+		RComponentType mRComponentType;
 
-		/** The index of the RenderableMesh updated if @see mIsTerrain is
-		 * false */
+		/** The index of the RenderableMesh updated if @see mRenderableType is
+		 * Mesh */
 		std::size_t mRIndex;
 
 		/** The RenderableShader used in the Operation */
@@ -44,24 +47,30 @@ namespace se::app {
 		 *
 		 * @param	operation the Operation to perform
 		 * @param	entity the Entity that owns the MeshComponent updated
+		 * @param	rComponentType the type of the Renderable component to
+		 *			update
 		 * @param	shader a pointer to the RenderableShader used in the
 		 *			Operation */
 		RenderableShaderEvent(
-			Operation operation, Entity entity, RenderableShaderSPtr shader
+			Operation operation, Entity entity, RComponentType rComponentType,
+			RenderableShaderSPtr shader
 		) : mOperation(operation), mEntity(entity),
-			mIsTerrain(true), mRIndex(0), mShader(shader) {};
+			mRComponentType(rComponentType), mRIndex(0), mShader(shader) {};
 
 		/** Creates a new RenderableShaderEvent used for notifying of a
 		 * RenderableShader add/remove Operation on a MeshComponent
 		 *
 		 * @param	operation the Operation to perform
 		 * @param	entity the Entity that owns the MeshComponent updated
-		 * @param	rIndex the index of the RenderableMesh updated */
+		 * @param	rIndex the index of the RenderableMesh updated
+		 * @param	shader a pointer to the RenderableShader used in the
+		 *			Operation */
 		RenderableShaderEvent(
 			Operation operation, Entity entity, std::size_t rIndex,
 			RenderableShaderSPtr shader
 		) : mOperation(operation), mEntity(entity),
-			mIsTerrain(false), mRIndex(rIndex), mShader(shader) {};
+			mRComponentType(RComponentType::Mesh), mRIndex(rIndex),
+			mShader(shader) {};
 
 		/** @return	the Operation to perform */
 		Operation getOperation() const { return mOperation; };
@@ -69,9 +78,8 @@ namespace se::app {
 		/** @return	the Entity to notify */
 		Entity getEntity() const { return mEntity; };
 
-		/** @return	true if the Component affected by the RenderableShaderEvent
-		 *			is a Terrain, false otherwise */
-		bool isTerrain() const { return mIsTerrain; };
+		/** @return	the type of the Renderable Component to update */
+		RComponentType getRComponentType() const { return mRComponentType; };
 
 		/** @return	the index of the RenderableMesh updated */
 		std::size_t getRIndex() const { return mRIndex; };

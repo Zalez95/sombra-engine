@@ -35,7 +35,8 @@ namespace se::app {
 
 		/** Sets the root Animation node of the AnimationComponent
 		 *
-		 * @param	a pointer to the new root AnimationNode of the hierarchy */
+		 * @param	node a pointer to the new root AnimationNode of the
+		 *			hierarchy */
 		void setRootNode(animation::AnimationNode* node);
 
 		/** @return	a pointer to the root AnimationNode of the hierarchy */

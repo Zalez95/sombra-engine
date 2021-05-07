@@ -37,12 +37,15 @@ namespace se::app {
 
 			/** Creates a new Shader from the given Material
 			 *
+			 * @param	name the name used for storing the RenderableShader and
+			 *			its Passes in the scene repository
 			 * @param	material the material used for creating the Shader
 			 * @param	hasSkin if the Shader must support skeletal animation
 			 *			or not
-			 * @return	a pointer to the new Shader */
+			 * @return	a pointer to the new Shader, null if it couldn't be
+			 *			created */
 			virtual ShaderSPtr createShader(
-				const Material& material, bool hasSkin
+				const char* name, const Material& material, bool hasSkin
 			) = 0;
 		};
 

@@ -7,6 +7,7 @@
 #include "se/app/TransformsComponent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
+#include "se/app/ParticleSystemComponent.h"
 #include "se/app/IViewProjectionUpdater.h"
 
 namespace se::app {
@@ -59,22 +60,26 @@ namespace se::app {
 			.set<CameraComponent>()
 			.set<MeshComponent>()
 			.set<TerrainComponent>()
+			.set<ParticleSystemComponent>()
 		);
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		auto forwardRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("forwardRendererMesh"));
-		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
 		auto gBufferRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererTerrain"));
+		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
+		auto gBufferRendererParticles = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererParticles"));
 		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
 
 		mCameraUniformsUpdater = new CameraUniformsUpdater(
-			this, { forwardRendererMesh, gBufferRendererMesh, gBufferRendererTerrain }, "uViewMatrix", "uProjectionMatrix"
+			this, { forwardRendererMesh, gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles },
+			"uViewMatrix", "uProjectionMatrix"
 		);
 
 		mFrustumFilter = std::make_shared<graphics::FrustumFilter>();
 		forwardRendererMesh->addFilter(mFrustumFilter);
-		gBufferRendererMesh->addFilter(mFrustumFilter);
 		gBufferRendererTerrain->addFilter(mFrustumFilter);
+		gBufferRendererMesh->addFilter(mFrustumFilter);
+		gBufferRendererParticles->addFilter(mFrustumFilter);
 	}
 
 
@@ -102,8 +107,8 @@ namespace se::app {
 
 	void CameraSystem::onNewEntity(Entity entity)
 	{
-		auto [transforms, camera, mesh, terrain] = mEntityDatabase.getComponents<
-			TransformsComponent, CameraComponent, MeshComponent, TerrainComponent
+		auto [transforms, camera, mesh, terrain, particleSystem] = mEntityDatabase.getComponents<
+			TransformsComponent, CameraComponent, MeshComponent, TerrainComponent, ParticleSystemComponent
 		>(entity);
 
 		if (camera) {
@@ -128,13 +133,19 @@ namespace se::app {
 				mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader);
 			});
 		}
+		if (particleSystem) {
+			mCameraUniformsUpdater->addRenderable(particleSystem->get());
+			particleSystem->processRenderableShaders([&](const auto& shader) {
+				mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader);
+			});
+		}
 	}
 
 
 	void CameraSystem::onRemoveEntity(Entity entity)
 	{
-		auto [camera, mesh, terrain] = mEntityDatabase.getComponents<
-			CameraComponent, MeshComponent, TerrainComponent
+		auto [camera, mesh, terrain, particleSystem] = mEntityDatabase.getComponents<
+			CameraComponent, MeshComponent, TerrainComponent, ParticleSystemComponent
 		>(entity);
 
 		if (mesh) {
@@ -144,6 +155,9 @@ namespace se::app {
 		}
 		if (terrain) {
 			mCameraUniformsUpdater->removeRenderable(terrain->get());
+		}
+		if (particleSystem) {
+			mCameraUniformsUpdater->removeRenderable(particleSystem->get());
 		}
 
 		if (mCamera == camera) {
@@ -212,20 +226,7 @@ namespace se::app {
 
 	void CameraSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
-		if (event.isTerrain()) {
-			auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
-			if (terrain) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						mCameraUniformsUpdater->addRenderableShader(terrain->get(), event.getShader());
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderableShader(terrain->get(), event.getShader());
-						break;
-				}
-			}
-		}
-		else {
+		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
 			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
 			if (mesh) {
 				switch (event.getOperation()) {
@@ -234,6 +235,28 @@ namespace se::app {
 						break;
 					case RenderableShaderEvent::Operation::Remove:
 						mCameraUniformsUpdater->removeRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						break;
+				}
+			}
+		}
+		else {
+			graphics::Renderable* renderable = nullptr;
+			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
+				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
+				renderable = &terrain->get();
+			}
+			else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::ParticleSystem) {
+				auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(event.getEntity());
+				renderable = &particleSystem->get();
+			}
+
+			if (renderable) {
+				switch (event.getOperation()) {
+					case RenderableShaderEvent::Operation::Add:
+						mCameraUniformsUpdater->addRenderableShader(*renderable, event.getShader());
+						break;
+					case RenderableShaderEvent::Operation::Remove:
+						mCameraUniformsUpdater->removeRenderableShader(*renderable, event.getShader());
 						break;
 				}
 			}

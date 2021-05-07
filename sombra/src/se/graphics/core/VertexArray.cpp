@@ -40,12 +40,35 @@ namespace se::graphics {
 	}
 
 
+	unsigned int VertexArray::getMaxAttributes()
+	{
+		int maxAttributes = 0;
+		GL_WRAP( glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttributes) );
+		return maxAttributes;
+	}
+
+
+	void VertexArray::enableAttribute(unsigned int index)
+	{
+		bind();
+		GL_WRAP( glEnableVertexAttribArray(index) );
+	}
+
+
+	bool VertexArray::isAttributeEnabled(unsigned int index) const
+	{
+		int enabled = 0;
+		bind();
+		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled) );
+		return enabled != 0;
+	}
+
+
 	void VertexArray::setVertexAttribute(
 		unsigned int index,
 		TypeId type, bool normalized, int componentSize, std::size_t stride, std::size_t offset
 	) {
 		bind();
-		GL_WRAP( glEnableVertexAttribArray(index) );
 		GL_WRAP( glVertexAttribPointer(
 			index, componentSize, toGLType(type), normalized,
 			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
@@ -58,7 +81,6 @@ namespace se::graphics {
 		TypeId type, int componentSize, std::size_t stride, std::size_t offset
 	) {
 		bind();
-		GL_WRAP( glEnableVertexAttribArray(index) );
 		GL_WRAP( glVertexAttribLPointer(
 			index, componentSize, toGLType(type),
 			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
@@ -71,7 +93,6 @@ namespace se::graphics {
 		TypeId type, int componentSize, std::size_t stride, std::size_t offset
 	) {
 		bind();
-		GL_WRAP( glEnableVertexAttribArray(index) );
 		GL_WRAP( glVertexAttribIPointer(
 			index, componentSize, toGLType(type),
 			static_cast<GLsizei>(stride), reinterpret_cast<const void*>(offset)
@@ -79,12 +100,21 @@ namespace se::graphics {
 	}
 
 
-	bool VertexArray::hasVertexAttribute(unsigned int index) const
+	bool VertexArray::isDoubleAttribute(unsigned int index) const
 	{
-		int enabled = 0;
+		int res = 0;
 		bind();
-		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled) );
-		return enabled != 0;
+		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_LONG, &res) );
+		return res != 0;
+	}
+
+
+	bool VertexArray::isIntegerAttribute(unsigned int index) const
+	{
+		int res = 0;
+		bind();
+		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_INTEGER, &res) );
+		return res != 0;
 	}
 
 
@@ -131,6 +161,13 @@ namespace se::graphics {
 		bind();
 		GL_WRAP( glGetVertexAttribIuiv(index, GL_VERTEX_ATTRIB_ARRAY_DIVISOR, &divisor) );
 		return divisor;
+	}
+
+
+	void VertexArray::disableAttribute(unsigned int index)
+	{
+		bind();
+		GL_WRAP( glDisableVertexAttribArray(index) );
 	}
 
 

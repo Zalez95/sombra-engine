@@ -12,6 +12,7 @@
 #include <se/app/TerrainComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/AnimationComponent.h>
+#include <se/app/ParticleSystemComponent.h>
 #include <se/app/graphics/TextureUtils.h>
 #include <se/physics/RigidBody.h>
 #include <se/collision/BoundingBox.h>
@@ -357,7 +358,7 @@ namespace editor {
 						}
 
 						if (ImGui::TreeNode("Shaders:")) {
-							std::shared_ptr<se::app::RenderableShader> shader;
+							std::shared_ptr<RenderableShader> shader;
 							std::string buttonName2 = "##MeshComponent::AddShaderMesh" + std::to_string(i);
 							if (addRepoDropdownButton(buttonName2.c_str(), "Add Shader", mEditor.getScene()->repository, shader)) {
 								mesh->addRenderableShader(i, shader);
@@ -371,7 +372,7 @@ namespace editor {
 								}
 								else {
 									ImGui::SameLine();
-									std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
+									std::shared_ptr<RenderableShader> shader2 = shader1;
 									std::string dropdownName2 = "##MeshComponent::SelectShader" + std::to_string(shaderIndex++) + "Mesh" + std::to_string(i);
 									if (addRepoDropdownShowSelected(dropdownName2.c_str(), mEditor.getScene()->repository, shader2)) {
 										mesh->removeRenderableShader(i, shader1);
@@ -408,19 +409,25 @@ namespace editor {
 			// TODO: lod and size
 
 			if (ImGui::TreeNode("Shaders:")) {
-				std::shared_ptr<se::app::RenderableShader> shader;
+				std::shared_ptr<RenderableShader> shader;
 				if (addRepoDropdownButton("##TerrainComponent::Shader", "Add Shader", mEditor.getScene()->repository, shader)) {
 					terrain->addRenderableShader(shader);
 				}
 
+				std::size_t shaderIndex = 0;
 				terrain->processRenderableShaders([&](const auto& shader1) {
-					ImGui::Text("Shader:");
-					ImGui::SameLine();
-					ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
-					std::shared_ptr<se::app::RenderableShader> shader2 = shader1;
-					if (addRepoDropdownShowSelected("##TerrainComponent::Shader2", mEditor.getScene()->repository, shader2)) {
+					std::string buttonName = "x##TerrainComponent::RemoveShader" + std::to_string(shaderIndex++);
+					if (ImGui::Button(buttonName.c_str())) {
 						terrain->removeRenderableShader(shader1);
-						terrain->addRenderableShader(shader2);
+					}
+					else {
+						ImGui::SameLine();
+						std::shared_ptr<RenderableShader> shader2 = shader1;
+						std::string dropdownName2 = "##TerrainComponent::SelectShader" + std::to_string(shaderIndex++);
+						if (addRepoDropdownShowSelected(dropdownName2.c_str(), mEditor.getScene()->repository, shader2)) {
+							terrain->removeRenderableShader(shader1);
+							terrain->addRenderableShader(shader2);
+						}
 					}
 				});
 				ImGui::TreePop();
@@ -659,7 +666,7 @@ namespace editor {
 					auto image = TextureUtils::textureToImage<unsigned char>(
 						*mHeightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
 					);
-					auto heights = se::app::MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
+					auto heights = MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
 					terrain.setHeights(heights.data(), image.width, image.height);
 				}
 				ImGui::TreePop();
@@ -746,6 +753,68 @@ namespace editor {
 	};
 
 
+	class ComponentPanel::ParticleSystemComponentNode : public ComponentPanel::ComponentNode<ParticleSystemComponent>
+	{
+	public:		// Functions
+		ParticleSystemComponentNode(Editor& editor) : ComponentNode(editor) {};
+		virtual const char* getName() const override
+		{ return "ParticleSystem"; };
+		virtual void create(Entity entity) override
+		{
+			mEditor.getEntityDatabase().emplaceComponent<ParticleSystemComponent>(entity, mEditor.getEventManager(), entity);
+		};
+		virtual void draw(Entity entity) override
+		{
+			auto [particleSystem] = mEditor.getEntityDatabase().getComponents<ParticleSystemComponent>(entity);
+
+			std::shared_ptr<Mesh> mesh = particleSystem->getMesh();
+			if (addRepoDropdownShowSelected("Mesh##ParticleSystemComponent::Mesh", mEditor.getScene()->repository, mesh)) {
+				particleSystem->setMesh(mesh);
+			}
+
+			if (ImGui::TreeNode("Shaders:")) {
+				if (!mesh) {
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				std::shared_ptr<RenderableShader> shader;
+				if (addRepoDropdownButton("##ParticleSystemComponent::Shader", "Add Shader", mEditor.getScene()->repository, shader)) {
+					particleSystem->addRenderableShader(shader);
+				}
+
+				std::size_t shaderIndex = 0;
+				particleSystem->processRenderableShaders([&](const auto& shader1) {
+					std::string buttonName = "x##ParticleSystemComponent::RemoveShader" + std::to_string(shaderIndex++);
+					if (ImGui::Button(buttonName.c_str())) {
+						particleSystem->removeRenderableShader(shader1);
+					}
+					else {
+						ImGui::SameLine();
+						std::shared_ptr<RenderableShader> shader2 = shader1;
+						std::string dropdownName2 = "##ParticleSystemComponent::SelectShader" + std::to_string(shaderIndex++);
+						if (addRepoDropdownShowSelected(dropdownName2.c_str(), mEditor.getScene()->repository, shader2)) {
+							particleSystem->removeRenderableShader(shader1);
+							particleSystem->addRenderableShader(shader2);
+						}
+					}
+				});
+
+				if (!mesh) {
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
+				ImGui::TreePop();
+			}
+
+			std::shared_ptr<ParticleEmitter> emitter = particleSystem->getEmitter();
+			if (addRepoDropdownShowSelected("Emitter##ParticleSystemComponent::Emitter", mEditor.getScene()->repository, emitter)) {
+				particleSystem->setEmitter(emitter);
+			}
+		};
+	};
+
+
 	ComponentPanel::ComponentPanel(Editor& editor) : mEditor(editor)
 	{
 		mNodes.emplace_back(new TagComponentNode(mEditor));
@@ -758,6 +827,7 @@ namespace editor {
 		mNodes.emplace_back(new TerrainComponentNode(mEditor));
 		mNodes.emplace_back(new RigidBodyComponentNode(mEditor));
 		mNodes.emplace_back(new ColliderComponentNode(mEditor));
+		mNodes.emplace_back(new ParticleSystemComponentNode(mEditor));
 	}
 
 

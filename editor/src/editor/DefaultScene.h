@@ -79,8 +79,15 @@ namespace editor {
 			throw std::runtime_error("Couldn't create programGBufSplatmap: " + std::string(result.description()));
 		}
 
+		std::shared_ptr<Program> programGBufParticles;
+		result = ShaderLoader::createProgram("res/shaders/vertexParticlesFaceCamera.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufParticles);
+		if (!result) {
+			throw std::runtime_error("Couldn't create programGBufParticles: " + std::string(result.description()));
+		}
+
 		auto shadowRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
 		auto gBufferRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+		auto gBufferRendererParticles = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
 
 		auto passShadow = std::make_shared<Pass>(*shadowRendererMesh);
 		passShadow->addBindable(programShadow);
@@ -99,9 +106,23 @@ namespace editor {
 			programGBufMaterial
 		);
 
+		auto passParticlesDefault = std::make_shared<Pass>(*gBufferRendererParticles);
+		passParticlesDefault->addBindable(programGBufParticles);
+		ShaderLoader::addMaterialBindables(
+			passParticlesDefault,
+			Material{
+				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
+				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), AlphaMode::Opaque, 0.5f, false
+			},
+			programGBufParticles
+		);
+
 		auto shaderDefault = std::make_shared<RenderableShader>(scene.application.getEventManager());
 		shaderDefault->addPass(passShadow)
 			.addPass(passDefault);
+
+		auto shaderParticlesDefault = std::make_shared<RenderableShader>(scene.application.getEventManager());
+		shaderParticlesDefault->addPass(passParticlesDefault);
 
 		scene.repository.add<Scene::Key, Mesh>("cube", cubeMesh);
 		scene.repository.add<Scene::Key, LightSource>("pointLight", pointLight);
@@ -109,7 +130,9 @@ namespace editor {
 		scene.repository.add(Scene::Key("passShadow"), passShadow);
 		scene.repository.add(Scene::Key("passShadowSkinning"), passShadowSkinning);
 		scene.repository.add(Scene::Key("passDefault"), passDefault);
+		scene.repository.add(Scene::Key("passParticlesDefault"), passParticlesDefault);
 		scene.repository.add(Scene::Key("shaderDefault"), shaderDefault);
+		scene.repository.add(Scene::Key("shaderParticlesDefault"), shaderParticlesDefault);
 		scene.repository.add<Scene::Key, Program>("programShadow", std::move(programShadow));
 		scene.repository.emplace<Scene::Key, ResourcePath<Program>>("programShadow", "res/shaders/vertex3D.glsl,,");
 		scene.repository.add<Scene::Key, Program>("programShadowSkinning", std::move(programShadowSkinning));
@@ -124,6 +147,8 @@ namespace editor {
 		scene.repository.emplace<Scene::Key, ResourcePath<Program>>("programGBufMaterialSkinning", "res/shaders/vertexNormalMapSkinning.glsl,,res/shaders/fragmentGBufMaterial.glsl");
 		scene.repository.add<Scene::Key, Program>("programGBufSplatmap", std::move(programGBufSplatmap));
 		scene.repository.emplace<Scene::Key, ResourcePath<Program>>("programGBufSplatmap", "res/shaders/vertexTerrain.glsl,res/shaders/geometryTerrain.glsl,res/shaders/fragmentGBufSplatmap.glsl");
+		scene.repository.add<Scene::Key, Program>("programGBufParticles", std::move(programGBufParticles));
+		scene.repository.emplace<Scene::Key, ResourcePath<Program>>("programGBufParticles", "res/shaders/vertexParticlesFaceCamera.glsl,,res/shaders/fragmentGBufMaterial.glsl");
 
 		// Default Scene entities
 		auto cubeEntity = scene.application.getEntityDatabase().addEntity();

@@ -79,7 +79,7 @@ namespace se::app {
 		 *
 		 * @param	hasSkinning if the new mesh has skinning or not
 		 * @param	mesh a pointer to the Mesh of the RenderableMesh
-		 * @param	primitiveMesh the type of primitive used for rendering
+		 * @param	primitiveType the type of primitive used for rendering
 		 * @return	the index used for accesing the new RenderableMesh */
 		std::size_t add(
 			bool hasSkinning,

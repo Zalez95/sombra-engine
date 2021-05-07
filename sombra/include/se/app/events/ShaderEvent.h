@@ -31,7 +31,7 @@ namespace se::app {
 
 	public:		// Functions
 		/** Creates a new ShaderEvent used for notifying of a RenderableShader
-		 * add/remove Operation on RenderableTerrain
+		 * add/remove Operation on a Renderable Component
 		 *
 		 * @param	operation the Operation to perform
 		 * @param	renderableShader the RenderableShader updated

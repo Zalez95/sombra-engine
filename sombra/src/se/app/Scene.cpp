@@ -10,6 +10,7 @@
 #include "se/graphics/3D/Mesh.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/ParticleSystemComponent.h"
 #include "se/app/RenderableShader.h"
 #include "se/app/Scene.h"
 
@@ -19,6 +20,7 @@ namespace se::app {
 	{
 		repository.init<Key, Skin>();
 		repository.init<Key, LightSource>();
+		repository.init<Key, ParticleEmitter>();
 		repository.init<Key, RenderableShader>();
 		repository.init<Key, animation::SkeletonAnimator>();
 		repository.init<Key, audio::Buffer>();

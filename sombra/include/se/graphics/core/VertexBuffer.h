@@ -45,14 +45,16 @@ namespace se::graphics {
 
 		/** Resizes and sets the buffer data
 		 *
-		 * @param	data a pointer to the data of the buffer
+		 * @param	data a pointer to the data of the buffer, if it's nullptr
+		 *			it will only resize the buffer
 		 * @param	count the number of elements in the data array */
 		template <typename T>
 		void resizeAndCopy(const T* data, std::size_t count);
 
 		/** Resizes and sets the buffer data
 		 *
-		 * @param	data a pointer to the data of the new buffer
+		 * @param	data a pointer to the data of the new buffer, if it's
+		 *			nullptr it will only resize the buffer
 		 * @param	size the size of the data buffer */
 		void resizeAndCopy(const void* data, std::size_t size);
 

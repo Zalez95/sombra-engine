@@ -4,13 +4,6 @@
 
 namespace se::graphics {
 
-	Renderable3D& Renderable3D::setModelMatrix(const glm::mat4& modelMatrix)
-	{
-		mModelMatrix = modelMatrix;
-		return *this;
-	}
-
-
 	Renderable3D& Renderable3D::addPassBindable(Pass* pass, BindableSPtr bindable)
 	{
 		if (pass && bindable) {

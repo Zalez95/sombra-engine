@@ -7,7 +7,9 @@ namespace se::app {
 	{
 		mShaders.emplace_back(shader);
 		mRenderableTerrain.addTechnique(shader->getTechnique());
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, shader));
+		mEventManager.publish(new RenderableShaderEvent(
+			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader
+		));
 	}
 
 
@@ -15,7 +17,9 @@ namespace se::app {
 	{
 		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
 		mRenderableTerrain.removeTechnique(shader->getTechnique());
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, shader));
+		mEventManager.publish(new RenderableShaderEvent(
+			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader
+		));
 	}
 
 }

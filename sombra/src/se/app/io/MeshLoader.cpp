@@ -25,6 +25,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.positions.data(), rawMesh.positions.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::PositionAttribute);
 			vao.setVertexAttribute(MeshAttributes::PositionAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.normals.empty()) {
@@ -32,6 +33,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.normals.data(), rawMesh.normals.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::NormalAttribute);
 			vao.setVertexAttribute(MeshAttributes::NormalAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.tangents.empty()) {
@@ -39,6 +41,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.tangents.data(), rawMesh.tangents.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::TangentAttribute);
 			vao.setVertexAttribute(MeshAttributes::TangentAttribute, TypeId::Float, false, 3, 0);
 		}
 		if (!rawMesh.texCoords.empty()) {
@@ -46,6 +49,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.texCoords.data(), rawMesh.texCoords.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::TexCoordAttribute0);
 			vao.setVertexAttribute(MeshAttributes::TexCoordAttribute0, TypeId::Float, false, 2, 0);
 		}
 		if (!rawMesh.jointIndices.empty()) {
@@ -53,6 +57,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::JointIndexAttribute);
 			vao.setVertexIntegerAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, 4, 0);
 		}
 		if (!rawMesh.jointWeights.empty()) {
@@ -60,6 +65,7 @@ namespace se::app {
 			vbo.resizeAndCopy(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
 
 			vbo.bind();
+			vao.enableAttribute(MeshAttributes::JointWeightAttribute);
 			vao.setVertexAttribute(MeshAttributes::JointWeightAttribute, TypeId::Float, false, 4, 0);
 		}
 
@@ -81,37 +87,37 @@ namespace se::app {
 		RawMesh ret;
 
 		for (const auto& vbo : gMesh.getVBOs()) {
-			if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::PositionAttribute)
+			if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::PositionAttribute)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::PositionAttribute, vbo)
 			) {
 				ret.positions.resize(vbo.size() / sizeof(glm::vec3));
 				vbo.read(ret.positions.data(), ret.positions.size());
 			}
-			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::NormalAttribute)
+			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::NormalAttribute)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::NormalAttribute, vbo)
 			) {
 				ret.normals.resize(vbo.size() / sizeof(glm::vec3));
 				vbo.read(ret.normals.data(), ret.normals.size());
 			}
-			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::TangentAttribute)
+			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::TangentAttribute)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TangentAttribute, vbo)
 			) {
 				ret.tangents.resize(vbo.size() / sizeof(glm::vec3));
 				vbo.read(ret.tangents.data(), ret.tangents.size());
 			}
-			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::TexCoordAttribute0)
+			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::TexCoordAttribute0)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TexCoordAttribute0, vbo)
 			) {
 				ret.texCoords.resize(vbo.size() / sizeof(glm::vec2));
 				vbo.read(ret.texCoords.data(), ret.texCoords.size());
 			}
-			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::JointIndexAttribute)
+			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::JointIndexAttribute)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointIndexAttribute, vbo)
 			) {
 				ret.jointIndices.resize(vbo.size() / sizeof(glm::u16vec4));
 				vbo.read(ret.jointIndices.data(), ret.jointIndices.size());
 			}
-			else if (gMesh.getVAO().hasVertexAttribute(MeshAttributes::JointWeightAttribute)
+			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::JointWeightAttribute)
 				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointWeightAttribute, vbo)
 			) {
 				ret.jointWeights.resize(vbo.size() / sizeof(glm::vec4));
@@ -275,10 +281,10 @@ namespace se::app {
 				ret.positions.emplace_back(j * stepL - halfL, 0.0f, i * stepL - halfL);
 
 				if ((i > 0) && (j > 0)) {
-					unsigned short topLeft = (i - 1) * (numSquares + 1) + j - 1;
-					unsigned short topRight = (i - 1) * (numSquares + 1) + j;
-					unsigned short bottomLeft = i * (numSquares + 1) + j - 1;
-					unsigned short bottomRight = i * (numSquares + 1) + j;
+					unsigned short topLeft = (i - 1) * (static_cast<unsigned short>(numSquares) + 1) + j - 1;
+					unsigned short topRight = (i - 1) * (static_cast<unsigned short>(numSquares) + 1) + j;
+					unsigned short bottomLeft = i * (static_cast<unsigned short>(numSquares) + 1) + j - 1;
+					unsigned short bottomRight = i * (static_cast<unsigned short>(numSquares) + 1) + j;
 					ret.indices.insert(ret.indices.end(), {
 						topLeft, bottomLeft, bottomLeft, bottomRight, bottomRight, topRight, topRight, topLeft
 					});
@@ -302,8 +308,8 @@ namespace se::app {
 		rawMesh.positions.push_back({ 0.0f, -radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
 			rawMesh.indices.push_back(0);
-			rawMesh.indices.push_back(j + 1);
-			rawMesh.indices.push_back((j + 1 < segments)? j + 2 : 1);
+			rawMesh.indices.push_back(static_cast<unsigned short>(j + 1));
+			rawMesh.indices.push_back(static_cast<unsigned short>((j + 1 < segments)? j + 2 : 1));
 		}
 
 		// Creates the internal rings
@@ -313,9 +319,11 @@ namespace se::app {
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.indices.push_back(rawMesh.positions.size() - 2 - segments + j);
-			rawMesh.indices.push_back(rawMesh.positions.size() - 1);
-			rawMesh.indices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 2 - segments + j));
+			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 1));
+			rawMesh.indices.push_back(static_cast<unsigned short>(
+				(j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments
+			));
 		}
 
 		return rawMesh;
@@ -337,9 +345,11 @@ namespace se::app {
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.indices.push_back(rawMesh.positions.size() - 2 - segments + j);
-			rawMesh.indices.push_back(rawMesh.positions.size() - 1);
-			rawMesh.indices.push_back((j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments);
+			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 2 - segments + j));
+			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 1));
+			rawMesh.indices.push_back(static_cast<unsigned short>(
+				(j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments
+			));
 		}
 
 		return rawMesh;
@@ -428,7 +438,7 @@ namespace se::app {
 		std::size_t segments, std::size_t rings, float radius,
 		glm::vec2 latitude
 	) {
-		std::size_t currentRingIndex = rawMesh.positions.size();
+		unsigned short currentRingIndex = static_cast<unsigned short>(rawMesh.positions.size());
 
 		// Creates the vertices
 		float segmentAngle = glm::two_pi<float>() / segments;
@@ -449,10 +459,10 @@ namespace se::app {
 
 		// Creates the face indices
 		for (std::size_t i = 0; i < rings; ++i) {
-			std::size_t previousRingIndex = currentRingIndex;
-			currentRingIndex += segments;
+			unsigned short previousRingIndex = currentRingIndex;
+			currentRingIndex += static_cast<unsigned short>(segments);
 
-			for (std::size_t j = 0; j < segments; ++j) {
+			for (unsigned short j = 0; j < static_cast<unsigned short>(segments); ++j) {
 				rawMesh.indices.push_back(previousRingIndex + j);
 				rawMesh.indices.push_back(currentRingIndex + j);
 				rawMesh.indices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);

@@ -166,7 +166,9 @@ namespace se::app {
 	void MeshSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
 		auto itEntity = mEntityUniforms.find(event.getEntity());
-		if (itEntity == mEntityUniforms.end() || event.isTerrain()) {
+		if ((itEntity == mEntityUniforms.end())
+			|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh)
+		) {
 			return;
 		}
 
