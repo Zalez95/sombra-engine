@@ -9,7 +9,7 @@
 namespace se::app {
 
 	GaussianBlurNode::GaussianBlurNode(
-		const std::string& name, utils::Repository& repository,
+		const std::string& name, Repository& repository,
 		std::size_t width, std::size_t height, bool horizontal
 	) : BindableRenderNode(name)
 	{

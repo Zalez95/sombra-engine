@@ -1,20 +1,40 @@
 #ifndef IMGUI_UTILS_HPP
 #define IMGUI_UTILS_HPP
 
-#include <imgui.h>
-
 namespace editor {
 
-	template <typename T>
-	bool addRepoDropdownButton(const char* tag, const char* buttonName, se::utils::Repository& repository, std::shared_ptr<T>& selectedValue)
+	template <typename K, typename V>
+	bool addRepoDropdownButton(const char* tag, const char* buttonName, se::app::Repository& repository, K& key)
 	{
 		bool ret = false;
 
 		if (ImGui::BeginCombo(tag, buttonName)) {
-			repository.iterate<std::string, T>([&](const std::string& k, std::shared_ptr<T>& v) {
-				bool isSelected = (v == selectedValue);
+			repository.iterate<K, V>([&](const K& k, std::shared_ptr<V>&) {
+				bool isSelected = (k == key);
 				if (ImGui::Selectable(k.c_str(), isSelected)) {
-					selectedValue = v;
+					key = k;
+					ret = true;
+				}
+				if (isSelected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			});
+			ImGui::EndCombo();
+		}
+
+		return ret;
+	}
+
+	template <typename K, typename V>
+	bool addRepoDropdownButtonValue(const char* tag, const char* buttonName, se::app::Repository& repository, std::shared_ptr<V>& value)
+	{
+		bool ret = false;
+
+		if (ImGui::BeginCombo(tag, buttonName)) {
+			repository.iterate<K, V>([&](const K& k, std::shared_ptr<V>& v) {
+				bool isSelected = (v == value);
+				if (ImGui::Selectable(k.c_str(), isSelected)) {
+					value = v;
 					ret = true;
 				}
 				if (isSelected) {
@@ -28,29 +48,19 @@ namespace editor {
 	}
 
 
-	template <typename T>
-	bool addRepoDropdownShowSelected(const char* tag, se::utils::Repository& repository, std::shared_ptr<T>& selectedValue)
+	template <typename K, typename V>
+	bool addRepoDropdownShowSelected(const char* tag, se::app::Repository& repository, K& key)
 	{
-		bool ret = false;
+		return addRepoDropdownButton<K, V>(tag, key.c_str(), repository, key);
+	}
 
-		std::string selectedValueName = "";
-		repository.findKey<std::string, T>(selectedValue, selectedValueName);
 
-		if (ImGui::BeginCombo(tag, selectedValueName.c_str())) {
-			repository.iterate<std::string, T>([&](const std::string& k, std::shared_ptr<T>& v) {
-				bool isSelected = (v == selectedValue);
-				if (ImGui::Selectable(k.c_str(), isSelected)) {
-					selectedValue = v;
-					ret = true;
-				}
-				if (isSelected) {
-					ImGui::SetItemDefaultFocus();
-				}
-			});
-			ImGui::EndCombo();
-		}
-
-		return ret;
+	template <typename K, typename V>
+	bool addRepoDropdownShowSelectedValue(const char* tag, se::app::Repository& repository, std::shared_ptr<V>& value)
+	{
+		K key;
+		repository.findKey<K, V>(value, key);
+		return addRepoDropdownButtonValue<K, V>(tag, key.c_str(), repository, value);
 	}
 
 }

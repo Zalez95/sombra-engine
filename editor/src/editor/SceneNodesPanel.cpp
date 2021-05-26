@@ -8,18 +8,19 @@
 
 namespace editor {
 
-	void SceneNodesPanel::render()
+	bool SceneNodesPanel::render()
 	{
-		if (!ImGui::Begin("Scene Hierarchy Panel")) {
+		bool open = true;
+		if (!ImGui::Begin(("Scene Hierarchy Panel##SceneNodesPanel" + std::to_string(mPanelId)).c_str(), &open)) {
 			ImGui::End();
-			return;
+			return open;
 		}
 
 		se::app::Scene* scene = mEditor.getScene();
 		if (!scene) {
 			mSelectedNode = NodeIterator();
 			ImGui::End();
-			return;
+			return open;
 		}
 		se::animation::AnimationNode* root = &scene->rootNode;
 
@@ -47,10 +48,13 @@ namespace editor {
 
 				ImGui::Separator();
 				ImGui::Text("Node selected: 0x%p", static_cast<void*>(&(*mSelectedNode)));
-				ImGui::InputText("Name##AnimationNodeName", animationData.name.data(), animationData.name.size());
+				ImGui::InputText(
+					("Name##SceneNodesPanel" + std::to_string(mPanelId) + "::name").c_str(),
+					animationData.name.data(), animationData.name.size()
+				);
 				ImGui::Text("Local transforms:");
 				updated |= ImGui::DragFloat3("Position", glm::value_ptr(animationData.localTransforms.position), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
-				updated |= drawOrientation("Orientation##AnimationNodeOrientation", animationData.localTransforms.orientation, mOrientationType);
+				updated |= drawOrientation("Orientation", animationData.localTransforms.orientation, mOrientationType);
 				updated |= ImGui::DragFloat3("Scale", glm::value_ptr(animationData.localTransforms.scale), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 				animationData.animated = updated;
 			}
@@ -84,7 +88,10 @@ namespace editor {
 		if (mAdd) {
 			ImGui::OpenPopup("addPopup");
 			if (ImGui::BeginPopup("addPopup")) {
-				ImGui::InputText("Name##addName", mWorkingData.name.data(), mWorkingData.name.size());
+				ImGui::InputText(
+					("Name##SceneNodesPanel" + std::to_string(mPanelId) + "::add").c_str(),
+					mWorkingData.name.data(), mWorkingData.name.size()
+				);
 				if (ImGui::Button("Add")) {
 					mAdd = false;
 					fixWorkingDataName();
@@ -109,7 +116,10 @@ namespace editor {
 					mRoot = (current == 0);
 				}
 				if (!mRoot) {
-					ImGui::InputText("Name##changeParentName", mWorkingData.name.data(), mWorkingData.name.size());
+					ImGui::InputText(
+						("Name##SceneNodesPanel" + std::to_string(mPanelId) + "::changeParent").c_str(),
+						mWorkingData.name.data(), mWorkingData.name.size()
+					);
 				}
 				ImGui::Checkbox("Update descendants", &mDescendants);
 
@@ -142,6 +152,7 @@ namespace editor {
 		}
 
 		ImGui::End();
+		return open;
 	}
 
 

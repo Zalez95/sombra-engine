@@ -8,7 +8,6 @@
 #include <se/graphics/core/GraphicsOperations.h>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
-#include <se/app/EntityDatabase.h>
 #include <se/app/RenderableShader.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraComponent.h>
@@ -16,6 +15,11 @@
 #include <se/app/events/ContainerEvent.h>
 #include "Editor.h"
 #include "ViewportControl.h"
+#include "EntityPanel.h"
+#include "ComponentPanel.h"
+#include "RepositoryPanel.h"
+#include "SceneNodesPanel.h"
+#include "Gizmo.h"
 
 namespace editor {
 
@@ -28,8 +32,7 @@ namespace editor {
 			kUpdateTime
 		),
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),
-		mMenuBar(nullptr), mEntityPanel(nullptr), mComponentPanel(nullptr),
-		mRepositoryPanel(nullptr), mSceneNodesPanel(nullptr), mGizmo(nullptr),
+		mMenuBar(nullptr), mPanelIdCount(0),
 		mViewportEntity(se::app::kNullEntity), mGridEntity(se::app::kNullEntity),
 		mActiveEntity(se::app::kNullEntity),
 		mScene(nullptr)
@@ -123,11 +126,11 @@ namespace editor {
 
 		/**** Add the GUI components ****/
 		mMenuBar = new MenuBar(*this);
-		mEntityPanel = new EntityPanel(*this);
-		mComponentPanel = new ComponentPanel(*this);
-		mRepositoryPanel = new RepositoryPanel(*this);
-		mSceneNodesPanel = new SceneNodesPanel(*this);
-		mGizmo = new Gizmo(*this);
+		addPanel(new EntityPanel(*this));
+		addPanel(new ComponentPanel(*this));
+		addPanel(new RepositoryPanel(*this));
+		addPanel(new SceneNodesPanel(*this));
+		addPanel(new Gizmo(*this));
 
 		/**** Create the Entity used for controlling the viewport ****/
 		mViewportEntity = mEntityDatabase->addEntity();
@@ -184,11 +187,9 @@ namespace editor {
 		if (mGridEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mGridEntity); }
 		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
 
-		if (mGizmo) { delete mGizmo; }
-		if (mSceneNodesPanel) { delete mSceneNodesPanel; }
-		if (mRepositoryPanel) { delete mRepositoryPanel; }
-		if (mComponentPanel) { delete mComponentPanel; }
-		if (mEntityPanel) { delete mEntityPanel; }
+		for (IEditorPanel* panel : mPanels) {
+			delete panel;
+		}
 		if (mMenuBar) { delete mMenuBar; }
 
 		mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
@@ -221,6 +222,13 @@ namespace editor {
 		mScene = nullptr;
 
 		SOMBRA_INFO_LOG << "Scene destroyed";
+	}
+
+
+	void Editor::addPanel(IEditorPanel* panel)
+	{
+		panel->setId(mPanelIdCount++);
+		mPanels.push_back(panel);
 	}
 
 
@@ -272,11 +280,14 @@ namespace editor {
 		ImGui::ShowDemoWindow(&show);
 
 		mMenuBar->render();
-		mRepositoryPanel->render();
-		mComponentPanel->render();
-		mSceneNodesPanel->render();
-		mEntityPanel->render();
-		mGizmo->render();
+		for (auto itPanel = mPanels.begin(); itPanel != mPanels.end();) {
+			if ((*itPanel)->render()) {
+				++itPanel;
+			}
+			else {
+				itPanel = mPanels.erase(itPanel);
+			}
+		}
 
 		ImGui::End();
 

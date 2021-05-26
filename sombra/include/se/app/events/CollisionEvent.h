@@ -3,7 +3,7 @@
 
 #include "Event.h"
 #include "../../collision/Manifold.h"
-#include "../EntityDatabase.h"
+#include "../Entity.h"
 
 namespace se::app {
 

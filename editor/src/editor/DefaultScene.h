@@ -95,6 +95,10 @@ namespace editor {
 		auto passShadowSkinning = std::make_shared<Pass>(*shadowRendererMesh);
 		passShadowSkinning->addBindable(programShadowSkinning);
 
+		auto passShadowTerrain = std::make_shared<Pass>(*shadowRendererMesh);
+		passShadowTerrain->addBindable(programShadowTerrain);
+		ShaderLoader::addHeightMapBindables(passShadowTerrain, chessTexture, 2.0f, 0.5f, programGBufSplatmap);
+
 		auto passDefault = std::make_shared<Pass>(*gBufferRendererMesh);
 		passDefault->addBindable(programGBufMaterial);
 		ShaderLoader::addMaterialBindables(
@@ -106,10 +110,21 @@ namespace editor {
 			programGBufMaterial
 		);
 
-		auto passParticlesDefault = std::make_shared<Pass>(*gBufferRendererParticles);
-		passParticlesDefault->addBindable(programGBufParticles);
+		auto passDefaultTerrain = std::make_shared<Pass>(*gBufferRendererMesh);
+		passDefaultTerrain->addBindable(programGBufSplatmap);
+		SplatmapMaterial sMaterial;
+		sMaterial.splatmapTexture = chessTexture;
+		sMaterial.materials.push_back(BasicMaterial{
+			PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
+			{}, 1.0f
+		});
+		ShaderLoader::addSplatmapMaterialBindables(passDefaultTerrain, sMaterial, programGBufSplatmap);
+		ShaderLoader::addHeightMapBindables(passDefaultTerrain, chessTexture, 2.0f, 0.5f, programGBufSplatmap);
+
+		auto passDefaultParticles = std::make_shared<Pass>(*gBufferRendererParticles);
+		passDefaultParticles->addBindable(programGBufParticles);
 		ShaderLoader::addMaterialBindables(
-			passParticlesDefault,
+			passDefaultParticles,
 			Material{
 				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), AlphaMode::Opaque, 0.5f, false
@@ -121,18 +136,25 @@ namespace editor {
 		shaderDefault->addPass(passShadow)
 			.addPass(passDefault);
 
-		auto shaderParticlesDefault = std::make_shared<RenderableShader>(scene.application.getEventManager());
-		shaderParticlesDefault->addPass(passParticlesDefault);
+		auto shaderDefaultTerrain = std::make_shared<RenderableShader>(scene.application.getEventManager());
+		shaderDefaultTerrain->addPass(passShadowTerrain)
+			.addPass(passDefaultTerrain);
+
+		auto shaderDefaultParticles = std::make_shared<RenderableShader>(scene.application.getEventManager());
+		shaderDefaultParticles->addPass(passDefaultParticles);
 
 		scene.repository.add<Scene::Key, Mesh>("cube", cubeMesh);
 		scene.repository.add<Scene::Key, LightSource>("pointLight", pointLight);
 		scene.repository.add<Scene::Key, Texture>("chessTexture", chessTexture);
 		scene.repository.add(Scene::Key("passShadow"), passShadow);
+		scene.repository.add(Scene::Key("passShadowTerrain"), passShadowTerrain);
 		scene.repository.add(Scene::Key("passShadowSkinning"), passShadowSkinning);
 		scene.repository.add(Scene::Key("passDefault"), passDefault);
-		scene.repository.add(Scene::Key("passParticlesDefault"), passParticlesDefault);
+		scene.repository.add(Scene::Key("passDefaultTerrain"), passDefaultTerrain);
+		scene.repository.add(Scene::Key("passDefaultParticles"), passDefaultParticles);
 		scene.repository.add(Scene::Key("shaderDefault"), shaderDefault);
-		scene.repository.add(Scene::Key("shaderParticlesDefault"), shaderParticlesDefault);
+		scene.repository.add(Scene::Key("shaderDefaultTerrain"), shaderDefaultTerrain);
+		scene.repository.add(Scene::Key("shaderDefaultParticles"), shaderDefaultParticles);
 		scene.repository.add<Scene::Key, Program>("programShadow", std::move(programShadow));
 		scene.repository.emplace<Scene::Key, ResourcePath<Program>>("programShadow", "res/shaders/vertex3D.glsl,,");
 		scene.repository.add<Scene::Key, Program>("programShadowSkinning", std::move(programShadowSkinning));

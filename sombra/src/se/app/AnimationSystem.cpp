@@ -21,34 +21,6 @@ namespace se::app {
 	}
 
 
-	void AnimationSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, animation] = mEntityDatabase.getComponents<TransformsComponent, AnimationComponent>(entity);
-		if (!animation) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Animation) );
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationNode " << animation << " added successfully";
-	}
-
-
-	void AnimationSystem::onRemoveEntity(Entity entity)
-	{
-		auto [animation] = mEntityDatabase.getComponents<AnimationComponent>(entity);
-		if (!animation) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be removed";
-			return;
-		}
-
-		SOMBRA_INFO_LOG << "Animation " << animation << " of Entity " << entity << " removed successfully";
-	}
-
-
 	void AnimationSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Start";
@@ -76,7 +48,8 @@ namespace se::app {
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Animation));
 				}
-			}
+			},
+			true
 		);
 
 		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
@@ -91,7 +64,8 @@ namespace se::app {
 					transforms->scale = nodeData.worldTransforms.scale;
 					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::Animation));
 				}
-			}
+			},
+			true
 		);
 		mEntityDatabase.iterateComponents<TransformsComponent, SkinComponent>(
 			[this](Entity, TransformsComponent* transforms, SkinComponent* skin) {
@@ -100,10 +74,28 @@ namespace se::app {
 						transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Skin));
 					}
 				});
-			}
+			},
+			true
 		);
 
 		SOMBRA_INFO_LOG << "End";
+	}
+
+// Private functions
+	void AnimationSystem::onNewAComponent(Entity entity, AnimationComponent* animationComponent)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset( static_cast<int>(TransformsComponent::Update::Animation) );
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationComponent " << animationComponent << " added successfully";
+	}
+
+
+	void AnimationSystem::onRemoveAComponent(Entity entity, AnimationComponent* animationComponent)
+	{
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationComponent " << animationComponent << " removed successfully";
 	}
 
 }

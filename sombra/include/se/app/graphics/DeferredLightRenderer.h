@@ -1,7 +1,7 @@
 #ifndef DEFERRED_LIGHT_RENDERER_H
 #define DEFERRED_LIGHT_RENDERER_H
 
-#include "../../utils/Repository.h"
+#include "../Repository.h"
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/core/UniformVariable.h"
 #include "../../graphics/core/UniformBuffer.h"
@@ -79,9 +79,7 @@ namespace se::app {
 		 *
 		 * @param	name the name of the RenderNode
 		 * @param	repository the Repository that holds the programs */
-		DeferredLightRenderer(
-			const std::string& name, utils::Repository& repository
-		);
+		DeferredLightRenderer(const std::string& name, Repository& repository);
 
 		/** Class destructor */
 		virtual ~DeferredLightRenderer() = default;

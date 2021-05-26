@@ -2,7 +2,7 @@
 #include <thread>
 #include "se/utils/Log.h"
 #include "se/utils/TaskSet.h"
-#include "se/utils/Repository.h"
+#include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
 #include "se/graphics/core/Texture.h"
@@ -76,7 +76,7 @@ namespace se::app {
 			mEventManager = new EventManager();
 
 			// Repository
-			mRepository = new utils::Repository();
+			mRepository = new Repository();
 			mRepository->init<std::string, graphics::Pass>();
 			mRepository->init<std::string, graphics::Technique>();
 			mRepository->init<std::string, graphics::Program>();

@@ -7,7 +7,7 @@
 
 namespace se::app {
 
-	DeferredLightRenderer::DeferredLightRenderer(const std::string& name, utils::Repository& repository) :
+	DeferredLightRenderer::DeferredLightRenderer(const std::string& name, Repository& repository) :
 		BindableRenderNode(name)
 	{
 		using namespace graphics;

@@ -20,32 +20,6 @@ namespace se::app {
 	}
 
 
-	void ParticleSystemSystem::onNewEntity(Entity entity)
-	{
-		auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(entity);
-		if (!particleSystem) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as ParticleSystem";
-			return;
-		}
-
-		mApplication.getExternalTools().graphicsEngine->addRenderable(&particleSystem->get());
-		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " added successfully";
-	}
-
-
-	void ParticleSystemSystem::onRemoveEntity(Entity entity)
-	{
-		auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(entity);
-		if (!particleSystem) {
-			SOMBRA_INFO_LOG << "ParticleSystem Entity " << entity << " couldn't removed";
-			return;
-		}
-
-		mApplication.getExternalTools().graphicsEngine->removeRenderable(&particleSystem->get());
-		SOMBRA_INFO_LOG << "ParticleSystem Entity " << entity << " removed successfully";
-	}
-
-
 	void ParticleSystemSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the ParticleSystems";
@@ -57,14 +31,37 @@ namespace se::app {
 					particleSystem->setInitialOrientation(transforms->orientation);
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::ParticleSystem));
 				}
-			}
+			},
+			true
 		);
 
-		mEntityDatabase.iterateComponents<ParticleSystemComponent>([this](Entity, ParticleSystemComponent* particleSystem) {
-			particleSystem->update(mDeltaTime);
-		});
+		mEntityDatabase.iterateComponents<ParticleSystemComponent>(
+			[this](Entity, ParticleSystemComponent* particleSystem) {
+				particleSystem->update(mDeltaTime);
+			},
+			true
+		);
 
 		SOMBRA_INFO_LOG << "Update end";
+	}
+
+// Private functions
+	void ParticleSystemSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::ParticleSystem));
+		}
+
+		mApplication.getExternalTools().graphicsEngine->addRenderable(&particleSystem->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " added successfully";
+	}
+
+
+	void ParticleSystemSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	{
+		mApplication.getExternalTools().graphicsEngine->removeRenderable(&particleSystem->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " removed successfully";
 	}
 
 }

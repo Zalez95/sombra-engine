@@ -131,15 +131,16 @@ namespace editor {
 	}
 
 
-	bool addDropdown(const char* name, const char* options[], std::size_t numOptions, std::size_t& selected)
+	bool addDropdown(const char* name, const char* options[], std::size_t numOptions, int& selected)
 	{
 		bool ret = false;
 
-		if (ImGui::BeginCombo(name, options[selected])) {
+		const char* selectedTag = (selected >= 0)? options[selected] : nullptr;
+		if (ImGui::BeginCombo(name, selectedTag)) {
 			for (std::size_t i = 0; i < numOptions; ++i) {
-				bool isSelected = (i == selected);
+				bool isSelected = (static_cast<int>(i) == selected);
 				if (ImGui::Selectable(options[i], isSelected)) {
-					selected = i;
+					selected = static_cast<int>(i);
 					ret = true;
 				}
 				if (isSelected) {
@@ -209,19 +210,21 @@ namespace editor {
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::InputText("Location", location.data(), location.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText("", location.data(), location.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
 			fs::path nextCurrentPath(location.data());
 			if (fs::exists(nextCurrentPath) && fs::is_directory(nextCurrentPath)) {
 				mCurrentPath = nextCurrentPath;
 			}
 		}
+		ImGui::SameLine();
+		mFilter.Draw("Search");
 
 		ImGui::Separator();
 
 		// Content
 		bool open = false;
 
-		const float reservedForFooter = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+		const float reservedForFooter = 6 * ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reservedForFooter), false, ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::Columns(4, "filecolumns");
 		ImGui::Separator();
@@ -233,11 +236,16 @@ namespace editor {
 
 		for (auto& p : fs::directory_iterator(mCurrentPath)) {
 			fs::path path = p.path();
+			std::string filename = path.filename().string();
+
+			if (!mFilter.PassFilter(filename.c_str())) {
+				continue;
+			}
 
 			// Show name
-			std::string filename = path.filename().string();
-			if (ImGui::Selectable(filename.c_str(), (path == mSelected), ImGuiSelectableFlags_SpanAllColumns)) {
-				mSelected = path;
+			if (ImGui::Selectable(filename.c_str(), (filename == mSelected.data()), ImGuiSelectableFlags_SpanAllColumns)) {
+				mSelected = {};
+				std::copy(filename.begin(), filename.end(), mSelected.data());
 			}
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
 				open = true;
@@ -289,6 +297,8 @@ namespace editor {
 		ImGui::Separator();
 
 		// Footer
+		ImGui::InputText("Name", mSelected.data(), mSelected.size(), ImGuiInputTextFlags_EnterReturnsTrue);
+
 		if (ImGui::Button("Close")) {
 			mShow = false;
 		}
@@ -304,17 +314,20 @@ namespace editor {
 		}
 
 		if (open) {
-			if (fs::is_symlink(mSelected)) {
-				fs::path newPath = fs::read_symlink(mSelected);
+			fs::path selectedPath = mCurrentPath / mSelected.data();
+			mSelected = {};
+
+			if (fs::is_symlink(selectedPath)) {
+				fs::path newPath = fs::read_symlink(selectedPath);
 				if (!newPath.empty()) {
 					mCurrentPath = newPath;
 				}
 			}
-			else if (fs::is_directory(mSelected)) {
-				mCurrentPath = mSelected;
+			else if (fs::is_directory(selectedPath)) {
+				mCurrentPath = selectedPath;
 			}
 			else {
-				outPath = mSelected.string();
+				outPath = selectedPath.string();
 				mShow = false;
 				ret = true;
 			}

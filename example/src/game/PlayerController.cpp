@@ -4,7 +4,7 @@
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
 #include <se/utils/Log.h>
-#include <se/utils/Repository.h>
+#include <se/app/Repository.h>
 #include <se/graphics/Renderer.h>
 #include <se/graphics/GraphicsEngine.h>
 #include <se/app/TagComponent.h>
@@ -79,7 +79,7 @@ namespace game {
 
 	void PlayerController::onUpdate(float elapsedTime, const se::app::UserInput& userInput)
 	{
-		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
+		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity, true);
 		if (!transforms) { return; }
 
 		// Get the mouse movement
@@ -166,7 +166,7 @@ namespace game {
 				mesh.rMeshes.emplace_back(mTetrahedronMesh).addTechnique(mYellowTechnique);
 				mGame.getEntityDatabase().addComponent(pointEntity, std::move(mesh));
 
-				auto [tag] = mGame.getEntityDatabase().getComponents<se::app::TagComponent>(entity);
+				auto [tag] = mGame.getEntityDatabase().getComponents<se::app::TagComponent>(entity, true);
 				names += std::string(tag->getName()) + "; ";
 			}
 

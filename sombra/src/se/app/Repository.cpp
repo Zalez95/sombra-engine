@@ -1,6 +1,6 @@
-#include "se/utils/Repository.h"
+#include "se/app/Repository.h"
 
-namespace se::utils {
+namespace se::app {
 
 	std::size_t Repository::sRepoTableTypeCount = 0;
 

@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/3D/Mesh.h"
-#include "../../utils/Repository.h"
+#include "../Repository.h"
 
 namespace se::app {
 
@@ -32,7 +32,7 @@ namespace se::app {
 		 * @param	repository the Repository that holds all the Programs
 		 * @param	maxSize the resolution of the 3D texture in each axis */
 		Tex3DClearNode(
-			const std::string& name, utils::Repository& repository,
+			const std::string& name, Repository& repository,
 			std::size_t maxSize
 		);
 

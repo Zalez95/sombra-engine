@@ -3,7 +3,6 @@
 
 #include "../../graphics/Pass.h"
 #include "../../graphics/core/Program.h"
-#include "../graphics/Image.h"
 #include "../graphics/Material.h"
 #include "Result.h"
 
@@ -16,6 +15,7 @@ namespace se::app {
 	private:	// Nested types
 		using ProgramSPtr = std::shared_ptr<graphics::Program>;
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using TextureSPtr = std::shared_ptr<graphics::Texture>;
 
 	public:		// Functions
 		/** Creates the bindables of the given material and adds them to the
@@ -66,7 +66,7 @@ namespace se::app {
 		 * @param	program the Program of the Pass */
 		static void addHeightMapBindables(
 			PassSPtr pass,
-			const Image<unsigned char>& heightMap, float size, float maxHeight,
+			TextureSPtr heightMap, float size, float maxHeight,
 			const ProgramSPtr program
 		);
 

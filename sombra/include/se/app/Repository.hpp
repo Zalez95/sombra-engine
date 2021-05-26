@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-namespace se::utils {
+namespace se::app {
 
 	/**
 	 * Class IRepoTable, it's the Interface that every RepoTable must implement

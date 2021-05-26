@@ -1,3 +1,4 @@
+#include <cassert>
 #include <algorithm>
 #include "se/graphics/3D/QuadTree.h"
 
@@ -44,7 +45,26 @@ namespace se::graphics {
 
 
 	QuadTree::QuadTree(float size, const std::vector<float>& lodDistances) :
-		mSize(size), mLodDistances(lodDistances) {}
+		mSize(size), mLodDistances(lodDistances)
+	{
+		assert(!lodDistances.empty() && "lodDistances must have at least LOD 0");
+	}
+
+
+	void QuadTree::setSize(float size)
+	{
+		mSize = size;
+		mRootNode = Node();
+	}
+
+
+	void QuadTree::setLodDistances(const std::vector<float>& lodDistances)
+	{
+		assert(!lodDistances.empty() && "lodDistances must have at least LOD 0");
+
+		mLodDistances = lodDistances;
+		mRootNode = Node();
+	}
 
 
 	void QuadTree::updateHighestLodLocation(const glm::vec3& highestLodLocation)

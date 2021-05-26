@@ -4,7 +4,7 @@
 #include "events/KeyEvent.h"
 #include "events/MouseEvents.h"
 #include <se/app/events/ResizeEvent.h>
-#include "ISystem.h"
+#include "ECS.h"
 #include "ScriptComponent.h"
 
 namespace se::app {
@@ -35,20 +35,38 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~ScriptSystem();
 
-		/** @copydoc ISystem::onNewEntity(Entity) */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::notify(const IEvent&) */
+		virtual void notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onRemoveEntity(Entity) */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&ScriptSystem::onNewScript, entity, mask); };
+
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&ScriptSystem::onRemoveScript, entity, mask); };
 
 		/** Updates the scripts of the Entities */
 		virtual void update() override;
-
-		/** Notifies the ImGuiInput of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const IEvent& event) override;
 	private:
+		/** Function called when a ScriptComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the ScriptComponent
+		 * @param	script a pointer to the new ScriptComponent */
+		void onNewScript(Entity entity, ScriptComponent* script);
+
+		/** Function called when a ScriptComponent is going to be removed from
+		 * an Entity
+		 *
+		 * @param	entity the Entity that holds the ScriptComponent
+		 * @param	script a pointer to the ScriptComponent that is going to be
+		 *			removed */
+		void onRemoveScript(Entity entity, ScriptComponent* script);
+
 		/** Handles the given event
 		 *
 		 * @param	event the KeyEvent to handle */

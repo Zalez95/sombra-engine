@@ -1,16 +1,13 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include <vector>
 #include <se/app/Application.h>
 #include <se/app/Scene.h>
 #include "ImGuiInput.h"
 #include "ImGuiRenderer.h"
 #include "MenuBar.h"
-#include "EntityPanel.h"
-#include "ComponentPanel.h"
-#include "RepositoryPanel.h"
-#include "SceneNodesPanel.h"
-#include "Gizmo.h"
+#include "IEditorPanel.h"
 
 namespace editor {
 
@@ -40,11 +37,8 @@ namespace editor {
 		ImGuiInput* mImGuiInput;
 		ImGuiRenderer* mImGuiRenderer;
 		MenuBar* mMenuBar;
-		EntityPanel* mEntityPanel;
-		ComponentPanel* mComponentPanel;
-		RepositoryPanel* mRepositoryPanel;
-		SceneNodesPanel* mSceneNodesPanel;
-		Gizmo* mGizmo;
+		int mPanelIdCount;
+		std::vector<IEditorPanel*> mPanels;
 
 		se::app::Entity mViewportEntity;
 		se::app::Entity mGridEntity;
@@ -79,6 +73,11 @@ namespace editor {
 
 		/** Destroys the current Scene */
 		void destroyScene();
+
+		/** Adds the given panel to the Editor
+		 *
+		 * @param	panel the new IEditorPanel */
+		void addPanel(IEditorPanel* panel);
 
 		/** @copydoc se::app::Application::notify(const IEvent&) */
 		virtual void notify(const se::app::IEvent&) override;

@@ -1,10 +1,12 @@
 #ifndef IMGUI_UTILS_H
 #define IMGUI_UTILS_H
 
+#include <array>
 #include <string>
 #include <filesystem>
+#include <imgui.h>
 #include <glm/glm.hpp>
-#include <se/utils/Repository.h>
+#include <se/app/Repository.h>
 
 namespace editor {
 
@@ -49,42 +51,71 @@ namespace editor {
 	 *
 	 * @param	name the name of the Dropdown
 	 * @param	options the different options
-	 * @param	options the number of options
-	 * @param	selected the current selected value (it will be modified on
-	 *			user selection)
+	 * @param	numOptions the number of options
+	 * @param	selected the current selected value, values below zero mean
+	 *			that there is no selected value. It will be modified on user
+	 *			selection
 	 * @return	true if the dropdown was updated, false otherwise */
 	bool addDropdown(
 		const char* name, const char* options[], std::size_t numOptions,
-		std::size_t& selected
+		int& selected
 	);
 
 
-	/** Creates a dropdown button used for selecting a value with type @tparam T
+	/** Creates a dropdown button used for selecting a value with the given key
 	 * from the given Repository
 	 *
 	 * @param	tag the tag of the button
 	 * @param	buttonName the string to show
 	 * @param	repository the Repository that holds the values
-	 * @param	selectedValue return parameter
+	 * @param	key return parameter
 	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename T>
+	template <typename K, typename V>
 	bool addRepoDropdownButton(
 		const char* tag, const char* buttonName,
-		se::utils::Repository& repository, std::shared_ptr<T>& selectedValue
+		se::app::Repository& repository, K& key
 	);
 
 
-	/** Creates a dropdown button used for selecting a value with type @tparam T
+	/** Creates a dropdown button used for selecting a value with type @tparam V
+	 * from the given Repository
+	 *
+	 * @param	tag the tag of the button
+	 * @param	buttonName the string to show
+	 * @param	repository the Repository that holds the values
+	 * @param	value return parameter
+	 * @return	true if the dropdown was updated, false otherwise */
+	template <typename K, typename V>
+	bool addRepoDropdownButtonValue(
+		const char* tag, const char* buttonName,
+		se::app::Repository& repository, std::shared_ptr<V>& value
+	);
+
+
+	/** Creates a dropdown button used for selecting a value with the given key
 	 * from the given Repository
 	 *
 	 * @param	tag the tag of the button
 	 * @param	repository the Repository that holds the values
-	 * @param	selectedValue return parameter
+	 * @param	key the current selected value key, also the return parameter
 	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename T>
+	template <typename K, typename V>
 	bool addRepoDropdownShowSelected(
-		const char* tag,
-		se::utils::Repository& repository, std::shared_ptr<T>& selectedValue
+		const char* tag, se::app::Repository& repository, K& key
+	);
+
+
+	/** Creates a dropdown button used for selecting a value with type @tparam V
+	 * from the given Repository
+	 *
+	 * @param	tag the tag of the button
+	 * @param	repository the Repository that holds the values
+	 * @param	value the current selected value, also the return parameter
+	 * @return	true if the dropdown was updated, false otherwise */
+	template <typename K, typename V>
+	bool addRepoDropdownShowSelectedValue(
+		const char* tag, se::app::Repository& repository,
+		std::shared_ptr<V>& value
 	);
 
 
@@ -132,20 +163,25 @@ namespace editor {
 	 */
 	class FileWindow
 	{
-	private:
+	private:	// Attributes
+		/** The maximum length of a Filename */
+		static constexpr std::size_t kMaxFilename = 256;
+
 		/** If the window must be shown or not */
-		bool mShow;
+		bool mShow = false;
 
 		/** The current path to show */
 		std::filesystem::path mCurrentPath;
 
-		/** The file selected */
-		std::filesystem::path mSelected;
+		/** The filter for the filenames */
+		ImGuiTextFilter mFilter;
+
+		/** The selected filename */
+		std::array<char, kMaxFilename> mSelected = {};
 
 	public:		// Functions
 		/** Creates a new FileWindow */
-		FileWindow() :
-			mShow(false), mCurrentPath(std::filesystem::current_path()) {};
+		FileWindow() : mCurrentPath(std::filesystem::current_path()) {};
 
 		/** If the window must be shown */
 		void show() { mShow = true; };

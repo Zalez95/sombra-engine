@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/3D/RenderableMesh.h"
-#include "../../utils/Repository.h"
+#include "../Repository.h"
 
 namespace se::app {
 
@@ -34,7 +34,7 @@ namespace se::app {
 		 * @param	horizontal if the blur is going to be applied in the
 		 *			horizontal direction or the vertical one */
 		GaussianBlurNode(
-			const std::string& name, utils::Repository& repository,
+			const std::string& name, Repository& repository,
 			std::size_t width, std::size_t height, bool horizontal
 		);
 

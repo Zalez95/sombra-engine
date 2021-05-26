@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include "../utils/Repository.h"
 #include "../animation/AnimationNode.h"
+#include "Repository.h"
 #include "Entity.h"
 #include "Application.h"
 
@@ -48,7 +48,7 @@ namespace se::app {
 		animation::AnimationNode rootNode;
 
 		/** The repository that holds all the shared data of the Scene */
-		utils::Repository repository;
+		Repository repository;
 
 		/** Creates a new Scene */
 		Scene(const char* name, Application& application);

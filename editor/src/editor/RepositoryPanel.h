@@ -1,16 +1,15 @@
 #ifndef REPOSITORY_PANEL_H
 #define REPOSITORY_PANEL_H
 
+#include "IEditorPanel.h"
+
 namespace editor {
-
-	class Editor;
-
 
 	/**
 	 * Class EntityPanel, it's the ImGui panel used for viewing and interacting
 	 * with the Scene resources added to its Repository
 	 */
-	class RepositoryPanel
+	class RepositoryPanel : public IEditorPanel
 	{
 	private:	// Nested types
 		class ITypeNode;
@@ -30,26 +29,23 @@ namespace editor {
 		class ParticleEmitterNode;
 
 	private:	// Attributes
-		/** A reference to the Editor that holds the RepositoryPanel */
-		Editor& mEditor;
-
 		/** The types that can be viewed */
 		std::vector<ITypeNode*> mTypes;
 
 		/** The current type to be viewed */
-		int mTypeSelected;
+		int mTypeSelected = -1;
 
 	public:		// Functions
 		/** Creates a new RepositoryPanel
 		 *
-		 * @param	editor a reference to the Editor that holds the MenuBar */
+		 * @param	editor a reference to the Editor that holds the Panel */
 		RepositoryPanel(Editor& editor);
 
 		/** Class destructor */
 		~RepositoryPanel();
 
-		/** Draws the current panel */
-		void render();
+		/** @copydoc IEditorPanel::render() */
+		virtual bool render() override;
 	};
 
 }

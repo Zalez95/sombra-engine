@@ -6,8 +6,7 @@ namespace se::graphics {
 	RenderableTerrain::RenderableTerrain(float size, float maxHeight, const std::vector<float>& lodDistances) :
 		mQuadTree(size, lodDistances), mMaxHeight(maxHeight)
 	{
-		mMinimum = { -size, -mMaxHeight, -size };
-		mMaximum = { size, mMaxHeight, size };
+		setModelMatrix(mModelMatrix);
 	}
 
 
@@ -50,6 +49,20 @@ namespace se::graphics {
 		}
 
 		return *this;
+	}
+
+
+	void RenderableTerrain::setMaxHeight(float maxHeight)
+	{
+		mMaxHeight = maxHeight;
+		setModelMatrix(mModelMatrix);
+	}
+
+
+	void RenderableTerrain::setSize(float size)
+	{
+		mQuadTree.setSize(size);
+		setModelMatrix(mModelMatrix);
 	}
 
 

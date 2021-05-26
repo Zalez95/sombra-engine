@@ -21,7 +21,7 @@ namespace editor {
 		se::app::Application& mApplication;
 
 		/** The repsoitory that holds the passes of the RenderableShaders */
-		se::utils::Repository& mRepository;
+		se::app::Repository& mRepository;
 
 	public:		// Functions
 		/** Creates a new DefaultShaderBuilder
@@ -32,7 +32,7 @@ namespace editor {
 			*			RenderableShaders */
 		DefaultShaderBuilder(
 			se::app::Application& application,
-			se::utils::Repository& repository
+			se::app::Repository& repository
 		) : mApplication(application), mRepository(repository) {};
 
 		/** @copydoc ShaderBuilder::createShader(const Material&, bool) */

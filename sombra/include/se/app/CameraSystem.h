@@ -7,12 +7,15 @@
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
-#include "ISystem.h"
-#include "CameraComponent.h"
+#include "ECS.h"
 
 namespace se::app {
 
 	class Application;
+	class CameraComponent;
+	class MeshComponent;
+	class TerrainComponent;
+	class ParticleSystemComponent;
 
 
 	/**
@@ -57,20 +60,82 @@ namespace se::app {
 		/** Class destructor */
 		~CameraSystem();
 
-		/** Notifies the CameraSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** @copydoc IVPSystem::onNewEntity(Entity) */
-		virtual void onNewEntity(Entity entity) override;
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
-		/** @copydoc IVPSystem::onRemoveEntity(Entity) */
-		virtual void onRemoveEntity(Entity entity) override;
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
 		/** Updates the Cameras sources with the Entities */
 		virtual void update() override;
 	private:
+		/** Function called when a Camera is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the Camera
+		 * @param	camera a pointer to the new Camera */
+		void onNewCamera(Entity entity, CameraComponent* camera);
+
+		/** Function called when a Camera is going to be removed from an Entity
+		 *
+		 * @param	entity the Entity that holds the Camera
+		 * @param	camera a pointer to the Camera that is going to be
+		 *			removed */
+		void onRemoveCamera(Entity entity, CameraComponent* camera);
+
+		/** Function called when a MeshComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the new MeshComponent */
+		void onNewMesh(Entity entity, MeshComponent* mesh);
+
+		/** Function called when a MeshComponent is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the MeshComponent that is going to be
+		 *			removed */
+		void onRemoveMesh(Entity entity, MeshComponent* mesh);
+
+		/** Function called when a TerrainComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the new TerrainComponent */
+		void onNewTerrain(Entity entity, TerrainComponent* terrain);
+
+		/** Function called when a TerrainComponent is going to be removed
+		 * from an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the TerrainComponent that is going to
+		 *			be removed */
+		void onRemoveTerrain(Entity entity, TerrainComponent* terrain);
+
+		/** Function called when a ParticleSystemComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the ParticleSystemComponent
+		 * @param	particleSystem a pointer to the new
+		 *			ParticleSystemComponent */
+		void onNewParticleSys(
+			Entity entity, ParticleSystemComponent* particleSystem
+		);
+
+		/** Function called when a ParticleSystemComponent is going to be
+		 * removed from an Entity
+		 *
+		 * @param	entity the Entity that holds the ParticleSystemComponent
+		 * @param	particleSystem a pointer to the ParticleSystemComponent
+		 *			that is going to be removed */
+		void onRemoveParticleSys(
+			Entity entity, ParticleSystemComponent* particleSystem
+		);
+
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered
 		 *

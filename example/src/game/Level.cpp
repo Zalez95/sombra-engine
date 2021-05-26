@@ -53,7 +53,7 @@
 #include <se/audio/Source.h>
 
 #include <se/utils/Log.h>
-#include <se/utils/Repository.h>
+#include <se/app/Repository.h>
 
 #include "Game.h"
 #include "Level.h"
@@ -556,13 +556,22 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
+			auto heightMapTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
+			heightMapTexture->setTextureUnit(se::app::SplatmapMaterial::TextureUnits::kHeightMap)
+				.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
+				.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+				.setImage(
+					heightMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::Red, se::graphics::ColorFormat::Red,
+					heightMap1.width, heightMap1.height
+				);
+
 			auto terrainShadowPass = std::make_shared<se::graphics::Pass>(*shadowRendererTerrain);
 			terrainShadowPass->addBindable(programShadowTerrain);
-			se::app::ShaderLoader::addHeightMapBindables(terrainShadowPass, heightMap1, size, maxHeight, programShadowTerrain);
+			se::app::ShaderLoader::addHeightMapBindables(terrainShadowPass, heightMapTexture, size, maxHeight, programShadowTerrain);
 
 			auto terrainPass = std::make_shared<se::graphics::Pass>(*gBufferRendererTerrain);
 			terrainPass->addBindable(programGBufSplatmap);
-			se::app::ShaderLoader::addHeightMapBindables(terrainPass, heightMap1, size, maxHeight, programGBufSplatmap);
+			se::app::ShaderLoader::addHeightMapBindables(terrainPass, heightMapTexture, size, maxHeight, programGBufSplatmap);
 			se::app::ShaderLoader::addSplatmapMaterialBindables(terrainPass, terrainMaterial, programGBufSplatmap);
 
 			auto terrainShader = std::make_shared<se::app::RenderableShader>(mGame.getEventManager());
@@ -629,7 +638,7 @@ namespace game {
 			{ 10.0f, 5.0f, -10.0f }
 		};
 		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
-		se::app::Entity e1, e2;
+		se::app::Entity e1 = se::app::kNullEntity, e2 = se::app::kNullEntity;
 		for (std::size_t i = 0; i < 5; ++i) {
 			auto cube = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(cube);

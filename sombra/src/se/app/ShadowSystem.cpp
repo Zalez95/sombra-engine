@@ -58,7 +58,7 @@ namespace se::app {
 
 
 	ShadowSystem::ShadowSystem(Application& application, const ShadowData& shadowData) :
-		ISystem(application.getEntityDatabase()), mApplication(application)
+		ISystem(application.getEntityDatabase()), mApplication(application), mShadowEntity(kNullEntity)
 	{
 		mApplication.getEventManager()
 			.subscribe(this, Topic::Shadow)
@@ -113,47 +113,19 @@ namespace se::app {
 	}
 
 
-	void ShadowSystem::onNewEntity(Entity entity)
+	void ShadowSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		auto [mesh, terrain] = mEntityDatabase.getComponents<MeshComponent, TerrainComponent>(entity);
-		if (mesh) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				for (auto& shadow : mShadows) {
-					shadow.uniformUpdater->addRenderable(mesh->get(i));
-					mesh->processRenderableShaders(i, [&](const auto& shader) {
-						shadow.uniformUpdater->addRenderableShader(mesh->get(i), shader);
-					});
-				}
-			});
-		}
-		if (terrain) {
-			for (auto& shadow : mShadows) {
-				shadow.uniformUpdater->addRenderable(terrain->get());
-				terrain->processRenderableShaders([&](const auto& shader) {
-					shadow.uniformUpdater->addRenderableShader(terrain->get(), shader);
-				});
-			}
-		}
+		tryCallC(&ShadowSystem::onNewLight, entity, mask);
+		tryCallC(&ShadowSystem::onNewMesh, entity, mask);
+		tryCallC(&ShadowSystem::onNewTerrain, entity, mask);
 	}
 
 
-	void ShadowSystem::onRemoveEntity(Entity entity)
+	void ShadowSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		auto [mesh, terrain] = mEntityDatabase.getComponents<MeshComponent, TerrainComponent>(entity);
-		if (mesh) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				for (auto& shadow : mShadows) {
-					shadow.uniformUpdater->removeRenderable(mesh->get(i));
-				}
-			});
-		}
-		if (terrain) {
-			for (auto& shadow : mShadows) {
-				shadow.uniformUpdater->removeRenderable(terrain->get());
-			}
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		tryCallC(&ShadowSystem::onRemoveLight, entity, mask);
+		tryCallC(&ShadowSystem::onRemoveMesh, entity, mask);
+		tryCallC(&ShadowSystem::onRemoveTerrain, entity, mask);
 	}
 
 
@@ -161,7 +133,7 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
 
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mShadowEntity);
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mShadowEntity, true);
 		if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Shadow)]) {
 			mShadows[0].camera.setPosition(transforms->position);
 			mShadows[0].camera.setOrientation(transforms->orientation);
@@ -180,9 +152,72 @@ namespace se::app {
 	}
 
 // Private functions
+	void ShadowSystem::onNewLight(Entity entity, LightComponent* light)
+	{
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " added successfully";
+	}
+
+
+	void ShadowSystem::onRemoveLight(Entity entity, LightComponent* light)
+	{
+		if (mShadowEntity == entity) {
+			mShadowEntity = kNullEntity;
+			SOMBRA_INFO_LOG << "Active Shadow Camera removed";
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
+	}
+
+
+	void ShadowSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	{
+		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+			for (auto& shadow : mShadows) {
+				shadow.uniformUpdater->addRenderable(mesh->get(i));
+				mesh->processRenderableShaders(i, [&](const auto& shader) {
+					shadow.uniformUpdater->addRenderableShader(mesh->get(i), shader);
+				});
+			}
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
+	}
+
+
+	void ShadowSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	{
+		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+			for (auto& shadow : mShadows) {
+				shadow.uniformUpdater->removeRenderable(mesh->get(i));
+			}
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
+	}
+
+
+	void ShadowSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		for (auto& shadow : mShadows) {
+			shadow.uniformUpdater->addRenderable(terrain->get());
+			terrain->processRenderableShaders([&](const auto& shader) {
+				shadow.uniformUpdater->addRenderableShader(terrain->get(), shader);
+			});
+		}
+		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " added successfully";
+	}
+
+
+	void ShadowSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		for (auto& shadow : mShadows) {
+			shadow.uniformUpdater->removeRenderable(terrain->get());
+		}
+		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
+	}
+
+
 	void ShadowSystem::onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event)
 	{
-		auto [transforms, light] = mEntityDatabase.getComponents<TransformsComponent, LightComponent>(event.getValue());
+		auto [transforms, light] = mEntityDatabase.getComponents<TransformsComponent, LightComponent>(event.getValue(), true);
 		if (transforms && light && light->source) {
 			mShadowEntity = event.getValue();
 
@@ -209,7 +244,7 @@ namespace se::app {
 
 	void ShadowSystem::onRMeshEvent(const RMeshEvent& event)
 	{
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 		if (mesh) {
 			switch (event.getOperation()) {
 				case RMeshEvent::Operation::Add:
@@ -230,7 +265,7 @@ namespace se::app {
 	void ShadowSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
 		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
-			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 			if (mesh) {
 				switch (event.getOperation()) {
 					case RenderableShaderEvent::Operation::Add:
@@ -249,7 +284,7 @@ namespace se::app {
 		else {
 			graphics::Renderable* renderable = nullptr;
 			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
-				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
+				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity(), true);
 				renderable = &terrain->get();
 			}
 

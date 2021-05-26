@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <se/app/EntityDatabase.h>
 #include <se/window/WindowManager.h>
 #include <se/window/KeyCodes.h>
 #include <se/window/MouseButtonCodes.h>
@@ -9,7 +8,7 @@ namespace editor {
 
 	void ViewportControl::onUpdate(float /*elapsedTime*/, const se::app::UserInput& userInput)
 	{
-		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity);
+		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity, true);
 		if (!transforms) { return; }
 
 		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {

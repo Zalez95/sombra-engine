@@ -6,7 +6,7 @@
 #include "../physics/constraints/FrictionConstraint.h"
 #include "../collision/Manifold.h"
 #include "../utils/PackedVector.h"
-#include "ISystem.h"
+#include "ECS.h"
 
 namespace se::app {
 
@@ -84,28 +84,40 @@ namespace se::app {
 		/** Class destructor */
 		~ConstraintsSystem();
 
-		/** Notifies the ConstraintsSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&ConstraintsSystem::onNewRigidBody, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&ConstraintsSystem::onRemoveRigidBody, entity, mask); };
 
 		/** Solves the Constraints between the RigidBodies of the entities
 		 *
 		 * @param	delta the elapsed time since the last update in seconds */
 		virtual void update() override;
 	private:
+		/** Function called when a RigidBody is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the RigidBody
+		 * @param	rigidBody a pointer to the new RigidBody */
+		void onNewRigidBody(Entity entity, physics::RigidBody* rigidBody);
+
+		/** Function called when a RigidBody is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the RigidBody
+		 * @param	rigidBody a pointer to the RigidBody that is going to be
+		 *			removed */
+		void onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody);
+
 		/** Handles the given CollisionEvent by creating ContactConstraints
 		 * between the colliding Entities
 		 *

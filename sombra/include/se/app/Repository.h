@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace se::utils {
+namespace se::app {
 
 	/**
 	 * Class Repository, it provides a single point for storing and accessing

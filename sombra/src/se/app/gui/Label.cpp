@@ -1,7 +1,7 @@
 #include <cctype>
 #include <algorithm>
 #include "se/utils/StringUtils.h"
-#include "se/utils/Repository.h"
+#include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/gui/Label.h"
 #include "se/app/gui/GUIManager.h"

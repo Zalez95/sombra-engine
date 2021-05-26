@@ -1,8 +1,10 @@
 #ifndef AUDIO_SYSTEM_H
 #define AUDIO_SYSTEM_H
 
-#include "ISystem.h"
+#include "ECS.h"
 #include "events/ContainerEvent.h"
+
+namespace se::audio { class Source; }
 
 namespace se::app {
 
@@ -33,26 +35,38 @@ namespace se::app {
 		/** Class destructor */
 		~AudioSystem();
 
-		/** Notifies the AudioSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const IEvent& event) override;
+		/** @copydoc ISystem::notify(const IEvent&) */
+		virtual void notify(const IEvent& event) override
+		{ tryCall(&AudioSystem::onCameraEvent, event); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&AudioSystem::onNewSource, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&AudioSystem::onRemoveSource, entity, mask); };
 
 		/** Updates the sources data with the Entities */
 		virtual void update() override;
 	private:
+		/** Function called when a Source is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the Source
+		 * @param	source a pointer to the new Source */
+		void onNewSource(Entity entity, audio::Source* source);
+
+		/** Function called when a Source is going to be removed from an Entity
+		 *
+		 * @param	entity the Entity that holds the Source
+		 * @param	source a pointer to the Source that is going to be
+		 *			removed */
+		void onRemoveSource(Entity entity, audio::Source* source);
+
 		/** Handles the given ContainerEvent by updating the Listener Entity
 		 * from where the audio Sources will be listened
 		 *

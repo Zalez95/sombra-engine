@@ -42,56 +42,6 @@ namespace se::app {
 	}
 
 
-	void ConstraintsSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, rb] = mEntityDatabase.getComponents<TransformsComponent, physics::RigidBody>(entity);
-		if (!rb) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RigidBody";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
-	}
-
-
-	void ConstraintsSystem::onRemoveEntity(Entity entity)
-	{
-		auto [rb] = mEntityDatabase.getComponents<physics::RigidBody>(entity);
-		if (!rb) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
-			return;
-		}
-
-		// Remove the Constraints from the ConstraintManager
-		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
-		physicsEngine.getConstraintManager().removeRigidBody(rb);
-
-		// Remove the Constraint indices
-		for (auto it = mManifoldConstraintIndicesMap.begin(); it != mManifoldConstraintIndicesMap.end();) {
-			if ((mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(0) == rb)
-				|| (mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(1) == rb)
-			) {
-				for (const auto& constraintIndices : it->second) {
-					mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
-					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
-					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
-				}
-
-				it = mManifoldConstraintIndicesMap.erase(it);
-			}
-			else {
-				++it;
-			}
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
-	}
-
-
 	void ConstraintsSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Start";
@@ -110,7 +60,8 @@ namespace se::app {
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_DEBUG_LOG << "Updating the NormalConstraints time";
@@ -131,7 +82,8 @@ namespace se::app {
 
 					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_DEBUG_LOG << "Putting the RigidBodies to sleep";
@@ -141,12 +93,51 @@ namespace se::app {
 	}
 
 // Private functions
+	void ConstraintsSystem::onNewRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " added successfully";
+	}
+
+
+	void ConstraintsSystem::onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	{
+		// Remove the Constraints from the ConstraintManager
+		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
+		physicsEngine.getConstraintManager().removeRigidBody(rigidBody);
+
+		// Remove the Constraint indices
+		for (auto it = mManifoldConstraintIndicesMap.begin(); it != mManifoldConstraintIndicesMap.end();) {
+			if ((mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(0) == rigidBody)
+				|| (mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(1) == rigidBody)
+			) {
+				for (const auto& constraintIndices : it->second) {
+					mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
+					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
+					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
+				}
+
+				it = mManifoldConstraintIndicesMap.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " removed successfully";
+	}
+
+
 	void ConstraintsSystem::onCollisionEvent(const CollisionEvent& event)
 	{
 		SOMBRA_TRACE_LOG << "Received CollisionEvent: " << event;
 
-		auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(0));
-		auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(1));
+		auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(0), true);
+		auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(1), true);
 		const collision::Manifold* manifold = event.getManifold();
 
 		if (rb1 && rb2 && manifold) {

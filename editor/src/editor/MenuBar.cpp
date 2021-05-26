@@ -4,6 +4,11 @@
 #include "DefaultScene.h"
 #include "MenuBar.h"
 #include "Editor.h"
+#include "EntityPanel.h"
+#include "ComponentPanel.h"
+#include "RepositoryPanel.h"
+#include "SceneNodesPanel.h"
+#include "Gizmo.h"
 
 using namespace se::app;
 
@@ -51,11 +56,29 @@ namespace editor {
 				}
 				ImGui::EndMenu();
 			}
+			if (ImGui::BeginMenu("View")) {
+				if (ImGui::MenuItem("Entity", "")) {
+					mEditor.addPanel(new EntityPanel(mEditor));
+				}
+				if (ImGui::MenuItem("Component", "")) {
+					mEditor.addPanel(new ComponentPanel(mEditor));
+				}
+				if (ImGui::MenuItem("Repository", "")) {
+					mEditor.addPanel(new RepositoryPanel(mEditor));
+				}
+				if (ImGui::MenuItem("SceneNodes", "")) {
+					mEditor.addPanel(new SceneNodesPanel(mEditor));
+				}
+				if (ImGui::MenuItem("Gizmo", "")) {
+					mEditor.addPanel(new Gizmo(mEditor));
+				}
+				ImGui::EndMenu();
+			}
 			if (ImGui::BeginMenu("Help")) {
-				if (ImGui::MenuItem("Controls", "", false, true)) {
+				if (ImGui::MenuItem("Controls", "")) {
 					mShowControlsWindow = true;
 				}
-				if (ImGui::MenuItem("About Sombra", "", false, true)) {
+				if (ImGui::MenuItem("About Sombra", "")) {
 					mShowAboutWindow = true;
 				}
 				ImGui::EndMenu();

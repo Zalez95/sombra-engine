@@ -5,13 +5,13 @@
 #include "events/EventManager.h"
 #include "../window/WindowManager.h"
 #include "../collision/CollisionWorld.h"
-#include "EntityDatabase.h"
+#include "ECS.h"
 
 namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
 namespace se::physics { class PhysicsEngine; }
 namespace se::animation { class AnimationEngine; }
 namespace se::audio { class AudioEngine; }
-namespace se::utils { class TaskManager; class Repository; }
+namespace se::utils { class TaskManager; }
 
 namespace se::app {
 
@@ -29,6 +29,7 @@ namespace se::app {
 	class AnimationSystem;
 	class AudioSystem;
 	class GUIManager;
+	class Repository;
 
 
 	/**
@@ -92,7 +93,7 @@ namespace se::app {
 		/** The Repository that holds all the shared data of the Application.
 		 * All the data added to this Repository will remain until the
 		 * Application ends */
-		utils::Repository* mRepository;
+		Repository* mRepository;
 
 		/** The EntityDatabase that holds all the Application Entities and
 		 * their Components */
@@ -144,7 +145,7 @@ namespace se::app {
 		EntityDatabase& getEntityDatabase() { return *mEntityDatabase; };
 
 		/** @return	a reference to the Repository of the Application */
-		utils::Repository& getRepository() { return *mRepository; };
+		Repository& getRepository() { return *mRepository; };
 
 		/** @return	a reference to the GUIManager of the Application */
 		GUIManager& getGUIManager() { return *mGUIManager; };

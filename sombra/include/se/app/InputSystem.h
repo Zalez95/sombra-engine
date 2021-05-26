@@ -2,7 +2,7 @@
 #define INPUT_SYSTEM_H
 
 #include <deque>
-#include "ISystem.h"
+#include "ECS.h"
 #include "events/MouseEvents.h"
 
 namespace se::app {

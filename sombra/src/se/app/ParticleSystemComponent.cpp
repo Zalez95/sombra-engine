@@ -40,7 +40,7 @@ namespace se::app {
 	void ParticleSystemComponent::resetAnimation()
 	{
 		mAccumulatedTime = 0.0f;
-		mParticles.clear();
+		mParticles = {};
 	}
 
 
@@ -98,14 +98,14 @@ namespace se::app {
 			std::size_t maxSimultaneousParticles = getMaxSimultaneousParticles();
 
 			// If the emitter was changed check if we have to resize the buffers
-			if (mParticles.empty() && (mParticles.capacity() < maxSimultaneousParticles)) {
-				mParticles.resize(maxSimultaneousParticles);
+			if (mParticles.capacity() != maxSimultaneousParticles) {
+				mParticles = std::vector<Particle>(maxSimultaneousParticles);
 				mParticleSystem.getInstanceVBOs()[0].resizeAndCopy(mParticles.data(), mParticles.size());
 				mParticles.clear();
 			}
 
 			std::size_t particlesLeft = (maxSimultaneousParticles >= mParticles.size())? maxSimultaneousParticles - mParticles.size() : 0;
-			std::size_t particlesToAdd = static_cast<std::size_t>(RANDOM_ZERO_ONE() * particlesLeft * elapsedTime);
+			std::size_t particlesToAdd = std::min(static_cast<std::size_t>(RANDOM_ZERO_ONE() * particlesLeft * elapsedTime), particlesLeft);
 			for (std::size_t i = 0; i < particlesToAdd; ++i) {
 				Particle& particle = addParticle();
 				minPosition = glm::min(minPosition, particle.position);

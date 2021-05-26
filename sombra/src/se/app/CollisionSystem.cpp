@@ -23,36 +23,6 @@ namespace se::app {
 	}
 
 
-	void CollisionSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, collider] = mEntityDatabase.getComponents<TransformsComponent, collision::Collider>(entity);
-		if (!collider) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Collider";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Collider));
-		}
-
-		mApplication.getExternalTools().collisionWorld->addCollider(collider);
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Collider " << collider << " added successfully";
-	}
-
-
-	void CollisionSystem::onRemoveEntity(Entity entity)
-	{
-		auto [collider] = mEntityDatabase.getComponents<collision::Collider>(entity);
-		if (!collider) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
-			return;
-		}
-
-		mApplication.getExternalTools().collisionWorld->removeCollider(collider);
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
-	}
-
-
 	void CollisionSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Updating the CollisionSystem";
@@ -65,7 +35,8 @@ namespace se::app {
 					collider->setTransforms(getModelMatrix(*transforms));
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Collider));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_DEBUG_LOG << "Detecting collisions between the colliders";
@@ -110,6 +81,25 @@ namespace se::app {
 
 		SOMBRA_INFO_LOG << "RayCast finished with " << ret.size() << " entities";
 		return ret;
+	}
+
+// Private functions
+	void CollisionSystem::onNewCollider(Entity entity, collision::Collider* collider)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Collider));
+		}
+
+		mApplication.getExternalTools().collisionWorld->addCollider(collider);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Collider " << collider << " added successfully";
+	}
+
+
+	void CollisionSystem::onRemoveCollider(Entity entity, collision::Collider* collider)
+	{
+		mApplication.getExternalTools().collisionWorld->removeCollider(collider);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Collider " << collider << " removed successfully";
 	}
 
 }

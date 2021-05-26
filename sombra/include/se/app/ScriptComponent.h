@@ -1,7 +1,7 @@
 #ifndef SCRIPT_COMPONENT_H
 #define SCRIPT_COMPONENT_H
 
-#include "EntityDatabase.h"
+#include "ECS.h"
 #include "events/EventManager.h"
 
 namespace se::app {
@@ -52,7 +52,7 @@ namespace se::app {
 	class ScriptComponent
 	{
 	protected:
-		/** The EntityDatabasethat holds @see mEntity */
+		/** The EntityDatabase that holds @see mEntity */
 		EntityDatabase* mEntityDatabase = nullptr;
 
 		/** The EventManager used for creating events */

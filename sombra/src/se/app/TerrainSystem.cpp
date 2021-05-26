@@ -40,67 +40,19 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity);
-		if (!terrain) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Terrain";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
-		}
-
-		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
-		if (camTransforms) {
-			terrain->get().setHighestLodLocation(camTransforms->position);
-		}
-
-		mEntityUniforms.emplace(entity, EntityUniformsVector());
-		terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
-			shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-				addPass(entity, pass);
-			});
-		});
-
-		mApplication.getExternalTools().graphicsEngine->addRenderable(&terrain->get());
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << terrain << " added successfully";
-	}
-
-
-	void TerrainSystem::onRemoveEntity(Entity entity)
-	{
-		auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(entity);
-		if (!terrain) {
-			SOMBRA_INFO_LOG << "Terrain Entity " << entity << " couldn't removed";
-			return;
-		}
-
-		mApplication.getExternalTools().graphicsEngine->removeRenderable(&terrain->get());
-
-		auto it = mEntityUniforms.find(entity);
-		if (it != mEntityUniforms.end()) {
-			mEntityUniforms.erase(it);
-		}
-
-		SOMBRA_INFO_LOG << "Terrain Entity " << entity << " removed successfully";
-	}
-
-
 	void TerrainSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Terrains";
 
 		glm::vec3 camPosition(0.0f);
-		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity);
+		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity, true);
 		if (camTransforms && (camTransforms->updated.any() || mCameraUpdated)) {
 			mCameraUpdated = true;
 			camPosition = camTransforms->position;
 		}
 
 		for (auto& [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity);
+			auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity, true);
 			if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Terrain)]) {
 				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
 				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
@@ -125,6 +77,43 @@ namespace se::app {
 	}
 
 // Private functions
+	void TerrainSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
+		}
+
+		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity, true);
+		if (camTransforms) {
+			terrain->get().setHighestLodLocation(camTransforms->position);
+		}
+
+		mEntityUniforms.emplace(entity, EntityUniformsVector());
+		terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
+			shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
+				addPass(entity, pass);
+			});
+		});
+
+		mApplication.getExternalTools().graphicsEngine->addRenderable(&terrain->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << terrain << " added successfully";
+	}
+
+
+	void TerrainSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		mApplication.getExternalTools().graphicsEngine->removeRenderable(&terrain->get());
+
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << terrain << " removed successfully";
+	}
+
+
 	void TerrainSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
 		mCameraEntity = event.getValue();
@@ -158,29 +147,32 @@ namespace se::app {
 
 	void TerrainSystem::onShaderEvent(const ShaderEvent& event)
 	{
-		mEntityDatabase.iterateComponents<TerrainComponent>([&](Entity entity, TerrainComponent* terrain) {
-			bool hasShader = false;
-			terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
-				hasShader |= (shader == event.getShader());
-			});
+		mEntityDatabase.iterateComponents<TerrainComponent>(
+			[&](Entity entity, TerrainComponent* terrain) {
+				bool hasShader = false;
+				terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
+					hasShader |= (shader == event.getShader());
+				});
 
-			if (hasShader) {
-				switch (event.getOperation()) {
-					case ShaderEvent::Operation::Add: {
-						addPass(entity, event.getPass());
-					} break;
-					case ShaderEvent::Operation::Remove: {
-						removePass(entity, event.getPass());
-					} break;
+				if (hasShader) {
+					switch (event.getOperation()) {
+						case ShaderEvent::Operation::Add: {
+							addPass(entity, event.getPass());
+						} break;
+						case ShaderEvent::Operation::Remove: {
+							removePass(entity, event.getPass());
+						} break;
+					}
 				}
-			}
-		});
+			},
+			true
+		);
 	}
 
 
 	void TerrainSystem::addPass(Entity entity, const PassSPtr& pass)
 	{
-		auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity);
+		auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}
@@ -225,7 +217,7 @@ namespace se::app {
 
 	void TerrainSystem::removePass(Entity entity, const PassSPtr& pass)
 	{
-		auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(entity);
+		auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}

@@ -22,44 +22,13 @@ namespace se::app {
 	}
 
 
-	void AudioSystem::notify(const IEvent& event)
-	{
-		tryCall(&AudioSystem::onCameraEvent, event);
-	}
-
-
-	void AudioSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, source] = mEntityDatabase.getComponents<TransformsComponent, audio::Source>(entity);
-		if (!source) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Source";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Source));
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " added successfully";
-	}
-
-
-	void AudioSystem::onRemoveEntity(Entity entity)
-	{
-		if (mListenerEntity == entity) {
-			mListenerEntity = kNullEntity;
-			SOMBRA_INFO_LOG << "Listener Entity " << entity << " removed successfully";
-		}
-	}
-
-
 	void AudioSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Updating the AudioSystem";
 
 		SOMBRA_DEBUG_LOG << "Updating the Listener";
-		auto [transforms, source] = mEntityDatabase.getComponents<TransformsComponent, audio::Source>(mListenerEntity);
-		if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Source)]) {
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListenerEntity, true);
+		if (transforms) {
 			auto& audioEngine = *mApplication.getExternalTools().audioEngine;
 			audioEngine.setListenerPosition(transforms->position);
 			audioEngine.setListenerOrientation(
@@ -67,10 +36,6 @@ namespace se::app {
 				glm::vec3(0.0f, 1.0f, 0.0)
 			);
 			audioEngine.setListenerVelocity(transforms->velocity);
-
-			if (!source) {
-				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Source));
-			}
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
@@ -86,21 +51,34 @@ namespace se::app {
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Source));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_INFO_LOG << "AudioSystem updated";
 	}
 
 // Private functions
-	void AudioSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
+	void AudioSystem::onNewSource(Entity entity, audio::Source* source)
 	{
-		mListenerEntity = event.getValue();
-
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListenerEntity);
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Source));
 		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " added successfully";
+	}
+
+
+	void AudioSystem::onRemoveSource(Entity entity, audio::Source* source)
+	{
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " removed successfully";
+	}
+
+
+	void AudioSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
+	{
+		mListenerEntity = event.getValue();
 	}
 
 }

@@ -4,6 +4,7 @@
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/CameraSystem.h"
 #include "se/app/Application.h"
+#include "se/app/CameraComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
@@ -105,67 +106,21 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onNewEntity(Entity entity)
+	void CameraSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		auto [transforms, camera, mesh, terrain, particleSystem] = mEntityDatabase.getComponents<
-			TransformsComponent, CameraComponent, MeshComponent, TerrainComponent, ParticleSystemComponent
-		>(entity);
-
-		if (camera) {
-			if (transforms) {
-				transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Camera));
-			}
-
-			SOMBRA_INFO_LOG << "Entity " << entity << " with Camera " << camera << " added successfully";
-		}
-
-		if (mesh) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				mCameraUniformsUpdater->addRenderable(mesh->get(i));
-				mesh->processRenderableShaders(i, [&](const auto& shader) {
-					mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader);
-				});
-			});
-		}
-		if (terrain) {
-			mCameraUniformsUpdater->addRenderable(terrain->get());
-			terrain->processRenderableShaders([&](const auto& shader) {
-				mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader);
-			});
-		}
-		if (particleSystem) {
-			mCameraUniformsUpdater->addRenderable(particleSystem->get());
-			particleSystem->processRenderableShaders([&](const auto& shader) {
-				mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader);
-			});
-		}
+		tryCallC(&CameraSystem::onNewCamera, entity, mask);
+		tryCallC(&CameraSystem::onNewMesh, entity, mask);
+		tryCallC(&CameraSystem::onNewTerrain, entity, mask);
+		tryCallC(&CameraSystem::onNewParticleSys, entity, mask);
 	}
 
 
-	void CameraSystem::onRemoveEntity(Entity entity)
+	void CameraSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		auto [camera, mesh, terrain, particleSystem] = mEntityDatabase.getComponents<
-			CameraComponent, MeshComponent, TerrainComponent, ParticleSystemComponent
-		>(entity);
-
-		if (mesh) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				mCameraUniformsUpdater->removeRenderable(mesh->get(i));
-			});
-		}
-		if (terrain) {
-			mCameraUniformsUpdater->removeRenderable(terrain->get());
-		}
-		if (particleSystem) {
-			mCameraUniformsUpdater->removeRenderable(particleSystem->get());
-		}
-
-		if (mCamera == camera) {
-			mCamera = nullptr;
-			SOMBRA_INFO_LOG << "Active Camera removed";
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
+		tryCallC(&CameraSystem::onRemoveCamera, entity, mask);
+		tryCallC(&CameraSystem::onRemoveMesh, entity, mask);
+		tryCallC(&CameraSystem::onRemoveTerrain, entity, mask);
+		tryCallC(&CameraSystem::onRemoveParticleSys, entity, mask);
 	}
 
 
@@ -179,7 +134,8 @@ namespace se::app {
 					camera->setOrientation(transforms->orientation);
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Camera));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
@@ -196,9 +152,86 @@ namespace se::app {
 	}
 
 // Private functions
+	void CameraSystem::onNewCamera(Entity entity, CameraComponent* camera)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Camera));
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with CameraComponent " << camera << " added successfully";
+	}
+
+
+	void CameraSystem::onRemoveCamera(Entity entity, CameraComponent* camera)
+	{
+		if (mCamera == camera) {
+			mCamera = nullptr;
+			SOMBRA_INFO_LOG << "Active Camera removed";
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with CameraComponent " << camera << " removed successfully";
+	}
+
+
+	void CameraSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	{
+		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+			mCameraUniformsUpdater->addRenderable(mesh->get(i));
+			mesh->processRenderableShaders(i, [&](const auto& shader) {
+				mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader);
+			});
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
+	}
+
+
+	void CameraSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	{
+		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+			mCameraUniformsUpdater->removeRenderable(mesh->get(i));
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
+	}
+
+
+	void CameraSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		mCameraUniformsUpdater->addRenderable(terrain->get());
+		terrain->processRenderableShaders([&](const auto& shader) {
+			mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader);
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " added successfully";
+	}
+
+
+	void CameraSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	{
+		mCameraUniformsUpdater->removeRenderable(terrain->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
+	}
+
+
+	void CameraSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	{
+		mCameraUniformsUpdater->addRenderable(particleSystem->get());
+		particleSystem->processRenderableShaders([&](const auto& shader) {
+			mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader);
+		});
+		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " added successfully";
+	}
+
+
+	void CameraSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	{
+		mCameraUniformsUpdater->removeRenderable(particleSystem->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " removed successfully";
+	}
+
+
 	void CameraSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
-		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue());
+		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue(), true);
 		if (camera) {
 			mCamera = camera;
 		}
@@ -210,7 +243,7 @@ namespace se::app {
 
 	void CameraSystem::onRMeshEvent(const RMeshEvent& event)
 	{
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 		if (mesh) {
 			switch (event.getOperation()) {
 				case RMeshEvent::Operation::Add:
@@ -227,7 +260,7 @@ namespace se::app {
 	void CameraSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
 		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
-			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity());
+			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 			if (mesh) {
 				switch (event.getOperation()) {
 					case RenderableShaderEvent::Operation::Add:
@@ -242,11 +275,11 @@ namespace se::app {
 		else {
 			graphics::Renderable* renderable = nullptr;
 			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
-				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity());
+				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity(), true);
 				renderable = &terrain->get();
 			}
 			else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::ParticleSystem) {
-				auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(event.getEntity());
+				auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(event.getEntity(), true);
 				renderable = &particleSystem->get();
 			}
 

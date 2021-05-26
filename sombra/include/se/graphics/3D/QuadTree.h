@@ -78,16 +78,29 @@ namespace se::graphics {
 		 *
 		 * @param	size the size of the QuadTree in the XZ plane
 		 * @param	lodDistances the minimum distance to the highestLodLocation
-		 *			at each level of detail */
-		QuadTree(float size, const std::vector<float>& lodDistances);
+		 *			at each level of detail. It must have at least LOD 0 */
+		QuadTree(
+			float size = 0.0f, const std::vector<float>& lodDistances = { 0.0f }
+		);
 
 		/** @return	the size of the QuadTree in the XZ plane */
 		float getSize() const { return mSize; };
 
+		/** Sets the size in the XZ plane of the QuadTree
+		 *
+		 * @param	size the new size of the QuadTree in the XZ plane */
+		void setSize(float size);
+
 		/** @return	the the minimum distance to the highestLodLocation
-		 *			at each level of detail */
+		 *			at each level of detail. It must have at least LOD 0 */
 		const std::vector<float>& getLodDistances() const
 		{ return mLodDistances; };
+
+		/** Sets the LOD distances of the QuadTree
+		 *
+		 * @param	lodDistances the minimum distance to the highestLodLocation
+		 *			at each level of detail */
+		void setLodDistances(const std::vector<float>& lodDistances);
 
 		/** @return	the root Node of the QuadTree */
 		const Node& getRootNode() const { return mRootNode; };

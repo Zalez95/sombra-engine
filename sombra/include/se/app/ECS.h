@@ -1,14 +1,17 @@
-#ifndef ENTITY_DATABASE_H
-#define ENTITY_DATABASE_H
+#ifndef ECS_H
+#define ECS_H
 
 #include <memory>
 #include <vector>
 #include <unordered_set>
 #include "../utils/PackedVector.h"
 #include "Entity.h"
-#include "ISystem.h"
+#include "events/EventManager.h"
 
 namespace se::app {
+
+	class ISystem;
+
 
 	/**
 	 * Class EntityDatabase, it holds all the Entities and their respective
@@ -39,12 +42,19 @@ namespace se::app {
 			 * @param	value the initial value of all the bits */
 			ComponentMask(bool value = false);
 
-			/** Returns the position of the bitmask located at the given index
+			/** Returns the value of the bitmask located at the given index
 			 *
 			 * @param	index the position to check
 			 * @return	the value at the given position */
 			bool operator[](std::size_t index) const
 			{ return mBitMask[index]; };
+
+			/** Sets the value of the bitmask located at the given index
+			 *
+			 * @param	index the position to set
+			 * @param	value the new bit value */
+			ComponentMask& set(std::size_t index, bool value = true)
+			{ mBitMask[index] = value; return *this; };
 
 			/** Sets the value for the given @tparam T Component
 			 *
@@ -126,7 +136,9 @@ namespace se::app {
 		/** Creates a new Entity
 		 *
 		 * @return	the new Entity, @see kNullEntity if it couldn't be
-		 *			created */
+		 *			created
+		 * @note	the Entity will have no Components, but all of them will be
+		 *			enabled by default */
 		Entity addEntity();
 
 		/** Returns the Entity that owns the given Component
@@ -203,35 +215,84 @@ namespace se::app {
 		 * Entity
 		 *
 		 * @param	entity the Entity that owns the Components
+		 * @param	onlyEnabled true if we only want to get the Components
+		 *			that are enabled, false if we want to get all the
+		 *			Components wether they are enabled or not
 		 * @return	a tuple with the pointers to the Components in the
-		 *			requested order. If any of the Components is null it's
-		 *			because the Entity doesn't have any Component with
-		 *			that type */
+		 *			requested order. If the Entity doesn't have any of the
+		 *			Components or it's disabled and @see onlyEnabled is true
+		 *			it will return nullptr in its place */
 		template <typename T1, typename T2, typename... Args>
-		std::tuple<T1*, T2*, Args*...> getComponents(Entity entity);
+		std::tuple<T1*, T2*, Args*...>
+			getComponents(Entity entity, bool onlyEnabled = false);
 
 		/** Returns the Component with type @tparam T owned by the given
 		 * Entity
 		 *
 		 * @param	entity the Entity that owns the Component
-		 * @return	a tuple with a pointer to the Component. If the Component
-		 *			is null then the Entity doesn't have any Component with the
-		 *			given type */
+		 * @param	onlyEnabled true if we only want to get the Component
+		 *			if it's enabled, false if we want to get the Component
+		 *			wether it's enabled or not
+		 * @return	a tuple with a pointer to the Component. If the Entity
+		 *			doesn't have the Component or it's disabled and
+		 *			@see onlyEnabled is true it will return nullptr in its
+		 *			place */
 		template <typename T>
-		std::tuple<T*> getComponents(Entity entity);
+		std::tuple<T*> getComponents(Entity entity, bool onlyEnabled = false);
 
 		/** Iterates all the Entities that have all of the requested Components
 		 * calling the given callback function
 		 *
-		 * @param	callback the callback function to call for each Entity */
+		 * @param	callback the callback function to call for each Entity
+		 * @param	onlyEnabled true if we only want to iterate the Entities
+		 *			with the given Components enabled, false if we want to
+		 *			iterate all the Entities with the given Components wether
+		 *			they are enabled or not */
 		template <typename... Args, typename F>
-		void iterateComponents(F&& callback);
+		void iterateComponents(F&& callback, bool onlyEnabled = false);
 
 		/** Removes the Component with @tparam T from the given Entity
 		 *
 		 * @param	entity the Entity that owns the Component */
 		template <typename T>
 		void removeComponent(Entity entity);
+
+		/** Enables the Component with @tparam T for the given Entity so the
+		 * Systems can start using it
+		 *
+		 * @param	entity the Entity that owns/will own the Component
+		 * @note	if there is no Component currently added to the Entity, the
+		 *			next time a Component is added the Systems will be notified
+		 *			of it */
+		template <typename T>
+		void enableComponent(Entity entity);
+
+		/** Checks if an Entity has all the given Components enabled
+		 *
+		 * @param	entity the Entity that owns/will own the Components
+		 * @return	true if the Entity has all the Components enabled, false
+		 *			otherwise */
+		template <typename T1, typename T2, typename... Args>
+		bool hasComponentsEnabled(Entity entity);
+
+		/** Checks if an Entity has a Component enabled with type @tparam T
+		 *
+		 * @param	entity the Entity that owns/will own the Component
+		 * @return	true if the Entity has the Component enabled, false
+		 *			otherwise */
+		template <typename T>
+		bool hasComponentsEnabled(Entity entity);
+
+		/** Disables the Component with @tparam T for the given Entity so the
+		 * Systems will no longer use it
+		 *
+		 * @param	entity the Entity that owns/will own the Component
+		 * @note	if there is no Component currently added to the Entity, the
+		 *			next time a Component is added to the Entity the Systems
+		 *			won't be notified of it until @see enableComponent is
+		 *			called */
+		template <typename T>
+		void disableComponent(Entity entity);
 	private:
 		/** @return	the Component id of @tparam T */
 		template <typename T>
@@ -243,8 +304,83 @@ namespace se::app {
 		ITComponentTable<T>& getTable() const;
 	};
 
+
+
+
+	/**
+	 * Class System, it's the interface that each System must implement. A
+	 * System is used for updating the Entities Components at every clock tick.
+	 * Also, it can listen for Events
+	 */
+	class ISystem : public IEventListener
+	{
+	protected:	// Attributes
+		/** The EntityDatabase that holds all the Entities and their
+		 * Components */
+		EntityDatabase& mEntityDatabase;
+
+		/** The elapsed time since the last @see update call */
+		float mDeltaTime;
+
+	public:		// Functions
+		/** Creates a new ISystem
+		 *
+		 * @param	entityDatabase the EntityDatabase that holds all the
+		 *			Entities */
+		ISystem(EntityDatabase& entityDatabase) :
+			mEntityDatabase(entityDatabase), mDeltaTime(0.0f) {};
+
+		/** Class destructor */
+		virtual ~ISystem() = default;
+
+		/** @copydoc IEventListener::notify(const IEvent&) */
+		virtual void notify(const IEvent& /*event*/) override {};
+
+		/** Function that the EntityDatabase will call when an Entity Component
+		 * is added
+		 *
+		 * @param	entity the Entity that holds the Component
+		 * @param	mask the ComponentMask that is used for knowing which
+		 *			Component has been added */
+		virtual void onNewComponent(
+			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
+		) {};
+
+		/** Function that the EntityDatabase will call when an Entity Component
+		 * is going to be removed
+		 *
+		 * @param	entity the Entity that holds the Component
+		 * @param	mask the ComponentMask that is used for knowing which
+		 *			Component is going to be removed */
+		virtual void onRemoveComponent(
+			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
+		) {};
+
+		/** Sets the delta time of the ISystem
+		 *
+		 * @param	deltaTime the elapsed time since the last @see update
+		 *			call */
+		void setDeltaTime(float deltaTime) { mDeltaTime = deltaTime; };
+
+		/** Function called every clock tick */
+		virtual void update() {};
+	protected:
+		/** Tries to call the given component handler function with the correct
+		 * Component type
+		 *
+		 * @param	componentHandler a pointer to the function to call
+		 * @param	entity the Entity that holds the Component
+		 * @param	mask the ComponentMask that holds the type of the Component
+		 *			to check */
+		template <typename S, typename C>
+		void tryCallC(
+			void(S::*componentHandler)(Entity, C*),
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		);
+	};
+
 }
 
-#include "EntityDatabase.hpp"
+#include "ECS.hpp"
 
-#endif		// ENTITY_DATABASE_H
+#endif		// ECS_H

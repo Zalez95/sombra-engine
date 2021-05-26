@@ -2,7 +2,7 @@
 #define SETTINGS_MENU_VIEW_H
 
 #include <vector>
-#include <se/utils/Repository.h>
+#include <se/app/Repository.h>
 #include <se/app/gui/Panel.h>
 #include <se/app/gui/Label.h>
 #include <se/app/gui/Button.h>

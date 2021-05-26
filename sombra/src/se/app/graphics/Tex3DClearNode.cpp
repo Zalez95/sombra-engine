@@ -7,7 +7,7 @@
 namespace se::app {
 
 	Tex3DClearNode::Tex3DClearNode(
-		const std::string& name, utils::Repository& repository, std::size_t maxSize
+		const std::string& name, Repository& repository, std::size_t maxSize
 	) : BindableRenderNode(name), mMaxSize(maxSize)
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DClear");

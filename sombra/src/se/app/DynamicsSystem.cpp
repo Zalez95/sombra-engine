@@ -20,36 +20,6 @@ namespace se::app {
 	}
 
 
-	void DynamicsSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, rb] = mEntityDatabase.getComponents<TransformsComponent, physics::RigidBody>(entity);
-		if (!rb) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as RigidBody";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
-		}
-
-		mApplication.getExternalTools().physicsEngine->addRigidBody(rb);
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rb << " added successfully";
-	}
-
-
-	void DynamicsSystem::onRemoveEntity(Entity entity)
-	{
-		auto [rb] = mEntityDatabase.getComponents<physics::RigidBody>(entity);
-		if (!rb) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " wasn't removed";
-			return;
-		}
-
-		mApplication.getExternalTools().physicsEngine->removeRigidBody(rb);
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
-	}
-
-
 	void DynamicsSystem::update()
 	{
 		SOMBRA_INFO_LOG << "Start";
@@ -67,7 +37,8 @@ namespace se::app {
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_DEBUG_LOG << "Integrating the RigidBodies";
@@ -83,10 +54,30 @@ namespace se::app {
 
 					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
-			}
+			},
+			true
 		);
 
 		SOMBRA_INFO_LOG << "End";
+	}
+
+// Private functions
+	void DynamicsSystem::onNewRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
+		}
+
+		mApplication.getExternalTools().physicsEngine->addRigidBody(rigidBody);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " added successfully";
+	}
+
+
+	void DynamicsSystem::onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	{
+		mApplication.getExternalTools().physicsEngine->removeRigidBody(rigidBody);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " removed successfully";
 	}
 
 }

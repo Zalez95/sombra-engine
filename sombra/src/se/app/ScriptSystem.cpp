@@ -1,7 +1,6 @@
 #include "se/utils/Log.h"
 #include "se/app/ScriptSystem.h"
 #include "se/app/Application.h"
-#include "se/app/ScriptComponent.h"
 
 namespace se::app {
 
@@ -32,37 +31,6 @@ namespace se::app {
 	}
 
 
-	void ScriptSystem::onNewEntity(Entity entity)
-	{
-		auto [script] = mEntityDatabase.getComponents<ScriptComponent>(entity);
-		script->setup(mApplication.getEntityDatabase(), mApplication.getEventManager(), entity);
-		script->onCreate(mUserInput);
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " added successfully";
-	}
-
-
-	void ScriptSystem::onRemoveEntity(Entity entity)
-	{
-		auto [script] = mEntityDatabase.getComponents<ScriptComponent>(entity);
-		script->onDestroy(mUserInput);
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " removed successfully";
-	}
-
-
-	void ScriptSystem::update()
-	{
-		SOMBRA_DEBUG_LOG << "Updating the Scripts";
-
-		mEntityDatabase.iterateComponents<ScriptComponent>([this](Entity, ScriptComponent* script) {
-			script->onUpdate(mDeltaTime, mUserInput);
-		});
-
-		SOMBRA_INFO_LOG << "Update end";
-	}
-
-
 	void ScriptSystem::notify(const IEvent& event)
 	{
 		tryCall(&ScriptSystem::onKeyEvent, event);
@@ -72,7 +40,37 @@ namespace se::app {
 		tryCall(&ScriptSystem::onResizeEvent, event);
 	}
 
+
+	void ScriptSystem::update()
+	{
+		SOMBRA_DEBUG_LOG << "Updating the Scripts";
+
+		mEntityDatabase.iterateComponents<ScriptComponent>(
+			[this](Entity, ScriptComponent* script) {
+				script->onUpdate(mDeltaTime, mUserInput);
+			},
+			true
+		);
+
+		SOMBRA_INFO_LOG << "Update end";
+	}
+
 // Private functions
+	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script)
+	{
+		script->setup(mApplication.getEntityDatabase(), mApplication.getEventManager(), entity);
+		script->onCreate(mUserInput);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " added successfully";
+	}
+
+
+	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script)
+	{
+		script->onDestroy(mUserInput);
+		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " removed successfully";
+	}
+
+
 	void ScriptSystem::onKeyEvent(const KeyEvent& event)
 	{
 		mUserInput.keys[event.getKeyCode()] = (event.getState() != KeyEvent::State::Released);

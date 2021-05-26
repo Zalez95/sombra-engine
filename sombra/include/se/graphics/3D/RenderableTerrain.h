@@ -30,10 +30,10 @@ namespace se::graphics {
 		 * @param	size the size of the terrain in the XZ plane
 		 * @param	maxHeight the maximum height of the vertices of the terrain
 		 * @param	lodDistances the minimum distance to the camera at each
-		 *			level of detail */
+		 *			level of detail. It must have at least LOD 0 */
 		RenderableTerrain(
-			float size, float maxHeight,
-			const std::vector<float>& lodDistances
+			float size = 0.0f, float maxHeight = 0.0f,
+			const std::vector<float>& lodDistances = { 0.0f }
 		);
 		RenderableTerrain(const RenderableTerrain& other);
 		RenderableTerrain(RenderableTerrain&& other) = default;
@@ -58,12 +58,35 @@ namespace se::graphics {
 		/** @return	the QuadTree of the RenderableTerrain */
 		QuadTree& getQuadTree() { return mQuadTree; };
 
+		/** @return	the maximum height of the RenderableTerrain */
+		float getMaxHeight() const { return mMaxHeight; };
+
+		/** Sets the maximum height of the RenderableTerrain
+		 *
+		 * @param	maxHeight the new maximum height of the vertices of the
+		 *			terrain */
+		void setMaxHeight(float maxHeight);
+
 		/** @return	the size of the RenderableTerrain in the XZ plane */
 		float getSize() const { return mQuadTree.getSize(); };
 
-		/** @return	the minimum distance to the camera at each level of detail */
+		/** Sets the size in the XZ plane of the RenderableTerrain
+		 *
+		 * @param	size the new size of the RenderableTerrain in the XZ
+		 *			plane */
+		void setSize(float size);
+
+		/** @return	the minimum distance to the camera at each level of
+		 *			detail */
 		const std::vector<float>& getLodDistances() const
 		{ return mQuadTree.getLodDistances(); };
+
+		/** Sets the LOD distances of the RenderableTerrain
+		 *
+		 * @param	lodDistances the minimum distance to the highestLodLocation
+		 *			at each level of detail. It must have at least LOD 0 */
+		void setLodDistances(const std::vector<float>& lodDistances)
+		{ mQuadTree.setLodDistances(lodDistances); };
 
 		/** Updates the terrain QuadTree according to the given highest lod
 		 * location and the configured level of detail distances

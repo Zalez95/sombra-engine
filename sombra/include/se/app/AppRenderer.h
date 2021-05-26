@@ -8,7 +8,7 @@
 #include "../graphics/core/UniformBuffer.h"
 #include "../graphics/core/UniformVariable.h"
 #include "../graphics/3D/RenderableMesh.h"
-#include "ISystem.h"
+#include "ECS.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
 #include "graphics/DeferredLightRenderer.h"
@@ -84,22 +84,18 @@ namespace se::app {
 		/** Class destructor */
 		~AppRenderer();
 
-		/** Notifies the AppRenderer of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
 		/** Updates the light sources with the Entities
 		 *
@@ -113,6 +109,34 @@ namespace se::app {
 		 *			Graphics API context (probably thread 0) */
 		void render();
 	private:
+		/** Function called when a LightComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	light a pointer to the new LightComponent */
+		void onNewLight(Entity entity, LightComponent* light);
+
+		/** Function called when a LightComponent is going to be removed from
+		 * an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	light a pointer to the LightComponent that is going to be
+		 *			removed */
+		void onRemoveLight(Entity entity, LightComponent* light);
+
+		/** Function called when a LightProbe is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the LightProbe
+		 * @param	lightProbe a pointer to the new LightProbe */
+		void onNewLightProbe(Entity entity, LightProbe* lightProbe);
+
+		/** Function called when a LightProbe is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the LightProbe
+		 * @param	lightProbe a pointer to the LightProbe that is going to be
+		 *			removed */
+		void onRemoveLightProbe(Entity entity, LightProbe* lightProbe);
+
 		/** Adds shared resources to the RenderGraph resource node
 		 *
 		 * @param	width the initial width of the FrameBuffer where the

@@ -2,7 +2,9 @@
 #define COLLISION_SYSTEM_H
 
 #include "../collision/RayCast.h"
-#include "ISystem.h"
+#include "ECS.h"
+
+namespace se::collision { class Collider; }
 
 namespace se::app {
 
@@ -34,17 +36,17 @@ namespace se::app {
 		/** Class destructor */
 		~CollisionSystem();
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&CollisionSystem::onNewCollider, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&CollisionSystem::onRemoveCollider, entity, mask); };
 
 		/** Detects the collisions between the entities' colliders */
 		virtual void update() override;
@@ -53,6 +55,20 @@ namespace se::app {
 		std::vector<EntityRayCastPair> getEntities(
 			const glm::vec3& rayOrigin, const glm::vec3& rayDirection
 		) const;
+	private:
+		/** Function called when a Collider is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the Collider
+		 * @param	collider a pointer to the new Collider */
+		void onNewCollider(Entity entity, collision::Collider* collider);
+
+		/** Function called when a Collider is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the Collider
+		 * @param	collider a pointer to the Collider that is going to be
+		 *			removed */
+		void onRemoveCollider(Entity entity, collision::Collider* collider);
 	};
 
 }

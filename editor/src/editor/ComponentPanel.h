@@ -3,18 +3,15 @@
 
 #include <vector>
 #include <unordered_map>
-#include <se/app/Entity.h>
+#include "IEditorPanel.h"
 
 namespace editor {
-
-	class Editor;
-
 
 	/**
 	 * Class ComponentPanel, it's the ImGui panel used for viewing and
 	 * interacting the Entity Components
 	 */
-	class ComponentPanel
+	class ComponentPanel : public IEditorPanel
 	{
 	private:	// Nested types
 		class IComponentNode;
@@ -32,23 +29,20 @@ namespace editor {
 		class ParticleSystemComponentNode;
 
 	private:	// Attributes
-		/** A reference to the Editor that holds the ComponentPanel */
-		Editor& mEditor;
-
 		/** The objects used for drawing the components */
 		std::vector<IComponentNode*> mNodes;
 
 	public:		// Functions
 		/** Creates a new ComponentPanel
 		 *
-		 * @param	editor a reference to the Editor that holds the Entities */
+		 * @param	editor a reference to the Editor that holds the Panel */
 		ComponentPanel(Editor& editor);
 
 		/** Class destructor */
 		~ComponentPanel();
 
-		/** Draws the current panel */
-		void render();
+		/** @copydoc IEditorPanel::render() */
+		virtual bool render() override;
 	};
 
 }

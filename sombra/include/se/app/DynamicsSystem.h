@@ -1,7 +1,9 @@
 #ifndef DYNAMICS_SYSTEM_H
 #define DYNAMICS_SYSTEM_H
 
-#include "ISystem.h"
+#include "ECS.h"
+
+namespace se::physics { class RigidBody; }
 
 namespace se::app {
 
@@ -29,20 +31,34 @@ namespace se::app {
 		/** Class destructor */
 		~DynamicsSystem();
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&DynamicsSystem::onNewRigidBody, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&DynamicsSystem::onRemoveRigidBody, entity, mask); };
 
 		/** Integrates the RigidBodies data of the entities */
 		virtual void update() override;
+	private:
+		/** Function called when a RigidBody is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the RigidBody
+		 * @param	rigidBody a pointer to the new RigidBody */
+		void onNewRigidBody(Entity entity, physics::RigidBody* rigidBody);
+
+		/** Function called when a RigidBody is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the RigidBody
+		 * @param	rigidBody a pointer to the RigidBody that is going to be
+		 *			removed */
+		void onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody);
 	};
 
 }

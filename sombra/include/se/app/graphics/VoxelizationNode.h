@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/3D/Renderer3D.h"
-#include "../../utils/Repository.h"
+#include "../Repository.h"
 
 namespace se::app {
 
@@ -39,7 +39,7 @@ namespace se::app {
 		 * @param	repository the Repository that holds all the Programs
 		 * @param	maxVoxels the maximum number of voxels in each dimension */
 		VoxelizationNode(
-			const std::string& name, utils::Repository& repository,
+			const std::string& name, Repository& repository,
 			std::size_t maxVoxels
 		);
 

@@ -1,4 +1,4 @@
-#include "se/app/EntityDatabase.h"
+#include "se/app/ECS.h"
 
 namespace se::app {
 
@@ -87,16 +87,21 @@ namespace se::app {
 	{
 		std::size_t numComponents = mComponentTables.size();
 		for (std::size_t i = 0; i < numComponents; ++i) {
-			if (mActiveComponents[entity * numComponents + i]) {
-				for (auto& pair : mSystems) {
-					if (pair.second[i]) {
-						pair.first->onRemoveEntity(entity);
+			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + i);
+			if (mActiveComponents[activeComponentsBaseIndex]) {
+				if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+					for (auto& pair : mSystems) {
+						if (pair.second[i]) {
+							pair.first->onRemoveComponent(entity, ComponentMask().set(i, true));
+						}
 					}
 				}
 
-				mActiveComponents[entity * numComponents + i] = false;
 				mComponentTables[i]->removeComponent(entity);
 			}
+
+			mActiveComponents[activeComponentsBaseIndex] = false;
+			mActiveComponents[activeComponentsBaseIndex + 1] = true;
 		}
 
 		if (entity != kNullEntity) {

@@ -4,7 +4,7 @@
 #include "se/graphics/core/Program.h"
 #include "se/app/IViewProjectionUpdater.h"
 #include "se/app/Application.h"
-#include "se/app/EntityDatabase.h"
+#include "se/app/ECS.h"
 #include "se/app/TransformsComponent.h"
 
 namespace se::app {
@@ -215,6 +215,7 @@ namespace se::app {
 		for (std::size_t iPass : mShadersData[iShader].passIndices) {
 			removePass(iShader, iPass);
 		}
+		mShadersData.erase( mShadersData.begin().setIndex(iShader) );
 	}
 
 }

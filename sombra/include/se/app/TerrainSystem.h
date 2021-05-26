@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
-#include "ISystem.h"
+#include "ECS.h"
 #include "events/ContainerEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
@@ -14,6 +14,7 @@
 namespace se::app {
 
 	class Application;
+	class TerrainComponent;
 
 
 	/**
@@ -60,26 +61,38 @@ namespace se::app {
 		/** Class destructor */
 		~TerrainSystem();
 
-		/** Notifies the TerrainSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&TerrainSystem::onNewTerrain, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&TerrainSystem::onRemoveTerrain, entity, mask); };
 
 		/** Updates the RenderableTerrains with the Entities */
 		virtual void update() override;
 	private:
+		/** Function called when a TerrainComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the new TerrainComponent */
+		void onNewTerrain(Entity entity, TerrainComponent* terrain);
+
+		/** Function called when a TerrainComponent is going to be removed from
+		 * an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the TerrainComponent that is going to
+		 *			be removed */
+		void onRemoveTerrain(Entity entity, TerrainComponent* terrain);
+
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered
 		 *

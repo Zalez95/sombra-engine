@@ -9,9 +9,10 @@
 
 namespace editor {
 
-	void Gizmo::render()
+	bool Gizmo::render()
 	{
-		if (ImGui::Begin("Gizmo Panel")) {
+		bool open = true;
+		if (ImGui::Begin(("Gizmo Panel##GizmoPanel" + std::to_string(mPanelId)).c_str(), &open)) {
 			if (ImGui::BeginTable("GizmoTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
@@ -38,9 +39,9 @@ namespace editor {
 		}
 		ImGui::End();
 
-		auto [camera] = mEditor.getEntityDatabase().getComponents<se::app::CameraComponent>(mEditor.getViewportEntity());
+		auto [camera] = mEditor.getEntityDatabase().getComponents<se::app::CameraComponent>(mEditor.getViewportEntity(), true);
 		if (!camera) {
-			return;
+			return open;
 		}
 
 		glm::mat4 viewMatrix = camera->getViewMatrix();
@@ -50,9 +51,9 @@ namespace editor {
 			(mOperation == Operation::Rotation)? ImGuizmo::OPERATION::ROTATE : ImGuizmo::OPERATION::SCALE;
 		ImGuizmo::MODE mode = mWorld? ImGuizmo::MODE::WORLD : ImGuizmo::MODE::LOCAL;
 
-		auto [transforms] = mEditor.getEntityDatabase().getComponents<se::app::TransformsComponent>(mEditor.getActiveEntity());
+		auto [transforms] = mEditor.getEntityDatabase().getComponents<se::app::TransformsComponent>(mEditor.getActiveEntity(), true);
 		if (!transforms) {
-			return;
+			return open;
 		}
 
 		glm::mat4 matrixTransform = se::app::getModelMatrix(*transforms);
@@ -60,6 +61,8 @@ namespace editor {
 			se::utils::decompose(matrixTransform, transforms->position, transforms->orientation, transforms->scale);
 			transforms->updated.reset();
 		}
+
+		return open;
 	}
 
 }

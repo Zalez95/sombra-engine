@@ -8,7 +8,7 @@
 
 namespace se::app {
 
-	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, utils::Repository& repository, std::size_t maxSize) :
+	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, Repository& repository, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize), mMinPosition(0.0f), mMaxPosition(0.0f), mNumInstances(0)
 	{
 		auto program = repository.find<std::string, graphics::Program>("programTex3DViewer");

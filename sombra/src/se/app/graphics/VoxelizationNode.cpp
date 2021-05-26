@@ -8,7 +8,7 @@
 
 namespace se::app {
 
-	VoxelizationNode::VoxelizationNode(const std::string& name, utils::Repository& repository, std::size_t maxVoxels) :
+	VoxelizationNode::VoxelizationNode(const std::string& name, Repository& repository, std::size_t maxVoxels) :
 		Renderer3D(name), mMaxVoxels(maxVoxels), mMinPosition(0.0f), mMaxPosition(0.0f)
 	{
 		auto program = repository.find<std::string, graphics::Program>("programVoxelization");

@@ -1,7 +1,7 @@
 #include <array>
 #include <memory>
 #include "se/utils/Log.h"
-#include "se/utils/Repository.h"
+#include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
@@ -70,7 +70,7 @@ namespace se::app {
 		std::shared_ptr<RenderableMesh> mPlane;
 
 	public:
-		CombineNode(const std::string& name, utils::Repository& repository) :
+		CombineNode(const std::string& name, Repository& repository) :
 			BindableRenderNode(name)
 		{
 			auto iTargetBindable = addBindable();
@@ -145,31 +145,17 @@ namespace se::app {
 	}
 
 
-	void AppRenderer::onNewEntity(Entity entity)
+	void AppRenderer::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(entity);
-		if (lightProbe) {
-			mLightProbeEntity = entity;
-			SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
-		}
+		tryCallC(&AppRenderer::onNewLight, entity, mask);
+		tryCallC(&AppRenderer::onNewLightProbe, entity, mask);
 	}
 
 
-	void AppRenderer::onRemoveEntity(Entity entity)
+	void AppRenderer::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
 	{
-		if (mShadowEntity == entity) {
-			mShadowEntity = kNullEntity;
-			SOMBRA_INFO_LOG << "Shadow Entity " << entity << " removed successfully";
-		}
-
-		if (mLightProbeEntity == entity) {
-			mLightProbeEntity = kNullEntity;
-			mResources->setBindable(mIrradianceTextureResource, nullptr);
-			mResources->setBindable(mPrefilterTextureResource, nullptr);
-
-			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(entity);
-			SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";
-		}
+		tryCallC(&AppRenderer::onRemoveLight, entity, mask);
+		tryCallC(&AppRenderer::onRemoveLightProbe, entity, mask);
 	}
 
 
@@ -179,7 +165,7 @@ namespace se::app {
 
 		// Update light probe
 		if (mLightProbeEntity != kNullEntity) {
-			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(mLightProbeEntity);
+			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(mLightProbeEntity, true);
 			if (mResources->getBindable(mIrradianceTextureResource) != lightProbe->irradianceMap) {
 				mResources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap);
 			}
@@ -220,7 +206,8 @@ namespace se::app {
 					}
 					++i;
 				}
-			}
+			},
+			true
 		);
 
 		mDeferredLightRenderer->setLights(uBaseLights.data(), i);
@@ -238,6 +225,42 @@ namespace se::app {
 	}
 
 // Private functions
+	void AppRenderer::onNewLight(Entity entity, LightComponent* light)
+	{
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " added successfully";
+	}
+
+
+	void AppRenderer::onRemoveLight(Entity entity, LightComponent* light)
+	{
+		if (mShadowEntity == entity) {
+			mShadowEntity = kNullEntity;
+			SOMBRA_INFO_LOG << "Active Shadow Camera removed";
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
+	}
+
+
+	void AppRenderer::onNewLightProbe(Entity entity, LightProbe* lightProbe)
+	{
+		mLightProbeEntity = entity;
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
+	}
+
+
+	void AppRenderer::onRemoveLightProbe(Entity entity, LightProbe* lightProbe)
+	{
+		if (mLightProbeEntity == entity) {
+			mLightProbeEntity = kNullEntity;
+			mResources->setBindable(mIrradianceTextureResource, nullptr);
+			mResources->setBindable(mPrefilterTextureResource, nullptr);
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";
+	}
+
+
 	bool AppRenderer::addResources(std::size_t width, std::size_t height)
 	{
 		auto& graphicsEngine = *mApplication.getExternalTools().graphicsEngine;

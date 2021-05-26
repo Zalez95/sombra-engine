@@ -35,7 +35,6 @@
 #include "se/app/CameraComponent.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/AnimationComponent.h"
-#include "se/app/MeshComponent.h"
 #include "se/app/LightComponent.h"
 
 using namespace se::utils;
@@ -1731,6 +1730,70 @@ namespace se::app {
 
 
 	template <>
+	nlohmann::json serializeComponent<TerrainComponent>(const TerrainComponent& terrain, SerializeData& data, std::ostream&)
+	{
+		nlohmann::json json;
+
+		json["size"] = terrain.get().getSize();
+		json["maxHeight"] = terrain.get().getMaxHeight();
+		json["lodDistances"] = terrain.get().getLodDistances();
+
+		auto shadersVJson = nlohmann::json::array();
+		terrain.processRenderableShaders([&](const std::shared_ptr<RenderableShader>& shader) {
+			Scene::Key shaderKey;
+			if (data.scene.repository.findKey(shader, shaderKey)) {
+				shadersVJson.push_back(shaderKey);
+			}
+		});
+		json["shaders"] = std::move(shadersVJson);
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<TerrainComponent> deserializeComponent<TerrainComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	{
+		auto itSize = json.find("size");
+		if (itSize == json.end()) {
+			return { Result(false, "Missing \"size\" property"), std::nullopt };
+		}
+
+		auto itMaxHeight = json.find("maxHeight");
+		if (itMaxHeight == json.end()) {
+			return { Result(false, "Missing \"maxHeight\" property"), std::nullopt };
+		}
+
+		auto itLodDistances = json.find("lodDistances");
+		if (itLodDistances == json.end()) {
+			return { Result(false, "Missing \"lodDistances\" property"), std::nullopt };
+		}
+
+		auto itShaders = json.find("shaders");
+		if (itShaders == json.end()) {
+			return { Result(false, "Missing \"shaders\" property"), std::nullopt };
+		}
+
+		float size = *itSize;
+		float maxHeight = *itMaxHeight;
+		std::vector<float> lodDistances = *itLodDistances;
+		TerrainComponent terrain(scene.application.getEventManager(), entity, size, maxHeight, lodDistances);
+
+		for (std::size_t i = 0; i < itShaders->size(); ++i) {
+			Scene::Key shaderKey = (*itShaders)[i];
+
+			if (auto shader = scene.repository.find<Scene::Key, RenderableShader>(shaderKey)) {
+				terrain.addRenderableShader(shader);
+			}
+			else {
+				return { Result(false, "RenderableShader \"" + shaderKey + "\" not found at shaders[" + std::to_string(i) + "]"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(terrain) };
+	}
+
+
+	template <>
 	nlohmann::json serializeComponent<LightComponent>(const LightComponent& light, SerializeData& data, std::ostream&)
 	{
 		nlohmann::json json;
@@ -2523,10 +2586,12 @@ namespace se::app {
 		for (Entity entity : data.scene.entities) {
 			std::size_t index = data.entityIndexMap.find(entity)->second;
 			auto [component] = data.scene.application.getEntityDatabase().getComponents<T>(entity);
+			bool componentEnabled = data.scene.application.getEntityDatabase().hasComponentsEnabled<T>(entity);
 
 			if (component) {
 				nlohmann::json componentJson = serializeComponent<T>(*component, data, dataStream);
 				componentJson["entity"] = index;
+				componentJson["enabled"] = componentEnabled;
 				componentsVJson.emplace_back(std::move(componentJson));
 			}
 		}
@@ -2553,6 +2618,18 @@ namespace se::app {
 				auto itEntity2 = data.indexEntityMap.find(iEntity);
 				if (itEntity2 == data.indexEntityMap.end()) {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Entity " + std::to_string(iEntity) + " not found");
+				}
+
+				auto itEnabled = componentJson.find("enabled");
+				if (itEnabled == componentJson.end()) {
+					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Missing \"enabled\" property");
+				}
+
+				if (itEnabled->get<bool>()) {
+					scene.application.getEntityDatabase().enableComponent<T>(itEntity2->second);
+				}
+				else {
+					scene.application.getEntityDatabase().disableComponent<T>(itEntity2->second);
 				}
 
 				if constexpr (hasDerived) {
@@ -2706,6 +2783,7 @@ namespace se::app {
 		serializeCVector<TransformsComponent>("transforms", data, json, dataStream);
 		serializeCVector<CameraComponent>("cameras", data, json, dataStream);
 		serializeCVector<MeshComponent>("meshComponents", data, json, dataStream);
+		serializeCVector<TerrainComponent>("terrainComponents", data, json, dataStream);
 		serializeCVector<LightComponent>("lights", data, json, dataStream);
 		serializeCVector<LightProbe>("lightProbes", data, json, dataStream);
 		serializeCVector<RigidBody>("rigidBodies", data, json, dataStream);
@@ -2721,6 +2799,7 @@ namespace se::app {
 		if (auto result = deserializeCVector<TransformsComponent>("transforms", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<CameraComponent>("cameras", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<MeshComponent>("meshComponents", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<TerrainComponent>("terrainComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightProbe>("lightProbes", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<RigidBody>("rigidBodies", data, scene); !result) { return result; }

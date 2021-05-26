@@ -56,7 +56,7 @@ namespace se::app {
 			return;
 		}
 
-		auto [node] = scene.application.getEntityDatabase().getComponents<animation::AnimationNode*>(entity);
+		auto [node] = scene.application.getEntityDatabase().getComponents<animation::AnimationNode*>(entity, true);
 		if (node) {
 			animation::AnimationNode& nodeRef = **node;
 

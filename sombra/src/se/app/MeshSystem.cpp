@@ -16,7 +16,7 @@ namespace se::app {
 			.subscribe(this, Topic::RMesh)
 			.subscribe(this, Topic::RShader)
 			.subscribe(this, Topic::Shader);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>().set<SkinComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>());
 
 		mEntityUniforms.reserve(mEntityDatabase.getMaxComponents<MeshComponent>());
 	}
@@ -40,58 +40,6 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::onNewEntity(Entity entity)
-	{
-		auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
-		if (!mesh) {
-			SOMBRA_WARN_LOG << "Entity " << entity << " couldn't be added as Mesh";
-			return;
-		}
-
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
-		}
-
-		if (mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>()).second) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
-					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-						addPass(entity, i, pass);
-					});
-				});
-
-				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
-			});
-
-			SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
-		}
-		else {
-			SOMBRA_ERROR_LOG << "Failed to add Entity " << entity << " with MeshComponent " << mesh << " to the map";
-		}
-	}
-
-
-	void MeshSystem::onRemoveEntity(Entity entity)
-	{
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(entity);
-		if (!mesh) {
-			SOMBRA_INFO_LOG << "Mesh Entity " << entity << " couldn't removed";
-			return;
-		}
-
-		mesh->processRenderableIndices([this, mesh = mesh](std::size_t i) {
-			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
-		});
-
-		auto it = mEntityUniforms.find(entity);
-		if (it != mEntityUniforms.end()) {
-			mEntityUniforms.erase(it);
-		}
-
-		SOMBRA_INFO_LOG << "Mesh Entity " << entity << " removed successfully";
-	}
-
-
 	void MeshSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
@@ -99,7 +47,7 @@ namespace se::app {
 		utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 
 		for (auto& [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
+			auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity, true);
 			if (transforms
 				&& (!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
 					|| !transforms->updated[static_cast<int>(TransformsComponent::Update::Skin)])
@@ -133,6 +81,47 @@ namespace se::app {
 	}
 
 // Private functions
+	void MeshSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	{
+		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		if (transforms) {
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
+		}
+
+		if (mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>()).second) {
+			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
+					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
+						addPass(entity, i, pass);
+					});
+				});
+
+				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
+			});
+
+			SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
+		}
+		else {
+			SOMBRA_ERROR_LOG << "Failed to add Entity " << entity << " with MeshComponent " << mesh << " to the map";
+		}
+	}
+
+
+	void MeshSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	{
+		mesh->processRenderableIndices([this, mesh = mesh](std::size_t i) {
+			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
+		});
+
+		auto it = mEntityUniforms.find(entity);
+		if (it != mEntityUniforms.end()) {
+			mEntityUniforms.erase(it);
+		}
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
+	}
+
+
 	void MeshSystem::onRMeshEvent(const RMeshEvent& event)
 	{
 		auto itEntity = mEntityUniforms.find(event.getEntity());
@@ -140,25 +129,26 @@ namespace se::app {
 			return;
 		}
 
-		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(event.getEntity());
+		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(event.getEntity(), true);
+		if (mesh) {
+			switch (event.getOperation()) {
+				case RMeshEvent::Operation::Add: {
+					glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
+					mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
 
-		switch (event.getOperation()) {
-			case RMeshEvent::Operation::Add: {
-				glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
-				mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
-
-				mesh->processRenderableShaders(event.getRIndex(), [&](const RenderableShaderSPtr& shader) {
-					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-						addPass(event.getEntity(), event.getRIndex(), pass);
+					mesh->processRenderableShaders(event.getRIndex(), [&](const RenderableShaderSPtr& shader) {
+						shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
+							addPass(event.getEntity(), event.getRIndex(), pass);
+						});
 					});
-				});
 
-				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(event.getRIndex()));
-			} break;
-			case RMeshEvent::Operation::Remove: {
-				mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
-				itEntity->second[event.getRIndex()].clear();
-			} break;
+					mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(event.getRIndex()));
+				} break;
+				case RMeshEvent::Operation::Remove: {
+					mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
+					itEntity->second[event.getRIndex()].clear();
+				} break;
+			}
 		}
 	}
 
@@ -189,31 +179,34 @@ namespace se::app {
 
 	void MeshSystem::onShaderEvent(const ShaderEvent& event)
 	{
-		mEntityDatabase.iterateComponents<MeshComponent>([&](Entity entity, MeshComponent* mesh) {
-			mesh->processRenderableIndices([&](std::size_t i) {
-				bool hasShader = false;
-				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
-					hasShader |= (shader == event.getShader());
-				});
+		mEntityDatabase.iterateComponents<MeshComponent>(
+			[&](Entity entity, MeshComponent* mesh) {
+				mesh->processRenderableIndices([&](std::size_t i) {
+					bool hasShader = false;
+					mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
+						hasShader |= (shader == event.getShader());
+					});
 
-				if (hasShader) {
-					switch (event.getOperation()) {
-						case ShaderEvent::Operation::Add: {
-							addPass(entity, i, event.getPass());
-						} break;
-						case ShaderEvent::Operation::Remove: {
-							removePass(entity, i, event.getPass());
-						} break;
+					if (hasShader) {
+						switch (event.getOperation()) {
+							case ShaderEvent::Operation::Add: {
+								addPass(entity, i, event.getPass());
+							} break;
+							case ShaderEvent::Operation::Remove: {
+								removePass(entity, i, event.getPass());
+							} break;
+						}
 					}
-				}
-			});
-		});
+				});
+			},
+			true
+		);
 	}
 
 
 	void MeshSystem::addPass(Entity entity, std::size_t rIndex, const PassSPtr& pass)
 	{
-		auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity);
+		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}
@@ -265,7 +258,7 @@ namespace se::app {
 
 	void MeshSystem::removePass(Entity entity, std::size_t rIndex, const PassSPtr& pass)
 	{
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(entity);
+		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}

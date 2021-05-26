@@ -2,55 +2,48 @@
 #define SCENE_NODES_PANEL_H
 
 #include <se/animation/AnimationNode.h>
+#include "IEditorPanel.h"
 
 namespace editor {
-
-	class Editor;
-
 
 	/**
 	 * Class SceneNodesPanel, it's the ImGui panel used for viewing and
 	 * interacting with the Scene AnimationNodes
 	 */
-	class SceneNodesPanel
+	class SceneNodesPanel : public IEditorPanel
 	{
 	private:	// Nested types
 		using NodeIterator =
 			se::animation::AnimationNode::iterator<se::utils::Traversal::BFS>;
 
 	private:	// Attributes
-		/** A reference to the Editor that holds the SceneNodesPanel */
-		Editor& mEditor;
-
 		/** The selected node */
 		NodeIterator mSelectedNode;
 
 		/** The type of orientation to show */
-		int mOrientationType;
+		int mOrientationType = 0;
 
 		/** The NodeData where the user input will be stored */
 		se::animation::NodeData mWorkingData;
 
 		/** The operations to execute */
-		bool mRemove, mAdd, mRemoveHierarchy, mChangeParent;
+		bool mRemove = false, mAdd = false, mRemoveHierarchy = false,
+			mChangeParent = false;
 
 		/** If the operation should affect the descendant nodes or not */
-		bool mDescendants;
+		bool mDescendants = false;
 
 		/** If we should use the root node in the operation or not */
-		bool mRoot;
+		bool mRoot = false;
 
 	public:		// Functions
 		/** Creates a new SceneNodesPanel
 		 *
-		 * @param	editor a reference to the Editor that holds the Entities */
-		SceneNodesPanel(Editor& editor) :
-			mEditor(editor), mSelectedNode(nullptr), mOrientationType(0),
-			mRemove(false), mAdd(false), mRemoveHierarchy(false),
-			mChangeParent(false), mDescendants(false), mRoot(false) {};
+		 * @param	editor a reference to the Editor that holds the Panel */
+		SceneNodesPanel(Editor& editor) : IEditorPanel(editor) {};
 
-		/** Draws the current panel */
-		void render();
+		/** @copydoc IEditorPanel::render() */
+		virtual bool render() override;
 	private:
 		/** Draws the given node
 		 *

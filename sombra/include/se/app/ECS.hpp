@@ -1,5 +1,5 @@
-#ifndef ENTITY_DATABASE_HPP
-#define ENTITY_DATABASE_HPP
+#ifndef ECS_HPP
+#define ECS_HPP
 
 #include <cassert>
 #include <functional>
@@ -324,7 +324,11 @@ namespace se::app {
 			mComponentTables[id] = std::make_unique<ComponentTable<T>>(maxComponents);
 		}
 
-		mActiveComponents.resize(mMaxEntities * mComponentTables.size(), false);
+		std::size_t activeComponentsSize = 2 * mMaxEntities * mComponentTables.size();
+		mActiveComponents.reserve(activeComponentsSize);
+		for (std::size_t i = 0; i < activeComponentsSize; ++i) {
+			mActiveComponents.push_back(i % 2 == 1);
+		}
 	}
 
 
@@ -367,11 +371,14 @@ namespace se::app {
 		T* ret = nullptr;
 		if (entity != kNullEntity) {
 			ret = getTable<T>().addComponent(entity, std::forward<T>(component));
-			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
-			for (auto& pair : mSystems) {
-				if (pair.second.get<T>()) {
-					pair.first->onNewEntity(entity);
+			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
+			mActiveComponents[activeComponentsBaseIndex] = true;
+			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
+					}
 				}
 			}
 		}
@@ -385,11 +392,14 @@ namespace se::app {
 		T* ret = nullptr;
 		if (entity != kNullEntity) {
 			ret = getTable<T>().addComponent(entity, std::move(component));
-			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = true;
 
-			for (auto& pair : mSystems) {
-				if (pair.second.get<T>()) {
-					pair.first->onNewEntity(entity);
+			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
+			mActiveComponents[activeComponentsBaseIndex] = true;
+			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
+					}
 				}
 			}
 		}
@@ -400,7 +410,7 @@ namespace se::app {
 	template <typename T1, typename T2, typename... Args>
 	bool EntityDatabase::hasComponents(Entity entity)
 	{
-		return mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T1>()]
+		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T1>())]
 			&& hasComponents<T2, Args...>(entity);
 	}
 
@@ -408,31 +418,37 @@ namespace se::app {
 	template <typename T>
 	bool EntityDatabase::hasComponents(Entity entity)
 	{
-		return mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()];
+		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T>())];
 	}
 
 
 	template <typename T1, typename T2, typename... Args>
-	std::tuple<T1*, T2*, Args*...> EntityDatabase::getComponents(Entity entity)
+	std::tuple<T1*, T2*, Args*...> EntityDatabase::getComponents(Entity entity, bool onlyEnabled)
 	{
-		auto component = getTable<T1>().getComponent(entity);
-		return std::tuple_cat(std::make_tuple(component), getComponents<T2, Args...>(entity));
+		auto [component] = getComponents<T1>(entity, onlyEnabled);
+		return std::tuple_cat(std::make_tuple(component), getComponents<T2, Args...>(entity, onlyEnabled));
 	}
 
 
 	template <typename T>
-	std::tuple<T*> EntityDatabase::getComponents(Entity entity)
+	std::tuple<T*> EntityDatabase::getComponents(Entity entity, bool onlyEnabled)
 	{
-		auto component = getTable<T>().getComponent(entity);
+		T* component = nullptr;
+		if (hasComponents<T>(entity) && (!onlyEnabled || hasComponentsEnabled<T>(entity))) {
+			component = getTable<T>().getComponent(entity);
+		}
+
 		return std::make_tuple(component);
 	}
 
 
 	template <typename... Args, typename F>
-	void EntityDatabase::iterateComponents(F&& callback)
+	void EntityDatabase::iterateComponents(F&& callback, bool onlyEnabled)
 	{
 		iterateEntities([&](Entity entity) {
-			if (hasComponents<Args...>(entity)) {
+			if (hasComponents<Args...>(entity)
+				&& (!onlyEnabled || hasComponentsEnabled<Args...>(entity))
+			) {
 				auto components = getComponents<Args...>(entity);
 				auto params = std::tuple_cat(std::make_tuple(entity), components);
 				std::apply(callback, params);
@@ -444,15 +460,83 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::removeComponent(Entity entity)
 	{
-		if (mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()]) {
-			for (auto& pair : mSystems) {
-				if (pair.second.get<T>()) {
-					pair.first->onRemoveEntity(entity);
+		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
+		if (mActiveComponents[activeComponentsBaseIndex]) {
+			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
+					}
 				}
 			}
 
-			mActiveComponents[entity * mComponentTables.size() + getComponentTypeId<T>()] = false;
+			mActiveComponents[activeComponentsBaseIndex] = false;
 			getTable<T>().removeComponent(entity);
+		}
+	}
+
+
+	template <typename T>
+	void EntityDatabase::enableComponent(Entity entity)
+	{
+		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
+		if (!mActiveComponents[activeComponentsBaseIndex + 1]) {
+			mActiveComponents[activeComponentsBaseIndex + 1] = true;
+
+			if (mActiveComponents[activeComponentsBaseIndex]) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
+					}
+				}
+			}
+		}
+	}
+
+
+	template <typename T1, typename T2, typename... Args>
+	bool EntityDatabase::hasComponentsEnabled(Entity entity)
+	{
+		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T1>()) + 1]
+			&& hasComponentsEnabled<T2, Args...>(entity);
+	}
+
+
+	template <typename T>
+	bool EntityDatabase::hasComponentsEnabled(Entity entity)
+	{
+		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T>()) + 1];
+	}
+
+
+	template <typename T>
+	void EntityDatabase::disableComponent(Entity entity)
+	{
+		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
+		if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+			if (mActiveComponents[activeComponentsBaseIndex]) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
+					}
+				}
+			}
+
+			mActiveComponents[activeComponentsBaseIndex + 1] = false;
+		}
+	}
+
+
+	template <typename S, typename C>
+	void ISystem::tryCallC(
+		void(S::*componentHandler)(Entity, C*),
+		Entity entity, const EntityDatabase::ComponentMask& mask
+	) {
+		if (mask.get<C>()) {
+			S* thisS = static_cast<S*>(this);
+
+			auto [component] = mEntityDatabase.getComponents<C>(entity);
+			(thisS->*componentHandler)(entity, component);
 		}
 	}
 
@@ -473,4 +557,4 @@ namespace se::app {
 
 }
 
-#endif		// ENTITY_DATABASE_HPP
+#endif		// ECS_HPP

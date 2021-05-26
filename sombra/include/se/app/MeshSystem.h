@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
-#include "ISystem.h"
+#include "ECS.h"
 #include "MeshComponent.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
@@ -60,26 +60,38 @@ namespace se::app {
 		/** Class destructor */
 		~MeshSystem();
 
-		/** Notifies the MeshSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * added
-		 *
-		 * @param	entity the new Entity */
-		virtual void onNewEntity(Entity entity);
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&MeshSystem::onNewMesh, entity, mask); };
 
-		/** Function that the EntityDatabase will call when an Entity is
-		 * removed
-		 *
-		 * @param	entity the Entity to remove */
-		virtual void onRemoveEntity(Entity entity);
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override
+		{ tryCallC(&MeshSystem::onRemoveMesh, entity, mask); };
 
 		/** Updates the RenderableMeshes with the Entities */
 		virtual void update() override;
 	private:
+		/** Function called when a MeshComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the new MeshComponent */
+		void onNewMesh(Entity entity, MeshComponent* mesh);
+
+		/** Function called when a MeshComponent is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the MeshComponent that is going to be
+		 *			removed */
+		void onRemoveMesh(Entity entity, MeshComponent* mesh);
+
 		/** Handles the given RMeshEvent by updating the RenderableMeshes
 		 * uniforms
 		 *

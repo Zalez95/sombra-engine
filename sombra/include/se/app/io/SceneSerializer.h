@@ -2,7 +2,6 @@
 #define SCENE_SERIALIZER_H
 
 #include <memory>
-#include "../EntityDatabase.h"
 #include "../Scene.h"
 #include "Result.h"
 

@@ -1,6 +1,6 @@
 #include <numeric>
 #include <se/utils/Log.h>
-#include <se/utils/Repository.h>
+#include <se/app/Repository.h>
 #include <se/app/io/FontReader.h>
 #include <se/graphics/GraphicsEngine.h>
 #include "Game.h"

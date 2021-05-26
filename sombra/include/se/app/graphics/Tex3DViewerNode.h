@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/3D/Mesh.h"
-#include "../../utils/Repository.h"
+#include "../Repository.h"
 
 namespace se::app {
 
@@ -50,7 +50,7 @@ namespace se::app {
 		 * @note	the initial mipmap level to draw will be the maximum
 		 *			available */
 		Tex3DViewerNode(
-			const std::string& name, utils::Repository& repository,
+			const std::string& name, Repository& repository,
 			std::size_t maxSize
 		);
 

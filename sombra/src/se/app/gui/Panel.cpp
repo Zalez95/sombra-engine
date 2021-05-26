@@ -1,4 +1,4 @@
-#include "se/utils/Repository.h"
+#include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/gui/Panel.h"
 #include "se/app/gui/GUIManager.h"

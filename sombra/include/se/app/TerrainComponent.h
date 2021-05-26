@@ -42,15 +42,17 @@ namespace se::app {
 		 *			level of detail */
 		TerrainComponent(
 			EventManager& eventManager, Entity entity,
-			float size, float maxHeight,
-			const std::vector<float>& lodDistances
+			float size = 0.0f, float maxHeight = 0.0f,
+			const std::vector<float>& lodDistances = {}
 		) : mEventManager(eventManager), mEntity(entity),
 			mRenderableTerrain(size, maxHeight, lodDistances) {};
 
-		/** Returns the selected RenderableTerrain
-		 *
-		 * @return	the RenderableTerrain */
+		/** @return	the RenderableTerrain of the TerrainComponent */
 		graphics::RenderableTerrain& get() { return mRenderableTerrain; };
+
+		/** @return	the RenderableTerrain of the TerrainComponent */
+		const graphics::RenderableTerrain& get() const
+		{ return mRenderableTerrain; };
 
 		/** Adds the given RenderableShader to the TerrainComponent
 		 *

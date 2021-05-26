@@ -9,11 +9,12 @@
 
 namespace editor {
 
-	void EntityPanel::render()
+	bool EntityPanel::render()
 	{
-		if (!ImGui::Begin("Entity Panel")) {
+		bool open = true;
+		if (!ImGui::Begin(("Entity Panel##EntityPanel" + std::to_string(mPanelId)).c_str(), &open)) {
 			ImGui::End();
-			return;
+			return open;
 		}
 
 		se::app::Scene* scene = mEditor.getScene();
@@ -61,6 +62,7 @@ namespace editor {
 		}
 
 		ImGui::End();
+		return open;
 	}
 
 }

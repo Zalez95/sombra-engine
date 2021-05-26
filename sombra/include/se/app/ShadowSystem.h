@@ -7,11 +7,13 @@
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
 #include "LightComponent.h"
-#include "ISystem.h"
+#include "ECS.h"
 
 namespace se::app {
 
 	class Application;
+	class MeshComponent;
+	class TerrainComponent;
 
 
 	/**
@@ -53,20 +55,64 @@ namespace se::app {
 		/** Class destructor */
 		~ShadowSystem();
 
-		/** Notifies the ShadowSystem of the given event
-		 *
-		 * @param	event the IEvent to notify */
+		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual void notify(const IEvent& event) override;
 
-		/** @copydoc IVPSystem::onNewEntity(Entity) */
-		virtual void onNewEntity(Entity entity) override;
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onNewComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
-		/** @copydoc IVPSystem::onRemoveEntity(Entity) */
-		virtual void onRemoveEntity(Entity entity) override;
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		virtual void onRemoveComponent(
+			Entity entity, const EntityDatabase::ComponentMask& mask
+		) override;
 
 		/** Updates the LightSources with the Entities */
 		virtual void update() override;
 	private:
+		/** Function called when a LightComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	light a pointer to the new LightComponent */
+		void onNewLight(Entity entity, LightComponent* light);
+
+		/** Function called when a LightComponent is going to be removed from
+		 * an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	light a pointer to the LightComponent that is going to be
+		 *			removed */
+		void onRemoveLight(Entity entity, LightComponent* light);
+
+		/** Function called when a MeshComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the new MeshComponent */
+		void onNewMesh(Entity entity, MeshComponent* mesh);
+
+		/** Function called when a MeshComponent is going to be removed from an
+		 * Entity
+		 *
+		 * @param	entity the Entity that holds the MeshComponent
+		 * @param	mesh a pointer to the MeshComponent that is going to be
+		 *			removed */
+		void onRemoveMesh(Entity entity, MeshComponent* mesh);
+
+		/** Function called when a TerrainComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the new TerrainComponent */
+		void onNewTerrain(Entity entity, TerrainComponent* terrain);
+
+		/** Function called when a TerrainComponent is going to be removed
+		 * from an Entity
+		 *
+		 * @param	entity the Entity that holds the TerrainComponent
+		 * @param	terrain a pointer to the TerrainComponent that is going to
+		 *			be removed */
+		void onRemoveTerrain(Entity entity, TerrainComponent* terrain);
+
 		/** Handles the given ContainerEvent by updating the LightComponent
 		 * Entity with which the shadows will be rendered
 		 *

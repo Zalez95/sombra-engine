@@ -1,8 +1,7 @@
 #ifndef ENTITY_PANEL_H
 #define ENTITY_PANEL_H
 
-#include <vector>
-#include <se/app/Entity.h>
+#include "IEditorPanel.h"
 
 namespace editor {
 
@@ -10,23 +9,19 @@ namespace editor {
 
 
 	/**
-	 * Class EntityPanel, it's the ImGui panel used for viewing and interacting
+	 * Class EntityPanel, it's the Editor panel used for viewing and interacting
 	 * with the Scene Entities
 	 */
-	class EntityPanel
+	class EntityPanel : public IEditorPanel
 	{
-	private:	// Attributes
-		/** A reference to the Editor that holds the EntityPanel */
-		Editor& mEditor;
-
 	public:		// Functions
 		/** Creates a new EntityPanel
 		 *
-		 * @param	editor a reference to the Editor that holds the MenuBar */
-		EntityPanel(Editor& editor) : mEditor(editor) {};
+		 * @param	editor a reference to the Editor that holds the Panel */
+		EntityPanel(Editor& editor) : IEditorPanel(editor) {};
 
-		/** Draws the current panel */
-		void render();
+		/** @copydoc IEditorPanel::render() */
+		virtual bool render() override;
 	};
 
 }
