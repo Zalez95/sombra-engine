@@ -11,20 +11,21 @@ namespace se::app {
 	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, Repository& repository, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize), mMinPosition(0.0f), mMaxPosition(0.0f), mNumInstances(0)
 	{
-		auto program = repository.find<std::string, graphics::Program>("programTex3DViewer");
-		if (!program) {
+		mProgram = repository.findByName<graphics::Program>("programTex3DViewer");
+		if (!mProgram) {
+			std::shared_ptr<graphics::Program> program;
 			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl", program);
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			repository.add(std::string("programTex3DViewer"), program);
+			mProgram = repository.insert(std::move(program), "programTex3DViewer");
 		}
-		addBindable(program);
+		addBindable(mProgram.get());
 
-		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(0.0f)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", program, kTextureUnit) );
-		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", program) );
+		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(0.0f)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", mProgram.get(), kTextureUnit) );
+		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", mProgram.get()) );
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, tex3DIndex) );

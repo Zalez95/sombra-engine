@@ -90,9 +90,9 @@ namespace se::app {
 
 		if (mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>()).second) {
 			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
-					shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-						addPass(entity, i, pass);
+				mesh->processRenderableShaders(i, [&](const auto& shader) {
+					shader->processSteps([&](const auto& step) {
+						addStep(entity, i, step.get());
 					});
 				});
 
@@ -136,9 +136,9 @@ namespace se::app {
 					glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
 					mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
 
-					mesh->processRenderableShaders(event.getRIndex(), [&](const RenderableShaderSPtr& shader) {
-						shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-							addPass(event.getEntity(), event.getRIndex(), pass);
+					mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+						shader->processSteps([&](const auto& step) {
+							addStep(event.getEntity(), event.getRIndex(), step.get());
 						});
 					});
 
@@ -164,13 +164,13 @@ namespace se::app {
 
 		switch (event.getOperation()) {
 			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->getTechnique()->processPasses([&](const PassSPtr& pass) {
-					addPass(event.getEntity(), event.getRIndex(), pass);
+				event.getShader()->processSteps([&](const auto& step) {
+					addStep(event.getEntity(), event.getRIndex(), step.get());
 				});
 			} break;
 			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->getTechnique()->processPasses([&](const PassSPtr& pass) {
-					removePass(event.getEntity(), event.getRIndex(), pass);
+				event.getShader()->processSteps([&](const auto& step) {
+					removeStep(event.getEntity(), event.getRIndex(), step.get());
 				});
 			} break;
 		}
@@ -183,17 +183,17 @@ namespace se::app {
 			[&](Entity entity, MeshComponent* mesh) {
 				mesh->processRenderableIndices([&](std::size_t i) {
 					bool hasShader = false;
-					mesh->processRenderableShaders(i, [&](const RenderableShaderSPtr& shader) {
-						hasShader |= (shader == event.getShader());
+					mesh->processRenderableShaders(i, [&](const auto& shader) {
+						hasShader |= (shader.get() == event.getShader());
 					});
 
 					if (hasShader) {
 						switch (event.getOperation()) {
 							case ShaderEvent::Operation::Add: {
-								addPass(entity, i, event.getPass());
+								addStep(entity, i, event.getStep());
 							} break;
 							case ShaderEvent::Operation::Remove: {
-								removePass(entity, i, event.getPass());
+								removeStep(entity, i, event.getStep());
 							} break;
 						}
 					}
@@ -204,49 +204,49 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::addPass(Entity entity, std::size_t rIndex, const PassSPtr& pass)
+	void MeshSystem::addStep(Entity entity, std::size_t rIndex, const RenderableShaderStepSPtr& step)
 	{
 		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}
 
-		// Check if the MeshComponent has the Pass already added
+		// Check if the MeshComponent has the Step already added
 		auto& entityUniforms = mEntityUniforms[entity][rIndex];
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.pass == pass;
+			return uniforms.step == step;
 		});
 		if (itUniforms != entityUniforms.end()) {
 			itUniforms->shaderCount++;
 			return;
 		}
 
-		// Find the program bindable of the Pass
+		// Find the program bindable of the Step
 		std::shared_ptr<graphics::Program> program;
-		pass->processBindables([&](const auto& bindable) {
+		step->processBindables([&](const auto& bindable) {
 			if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
 				program = tmp;
 			}
 		});
 
 		if (!program) {
-			SOMBRA_WARN_LOG << "Trying to add a Pass " << pass << " with no program";
+			SOMBRA_WARN_LOG << "Trying to add a Step " << step.get() << " with no program";
 			return;
 		}
 
 		// Create and add the uniforms to the mesh
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
-		uniforms.pass = pass;
+		uniforms.step = step;
 		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
 		if (uniforms.modelMatrix->found()) {
-			mesh->get(rIndex).addPassBindable(pass.get(), uniforms.modelMatrix);
+			mesh->get(rIndex).addPassBindable(step->getPass().get(), uniforms.modelMatrix);
 		}
 		if (mesh->hasSkinning(rIndex)) {
 			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4>>("uJointMatrices", program);
 			if (uniforms.jointMatrices->found()) {
 				uniforms.jointMatrices->reserve(Skin::kMaxJoints);
-				mesh->get(rIndex).addPassBindable(pass.get(), uniforms.jointMatrices);
+				mesh->get(rIndex).addPassBindable(step->getPass().get(), uniforms.jointMatrices);
 			}
 		}
 
@@ -256,7 +256,7 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::removePass(Entity entity, std::size_t rIndex, const PassSPtr& pass)
+	void MeshSystem::removeStep(Entity entity, std::size_t rIndex, const RenderableShaderStepSPtr& step)
 	{
 		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(entity, true);
 		if (!mesh) {
@@ -265,7 +265,7 @@ namespace se::app {
 
 		auto& entityUniforms = mEntityUniforms.find(entity)->second[rIndex];
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.pass == pass;
+			return uniforms.step == step;
 		});
 		if (itUniforms == entityUniforms.end()) {
 			return;
@@ -273,9 +273,9 @@ namespace se::app {
 
 		itUniforms->shaderCount--;
 		if (itUniforms->shaderCount == 0) {
-			mesh->get(rIndex).removePassBindable(pass.get(), itUniforms->modelMatrix);
+			mesh->get(rIndex).removePassBindable(step->getPass().get(), itUniforms->modelMatrix);
 			if (mesh->hasSkinning(rIndex)) {
-				mesh->get(rIndex).removePassBindable(pass.get(), itUniforms->jointMatrices);
+				mesh->get(rIndex).removePassBindable(step->getPass().get(), itUniforms->jointMatrices);
 			}
 			entityUniforms.erase(itUniforms);
 		}

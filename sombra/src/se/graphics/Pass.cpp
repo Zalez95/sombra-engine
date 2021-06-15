@@ -10,7 +10,7 @@ namespace se::graphics {
 	}
 
 
-	Pass& Pass::addBindable(BindableSPtr bindable)
+	Pass& Pass::addBindable(const BindableSPtr& bindable)
 	{
 		if (bindable) {
 			mBindables.push_back(bindable);
@@ -20,7 +20,7 @@ namespace se::graphics {
 	}
 
 
-	Pass& Pass::removeBindable(BindableSPtr bindable)
+	Pass& Pass::removeBindable(const BindableSPtr& bindable)
 	{
 		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());
 

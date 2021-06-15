@@ -3,8 +3,6 @@
 #include "se/utils/Log.h"
 #include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
-#include "se/graphics/Pass.h"
-#include "se/graphics/Technique.h"
 #include "se/graphics/FBClearNode.h"
 #include "se/graphics/FBCopyNode.h"
 #include "se/graphics/TextureUnitNode.h"
@@ -67,7 +65,8 @@ namespace se::app {
 		static constexpr int kColor0 = 0;
 		static constexpr int kColor1 = 1;
 	private:
-		std::shared_ptr<RenderableMesh> mPlane;
+		Repository::ResourceRef<Mesh> mPlane;
+		Repository::ResourceRef<Program> mProgram;
 
 	public:
 		CombineNode(const std::string& name, Repository& repository) :
@@ -80,30 +79,35 @@ namespace se::app {
 			addInput( std::make_unique<BindableRNodeInput<Texture>>("color0", this, addBindable()) );
 			addInput( std::make_unique<BindableRNodeInput<Texture>>("color1", this, addBindable()) );
 
-			mPlane = std::make_shared<RenderableMesh>( repository.find<std::string, Mesh>("plane") );
+			mPlane = repository.findByName<Mesh>("plane");
 
-			auto program = repository.find<std::string, Program>("fragmentCombineHDR");
-			if (!program) {
+			mProgram = repository.findByName<Program>("fragmentCombineHDR");
+			if (!mProgram) {
+				std::shared_ptr<Program> program;
 				auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentCombineHDR.glsl", program);
 				if (!result) {
 					SOMBRA_ERROR_LOG << result.description();
 					return;
 				}
-				repository.add("programCombineHDR"s, program);
+				mProgram = repository.insert(std::move(program), "programCombineHDR");
 			}
 
-			addBindable(program);
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uColor0", program, kColor0));
-			addBindable(std::make_shared<UniformVariableValue<int>>("uColor1", program, kColor1));
+			addBindable(mProgram.get());
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uColor0", mProgram.get(), kColor0));
+			addBindable(std::make_shared<UniformVariableValue<int>>("uColor1", mProgram.get(), kColor1));
 		};
 
 		virtual void execute() override
 		{
 			bind();
-			mPlane->draw();
+			mPlane->bind();
+			graphics::GraphicsOperations::drawIndexedInstanced(
+				graphics::PrimitiveType::Triangle,
+				mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
+			);
 		};
 	};
 
@@ -132,6 +136,8 @@ namespace se::app {
 
 	AppRenderer::~AppRenderer()
 	{
+		mApplication.getExternalTools().graphicsEngine->getRenderGraph().clearNodes();
+		mApplication.getRepository().findByName<graphics::Mesh>("plane").setFakeUser(false);
 		mApplication.getEntityDatabase().removeSystem(this);
 		mApplication.getEventManager().unsubscribe(this, Topic::Shadow);
 		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
@@ -166,11 +172,11 @@ namespace se::app {
 		// Update light probe
 		if (mLightProbeEntity != kNullEntity) {
 			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(mLightProbeEntity, true);
-			if (mResources->getBindable(mIrradianceTextureResource) != lightProbe->irradianceMap) {
-				mResources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap);
+			if (mResources->getBindable(mIrradianceTextureResource) != lightProbe->irradianceMap.get()) {
+				mResources->setBindable(mIrradianceTextureResource, lightProbe->irradianceMap.get());
 			}
-			if (mResources->getBindable(mPrefilterTextureResource) != lightProbe->prefilterMap) {
-				mResources->setBindable(mPrefilterTextureResource, lightProbe->prefilterMap);
+			if (mResources->getBindable(mPrefilterTextureResource) != lightProbe->prefilterMap.get()) {
+				mResources->setBindable(mPrefilterTextureResource, lightProbe->prefilterMap.get());
 			}
 		}
 
@@ -270,7 +276,7 @@ namespace se::app {
 		planeRawMesh.positions = { {-1.0f,-1.0f, 0.0f }, { 1.0f,-1.0f, 0.0f }, {-1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } };
 		planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 		auto planeMesh = std::make_shared<Mesh>(MeshLoader::createGraphicsMesh(planeRawMesh));
-		mApplication.getRepository().add(std::string("plane"), std::move(planeMesh));
+		mApplication.getRepository().insert(std::move(planeMesh), "plane").setFakeUser();
 
 		mIrradianceTextureResource = mResources->addBindable();
 		if (!mResources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("irradianceTexture", mResources, mIrradianceTextureResource) )) {

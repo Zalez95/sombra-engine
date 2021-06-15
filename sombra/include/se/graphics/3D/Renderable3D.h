@@ -56,14 +56,16 @@ namespace se::graphics {
 		 * @param	pass a pointer to the Pass used for binding the Bindable
 		 * @param	bindable a pointer to the Bindable to add
 		 * @return	a reference to the current Renderable3D object */
-		Renderable3D& addPassBindable(Pass* pass, BindableSPtr bindable);
+		Renderable3D& addPassBindable(Pass* pass, const BindableSPtr& bindable);
 
 		/** Removes a Bindable from the current Renderable3D
 		 *
 		 * @param	pass a pointer to the Pass used for binding the Bindable
 		 * @param	bindable a pointer to the Bindable to remove
 		 * @return	a reference to the current Renderable3D object */
-		Renderable3D& removePassBindable(Pass* pass, BindableSPtr bindable);
+		Renderable3D& removePassBindable(
+			Pass* pass, const BindableSPtr& bindable
+		);
 
 		/** Binds all the Bindables added to the current Renderable3D related
 		 * to the given Pass

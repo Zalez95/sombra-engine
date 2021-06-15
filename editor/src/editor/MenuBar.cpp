@@ -16,9 +16,9 @@ namespace editor {
 
 	void MenuBar::render()
 	{
-		Alert closePopUp("Close?", "Are you sure that you want to close the current Scene?", "Close");
-		Alert createPopUp("Close first?", "The current scene must be closed first, are you sure that you want to close the current Scene?", "Close");
-		Alert errorPopUp("Error", "Operation failed, check logs for more details", "Close");
+		Alert closePopUp("MenuBar::closeAlert", "Close?", "Are you sure that you want to close the current Scene?", "Close");
+		Alert createPopUp("MenuBar::createAlert", "Close first?", "The current scene must be closed first, are you sure that you want to close the current Scene?", "Close");
+		Alert errorPopUp("MenuBar::errorAlert", "Error", "Operation failed, check logs for more details", "Close");
 
 		if (ImGui::BeginMenuBar()) {
 			if (ImGui::BeginMenu("File")) {

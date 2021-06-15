@@ -10,25 +10,26 @@ namespace se::app {
 		const std::string& name, Repository& repository, std::size_t maxSize
 	) : BindableRenderNode(name), mMaxSize(maxSize)
 	{
-		auto program = repository.find<std::string, graphics::Program>("programTex3DClear");
-		if (!program) {
+		mProgram = repository.findByName<graphics::Program>("programTex3DClear");
+		if (!mProgram) {
+			std::shared_ptr<graphics::Program> program;
 			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl", program);
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			repository.add(std::string("programTex3DClear"), program);
+			mProgram = repository.insert(std::move(program), "programTex3DClear");
 		}
-		addBindable(program);
+		addBindable(mProgram.get());
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", program, static_cast<int>(mMaxSize)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", program, kImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", mProgram.get(), static_cast<int>(mMaxSize)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", mProgram.get(), kImageUnit) );
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, tex3DIndex) );
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, tex3DIndex) );
 
-		mPlane = repository.find<std::string, graphics::Mesh>("plane");
+		mPlane = repository.findByName<graphics::Mesh>("plane");
 	}
 
 

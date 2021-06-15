@@ -3,38 +3,16 @@
 
 namespace editor {
 
-	template <typename K, typename V>
-	bool addRepoDropdownButton(const char* tag, const char* buttonName, se::app::Repository& repository, K& key)
+	template <typename T>
+	bool addRepoDropdownButton(const char* tag, const char* buttonName, se::app::Repository& repository, se::app::Repository::ResourceRef<T>& value)
 	{
 		bool ret = false;
 
 		if (ImGui::BeginCombo(tag, buttonName)) {
-			repository.iterate<K, V>([&](const K& k, std::shared_ptr<V>&) {
-				bool isSelected = (k == key);
-				if (ImGui::Selectable(k.c_str(), isSelected)) {
-					key = k;
-					ret = true;
-				}
-				if (isSelected) {
-					ImGui::SetItemDefaultFocus();
-				}
-			});
-			ImGui::EndCombo();
-		}
-
-		return ret;
-	}
-
-	template <typename K, typename V>
-	bool addRepoDropdownButtonValue(const char* tag, const char* buttonName, se::app::Repository& repository, std::shared_ptr<V>& value)
-	{
-		bool ret = false;
-
-		if (ImGui::BeginCombo(tag, buttonName)) {
-			repository.iterate<K, V>([&](const K& k, std::shared_ptr<V>& v) {
-				bool isSelected = (v == value);
-				if (ImGui::Selectable(k.c_str(), isSelected)) {
-					value = v;
+			repository.iterate<T>([&](const se::app::Repository::ResourceRef<T>& ref) {
+				bool isSelected = (ref == value);
+				if (ImGui::Selectable(ref.getResource().getName(), isSelected)) {
+					value = ref;
 					ret = true;
 				}
 				if (isSelected) {
@@ -48,19 +26,26 @@ namespace editor {
 	}
 
 
-	template <typename K, typename V>
-	bool addRepoDropdownShowSelected(const char* tag, se::app::Repository& repository, K& key)
+	template <typename T>
+	bool addRepoDropdownShowSelected(const char* tag, se::app::Repository& repository, se::app::Repository::ResourceRef<T>& value)
 	{
-		return addRepoDropdownButton<K, V>(tag, key.c_str(), repository, key);
+		const char* buttonName = (value)? value.getResource().getName() : "";
+		return addRepoDropdownButton<T>(tag, buttonName, repository, value);
 	}
 
 
-	template <typename K, typename V>
-	bool addRepoDropdownShowSelectedValue(const char* tag, se::app::Repository& repository, std::shared_ptr<V>& value)
+	template <typename T>
+	void setRepoName(se::app::Resource<T>& resource, const char* name, se::app::Repository& repository)
 	{
-		K key;
-		repository.findKey<K, V>(value, key);
-		return addRepoDropdownButtonValue<K, V>(tag, key.c_str(), repository, value);
+		std::size_t i = 1;
+		std::string nameStr = name;
+		while (true) {
+			if (!repository.findByName<T>(nameStr.c_str())) {
+				resource.setName(nameStr.c_str());
+				return;
+			}
+			nameStr = name + std::to_string(i++);
+		}
 	}
 
 }

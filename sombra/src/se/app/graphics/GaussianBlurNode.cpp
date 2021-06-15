@@ -25,25 +25,30 @@ namespace se::app {
 		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
 
-		mPlane = std::make_shared<graphics::RenderableMesh>( repository.find<std::string, graphics::Mesh>("plane") );
-
-		auto program = repository.find<std::string, graphics::Program>("programGaussianBlur");
-		if (!program) {
+		mProgram = repository.findByName<graphics::Program>("programGaussianBlur");
+		if (!mProgram) {
+			std::shared_ptr<graphics::Program> program;
 			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentGaussianBlur.glsl", program);
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			repository.add(std::string("programGaussianBlur"), program);
+			mProgram = repository.insert(std::move(program), "programGaussianBlur");
+		}
+
+		mPlane = repository.findByName<graphics::Mesh>("plane");
+		if (!mPlane) {
+			SOMBRA_ERROR_LOG << "plane not found";
+			return;
 		}
 
 		addBindable(std::move(frameBuffer));
-		addBindable(program);
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHorizontal", program, horizontal));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", program, kColorTextureUnit));
+		addBindable(mProgram.get());
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHorizontal", mProgram.get(), horizontal));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", mProgram.get(), kColorTextureUnit));
 	}
 
 
@@ -64,7 +69,11 @@ namespace se::app {
 		auto mask = graphics::FrameBufferMask::Mask().set(graphics::FrameBufferMask::kColor);
 		graphics::GraphicsOperations::clear(mask);
 
-		mPlane->draw();
+		mPlane->bind();
+		graphics::GraphicsOperations::drawIndexedInstanced(
+			graphics::PrimitiveType::Triangle,
+			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
+		);
 
 		graphics::GraphicsOperations::setDepthMask(true);
 	}

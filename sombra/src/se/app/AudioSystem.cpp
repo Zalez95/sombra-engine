@@ -1,9 +1,9 @@
 #include "se/utils/Log.h"
-#include "se/audio/Source.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/AudioSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
+#include "se/app/AudioSourceComponent.h"
 
 namespace se::app {
 
@@ -11,7 +11,7 @@ namespace se::app {
 		ISystem(application.getEntityDatabase()), mApplication(application), mListenerEntity(kNullEntity)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<audio::Source>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<AudioSourceComponent>());
 	}
 
 
@@ -39,17 +39,17 @@ namespace se::app {
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
-		mEntityDatabase.iterateComponents<TransformsComponent, audio::Source>(
-			[this](Entity, TransformsComponent* transforms, audio::Source* source) {
-				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Source)]) {
-					source->setPosition(transforms->position);
-					source->setOrientation(
+		mEntityDatabase.iterateComponents<TransformsComponent, AudioSourceComponent>(
+			[this](Entity, TransformsComponent* transforms, AudioSourceComponent* source) {
+				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::AudioSource)]) {
+					source->get().setPosition(transforms->position);
+					source->get().setOrientation(
 						glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
 						glm::vec3(0.0f, 1.0f, 0.0)
 					);
-					source->setVelocity(transforms->velocity);
+					source->get().setVelocity(transforms->velocity);
 
-					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Source));
+					transforms->updated.set(static_cast<int>(TransformsComponent::Update::AudioSource));
 				}
 			},
 			true
@@ -59,20 +59,20 @@ namespace se::app {
 	}
 
 // Private functions
-	void AudioSystem::onNewSource(Entity entity, audio::Source* source)
+	void AudioSystem::onNewSource(Entity entity, AudioSourceComponent* source)
 	{
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Source));
+			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::AudioSource));
 		}
 
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " added successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " added successfully";
 	}
 
 
-	void AudioSystem::onRemoveSource(Entity entity, audio::Source* source)
+	void AudioSystem::onRemoveSource(Entity entity, AudioSourceComponent* source)
 	{
-		SOMBRA_INFO_LOG << "Entity " << entity << " with Source " << source << " removed successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " removed successfully";
 	}
 
 

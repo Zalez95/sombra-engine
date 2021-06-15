@@ -1,9 +1,9 @@
 #ifndef SKIN_COMPONENT_H
 #define SKIN_COMPONENT_H
 
-#include <memory>
 #include "../utils/FixedVector.h"
 #include "../animation/AnimationNode.h"
+#include "Repository.h"
 
 namespace se::app {
 
@@ -32,7 +32,7 @@ namespace se::app {
 	class SkinComponent
 	{
 	public:		// Nested types
-		using SkinSPtr = std::shared_ptr<Skin>;
+		using SkinRef = Repository::ResourceRef<Skin>;
 		using MapNodeJoint = utils::FixedVector<
 			std::pair<animation::AnimationNode*, std::size_t>,
 			Skin::kMaxJoints
@@ -44,7 +44,7 @@ namespace se::app {
 
 		/** A pointer to the Skin that is going to be used for the Skinning
 		 * animation */
-		SkinSPtr mSkin;
+		SkinRef mSkin;
 
 		/** Maps the AnimationNodes with their respective joint indices in
 		 * @see skin */
@@ -59,7 +59,7 @@ namespace se::app {
 		 * @param	jointIndices maps each AnimationNode with its respective
 		 *			joint index in the skin */
 		SkinComponent(
-			animation::AnimationNode* root, SkinSPtr skin,
+			animation::AnimationNode* root, const SkinRef& skin,
 			MapNodeJoint jointIndices = {}
 		) : mRoot(root), mSkin(skin), mJointIndices(jointIndices) {};
 
@@ -67,7 +67,7 @@ namespace se::app {
 		animation::AnimationNode* getRoot() const { return mRoot; };
 
 		/** @return	a pointer to the Skin used by the SkinComponent */
-		SkinSPtr getSkin() const { return mSkin; };
+		const SkinRef& getSkin() const { return mSkin; };
 
 		/** @return	a vector that maps each AnimationNode with its respective
 		 *			joint index in the skin */

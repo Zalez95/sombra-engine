@@ -11,8 +11,9 @@ namespace se::app {
 	VoxelizationNode::VoxelizationNode(const std::string& name, Repository& repository, std::size_t maxVoxels) :
 		Renderer3D(name), mMaxVoxels(maxVoxels), mMinPosition(0.0f), mMaxPosition(0.0f)
 	{
-		auto program = repository.find<std::string, graphics::Program>("programVoxelization");
-		if (!program) {
+		mProgram = repository.findByName<graphics::Program>("programVoxelization");
+		if (!mProgram) {
+			std::shared_ptr<graphics::Program> program;
 			auto result = ShaderLoader::createProgram(
 				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
 				"res/shaders/fragmentVoxelization.glsl", program
@@ -21,18 +22,18 @@ namespace se::app {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			repository.add(std::string("programVoxelization"), program);
+			mProgram = repository.insert(std::move(program), "programVoxelization");
 		}
-		addBindable(program);
+		addBindable(mProgram.get());
 
 		for (std::size_t i = 0; i < 3; ++i) {
 			mProjectionMatrices[i] = addBindable(
-				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), program)
+				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), mProgram.get())
 			);
 		}
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", program, static_cast<int>(mMaxVoxels)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", program, kVoxelImageUnit) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", mProgram.get(), static_cast<int>(mMaxVoxels)) );
+		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", mProgram.get(), kVoxelImageUnit) );
 
 		mVoxelImage = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, mVoxelImage) );

@@ -1,16 +1,16 @@
 #include "se/utils/Log.h"
-#include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/app/DynamicsSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
+#include "se/app/RigidBodyComponent.h"
 
 namespace se::app {
 
 	DynamicsSystem::DynamicsSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<RigidBodyComponent>());
 	}
 
 
@@ -27,13 +27,13 @@ namespace se::app {
 		mApplication.getExternalTools().physicsEngine->resetRigidBodiesState();
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
-		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
-			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
+		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
 					rigidBody->getData().position		= transforms->position;
 					rigidBody->getData().linearVelocity	= transforms->velocity;
 					rigidBody->getData().orientation	= transforms->orientation;
-					rigidBody->synchWithData();
+					rigidBody->get().synchWithData();
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
@@ -45,9 +45,9 @@ namespace se::app {
 		mApplication.getExternalTools().physicsEngine->integrate(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
-			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
-				if (rigidBody->checkState(physics::RigidBodyState::Integrated)) {
+		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
+				if (rigidBody->get().checkState(physics::RigidBodyState::Integrated)) {
 					transforms->position	= rigidBody->getData().position;
 					transforms->velocity	= rigidBody->getData().linearVelocity;
 					transforms->orientation	= rigidBody->getData().orientation;
@@ -62,22 +62,22 @@ namespace se::app {
 	}
 
 // Private functions
-	void DynamicsSystem::onNewRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	void DynamicsSystem::onNewRigidBody(Entity entity, RigidBodyComponent* rigidBody)
 	{
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
 		}
 
-		mApplication.getExternalTools().physicsEngine->addRigidBody(rigidBody);
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " added successfully";
+		mApplication.getExternalTools().physicsEngine->addRigidBody(&rigidBody->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBodyComponent " << rigidBody << " added successfully";
 	}
 
 
-	void DynamicsSystem::onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	void DynamicsSystem::onRemoveRigidBody(Entity entity, RigidBodyComponent* rigidBody)
 	{
-		mApplication.getExternalTools().physicsEngine->removeRigidBody(rigidBody);
-		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBody " << rigidBody << " removed successfully";
+		mApplication.getExternalTools().physicsEngine->removeRigidBody(&rigidBody->get());
+		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBodyComponent " << rigidBody << " removed successfully";
 	}
 
 }

@@ -4,7 +4,7 @@
 
 namespace se::graphics {
 
-	Technique& Technique::addPass(PassSPtr pass)
+	Technique& Technique::addPass(const PassSPtr& pass)
 	{
 		if (pass) {
 			mPasses.emplace_back(std::move(pass));
@@ -14,7 +14,7 @@ namespace se::graphics {
 	}
 
 
-	Technique& Technique::removePass(PassSPtr pass)
+	Technique& Technique::removePass(const PassSPtr& pass)
 	{
 		mPasses.erase(std::remove(mPasses.begin(), mPasses.end(), pass), mPasses.end());
 

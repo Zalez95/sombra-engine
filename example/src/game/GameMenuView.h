@@ -50,8 +50,7 @@ namespace game {
 			mQuitButton(&mGUIManager, std::make_unique<se::app::Rectangle>()),
 			mBackLabel(&mGUIManager), mQuitLabel(&mGUIManager)
 		{
-			auto arial = game.getRepository().find<std::string, se::graphics::Font>("arial");
-			if (!arial) { return; }
+			auto arial = game.getRepository().findByName<se::graphics::Font>("arial");
 
 			mTitleLabel.setFont(arial);
 			mTitleLabel.setCharacterSize({ 24, 24 });

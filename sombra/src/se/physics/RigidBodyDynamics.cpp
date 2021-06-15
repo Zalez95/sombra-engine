@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "se/physics/RigidBody.h"
+#include "se/physics/forces/Force.h"
 #include "RigidBodyDynamics.h"
 
 namespace se::physics {

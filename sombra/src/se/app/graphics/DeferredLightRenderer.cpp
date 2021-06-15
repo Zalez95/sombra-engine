@@ -26,46 +26,51 @@ namespace se::app {
 		addInput( std::make_unique<BindableRNodeInput<Texture>>("material", this, addBindable()) );
 		addInput( std::make_unique<BindableRNodeInput<Texture>>("emissive", this, addBindable()) );
 
-		mPlane = std::make_shared<RenderableMesh>( repository.find<std::string, Mesh>("plane") );
-
-		auto program = repository.find<std::string, Program>("programDeferredLighting");
-		if (!program) {
+		mProgram = repository.findByName<Program>("programDeferredLighting");
+		if (!mProgram) {
+			std::shared_ptr<Program> program;
 			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl", program);
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			repository.add(std::string("programDeferredLighting"), program);
+			mProgram = repository.insert(std::move(program), "programDeferredLighting");
 		}
 
-		mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", program, glm::vec3(0.0f));
-		mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", program, 0);
+		mPlane = repository.findByName<Mesh>("plane");
+		if (!mPlane) {
+			SOMBRA_ERROR_LOG << "plane not found";
+			return;
+		}
+
+		mViewPosition = std::make_shared<UniformVariableValue<glm::vec3>>("uViewPosition", mProgram.get(), glm::vec3(0.0f));
+		mNumLights = std::make_shared<UniformVariableValue<unsigned int>>("uNumLights", mProgram.get(), 0);
 		mLightsBuffer = std::make_shared<UniformBuffer>();
 		utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
 		mLightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
-		mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", program, kMaxLights);
-		mShadowViewProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewProjectionMatrix", program, glm::mat4(1.0f));
+		mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", mProgram.get(), kMaxLights);
+		mShadowViewProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewProjectionMatrix", mProgram.get(), glm::mat4(1.0f));
 
-		addBindable(program);
+		addBindable(mProgram.get());
 		addBindable(std::make_shared<SetDepthMask>(false));
-		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", program, glm::mat4(1.0f)));
-		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", program, glm::mat4(1.0f)));
+		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
+		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
+		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
 		addBindable(mShadowViewProjectionMatrix);
 		addBindable(mViewPosition);
-		addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", program, TexUnits::kIrradianceMap));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", program, TexUnits::kPrefilterMap));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", program, TexUnits::kBRDFMap));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", program, TexUnits::kShadowMap));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", program, TexUnits::kPosition));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", program, TexUnits::kNormal));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", program, TexUnits::kAlbedo));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", program, TexUnits::kMaterial));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", program, TexUnits::kEmissive));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", mProgram.get(), TexUnits::kIrradianceMap));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", mProgram.get(), TexUnits::kPrefilterMap));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", mProgram.get(), TexUnits::kBRDFMap));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", mProgram.get(), TexUnits::kShadowMap));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", mProgram.get(), TexUnits::kPosition));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", mProgram.get(), TexUnits::kNormal));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", mProgram.get(), TexUnits::kAlbedo));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uMaterial", mProgram.get(), TexUnits::kMaterial));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", mProgram.get(), TexUnits::kEmissive));
 		addBindable(mLightsBuffer);
 		addBindable(mNumLights);
 		addBindable(mShadowLightIndex);
-		addBindable(std::make_shared<UniformBlock>("LightsBlock", program));
+		addBindable(std::make_shared<UniformBlock>("LightsBlock", mProgram.get()));
 	}
 
 
@@ -97,7 +102,11 @@ namespace se::app {
 	void DeferredLightRenderer::execute()
 	{
 		bind();
-		mPlane->draw();
+		mPlane->bind();
+		graphics::GraphicsOperations::drawIndexed(
+			graphics::PrimitiveType::Triangle,
+			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
+		);
 	}
 
 }

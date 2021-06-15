@@ -4,11 +4,10 @@
 #include "ECS.h"
 #include "events/ContainerEvent.h"
 
-namespace se::audio { class Source; }
-
 namespace se::app {
 
 	class Application;
+	class AudioSourceComponent;
 
 
 	/**
@@ -54,18 +53,19 @@ namespace se::app {
 		/** Updates the sources data with the Entities */
 		virtual void update() override;
 	private:
-		/** Function called when a Source is added to an Entity
+		/** Function called when a AudioSourceComponent is added to an Entity
 		 *
-		 * @param	entity the Entity that holds the Source
-		 * @param	source a pointer to the new Source */
-		void onNewSource(Entity entity, audio::Source* source);
+		 * @param	entity the Entity that holds the AudioSourceComponent
+		 * @param	source a pointer to the new AudioSourceComponent */
+		void onNewSource(Entity entity, AudioSourceComponent* source);
 
-		/** Function called when a Source is going to be removed from an Entity
+		/** Function called when a AudioSourceComponent is going to be removed
+		 * from an Entity
 		 *
-		 * @param	entity the Entity that holds the Source
-		 * @param	source a pointer to the Source that is going to be
-		 *			removed */
-		void onRemoveSource(Entity entity, audio::Source* source);
+		 * @param	entity the Entity that holds the AudioSourceComponent
+		 * @param	source a pointer to the AudioSourceComponent that is going
+		 *			to be removed */
+		void onRemoveSource(Entity entity, AudioSourceComponent* source);
 
 		/** Handles the given ContainerEvent by updating the Listener Entity
 		 * from where the audio Sources will be listened

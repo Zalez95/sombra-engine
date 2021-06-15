@@ -15,7 +15,7 @@
 namespace game {
 
 	/**
-	 * Class Level, TODO:
+	 * Class Level, it's the single level of the Example Game
 	 */
 	class Level : public IGameScreen, public se::app::IEventListener
 	{

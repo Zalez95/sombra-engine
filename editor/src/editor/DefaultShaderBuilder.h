@@ -36,39 +36,33 @@ namespace editor {
 		) : mApplication(application), mRepository(repository) {};
 
 		/** @copydoc ShaderBuilder::createShader(const Material&, bool) */
-		virtual ShaderSPtr createShader(const char* name, const se::app::Material& material, bool hasSkin) override
+		virtual ShaderRef createShader(const char* name, const se::app::Material& material, bool hasSkin) override
 		{
-			std::string shadowPassKey = hasSkin? "passShadowSkinning" : "passShadow";
-			auto shadowPass = mRepository.find<std::string, se::graphics::Pass>(shadowPassKey);
-			if (!shadowPass) {
-				return nullptr;
+			const char* shadowStepName = hasSkin? "stepShadowSkinning" : "stepShadow";
+			auto shadowStep = mRepository.findByName<se::app::RenderableShaderStep>(shadowStepName);
+			if (!shadowStep) {
+				return ShaderRef();
 			}
 
 			auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 			auto gBufferRendererMesh = dynamic_cast<se::graphics::Renderer*>(renderGraph.getNode("gBufferRendererMesh"));
 			if (!gBufferRendererMesh) {
-				return nullptr;
+				return ShaderRef();
 			}
 
-			std::string programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
-			auto program = mRepository.find<std::string, se::graphics::Program>(programKey);
+			const char* programName = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
+			auto program = mRepository.findByName<se::graphics::Program>(programName);
 			if (!program) {
-				return nullptr;
+				return ShaderRef();
 			}
 
-			auto pass = std::make_shared<se::graphics::Pass>(*gBufferRendererMesh);
-			pass->addBindable(program);
-			se::app::ShaderLoader::addMaterialBindables(pass, material, program);
-			if (!mRepository.add(Scene::Key(name), pass)) {
-				return nullptr;
-			}
+			auto step = mRepository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), name);
+			se::app::ShaderLoader::addMaterialBindables(step, material, program);
 
-			auto shader = std::make_shared<se::app::RenderableShader>(mApplication.getEventManager());
-			shader->addPass(shadowPass)
-				.addPass(pass);
-			if (!mRepository.add(Scene::Key(name), shader)) {
-				return nullptr;
-			}
+			auto shader = mRepository.emplace<se::app::RenderableShader>(mApplication.getEventManager());
+			shader.getResource().setName(name);
+			shader->addStep(shadowStep)
+				.addStep(step);
 
 			return shader;
 		};

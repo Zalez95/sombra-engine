@@ -6,9 +6,11 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "forces/Force.h"
 
 namespace se::physics {
+
+	class Force;
+
 
 	/** The different states in which a RigidBody can be */
 	enum class RigidBodyState : int

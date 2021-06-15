@@ -80,6 +80,12 @@ namespace se::graphics {
 	}
 
 
+	void RenderGraph::clearNodes()
+	{
+		mRenderNodes.clear();
+	}
+
+
 	RenderNode* RenderGraph::getNode(const std::string& nodeName) const
 	{
 		auto itRenderNode = std::find_if(

@@ -6,7 +6,7 @@
 
 namespace se::graphics {
 
-	IUniformVariable::IUniformVariable(const char* name, std::shared_ptr<Program> program) :
+	IUniformVariable::IUniformVariable(const char* name, const std::shared_ptr<Program>& program) :
 		mName(name), mProgram(program), mUniformLocation(-1)
 	{
 		GL_WRAP( mUniformLocation = glGetUniformLocation(mProgram->mProgramId, mName.c_str()) );

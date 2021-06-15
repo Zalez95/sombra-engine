@@ -22,7 +22,7 @@ namespace se::app {
 	 * Class CameraSystem, it's the System used for updating the Entities'
 	 * Cameras, the view and projection matrices on their shaders and the
 	 * Renderers that use the Cameras
-	 * @note	it will only update the cameras of the Passes that use the
+	 * @note	it will only update the cameras of the Steps that use the
 	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */
 	class CameraSystem : public ISystem
@@ -39,7 +39,7 @@ namespace se::app {
 		CameraComponent* mCamera;
 
 		/** The object used for updating the camera uniforms in the Entities
-		 * passes */
+		 * steps */
 		CameraUniformsUpdater* mCameraUniformsUpdater;
 
 		/** A pointer to the frustum filter shared between all the

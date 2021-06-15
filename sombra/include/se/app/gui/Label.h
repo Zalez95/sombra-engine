@@ -2,6 +2,7 @@
 #define LABEL_H
 
 #include "../../graphics/2D/RenderableText.h"
+#include "../Repository.h"
 #include "IComponent.h"
 
 namespace se::app {
@@ -21,7 +22,8 @@ namespace se::app {
 		/** The vertical alignment of the text lines inside the Label */
 		enum class VerticalAlignment { Top, Center, Bottom };
 	private:
-		using FontSPtr = std::shared_ptr<graphics::Font>;
+		using TechniqueRef = Repository::ResourceRef<graphics::Technique>;
+		using FontRef = Repository::ResourceRef<graphics::Font>;
 		using RenderableTextUPtr = std::unique_ptr<graphics::RenderableText>;
 
 	private:	// Attributes
@@ -31,8 +33,11 @@ namespace se::app {
 		/** The RenderableText used for drawing each line of the Label */
 		std::vector<RenderableTextUPtr> mRenderableTexts;
 
+		/** The technique of the Text */
+		TechniqueRef mTechnique;
+
 		/** The font of the Text */
-		FontSPtr mFont;
+		FontRef mFont;
 
 		/** The maximum character size to use with the Text */
 		glm::vec2 mCharacterSize;
@@ -89,8 +94,8 @@ namespace se::app {
 
 		/** Sets the font of the Label
 		 *
-		 * @param	font a pointer to the Font of the Label */
-		void setFont(FontSPtr font);
+		 * @param	font the Font of the Label */
+		void setFont(FontRef font);
 
 		/** Sets the size of each character in the Label text
 		 *

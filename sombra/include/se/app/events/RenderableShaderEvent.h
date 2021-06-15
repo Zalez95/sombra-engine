@@ -2,7 +2,7 @@
 #define RENDERABLE_SHADER_EVENT_H
 
 #include "../Entity.h"
-#include "../RenderableShader.h"
+#include "../graphics/RenderableShader.h"
 #include "Event.h"
 
 namespace se::app {

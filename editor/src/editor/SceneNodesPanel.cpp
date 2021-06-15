@@ -86,13 +86,13 @@ namespace editor {
 			root->erase(mSelectedNode, true);
 		}
 		if (mAdd) {
-			ImGui::OpenPopup("addPopup");
-			if (ImGui::BeginPopup("addPopup")) {
+			ImGui::OpenPopup(("SceneNodesPanel" + std::to_string(mPanelId) + "::addParentPopup").c_str());
+			if (ImGui::BeginPopup(("SceneNodesPanel" + std::to_string(mPanelId) + "::addPopup").c_str())) {
 				ImGui::InputText(
 					("Name##SceneNodesPanel" + std::to_string(mPanelId) + "::add").c_str(),
 					mWorkingData.name.data(), mWorkingData.name.size()
 				);
-				if (ImGui::Button("Add")) {
+				if (ImGui::Button(("Add##SceneNodesPanel" + std::to_string(mPanelId) + "::Add").c_str())) {
 					mAdd = false;
 					fixWorkingDataName();
 					se::animation::AnimationNode::const_iterator<se::utils::Traversal::BFS> selectedNode = mSelectedNode;
@@ -100,7 +100,7 @@ namespace editor {
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Cancel")) {
+				if (ImGui::Button(("Cancel##SceneNodesPanel" + std::to_string(mPanelId) + "::CancelAdd").c_str())) {
 					mAdd = false;
 					ImGui::CloseCurrentPopup();
 				}
@@ -108,8 +108,8 @@ namespace editor {
 			}
 		}
 		if (mChangeParent) {
-			ImGui::OpenPopup("changeParentPopup");
-			if (ImGui::BeginPopup("changeParentPopup")) {
+			ImGui::OpenPopup(("SceneNodesPanel" + std::to_string(mPanelId) + "::changeParentPopup").c_str());
+			if (ImGui::BeginPopup(("SceneNodesPanel" + std::to_string(mPanelId) + "::changeParentPopup").c_str())) {
 				static const char* items[] = { "Root", "Other" };
 				int current = mRoot? 0 : 1;
 				if (ImGui::Combo("Parent node", &current, items, IM_ARRAYSIZE(items))) {
@@ -123,7 +123,7 @@ namespace editor {
 				}
 				ImGui::Checkbox("Update descendants", &mDescendants);
 
-				if (ImGui::Button("Change")) {
+				if (ImGui::Button(("Change##SceneNodesPanel" + std::to_string(mPanelId) + "::Change").c_str())) {
 					mChangeParent = false;
 
 					bool change = true;
@@ -143,7 +143,7 @@ namespace editor {
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Cancel")) {
+				if (ImGui::Button(("Cancel##SceneNodesPanel" + std::to_string(mPanelId) + "::CancelChangeParent").c_str())) {
 					mChangeParent = false;
 					ImGui::CloseCurrentPopup();
 				}

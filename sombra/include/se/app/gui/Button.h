@@ -3,6 +3,7 @@
 
 #include <functional>
 #include "../../graphics/2D/RenderableSprite.h"
+#include "../Repository.h"
 #include "IComponent.h"
 #include "IBounds.h"
 
@@ -30,6 +31,9 @@ namespace se::app {
 
 		/** The RenderableSprite used for drawing of the Button */
 		graphics::RenderableSprite mSprite;
+
+		/** The Technique of the Button */
+		Repository::ResourceRef<graphics::Technique> mTechnique;
 
 		/** If the mouse is over or not */
 		bool mIsOver;

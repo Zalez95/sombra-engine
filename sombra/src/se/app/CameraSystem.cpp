@@ -9,7 +9,7 @@
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
 #include "se/app/ParticleSystemComponent.h"
-#include "se/app/IViewProjectionUpdater.h"
+#include "se/app/graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
 
@@ -42,9 +42,9 @@ namespace se::app {
 			return glm::mat4(1.0f);
 		};
 
-		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
+		virtual bool shouldAddUniforms(const RenderableShaderStepSPtr& step) const override
 		{
-			return std::find(mRenderers.begin(), mRenderers.end(), &pass->getRenderer()) != mRenderers.end();
+			return std::find(mRenderers.begin(), mRenderers.end(), &step->getPass()->getRenderer()) != mRenderers.end();
 		};
 	};
 
@@ -179,7 +179,7 @@ namespace se::app {
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mCameraUniformsUpdater->addRenderable(mesh->get(i));
 			mesh->processRenderableShaders(i, [&](const auto& shader) {
-				mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader);
+				mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader.get());
 			});
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
@@ -199,7 +199,7 @@ namespace se::app {
 	{
 		mCameraUniformsUpdater->addRenderable(terrain->get());
 		terrain->processRenderableShaders([&](const auto& shader) {
-			mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader);
+			mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader.get());
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " added successfully";
 	}
@@ -216,7 +216,7 @@ namespace se::app {
 	{
 		mCameraUniformsUpdater->addRenderable(particleSystem->get());
 		particleSystem->processRenderableShaders([&](const auto& shader) {
-			mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader);
+			mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader.get());
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " added successfully";
 	}
@@ -301,10 +301,10 @@ namespace se::app {
 	{
 		switch (event.getOperation()) {
 			case ShaderEvent::Operation::Add:
-				mCameraUniformsUpdater->onAddShaderPass(event.getShader(), event.getPass());
+				mCameraUniformsUpdater->onAddShaderStep(event.getShader(), event.getStep());
 				break;
 			case ShaderEvent::Operation::Remove:
-				mCameraUniformsUpdater->onRemoveShaderPass(event.getShader(), event.getPass());
+				mCameraUniformsUpdater->onRemoveShaderStep(event.getShader(), event.getStep());
 				break;
 		}
 	}

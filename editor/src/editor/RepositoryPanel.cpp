@@ -16,12 +16,12 @@
 #include <se/graphics/3D/Mesh.h>
 #include <se/app/SkinComponent.h>
 #include <se/app/LightComponent.h>
-#include <se/app/RenderableShader.h>
 #include <se/app/ParticleSystemComponent.h>
 #include <se/app/Scene.h>
 #include <se/app/io/ImageReader.h>
 #include <se/app/io/SceneImporter.h>
 #include <se/app/io/ShaderLoader.h>
+#include <se/app/graphics/RenderableShader.h>
 #include "Editor.h"
 #include "ImGuiUtils.h"
 #include "RepositoryPanel.h"
@@ -35,12 +35,6 @@ using namespace se::audio;
 using namespace se::physics;
 
 namespace editor {
-
-	static bool cancelButton()
-	{
-		return ImGui::Button("Cancel");
-	}
-
 
 	static bool confirmButton(bool enabled = true)
 	{
@@ -66,14 +60,14 @@ namespace editor {
 	};
 
 
-	template <typename T, bool hasPath>
+	template <typename T>
 	class RepositoryPanel::TypeNode : public RepositoryPanel::ITypeNode
 	{
 	protected:	// Attributes
 		static constexpr std::size_t kMaxNameSize = 128;
 	private:
 		RepositoryPanel& mPanel;
-		Scene::Key mSelected;
+		std::string mSelectedName;
 		bool mShowCreate;
 
 	public:		// Functions
@@ -83,51 +77,54 @@ namespace editor {
 		{
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::CollapsingHeader("Elements")) {
-				if (ImGui::SmallButton("Add")) {
+				if (ImGui::SmallButton(("Add" + getIdPrefix() + "AddResource").c_str())) {
 					mShowCreate = true;
 				}
-				ImGui::SameLine();
-				if (ImGui::SmallButton("Remove")) {
-					repository.remove<Scene::Key, T>(mSelected);
-					if (hasPath) {
-						repository.remove<Scene::Key, ResourcePath<T>>(mSelected);
-					}
-					mSelected = "";
-				}
 
-				repository.iterate<Scene::Key, T>([&](const Scene::Key& key, std::shared_ptr<T>) {
-					if (ImGui::Selectable(key.c_str(), key == mSelected)) {
-						mSelected = key;
-					}
-				});
+				std::size_t i = 0;
+				if (ImGui::BeginTable((getIdPrefix() + "Elements").c_str(), 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+					repository.iterate<T>([&](Repository::ResourceRef<T> value) {
+						ImGui::TableNextRow();
+
+						ImGui::TableSetColumnIndex(0);
+						bool isSelected = (value.getResource().getName() == mSelectedName);
+						if (ImGui::Selectable(value.getResource().getName(), isSelected)) {
+							mSelectedName = value.getResource().getName();
+						}
+
+						ImGui::TableSetColumnIndex(1);
+						std::string buttonLabel = (value.hasFakeUser()? "F" : "") + std::to_string(value.getUserCount() - 1)
+							+ getIdPrefix() + "FakeUser" + std::to_string(i++);
+						if (ImGui::Button(buttonLabel.c_str())) {
+							value.setFakeUser(!value.hasFakeUser());
+						}
+					});
+
+					ImGui::EndTable();
+				}
 			}
 
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::CollapsingHeader("Selected element")) {
-				if (!repository.find<Scene::Key, T>(mSelected)) {
-					mSelected = "";
-				}
+				if (!mSelectedName.empty()) {
+					auto selected = repository.findByName<T>(mSelectedName.c_str());
 
-				if (!mSelected.empty()) {
 					std::array<char, kMaxNameSize> nameBuffer = {};
-					std::copy(mSelected.begin(), mSelected.end(), nameBuffer.data());
-					std::string name = "Name" + getIGPrefix() + "::TypeNode::name";
+					std::strcpy(nameBuffer.data(), selected.getResource().getName());
+					std::string name = "Name" + getIdPrefix() + "TypeNode::name";
 					if (ImGui::InputText(name.c_str(), nameBuffer.data(), nameBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
-						Scene::Key oldName = mSelected;
-						mSelected = nameBuffer.data();
-
-						auto element = repository.find<Scene::Key, T>(oldName);
-						repository.remove<Scene::Key, T>(oldName);
-						repository.add<Scene::Key, T>(mSelected, std::move(element));
-
-						if (hasPath) {
-							auto elementPath = repository.find<Scene::Key, ResourcePath<T>>(oldName);
-							repository.remove<Scene::Key, ResourcePath<T>>(oldName);
-							repository.add<Scene::Key, ResourcePath<T>>(mSelected, std::move(elementPath));
-						}
+						setRepoName<T>(selected.getResource(), name.data(), repository);
+						mSelectedName = selected.getResource().getName();
 					}
 
-					draw(repository, mSelected);
+					std::array<char, 4 * kMaxNameSize> pathBuffer = {};
+					std::strcpy(pathBuffer.data(), selected.getResource().getPath());
+					std::string path = "Path" + getIdPrefix() + "TypeNode::path";
+					if (ImGui::InputText(path.c_str(), pathBuffer.data(), pathBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
+						selected.getResource().setPath(pathBuffer.data());
+					}
+
+					draw(repository, selected);
 				}
 			}
 
@@ -140,30 +137,31 @@ namespace editor {
 		};
 	protected:
 		Editor& getEditor() const { return mPanel.mEditor; };
-		std::string getIGPrefix() const { return "##ComponentPanel" + std::to_string(mPanel.mPanelId); };
-		virtual void draw(Repository& /*repository*/, const Scene::Key& /*key*/) {};
+		std::string getIdPrefix() const { return "##RepositoryPanel" + std::to_string(mPanel.mPanelId) + "::"; };
+		virtual void draw(Repository& /*repository*/, Repository::ResourceRef<T> /*resource*/) {};
 		/** @return	true if the create menu must be shown, false otherwise */
 		virtual bool create(Repository& /*repository*/) { return false; };
 	};
 
 
-	template <typename T, bool hasPath>
-	class RepositoryPanel::ImportTypeNode : public RepositoryPanel::TypeNode<T, hasPath>
+	template <typename T>
+	class RepositoryPanel::ImportTypeNode : public RepositoryPanel::TypeNode<T>
 	{
 	private:	// Attributes
 		std::string mPath;
 		FileWindow mFileWindow;
 
 	public:		// Functions
-		ImportTypeNode(RepositoryPanel& panel) : TypeNode<T, hasPath>(panel) {};
+		ImportTypeNode(RepositoryPanel& panel) :
+			TypeNode<T>(panel), mFileWindow((TypeNode<T>::getIdPrefix() + "ImportFile").c_str()) {};
 		virtual ~ImportTypeNode() = default;
 	protected:
 		virtual bool create(Repository& repository) override
 		{
 			bool ret = false;
-			Alert importErrorPopUp("Error", "Failed to import, see logs for more details", "Close");
+			Alert importErrorPopUp((TypeNode<T>::getIdPrefix() + "ErrorAlert").c_str(), "Error", "Failed to import, see logs for more details", "Close");
 
-			std::string label = mPath.empty()? "Open File..." : ("Selected: " + mPath);
+			std::string label = (mPath.empty()? "Open File..." : ("Selected: " + mPath)) + TypeNode<T>::getIdPrefix() + "OpenFile";
 			if (ImGui::Button(label.c_str())) {
 				mFileWindow.show();
 			}
@@ -172,7 +170,7 @@ namespace editor {
 			bool validOptions = options(repository);
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + TypeNode<T>::getIdPrefix() + "CancelCreate").c_str())) {
 				ret = true;
 			}
 			ImGui::SameLine();
@@ -196,21 +194,21 @@ namespace editor {
 	};
 
 
-	template <typename T, bool hasPath>
-	class RepositoryPanel::SceneImporterTypeNode : public RepositoryPanel::ImportTypeNode<T, hasPath>
+	template <typename T>
+	class RepositoryPanel::SceneImporterTypeNode : public RepositoryPanel::ImportTypeNode<T>
 	{
 	private:	// Attributes
 		SceneImporter::FileType mFileType;
 
 	public:		// Functions
 		SceneImporterTypeNode(RepositoryPanel& panel) :
-			ImportTypeNode<T, hasPath>(panel), mFileType(SceneImporter::FileType::GLTF) {};
+			ImportTypeNode<T>(panel), mFileType(SceneImporter::FileType::GLTF) {};
 	protected:
 		virtual bool options(Repository&) override
 		{
 			static const char* fileTypeTags[] = { "GLTF" };
 			int currentType = static_cast<int>(mFileType);
-			std::string name = "Type" + getIGPrefix() + "::SceneImporterTypeNode::type";
+			std::string name = "Type" + TypeNode<T>::getIdPrefix() + "SceneImporterTypeNode::type";
 			if (addDropdown(name.c_str(), fileTypeTags, IM_ARRAYSIZE(fileTypeTags), currentType)) {
 				mFileType = static_cast<SceneImporter::FileType>(currentType);
 			}
@@ -220,9 +218,9 @@ namespace editor {
 
 		virtual bool load(Repository& repository, const char* path) override
 		{
-			DefaultShaderBuilder shaderBuilder(getEditor(), repository);
+			DefaultShaderBuilder shaderBuilder(TypeNode<T>::getEditor(), repository);
 			auto SceneImporter = SceneImporter::createSceneImporter(mFileType, shaderBuilder);
-			auto result = SceneImporter->load(path, *getEditor().getScene());
+			auto result = SceneImporter->load(path, *TypeNode<T>::getEditor().getScene());
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 			}
@@ -237,9 +235,8 @@ namespace editor {
 		SkinNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Skin"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<Skin> skin) override
 		{
-			auto skin = repository.find<Scene::Key, Skin>(key);
 			ImGui::Text("Inverse bind matrices: %lu", skin->inverseBindMatrices.size());
 		};
 	};
@@ -254,13 +251,11 @@ namespace editor {
 		LightSourceNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "LightSource"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<LightSource> source) override
 		{
-			auto source = repository.find<Scene::Key, LightSource>(key);
-
 			static const char* lightTypeTags[] = { "Directional", "Point", "Spot" };
 			int currentType = static_cast<int>(source->type);
-			std::string name = "Type" + getIGPrefix() + "::LightSourceNode::type";
+			std::string name = "Type" + getIdPrefix() + "LightSourceNode::type";
 			if (addDropdown(name.c_str(), lightTypeTags, IM_ARRAYSIZE(lightTypeTags), currentType)) {
 				source->type = static_cast<LightSource::Type>(currentType);
 			}
@@ -279,19 +274,20 @@ namespace editor {
 		{
 			bool ret = false;
 
-			std::string name = "Name" + getIGPrefix() + "::LightSourceNode::name";
+			std::string name = "Name" + getIdPrefix() + "LightSourceNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, LightSource>(mNameBuffer.data());
+			bool validName = !repository.findByName<LightSource>(mNameBuffer.data());
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
 
-			if (confirmButton(validKey)) {
-				repository.add(Scene::Key(mNameBuffer.data()), std::make_shared<LightSource>(LightSource::Type::Directional));
+			if (confirmButton(validName)) {
+				auto source = repository.insert(std::make_shared<LightSource>(LightSource::Type::Directional), mNameBuffer.data());
+				source.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -307,15 +303,14 @@ namespace editor {
 		SkeletonAnimatorNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "SkeletonAnimator"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<SkeletonAnimator> animator) override
 		{
-			auto animator = repository.find<Scene::Key, SkeletonAnimator>(key);
 			ImGui::Text("Loop time: %.3f seconds", animator->getLoopTime());
 		};
 	};
 
 
-	class RepositoryPanel::AudioBufferNode : public RepositoryPanel::ImportTypeNode<Buffer, true>
+	class RepositoryPanel::AudioBufferNode : public RepositoryPanel::ImportTypeNode<Buffer>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -324,20 +319,12 @@ namespace editor {
 		AudioBufferNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "AudioBuffer"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
-		{
-			auto path = repository.find<Scene::Key, ResourcePath<Buffer>>(key);
-			if (path) {
-				ImGui::Text("Path: %s", path->path.c_str());
-			}
-		}
-
 		virtual bool options(Repository& repository) override
 		{
-			std::string name = "Name" + getIGPrefix() + "::AudioBufferNode::name";
+			std::string name = "Name" + getIdPrefix() + "AudioBufferNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, LightSource>(mNameBuffer.data());
-			return validKey;
+			bool validName = !repository.findByName<Buffer>(mNameBuffer.data());
+			return validName;
 		};
 
 		virtual bool load(Repository& repository, const char* path) override
@@ -348,16 +335,14 @@ namespace editor {
 				return false;
 			}
 
-			auto buffer = std::make_shared<Buffer>(
+			auto bufferSPtr = std::make_shared<Buffer>(
 				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 				FormatId::MonoFloat, audioFile.getSampleRate()
 			);
 
-			if (!repository.add(Scene::Key(mNameBuffer.data()), buffer)
-				|| !repository.emplace<Scene::Key, ResourcePath<Buffer>>(mNameBuffer.data(), path)
-			) {
-				return false;
-			}
+			auto buffer = repository.insert(std::move(bufferSPtr), mNameBuffer.data());
+			buffer.getResource().setPath(path);
+			buffer.setFakeUser();
 
 			return true;
 		};
@@ -373,39 +358,59 @@ namespace editor {
 		ForceNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Force"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository& repository, Repository::ResourceRef<Force> force) override
 		{
-			auto force = repository.find<Scene::Key, Force>(key);
-			auto gravity = std::dynamic_pointer_cast<Gravity>(force);
-			auto punctual = std::dynamic_pointer_cast<PunctualForce>(force);
-			auto directional = std::dynamic_pointer_cast<DirectionalForce>(force);
+			auto gravity = std::dynamic_pointer_cast<Gravity>(force.get());
+			auto punctual = std::dynamic_pointer_cast<PunctualForce>(force.get());
+			auto directional = std::dynamic_pointer_cast<DirectionalForce>(force.get());
 
 			static const char* forceTypeTags[] = { "Gravity", "Punctual", "Directional" };
 			int currentType = gravity? 0 : punctual? 1 : 2;
-			std::string name = "Type" + getIGPrefix() + "::ForceNode::type";
+			std::string name = "Type" + getIdPrefix() + "ForceNode::type";
 			addDropdown(name.c_str(), forceTypeTags, IM_ARRAYSIZE(forceTypeTags), currentType);
 
 			if (currentType == 0) {
 				if (!gravity) {
+					force.setFakeUser(false);
+
 					gravity = std::make_shared<Gravity>();
-					repository.remove<Scene::Key, Force>(key);
-					repository.add<Scene::Key, Force>(key, gravity);
+					auto force2 = repository.insert<Force>(gravity);
+					force2.setFakeUser(true);
+					force2.getResource().setName(force.getResource().getName());
+					force2.getResource().setPath(force.getResource().getPath());
+					if (force.getResource().isLinked()) {
+						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					}
 				}
 				drawGravity(*gravity);
 			}
 			else if (currentType == 1) {
 				if (!punctual) {
+					force.setFakeUser(false);
+
 					punctual = std::make_shared<PunctualForce>();
-					repository.remove<Scene::Key, Force>(key);
-					repository.add<Scene::Key, Force>(key, punctual);
+					auto force2 = repository.insert<Force>(punctual);
+					force2.setFakeUser(true);
+					force2.getResource().setName(force.getResource().getName());
+					force2.getResource().setPath(force.getResource().getPath());
+					if (force.getResource().isLinked()) {
+						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					}
 				}
 				drawPunctualForce(*punctual);
 			}
 			else if (currentType == 2) {
 				if (!directional) {
+					force.setFakeUser(false);
+
 					directional = std::make_shared<DirectionalForce>();
-					repository.remove<Scene::Key, Force>(key);
-					repository.add<Scene::Key, Force>(key, directional);
+					auto force2 = repository.insert<Force>(directional);
+					force2.setFakeUser(true);
+					force2.getResource().setName(force.getResource().getName());
+					force2.getResource().setPath(force.getResource().getPath());
+					if (force.getResource().isLinked()) {
+						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					}
 				}
 				drawDirectionalForce(*directional);
 			}
@@ -415,18 +420,19 @@ namespace editor {
 		{
 			bool ret = false;
 
-			std::string name = "Name" + getIGPrefix() + "::ForceNode::name";
+			std::string name = "Name" + getIdPrefix() + "ForceNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, Force>(mNameBuffer.data());
+			bool validName = !repository.findByName<Force>(mNameBuffer.data());
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validKey)) {
-				repository.add<Scene::Key, Force>(mNameBuffer.data(), std::make_shared<Gravity>());
+			if (confirmButton(validName)) {
+				auto force = repository.insert<Force>(std::make_shared<Gravity>(), mNameBuffer.data());
+				force.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -465,7 +471,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<Program, true>
+	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<Program>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -474,25 +480,19 @@ namespace editor {
 		FileWindow mFileWindow;
 
 	public:		// Functions
-		ProgramNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{}, mPath(nullptr) {};
+		ProgramNode(RepositoryPanel& panel) :
+			TypeNode(panel), mNameBuffer{}, mPath(nullptr),
+			mFileWindow((getIdPrefix() + "ProgramFile").c_str()) {};
 		virtual const char* getName() const override { return "Program"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
-		{
-			auto path = repository.find<Scene::Key, ResourcePath<Program>>(key);
-			if (path) {
-				ImGui::Text("Path: %s", path->path.c_str());
-			}
-		}
-
 		virtual bool create(Repository& repository) override
 		{
 			bool ret = false;
-			Alert importErrorPopUp("Error", "Failed to import, see logs for more details", "Close");
+			Alert importErrorPopUp((getIdPrefix() + "ErrorAlert").c_str(), "Error", "Failed to import, see logs for more details", "Close");
 
-			std::string name = "Name" + getIGPrefix() + "::ProgramNode::name";
+			std::string name = "Name" + getIdPrefix() + "ProgramNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validOptions = !repository.has<Scene::Key, LightSource>(mNameBuffer.data());
+			bool validName = !repository.findByName<LightSource>(mNameBuffer.data());
 
 			ImGui::TextDisabled("(?)");
 			if (ImGui::IsItemHovered())
@@ -504,19 +504,19 @@ namespace editor {
 				ImGui::EndTooltip();
 			}
 
-			std::string vLabel = mPathVertex.empty()? "Open Vertex Shader..." : "Selected: " + mPathVertex;
+			std::string vLabel = (mPathVertex.empty()? "Open Vertex Shader..." : "Selected: " + mPathVertex) + getIdPrefix() + "OpenVertex";
 			if (ImGui::Button(vLabel.c_str())) {
 				mPath = &mPathVertex;
 				mFileWindow.show();
 			}
 
-			std::string gLabel = mPathGeometry.empty()? "Open Geometry Shader..." : "Selected: " + mPathGeometry;
+			std::string gLabel = (mPathGeometry.empty()? "Open Geometry Shader..." : "Selected: " + mPathGeometry) + getIdPrefix() + "OpenGeometry";
 			if (ImGui::Button(gLabel.c_str())) {
 				mPath = &mPathGeometry;
 				mFileWindow.show();
 			}
 
-			std::string fLabel = mPathFragment.empty()? "Open Fragment Shader..." : "Selected: " + mPathFragment;
+			std::string fLabel = (mPathFragment.empty()? "Open Fragment Shader..." : "Selected: " + mPathFragment) + getIdPrefix() + "OpenFragment";
 			if (ImGui::Button(fLabel.c_str())) {
 				mPath = &mPathFragment;
 				mFileWindow.show();
@@ -527,31 +527,25 @@ namespace editor {
 			}
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validOptions)) {
-				std::shared_ptr<Program> program;
+			if (confirmButton(validName)) {
+				std::shared_ptr<Program> programSPtr;
 				auto result = ShaderLoader::createProgram(
 					mPathVertex.empty()? nullptr : mPathVertex.c_str(),
 					mPathGeometry.empty()? nullptr : mPathGeometry.c_str(),
 					mPathFragment.empty()? nullptr : mPathFragment.c_str(),
-					program
+					programSPtr
 				);
 				if (result) {
-					std::string resourcePath = mPathVertex + "," + mPathGeometry + "," + mPathFragment;
-					if (repository.add<Scene::Key, Program>(mNameBuffer.data(), std::move(program))
-						&& repository.emplace<Scene::Key, ResourcePath<Program>>(mNameBuffer.data(), resourcePath)
-					) {
-						mNameBuffer.fill(0);
-						ret = true;
-					}
-					else {
-						SOMBRA_ERROR_LOG << "Failed to add the program";
-						importErrorPopUp.show();
-					}
+					auto program = repository.insert<Program>(std::move(programSPtr), mNameBuffer.data());
+					program.setFakeUser();
+					program.getResource().setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
+					mNameBuffer.fill(0);
+					ret = true;
 				}
 				else {
 					SOMBRA_ERROR_LOG << result.description();
@@ -565,7 +559,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::PassNode : public RepositoryPanel::TypeNode<Pass>
+	class RepositoryPanel::RenderableShaderStepNode : public RepositoryPanel::TypeNode<RenderableShaderStep>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer = {};
@@ -573,33 +567,31 @@ namespace editor {
 		int mBindableTypeSelected = -1;
 		int mSubTypeSelected = -1;
 		std::array<char, kMaxNameSize> mUniformName = {};
-		Scene::Key mKeyTypeSelected;
+		std::string mNameSelected;
 
 	public:		// Functions
-		PassNode(RepositoryPanel& panel) : TypeNode(panel) {};
-		virtual const char* getName() const override { return "Pass"; };
+		RenderableShaderStepNode(RepositoryPanel& panel) : TypeNode(panel) {};
+		virtual const char* getName() const override { return "RenderableShaderStep"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository& repository, Repository::ResourceRef<RenderableShaderStep> step) override
 		{
-			auto pass = repository.find<Scene::Key, Pass>(key);
-
-			ImGui::Text("Renderer: %s", pass->getRenderer().getName().c_str());
+			ImGui::Text("Renderer: %s", step->getPass()->getRenderer().getName().c_str());
 
 			if (ImGui::TreeNode("Add Bindable")) {
-				addBindable(repository, *pass);
+				addBindable(repository, *step);
 				ImGui::TreePop();
 			}
 
-			showBindables(repository, *pass);
+			showBindables(repository, *step);
 		};
 
 		virtual bool create(Repository& repository) override
 		{
 			bool ret = false;
 
-			std::string name = "Name" + getIGPrefix() + "::PassNode::name";
+			std::string name = "Name" + getIdPrefix() + "RenderableShaderStepNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, Pass>(mNameBuffer.data());
+			bool validName = !repository.findByName<RenderableShaderStep>(mNameBuffer.data());
 
 			std::vector<Renderer*> renderers;
 			std::vector<const char*> rendererNames;
@@ -610,18 +602,19 @@ namespace editor {
 				}
 			});
 
-			std::string name1 = "Renderer" + getIGPrefix() + "::PassNode::Renderer";
+			std::string name1 = "Renderer" + getIdPrefix() + "RenderableShaderStepNode::Renderer";
 			addDropdown(name1.c_str(), rendererNames.data(), rendererNames.size(), mRendererSelected);
 			bool isRendererSelected = (mRendererSelected >= 0) && (mRendererSelected < static_cast<int>(renderers.size()));
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validKey && isRendererSelected)) {
-				repository.emplace<Scene::Key, Pass>(mNameBuffer.data(), *renderers[mRendererSelected]);
+			if (confirmButton(validName && isRendererSelected)) {
+				auto step = repository.insert<RenderableShaderStep>(std::make_shared<RenderableShaderStep>(*renderers[mRendererSelected]), mNameBuffer.data());
+				step.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -629,123 +622,167 @@ namespace editor {
 			return ret;
 		};
 	private:
-		void addBindable(Repository& repository, Pass& pass)
+		void addBindable(Repository& repository, RenderableShaderStep& step)
 		{
 			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation", "SetDepthMask" };
 			const char* uniformTypeTags[] = { "int", "unsigned int", "float", "vec2", "ivec2", "vec3", "ivec3", "vec4", "ivec4", "mat3", "mat4", "mat3x4" };
 			const char* operationTypeTags[] = { "Culling", "DepthTest", "ScissorTest" };
 
-			std::string name = "Bindable Type" + getIGPrefix() + "::PassNode::BindableType";
+			std::string name = "Bindable Type" + getIdPrefix() + "RenderableShaderStepNode::BindableType";
 			if (addDropdown(name.c_str(), bindableTypeTags, IM_ARRAYSIZE(bindableTypeTags), mBindableTypeSelected)) {
 				mSubTypeSelected = -1;
 				mUniformName = {};
-				mKeyTypeSelected = "";
+				mNameSelected = "";
 			}
 
 			switch (mBindableTypeSelected) {
 				case 0:
 				case 1: {
-					std::string name1 = "Name" + getIGPrefix() + "::PassNode::UniformName";
+					std::string name1 = "Name" + getIdPrefix() + "RenderableShaderStepNode::UniformName";
 					ImGui::InputText(name1.c_str(), mUniformName.data(), mUniformName.size());
-					std::string name2 = "Type" + getIGPrefix() + "::PassNode::UniformType";
+					std::string name2 = "Type" + getIdPrefix() + "RenderableShaderStepNode::UniformType";
 					addDropdown(name2.c_str(), uniformTypeTags, IM_ARRAYSIZE(uniformTypeTags), mSubTypeSelected);
 				} break;
 				case 2: {
-					std::string name1 = "Texture" + getIGPrefix() + "::PassNode::Texture";
-					addRepoDropdownShowSelected<Scene::Key, Texture>(name1.c_str(), repository, mKeyTypeSelected);
+					std::string name1 = "Texture" + getIdPrefix() + "RenderableShaderStepNode::Texture";
+					auto texture = repository.findByName<Texture>(mNameSelected.c_str());
+					if (addRepoDropdownShowSelected(name1.c_str(), repository, texture)) {
+						mNameSelected = texture.getResource().getName();
+					}
 				} break;
 				case 3: {
-					std::string name1 = "Program" + getIGPrefix() + "::PassNode::Program";
-					addRepoDropdownShowSelected<Scene::Key, Program>(name1.c_str(), repository, mKeyTypeSelected);
+					std::string name1 = "Program" + getIdPrefix() + "RenderableShaderStepNode::Program";
+					auto program = repository.findByName<Program>(mNameSelected.c_str());
+					if (addRepoDropdownShowSelected(name1.c_str(), repository, program)) {
+						mNameSelected = program.getResource().getName();
+					}
 				} break;
 				case 4: {
-					std::string name1 = "Operation" + getIGPrefix() + "::PassNode::Operation";
+					std::string name1 = "Operation" + getIdPrefix() + "RenderableShaderStepNode::Operation";
 					addDropdown(name1.c_str(), operationTypeTags, IM_ARRAYSIZE(operationTypeTags), mSubTypeSelected);
 				} break;
 				default:
 					break;
 			}
 
-			std::string name1 = "Add" + getIGPrefix() + "::PassNode::Add";
+			std::string name1 = "Add" + getIdPrefix() + "RenderableShaderStepNode::Add";
 			if (ImGui::Button(name1.c_str())) {
 				switch (mBindableTypeSelected) {
 					case 0: {
 						std::shared_ptr<Program> program;
-						pass.processBindables([&](const std::shared_ptr<Bindable>& bindable) { if (auto tmp = std::dynamic_pointer_cast<Program>(bindable)) {
-							program = tmp;
-						}});
+						step.processPrograms([&](const auto& tmp) { program = tmp.get(); });
 						switch (mSubTypeSelected) {
-							case 0:		pass.addBindable( std::make_shared<UniformVariableValue<int>>(mUniformName.data(), program) );				break;
-							case 1:		pass.addBindable( std::make_shared<UniformVariableValue<unsigned int>>(mUniformName.data(), program) );		break;
-							case 2:		pass.addBindable( std::make_shared<UniformVariableValue<float>>(mUniformName.data(), program) );			break;
-							case 3:		pass.addBindable( std::make_shared<UniformVariableValue<glm::vec2>>(mUniformName.data(), program) );		break;
-							case 4:		pass.addBindable( std::make_shared<UniformVariableValue<glm::ivec2>>(mUniformName.data(), program) );		break;
-							case 5:		pass.addBindable( std::make_shared<UniformVariableValue<glm::vec3>>(mUniformName.data(), program) );		break;
-							case 6:		pass.addBindable( std::make_shared<UniformVariableValue<glm::ivec3>>(mUniformName.data(), program) );		break;
-							case 7:		pass.addBindable( std::make_shared<UniformVariableValue<glm::vec4>>(mUniformName.data(), program) );		break;
-							case 8:		pass.addBindable( std::make_shared<UniformVariableValue<glm::ivec4>>(mUniformName.data(), program) );		break;
-							case 9:		pass.addBindable( std::make_shared<UniformVariableValue<glm::mat3>>(mUniformName.data(), program) );		break;
-							case 10:	pass.addBindable( std::make_shared<UniformVariableValue<glm::mat4>>(mUniformName.data(), program) );		break;
-							default:	pass.addBindable( std::make_shared<UniformVariableValue<glm::mat3x4>>(mUniformName.data(), program) );		break;
+							case 0:		step.addBindable( std::make_shared<UniformVariableValue<int>>(mUniformName.data(), program) );				break;
+							case 1:		step.addBindable( std::make_shared<UniformVariableValue<unsigned int>>(mUniformName.data(), program) );		break;
+							case 2:		step.addBindable( std::make_shared<UniformVariableValue<float>>(mUniformName.data(), program) );			break;
+							case 3:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec2>>(mUniformName.data(), program) );		break;
+							case 4:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec2>>(mUniformName.data(), program) );		break;
+							case 5:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec3>>(mUniformName.data(), program) );		break;
+							case 6:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec3>>(mUniformName.data(), program) );		break;
+							case 7:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec4>>(mUniformName.data(), program) );		break;
+							case 8:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec4>>(mUniformName.data(), program) );		break;
+							case 9:		step.addBindable( std::make_shared<UniformVariableValue<glm::mat3>>(mUniformName.data(), program) );		break;
+							case 10:	step.addBindable( std::make_shared<UniformVariableValue<glm::mat4>>(mUniformName.data(), program) );		break;
+							default:	step.addBindable( std::make_shared<UniformVariableValue<glm::mat3x4>>(mUniformName.data(), program) );		break;
 						}
 					} break;
 					case 1: {
 						std::shared_ptr<Program> program;
-						pass.processBindables([&](const std::shared_ptr<Bindable>& bindable) { if (auto tmp = std::dynamic_pointer_cast<Program>(bindable)) {
-							program = tmp;
-						}});
+						step.processPrograms([&](const auto& tmp) { program = tmp.get(); });
 						switch (mSubTypeSelected) {
-							case 0:		pass.addBindable( std::make_shared<UniformVariableValueVector<int>>(mUniformName.data(), program) );			break;
-							case 1:		pass.addBindable( std::make_shared<UniformVariableValueVector<unsigned int>>(mUniformName.data(), program) );	break;
-							case 2:		pass.addBindable( std::make_shared<UniformVariableValueVector<float>>(mUniformName.data(), program) );			break;
-							case 3:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::vec2>>(mUniformName.data(), program) );		break;
-							case 4:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec2>>(mUniformName.data(), program) );		break;
-							case 5:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::vec3>>(mUniformName.data(), program) );		break;
-							case 6:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec3>>(mUniformName.data(), program) );		break;
-							case 7:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::vec4>>(mUniformName.data(), program) );		break;
-							case 8:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec4>>(mUniformName.data(), program) );		break;
-							case 9:		pass.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3>>(mUniformName.data(), program) );		break;
-							case 10:	pass.addBindable( std::make_shared<UniformVariableValueVector<glm::mat4>>(mUniformName.data(), program) );		break;
-							default:	pass.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3x4>>(mUniformName.data(), program) );	break;
+							case 0:		step.addBindable( std::make_shared<UniformVariableValueVector<int>>(mUniformName.data(), program) );			break;
+							case 1:		step.addBindable( std::make_shared<UniformVariableValueVector<unsigned int>>(mUniformName.data(), program) );	break;
+							case 2:		step.addBindable( std::make_shared<UniformVariableValueVector<float>>(mUniformName.data(), program) );			break;
+							case 3:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec2>>(mUniformName.data(), program) );		break;
+							case 4:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec2>>(mUniformName.data(), program) );		break;
+							case 5:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec3>>(mUniformName.data(), program) );		break;
+							case 6:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec3>>(mUniformName.data(), program) );		break;
+							case 7:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec4>>(mUniformName.data(), program) );		break;
+							case 8:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec4>>(mUniformName.data(), program) );		break;
+							case 9:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3>>(mUniformName.data(), program) );		break;
+							case 10:	step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat4>>(mUniformName.data(), program) );		break;
+							default:	step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3x4>>(mUniformName.data(), program) );	break;
 						}
 					} break;
 					case 2: {
-						if (auto texture = repository.find<Scene::Key, Texture>(mKeyTypeSelected)) {
-							pass.addBindable(texture);
+						if (auto texture = repository.findByName<Texture>(mNameSelected.c_str())) {
+							step.addResource(texture);
 						}
 					} break;
 					case 3: {
-						if (auto program = repository.find<Scene::Key, Program>(mKeyTypeSelected)) {
-							pass.addBindable(program);
+						if (auto program = repository.findByName<Program>(mNameSelected.c_str())) {
+							step.addResource(program);
 						}
 					} break;
 					case 4: {
 						switch (mSubTypeSelected) {
-							case 0:		pass.addBindable(std::make_shared<SetOperation>(Operation::Culling));		break;
-							case 1:		pass.addBindable(std::make_shared<SetOperation>(Operation::DepthTest));		break;
-							default:	pass.addBindable(std::make_shared<SetOperation>(Operation::ScissorTest));	break;
+							case 0:		step.addBindable(std::make_shared<SetOperation>(Operation::Culling));		break;
+							case 1:		step.addBindable(std::make_shared<SetOperation>(Operation::DepthTest));		break;
+							default:	step.addBindable(std::make_shared<SetOperation>(Operation::ScissorTest));	break;
 						}
 					} break;
 					default: {
-						pass.addBindable(std::make_shared<SetDepthMask>());
+						step.addBindable(std::make_shared<SetDepthMask>());
 					} break;
 				}
 			}
 		};
 
-		void showBindables(Repository& repository, Pass& pass)
+		void showBindables(Repository& repository, RenderableShaderStep& step)
 		{
 			std::size_t numBindables = 0;
-			pass.processBindables([&](std::shared_ptr<Bindable> bindable) {
+			step.processPrograms([&](const auto& program) {
 				std::size_t bindableIndex = numBindables++;
 
-				std::string name = "x" + getIGPrefix() + "::PassNode::remove" + std::to_string(bindableIndex);
+				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
 				if (ImGui::Button(name.c_str())) {
-					pass.removeBindable(bindable);
+					step.removeResource(program);
 				}
 				ImGui::SameLine();
 
-				std::string treeId = "PassNode::bindable" + std::to_string(bindableIndex);
+				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
+				if (!ImGui::TreeNode(treeId.c_str(), "Program")) { return; }
+				auto program2 = program;
+				std::string name1 = getIdPrefix() + "RenderableShaderStepNode::ChangeProgram" + std::to_string(bindableIndex);
+				if (addRepoDropdownShowSelected(name1.c_str(), repository, program2)) {
+					step.removeResource(program);
+					step.addResource(program2);
+				}
+				ImGui::TreePop();
+			});
+			step.processTextures([&](const auto& texture) {
+				std::size_t bindableIndex = numBindables++;
+
+				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
+				if (ImGui::Button(name.c_str())) {
+					step.removeResource(texture);
+				}
+				ImGui::SameLine();
+
+				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
+				if (!ImGui::TreeNode(treeId.c_str(), "Texture (Unit %d)", texture->getTextureUnit())) { return; }
+				auto texture2 = texture;
+				std::string name1 = getIdPrefix() + "RenderableShaderStepNode::ChangeTexture" + std::to_string(bindableIndex);
+				if (addRepoDropdownShowSelected(name1.c_str(), repository, texture2)) {
+					step.removeResource(texture);
+					step.addResource(texture2);
+				}
+				ImGui::TreePop();
+			});
+			step.processBindables([&](std::shared_ptr<Bindable> bindable) {
+				if (std::dynamic_pointer_cast<Program>(bindable) || std::dynamic_pointer_cast<Texture>(bindable)) {
+					return;
+				}
+
+				std::size_t bindableIndex = numBindables++;
+
+				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
+				if (ImGui::Button(name.c_str())) {
+					step.removeBindable(bindable);
+				}
+				ImGui::SameLine();
+
+				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
 				if (auto uniform1 = std::dynamic_pointer_cast<UniformVariableValue<int>>(bindable)) {
 					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<int>, %d)", uniform1->getName().c_str(), uniform1->found())) { return; }
 					if (int value = uniform1->getValue(); ImGui::DragInt("Value", &value, 1, -INT_MAX, INT_MAX)) {
@@ -1022,26 +1059,6 @@ namespace editor {
 					}
 					ImGui::TreePop();
 				}
-				else if (auto texture = std::dynamic_pointer_cast<Texture>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "Texture (Unit %d)", texture->getTextureUnit())) { return; }
-					std::shared_ptr<Texture> texture2 = texture;
-					std::string name1 = getIGPrefix() + "::PassNode::ChangeTexture" + std::to_string(bindableIndex);
-					if (addRepoDropdownShowSelectedValue<Scene::Key, Texture>(name1.c_str(), repository, texture2)) {
-						pass.removeBindable(texture);
-						pass.addBindable(texture2);
-					}
-					ImGui::TreePop();
-				}
-				else if (auto program = std::dynamic_pointer_cast<Program>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "Program")) { return; }
-					std::shared_ptr<Program> program2 = program;
-					std::string name1 = getIGPrefix() + "::PassNode::ChangeProgram" + std::to_string(bindableIndex);
-					if (addRepoDropdownShowSelectedValue<Scene::Key, Program>(name1.c_str(), repository, program2)) {
-						pass.removeBindable(program);
-						pass.addBindable(program2);
-					}
-					ImGui::TreePop();
-				}
 				else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
 					const char* operation = (setOperation->getOperation() == Operation::Culling)? "Culling" :
 											(setOperation->getOperation() == Operation::DepthTest)? "DepthTest" :
@@ -1076,29 +1093,27 @@ namespace editor {
 		RenderableShaderNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "RenderableShader"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository& repository, Repository::ResourceRef<RenderableShader> shader) override
 		{
-			auto shader = repository.find<Scene::Key, RenderableShader>(key);
-
-			std::shared_ptr<Pass> pass;
-			std::string name = getIGPrefix() + "::RenderableShaderNode::Add";
-			if (addRepoDropdownButtonValue<Scene::Key, Pass>(name.c_str(), "Add Shader", repository, pass)) {
-				shader->addPass(std::move(pass));
+			Repository::ResourceRef<RenderableShaderStep> step;
+			std::string name = getIdPrefix() + "RenderableShaderNode::Add";
+			if (addRepoDropdownButton(name.c_str(), "Add Shader", repository, step)) {
+				shader->addStep(std::move(step));
 			}
 
 			std::size_t passIndex = 0;
-			shader->getTechnique()->processPasses([&](const std::shared_ptr<Pass>& pass1) {
-				std::string name1 = "x" + getIGPrefix() + "::RenderableShaderNode::Remove" + std::to_string(passIndex++);
+			shader->processSteps([&](const auto& step1) {
+				std::string name1 = "x" + getIdPrefix() + "RenderableShaderNode::Remove" + std::to_string(passIndex++);
 				if (ImGui::Button(name1.c_str())) {
-					shader->removePass(pass1);
+					shader->removeStep(step1);
 				}
 				ImGui::SameLine();
 
-				std::shared_ptr<Pass> pass2 = pass1;
-				std::string name2 = getIGPrefix() + "::RenderableShaderNode::Change" + std::to_string(passIndex);
-				if (addRepoDropdownShowSelectedValue<Scene::Key, Pass>(name2.c_str(), repository, pass2)) {
-					shader->removePass(pass1);
-					shader->addPass(pass2);
+				Repository::ResourceRef<RenderableShaderStep> step2 = step1;
+				std::string name2 = getIdPrefix() + "RenderableShaderNode::Change" + std::to_string(passIndex);
+				if (addRepoDropdownShowSelected(name2.c_str(), repository, step2)) {
+					shader->removeStep(step1);
+					shader->addStep(step2);
 				}
 			});
 		};
@@ -1107,18 +1122,19 @@ namespace editor {
 		{
 			bool ret = false;
 
-			std::string name = "Name" + getIGPrefix() + "::TextureNode::name";
+			std::string name = "Name" + getIdPrefix() + "TextureNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, RenderableShader>(mNameBuffer.data());
+			bool validName = !repository.findByName<RenderableShader>(mNameBuffer.data());
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validKey)) {
-				repository.emplace<Scene::Key, RenderableShader>(mNameBuffer.data(), getEditor().getEventManager());
+			if (confirmButton(validName)) {
+				auto emitter = repository.insert(std::make_shared<RenderableShader>(getEditor().getEventManager()), mNameBuffer.data());
+				emitter.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -1128,7 +1144,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<Texture, true>
+	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<Texture>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -1139,18 +1155,9 @@ namespace editor {
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Texture"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<Texture> texture) override
 		{
-			auto path = repository.find<Scene::Key, ResourcePath<Texture>>(key);
-			if (path) {
-				ImGui::Text("Path: %s", path->path.c_str());
-			}
-			else {
-				ImGui::Text("No path");
-			}
-
-			auto texture = repository.find<Scene::Key, Texture>(key);
-			ImGui::Image(static_cast<void*>(texture.get()), ImVec2{ 200.0f, 200.0f });
+			ImGui::Image(static_cast<void*>(texture.get().get()), ImVec2{ 200.0f, 200.0f });
 
 			int textureUnit = texture->getTextureUnit();
 			if (ImGui::DragInt("Texture Unit", &textureUnit, 1, 0, 16)) {
@@ -1163,12 +1170,12 @@ namespace editor {
 			int iMag = static_cast<int>(mag);
 
 			static const char* filterTypeTags[] = { "Nearest", "Linear", "Nearest MipMap Nearest", "Linear MipMap Nearest", "Nearest MipMap Linear", "Linear MipMap Linear" };
-			std::string name = getIGPrefix() + "::TextureNode::MinFilter";
+			std::string name = getIdPrefix() + "TextureNode::MinFilter";
 			if (addDropdown(name.c_str(), filterTypeTags, IM_ARRAYSIZE(filterTypeTags), iMin)) {
 				min = static_cast<TextureFilter>(iMin);
 				texture->setFiltering(min, mag);
 			}
-			std::string name1 = getIGPrefix() + "::TextureNode::MagFilter";
+			std::string name1 = getIdPrefix() + "TextureNode::MagFilter";
 			if (addDropdown(name1.c_str(), filterTypeTags, IM_ARRAYSIZE(filterTypeTags), iMag)) {
 				mag = static_cast<TextureFilter>(iMag);
 				texture->setFiltering(min, mag);
@@ -1182,20 +1189,20 @@ namespace editor {
 
 			static const char* wrapTypeTags[] = { "Repeat", "Mirrored Repeat", "Clamp to Edge", "Clamp to Border" };
 			bool set = false;
-			std::string name2 = getIGPrefix() + "::TextureNode::WrapS";
+			std::string name2 = getIdPrefix() + "TextureNode::WrapS";
 			if (addDropdown(name2.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapS)) {
 				wrapS = static_cast<TextureWrap>(iWrapS);
 				set = true;
 			}
 			if (texture->getTarget() != TextureTarget::Texture1D) {
-				std::string name3 = getIGPrefix() + "::TextureNode::WrapT";
+				std::string name3 = getIdPrefix() + "TextureNode::WrapT";
 				if (addDropdown(name3.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapT)) {
 					wrapT = static_cast<TextureWrap>(iWrapT);
 					set = true;
 				}
 
 				if (texture->getTarget() != TextureTarget::Texture2D) {
-					std::string name4 = getIGPrefix() + "::TextureNode::WrapR";
+					std::string name4 = getIdPrefix() + "TextureNode::WrapR";
 					if (addDropdown(name4.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapR)) {
 						wrapR = static_cast<TextureWrap>(iWrapR);
 						set = true;
@@ -1210,26 +1217,26 @@ namespace editor {
 
 		virtual bool options(Repository& repository) override
 		{
-			std::string name = "Name" + getIGPrefix() + "::TextureNode::name";
+			std::string name = "Name" + getIdPrefix() + "TextureNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, LightSource>(mNameBuffer.data());
+			bool validName = !repository.findByName<Texture>(mNameBuffer.data());
 
 			ImGui::Checkbox("Is HDR", &mIsHDR);
 
 			static const char* colorTypeTags[] = { "Red", "RG", "RGB", "RGBA" };
 			int currentType = static_cast<int>(mColorType);
-			std::string name1 = "Type" + getIGPrefix() + "::TextureNode::type";
+			std::string name1 = "Type" + getIdPrefix() + "TextureNode::type";
 			if (addDropdown(name1.c_str(), colorTypeTags, IM_ARRAYSIZE(colorTypeTags), currentType)) {
 				mColorType = static_cast<ColorFormat>(currentType);
 			}
 
-			return validKey;
+			return validName;
 		};
 
 		virtual bool load(Repository& repository, const char* path) override
 		{
-			auto texture = std::make_shared<Texture>(TextureTarget::Texture2D);
-			texture->setTextureUnit(0);
+			auto textureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
+			textureSPtr->setTextureUnit(0);
 
 			if (mIsHDR) {
 				Image<float> image;
@@ -1239,7 +1246,7 @@ namespace editor {
 					return false;
 				}
 
-				texture->setImage(
+				textureSPtr->setImage(
 					image.pixels.get(), TypeId::Float, mColorType, mColorType,
 					image.width, image.height
 				);
@@ -1252,17 +1259,15 @@ namespace editor {
 					return false;
 				}
 
-				texture->setImage(
+				textureSPtr->setImage(
 					image.pixels.get(), TypeId::UnsignedByte, mColorType, mColorType,
 					image.width, image.height
 				);
 			}
 
-			if (!repository.add(Scene::Key(mNameBuffer.data()), texture)
-				|| !repository.emplace<Scene::Key, ResourcePath<Texture>>(mNameBuffer.data(), path)
-			) {
-				return false;
-			}
+			auto texture = repository.insert(textureSPtr, mNameBuffer.data());
+			texture.getResource().setPath(mNameBuffer.data());
+			texture.setFakeUser();
 
 			return true;
 		};
@@ -1275,9 +1280,8 @@ namespace editor {
 		MeshNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Mesh"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<Mesh> mesh) override
 		{
-			auto mesh = repository.find<Scene::Key, Mesh>(key);
 			auto [min, max] = mesh->getBounds();
 
 			ImGui::Text("Bounds:");
@@ -1296,10 +1300,8 @@ namespace editor {
 		ParticleEmitterNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "ParticleEmitter"; };
 	protected:
-		virtual void draw(Repository& repository, const Scene::Key& key) override
+		virtual void draw(Repository&, Repository::ResourceRef<ParticleEmitter> emitter) override
 		{
-			auto emitter = repository.find<Scene::Key, ParticleEmitter>(key);
-
 			ImGui::DragInt("Maximum particles", reinterpret_cast<int*>(&emitter->maxParticles), 1, 0, INT_MAX);
 			ImGui::DragFloat("Particle simulation duration", &emitter->duration, 0.005f, 0.0f, FLT_MAX, "%.3f", 1.0f);
 			ImGui::Checkbox("Loop simulation", &emitter->loop);
@@ -1318,18 +1320,19 @@ namespace editor {
 		{
 			bool ret = false;
 
-			std::string name = "Name" + getIGPrefix() + "::ParticleEmitterNode::name";
+			std::string name = "Name" + getIdPrefix() + "ParticleEmitterNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validKey = !repository.has<Scene::Key, ParticleEmitter>(mNameBuffer.data());
+			bool validName = !repository.findByName<ParticleEmitter>(mNameBuffer.data());
 
 			ImGui::Separator();
-			if (cancelButton()) {
+			if (ImGui::Button(("Cancel" + getIdPrefix() + "CancelCreate").c_str())) {
 				mNameBuffer.fill(0);
 				ret = true;
 			}
 			ImGui::SameLine();
-			if (confirmButton(validKey)) {
-				repository.emplace<Scene::Key, ParticleEmitter>(mNameBuffer.data());
+			if (confirmButton(validName)) {
+				auto emitter = repository.insert(std::make_shared<ParticleEmitter>(), mNameBuffer.data());
+				emitter.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -1347,7 +1350,7 @@ namespace editor {
 		mTypes.emplace_back(new AudioBufferNode(*this));
 		mTypes.emplace_back(new ForceNode(*this));
 		mTypes.emplace_back(new ProgramNode(*this));
-		mTypes.emplace_back(new PassNode(*this));
+		mTypes.emplace_back(new RenderableShaderStepNode(*this));
 		mTypes.emplace_back(new RenderableShaderNode(*this));
 		mTypes.emplace_back(new TextureNode(*this));
 		mTypes.emplace_back(new MeshNode(*this));
@@ -1367,7 +1370,10 @@ namespace editor {
 	{
 		bool open = true;
 		if (ImGui::Begin(("Scene Repository##SceneRepository" + std::to_string(mPanelId)).c_str(), &open)) {
-			if (ImGui::BeginTable("RepositoryTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+			if (ImGui::BeginTable(
+				("RepositoryTable" + std::to_string(mPanelId)).c_str(), 2,
+				ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)
+			) {
 				ImGui::TableNextRow();
 
 				ImGui::TableSetColumnIndex(0);

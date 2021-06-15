@@ -463,12 +463,13 @@ namespace se::app {
 			currentRingIndex += static_cast<unsigned short>(segments);
 
 			for (unsigned short j = 0; j < static_cast<unsigned short>(segments); ++j) {
+				unsigned short nextJ = j + 1;
 				rawMesh.indices.push_back(previousRingIndex + j);
 				rawMesh.indices.push_back(currentRingIndex + j);
-				rawMesh.indices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
+				rawMesh.indices.push_back((nextJ < segments)? currentRingIndex + nextJ : currentRingIndex);
 				rawMesh.indices.push_back(previousRingIndex + j);
-				rawMesh.indices.push_back((j + 1 < segments)? currentRingIndex + j + 1 : currentRingIndex);
-				rawMesh.indices.push_back((j + 1 < segments)? previousRingIndex + j + 1 : previousRingIndex);
+				rawMesh.indices.push_back((nextJ < segments)? currentRingIndex + nextJ : currentRingIndex);
+				rawMesh.indices.push_back((nextJ < segments)? previousRingIndex + nextJ : previousRingIndex);
 			}
 		}
 	}

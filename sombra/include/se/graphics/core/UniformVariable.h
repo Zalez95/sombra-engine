@@ -34,7 +34,9 @@ namespace se::graphics {
 		 * @param	name the name of the IUniformVariable
 		 * @param	program the Program used for retrieving the Uniform
 		 *			Location of the IUniformVariable */
-		IUniformVariable(const char* name, std::shared_ptr<Program> program);
+		IUniformVariable(
+			const char* name, const std::shared_ptr<Program>& program
+		);
 
 		/** Class destructor */
 		virtual ~IUniformVariable() = default;
@@ -43,7 +45,7 @@ namespace se::graphics {
 		const std::string& getName() const { return mName; };
 
 		/** @return	the Program of the IUniformVariable */
-		std::shared_ptr<Program> getProgram() const { return mProgram; };
+		const std::shared_ptr<Program>& getProgram() const { return mProgram; };
 
 		/** @return	true if the IUniformVariable was found inside the Program,
 		 *			false otherwise */
@@ -64,8 +66,9 @@ namespace se::graphics {
 		 * @param	name the name of the UniformVariable
 		 * @param	program the Program used for retrieving the Uniform
 		 *			Location of the UniformVariable */
-		UniformVariable(const char* name, std::shared_ptr<Program> program) :
-			IUniformVariable(name, program) {};
+		UniformVariable(
+			const char* name, const std::shared_ptr<Program>& program
+		) : IUniformVariable(name, program) {};
 
 		/** Class destructor */
 		virtual ~UniformVariable() = default;
@@ -102,7 +105,7 @@ namespace se::graphics {
 		 *			Location of the UniformVariableValue
 		 * @param	value the value of the UniformVariableValue to bind */
 		UniformVariableValue(
-			const char* name, std::shared_ptr<Program> program,
+			const char* name, const std::shared_ptr<Program>& program,
 			const T& value = T()
 		) : UniformVariable<T>(name, program), mValue(value) {};
 
@@ -150,7 +153,7 @@ namespace se::graphics {
 		 *			values
 		 * @param	count the number of elements in valuePtr */
 		UniformVariableValueVector(
-			const char* name, std::shared_ptr<Program> program,
+			const char* name, const std::shared_ptr<Program>& program,
 			const T* valuePtr = nullptr, std::size_t count = 0
 		) : UniformVariable<T>(name, program) { setValue(valuePtr, count); };
 
@@ -229,7 +232,7 @@ namespace se::graphics {
 		 * @param	callback the callback function used for retrieving the
 		 *			value of the UniformVariableCallback to bind */
 		UniformVariableCallback(
-			const char* name, std::shared_ptr<Program> program,
+			const char* name, const std::shared_ptr<Program>& program,
 			const Callback& callback
 		) : UniformVariable<T>(name, program), mCallback(callback) {};
 

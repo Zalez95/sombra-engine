@@ -40,7 +40,7 @@ namespace editor {
 		/** Creates a new MenuBar
 		 *
 		 * @param	editor a reference to the Editor that holds the MenuBar */
-		MenuBar(Editor& editor) : mEditor(editor) {};
+		MenuBar(Editor& editor) : mEditor(editor), mWindow("MenuBar") {};
 
 		/** Draws the current menu bar */
 		void render();

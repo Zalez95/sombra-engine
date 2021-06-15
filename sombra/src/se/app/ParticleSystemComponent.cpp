@@ -37,37 +37,44 @@ namespace se::app {
 	}
 
 
-	void ParticleSystemComponent::resetAnimation()
+	void ParticleSystemComponent::setMesh(const MeshRef& mesh)
 	{
-		mAccumulatedTime = 0.0f;
-		mParticles = {};
+		mMesh = mesh;
+		mParticleSystem.setMesh(mesh.get());
 	}
 
 
-	void ParticleSystemComponent::setEmitter(ParticleEmitterSPtr emitter)
+	void ParticleSystemComponent::setEmitter(const ParticleEmitterRef& emitter)
 	{
 		mEmitter = emitter;
 		resetAnimation();
 	}
 
 
-	void ParticleSystemComponent::addRenderableShader(const RenderableShaderSPtr& shader)
+	void ParticleSystemComponent::addRenderableShader(const RenderableShaderRef& shader)
 	{
 		mShaders.emplace_back(shader);
 		mParticleSystem.addTechnique(shader->getTechnique());
 		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader
+			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
 		));
 	}
 
 
-	void ParticleSystemComponent::removeRenderableShader(const RenderableShaderSPtr& shader)
+	void ParticleSystemComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
-		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
-		mParticleSystem.removeTechnique(shader->getTechnique());
 		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader
+			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
 		));
+		mParticleSystem.removeTechnique(shader->getTechnique());
+		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
+	}
+
+
+	void ParticleSystemComponent::resetAnimation()
+	{
+		mAccumulatedTime = 0.0f;
+		mParticles = {};
 	}
 
 

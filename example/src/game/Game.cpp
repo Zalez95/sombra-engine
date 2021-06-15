@@ -110,16 +110,17 @@ namespace game {
 
 		try {
 			// Font load
-			auto arial = std::make_shared<se::graphics::Font>();
+			auto arialSPtr = std::make_shared<se::graphics::Font>();
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), '\0');
-			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arial)) {
+			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arialSPtr)) {
 				throw std::runtime_error("Error reading the font file");
 			}
-			mRepository->add(std::string("arial"), arial);
+			auto arial = mRepository->insert(std::move(arialSPtr), "arial");
+			arial.setFakeUser();
 
-			mFPSText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arial, { 0.0f, 1.0f, 0.0f, 1.0f });
-			mFPSText->addTechnique(mRepository->find<std::string, se::graphics::Technique>("technique2D"));
+			mFPSText = new se::graphics::RenderableText(glm::vec2(0.0f), glm::vec2(16.0f), arial.get(), { 0.0f, 1.0f, 0.0f, 1.0f });
+			mFPSText->addTechnique(mRepository->findByName<se::graphics::Technique>("technique2D").get());
 			mFPSText->setZIndex(255);
 			mExternalTools->graphicsEngine->addRenderable(mFPSText);
 		}

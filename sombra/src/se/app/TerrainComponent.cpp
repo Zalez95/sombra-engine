@@ -3,23 +3,23 @@
 
 namespace se::app {
 
-	void TerrainComponent::addRenderableShader(const RenderableShaderSPtr& shader)
+	void TerrainComponent::addRenderableShader(const RenderableShaderRef& shader)
 	{
 		mShaders.emplace_back(shader);
 		mRenderableTerrain.addTechnique(shader->getTechnique());
 		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader
+			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader.get()
 		));
 	}
 
 
-	void TerrainComponent::removeRenderableShader(const RenderableShaderSPtr& shader)
+	void TerrainComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
-		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
-		mRenderableTerrain.removeTechnique(shader->getTechnique());
 		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader
+			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader.get()
 		));
+		mRenderableTerrain.removeTechnique(shader->getTechnique());
+		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
 	}
 
 }

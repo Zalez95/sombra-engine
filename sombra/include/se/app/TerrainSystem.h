@@ -4,7 +4,6 @@
 #include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ECS.h"
 #include "events/ContainerEvent.h"
@@ -24,13 +23,13 @@ namespace se::app {
 	class TerrainSystem : public ISystem
 	{
 	private:	// Nested types
-		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
 		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
 
 		struct EntityUniforms
 		{
 			std::size_t shaderCount = 0;
-			PassSPtr pass;
+			RenderableShaderStepSPtr step;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 				modelMatrix;
 		};
@@ -111,17 +110,17 @@ namespace se::app {
 		 * @param	event the ShaderEvent to handle */
 		void onShaderEvent(const ShaderEvent& event);
 
-		/** Adds the pass uniforms to the Entity terrain
+		/** Adds the RenderableShaderStep uniforms to the Entity terrain
 		 *
 		 * @param	entity the Entity that owns the TerrainComponent
-		 * @param	pass a pointer to the new Pass to add */
-		void addPass(Entity entity, const PassSPtr& pass);
+		 * @param	step a pointer to the new RenderableShaderStep to add */
+		void addStep(Entity entity, const RenderableShaderStepSPtr& step);
 
-		/** Removes the pass uniforms from the Entity terrain
+		/** Removes the RenderableShaderStep uniforms from the Entity terrain
 		 *
 		 * @param	entity the Entity that owns the TerrainComponent
-		 * @param	pass a pointer to the Pass to remove */
-		void removePass(Entity entity, const PassSPtr& pass);
+		 * @param	step a pointer to the RenderableShaderStep to remove */
+		void removeStep(Entity entity, const RenderableShaderStepSPtr& step);
 	};
 
 }

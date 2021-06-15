@@ -1,10 +1,10 @@
 #ifndef PLAYER_CONTROLLER_H
 #define PLAYER_CONTROLLER_H
 
-#include <se/app/ScriptComponent.h>
-#include <se/app/graphics/Material.h>
 #include <se/graphics/3D/Mesh.h>
 #include <se/graphics/2D/RenderableText.h>
+#include <se/app/graphics/RenderableShader.h>
+#include <se/app/ScriptComponent.h>
 
 namespace game {
 
@@ -28,8 +28,10 @@ namespace game {
 		/** The last mouse location */
 		float mLastMouseX = 0.0f, mLastMouseY = 0.0f;
 
-		std::shared_ptr<se::graphics::Mesh> mTetrahedronMesh;
-		std::shared_ptr<se::graphics::Technique> mYellowTechnique;
+		se::app::Repository::ResourceRef<se::graphics::Mesh>
+			mTetrahedronMesh;
+		se::app::Repository::ResourceRef<se::app::RenderableShader>
+			mShaderYellow;
 
 	public:		// Functions
 		/** Creates a new PlayerController

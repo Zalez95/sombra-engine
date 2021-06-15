@@ -2,37 +2,30 @@
 #include "se/animation/SkeletonAnimator.h"
 #include "se/audio/Buffer.h"
 #include "se/physics/forces/Force.h"
-#include "se/physics/constraints/Constraint.h"
 #include "se/graphics/core/Program.h"
-#include "se/graphics/Pass.h"
-#include "se/graphics/Technique.h"
 #include "se/graphics/core/Texture.h"
 #include "se/graphics/3D/Mesh.h"
+#include "se/app/graphics/RenderableShader.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
 #include "se/app/ParticleSystemComponent.h"
-#include "se/app/RenderableShader.h"
 #include "se/app/Scene.h"
 
 namespace se::app {
 
-	Scene::Scene(const char* name, Application& application) : name(name), application(application)
+	Scene::Scene(const std::string& name, Application& application) : application(application), name(name)
 	{
-		repository.init<Key, Skin>();
-		repository.init<Key, LightSource>();
-		repository.init<Key, ParticleEmitter>();
-		repository.init<Key, RenderableShader>();
-		repository.init<Key, animation::SkeletonAnimator>();
-		repository.init<Key, audio::Buffer>();
-		repository.init<Key, physics::Force>();
-		repository.init<Key, physics::Constraint>();
-		repository.init<Key, graphics::Program>();
-		repository.init<Key, graphics::Pass>();
-		repository.init<Key, graphics::Texture>();
-		repository.init<Key, graphics::Mesh>();
-		repository.init<Key, ResourcePath<audio::Buffer>>();
-		repository.init<Key, ResourcePath<graphics::Program>>();
-		repository.init<Key, ResourcePath<graphics::Texture>>();
+		repository.init<graphics::Program>();
+		repository.init<graphics::Texture>();
+		repository.init<graphics::Mesh>();
+		repository.init<audio::Buffer>();
+		repository.init<physics::Force>();
+		repository.init<Skin>();
+		repository.init<LightSource>();
+		repository.init<ParticleEmitter>();
+		repository.init<RenderableShaderStep>();
+		repository.init<RenderableShader>();
+		repository.init<animation::SkeletonAnimator>();
 
 		entities.reserve(application.getEntityDatabase().getMaxEntities());
 	}
@@ -43,10 +36,6 @@ namespace se::app {
 		for (auto entity : entities) {
 			application.getEntityDatabase().removeEntity(entity);
 		}
-
-		repository.iterate<Key, animation::SkeletonAnimator>([this](const Key&, std::shared_ptr<animation::SkeletonAnimator> v) {
-			application.getExternalTools().animationEngine->removeAnimator(v.get());
-		});
 	}
 
 

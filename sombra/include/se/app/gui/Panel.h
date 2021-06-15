@@ -2,6 +2,7 @@
 #define PANEL_H
 
 #include "../../graphics/2D/RenderableSprite.h"
+#include "../Repository.h"
 #include "ComposedComponent.h"
 
 namespace se::app {
@@ -21,6 +22,9 @@ namespace se::app {
 
 		/** The RenderableSprite used for drawing of the Panel */
 		graphics::RenderableSprite mSprite;
+
+		/** The technique of the Panel */
+		Repository::ResourceRef<graphics::Technique> mTechnique;
 
 	public:		// Functions
 		/** Creates a new Panel

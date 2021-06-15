@@ -22,7 +22,7 @@ namespace se::audio {
 	Source::~Source()
 	{
 		if (mSourceId != 0) {
-			stop();
+			unbind();
 			AL_WRAP( alDeleteSources(1, &mSourceId) );
 			SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
 		}
@@ -32,7 +32,7 @@ namespace se::audio {
 	Source& Source::operator=(Source&& other)
 	{
 		if (mSourceId != 0) {
-			stop();
+			unbind();
 			AL_WRAP( alDeleteSources(1, &mSourceId) );
 			SOMBRA_TRACE_LOG << "Deleted Source " << mSourceId;
 		}

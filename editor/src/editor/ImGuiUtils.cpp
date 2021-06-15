@@ -159,24 +159,24 @@ namespace editor {
 		bool ret = false;
 
 		if (mShow) {
-			ImGui::OpenPopup(mTitle);
+			ImGui::OpenPopup((mTitle + "##" + mTag + "::Title").c_str());
 			mShow = false;
 		}
 
 		ImVec2 center(0.5f * ImGui::GetIO().DisplaySize.x, 0.5f * ImGui::GetIO().DisplaySize.y);
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-		if (ImGui::BeginPopupModal(mTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-			ImGui::Text("%s", mMessage);
+		if (ImGui::BeginPopupModal((mTitle + "##" + mTag + "::Title").c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::Text("%s", mMessage.c_str());
 			ImGui::Separator();
 
-			if (ImGui::Button(mButton)) {
+			if (ImGui::Button((mButton + "##" + mTag + "::Button").c_str())) {
 				ImGui::CloseCurrentPopup();
 				ret = true;
 			}
 			ImGui::SetItemDefaultFocus();
 			ImGui::SameLine();
-			if (ImGui::Button("Cancel")) {
+			if (ImGui::Button(("Cancel##" + mTag + "::Cancel").c_str())) {
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
@@ -194,7 +194,7 @@ namespace editor {
 			return ret;
 		}
 
-		if (!ImGui::Begin("File", &mShow)) {
+		if (!ImGui::Begin(("File##" + mTag + "::File").c_str(), &mShow)) {
 			ImGui::End();
 			return ret;
 		}
@@ -204,13 +204,13 @@ namespace editor {
 		std::string locationStr = fs::absolute(mCurrentPath).string();
 		std::copy(locationStr.begin(), locationStr.end(), location.begin());
 
-		if (ImGui::ArrowButton("up_dir", ImGuiDir_Up)) {
+		if (ImGui::ArrowButton(("##" + mTag + "::UpDir").c_str(), ImGuiDir_Up)) {
 			if (mCurrentPath.has_parent_path()) {
 				mCurrentPath = mCurrentPath.parent_path();
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::InputText("", location.data(), location.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
+		if (ImGui::InputText(("##" + mTag + "::Location").c_str(), location.data(), location.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
 			fs::path nextCurrentPath(location.data());
 			if (fs::exists(nextCurrentPath) && fs::is_directory(nextCurrentPath)) {
 				mCurrentPath = nextCurrentPath;
@@ -297,16 +297,16 @@ namespace editor {
 		ImGui::Separator();
 
 		// Footer
-		ImGui::InputText("Name", mSelected.data(), mSelected.size(), ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputText(("Name##" + mTag + "::Name").c_str(), mSelected.data(), mSelected.size(), ImGuiInputTextFlags_EnterReturnsTrue);
 
-		if (ImGui::Button("Close")) {
+		if (ImGui::Button(("Close##" + mTag + "::Close").c_str())) {
 			mShow = false;
 		}
 		ImGui::SameLine();
 		if (mSelected.empty()) {
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		}
-		if (ImGui::Button("Open") && !mSelected.empty()) {
+		if (ImGui::Button(("Open##" + mTag + "::Open").c_str()) && !mSelected.empty()) {
 			open = true;
 		}
 		if (mSelected.empty()) {

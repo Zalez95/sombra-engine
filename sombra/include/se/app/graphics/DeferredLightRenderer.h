@@ -3,9 +3,10 @@
 
 #include "../Repository.h"
 #include "../../graphics/BindableRenderNode.h"
+#include "../../graphics/core/Program.h"
 #include "../../graphics/core/UniformVariable.h"
 #include "../../graphics/core/UniformBuffer.h"
-#include "../../graphics/3D/RenderableMesh.h"
+#include "../../graphics/3D/Mesh.h"
 
 namespace se::app {
 
@@ -49,8 +50,11 @@ namespace se::app {
 		static constexpr unsigned int kMaxLights = 32;
 
 	private:	// Attributes
+		/** The program used by the DeferredLightRenderer */
+		Repository::ResourceRef<graphics::Program> mProgram;
+
 		/** The plane used for rendering */
-		std::shared_ptr<graphics::RenderableMesh> mPlane;
+		Repository::ResourceRef<graphics::Mesh> mPlane;
 
 		/** The uniform variable that the Camera location in world space */
 		std::shared_ptr<graphics::UniformVariableValue<glm::vec3>>

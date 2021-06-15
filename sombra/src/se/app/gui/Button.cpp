@@ -17,9 +17,9 @@ namespace se::app {
 
 		mSprite.setZIndex(mZIndex);
 		auto& application = mGUIManager->getApplication();
-		auto technique2D = application.getRepository().find<std::string, graphics::Technique>("technique2D");
-		if (technique2D) {
-			mSprite.addTechnique(technique2D);
+		mTechnique = application.getRepository().findByName<graphics::Technique>("technique2D");
+		if (mTechnique) {
+			mSprite.addTechnique(mTechnique.get());
 		}
 
 		mIsVisible = false;

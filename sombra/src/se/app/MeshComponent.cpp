@@ -10,17 +10,23 @@ namespace se::app {
 	}
 
 
-	std::size_t MeshComponent::add(
-		bool hasSkinning,
-		std::shared_ptr<graphics::Mesh> mesh, graphics::PrimitiveType primitiveType
-	) {
+	void MeshComponent::setMesh(std::size_t rIndex, MeshRef mesh)
+	{
+		mRMeshes[rIndex].mesh = mesh;
+		mRMeshes[rIndex].renderable.setMesh(mesh.get());
+	}
+
+
+	std::size_t MeshComponent::add(bool hasSkinning, MeshRef mesh, graphics::PrimitiveType primitiveType)
+	{
 		std::size_t ret = kMaxMeshes;
 
 		auto it = std::find_if(mRMeshes.begin(), mRMeshes.end(), [](const RMesh& rMesh) { return !rMesh.active; });
 		if (it != mRMeshes.end()) {
 			it->active = true;
 			it->hasSkinning = hasSkinning;
-			it->renderable = graphics::RenderableMesh(std::move(mesh), primitiveType);
+			it->mesh = mesh;
+			it->renderable = graphics::RenderableMesh(mesh.get(), primitiveType);
 			ret = std::distance(mRMeshes.begin(), it);
 
 			mEventManager.publish(new RMeshEvent(RMeshEvent::Operation::Add, mEntity, ret));
@@ -37,17 +43,17 @@ namespace se::app {
 	}
 
 
-	void MeshComponent::addRenderableShader(std::size_t rIndex, const RenderableShaderSPtr& shader)
+	void MeshComponent::addRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
 	{
 		mRMeshes[rIndex].shaders.emplace_back(shader);
 		mRMeshes[rIndex].renderable.addTechnique(shader->getTechnique());
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader));
+		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader.get()));
 	}
 
 
-	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderSPtr& shader)
+	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
 	{
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader));
+		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));
 		mRMeshes[rIndex].renderable.removeTechnique(shader->getTechnique());
 		mRMeshes[rIndex].shaders.erase(
 			std::remove(mRMeshes[rIndex].shaders.begin(), mRMeshes[rIndex].shaders.end(), shader),

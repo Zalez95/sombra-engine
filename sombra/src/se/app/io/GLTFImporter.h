@@ -25,18 +25,19 @@ namespace se::app {
 	{
 	private:	// Nested types
 		using Buffer = std::vector<std::byte>;
-		using TextureSPtr = std::shared_ptr<graphics::Texture>;
-		using ShaderSPtr = std::shared_ptr<RenderableShader>;
-		using MeshSPtr = std::shared_ptr<graphics::Mesh>;
-		using LightSourceSPtr = std::shared_ptr<LightSource>;
-		using SkinSPtr = std::shared_ptr<Skin>;
+		using TextureRef = Repository::ResourceRef<graphics::Texture>;
+		using ShaderRef = Repository::ResourceRef<RenderableShader>;
+		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
+		using LightSourceRef = Repository::ResourceRef<LightSource>;
+		using SkinRef = Repository::ResourceRef<Skin>;
 		using SceneUPtr = std::unique_ptr<Scene>;
 		using Vec3Animation = animation::IAnimation<glm::vec3>;
 		using QuatAnimation = animation::IAnimation<glm::quat>;
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
-		using SAnimatorSPtr = std::shared_ptr<animation::SkeletonAnimator>;
+		using SAnimatorRef =
+			Repository::ResourceRef<animation::SkeletonAnimator>;
 		using IndexVector = std::vector<std::size_t>;
 		struct Accessor;
 		struct BufferView;
@@ -261,7 +262,7 @@ namespace se::app {
 		 * @param	out the pointer where the Mesh will be stored 
 		 * @note	it will check if the Mesh was already created */
 		Result createMesh(
-			const PrimitiveMeshData& primitiveMesh, MeshSPtr& out
+			const PrimitiveMeshData& primitiveMesh, MeshRef& out
 		) const;
 	};
 

@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
+#include "../../graphics/core/Program.h"
 #include "../../graphics/3D/Mesh.h"
 #include "../Repository.h"
 
@@ -28,6 +29,9 @@ namespace se::app {
 
 		/** The minimum and maximum positions in the Scene */
 		glm::vec3 mMinPosition, mMaxPosition;
+
+		/** The program used by the Tex3DViewerNode */
+		Repository::ResourceRef<graphics::Program> mProgram;
 
 		/** The Cube Mesh used for rendering the grid */
 		std::unique_ptr<graphics::Mesh> mCube;

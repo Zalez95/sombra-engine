@@ -24,7 +24,7 @@ namespace se::app {
 			RigidBody,
 			Collider,
 			Animation,
-			Source,
+			AudioSource,
 			Skin,
 			Shadow,
 			Count		///< The number of indices

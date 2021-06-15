@@ -48,7 +48,7 @@ namespace se::graphics {
 		/** Sets the bounds of the Mesh
 		 *
 		 * @param	minimum the minimum position of the mesh at each direction
-		 * @param	minimum the maximum position of the mesh at each
+		 * @param	maximum the maximum position of the mesh at each
 		 *			direction */
 		void setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
 

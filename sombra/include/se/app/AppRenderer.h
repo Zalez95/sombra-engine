@@ -3,15 +3,12 @@
 
 #include <glm/glm.hpp>
 #include "../graphics/GraphicsEngine.h"
-#include "../graphics/Pass.h"
 #include "../graphics/core/Texture.h"
-#include "../graphics/core/UniformBuffer.h"
-#include "../graphics/core/UniformVariable.h"
 #include "../graphics/3D/RenderableMesh.h"
-#include "ECS.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
 #include "graphics/DeferredLightRenderer.h"
+#include "ECS.h"
 #include "LightComponent.h"
 
 namespace se::app {

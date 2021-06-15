@@ -1,8 +1,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <string>
-#include <vector>
 #include "../animation/AnimationNode.h"
 #include "Repository.h"
 #include "Entity.h"
@@ -10,35 +8,23 @@
 
 namespace se::app {
 
-	/** Struct ResourcePath, it holds a path to a Repository element of type
-	 * @tparam T */
-	template <typename T>
-	struct ResourcePath
-	{
-		/** The path value, if there are multiple paths they will be
-		 * separarated by commas */
-		std::string path;
-
-		/** Creates a new ResourcePath
-		 *
-		 * @param	path the path of the ResourcePath */
-		ResourcePath(const std::string& path = "") : path(path) {};
-	};
-
-
 	/**
 	 * Struct Scene, holds all the common data shared by the Entities of an App
 	 * and other data needed for simulating the 3D scene
 	 */
 	struct Scene
 	{
-		using Key = std::string;
-
-		/** The name of the Scene */
-		std::string name;
-
 		/** The application that holds the @see entities data */
 		Application& application;
+
+		/** The name of the Scene */
+		std::string name = {};
+
+		/** The path where the Scene is stored */
+		std::string path = {};
+
+		/** The paths to the Scenes linked from the current Scene */
+		std::vector<std::string> linkedScenePaths;
 
 		/** The Entities of the Scene, they will get automatically cleared when
 		 * the Scene is destroyed */
@@ -47,11 +33,16 @@ namespace se::app {
 		/** The root AnimationNode node of the Scene hierarchy */
 		animation::AnimationNode rootNode;
 
-		/** The repository that holds all the shared data of the Scene */
+		/** The repository that holds all the shared data of the Scene. The
+		 * available types are Skin, LightSource, ParticleEmitter,
+		 * RenderableShader, RenderableShaderStp,
+		 * animation::SkeletonAnimator, audio::Buffer,
+		 * physics::Force, physics::Constraint, graphics::Program,
+		 * graphics::Texture and graphics::Mesh */
 		Repository repository;
 
 		/** Creates a new Scene */
-		Scene(const char* name, Application& application);
+		Scene(const std::string& name, Application& application);
 		Scene(const Scene& other) = delete;
 		Scene(Scene&& other) = default;
 

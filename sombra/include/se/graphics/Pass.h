@@ -50,7 +50,7 @@ namespace se::graphics {
 		 *
 		 * @param	bindable a pointer to the Bindable to add
 		 * @return	a reference to the current Pass object */
-		Pass& addBindable(BindableSPtr bindable);
+		Pass& addBindable(const BindableSPtr& bindable);
 
 		/** Iterates through all the Bindables of the Pass calling the given
 		 * callback function
@@ -63,7 +63,7 @@ namespace se::graphics {
 		 *
 		 * @param	bindable a pointer to the Bindable to remove
 		 * @return	a reference to the current Pass object */
-		Pass& removeBindable(BindableSPtr bindable);
+		Pass& removeBindable(const BindableSPtr& bindable);
 
 		/** Binds the current Pass for using it in the following operations
 		 * @note	the Bindables added to the Pass will be bound in the same

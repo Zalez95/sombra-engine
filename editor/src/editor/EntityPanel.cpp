@@ -24,13 +24,13 @@ namespace editor {
 		}
 
 		if (scene) {
-			if (ImGui::SmallButton("Add")) {
+			if (ImGui::SmallButton(("Add##EntityPanel" + std::to_string(mPanelId) + "::Add").c_str())) {
 				se::app::Entity newEntity = mEditor.getEntityDatabase().addEntity();
 				scene->entities.push_back(newEntity);
 				mEditor.setActiveEntity(newEntity);
 			}
 			ImGui::SameLine();
-			if (ImGui::SmallButton("Remove")) {
+			if (ImGui::SmallButton(("Remove##EntityPanel" + std::to_string(mPanelId) + "::Remove").c_str())) {
 				se::app::Entity entity = mEditor.getActiveEntity();
 				auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
 				if (itEntity != scene->entities.end()) {

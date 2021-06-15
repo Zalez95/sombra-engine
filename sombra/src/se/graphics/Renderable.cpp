@@ -4,7 +4,7 @@
 
 namespace se::graphics {
 
-	Renderable& Renderable::addTechnique(TechniqueSPtr technique)
+	Renderable& Renderable::addTechnique(const TechniqueSPtr& technique)
 	{
 		if (technique) {
 			mTechniques.push_back(technique);
@@ -14,7 +14,7 @@ namespace se::graphics {
 	}
 
 
-	Renderable& Renderable::removeTechnique(TechniqueSPtr technique)
+	Renderable& Renderable::removeTechnique(const TechniqueSPtr& technique)
 	{
 		mTechniques.erase(
 			std::remove(mTechniques.begin(), mTechniques.end(), technique),

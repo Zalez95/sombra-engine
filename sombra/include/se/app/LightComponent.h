@@ -1,10 +1,10 @@
 #ifndef LIGHT_COMPONENT_H
 #define LIGHT_COMPONENT_H
 
-#include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include "../graphics/core/Texture.h"
+#include "Repository.h"
 
 namespace se::app {
 
@@ -51,7 +51,7 @@ namespace se::app {
 	struct LightComponent
 	{
 		/** A pointer to the LightSource that is going to be used */
-		std::shared_ptr<LightSource> source;
+		Repository::ResourceRef<LightSource> source;
 	};
 
 
@@ -61,10 +61,10 @@ namespace se::app {
 	struct LightProbe
 	{
 		/** The irradiance texture */
-		std::shared_ptr<graphics::Texture> irradianceMap;
+		Repository::ResourceRef<graphics::Texture> irradianceMap;
 
 		/** The prefiltered environment map texture */
-		std::shared_ptr<graphics::Texture> prefilterMap;
+		Repository::ResourceRef<graphics::Texture> prefilterMap;
 	};
 
 

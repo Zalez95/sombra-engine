@@ -3,7 +3,7 @@
 
 #include <array>
 #include "../graphics/3D/RenderableMesh.h"
-#include "RenderableShader.h"
+#include "graphics/RenderableShader.h"
 #include "events/EventManager.h"
 #include "events/RMeshEvent.h"
 #include "Entity.h"
@@ -17,14 +17,16 @@ namespace se::app {
 	class MeshComponent
 	{
 	private:	// Nested types
-		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
+		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
+		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
 
 		struct RMesh
 		{
 			bool active = false;
 			bool hasSkinning = false;
+			MeshRef mesh;
+			std::vector<RenderableShaderRef> shaders;
 			graphics::RenderableMesh renderable;
-			std::vector<RenderableShaderSPtr> shaders;
 		};
 
 	public:		// Attributes
@@ -75,6 +77,19 @@ namespace se::app {
 		bool hasSkinning(std::size_t rIndex) const
 		{ return mRMeshes[rIndex].hasSkinning; };
 
+		/** Returns the selected Mesh
+		 *
+		 * @param	rIndex the index of the Mesh
+		 * @return	the Mesh */
+		const MeshRef& getMesh(std::size_t rIndex) const
+		{ return mRMeshes[rIndex].mesh; };
+
+		/** Sets the Mesh of the given RenderableMesh
+		 *
+		 * @param	rIndex the index of the RenderableMesh
+		 * @param	mesh a pointer to the new Mesh of the RenderableMesh */
+		void setMesh(std::size_t rIndex, MeshRef mesh);
+
 		/** Adds a new RenderableMesh to the RenderableComponent
 		 *
 		 * @param	hasSkinning if the new mesh has skinning or not
@@ -82,8 +97,8 @@ namespace se::app {
 		 * @param	primitiveType the type of primitive used for rendering
 		 * @return	the index used for accesing the new RenderableMesh */
 		std::size_t add(
-			bool hasSkinning,
-			std::shared_ptr<graphics::Mesh> mesh = nullptr,
+			bool hasSkinning = false,
+			MeshRef mesh = MeshRef(),
 			graphics::PrimitiveType primitiveType =
 				graphics::PrimitiveType::Triangle
 		);
@@ -106,7 +121,7 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to update
 		 * @param	shader a pointer to the shader to add */
 		void addRenderableShader(
-			std::size_t rIndex, const RenderableShaderSPtr& shader
+			std::size_t rIndex, const RenderableShaderRef& shader
 		);
 
 		/** Iterates through all the RenderableShaders of the given
@@ -122,7 +137,7 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to update
 		 * @param	shader a pointer to the shader to remove */
 		void removeRenderableShader(
-			std::size_t rIndex, const RenderableShaderSPtr& shader
+			std::size_t rIndex, const RenderableShaderRef& shader
 		);
 	};
 

@@ -59,6 +59,9 @@ namespace se::graphics {
 		 *			otherwise */
 		bool removeNode(RenderNode* node);
 
+		/** Removes all the RenderNodes from the RenderGraph */
+		void clearNodes();
+
 		/** Searchs a RenderNode with the same name in the RenderGraph
 		 *
 		 * @param	nodeName the name of the RenderNode

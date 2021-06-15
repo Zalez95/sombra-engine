@@ -5,8 +5,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "../graphics/3D/ParticleSystem.h"
-#include "RenderableShader.h"
 #include "events/EventManager.h"
+#include "graphics/RenderableShader.h"
 #include "Entity.h"
 
 namespace se::app {
@@ -73,8 +73,9 @@ namespace se::app {
 			float remainingTime = 0.0f;
 		};
 
-		using ParticleEmitterSPtr = std::shared_ptr<ParticleEmitter>;
-		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
+		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
+		using ParticleEmitterRef = Repository::ResourceRef<ParticleEmitter>;
+		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
 
 	public:		// Attributes
 		static constexpr int kPositionIndex			= 4;
@@ -97,7 +98,7 @@ namespace se::app {
 		graphics::ParticleSystem mParticleSystem;
 
 		/** The shaders added to the ParticleSystemComponent */
-		std::vector<RenderableShaderSPtr> mShaders;
+		std::vector<RenderableShaderRef> mShaders;
 
 		/** The initial location of the new Particles */
 		glm::vec3 mInitialPosition;
@@ -108,8 +109,11 @@ namespace se::app {
 		/** The accumulated time since the start of the particle simulation */
 		float mAccumulatedTime;
 
+		/** The Mesh used for drawing the particles */
+		MeshRef mMesh;
+
 		/** The emitter that holds the particles properties */
-		ParticleEmitterSPtr mEmitter;
+		ParticleEmitterRef mEmitter;
 
 	public:		// Functions
 		/** Creates a new ParticleSystemComponent
@@ -135,16 +139,6 @@ namespace se::app {
 		/** @return	the ParticleSystem of the ParticleSystemComponent */
 		const graphics::ParticleSystem& get() const { return mParticleSystem; };
 
-		/** @return	the Mesh of the ParticleSystem */
-		graphics::ParticleSystem::MeshSPtr getMesh() const
-		{ return mParticleSystem.getMesh(); };
-
-		/** Sets the Mesh of the ParticleSystem
-		 *
-		 * @param	mesh the new Mesh of the ParticleSystem */
-		void setMesh(const graphics::ParticleSystem::MeshSPtr& mesh)
-		{ mParticleSystem.setMesh(mesh); };
-
 		/** @return	the initial Position of the Particles */
 		glm::vec3 getInitialPosition() const { return mInitialPosition; };
 
@@ -159,22 +153,27 @@ namespace se::app {
 		void setInitialOrientation(const glm::quat& initialOrientation)
 		{ mInitialOrientation = initialOrientation; };
 
-		/** Resets the particle simulation */
-		void resetAnimation();
+		/** @return	the Mesh of the ParticleSystem */
+		const MeshRef& getMesh() const { return mMesh; };
+
+		/** Sets the Mesh of the ParticleSystem
+		 *
+		 * @param	mesh the new Mesh of the ParticleSystem */
+		void setMesh(const MeshRef& mesh);
 
 		/** @return	a pointer to the ParticleEmitter of the
 		 *			ParticleSystemComponent */
-		ParticleEmitterSPtr getEmitter() const { return mEmitter; };
+		const ParticleEmitterRef& getEmitter() const { return mEmitter; };
 
 		/** Sets the ParticleEmitter of the ParticleSystemComponent
 		 *
 		 * @param	emitter a pointer to the new ParticleEmitter */
-		void setEmitter(ParticleEmitterSPtr emitter);
+		void setEmitter(const ParticleEmitterRef& emitter);
 
 		/** Adds the given RenderableShader to the ParticleSystemComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
-		void addRenderableShader(const RenderableShaderSPtr& shader);
+		void addRenderableShader(const RenderableShaderRef& shader);
 
 		/** Iterates through all the RenderableShaders of the ParticleSystemComponents
 		 * calling the given callback function
@@ -186,7 +185,10 @@ namespace se::app {
 		/** Removes the given RenderableShader from the ParticleSystemComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
-		void removeRenderableShader(const RenderableShaderSPtr& shader);
+		void removeRenderableShader(const RenderableShaderRef& shader);
+
+		/** Resets the particle simulation */
+		void resetAnimation();
 
 		/** Updates the properties of the Particles based on the given time,
 		 * removing those that have aren't alive anymore

@@ -4,7 +4,7 @@
 
 namespace se::graphics {
 
-	Renderable3D& Renderable3D::addPassBindable(Pass* pass, BindableSPtr bindable)
+	Renderable3D& Renderable3D::addPassBindable(Pass* pass, const BindableSPtr& bindable)
 	{
 		if (pass && bindable) {
 			mPassBindables[pass].push_back(bindable);
@@ -14,7 +14,7 @@ namespace se::graphics {
 	}
 
 
-	Renderable3D& Renderable3D::removePassBindable(Pass* pass, BindableSPtr bindable)
+	Renderable3D& Renderable3D::removePassBindable(Pass* pass, const BindableSPtr& bindable)
 	{
 		auto it = mPassBindables.find(pass);
 		if (it != mPassBindables.end()) {

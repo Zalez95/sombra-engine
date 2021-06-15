@@ -13,16 +13,16 @@ namespace editor {
 	{
 	private:	// Nested types
 		class ITypeNode;
-		template <typename T, bool hasPath = false> class TypeNode;
-		template <typename T, bool hasPath = false> class ImportTypeNode;
-		template <typename T, bool hasPath = false> class SceneImporterTypeNode;
+		template <typename T> class TypeNode;
+		template <typename T> class ImportTypeNode;
+		template <typename T> class SceneImporterTypeNode;
 		class SkinNode;
 		class LightSourceNode;
 		class SkeletonAnimatorNode;
 		class AudioBufferNode;
 		class ForceNode;
 		class ProgramNode;
-		class PassNode;
+		class RenderableShaderStepNode;
 		class RenderableShaderNode;
 		class TextureNode;
 		class MeshNode;

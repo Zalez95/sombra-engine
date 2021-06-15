@@ -90,9 +90,9 @@ namespace se::app {
 		}
 
 		mEntityUniforms.emplace(entity, EntityUniformsVector());
-		terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
-			shader->getTechnique()->processPasses([&](const PassSPtr& pass) {
-				addPass(entity, pass);
+		terrain->processRenderableShaders([&](const auto& shader) {
+			shader->processSteps([&](const auto& step) {
+				addStep(entity, step.get());
 			});
 		});
 
@@ -132,13 +132,13 @@ namespace se::app {
 
 		switch (event.getOperation()) {
 			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->getTechnique()->processPasses([&](const PassSPtr& pass) {
-					addPass(event.getEntity(), pass);
+				event.getShader()->processSteps([&](const auto& step) {
+					addStep(event.getEntity(), step.get());
 				});
 			} break;
 			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->getTechnique()->processPasses([&](const PassSPtr& pass) {
-					removePass(event.getEntity(), pass);
+				event.getShader()->processSteps([&](const auto& step) {
+					removeStep(event.getEntity(), step.get());
 				});
 			} break;
 		}
@@ -150,17 +150,17 @@ namespace se::app {
 		mEntityDatabase.iterateComponents<TerrainComponent>(
 			[&](Entity entity, TerrainComponent* terrain) {
 				bool hasShader = false;
-				terrain->processRenderableShaders([&](const RenderableShaderSPtr& shader) {
-					hasShader |= (shader == event.getShader());
+				terrain->processRenderableShaders([&](const auto& shader) {
+					hasShader |= (shader.get() == event.getShader());
 				});
 
 				if (hasShader) {
 					switch (event.getOperation()) {
 						case ShaderEvent::Operation::Add: {
-							addPass(entity, event.getPass());
+							addStep(entity, event.getStep());
 						} break;
 						case ShaderEvent::Operation::Remove: {
-							removePass(entity, event.getPass());
+							removeStep(entity, event.getStep());
 						} break;
 					}
 				}
@@ -170,43 +170,43 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::addPass(Entity entity, const PassSPtr& pass)
+	void TerrainSystem::addStep(Entity entity, const RenderableShaderStepSPtr& step)
 	{
 		auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}
 
-		// Check if the terrain has the Pass already added
+		// Check if the terrain has the Step already added
 		auto& entityUniforms = mEntityUniforms.find(entity)->second;
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.pass == pass;
+			return uniforms.step == step;
 		});
 		if (itUniforms != entityUniforms.end()) {
 			itUniforms->shaderCount++;
 			return;
 		}
 
-		// Find the program bindable of the Pass
+		// Find the program bindable of the Step
 		std::shared_ptr<graphics::Program> program;
-		pass->processBindables([&](const auto& bindable) {
+		step->processBindables([&](const auto& bindable) {
 			if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
 				program = tmp;
 			}
 		});
 
 		if (!program) {
-			SOMBRA_WARN_LOG << "Trying to add a Pass " << pass << " with no program";
+			SOMBRA_WARN_LOG << "Trying to add a Step " << step.get() << " with no program";
 			return;
 		}
 
 		// Create and add the uniforms to the terrain
 		auto& uniforms = entityUniforms.emplace_back();
 		uniforms.shaderCount = 1;
-		uniforms.pass = pass;
+		uniforms.step = step;
 		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
 		if (uniforms.modelMatrix->found()) {
-			terrain->get().addPassBindable(pass.get(), uniforms.modelMatrix);
+			terrain->get().addPassBindable(step->getPass().get(), uniforms.modelMatrix);
 		}
 
 		if (transforms) {
@@ -215,7 +215,7 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::removePass(Entity entity, const PassSPtr& pass)
+	void TerrainSystem::removeStep(Entity entity, const RenderableShaderStepSPtr& step)
 	{
 		auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(entity, true);
 		if (!terrain) {
@@ -224,7 +224,7 @@ namespace se::app {
 
 		auto& entityUniforms = mEntityUniforms.find(entity)->second;
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.pass == pass;
+			return uniforms.step == step;
 		});
 		if (itUniforms == entityUniforms.end()) {
 			return;
@@ -232,7 +232,7 @@ namespace se::app {
 
 		itUniforms->shaderCount--;
 		if (itUniforms->shaderCount == 0) {
-			terrain->get().removePassBindable(pass.get(), itUniforms->modelMatrix);
+			terrain->get().removePassBindable(step->getPass().get(), itUniforms->modelMatrix);
 			entityUniforms.erase(itUniforms);
 		}
 	}

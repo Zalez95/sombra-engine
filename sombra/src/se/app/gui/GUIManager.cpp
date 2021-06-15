@@ -18,25 +18,27 @@ namespace se::app {
 		mApplication.getEventManager().subscribe(this, Topic::MouseMove);
 		mApplication.getEventManager().subscribe(this, Topic::MouseButton);
 
-		if (!mApplication.getRepository().find<std::string, graphics::Program>("technique2D")) {
+		mTechnique = mApplication.getRepository().findByName<graphics::Technique>("technique2D");
+		if (!mTechnique) {
 			auto renderer = dynamic_cast<graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("renderer2D"));
 
-			auto program = mApplication.getRepository().find<std::string, graphics::Program>("program2D");
-			if (!program) {
+			mProgram = mApplication.getRepository().findByName<graphics::Program>("program2D");
+			if (!mProgram) {
+				std::shared_ptr<graphics::Program> program;
 				auto result = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl", program);
 				if (!result) {
 					SOMBRA_ERROR_LOG << result.description();
 					return;
 				}
-				mApplication.getRepository().add(std::string("program2D"), program);
+				mProgram = mApplication.getRepository().insert(std::move(program), "program2D");
 			}
 
-			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", program,
+			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(),
 				glm::ortho(0.0f, initialWindowSize.x, initialWindowSize.y, 0.0f, -1.0f, 1.0f)
 			);
 
 			auto pass = std::make_shared<graphics::Pass>(*renderer);
-			pass->addBindable(program)
+			pass->addBindable(mProgram.get())
 				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, true))
 				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, false))
 				.addBindable(mProjectionMatrix);
@@ -44,12 +46,12 @@ namespace se::app {
 			for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
 				utils::ArrayStreambuf<char, 64> aStreambuf;
 				std::ostream(&aStreambuf) << "uTextures[" << i << "]";
-				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), program, i));
+				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), mProgram.get(), i));
 			}
 
 			auto technique2D = std::make_shared<graphics::Technique>();
 			technique2D->addPass(pass);
-			mApplication.getRepository().add(std::string("technique2D"), std::move(technique2D));
+			mTechnique = mApplication.getRepository().insert(std::move(technique2D), "technique2D");
 		}
 
 		mRootComponent.setSize(initialWindowSize);

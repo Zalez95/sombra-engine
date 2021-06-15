@@ -1,10 +1,10 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include <memory>
 #include <glm/glm.hpp>
 #include "../../utils/FixedVector.h"
 #include "../../graphics/core/Texture.h"
+#include "../Repository.h"
 
 namespace se::app {
 
@@ -18,7 +18,7 @@ namespace se::app {
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
 		/** The base color texture */
-		std::shared_ptr<graphics::Texture> baseColorTexture;
+		Repository::ResourceRef<graphics::Texture> baseColorTexture;
 
 		/** The metalness of the material */
 		float metallicFactor = 1.0f;
@@ -27,7 +27,7 @@ namespace se::app {
 		float roughnessFactor = 1.0f;
 
 		/** The metallic-roughness texture */
-		std::shared_ptr<graphics::Texture> metallicRoughnessTexture;
+		Repository::ResourceRef<graphics::Texture> metallicRoughnessTexture;
 	};
 
 
@@ -51,19 +51,19 @@ namespace se::app {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		std::shared_ptr<graphics::Texture> normalTexture;
+		Repository::ResourceRef<graphics::Texture> normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale = 1.0f;
 
 		/** The occlusion map texture */
-		std::shared_ptr<graphics::Texture> occlusionTexture;
+		Repository::ResourceRef<graphics::Texture> occlusionTexture;
 
 		/** The amount of occlusion applied */
 		float occlusionStrength = 1.0f;
 
 		/** The emissive map texture */
-		std::shared_ptr<graphics::Texture> emissiveTexture;
+		Repository::ResourceRef<graphics::Texture> emissiveTexture;
 
 		/** The RGB components of the emissive color of the material */
 		glm::vec3 emissiveFactor = glm::vec3(0.0f);
@@ -95,7 +95,7 @@ namespace se::app {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		std::shared_ptr<graphics::Texture> normalTexture;
+		Repository::ResourceRef<graphics::Texture> normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale;
@@ -124,7 +124,7 @@ namespace se::app {
 		/** The splatmap texture, its a RGBA textures that codifies in each of
 		 * its channels which material should be used at each position and in
 		 * what percentage */
-		std::shared_ptr<graphics::Texture> splatmapTexture;
+		Repository::ResourceRef<graphics::Texture> splatmapTexture;
 	};
 
 }

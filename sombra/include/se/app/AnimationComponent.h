@@ -2,6 +2,7 @@
 #define ANIMATION_COMPONENT_H
 
 #include "../animation/SkeletonAnimator.h"
+#include "Repository.h"
 
 namespace se::app {
 
@@ -12,15 +13,15 @@ namespace se::app {
 	class AnimationComponent
 	{
 	private:	// Nested types
-		using SkeletonAnimatorSPtr =
-			std::shared_ptr<animation::SkeletonAnimator>;
+		using SkeletonAnimatorRef =
+			Repository::ResourceRef<animation::SkeletonAnimator>;
 
 	private:	// Attributes
 		/** A pointer to the root AnimationNode of the hierarchy */
 		animation::AnimationNode* mNode;
 
 		/** All the SkeletonAnimators added to the AnimationComponent */
-		std::vector<SkeletonAnimatorSPtr> mSAnimators;
+		std::vector<SkeletonAnimatorRef> mSAnimators;
 
 	public:		// Functions
 		/** Creates a new AnimationComponent
@@ -31,43 +32,80 @@ namespace se::app {
 			mNode(node) {};
 
 		/** Class destructor */
-		~AnimationComponent();
+		~AnimationComponent()
+		{
+			if (mNode) {
+				for (auto& animator : mSAnimators) {
+					animator->removeNodeHierarchy(*mNode);
+				}
+			}
+		};
 
 		/** Sets the root Animation node of the AnimationComponent
 		 *
 		 * @param	node a pointer to the new root AnimationNode of the
-		 *			hierarchy */
-		void setRootNode(animation::AnimationNode* node);
+		 *			hierarchy
+		 * @return	a reference to the current AnimationComponent object */
+		AnimationComponent& setRootNode(animation::AnimationNode* node)
+		{
+			if (mNode) {
+				for (auto& animator : mSAnimators) {
+					animator->removeNodeHierarchy(*mNode);
+				}
+			}
+			mNode = node;
+			if (mNode) {
+				for (auto& animator : mSAnimators) {
+					animator->addNodeHierarchy(*mNode);
+				}
+			}
+			return *this;
+		};
 
 		/** @return	a pointer to the root AnimationNode of the hierarchy */
 		animation::AnimationNode* getRootNode() const { return mNode; };
 
 		/** Adds the given animator to the AnimationComponent
 		 *
-		 * @param	sAnimator a pointer to the SkeletonAnimator to add */
-		void addAnimator(SkeletonAnimatorSPtr sAnimator);
+		 * @param	sAnimator a pointer to the SkeletonAnimator to add
+		 * @return	a reference to the current AnimationComponent object */
+		AnimationComponent& addAnimator(SkeletonAnimatorRef sAnimator)
+		{
+			mSAnimators.push_back(sAnimator);
+			if (mNode) {
+				sAnimator->addNodeHierarchy(*mNode);
+			}
+			return *this;
+		};
 
 		/** Iterates through all the SkeletonAnimators of the AnimationComponent
 		 * calling the given callback function
 		 *
 		 * @param	callback the function to call for each SkeletonAnimator */
 		template <typename F>
-		void processSAnimators(F callback) const;
+		void processSAnimators(F callback) const
+		{
+			for (auto& sAnimator : mSAnimators) {
+				callback(sAnimator);
+			}
+		}
 
 		/** Removes the given animator from the AnimationComponent
 		 *
-		 * @param	sAnimator a pointer to the SkeletonAnimator to remove */
-		void removeAnimator(SkeletonAnimatorSPtr sAnimator);
+		 * @param	sAnimator a pointer to the SkeletonAnimator to remove
+		 * @return	a reference to the current AnimationComponent object */
+		AnimationComponent& removeAnimator(SkeletonAnimatorRef sAnimator)
+		{
+			if (mNode) {
+				sAnimator->removeNodeHierarchy(*mNode);
+			}
+			mSAnimators.erase(
+				std::remove(mSAnimators.begin(), mSAnimators.end(), sAnimator),
+				mSAnimators.end()
+			);
+			return *this;
+		};
 	};
-
-
-	template <typename F>
-	void AnimationComponent::processSAnimators(F callback) const
-	{
-		for (auto& sAnimator : mSAnimators) {
-			callback(sAnimator);
-		}
-	}
 
 }
 

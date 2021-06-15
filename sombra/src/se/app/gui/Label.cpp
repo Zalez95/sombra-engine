@@ -112,7 +112,7 @@ namespace se::app {
 	}
 
 
-	void Label::setFont(FontSPtr font)
+	void Label::setFont(FontRef font)
 	{
 		mFont = font;
 		updateRenderableTexts();
@@ -175,13 +175,13 @@ namespace se::app {
 
 		// Add more RenderableTexts
 		auto& application = mGUIManager->getApplication();
-		auto technique2D = application.getRepository().find<std::string, graphics::Technique>("technique2D");
+		mTechnique = application.getRepository().findByName<graphics::Technique>("technique2D");
 		while (mRenderableTexts.size() < lines.size()) {
 			auto& renderable = mRenderableTexts.emplace_back( std::make_unique<graphics::RenderableText>(mPosition, mCharacterSize) );
 
 			renderable->setZIndex(mZIndex);
-			if (technique2D) {
-				renderable->addTechnique(technique2D);
+			if (mTechnique) {
+				renderable->addTechnique(mTechnique.get());
 			}
 
 			if (mIsVisible) {
@@ -201,7 +201,7 @@ namespace se::app {
 		for (std::size_t iLine = 0; iLine < lines.size(); ++iLine) {
 			mRenderableTexts[iLine]->setPosition( calculateLinePosition(lines, iLine) );
 			mRenderableTexts[iLine]->setSize(mCharacterSize);
-			mRenderableTexts[iLine]->setFont(mFont);
+			mRenderableTexts[iLine]->setFont(mFont.get());
 			mRenderableTexts[iLine]->setColor(mColor);
 			mRenderableTexts[iLine]->setText(lines[iLine]);
 		}
@@ -212,7 +212,7 @@ namespace se::app {
 	{
 		utils::trimRight(input);
 
-		while (true) {
+		while (mFont) {
 			// Check if there is space left for another line
 			if ((output.size() + 1) * mCharacterSize.y >= mSize.y) {
 				return;
@@ -264,33 +264,35 @@ namespace se::app {
 	{
 		glm::vec2 position = mPosition;
 
-		if (mHorizontalAlignment != HorizontalAlignment::Left) {
-			float lineWidth = 0.0f;
-			float xScale = mCharacterSize.x / mFont->maxCharacterSize.x;
-			for (char c : lines[iLine]) {
-				auto itCharacter = mFont->characters.find(c);
-				if (itCharacter != mFont->characters.end()) {
-					lineWidth += xScale * itCharacter->second.advance;
+		if (mFont) {
+			if (mHorizontalAlignment != HorizontalAlignment::Left) {
+				float lineWidth = 0.0f;
+				float xScale = mCharacterSize.x / mFont->maxCharacterSize.x;
+				for (char c : lines[iLine]) {
+					auto itCharacter = mFont->characters.find(c);
+					if (itCharacter != mFont->characters.end()) {
+						lineWidth += xScale * itCharacter->second.advance;
+					}
+				}
+
+				if (mHorizontalAlignment == HorizontalAlignment::Right) {
+					position.x += mSize.x - lineWidth;
+				}
+				else {
+					position.x += (mSize.x - lineWidth) / 2.0f;
 				}
 			}
 
-			if (mHorizontalAlignment == HorizontalAlignment::Right) {
-				position.x += mSize.x - lineWidth;
-			}
-			else {
-				position.x += (mSize.x - lineWidth) / 2.0f;
-			}
-		}
+			position.y += iLine * mCharacterSize.y;
+			if (mVerticalAlignment != VerticalAlignment::Top) {
+				float lineBlockHeight = lines.size() * mCharacterSize.y;
 
-		position.y += iLine * mCharacterSize.y;
-		if (mVerticalAlignment != VerticalAlignment::Top) {
-			float lineBlockHeight = lines.size() * mCharacterSize.y;
-
-			if (mVerticalAlignment == VerticalAlignment::Bottom) {
-				position.y += mSize.y - lineBlockHeight;
-			}
-			else {
-				position.y += (mSize.y - lineBlockHeight) / 2.0f;
+				if (mVerticalAlignment == VerticalAlignment::Bottom) {
+					position.y += mSize.y - lineBlockHeight;
+				}
+				else {
+					position.y += (mSize.y - lineBlockHeight) / 2.0f;
+				}
 			}
 		}
 

@@ -62,60 +62,49 @@ namespace editor {
 	);
 
 
-	/** Creates a dropdown button used for selecting a value with the given key
+	/** Creates a dropdown button used for selecting a value of @tparam T type
 	 * from the given Repository
 	 *
 	 * @param	tag the tag of the button
 	 * @param	buttonName the string to show
 	 * @param	repository the Repository that holds the values
-	 * @param	key return parameter
+	 * @param	value the selected value (return parameter)
 	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename K, typename V>
+	template <typename T>
 	bool addRepoDropdownButton(
 		const char* tag, const char* buttonName,
-		se::app::Repository& repository, K& key
+		se::app::Repository& repository,
+		se::app::Repository::ResourceRef<T>& value
 	);
 
 
-	/** Creates a dropdown button used for selecting a value with type @tparam V
-	 * from the given Repository
-	 *
-	 * @param	tag the tag of the button
-	 * @param	buttonName the string to show
-	 * @param	repository the Repository that holds the values
-	 * @param	value return parameter
-	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename K, typename V>
-	bool addRepoDropdownButtonValue(
-		const char* tag, const char* buttonName,
-		se::app::Repository& repository, std::shared_ptr<V>& value
-	);
-
-
-	/** Creates a dropdown button used for selecting a value with the given key
+	/** Creates a dropdown button used for selecting a value of @tparam T type
 	 * from the given Repository
 	 *
 	 * @param	tag the tag of the button
 	 * @param	repository the Repository that holds the values
-	 * @param	key the current selected value key, also the return parameter
+	 * @param	value the current selected value, it's name will be shown in
+	 *			the dropdown, if it's invalid it will show an empty string.
+	 *			It's also the return parameter
 	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename K, typename V>
+	template <typename T>
 	bool addRepoDropdownShowSelected(
-		const char* tag, se::app::Repository& repository, K& key
+		const char* tag, se::app::Repository& repository,
+		se::app::Repository::ResourceRef<T>& value
 	);
 
 
-	/** Creates a dropdown button used for selecting a value with type @tparam V
-	 * from the given Repository
+	/** Sets the name of the given resource, appending a number in case that
+	 * another resource with the same type and name already exists in the
+	 * repository
 	 *
-	 * @param	tag the tag of the button
-	 * @param	repository the Repository that holds the values
-	 * @param	value the current selected value, also the return parameter
-	 * @return	true if the dropdown was updated, false otherwise */
-	template <typename K, typename V>
-	bool addRepoDropdownShowSelectedValue(
-		const char* tag, se::app::Repository& repository,
-		std::shared_ptr<V>& value
+	 * @param	value the Resource to set it's name
+	 * @param	name the new name of the Resource
+	 * @param	repository the Repository where the resource is located */
+	template <typename T>
+	void setRepoName(
+		se::app::Resource<T>& resource,
+		const char* name, se::app::Repository& repository
 	);
 
 
@@ -125,14 +114,17 @@ namespace editor {
 	class Alert
 	{
 	private:	// Attributes
+		/** The tag used in the Alert ImGui elements */
+		std::string mTag;
+
 		/** The text that the pop up window title must show */
-		const char* mTitle;
+		std::string mTitle;
 
 		/** The text that the pop up window must show */
-		const char* mMessage;
+		std::string mMessage;
 
 		/** The text that the accept button must show */
-		const char* mButton;
+		std::string mButton;
 
 		/** If the pop up must be shown or not */
 		bool mShow;
@@ -140,10 +132,14 @@ namespace editor {
 	public:		// Functions
 		/** Creates a new Alert
 		 *
+		 * @param	tag the tag used in the Alert ImGui elements
 		 * @param	title the text that the pop up window title
 		 * @param	message the text that the pop up window must show
 		 * @param	button the text that the accept button must show */
-		Alert(const char* title, const char* message, const char* button) :
+		Alert(
+			const char* tag,
+			const char* title, const char* message, const char* button
+		) : mTag(tag),
 			mTitle(title), mMessage(message), mButton(button), mShow(false) {};
 
 		/** If the pop up must be shown */
@@ -170,6 +166,9 @@ namespace editor {
 		/** If the window must be shown or not */
 		bool mShow = false;
 
+		/** The prefix used for all the ImGui elements of the FileWindow */
+		std::string mTag;
+
 		/** The current path to show */
 		std::filesystem::path mCurrentPath;
 
@@ -180,8 +179,12 @@ namespace editor {
 		std::array<char, kMaxFilename> mSelected = {};
 
 	public:		// Functions
-		/** Creates a new FileWindow */
-		FileWindow() : mCurrentPath(std::filesystem::current_path()) {};
+		/** Creates a new FileWindow
+		 *
+		 * @param	tag the prefix used for all the ImGui elements of the
+		 *			FileWindow */
+		FileWindow(const char* tag) :
+			mTag(tag), mCurrentPath(std::filesystem::current_path()) {};
 
 		/** If the window must be shown */
 		void show() { mShow = true; };

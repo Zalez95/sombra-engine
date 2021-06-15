@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <optional>
 #include "GLMJSON.h"
-#include "se/physics/RigidBody.h"
+#include <AudioFile.h>
 #include "se/physics/forces/Gravity.h"
 #include "se/physics/forces/PunctualForce.h"
 #include "se/physics/forces/DirectionalForce.h"
@@ -22,6 +22,7 @@
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Renderer.h"
+#include "se/audio/Buffer.h"
 #include "se/app/graphics/RawMesh.h"
 #include "se/app/io/SceneSerializer.h"
 #include "se/app/io/ShaderLoader.h"
@@ -36,12 +37,15 @@
 #include "se/app/SkinComponent.h"
 #include "se/app/AnimationComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/RigidBodyComponent.h"
+#include "se/app/AudioSourceComponent.h"
 
 using namespace se::utils;
 using namespace se::graphics;
 using namespace se::physics;
 using namespace se::collision;
 using namespace se::animation;
+using namespace se::audio;
 
 namespace se::app {
 
@@ -163,20 +167,20 @@ namespace se::app {
 
 
 	template <typename T>
-	void serializeResource(const T& value, const Scene::Key& key, SerializeData& data, nlohmann::json& json, std::ostream& dataStream);
+	void serializeResource(const Repository::ResourceRef<T>& resource, SerializeData& data, nlohmann::json& json, std::ostream& dataStream);
 
 	template <typename T>
-	Result deserializeResource(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene);
+	Result deserializeResource(const nlohmann::json& json, Repository::ResourceRef<T>& resource, DeserializeData& data, Scene& scene);
 
 
 	template <>
-	void serializeResource<Mesh>(const Mesh& mesh, const Scene::Key&, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<Mesh>(const Repository::ResourceRef<Mesh>& mesh, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
 		// VBOs
-		const auto& vao = mesh.getVAO();
+		const auto& vao = mesh->getVAO();
 
 		nlohmann::json jsonVBOs;
-		const auto& vbos = mesh.getVBOs();
+		const auto& vbos = mesh->getVBOs();
 		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) {
 			if (vao.isAttributeEnabled(i)) {
 				auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
@@ -193,7 +197,7 @@ namespace se::app {
 
 					Accessor accessor;
 					accessor.buffer = data.buffersJson.size() - 1;
-					mesh.getVAO().getVertexAttribute(
+					mesh->getVAO().getVertexAttribute(
 						i, accessor.type, accessor.normalized, accessor.componentSize,
 						accessor.stride, accessor.offset
 					);
@@ -212,7 +216,7 @@ namespace se::app {
 		json["vbos"] = jsonVBOs;
 
 		// IBO
-		const auto& ibo = mesh.getIBO();
+		const auto& ibo = mesh->getIBO();
 
 		std::size_t bufferSize = ibo.size();
 		std::vector<std::byte> buffer(bufferSize);
@@ -230,14 +234,14 @@ namespace se::app {
 
 		// Bounds
 		nlohmann::json jsonBounds;
-		auto [minimum, maximum] = mesh.getBounds();
+		auto [minimum, maximum] = mesh->getBounds();
 		jsonBounds["minimum"] = toJson(minimum);
 		jsonBounds["maximum"] = toJson(maximum);
 		json["bounds"] = jsonBounds;
 	}
 
 	template <>
-	Result deserializeResource<Mesh>(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene)
+	Result deserializeResource<Mesh>(const nlohmann::json& json, Repository::ResourceRef<Mesh>& mesh, DeserializeData& data, Scene& scene)
 	{
 		// VBOs
 		VertexArray vao;
@@ -349,22 +353,22 @@ namespace se::app {
 		}
 
 		// Create the mesh
-		auto mesh = std::make_shared<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-		mesh->setBounds(minimum, maximum);
+		auto meshSPtr = std::make_shared<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+		meshSPtr->setBounds(minimum, maximum);
 
-		scene.repository.add(key, std::move(mesh));
+		mesh = scene.repository.insert(std::move(meshSPtr));
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Skin>(const Skin& skin, const Scene::Key&, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<Skin>(const Repository::ResourceRef<Skin>& skin, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
 		nlohmann::json bufferJson;
 		serializeBuffer(
-			reinterpret_cast<const std::byte*>(skin.inverseBindMatrices.data()),
-			skin.inverseBindMatrices.size() * sizeof(glm::mat4), bufferJson, dataStream
+			reinterpret_cast<const std::byte*>(skin->inverseBindMatrices.data()),
+			skin->inverseBindMatrices.size() * sizeof(glm::mat4), bufferJson, dataStream
 		);
 		data.buffersJson.emplace_back(std::move(bufferJson));
 
@@ -372,7 +376,7 @@ namespace se::app {
 	}
 
 	template <>
-	Result deserializeResource<Skin>(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene)
+	Result deserializeResource<Skin>(const nlohmann::json& json, Repository::ResourceRef<Skin>& skin, DeserializeData& data, Scene& scene)
 	{
 		auto itInverseBindMatrices = json.find("inverseBindMatrices");
 		if (itInverseBindMatrices == json.end()) {
@@ -388,22 +392,22 @@ namespace se::app {
 			return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
 		}
 
-		auto skin = std::make_shared<Skin>();
+		auto skinSPtr = std::make_shared<Skin>();
 
 		glm::mat4* bufPtr = reinterpret_cast<glm::mat4*>(buffer.data());
-		std::copy(bufPtr, bufPtr + buffer.size() / sizeof(glm::mat4), skin->inverseBindMatrices.end());
+		std::copy(bufPtr, bufPtr + buffer.size() / sizeof(glm::mat4), skinSPtr->inverseBindMatrices.end());
 
-		scene.repository.add(key, std::move(skin));
+		skin = scene.repository.insert(std::move(skinSPtr));
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<SkeletonAnimator>(const SkeletonAnimator& animator, const Scene::Key&, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<SkeletonAnimator>(const Repository::ResourceRef<SkeletonAnimator>& animator, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
 		nlohmann::json nodeAnimatorsVJson;
-		animator.processAnimators([&](const char* nodeName, TransformationAnimator::TransformationType tType, TransformationAnimator* animator) {
+		animator->processAnimators([&](const char* nodeName, TransformationAnimator::TransformationType tType, TransformationAnimator* animator) {
 			const std::byte* bufferData = nullptr;
 			std::size_t bufferDataSize = 0;
 			std::string animationType, keyFrameType;
@@ -458,14 +462,14 @@ namespace se::app {
 			nodeAnimatorsVJson.emplace_back(std::move(nodeAnimatorJson));
 		});
 
-		json["loopTime"] = animator.getLoopTime();
+		json["loopTime"] = animator->getLoopTime();
 		json["nodeAnimators"] = std::move(nodeAnimatorsVJson);
 	}
 
 	template <>
-	Result deserializeResource<SkeletonAnimator>(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene)
+	Result deserializeResource<SkeletonAnimator>(const nlohmann::json& json, Repository::ResourceRef<SkeletonAnimator>& animator, DeserializeData& data, Scene& scene)
 	{
-		auto animator = std::make_shared<SkeletonAnimator>();
+		auto animatorSPtr = std::make_shared<SkeletonAnimator>();
 
 		auto itNodeAnimators = json.find("nodeAnimators");
 		if (itNodeAnimators == json.end()) {
@@ -537,7 +541,7 @@ namespace se::app {
 				}
 
 				auto nodeAnimator = std::make_unique<Vec3Animator>(std::move(animation));
-				animator->addAnimator(nodeName.c_str(), transformationType, std::move(nodeAnimator));
+				animatorSPtr->addAnimator(nodeName.c_str(), transformationType, std::move(nodeAnimator));
 			}
 			else if (animationType == "QUAT") {
 				std::unique_ptr<IAnimation<glm::quat>> animation;
@@ -570,7 +574,7 @@ namespace se::app {
 				}
 
 				auto nodeAnimator = std::make_unique<QuatAnimator>(std::move(animation));
-				animator->addAnimator(nodeName.c_str(), transformationType, std::move(nodeAnimator));
+				animatorSPtr->addAnimator(nodeName.c_str(), transformationType, std::move(nodeAnimator));
 			}
 			else {
 				return Result(false, "Failed to parse nodeAnimators[" + std::to_string(i) + "]: wrong Animation type=" + animationType);
@@ -582,89 +586,89 @@ namespace se::app {
 			return Result(false, "Missing \"loopTime\" property");
 		}
 
-		animator->setLoopTime(*itLoopTime);
+		animatorSPtr->setLoopTime(*itLoopTime);
 
-		scene.repository.add(key, std::move(animator));
+		animator = scene.repository.insert(std::move(animatorSPtr));
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<LightSource>(const LightSource& light, const Scene::Key&, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<LightSource>(const Repository::ResourceRef<LightSource>& light, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		json["type"] = static_cast<int>(light.type);
-		json["color"] = toJson(light.color);
-		json["intensity"] = light.intensity;
-		json["range"] = light.range;
-		json["innerConeAngle"] = light.innerConeAngle;
-		json["outerConeAngle"] = light.outerConeAngle;
+		json["type"] = static_cast<int>(light->type);
+		json["color"] = toJson(light->color);
+		json["intensity"] = light->intensity;
+		json["range"] = light->range;
+		json["innerConeAngle"] = light->innerConeAngle;
+		json["outerConeAngle"] = light->outerConeAngle;
 	}
 
 	template <>
-	Result deserializeResource<LightSource>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<LightSource>(const nlohmann::json& json, Repository::ResourceRef<LightSource>& light, DeserializeData&, Scene& scene)
 	{
-		auto light = std::make_shared<LightSource>();
+		auto lightSPtr = std::make_shared<LightSource>();
 
 		auto itType = json.find("type");
 		if (itType != json.end()) {
-			light->type = static_cast<LightSource::Type>(itType->get<int>());
+			lightSPtr->type = static_cast<LightSource::Type>(itType->get<int>());
 		}
 
 		auto itColor = json.find("color");
 		if (itColor != json.end()) {
-			toVec(*itColor, light->color);
+			toVec(*itColor, lightSPtr->color);
 		}
 
 		auto itIntensity = json.find("intensity");
 		if (itIntensity != json.end()) {
-			light->intensity = *itIntensity;
+			lightSPtr->intensity = *itIntensity;
 		}
 
 		auto itInnerConeAngle = json.find("innerConeAngle");
 		if (itInnerConeAngle != json.end()) {
-			light->innerConeAngle = *itInnerConeAngle;
+			lightSPtr->innerConeAngle = *itInnerConeAngle;
 		}
 
 		auto itOuterConeAngle = json.find("outerConeAngle");
 		if (itOuterConeAngle != json.end()) {
-			light->outerConeAngle = *itOuterConeAngle;
+			lightSPtr->outerConeAngle = *itOuterConeAngle;
 		}
 
-		scene.repository.add(key, std::move(light));
+		light = scene.repository.insert(std::move(lightSPtr));
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Texture>(const Texture& texture, const Scene::Key& key, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<Texture>(const Repository::ResourceRef<Texture>& texture, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
-		auto path = data.scene.repository.find<Scene::Key, ResourcePath<Texture>>(key);
-		if (path) {
+		std::string path = texture.getResource().getPath();
+		if (!path.empty()) {
 			// Use the path to the image file
-			json["path"] = path->path;
+			json["path"] = path;
 		}
 		else {
 			// Save the texture to a buffer in the dataStream
-			TextureTarget target = texture.getTarget();
-			std::size_t width = texture.getWidth();
-			std::size_t height = (target != TextureTarget::Texture1D)? texture.getHeight() : 1;
-			std::size_t depth = ((target != TextureTarget::Texture1D) && (target != TextureTarget::Texture2D))? texture.getDepth() : 1;
-			TypeId type = texture.getTypeId();
-			ColorFormat color = texture.getColorFormat();
+			TextureTarget target = texture->getTarget();
+			std::size_t width = texture->getWidth();
+			std::size_t height = (target != TextureTarget::Texture1D)? texture->getHeight() : 1;
+			std::size_t depth = ((target != TextureTarget::Texture1D) && (target != TextureTarget::Texture2D))? texture->getDepth() : 1;
+			TypeId type = texture->getTypeId();
+			ColorFormat color = texture->getColorFormat();
 
 			std::vector<std::byte> bufferData;
 			if (target == TextureTarget::CubeMap) {
 				std::size_t sideSize = width * height * depth * toNumberOfComponents(color) * toTypeSize(type);
 				bufferData.resize(6 * sideSize);
 				for (int i = 0; i < 6; ++i) {
-					texture.getImage(type, toUnSizedColorFormat(color), &bufferData[i * sideSize], i);
+					texture->getImage(type, toUnSizedColorFormat(color), &bufferData[i * sideSize], i);
 				}
 			}
 			else {
 				bufferData.resize(width * height * depth * toNumberOfComponents(color) * toTypeSize(type));
-				texture.getImage(type, toUnSizedColorFormat(color), bufferData.data());
+				texture->getImage(type, toUnSizedColorFormat(color), bufferData.data());
 			}
 
 			nlohmann::json bufferJson;
@@ -681,22 +685,22 @@ namespace se::app {
 		}
 
 		TextureFilter min, mag;
-		texture.getFiltering(&min, &mag);
+		texture->getFiltering(&min, &mag);
 
 		json["min"] = static_cast<int>(min);
 		json["mag"] = static_cast<int>(mag);
 
 		TextureWrap wrapS, wrapT;
-		texture.getWrapping(&wrapS, &wrapT);
+		texture->getWrapping(&wrapS, &wrapT);
 
 		json["wrapS"] = static_cast<int>(wrapS);
 		json["wrapT"] = static_cast<int>(wrapT);
 
-		json["textureUnit"] = texture.getTextureUnit();
+		json["textureUnit"] = texture->getTextureUnit();
 	}
 
 	template <>
-	Result deserializeResource<Texture>(const nlohmann::json& json, const Scene::Key& key, DeserializeData& data, Scene& scene)
+	Result deserializeResource<Texture>(const nlohmann::json& json, Repository::ResourceRef<Texture>& texture, DeserializeData& data, Scene& scene)
 	{
 		auto toColorFormat = [](int channels) {
 			switch (channels) {
@@ -707,7 +711,7 @@ namespace se::app {
 			}
 		};
 
-		std::shared_ptr<Texture> texture;
+		std::shared_ptr<Texture> textureSPtr;
 
 		auto itPath = json.find("path");
 		auto itBuffer = json.find("buffer");
@@ -715,8 +719,8 @@ namespace se::app {
 			// Load from file, ONLY TEXTURE2D
 			std::string path = *itPath;
 
-			texture = std::make_shared<Texture>(TextureTarget::Texture2D);
-			if (path.substr(path.size() - 3, 3) == "hdr") {
+			textureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
+			if ((path.size() > 3) && (path.substr(path.size() - 3, 3) == "hdr")) {
 				Image<float> image;
 				auto result = ImageReader::readHDR(path.c_str(), image);
 				if (!result) {
@@ -724,7 +728,7 @@ namespace se::app {
 				}
 
 				ColorFormat format = toColorFormat(image.channels);
-				texture->setImage(image.pixels.get(), TypeId::Float, format, format, image.width, image.height);
+				textureSPtr->setImage(image.pixels.get(), TypeId::Float, format, format, image.width, image.height);
 			}
 			else {
 				Image<unsigned char> image;
@@ -734,10 +738,11 @@ namespace se::app {
 				}
 
 				ColorFormat format = toColorFormat(image.channels);
-				texture->setImage(image.pixels.get(), TypeId::UnsignedByte, format, format, image.width, image.height);
+				textureSPtr->setImage(image.pixels.get(), TypeId::UnsignedByte, format, format, image.width, image.height);
 			}
 
-			scene.repository.emplace<Scene::Key, ResourcePath<Texture>>(key, path);
+			texture = scene.repository.insert(textureSPtr);
+			texture.getResource().setPath(path.c_str());
 		}
 		else if (itBuffer != json.end()) {
 			auto itTarget = json.find("target");
@@ -781,16 +786,18 @@ namespace se::app {
 				return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
 			}
 
-			texture = std::make_shared<Texture>(target);
+			textureSPtr = std::make_shared<Texture>(target);
 			if (target == TextureTarget::CubeMap) {
 				std::size_t sideSize = width * height * toNumberOfComponents(color) * toTypeSize(type);
 				for (int i = 0; i < 6; ++i) {
-					texture->setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(color), color, width, height, 0, i);
+					textureSPtr->setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(color), color, width, height, 0, i);
 				}
 			}
 			else {
-				texture->setImage(buffer.data(), type, toUnSizedColorFormat(color), color, width, height, depth);
+				textureSPtr->setImage(buffer.data(), type, toUnSizedColorFormat(color), color, width, height, depth);
 			}
+
+			texture = scene.repository.insert(textureSPtr);
 		}
 		else {
 			return Result(false, "Missing \"path\" and \"buffer\" properties");
@@ -811,28 +818,25 @@ namespace se::app {
 		TextureWrap wrapS = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapS->get<int>()) : TextureWrap::ClampToBorder;
 		TextureWrap wrapT = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
 
-		texture->setTextureUnit(*itTextureUnit)
+		textureSPtr->setTextureUnit(*itTextureUnit)
 			.setFiltering(min, mag)
 			.setWrapping(wrapS, wrapT)
 			.generateMipMap();
-
-		scene.repository.add(key, texture);
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Program>(const Program&, const Scene::Key& key, SerializeData& data, nlohmann::json& json, std::ostream&)
+	void serializeResource<Program>(const Repository::ResourceRef<Program>& program, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		auto path = data.scene.repository.find<Scene::Key, ResourcePath<Program>>(key);
-		if (path) {
-			json["path"] = path->path;
+		if (auto path = program.getResource().getPath()) {
+			json["path"] = path;
 		}
 	}
 
 	template <>
-	Result deserializeResource<Program>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<Program>(const nlohmann::json& json, Repository::ResourceRef<Program>& program, DeserializeData&, Scene& scene)
 	{
 		auto itPath = json.find("path");
 		if (itPath == json.end()) {
@@ -841,36 +845,44 @@ namespace se::app {
 
 		std::string vertexPath, geometryPath, fragmentPath;
 		std::stringstream ss(itPath->get<std::string>());
-		std::getline(ss, vertexPath, ',');
-		std::getline(ss, geometryPath, ',');
-		std::getline(ss, fragmentPath, ',');
+		std::getline(ss, vertexPath, '|');
+		std::getline(ss, geometryPath, '|');
+		std::getline(ss, fragmentPath, '|');
 
-		std::shared_ptr<Program> program;
+		std::shared_ptr<Program> programSPtr;
 		auto result = ShaderLoader::createProgram(
 			vertexPath.empty()? nullptr : vertexPath.c_str(),
 			geometryPath.empty()? nullptr : geometryPath.c_str(),
 			fragmentPath.empty()? nullptr : fragmentPath.c_str(),
-			program
+			programSPtr
 		);
 		if (!result) {
 			return Result(false, "Couldn't create the program: " + std::string(result.description()));
 		}
-		scene.repository.add<Scene::Key, Program>(key, std::move(program));
-		scene.repository.emplace<Scene::Key, ResourcePath<Program>>(key, itPath->get<std::string>());
+
+		program = scene.repository.insert(std::move(programSPtr));
+		program.getResource().setPath( itPath->get<std::string>().c_str() );
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Pass>(const Pass& pass, const Scene::Key&, SerializeData& data, nlohmann::json& json, std::ostream&)
+	void serializeResource<RenderableShaderStep>(const Repository::ResourceRef<RenderableShaderStep>& step, SerializeData& data, nlohmann::json& json, std::ostream&)
 	{
 		nlohmann::json bindablesVJson;
-		pass.processBindables([&](std::shared_ptr<Bindable> bindable) {
+		step->processPrograms([&](const Repository::ResourceRef<Program>& program) {
+			nlohmann::json bindableJson = { { "type", "Program" }, { "name", program.getResource().getName() } };
+			bindablesVJson.emplace_back(std::move(bindableJson));
+		});
+		step->processTextures([&](const Repository::ResourceRef<Texture>& texture) {
+			nlohmann::json bindableJson = { { "type", "Texture" }, { "name", texture.getResource().getName() } };
+			bindablesVJson.emplace_back(std::move(bindableJson));
+		});
+		step->processBindables([&](std::shared_ptr<Bindable> bindable) {
 			nlohmann::json bindableJson;
 			if (auto uniform = std::dynamic_pointer_cast<IUniformVariable>(bindable)) {
-				Scene::Key key;
-				if (data.scene.repository.findKey(uniform->getProgram(), key)) {
+				if (auto program = data.scene.repository.findResource(uniform->getProgram().get())) {
 					if (auto uniform1 = std::dynamic_pointer_cast<UniformVariableValue<int>>(bindable)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "int" }, { "value", uniform1->getValue() } };
 					}
@@ -981,19 +993,7 @@ namespace se::app {
 					}
 
 					bindableJson["name"] = uniform->getName();
-					bindableJson["program"] = key;
-				}
-			}
-			else if (auto texture = std::dynamic_pointer_cast<Texture>(bindable)) {
-				Scene::Key key;
-				if (data.scene.repository.findKey(texture, key)) {
-					bindableJson = { { "type", "Texture" }, { "key", key } };
-				}
-			}
-			else if (auto program = std::dynamic_pointer_cast<Program>(bindable)) {
-				Scene::Key key;
-				if (data.scene.repository.findKey(program, key)) {
-					bindableJson = { { "type", "Program" }, { "key", key } };
+					bindableJson["program"] = program.getResource().getName();
 				}
 			}
 			else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
@@ -1007,12 +1007,12 @@ namespace se::app {
 				bindablesVJson.emplace_back(std::move(bindableJson));
 			}
 		});
-		json["renderer"] = pass.getRenderer().getName();
+		json["renderer"] = step->getPass()->getRenderer().getName();
 		json["bindables"] = std::move(bindablesVJson);
 	}
 
 	template <>
-	Result deserializeResource<Pass>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<RenderableShaderStep>(const nlohmann::json& json, Repository::ResourceRef<RenderableShaderStep>& step, DeserializeData&, Scene& scene)
 	{
 		auto itRenderer = json.find("renderer");
 		if (itRenderer == json.end()) {
@@ -1030,7 +1030,7 @@ namespace se::app {
 			return Result(false, "Missing \"bindables\" property");
 		}
 
-		auto pass = std::make_shared<Pass>(*renderer);
+		auto stepSPtr = std::make_shared<RenderableShaderStep>(*renderer);
 		for (std::size_t i = 0; i < itBindables->size(); ++i) {
 			const auto& jBindable = (*itBindables)[i];
 			std::shared_ptr<Bindable> bindable;
@@ -1060,72 +1060,72 @@ namespace se::app {
 
 				std::string name = *itName;
 
-				auto program = scene.repository.find<Scene::Key, Program>(*itProgram);
+				auto program = scene.repository.findByName<Program>(itProgram->get<std::string>().c_str());
 				if (!program) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: \"program\"= " + itProgram->get<std::string>() + " not found");
 				}
 
 				if (*itUniformType == "int") {
-					bindable = std::make_shared<UniformVariableValue<int>>(name.c_str(), program, *itValue);
+					bindable = std::make_shared<UniformVariableValue<int>>(name.c_str(), program.get(), *itValue);
 				}
 				else if (*itUniformType == "unsigned int") {
-					bindable = std::make_shared<UniformVariableValue<unsigned int>>(name.c_str(), program, *itValue);
+					bindable = std::make_shared<UniformVariableValue<unsigned int>>(name.c_str(), program.get(), *itValue);
 				}
 				else if (*itUniformType == "float") {
-					bindable = std::make_shared<UniformVariableValue<float>>(name.c_str(), program, *itValue);
+					bindable = std::make_shared<UniformVariableValue<float>>(name.c_str(), program.get(), *itValue);
 				}
 				else if (*itUniformType == "vec2") {
 					glm::vec2 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec2>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::vec2>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "ivec2") {
 					glm::ivec2 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec2>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::ivec2>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "vec3") {
 					glm::vec3 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec3>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::vec3>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "ivec3") {
 					glm::ivec3 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec3>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::ivec3>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "vec4") {
 					glm::vec4 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec4>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::vec4>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "ivec4") {
 					glm::ivec4 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec4>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::ivec4>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "mat3") {
 					glm::mat3 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat3>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::mat3>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "mat4") {
 					glm::mat4 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat4>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::mat4>>(name.c_str(), program.get(), value);
 					}
 				}
 				else if (*itUniformType == "mat3x4") {
 					glm::mat3x4 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat3x4>>(name.c_str(), program, value);
+						bindable = std::make_shared<UniformVariableValue<glm::mat3x4>>(name.c_str(), program.get(), value);
 					}
 				}
 			}
@@ -1149,22 +1149,22 @@ namespace se::app {
 
 				std::string name = *itName;
 
-				auto program = scene.repository.find<Scene::Key, Program>(*itProgram);
+				auto program = scene.repository.findByName<Program>(itProgram->get<std::string>().c_str());
 				if (!program) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: \"program\"= " + itProgram->get<std::string>() + " not found");
 				}
 
 				if (*itUniformType == "int") {
 					std::vector<int> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<int>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<int>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "unsigned int") {
 					std::vector<unsigned int> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<unsigned int>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<unsigned int>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "float") {
 					std::vector<float> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<float>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<float>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "vec2") {
 					std::vector<glm::vec2> value;
@@ -1173,7 +1173,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec2>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::vec2>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "ivec2") {
 					std::vector<glm::ivec2> value;
@@ -1182,7 +1182,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec2>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::ivec2>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "vec3") {
 					std::vector<glm::vec3> value;
@@ -1191,7 +1191,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec3>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::vec3>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "ivec3") {
 					std::vector<glm::ivec3> value;
@@ -1200,7 +1200,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec3>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::ivec3>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "vec4") {
 					std::vector<glm::vec4> value;
@@ -1209,7 +1209,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec4>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::vec4>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "ivec4") {
 					std::vector<glm::ivec4> value;
@@ -1218,7 +1218,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec4>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::ivec4>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "mat3") {
 					std::vector<glm::mat3> value;
@@ -1227,7 +1227,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat3>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::mat3>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "mat4") {
 					std::vector<glm::mat4> value;
@@ -1236,7 +1236,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat4>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::mat4>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 				else if (*itUniformType == "mat3x4") {
 					std::vector<glm::mat3x4> value;
@@ -1245,28 +1245,32 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat3x4>>(name.c_str(), program, value.data(), value.size());
+					bindable = std::make_shared<UniformVariableValueVector<glm::mat3x4>>(name.c_str(), program.get(), value.data(), value.size());
 				}
 			}
 			else if (*itType == "Texture") {
-				auto itKey = jBindable.find("key");
-				if (itKey == jBindable.end()) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture missing \"key\" property");
+				auto itName = jBindable.find("name");
+				if (itName == jBindable.end()) {
+					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture missing \"name\" property");
 				}
-				bindable = scene.repository.find<Scene::Key, Texture>(*itKey);
-				if (!bindable) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture with \"key\"=" + itKey->get<std::string>() + " not found");
+				auto resource = scene.repository.findByName<Texture>(itName->get<std::string>().c_str());
+				if (!resource) {
+					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture with \"name\"=" + itName->get<std::string>() + " not found");
 				}
+				bindable = resource.get();
+				stepSPtr->addResource(std::move(resource), false);
 			}
 			else if (*itType == "Program") {
-				auto itKey = jBindable.find("key");
-				if (itKey == jBindable.end()) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program missing \"key\" property");
+				auto itName = jBindable.find("name");
+				if (itName == jBindable.end()) {
+					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program missing \"name\" property");
 				}
-				bindable = scene.repository.find<Scene::Key, Program>(*itKey);
-				if (!bindable) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program with \"key\"=" + itKey->get<std::string>() + " not found");
+				auto resource = scene.repository.findByName<Program>(itName->get<std::string>().c_str());
+				if (!resource) {
+					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program with \"name\"=" + itName->get<std::string>() + " not found");
 				}
+				bindable = resource.get();
+				stepSPtr->addResource(std::move(resource), false);
 			}
 			else if (*itType == "SetOperation") {
 				auto itOperation = jBindable.find("operation");
@@ -1290,63 +1294,60 @@ namespace se::app {
 				return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Wrong \"type\" property = " + itType->get<std::string>());
 			}
 
-			pass->addBindable(std::move(bindable));
+			stepSPtr->addBindable(std::move(bindable));
 		}
 
-		scene.repository.add(key, pass);
+		step = scene.repository.insert(std::move(stepSPtr));
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<RenderableShader>(const RenderableShader& shader, const Scene::Key&, SerializeData& data, nlohmann::json& json, std::ostream&)
+	void serializeResource<RenderableShader>(const Repository::ResourceRef<RenderableShader>& shader, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		auto passesVJson = nlohmann::json::array();
-		shader.getTechnique()->processPasses([&](const std::shared_ptr<Pass>& pass) {
-			Scene::Key key;
-			if (data.scene.repository.findKey<Scene::Key, Pass>(pass, key)) {
-				passesVJson.push_back(key);
-			}
+		auto stepsVJson = nlohmann::json::array();
+		shader->processSteps([&](const auto& step) {
+			stepsVJson.push_back(step.getResource().getName());
 		});
-		json["passes"] = std::move(passesVJson);
+		json["steps"] = std::move(stepsVJson);
 	}
 
 	template <>
-	Result deserializeResource<RenderableShader>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<RenderableShader>(const nlohmann::json& json, Repository::ResourceRef<RenderableShader>& shader, DeserializeData&, Scene& scene)
 	{
-		auto itPasses = json.find("passes");
-		if (itPasses == json.end()) {
-			return Result(false, "Missing \"passes\" property");
+		auto itSteps = json.find("steps");
+		if (itSteps == json.end()) {
+			return Result(false, "Missing \"steps\" property");
 		}
 
-		auto shader = std::make_shared<RenderableShader>(scene.application.getEventManager());
-		for (std::size_t i = 0; i < itPasses->size(); ++i) {
-			Scene::Key keyPass = (*itPasses)[i].get<std::string>();
-			auto pass = scene.repository.find<Scene::Key, Pass>(keyPass);
-			if (!pass) {
-				return Result(false, "Failed to parse passes[" + std::to_string(i) + "]: Key " + keyPass + " not found");
+		auto shaderSPtr = std::make_shared<RenderableShader>(scene.application.getEventManager());
+		for (std::size_t i = 0; i < itSteps->size(); ++i) {
+			std::string stepName = (*itSteps)[i].get<std::string>();
+			auto step = scene.repository.findByName<RenderableShaderStep>(stepName.c_str());
+			if (!step) {
+				return Result(false, "Failed to parse steps[" + std::to_string(i) + "]: Name " + stepName + " not found");
 			}
 
-			shader->addPass(pass);
+			shaderSPtr->addStep(step);
 		}
 
-		scene.repository.add(key, shader);
+		shader = scene.repository.insert(std::move(shaderSPtr));
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Force>(const Force& force, const Scene::Key&, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<Force>(const Repository::ResourceRef<Force>& force, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		if (auto gravity = dynamic_cast<const Gravity*>(&force); gravity) {
+		if (auto gravity = std::dynamic_pointer_cast<Gravity>(force.get()); gravity) {
 			json["type"] = "Gravity";
 			json["value"] = gravity->getValue();
 		}
-		else if (auto directional = dynamic_cast<const DirectionalForce*>(&force); directional) {
+		else if (auto directional = std::dynamic_pointer_cast<DirectionalForce>(force.get()); directional) {
 			json["type"] = "DirectionalForce";
 			json["value"] = toJson(directional->getValue());
 		}
-		else if (auto punctual = dynamic_cast<const PunctualForce*>(&force); punctual) {
+		else if (auto punctual = std::dynamic_pointer_cast<PunctualForce>(force.get()); punctual) {
 			json["type"] = "PunctualForce";
 			json["value"] = toJson(punctual->getValue());
 			json["point"] = toJson(punctual->getPoint());
@@ -1354,9 +1355,9 @@ namespace se::app {
 	}
 
 	template <>
-	Result deserializeResource<Force>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<Force>(const nlohmann::json& json, Repository::ResourceRef<Force>& force, DeserializeData&, Scene& scene)
 	{
-		std::shared_ptr<Force> force;
+		std::shared_ptr<Force> forceSPtr;
 
 		auto itType = json.find("type");
 		if (itType == json.end()) {
@@ -1370,7 +1371,7 @@ namespace se::app {
 				return Result(false, "Gravity missing \"value\" property");
 			}
 
-			force = std::make_shared<Gravity>(itValue->get<float>());
+			forceSPtr = std::make_shared<Gravity>(itValue->get<float>());
 		}
 		else if (type == "DirectionalForce") {
 			auto itValue = json.find("value");
@@ -1383,7 +1384,7 @@ namespace se::app {
 				return Result(false, "Wrong \"value\" property");
 			}
 
-			force = std::make_shared<DirectionalForce>(value);
+			forceSPtr = std::make_shared<DirectionalForce>(value);
 		}
 		else if (type == "PunctualForce") {
 			auto itValue = json.find("value");
@@ -1406,90 +1407,122 @@ namespace se::app {
 				return Result(false, "Wrong \"point\" property");
 			}
 
-			force = std::make_shared<PunctualForce>(value, point);
+			forceSPtr = std::make_shared<PunctualForce>(value, point);
 		}
 		else {
 			return Result(false, "Wrong \"type\" value = " + type);
 		}
 
-		scene.repository.add(key, force);
-
+		force = scene.repository.insert(std::move(forceSPtr));
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<ParticleEmitter>(const ParticleEmitter& emitter, const Scene::Key&, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<ParticleEmitter>(const Repository::ResourceRef<ParticleEmitter>& emitter, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		json["maxParticles"] = emitter.maxParticles;
-		json["duration"] = emitter.duration;
-		json["loop"] = emitter.loop;
-		json["initialVelocity"] = emitter.initialVelocity;
-		json["initialPositionRandomFactor"] = emitter.initialPositionRandomFactor;
-		json["initialVelocityRandomFactor"] = emitter.initialVelocityRandomFactor;
-		json["initialRotationRandomFactor"] = emitter.initialRotationRandomFactor;
-		json["scale"] = emitter.scale;
-		json["initialScaleRandomFactor"] = emitter.initialScaleRandomFactor;
-		json["lifeLength"] = emitter.lifeLength;
-		json["lifeLengthRandomFactor"] = emitter.lifeLengthRandomFactor;
-		json["gravity"] = emitter.gravity;
+		json["maxParticles"] = emitter->maxParticles;
+		json["duration"] = emitter->duration;
+		json["loop"] = emitter->loop;
+		json["initialVelocity"] = emitter->initialVelocity;
+		json["initialPositionRandomFactor"] = emitter->initialPositionRandomFactor;
+		json["initialVelocityRandomFactor"] = emitter->initialVelocityRandomFactor;
+		json["initialRotationRandomFactor"] = emitter->initialRotationRandomFactor;
+		json["scale"] = emitter->scale;
+		json["initialScaleRandomFactor"] = emitter->initialScaleRandomFactor;
+		json["lifeLength"] = emitter->lifeLength;
+		json["lifeLengthRandomFactor"] = emitter->lifeLengthRandomFactor;
+		json["gravity"] = emitter->gravity;
 	}
 
 	template <>
-	Result deserializeResource<ParticleEmitter>(const nlohmann::json& json, const Scene::Key& key, DeserializeData&, Scene& scene)
+	Result deserializeResource<ParticleEmitter>(const nlohmann::json& json, Repository::ResourceRef<ParticleEmitter>& emitter, DeserializeData&, Scene& scene)
 	{
-		auto emitter = std::make_shared<ParticleEmitter>();
+		auto emitterSPtr = std::make_shared<ParticleEmitter>();
 
 		auto itMaxParticles = json.find("maxParticles");
 		if (itMaxParticles != json.end()) {
-			emitter->maxParticles = *itMaxParticles;
+			emitterSPtr->maxParticles = *itMaxParticles;
 		}
 		auto itDuration = json.find("duration");
 		if (itDuration != json.end()) {
-			emitter->duration = *itDuration;
+			emitterSPtr->duration = *itDuration;
 		}
 		auto itLoop = json.find("loop");
 		if (itLoop != json.end()) {
-			emitter->loop = *itLoop;
+			emitterSPtr->loop = *itLoop;
 		}
 		auto itInitialVelocity = json.find("initialVelocity");
 		if (itInitialVelocity != json.end()) {
-			emitter->initialVelocity = *itInitialVelocity;
+			emitterSPtr->initialVelocity = *itInitialVelocity;
 		}
 		auto itInitialPositionRandomFactor = json.find("initialPositionRandomFactor");
 		if (itInitialPositionRandomFactor != json.end()) {
-			emitter->initialPositionRandomFactor = *itInitialPositionRandomFactor;
+			emitterSPtr->initialPositionRandomFactor = *itInitialPositionRandomFactor;
 		}
 		auto itInitialVelocityRandomFactor = json.find("initialVelocityRandomFactor");
 		if (itInitialVelocityRandomFactor != json.end()) {
-			emitter->initialVelocityRandomFactor = *itInitialVelocityRandomFactor;
+			emitterSPtr->initialVelocityRandomFactor = *itInitialVelocityRandomFactor;
 		}
 		auto itInitialRotationRandomFactor = json.find("initialRotationRandomFactor");
 		if (itInitialRotationRandomFactor != json.end()) {
-			emitter->initialRotationRandomFactor = *itInitialRotationRandomFactor;
+			emitterSPtr->initialRotationRandomFactor = *itInitialRotationRandomFactor;
 		}
 		auto itInitialScaleRandomFactor = json.find("initialScaleRandomFactor");
 		if (itInitialScaleRandomFactor != json.end()) {
-			emitter->initialScaleRandomFactor = *itInitialScaleRandomFactor;
+			emitterSPtr->initialScaleRandomFactor = *itInitialScaleRandomFactor;
 		}
 		auto itScale = json.find("scale");
 		if (itScale != json.end()) {
-			emitter->scale = *itScale;
+			emitterSPtr->scale = *itScale;
 		}
 		auto itLifeLength = json.find("lifeLength");
 		if (itLifeLength != json.end()) {
-			emitter->lifeLength = *itLifeLength;
+			emitterSPtr->lifeLength = *itLifeLength;
 		}
 		auto itLifeLengthRandomFactor = json.find("lifeLengthRandomFactor");
 		if (itLifeLengthRandomFactor != json.end()) {
-			emitter->lifeLengthRandomFactor = *itLifeLengthRandomFactor;
+			emitterSPtr->lifeLengthRandomFactor = *itLifeLengthRandomFactor;
 		}
 		auto itGravity = json.find("gravity");
 		if (itGravity != json.end()) {
-			emitter->gravity = *itGravity;
+			emitterSPtr->gravity = *itGravity;
 		}
 
-		scene.repository.add(key, emitter);
+		emitter = scene.repository.insert(std::move(emitterSPtr));
+		return Result();
+	}
+
+
+	template <>
+	void serializeResource<Buffer>(const Repository::ResourceRef<Buffer>& buffer, SerializeData&, nlohmann::json& json, std::ostream&)
+	{
+		std::string path = buffer.getResource().getPath();
+		if (!path.empty()) {
+			json["path"] = path;
+		}
+	}
+
+	template <>
+	Result deserializeResource<Buffer>(const nlohmann::json& json, Repository::ResourceRef<Buffer>& buffer, DeserializeData&, Scene& scene)
+	{
+		auto itPath = json.find("path");
+		if (itPath == json.end()) {
+			return Result(false, "Missing \"path\"");
+		}
+
+		std::string path = *itPath;
+		AudioFile<float> audioFile;
+		if (!audioFile.load(path)) {
+			return Result(false, "Failed to read the audio file");
+		}
+
+		buffer = scene.repository.emplace<Buffer>(
+			audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
+			FormatId::MonoFloat, audioFile.getSampleRate()
+		);
+		buffer.getResource().setPath(path.c_str());
+
 		return Result();
 	}
 
@@ -1642,31 +1675,23 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<MeshComponent>(const MeshComponent& mesh, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<MeshComponent>(const MeshComponent& mesh, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
 		auto rMeshesJson = nlohmann::json::array();
 		mesh.processRenderableIndices([&](std::size_t iMesh) {
-			auto value = mesh.get(iMesh).getMesh();
+			auto shadersVJson = nlohmann::json::array();
+			mesh.processRenderableShaders(iMesh, [&](const auto& shader) {
+				shadersVJson.push_back(shader.getResource().getName());
+			});
 
-			Scene::Key key;
-			if (data.scene.repository.findKey(value, key)) {
-				auto shadersVJson = nlohmann::json::array();
-				mesh.processRenderableShaders(iMesh, [&](const std::shared_ptr<RenderableShader>& shader) {
-					Scene::Key shaderKey;
-					if (data.scene.repository.findKey(shader, shaderKey)) {
-						shadersVJson.push_back(shaderKey);
-					}
-				});
-
-				nlohmann::json meshJson;
-				meshJson["mesh"] = key;
-				meshJson["primitive"] = static_cast<int>(mesh.get(iMesh).getPrimitiveType());
-				meshJson["shaders"] = std::move(shadersVJson);
-				meshJson["hasSkinning"] = mesh.hasSkinning(iMesh);
-				rMeshesJson.emplace_back(std::move(meshJson));
-			}
+			nlohmann::json meshJson;
+			meshJson["hasSkinning"] = mesh.hasSkinning(iMesh);
+			meshJson["mesh"] = mesh.getMesh(iMesh).getResource().getName();
+			meshJson["primitive"] = static_cast<int>(mesh.get(iMesh).getPrimitiveType());
+			meshJson["shaders"] = std::move(shadersVJson);
+			rMeshesJson.emplace_back(std::move(meshJson));
 		});
 		json["rMeshes"] = std::move(rMeshesJson);
 
@@ -1685,10 +1710,13 @@ namespace se::app {
 
 		for (std::size_t i = 0; i < itRMeshes->size(); ++i) {
 			const auto& rMesh = (*itRMeshes)[i];
+			auto itHasSkinning = rMesh.find("hasSkinning");
 			auto itMesh = rMesh.find("mesh");
 			auto itPrimitive = rMesh.find("primitive");
 			auto itShaders = rMesh.find("shaders");
-			auto itHasSkinning = rMesh.find("hasSkinning");
+			if (itHasSkinning == rMesh.end()) {
+				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: Missing \"hasSkinning\" property"), std::nullopt };
+			}
 			if (itMesh == rMesh.end()) {
 				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: Missing \"mesh\" property"), std::nullopt };
 			}
@@ -1698,12 +1726,9 @@ namespace se::app {
 			if (itShaders == rMesh.end()) {
 				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: Missing \"shaders\" property"), std::nullopt };
 			}
-			if (itHasSkinning == rMesh.end()) {
-				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: Missing \"hasSkinning\" property"), std::nullopt };
-			}
 
-			Scene::Key key = *itMesh;
-			auto value = scene.repository.find<Scene::Key, Mesh>(key);
+			std::string key = *itMesh;
+			auto value = scene.repository.findByName<Mesh>(key.c_str());
 			if (!value) {
 				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: key=" + key + " not found"), std::nullopt };
 			}
@@ -1715,8 +1740,8 @@ namespace se::app {
 			for (std::size_t j = 0; j < itShaders->size(); ++j) {
 				auto jShader = (*itShaders)[i];
 
-				Scene::Key shaderKey = jShader.get<std::string>();
-				auto shader = scene.repository.find<Scene::Key, RenderableShader>(shaderKey);
+				std::string shaderKey = jShader.get<std::string>();
+				auto shader = scene.repository.findByName<RenderableShader>(shaderKey.c_str());
 				if (!shader) {
 					return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: shader=" + shaderKey + " not found"), std::nullopt };
 				}
@@ -1730,7 +1755,7 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<TerrainComponent>(const TerrainComponent& terrain, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<TerrainComponent>(const TerrainComponent& terrain, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
@@ -1739,11 +1764,8 @@ namespace se::app {
 		json["lodDistances"] = terrain.get().getLodDistances();
 
 		auto shadersVJson = nlohmann::json::array();
-		terrain.processRenderableShaders([&](const std::shared_ptr<RenderableShader>& shader) {
-			Scene::Key shaderKey;
-			if (data.scene.repository.findKey(shader, shaderKey)) {
-				shadersVJson.push_back(shaderKey);
-			}
+		terrain.processRenderableShaders([&](const auto& shader) {
+			shadersVJson.push_back(shader.getResource().getName());
 		});
 		json["shaders"] = std::move(shadersVJson);
 
@@ -1779,9 +1801,8 @@ namespace se::app {
 		TerrainComponent terrain(scene.application.getEventManager(), entity, size, maxHeight, lodDistances);
 
 		for (std::size_t i = 0; i < itShaders->size(); ++i) {
-			Scene::Key shaderKey = (*itShaders)[i];
-
-			if (auto shader = scene.repository.find<Scene::Key, RenderableShader>(shaderKey)) {
+			std::string shaderKey = (*itShaders)[i];
+			if (auto shader = scene.repository.findByName<RenderableShader>(shaderKey.c_str())) {
 				terrain.addRenderableShader(shader);
 			}
 			else {
@@ -1794,13 +1815,12 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<LightComponent>(const LightComponent& light, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<LightComponent>(const LightComponent& light, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
-		Scene::Key key;
-		if (data.scene.repository.findKey(light.source, key)) {
-			json["sourceKey"] = key;
+		if (light.source) {
+			json["sourceName"] = light.source.getResource().getName();
 		}
 
 		return json;
@@ -1811,14 +1831,14 @@ namespace se::app {
 	{
 		LightComponent light;
 
-		auto itSourceKey = json.find("sourceKey");
-		if (itSourceKey != json.end()) {
-			Scene::Key key = *itSourceKey;
-			if (auto source = scene.repository.find<Scene::Key, LightSource>(key)) {
+		auto itSourceName = json.find("sourceName");
+		if (itSourceName != json.end()) {
+			std::string name = *itSourceName;
+			if (auto source = scene.repository.findByName<LightSource>(name.c_str())) {
 				light.source = source;
 			}
 			else {
-				return { Result(false, "Key \"" + key + "\" not found"), std::nullopt };
+				return { Result(false, "sourceName \"" + name + "\" not found"), std::nullopt };
 			}
 		}
 
@@ -1827,18 +1847,16 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<LightProbe>(const LightProbe& lightProbe, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<LightProbe>(const LightProbe& lightProbe, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
-		Scene::Key keyIrradianceMap;
-		if (data.scene.repository.findKey(lightProbe.irradianceMap, keyIrradianceMap)) {
-			json["irradianceMap"] = keyIrradianceMap;
+		if (lightProbe.irradianceMap) {
+			json["irradianceMap"] = lightProbe.irradianceMap.getResource().getName();
 		}
 
-		Scene::Key keyPrefilterMap;
-		if (data.scene.repository.findKey(lightProbe.prefilterMap, keyPrefilterMap)) {
-			json["prefilterMap"] = keyPrefilterMap;
+		if (lightProbe.prefilterMap) {
+			json["prefilterMap"] = lightProbe.prefilterMap.getResource().getName();
 		}
 
 		return json;
@@ -1851,8 +1869,8 @@ namespace se::app {
 
 		auto itIrradianceMap = json.find("irradianceMap");
 		if (itIrradianceMap != json.end()) {
-			Scene::Key keyIrradianceMap = *itIrradianceMap;
-			if (auto irradianceMap = scene.repository.find<Scene::Key, Texture>(keyIrradianceMap)) {
+			std::string keyIrradianceMap = *itIrradianceMap;
+			if (auto irradianceMap = scene.repository.findByName<Texture>(keyIrradianceMap.c_str())) {
 				lightProbe.irradianceMap = irradianceMap;
 			}
 			else {
@@ -1862,8 +1880,8 @@ namespace se::app {
 
 		auto itPrefilterMap = json.find("prefilterMap");
 		if (itPrefilterMap != json.end()) {
-			Scene::Key keyPrefilterMap = *itPrefilterMap;
-			if (auto prefilterMap = scene.repository.find<Scene::Key, Texture>(keyPrefilterMap)) {
+			std::string keyPrefilterMap = *itPrefilterMap;
+			if (auto prefilterMap = scene.repository.findByName<Texture>(keyPrefilterMap.c_str())) {
 				lightProbe.prefilterMap = prefilterMap;
 			}
 			else {
@@ -1876,14 +1894,11 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<RigidBody>(const RigidBody& rigidBody, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<RigidBodyComponent>(const RigidBodyComponent& rigidBody, SerializeData&, std::ostream&)
 	{
 		auto forces = nlohmann::json::array();
-		rigidBody.processForces([&](std::shared_ptr<Force> force) {
-			Scene::Key key;
-			if (data.scene.repository.findKey(force, key)) {
-				forces.push_back(key);
-			}
+		rigidBody.processForces([&](const auto& force) {
+			forces.push_back(force.getResource().getName());
 		});
 
 		nlohmann::json json;
@@ -1898,9 +1913,9 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<RigidBody> deserializeComponent<RigidBody>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	ResultOptional<RigidBodyComponent> deserializeComponent<RigidBodyComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
 	{
-		RigidBody rigidBody;
+		RigidBodyComponent rigidBody;
 
 		auto itInvertedMass = json.find("invertedMass"), itInvertedInertiaTensor = json.find("invertedInertiaTensor"),
 			itLinearDrag = json.find("linearDrag"), itAngularDrag = json.find("angularDrag"),
@@ -1926,13 +1941,13 @@ namespace se::app {
 		rigidBody.getConfig().sleepMotion = *itSleepMotion;
 
 		for (std::size_t i = 0; i < itForces->size(); ++i) {
-			auto forceJson = (*itForces)[i];
-			auto force = scene.repository.find<Scene::Key, Force>(forceJson.get<std::string>());
+			std::string forceJson = (*itForces)[i];
+			auto force = scene.repository.findByName<Force>(forceJson.c_str());
 			if (force) {
 				rigidBody.addForce(force);
 			}
 			else {
-				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Key " + forceJson.get<std::string>() + " not found"), std::nullopt };
+				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Name " + forceJson + " not found"), std::nullopt };
 			}
 		}
 
@@ -2274,9 +2289,8 @@ namespace se::app {
 	{
 		nlohmann::json json;
 
-		Scene::Key key;
 		auto itNodeIndex = data.nodeIndexMap.find(skin.getRoot());
-		if ((itNodeIndex != data.nodeIndexMap.end()) && data.scene.repository.findKey(skin.getSkin(), key)) {
+		if ((itNodeIndex != data.nodeIndexMap.end()) && skin.getSkin()) {
 			auto mapNodeJointJson = nlohmann::json::array();
 			for (auto [node, jointIndex] : skin.getMapNodeJoint()) {
 				auto itNode = data.nodeIndexMap.find(node);
@@ -2290,7 +2304,7 @@ namespace se::app {
 
 			json["root"] = itNodeIndex->second;
 			json["mapNodeJoint"] = std::move(mapNodeJointJson);
-			json["skin"] = key;
+			json["skin"] = skin.getSkin().getResource().getName();
 		}
 
 		return json;
@@ -2319,7 +2333,7 @@ namespace se::app {
 			return { Result(false, "Node " + std::to_string(itRoot->get<std::size_t>()) + " not found"), std::nullopt };
 		}
 
-		auto skin = scene.repository.find<Scene::Key, Skin>(*itSkin);
+		auto skin = scene.repository.findByName<Skin>(itSkin->get<std::string>().c_str());
 		if (!skin) {
 			return { Result(false, "Skin \"" + itSkin->get<std::string>() + "\" not found"), std::nullopt };
 		}
@@ -2356,11 +2370,8 @@ namespace se::app {
 		auto itNodeIndex = data.nodeIndexMap.find(animation.getRootNode());
 		if (itNodeIndex != data.nodeIndexMap.end()) {
 			auto animatorsJson = nlohmann::json::array();
-			animation.processSAnimators([&](std::shared_ptr<SkeletonAnimator> sAnimator) {
-				Scene::Key key;
-				if (data.scene.repository.findKey(sAnimator, key)) {
-					animatorsJson.emplace_back(key);
-				}
+			animation.processSAnimators([&](const auto& sAnimator) {
+				animatorsJson.emplace_back(sAnimator.getResource().getName());
 			});
 
 			json["root"] = itNodeIndex->second;
@@ -2390,7 +2401,7 @@ namespace se::app {
 
 		AnimationComponent animation(itRoot2->second);
 		for (std::size_t i = 0; i < itAnimators->size(); ++i) {
-			auto animator = scene.repository.find<Scene::Key, SkeletonAnimator>((*itAnimators)[i]);
+			auto animator = scene.repository.findByName<SkeletonAnimator>((*itAnimators)[i].get<std::string>().c_str());
 			if (!animator) {
 				return { Result(false, "SkeletonAnimator " + (*itAnimators)[i].get<std::string>() + " not found"), std::nullopt };
 			}
@@ -2402,27 +2413,22 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<ParticleSystemComponent>(const ParticleSystemComponent& particleSystem, SerializeData& data, std::ostream&)
+	nlohmann::json serializeComponent<ParticleSystemComponent>(const ParticleSystemComponent& particleSystem, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
-		Scene::Key meshKey;
-		if (data.scene.repository.findKey(particleSystem.getMesh(), meshKey)) {
-			json["mesh"] = meshKey;
+		if (auto mesh = particleSystem.getMesh()) {
+			json["mesh"] = mesh.getResource().getName();
 		}
 
 		auto shadersVJson = nlohmann::json::array();
-		particleSystem.processRenderableShaders([&](const std::shared_ptr<RenderableShader>& shader) {
-			Scene::Key shaderKey;
-			if (data.scene.repository.findKey(shader, shaderKey)) {
-				shadersVJson.push_back(shaderKey);
-			}
+		particleSystem.processRenderableShaders([&](const auto& shader) {
+			shadersVJson.push_back(shader.getResource().getName());
 		});
 		json["shaders"] = std::move(shadersVJson);
 
-		Scene::Key emitterKey;
-		if (data.scene.repository.findKey(particleSystem.getEmitter(), emitterKey)) {
-			json["emitter"] = emitterKey;
+		if (particleSystem.getEmitter()) {
+			json["emitter"] = particleSystem.getEmitter().getResource().getName();
 		}
 
 		return json;
@@ -2438,7 +2444,7 @@ namespace se::app {
 			return { Result(false, "Missing \"mesh\" property"), std::nullopt };
 		}
 
-		if (auto mesh = scene.repository.find<Scene::Key, Mesh>(*itMesh)) {
+		if (auto mesh = scene.repository.findByName<Mesh>(itMesh->get<std::string>().c_str())) {
 			particleSystem.setMesh(mesh);
 		}
 
@@ -2448,13 +2454,13 @@ namespace se::app {
 		}
 
 		for (std::size_t i = 0; i < itShaders->size(); ++i) {
-			Scene::Key shaderKey = (*itShaders)[i];
+			std::string shaderName = (*itShaders)[i];
 
-			if (auto shader = scene.repository.find<Scene::Key, RenderableShader>(shaderKey)) {
+			if (auto shader = scene.repository.findByName<RenderableShader>(shaderName.c_str())) {
 				particleSystem.addRenderableShader(shader);
 			}
 			else {
-				return { Result(false, "RenderableShader \"" + shaderKey + "\" not found at shaders[" + std::to_string(i) + "]"), std::nullopt };
+				return { Result(false, "RenderableShader \"" + shaderName + "\" not found at shaders[" + std::to_string(i) + "]"), std::nullopt };
 			}
 		}
 
@@ -2463,11 +2469,43 @@ namespace se::app {
 			return { Result(false, "Missing \"emitter\" property"), std::nullopt };
 		}
 
-		if (auto emitter = scene.repository.find<Scene::Key, ParticleEmitter>(*itEmitter)) {
+		if (auto emitter = scene.repository.findByName<ParticleEmitter>(itEmitter->get<std::string>().c_str())) {
 			particleSystem.setEmitter(emitter);
 		}
 
 		return { Result(), std::move(particleSystem) };
+	}
+
+
+	template <>
+	nlohmann::json serializeComponent<AudioSourceComponent>(const AudioSourceComponent& audioSource, SerializeData&, std::ostream&)
+	{
+		nlohmann::json json;
+
+		if (auto buffer = audioSource.getBuffer()) {
+			json["bufferName"] = buffer.getResource().getName();
+		}
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<AudioSourceComponent> deserializeComponent<AudioSourceComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	{
+		AudioSourceComponent audioSource;
+
+		auto itBufferName = json.find("bufferName");
+		if (itBufferName != json.end()) {
+			std::string bufferName = *itBufferName;
+			if (auto buffer = scene.repository.findByName<Buffer>(bufferName.c_str())) {
+				audioSource.setBuffer(buffer);
+			}
+			else {
+				return { Result(false, "Buffer \"" + bufferName + "\" not found"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(audioSource) };
 	}
 
 // Other
@@ -2543,10 +2581,10 @@ namespace se::app {
 	{
 		auto resourcesVJson = nlohmann::json::array();
 
-		data.scene.repository.iterate<Scene::Key, T>([&](const Scene::Key& k, const std::shared_ptr<T>& v) {
+		data.scene.repository.iterate<T>([&](const Repository::ResourceRef<T>& r) {
 			nlohmann::json resourceJson;
-			resourceJson["key"] = k;
-			serializeResource<T>(*v, k, data, resourceJson, dataStream);
+			resourceJson["name"] = r.getResource().getName();
+			serializeResource<T>(r, data, resourceJson, dataStream);
 			resourcesVJson.emplace_back(std::move(resourceJson));
 		});
 
@@ -2563,14 +2601,18 @@ namespace se::app {
 			for (std::size_t i = 0; i < it->size(); ++i) {
 				auto& resourceJson = (*it)[i];
 
-				auto itKey = resourceJson.find("key");
-				if (itKey == resourceJson.end()) {
-					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Missing key");
+				auto itName = resourceJson.find("name");
+				if (itName == resourceJson.end()) {
+					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Missing name");
 				}
 
-				if (auto result = deserializeResource<T>(resourceJson, *itKey, data, scene); !result) {
+				Repository::ResourceRef<T> r;
+				if (auto result = deserializeResource<T>(resourceJson, r, data, scene); !result) {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 				}
+
+				r.setFakeUser();
+				r.getResource().setName(itName->get<std::string>().c_str());
 			}
 		}
 
@@ -2661,10 +2703,11 @@ namespace se::app {
 		serializeRVector<LightSource>("lightSources", data, json, dataStream);
 		serializeRVector<Texture>("textures", data, json, dataStream);
 		serializeRVector<Program>("programs", data, json, dataStream);
-		serializeRVector<Pass>("passes", data, json, dataStream);
+		serializeRVector<RenderableShaderStep>("steps", data, json, dataStream);
 		serializeRVector<RenderableShader>("shaders", data, json, dataStream);
 		serializeRVector<Force>("forces", data, json, dataStream);
 		serializeRVector<ParticleEmitter>("particleEmitter", data, json, dataStream);
+		serializeRVector<Buffer>("audioBuffers", data, json, dataStream);
 	}
 
 	Result deserializeRepository(DeserializeData& data, Scene& scene)
@@ -2675,10 +2718,11 @@ namespace se::app {
 		if (auto result = deserializeRVector<LightSource>("lightSources", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Texture>("textures", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Program>("programs", data, scene); !result) { return result; }
-		if (auto result = deserializeRVector<Pass>("passes", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<RenderableShaderStep>("steps", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<RenderableShader>("shaders", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Force>("forces", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<ParticleEmitter>("particleEmitter", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<Buffer>("audioBuffers", data, scene); !result) { return result; }
 		return Result();
 	}
 
@@ -2786,11 +2830,12 @@ namespace se::app {
 		serializeCVector<TerrainComponent>("terrainComponents", data, json, dataStream);
 		serializeCVector<LightComponent>("lights", data, json, dataStream);
 		serializeCVector<LightProbe>("lightProbes", data, json, dataStream);
-		serializeCVector<RigidBody>("rigidBodies", data, json, dataStream);
+		serializeCVector<RigidBodyComponent>("rigidBodies", data, json, dataStream);
 		serializeCVector<Collider>("colliders", data, json, dataStream);
 		serializeCVector<SkinComponent>("skinComponents", data, json, dataStream);
 		serializeCVector<AnimationComponent>("animationComponents", data, json, dataStream);
 		serializeCVector<ParticleSystemComponent>("particleSystemComponents", data, json, dataStream);
+		serializeCVector<AudioSourceComponent>("audioSourceComponents", data, json, dataStream);
 	}
 
 	Result deserializeComponents(DeserializeData& data, Scene& scene)
@@ -2802,11 +2847,12 @@ namespace se::app {
 		if (auto result = deserializeCVector<TerrainComponent>("terrainComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightProbe>("lightProbes", data, scene); !result) { return result; }
-		if (auto result = deserializeCVector<RigidBody>("rigidBodies", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<RigidBodyComponent>("rigidBodies", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<Collider, true>("colliders", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<ParticleSystemComponent>("particleSystemComponents", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<AudioSourceComponent>("audioSourceComponents", data, scene); !result) { return result; }
 		return Result();
 	}
 

@@ -1,11 +1,11 @@
 #include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
-#include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
+#include "se/app/events/CollisionEvent.h"
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/events/CollisionEvent.h"
+#include "se/app/RigidBodyComponent.h"
 
 namespace se::app {
 
@@ -17,7 +17,7 @@ namespace se::app {
 		mContactFrictionConstraints.reserve(2 * kMaxContacts);
 
 		mApplication.getEventManager().subscribe(this, Topic::Collision);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<physics::RigidBody>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<RigidBodyComponent>());
 	}
 
 
@@ -50,13 +50,13 @@ namespace se::app {
 		physicsEngine.resetRigidBodiesState();
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
-		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
-			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
+		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
 					rigidBody->getData().position		= transforms->position;
 					rigidBody->getData().linearVelocity	= transforms->velocity;
 					rigidBody->getData().orientation	= transforms->orientation;
-					rigidBody->synchWithData();
+					rigidBody->get().synchWithData();
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
@@ -73,9 +73,9 @@ namespace se::app {
 		physicsEngine.solveConstraints(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		mEntityDatabase.iterateComponents<TransformsComponent, physics::RigidBody>(
-			[this](Entity, TransformsComponent* transforms, physics::RigidBody* rigidBody) {
-				if (rigidBody->checkState(physics::RigidBodyState::ConstraintsSolved)) {
+		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
+				if (rigidBody->get().checkState(physics::RigidBodyState::ConstraintsSolved)) {
 					transforms->position	= rigidBody->getData().position;
 					transforms->velocity	= rigidBody->getData().linearVelocity;
 					transforms->orientation	= rigidBody->getData().orientation;
@@ -93,7 +93,7 @@ namespace se::app {
 	}
 
 // Private functions
-	void ConstraintsSystem::onNewRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	void ConstraintsSystem::onNewRigidBody(Entity entity, RigidBodyComponent* rigidBody)
 	{
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
@@ -104,16 +104,16 @@ namespace se::app {
 	}
 
 
-	void ConstraintsSystem::onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody)
+	void ConstraintsSystem::onRemoveRigidBody(Entity entity, RigidBodyComponent* rigidBody)
 	{
 		// Remove the Constraints from the ConstraintManager
 		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
-		physicsEngine.getConstraintManager().removeRigidBody(rigidBody);
+		physicsEngine.getConstraintManager().removeRigidBody(&rigidBody->get());
 
 		// Remove the Constraint indices
 		for (auto it = mManifoldConstraintIndicesMap.begin(); it != mManifoldConstraintIndicesMap.end();) {
-			if ((mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(0) == rigidBody)
-				|| (mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(1) == rigidBody)
+			if ((mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(0) == &rigidBody->get())
+				|| (mContactNormalConstraints[it->second[0].iNormalConstraint].getRigidBody(1) == &rigidBody->get())
 			) {
 				for (const auto& constraintIndices : it->second) {
 					mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
@@ -136,8 +136,8 @@ namespace se::app {
 	{
 		SOMBRA_TRACE_LOG << "Received CollisionEvent: " << event;
 
-		auto [rb1] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(0), true);
-		auto [rb2] = mEntityDatabase.getComponents<physics::RigidBody>(event.getEntity(1), true);
+		auto [rb1] = mEntityDatabase.getComponents<RigidBodyComponent>(event.getEntity(0), true);
+		auto [rb2] = mEntityDatabase.getComponents<RigidBodyComponent>(event.getEntity(1), true);
 		const collision::Manifold* manifold = event.getManifold();
 
 		if (rb1 && rb2 && manifold) {
@@ -147,7 +147,7 @@ namespace se::app {
 					<< rb2 << " (p=" << glm::to_string(rb2->getData().position) << ", o=" << glm::to_string(rb2->getData().orientation) << ")";
 
 				if (manifold->state[collision::Manifold::State::Intersecting]) {
-					handleIntersectingManifold(rb1, rb2, manifold);
+					handleIntersectingManifold(&rb1->get(), &rb2->get(), manifold);
 				}
 				else {
 					handleDisjointManifold(manifold);

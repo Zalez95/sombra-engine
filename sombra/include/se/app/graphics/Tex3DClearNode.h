@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
+#include "../../graphics/core/Program.h"
 #include "../../graphics/3D/Mesh.h"
 #include "../Repository.h"
 
@@ -23,7 +24,10 @@ namespace se::app {
 		std::size_t mMaxSize;
 
 		/** The plane Mesh used for clearing the Texture */
-		std::shared_ptr<graphics::Mesh> mPlane;
+		Repository::ResourceRef<graphics::Mesh> mPlane;
+
+		/** The program used by the Tex3DClearNode */
+		Repository::ResourceRef<graphics::Program> mProgram;
 
 	public:		// Functions
 		/** Creates a new Tex3DClearNode

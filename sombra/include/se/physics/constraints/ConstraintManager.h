@@ -115,6 +115,17 @@ namespace se::physics {
 		template <typename F>
 		void processRigidBodies(F callback) const;
 
+		/** Iterates through all the Constraints of the ConstraintManager that
+		 * containts the given RigidBody calling the given callback function
+		 *
+		 * @param	rigidBody a pointer to the RigidBody whose Constraints we
+		 *			want to check
+		 * @param	callback the function to call for each RigidBody */
+		template <typename F>
+		void processRigidBodyConstraints(
+			RigidBody* rigidBody, F callback
+		) const;
+
 		/** Removes all the Constraints that constains the given RigidBody
 		 * from the ConstraintManager.
 		 *
@@ -230,6 +241,32 @@ namespace se::physics {
 	{
 		for (RigidBody* rigidBody : mRigidBodies) {
 			callback(*rigidBody);
+		}
+	}
+
+
+	template <typename F>
+	void ConstraintManager::processRigidBodyConstraints(
+		RigidBody* rigidBody, F callback
+	) const
+	{
+		bool found = false;
+		std::size_t iRigidBody = 0;
+		for (; iRigidBody < mRigidBodies.size(); ++iRigidBody) {
+			if (mRigidBodies[iRigidBody] == rigidBody) {
+				found = true;
+				break;
+			}
+		}
+
+		if (found) {
+			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
+				if ((mConstraintRBMap[i][0] == iRigidBody)
+					|| (mConstraintRBMap[i][1] == iRigidBody)
+				) {
+					callback(*mConstraints[i]);
+				}
+			}
 		}
 	}
 

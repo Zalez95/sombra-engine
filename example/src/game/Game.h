@@ -42,7 +42,8 @@ namespace game {
 
 
 	/**
-	 * Class Game, TODO:
+	 * Class Game, it's an example game created using the SombraEngine
+	 * Application class
 	 */
 	class Game : public se::app::Application
 	{

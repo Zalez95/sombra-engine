@@ -26,6 +26,9 @@ namespace game {
 	PlayerController::PlayerController(Level& level, se::graphics::RenderableText& pickText) :
 		mLevel(level), mPickText(pickText)
 	{
+		auto& scene = mLevel.getScene();
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
 			{ 0.0f, 0.5f, 0.0f },
@@ -47,17 +50,13 @@ namespace game {
 		};
 		rawMesh2.normals = se::app::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.indices);
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.indices);
-		mTetrahedronMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2));
+		mTetrahedronMesh = scene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2)), "tetrahedronMesh");
 
-		auto& scene = mLevel.getScene();
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
-
-		auto programGBufMaterial = scene.repository.find<std::string, se::graphics::Program>("programGBufMaterial");
-		auto passYellow = std::make_shared<se::graphics::Pass>(*gBufferRenderer);
-		scene.repository.add(std::string("passYellow"), passYellow);
+		auto programGBufMaterial = scene.repository.findByName<se::graphics::Program>("programGBufMaterial");
+		auto stepYellow = scene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRenderer), "stepYellow");
 
 		se::app::ShaderLoader::addMaterialBindables(
-			passYellow,
+			stepYellow,
 			se::app::Material{
 				se::app::PBRMetallicRoughness{ { 1.0f, 1.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
@@ -65,8 +64,8 @@ namespace game {
 			programGBufMaterial
 		);
 
-		mYellowTechnique = std::make_shared<se::graphics::Technique>();
-		mYellowTechnique->addPass(passYellow);
+		mShaderYellow = scene.repository.insert(std::make_shared<se::app::RenderableShader>(mLevel.getGame().getEventManager()), "shaderYellow");
+		mShaderYellow->addStep(stepYellow);
 	}
 
 

@@ -3,7 +3,8 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
-#include "../../graphics/3D/RenderableMesh.h"
+#include "../../graphics/core/Program.h"
+#include "../../graphics/3D/Mesh.h"
 #include "../Repository.h"
 
 namespace se::app {
@@ -20,8 +21,11 @@ namespace se::app {
 		/** The texture unit where the color texture must be attached */
 		static constexpr int kColorTextureUnit = 0;
 	private:
-		/** The RenderableMesh used for rendering to the FrameBuffers */
-		std::shared_ptr<graphics::RenderableMesh> mPlane;
+		/** The program used by the GaussianBlurNode */
+		Repository::ResourceRef<graphics::Program> mProgram;
+
+		/** The Mesh used for rendering to the FrameBuffers */
+		Repository::ResourceRef<graphics::Mesh> mPlane;
 
 	public:		// Functions
 		/** Creates a new GaussianBlurNode

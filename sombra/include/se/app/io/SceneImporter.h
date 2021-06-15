@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "../graphics/Material.h"
-#include "../RenderableShader.h"
+#include "../graphics/RenderableShader.h"
 #include "../Scene.h"
 #include "Result.h"
 
@@ -29,7 +29,7 @@ namespace se::app {
 		class ShaderBuilder
 		{
 		public:		// Nested types
-			using ShaderSPtr = std::shared_ptr<RenderableShader>;
+			using ShaderRef = Repository::ResourceRef<RenderableShader>;
 
 		public:		// Functions
 			/** Class destructor */
@@ -38,13 +38,12 @@ namespace se::app {
 			/** Creates a new Shader from the given Material
 			 *
 			 * @param	name the name used for storing the RenderableShader and
-			 *			its Passes in the scene repository
+			 *			its Steps in the scene repository
 			 * @param	material the material used for creating the Shader
 			 * @param	hasSkin if the Shader must support skeletal animation
 			 *			or not
-			 * @return	a pointer to the new Shader, null if it couldn't be
-			 *			created */
-			virtual ShaderSPtr createShader(
+			 * @return	the new Shader */
+			virtual ShaderRef createShader(
 				const char* name, const Material& material, bool hasSkin
 			) = 0;
 		};
@@ -52,6 +51,12 @@ namespace se::app {
 	protected:	// Attributes
 		/** A reference to the ShaderBuilder used for creating the Shaders */
 		ShaderBuilder& mShaderBuilder;
+
+		/** The default shader of the ShaderBuilder */
+		Repository::ResourceRef<RenderableShader> mDefaultShader;
+
+		/** The default shader with skinning of the ShaderBuilder */
+		Repository::ResourceRef<RenderableShader> mDefaultShaderSkin;
 
 	public:		// Functions
 		/** Class destructor */

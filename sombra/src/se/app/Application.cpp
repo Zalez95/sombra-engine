@@ -10,11 +10,9 @@
 #include "se/graphics/Technique.h"
 #include "se/graphics/2D/Font.h"
 #include "se/graphics/3D/Mesh.h"
-#include "se/physics/RigidBody.h"
 #include "se/physics/PhysicsEngine.h"
 #include "se/collision/Collider.h"
 #include "se/animation/AnimationEngine.h"
-#include "se/audio/Source.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
 #include "se/app/InputSystem.h"
@@ -41,6 +39,8 @@
 #include "se/app/AnimationComponent.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/RigidBodyComponent.h"
+#include "se/app/AudioSourceComponent.h"
 #include "se/utils/Profiler.h"
 
 namespace se::app {
@@ -77,12 +77,14 @@ namespace se::app {
 
 			// Repository
 			mRepository = new Repository();
-			mRepository->init<std::string, graphics::Pass>();
-			mRepository->init<std::string, graphics::Technique>();
-			mRepository->init<std::string, graphics::Program>();
-			mRepository->init<std::string, graphics::Texture>();
-			mRepository->init<std::string, graphics::Font>();
-			mRepository->init<std::string, graphics::Mesh>();
+			mRepository->init<graphics::Program>();
+			mRepository->init<graphics::Pass>();
+			mRepository->init<graphics::Technique>();
+			mRepository->init<graphics::Texture>();
+			mRepository->init<graphics::Font>();
+			mRepository->init<graphics::Mesh>();
+			mRepository->init<RenderableShaderStep>();
+			mRepository->init<RenderableShader>();
 
 			// Entities
 			mEntityDatabase = new EntityDatabase(kMaxEntities);
@@ -96,10 +98,10 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains);
 			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<physics::RigidBody>(kMaxEntities);
+			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
 			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
-			mEntityDatabase->addComponentTable<audio::Source>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities);
 
 			// Systems
 			ShadowData shadowData;

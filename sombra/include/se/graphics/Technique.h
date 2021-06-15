@@ -28,7 +28,7 @@ namespace se::graphics {
 		 *
 		 * @param	pass a pointer to the Pass to add to the Technique
 		 * @return	a reference to the current Technique object */
-		Technique& addPass(PassSPtr pass);
+		Technique& addPass(const PassSPtr& pass);
 
 		/** Iterates through all the Passes of the Technique calling the given
 		 * callback function
@@ -41,7 +41,7 @@ namespace se::graphics {
 		 *
 		 * @param	pass a pointer to the Pass to remove
 		 * @return	a reference to the current Technique object */
-		Technique& removePass(PassSPtr pass);
+		Technique& removePass(const PassSPtr& pass);
 
 		/** Submits the given Renderable for rendering with the current
 		 * Technique

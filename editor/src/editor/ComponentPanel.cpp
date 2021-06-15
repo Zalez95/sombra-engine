@@ -13,8 +13,9 @@
 #include <se/app/TransformsComponent.h>
 #include <se/app/AnimationComponent.h>
 #include <se/app/ParticleSystemComponent.h>
+#include <se/app/RigidBodyComponent.h>
+#include <se/app/AudioSourceComponent.h>
 #include <se/app/graphics/TextureUtils.h>
-#include <se/physics/RigidBody.h>
 #include <se/collision/BoundingBox.h>
 #include <se/collision/BoundingSphere.h>
 #include <se/collision/Capsule.h>
@@ -61,27 +62,27 @@ namespace editor {
 		virtual ~ComponentNode() = default;
 		virtual bool active(Entity entity) override
 		{
-			return getEditor().getEntityDatabase().hasComponents<T>(entity);
+			return mPanel.mEditor.getEntityDatabase().hasComponents<T>(entity);
 		};
 		virtual void enable(Entity entity) override
 		{
-			getEditor().getEntityDatabase().enableComponent<T>(entity);
+			mPanel.mEditor.getEntityDatabase().enableComponent<T>(entity);
 		};
 		virtual bool enabled(Entity entity) override
 		{
-			return getEditor().getEntityDatabase().hasComponentsEnabled<T>(entity);
+			return mPanel.mEditor.getEntityDatabase().hasComponentsEnabled<T>(entity);
 		};
 		virtual void disable(Entity entity) override
 		{
-			getEditor().getEntityDatabase().disableComponent<T>(entity);
+			mPanel.mEditor.getEntityDatabase().disableComponent<T>(entity);
 		};
 		virtual void remove(Entity entity) override
 		{
-			getEditor().getEntityDatabase().removeComponent<T>(entity);
+			mPanel.mEditor.getEntityDatabase().removeComponent<T>(entity);
 		};
 	protected:
 		Editor& getEditor() const { return mPanel.mEditor; };
-		std::string getIGPrefix() const { return "##ComponentPanel" + std::to_string(mPanel.mPanelId); };
+		std::string getIdPrefix() const { return "##ComponentPanel" + std::to_string(mPanel.mPanelId) + "::"; };
 	};
 
 
@@ -99,7 +100,7 @@ namespace editor {
 
 			char nameBuffer[TagComponent::kMaxLength] = {};
 			std::copy(tag->getName(), tag->getName() + tag->getLength(), nameBuffer);
-			std::string name = "Name" + getIGPrefix() + "::TagComponentNode::name";
+			std::string name = "Name" + getIdPrefix() + "TagComponentNode::name";
 			if (ImGui::InputText(name.c_str(), nameBuffer, TagComponent::kMaxLength)) {
 				tag->setName(nameBuffer);
 			}
@@ -158,15 +159,15 @@ namespace editor {
 			}
 
 			if (ImGui::TreeNode("Animators:")) {
-				std::shared_ptr<SkeletonAnimator> sAnimator;
-				std::string name = getIGPrefix() + "::AnimationComponentNode::AddAnimator";
-				if (addRepoDropdownButtonValue<Scene::Key, SkeletonAnimator>(name.c_str(), "Add", getEditor().getScene()->repository, sAnimator)) {
+				Repository::ResourceRef<SkeletonAnimator> sAnimator;
+				std::string name = getIdPrefix() + "AnimationComponentNode::AddAnimator";
+				if (addRepoDropdownButton(name.c_str(), "Add", getEditor().getScene()->repository, sAnimator)) {
 					animation->addAnimator(sAnimator);
 				}
 
 				std::size_t sAnimatorIndex = 0;
-				animation->processSAnimators([&, animation = animation](std::shared_ptr<SkeletonAnimator> sAnimator2) {
-					std::string name1 = "x" + getIGPrefix() + "::AnimationComponentNode::RemoveAnimator" + std::to_string(sAnimatorIndex++);
+				animation->processSAnimators([&, animation = animation](auto sAnimator2) {
+					std::string name1 = "x" + getIdPrefix() + "AnimationComponentNode::RemoveAnimator" + std::to_string(sAnimatorIndex++);
 					if (ImGui::Button(name1.c_str())) {
 						animation->removeAnimator(sAnimator2);
 					}
@@ -174,8 +175,8 @@ namespace editor {
 						ImGui::SameLine();
 
 						auto oldSAnimator2 = sAnimator2;
-						std::string name2 = getIGPrefix() + "::AnimationComponentNode::ChangeAnimator" + std::to_string(sAnimatorIndex);
-						if (addRepoDropdownShowSelectedValue<Scene::Key, SkeletonAnimator>(name2.c_str(), getEditor().getScene()->repository, sAnimator2)) {
+						std::string name2 = getIdPrefix() + "AnimationComponentNode::ChangeAnimator" + std::to_string(sAnimatorIndex);
+						if (addRepoDropdownShowSelected(name2.c_str(), getEditor().getScene()->repository, sAnimator2)) {
 							animation->removeAnimator(oldSAnimator2);
 							animation->addAnimator(sAnimator2);
 						}
@@ -185,9 +186,9 @@ namespace editor {
 			}
 
 			if (ImGui::TreeNode("Change node:")) {
-				std::string name = "Name" + getIGPrefix() + "::AnimationComponentNode::name";
+				std::string name = "Name" + getIdPrefix() + "AnimationComponentNode::name";
 				ImGui::InputText(name.c_str(), mName.data(), mName.size());
-				if (ImGui::Button(("Change" + getIGPrefix() + "::AnimationComponentNode::ChangeNode").c_str())) {
+				if (ImGui::Button(("Change" + getIdPrefix() + "AnimationComponentNode::ChangeNode").c_str())) {
 					void* nodePtr = nullptr;
 					std::istringstream(mName.data()) >> nodePtr;
 
@@ -270,8 +271,8 @@ namespace editor {
 
 			ImGui::Text("Source:");
 			ImGui::SameLine();
-			std::string name = getIGPrefix() + "::LightComponentNode::ChangeSource";
-			addRepoDropdownShowSelectedValue<Scene::Key, LightSource>(name.c_str(), getEditor().getScene()->repository, light->source);
+			std::string name = getIdPrefix() + "LightComponentNode::ChangeSource";
+			addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, light->source);
 		};
 	};
 
@@ -279,7 +280,7 @@ namespace editor {
 	class ComponentPanel::LightProbeComponentNode : public ComponentPanel::ComponentNode<LightProbe>
 	{
 	private:	// Attributes
-		std::shared_ptr<Texture> mEnvironmentTexture;
+		std::string mEnvironmentTextureName;
 		bool mIsCubeMap = false;
 		int mCubeMapSize = 512;
 		int mIrradianceMapSize = 32;
@@ -295,14 +296,16 @@ namespace editor {
 		{
 			auto [lightProbe] = getEditor().getEntityDatabase().getComponents<LightProbe>(entity);
 
-			std::string name1 = "Irradiance map" + getIGPrefix() + "::LightProbeComponentNode::ChangeIrradiance";
-			addRepoDropdownShowSelectedValue<Scene::Key, Texture>(name1.c_str(), getEditor().getScene()->repository, lightProbe->irradianceMap);
-			std::string name2 = "Prefilter map" + getIGPrefix() + "::LightProbeComponentNode::ChangePrefilter";
-			addRepoDropdownShowSelectedValue<Scene::Key, Texture>(name2.c_str(), getEditor().getScene()->repository, lightProbe->prefilterMap);
+			std::string name1 = "Irradiance map" + getIdPrefix() + "LightProbeComponentNode::ChangeIrradiance";
+			addRepoDropdownShowSelected(name1.c_str(), getEditor().getScene()->repository, lightProbe->irradianceMap);
+			std::string name2 = "Prefilter map" + getIdPrefix() + "LightProbeComponentNode::ChangePrefilter";
+			addRepoDropdownShowSelected(name2.c_str(), getEditor().getScene()->repository, lightProbe->prefilterMap);
 
 			if (ImGui::TreeNode("Create from texture")) {
-				std::string name3 = "Environment Map" + getIGPrefix() + "::LightProbeComponentNode::ChangeEnvironment";
-				addRepoDropdownShowSelectedValue<Scene::Key, Texture>(name3.c_str(), getEditor().getScene()->repository, mEnvironmentTexture);
+				auto environmentTexture = getEditor().getScene()->repository.findByName<Texture>(mEnvironmentTextureName.c_str());
+
+				std::string name3 = "Environment Map" + getIdPrefix() + "LightProbeComponentNode::ChangeEnvironment";
+				addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture);
 				ImGui::Checkbox("Is cube map", &mIsCubeMap);
 				if (!mIsCubeMap) {
 					ImGui::DragInt("New cube map resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
@@ -311,18 +314,27 @@ namespace editor {
 				ImGui::DragInt("Irradiance map resolution", &mIrradianceMapSize, 0.01f, 0, INT_MAX);
 				ImGui::DragInt("Prefilter map resolution", &mPrefilterMapSize, 0.01f, 0, INT_MAX);
 
-				if (ImGui::Button(("Build probe" + getIGPrefix() + "::LightProbeComponentNode::BuildProbe").c_str())) {
-					auto cubeMap = mEnvironmentTexture;
+				if (ImGui::Button(("Build probe" + getIdPrefix() + "LightProbeComponentNode::BuildProbe").c_str())) {
+					auto cubeMapSPtr = environmentTexture.get();
 					if (!mIsCubeMap) {
-						cubeMap = TextureUtils::equirectangularToCubeMap(mEnvironmentTexture, mCubeMapSize);
-						for (std::size_t i = 0; !getEditor().getScene()->repository.add("cubeMap" + std::to_string(i), cubeMap); ++i);
+						cubeMapSPtr = TextureUtils::equirectangularToCubeMap(environmentTexture.get(), mCubeMapSize);
+						auto cubeMap = getEditor().getScene()->repository.insert(cubeMapSPtr);
+						setRepoName<Texture>(cubeMap.getResource(), (mEnvironmentTextureName + "CubeMap").c_str(), getEditor().getScene()->repository);
 					}
 
-					lightProbe->irradianceMap = TextureUtils::convoluteCubeMap(cubeMap, mIrradianceMapSize);
-					lightProbe->prefilterMap = TextureUtils::prefilterCubeMap(cubeMap, mPrefilterMapSize);
+					auto irradianceMapSPtr = TextureUtils::convoluteCubeMap(cubeMapSPtr, mIrradianceMapSize);
+					lightProbe->irradianceMap = getEditor().getScene()->repository.insert(std::move(irradianceMapSPtr));
+					setRepoName<Texture>(
+						lightProbe->irradianceMap.getResource(),
+						(mEnvironmentTextureName + "IrradianceMap").c_str(), getEditor().getScene()->repository
+					);
 
-					for (std::size_t i = 0; !getEditor().getScene()->repository.add("irradianceMap" + std::to_string(i), lightProbe->irradianceMap); ++i);
-					for (std::size_t i = 0; !getEditor().getScene()->repository.add("prefilterMap" + std::to_string(i), lightProbe->prefilterMap); ++i);
+					auto prefilterMapSPtr = TextureUtils::prefilterCubeMap(cubeMapSPtr, mPrefilterMapSize);
+					lightProbe->prefilterMap = getEditor().getScene()->repository.insert(std::move(prefilterMapSPtr));
+					setRepoName<Texture>(
+						lightProbe->prefilterMap.getResource(),
+						(mEnvironmentTextureName + "PrefilterMap").c_str(), getEditor().getScene()->repository
+					);
 				}
 				ImGui::TreePop();
 			}
@@ -350,9 +362,9 @@ namespace editor {
 				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 			}
-			std::shared_ptr<Mesh> gMesh;
-			std::string name = getIGPrefix() + "::MeshComponentNode::AddMesh";
-			if (addRepoDropdownButtonValue<Scene::Key, Mesh>(name.c_str(), "Add RenderableMesh", getEditor().getScene()->repository, gMesh)) {
+			Repository::ResourceRef<Mesh> gMesh;
+			std::string name = getIdPrefix() + "MeshComponentNode::AddMesh";
+			if (addRepoDropdownButton(name.c_str(), "Add RenderableMesh", getEditor().getScene()->repository, gMesh)) {
 				mesh->add(mHasSkinning, gMesh);
 			}
 			ImGui::SameLine();
@@ -363,7 +375,7 @@ namespace editor {
 			}
 
 			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				std::string name1 = "x" + getIGPrefix() + "::MeshComponentNode::RemoveMesh" + std::to_string(i);
+				std::string name1 = "x" + getIdPrefix() + "MeshComponentNode::RemoveMesh" + std::to_string(i);
 				if (ImGui::Button(name1.c_str())) {
 					mesh->remove(i);
 				}
@@ -377,30 +389,30 @@ namespace editor {
 						ImGui::SameLine();
 						ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);
 
-						gMesh = mesh->get(i).getMesh();
-						std::string name2 = getIGPrefix() + "::MeshComponentNode::ChangeMesh" + std::to_string(i);
-						if (addRepoDropdownShowSelectedValue<Scene::Key, Mesh>(name2.c_str(), getEditor().getScene()->repository, gMesh)) {
-							mesh->get(i).setMesh(gMesh);
+						gMesh = mesh->getMesh(i);
+						std::string name2 = getIdPrefix() + "MeshComponentNode::ChangeMesh" + std::to_string(i);
+						if (addRepoDropdownShowSelected(name2.c_str(), getEditor().getScene()->repository, gMesh)) {
+							mesh->setMesh(i, gMesh);
 						}
 
 						if (ImGui::TreeNode("Shaders:")) {
-							std::shared_ptr<RenderableShader> shader;
-							std::string name3 = getIGPrefix() + "::MeshComponentNode::AddShaderMesh" + std::to_string(i);
-							if (addRepoDropdownButtonValue<Scene::Key, RenderableShader>(name3.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
+							Repository::ResourceRef<RenderableShader> shader;
+							std::string name3 = getIdPrefix() + "MeshComponentNode::AddShaderMesh" + std::to_string(i);
+							if (addRepoDropdownButton(name3.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
 								mesh->addRenderableShader(i, shader);
 							}
 
 							std::size_t shaderIndex = 0;
 							mesh->processRenderableShaders(i, [&](const auto& shader1) {
-								std::string name4 = "x" + getIGPrefix() + "::MeshComponentNode::changeShader" + std::to_string(shaderIndex++) + "Mesh" + std::to_string(i);
+								std::string name4 = "x" + getIdPrefix() + "MeshComponentNode::changeShader" + std::to_string(shaderIndex++) + "Mesh" + std::to_string(i);
 								if (ImGui::Button(name4.c_str())) {
 									mesh->removeRenderableShader(i, shader1);
 								}
 								else {
 									ImGui::SameLine();
-									std::shared_ptr<RenderableShader> shader2 = shader1;
-									std::string name5 = getIGPrefix() + "::MeshComponentNode::changeShader" + std::to_string(shaderIndex) + "Mesh" + std::to_string(i);
-									if (addRepoDropdownShowSelectedValue<Scene::Key, RenderableShader>(name5.c_str(), getEditor().getScene()->repository, shader2)) {
+									Repository::ResourceRef<RenderableShader> shader2 = shader1;
+									std::string name5 = getIdPrefix() + "MeshComponentNode::changeShader" + std::to_string(shaderIndex) + "Mesh" + std::to_string(i);
+									if (addRepoDropdownShowSelected(name5.c_str(), getEditor().getScene()->repository, shader2)) {
 										mesh->removeRenderableShader(i, shader1);
 										mesh->addRenderableShader(i, shader2);
 									}
@@ -452,7 +464,7 @@ namespace editor {
 				for (std::size_t lod = 1; lod < lods.size(); ++lod) {
 					std::size_t i = lods.size() - lod - 1;
 
-					std::string name = "x" + getIGPrefix() + "TerrainComponentNode::RemoveLOD" + std::to_string(lod);
+					std::string name = "x" + getIdPrefix() + "TerrainComponentNode::RemoveLOD" + std::to_string(lod);
 					if (ImGui::Button(name.c_str())) {
 						lods.erase(lods.begin() + i);
 						updated = true;
@@ -465,7 +477,7 @@ namespace editor {
 					}
 				}
 
-				std::string name = "x" + getIGPrefix() + "TerrainComponentNode::AddLOD";
+				std::string name = "x" + getIdPrefix() + "TerrainComponentNode::AddLOD";
 				if (ImGui::Button(name.c_str())) {
 					lods.insert(lods.begin(), lods.front());
 					updated = true;
@@ -478,23 +490,23 @@ namespace editor {
 			}
 
 			if (ImGui::TreeNode("Shaders:")) {
-				std::shared_ptr<RenderableShader> shader;
-				std::string name = getIGPrefix() + "::TerrainComponentNode::AddShader";
-				if (addRepoDropdownButtonValue<Scene::Key, RenderableShader>(name.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
+				Repository::ResourceRef<RenderableShader> shader;
+				std::string name = getIdPrefix() + "TerrainComponentNode::AddShader";
+				if (addRepoDropdownButton(name.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
 					terrain->addRenderableShader(shader);
 				}
 
 				std::size_t shaderIndex = 0;
 				terrain->processRenderableShaders([&](const auto& shader1) {
-					std::string name1 = "x" + getIGPrefix() + "::TerrainComponentNode::RemoveShader" + std::to_string(shaderIndex++);
+					std::string name1 = "x" + getIdPrefix() + "TerrainComponentNode::RemoveShader" + std::to_string(shaderIndex++);
 					if (ImGui::Button(name1.c_str())) {
 						terrain->removeRenderableShader(shader1);
 					}
 					else {
 						ImGui::SameLine();
-						std::shared_ptr<RenderableShader> shader2 = shader1;
-						std::string name2 = getIGPrefix() + "::TerrainComponentNode::ChangeShader" + std::to_string(shaderIndex);
-						if (addRepoDropdownShowSelectedValue<Scene::Key, RenderableShader>(name2.c_str(), getEditor().getScene()->repository, shader2)) {
+						Repository::ResourceRef<RenderableShader> shader2 = shader1;
+						std::string name2 = getIdPrefix() + "TerrainComponentNode::ChangeShader" + std::to_string(shaderIndex);
+						if (addRepoDropdownShowSelected(name2.c_str(), getEditor().getScene()->repository, shader2)) {
 							terrain->removeRenderableShader(shader1);
 							terrain->addRenderableShader(shader2);
 						}
@@ -506,17 +518,17 @@ namespace editor {
 	};
 
 
-	class ComponentPanel::RigidBodyComponentNode : public ComponentPanel::ComponentNode<RigidBody>
+	class ComponentPanel::RigidBodyComponentNode : public ComponentPanel::ComponentNode<RigidBodyComponent>
 	{
 	public:		// Functions
 		RigidBodyComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
 		virtual const char* getName() const override
 		{ return "Rigid Body"; };
 		virtual void create(Entity entity) override
-		{ getEditor().getEntityDatabase().emplaceComponent<RigidBody>(entity); };
+		{ getEditor().getEntityDatabase().emplaceComponent<RigidBodyComponent>(entity); };
 		virtual void draw(Entity entity) override
 		{
-			auto [rigidBody] = getEditor().getEntityDatabase().getComponents<RigidBody>(entity);
+			auto [rigidBody] = getEditor().getEntityDatabase().getComponents<RigidBodyComponent>(entity);
 			auto& rbConfig = rigidBody->getConfig();
 			auto& rbData = rigidBody->getData();
 
@@ -524,7 +536,7 @@ namespace editor {
 
 			static const char* massTypeTags[] = { "infinite", "custom" };
 			int currentType = infiniteMass? 0 : 1;
-			std::string name = "Mass" + getIGPrefix() + "::RigidBodyComponentNode::Mass";
+			std::string name = "Mass" + getIdPrefix() + "RigidBodyComponentNode::Mass";
 			if (addDropdown(name.c_str(), massTypeTags, IM_ARRAYSIZE(massTypeTags), currentType)) {
 				infiniteMass = (currentType == 0);
 			}
@@ -561,24 +573,24 @@ namespace editor {
 			ImGui::DragFloat3("Linear Velocity", glm::value_ptr(rbData.linearVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			ImGui::DragFloat3("Angular Velocity", glm::value_ptr(rbData.angularVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 
-			std::shared_ptr<Force> force;
-			std::string name1 = getIGPrefix() + "::RigidBodyComponentNode::AddForce";
-			if (addRepoDropdownButtonValue<Scene::Key, Force>(name1.c_str(), "Add Force", getEditor().getScene()->repository, force)) {
+			Repository::ResourceRef<Force> force;
+			std::string name1 = getIdPrefix() + "RigidBodyComponentNode::AddForce";
+			if (addRepoDropdownButton(name1.c_str(), "Add Force", getEditor().getScene()->repository, force)) {
 				rigidBody->addForce(force);
 			}
 			std::size_t i = 0;
-			rigidBody->processForces([&, rigidBody = rigidBody](std::shared_ptr<Force> force2) {
-				std::string name2 = "x" + getIGPrefix() + "::RigidBodyComponentNode::RemoveForce" + std::to_string(i++);
+			rigidBody->processForces([&, rigidBody = rigidBody](const auto& force1) {
+				std::string name2 = "x" + getIdPrefix() + "RigidBodyComponentNode::RemoveForce" + std::to_string(i++);
 				if (ImGui::Button(name2.c_str())) {
-					rigidBody->removeForce(force2);
+					rigidBody->removeForce(force1);
 				}
 				else {
 					ImGui::SameLine();
 
-					auto oldForce2 = force2;
-					std::string name3 = getIGPrefix() + "::RigidBodyComponentNode::ChangeForce" + std::to_string(i);
-					if (addRepoDropdownShowSelectedValue<Scene::Key, Force>(name3.c_str(), getEditor().getScene()->repository, force2)) {
-						rigidBody->removeForce(oldForce2);
+					Repository::ResourceRef<Force> force2 = force1;
+					std::string name3 = getIdPrefix() + "RigidBodyComponentNode::ChangeForce" + std::to_string(i);
+					if (addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, force2)) {
+						rigidBody->removeForce(force1);
 						rigidBody->addForce(force2);
 					}
 				}
@@ -590,10 +602,10 @@ namespace editor {
 	class ComponentPanel::ColliderComponentNode : public ComponentPanel::ComponentNode<Collider>
 	{
 	private:	// Attributes
-		std::shared_ptr<Texture> mHeightTexture;
+		std::string mHeightTextureName;
 		int mSize1 = 128;
 		int mSize2 = 128;
-		std::shared_ptr<Mesh> mMesh;
+		std::string mMeshName;
 
 	public:		// Functions
 		ColliderComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
@@ -615,7 +627,7 @@ namespace editor {
 
 			static const char* typeTags[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain", "Convex Polyhedron", "Composite" };
 			int currentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : terrain? 4 : cPoly? 5 : 6;
-			std::string name = "Type" + getIGPrefix() + "::ColliderComponentNode::ChangeType";
+			std::string name = "Type" + getIdPrefix() + "ColliderComponentNode::ChangeType";
 			addDropdown(name.c_str(), typeTags, IM_ARRAYSIZE(typeTags), currentType);
 
 			switch (currentType) {
@@ -731,15 +743,19 @@ namespace editor {
 		void drawTerrain(TerrainCollider& terrain)
 		{
 			if (ImGui::TreeNode("Create from texture")) {
-				std::string name = "Height Map" + getIGPrefix() + "::ColliderComponentNode::HeightMap";
-				addRepoDropdownShowSelectedValue<Scene::Key, Texture>(name.c_str(), getEditor().getScene()->repository, mHeightTexture);
+				auto heightTexture = getEditor().getScene()->repository.findByName<Texture>(mHeightTextureName.c_str());
+				std::string name = "Height Map" + getIdPrefix() + "ColliderComponentNode::HeightMap";
+				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, heightTexture)) {
+					mHeightTextureName = heightTexture.getResource().getName();
+				}
+
 				ImGui::DragInt("Size X", &mSize1, 0.01f, 0, INT_MAX);
 				ImGui::DragInt("Size Z", &mSize2, 0.01f, 0, INT_MAX);
 
-				std::string name1 = "Build terrain" + getIGPrefix() + "::ColliderComponentNode::BuildTerrain";
+				std::string name1 = "Build terrain" + getIdPrefix() + "ColliderComponentNode::BuildTerrain";
 				if (ImGui::Button(name1.c_str())) {
 					auto image = TextureUtils::textureToImage<unsigned char>(
-						*mHeightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
+						*heightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
 					);
 					auto heights = MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
 					terrain.setHeights(heights.data(), image.width, image.height);
@@ -754,12 +770,15 @@ namespace editor {
 			ImGui::Text("Number of faces: %lu", cPoly.getLocalMesh().faces.size());
 
 			if (ImGui::TreeNode("Create from mesh")) {
-				std::string name = "Mesh" + getIGPrefix() + "::ColliderComponentNode::Mesh";
-				addRepoDropdownShowSelectedValue<Scene::Key, Mesh>(name.c_str(), getEditor().getScene()->repository, mMesh);
+				auto mesh = getEditor().getScene()->repository.findByName<Mesh>(mMeshName.c_str());
+				std::string name = "Mesh" + getIdPrefix() + "ColliderComponentNode::Mesh";
+				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
+					mMeshName = mesh.getResource().getName();
+				}
 
-				std::string name1 = "Build Convex Polyhedron" + getIGPrefix() + "::ColliderComponentNode::BuildConvexPolyhedron";
+				std::string name1 = "Build Convex Polyhedron" + getIdPrefix() + "ColliderComponentNode::BuildConvexPolyhedron";
 				if (ImGui::Button(name1.c_str())) {
-					auto [heMesh, loaded] = MeshLoader::createHalfEdgeMesh(MeshLoader::createRawMesh(*mMesh));
+					auto [heMesh, loaded] = MeshLoader::createHalfEdgeMesh(MeshLoader::createRawMesh(*mesh));
 					if (loaded) {
 						cPoly.setLocalMesh(heMesh);
 					}
@@ -774,10 +793,10 @@ namespace editor {
 		{
 			if (!ImGui::TreeNode("Parts")) { return; }
 
-			if (ImGui::SmallButton("Add")) {
-				ImGui::OpenPopup("add_composite_part");
+			if (ImGui::SmallButton(("Add" + getIdPrefix() + "AddComposite").c_str())) {
+				ImGui::OpenPopup((getIdPrefix() + "AddComposite").c_str());
 			}
-			if (ImGui::BeginPopup("add_composite_part")) {
+			if (ImGui::BeginPopup((getIdPrefix() + "AddComposite").c_str())) {
 				if (ImGui::MenuItem("Add BoundingBox")) {
 					composite.addPart(std::make_unique<BoundingBox>());
 				}
@@ -844,9 +863,9 @@ namespace editor {
 		{
 			auto [particleSystem] = getEditor().getEntityDatabase().getComponents<ParticleSystemComponent>(entity);
 
-			std::shared_ptr<Mesh> mesh = particleSystem->getMesh();
-			std::string name = "Mesh" + getIGPrefix() + "::ParticleSystemComponentNode::Mesh";
-			if (addRepoDropdownShowSelectedValue<Scene::Key, Mesh>(name.c_str(), getEditor().getScene()->repository, mesh)) {
+			auto mesh = particleSystem->getMesh();
+			std::string name = "Mesh" + getIdPrefix() + "ParticleSystemComponentNode::Mesh";
+			if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
 				particleSystem->setMesh(mesh);
 			}
 
@@ -856,23 +875,23 @@ namespace editor {
 					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 				}
 
-				std::shared_ptr<RenderableShader> shader;
-				std::string name1 = getIGPrefix() + "::ParticleSystemComponentNode::AddShader";
-				if (addRepoDropdownButtonValue<Scene::Key, RenderableShader>(name1.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
+				Repository::ResourceRef<RenderableShader> shader;
+				std::string name1 = getIdPrefix() + "ParticleSystemComponentNode::AddShader";
+				if (addRepoDropdownButton(name1.c_str(), "Add Shader", getEditor().getScene()->repository, shader)) {
 					particleSystem->addRenderableShader(shader);
 				}
 
 				std::size_t shaderIndex = 0;
 				particleSystem->processRenderableShaders([&](const auto& shader1) {
-					std::string name2 = "x" + getIGPrefix() + "::ParticleSystemComponentNode::RemoveShader" + std::to_string(shaderIndex++);
+					std::string name2 = "x" + getIdPrefix() + "ParticleSystemComponentNode::RemoveShader" + std::to_string(shaderIndex++);
 					if (ImGui::Button(name2.c_str())) {
 						particleSystem->removeRenderableShader(shader1);
 					}
 					else {
 						ImGui::SameLine();
-						std::shared_ptr<RenderableShader> shader2 = shader1;
-						std::string name3 = getIGPrefix() + "::ParticleSystemComponentNode::ChangeShader" + std::to_string(shaderIndex);
-						if (addRepoDropdownShowSelectedValue<Scene::Key, RenderableShader>(name3.c_str(), getEditor().getScene()->repository, shader2)) {
+						Repository::ResourceRef<RenderableShader> shader2 = shader1;
+						std::string name3 = getIdPrefix() + "ParticleSystemComponentNode::ChangeShader" + std::to_string(shaderIndex);
+						if (addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, shader2)) {
 							particleSystem->removeRenderableShader(shader1);
 							particleSystem->addRenderableShader(shader2);
 						}
@@ -886,10 +905,33 @@ namespace editor {
 				ImGui::TreePop();
 			}
 
-			std::shared_ptr<ParticleEmitter> emitter = particleSystem->getEmitter();
-			std::string name4 = "Emitter" + getIGPrefix() + "::ParticleSystemComponentNode::Emitter";
-			if (addRepoDropdownShowSelectedValue<Scene::Key, ParticleEmitter>(name4.c_str(), getEditor().getScene()->repository, emitter)) {
+			Repository::ResourceRef<ParticleEmitter> emitter = particleSystem->getEmitter();
+			std::string name4 = "Emitter" + getIdPrefix() + "ParticleSystemComponentNode::Emitter";
+			if (addRepoDropdownShowSelected(name4.c_str(), getEditor().getScene()->repository, emitter)) {
 				particleSystem->setEmitter(emitter);
+			}
+		};
+	};
+
+
+	class ComponentPanel::AudioSourceComponentNode : public ComponentPanel::ComponentNode<AudioSourceComponent>
+	{
+	public:		// Functions
+		AudioSourceComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
+		virtual const char* getName() const override
+		{ return "AudioSource"; };
+		virtual void create(Entity entity) override
+		{
+			getEditor().getEntityDatabase().emplaceComponent<AudioSourceComponent>(entity);
+		};
+		virtual void draw(Entity entity) override
+		{
+			auto [audioSource] = getEditor().getEntityDatabase().getComponents<AudioSourceComponent>(entity);
+
+			auto buffer = audioSource->getBuffer();
+			std::string name = "Buffer" + getIdPrefix() + "AudioSourceComponentNode::Buffer";
+			if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, buffer)) {
+				audioSource->setBuffer(buffer);
 			}
 		};
 	};
@@ -908,6 +950,7 @@ namespace editor {
 		mNodes.emplace_back(new RigidBodyComponentNode(*this));
 		mNodes.emplace_back(new ColliderComponentNode(*this));
 		mNodes.emplace_back(new ParticleSystemComponentNode(*this));
+		mNodes.emplace_back(new AudioSourceComponentNode(*this));
 	}
 
 
@@ -927,10 +970,10 @@ namespace editor {
 			if (selectedEntity != kNullEntity) {
 				ImGui::Text("Entity #%u selected", selectedEntity);
 				ImGui::SameLine();
-				if (ImGui::SmallButton("Add")) {
-					ImGui::OpenPopup("add_component");
+				if (ImGui::SmallButton(("Add##ComponentPanel" + std::to_string(mPanelId) + "::addComponent").c_str())) {
+					ImGui::OpenPopup(("ComponentPanel" + std::to_string(mPanelId) + "::addComponent").c_str());
 				}
-				if (ImGui::BeginPopup("add_component")) {
+				if (ImGui::BeginPopup(("ComponentPanel" + std::to_string(mPanelId) + "::addComponent").c_str())) {
 					for (IComponentNode* node : mNodes) {
 						if (!node->active(selectedEntity) && ImGui::MenuItem(node->getName())) {
 							node->create(selectedEntity);

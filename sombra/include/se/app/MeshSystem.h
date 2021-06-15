@@ -4,7 +4,6 @@
 #include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "../graphics/Pass.h"
 #include "../graphics/core/UniformVariable.h"
 #include "ECS.h"
 #include "MeshComponent.h"
@@ -24,13 +23,13 @@ namespace se::app {
 	class MeshSystem : public ISystem
 	{
 	private:	// Nested types
-		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
 		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
 
 		struct EntityUniforms
 		{
 			std::size_t shaderCount = 0;
-			PassSPtr pass;
+			RenderableShaderStepSPtr step;
 			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 				modelMatrix;
 			std::shared_ptr<graphics::UniformVariableValueVector<glm::mat3x4>>
@@ -110,20 +109,24 @@ namespace se::app {
 		 * @param	event the ShaderEvent to handle */
 		void onShaderEvent(const ShaderEvent& event);
 
-		/** Adds the pass uniforms to the Entity mesh
+		/** Adds the RenderableShaderStep uniforms to the Entity mesh
 		 *
 		 * @param	entity the Entity that owns the RenderableMesh
 		 * @param	rIndex the index of the RenderableMesh updated
-		 * @param	pass a pointer to the new Pass to add */
-		void addPass(Entity entity, std::size_t rIndex, const PassSPtr& pass);
+		 * @param	step a pointer to the new RenderableShaderStep to add */
+		void addStep(
+			Entity entity, std::size_t rIndex,
+			const RenderableShaderStepSPtr& step
+		);
 
-		/** Removes the pass uniforms from the Entity mesh
+		/** Removes the RenderableShaderStep uniforms from the Entity mesh
 		 *
 		 * @param	entity the Entity that owns the RenderableMesh
 		 * @param	rIndex the index of the RenderableMesh updated
-		 * @param	pass a pointer to the Pass to remove */
-		void removePass(
-			Entity entity, std::size_t rIndex, const PassSPtr& pass
+		 * @param	step a pointer to the RenderableShaderStep to remove */
+		void removeStep(
+			Entity entity, std::size_t rIndex,
+			const RenderableShaderStepSPtr& step
 		);
 	};
 

@@ -53,8 +53,7 @@ namespace game {
 			mStartLabel(&mGUIManager), mConfigLabel(&mGUIManager),
 			mQuitLabel(&mGUIManager)
 		{
-			auto arial = game.getRepository().find<std::string, se::graphics::Font>("arial");
-			if (!arial) { return; }
+			auto arial = game.getRepository().findByName<se::graphics::Font>("arial");
 
 			mTitleLabel.setText("SOMBRA");
 			mTitleLabel.setFont(arial);

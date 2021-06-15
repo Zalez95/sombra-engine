@@ -11,6 +11,7 @@
 namespace se::app {
 
 	class Application;
+	class RigidBodyComponent;
 	class CollisionEvent;
 
 
@@ -104,19 +105,19 @@ namespace se::app {
 		 * @param	delta the elapsed time since the last update in seconds */
 		virtual void update() override;
 	private:
-		/** Function called when a RigidBody is added to an Entity
+		/** Function called when a RigidBodyComponent is added to an Entity
 		 *
-		 * @param	entity the Entity that holds the RigidBody
-		 * @param	rigidBody a pointer to the new RigidBody */
-		void onNewRigidBody(Entity entity, physics::RigidBody* rigidBody);
+		 * @param	entity the Entity that holds the RigidBodyComponent
+		 * @param	rigidBody a pointer to the new RigidBodyComponent */
+		void onNewRigidBody(Entity entity, RigidBodyComponent* rigidBody);
 
-		/** Function called when a RigidBody is going to be removed from an
-		 * Entity
+		/** Function called when a RigidBodyComponent is going to be removed
+		 * from an Entity
 		 *
-		 * @param	entity the Entity that holds the RigidBody
-		 * @param	rigidBody a pointer to the RigidBody that is going to be
-		 *			removed */
-		void onRemoveRigidBody(Entity entity, physics::RigidBody* rigidBody);
+		 * @param	entity the Entity that holds the RigidBodyComponent
+		 * @param	rigidBody a pointer to the RigidBodyComponent that is going
+		 *			to be removed */
+		void onRemoveRigidBody(Entity entity, RigidBodyComponent* rigidBody);
 
 		/** Handles the given CollisionEvent by creating ContactConstraints
 		 * between the colliding Entities

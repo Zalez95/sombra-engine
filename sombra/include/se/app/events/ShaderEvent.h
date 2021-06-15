@@ -1,7 +1,7 @@
 #ifndef SHADER_EVENT_H
 #define SHADER_EVENT_H
 
-#include "../RenderableShader.h"
+#include "../graphics/RenderableShader.h"
 #include "Event.h"
 
 namespace se::app {
@@ -14,7 +14,7 @@ namespace se::app {
 	{
 	public:		// Nested types
 		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
-		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
 
 		/** The different operations to perform with the ShaderEvent */
 		enum class Operation { Add, Remove };
@@ -26,8 +26,9 @@ namespace se::app {
 		/** The RenderableShader updated */
 		RenderableShaderSPtr mRenderableShader;
 
-		/** The Pass added/removed from @see mRenderableShader */
-		PassSPtr mPass;
+		/** The RenderableShaderStep added/removed from
+		 * @see mRenderableShader */
+		RenderableShaderStepSPtr mStep;
 
 	public:		// Functions
 		/** Creates a new ShaderEvent used for notifying of a RenderableShader
@@ -35,21 +36,24 @@ namespace se::app {
 		 *
 		 * @param	operation the Operation to perform
 		 * @param	renderableShader the RenderableShader updated
-		 * @param	pass the Pass added/removed */
+		 * @param	step the Step added/removed */
 		ShaderEvent(
 			Operation operation,
-			RenderableShaderSPtr renderableShader, PassSPtr pass
+			const RenderableShaderSPtr& renderableShader,
+			const RenderableShaderStepSPtr& step
 		) : mOperation(operation),
-			mRenderableShader(renderableShader), mPass(pass) {};
+			mRenderableShader(renderableShader), mStep(step) {};
 
 		/** @return	the Operation to perform */
 		Operation getOperation() const { return mOperation; };
 
 		/** @return	a pointer to the RenderableShader to notify */
-		RenderableShaderSPtr getShader() const { return mRenderableShader; };
+		const RenderableShaderSPtr& getShader() const
+		{ return mRenderableShader; };
 
-		/** @return	a pointer to the Pass to notify */
-		PassSPtr getPass() const { return mPass; };
+		/** @return	a pointer to the RenderableShaderStep to notify */
+		const RenderableShaderStepSPtr& getStep() const
+		{ return mStep; };
 	};
 
 }

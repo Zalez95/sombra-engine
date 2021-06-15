@@ -8,7 +8,7 @@
 #include <se/graphics/core/GraphicsOperations.h>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
-#include <se/app/RenderableShader.h>
+#include <se/app/graphics/RenderableShader.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/CameraComponent.h>
 #include <se/app/MeshComponent.h>
@@ -153,24 +153,27 @@ namespace editor {
 
 		auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity, *mEventManager, mGridEntity);
 		auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
-		auto gridMesh = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
+		auto gridMeshSPtr = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
+		auto gridMesh = mRepository->insert(std::move(gridMeshSPtr), "gridMesh");
 		std::size_t gridIndex = mesh->add(false, gridMesh, se::graphics::PrimitiveType::Line);
 
-		std::shared_ptr<se::graphics::Program> program;
-		auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", program);
+		std::shared_ptr<se::graphics::Program> program3DSPtr;
+		auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", program3DSPtr);
 		if (!result) {
 			SOMBRA_ERROR_LOG << result.description();
 			return;
 		}
+		auto program3D = mRepository->insert(std::move(program3DSPtr), "program3D");
+		program3D.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
 
 		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
-		auto pass = std::make_shared<se::graphics::Pass>(*renderer);
-		pass->addBindable(program)
-			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program, glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
+		auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");
+		stepGrid->addResource(program3D)
+			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
 			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
-		auto rShader = std::make_shared<se::app::RenderableShader>(*mEventManager);
-		rShader->addPass(pass);
-		mesh->addRenderableShader(gridIndex, rShader);
+		auto shaderGrid = mRepository->insert(std::make_shared<se::app::RenderableShader>(*mEventManager), "shaderGrid");
+		shaderGrid->addStep(stepGrid);
+		mesh->addRenderableShader(gridIndex, shaderGrid);
 
 		SOMBRA_INFO_LOG << "Editor created";
 	}

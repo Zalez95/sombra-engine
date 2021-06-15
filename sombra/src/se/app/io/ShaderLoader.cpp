@@ -11,111 +11,146 @@
 
 namespace se::app {
 
-	void ShaderLoader::addMaterialBindables(PassSPtr pass, const Material& material, const ProgramSPtr program)
+	void ShaderLoader::addMaterialBindables(StepRef step, const Material& material, const ProgramRef& program)
 	{
+		// Set the program
+		bool hasProgram = false;
+		step->processPrograms([&](const ProgramRef& program2) {
+			hasProgram |= (program == program2);
+		});
+		if (!hasProgram) {
+			step->addResource(program);
+		}
+
 		// Set the material alphaMode
-		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, material.alphaMode == graphics::AlphaMode::Blend))
+		step->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, material.alphaMode == graphics::AlphaMode::Blend))
 			.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, material.alphaMode != graphics::AlphaMode::Blend));
 
 		// Unset face culling
-		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, !material.doubleSided));
+		step->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, !material.doubleSided));
 
 		// Set uniforms
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec4>>(
-			"uMaterial.pbrMetallicRoughness.baseColorFactor", program, material.pbrMetallicRoughness.baseColorFactor
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec4>>(
+			"uMaterial.pbrMetallicRoughness.baseColorFactor", program.get(), material.pbrMetallicRoughness.baseColorFactor
 		));
 
-		bool useBaseColorTexture = material.pbrMetallicRoughness.baseColorTexture != nullptr;
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.pbrMetallicRoughness.useBaseColorTexture", program, useBaseColorTexture
+		bool useBaseColorTexture = material.pbrMetallicRoughness.baseColorTexture;
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uMaterial.pbrMetallicRoughness.useBaseColorTexture", program.get(), useBaseColorTexture
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.pbrMetallicRoughness.baseColorTexture", program, Material::TextureUnits::kBaseColor
+				"uMaterial.pbrMetallicRoughness.baseColorTexture", program.get(), Material::TextureUnits::kBaseColor
 			));
 		if (useBaseColorTexture) {
-			material.pbrMetallicRoughness.baseColorTexture->setTextureUnit(Material::TextureUnits::kBaseColor);
-			pass->addBindable(material.pbrMetallicRoughness.baseColorTexture);
+			TextureRef texture = material.pbrMetallicRoughness.baseColorTexture;
+			texture->setTextureUnit(Material::TextureUnits::kBaseColor);
+			step->addResource(std::move(texture));
 		}
 
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				"uMaterial.pbrMetallicRoughness.metallicFactor", program, material.pbrMetallicRoughness.metallicFactor
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uMaterial.pbrMetallicRoughness.metallicFactor", program.get(), material.pbrMetallicRoughness.metallicFactor
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				"uMaterial.pbrMetallicRoughness.roughnessFactor", program, material.pbrMetallicRoughness.roughnessFactor
+				"uMaterial.pbrMetallicRoughness.roughnessFactor", program.get(), material.pbrMetallicRoughness.roughnessFactor
 			));
 
-		bool useMetallicRoughnessTexture = material.pbrMetallicRoughness.metallicRoughnessTexture != nullptr;
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture", program, useMetallicRoughnessTexture
+		bool useMetallicRoughnessTexture = material.pbrMetallicRoughness.metallicRoughnessTexture;
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uMaterial.pbrMetallicRoughness.useMetallicRoughnessTexture", program.get(), useMetallicRoughnessTexture
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.pbrMetallicRoughness.metallicRoughnessTexture", program, Material::TextureUnits::kMetallicRoughness
+				"uMaterial.pbrMetallicRoughness.metallicRoughnessTexture", program.get(), Material::TextureUnits::kMetallicRoughness
 			));
 		if (useMetallicRoughnessTexture) {
-			material.pbrMetallicRoughness.metallicRoughnessTexture->setTextureUnit(Material::TextureUnits::kMetallicRoughness);
-			pass->addBindable(material.pbrMetallicRoughness.metallicRoughnessTexture);
+			TextureRef texture = material.pbrMetallicRoughness.metallicRoughnessTexture;
+			texture->setTextureUnit(Material::TextureUnits::kMetallicRoughness);
+			step->addResource(std::move(texture));
 		}
 
-		bool useNormalTexture = material.normalTexture != nullptr;
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.useNormalTexture", program, useNormalTexture
+		bool useNormalTexture = material.normalTexture;
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uMaterial.useNormalTexture", program.get(), useNormalTexture
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.normalTexture", program, Material::TextureUnits::kNormal
+				"uMaterial.normalTexture", program.get(), Material::TextureUnits::kNormal
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				"uMaterial.normalScale", program, material.normalScale
+				"uMaterial.normalScale", program.get(), material.normalScale
 			));
 		if (useNormalTexture) {
-			material.normalTexture->setTextureUnit(Material::TextureUnits::kNormal);
-			pass->addBindable(material.normalTexture);
+			TextureRef texture = material.normalTexture;
+			texture->setTextureUnit(Material::TextureUnits::kNormal);
+			step->addResource(std::move(texture));
 		}
 
-		bool useOcclusionTexture = material.occlusionTexture != nullptr;
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.useOcclusionTexture", program, useOcclusionTexture
+		bool useOcclusionTexture = material.occlusionTexture;
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uMaterial.useOcclusionTexture", program.get(), useOcclusionTexture
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.occlusionTexture", program, Material::TextureUnits::kOcclusion
+				"uMaterial.occlusionTexture", program.get(), Material::TextureUnits::kOcclusion
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				"uMaterial.occlusionStrength", program, material.occlusionStrength
+				"uMaterial.occlusionStrength", program.get(), material.occlusionStrength
 			));
 		if (useOcclusionTexture) {
-			material.occlusionTexture->setTextureUnit(Material::TextureUnits::kOcclusion);
-			pass->addBindable(material.occlusionTexture);
+			TextureRef texture = material.occlusionTexture;
+			texture->setTextureUnit(Material::TextureUnits::kOcclusion);
+			step->addResource(std::move(texture));
 		}
 
-		bool useEmissiveTexture = material.emissiveTexture != nullptr;
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.useEmissiveTexture", program, useEmissiveTexture
+		bool useEmissiveTexture = material.emissiveTexture;
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				"uMaterial.useEmissiveTexture", program.get(), useEmissiveTexture
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uMaterial.emissiveTexture", program, Material::TextureUnits::kEmissive
+				"uMaterial.emissiveTexture", program.get(), Material::TextureUnits::kEmissive
 			))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec3>>(
-				"uMaterial.emissiveFactor", program, material.emissiveFactor
+				"uMaterial.emissiveFactor", program.get(), material.emissiveFactor
 			));
 		if (useEmissiveTexture) {
-			material.emissiveTexture->setTextureUnit(Material::TextureUnits::kEmissive);
-			pass->addBindable(material.emissiveTexture);
+			TextureRef texture = material.emissiveTexture;
+			texture->setTextureUnit(Material::TextureUnits::kEmissive);
+			step->addResource(std::move(texture));
 		}
 
 		bool checkAlphaCutoff = (material.alphaMode == graphics::AlphaMode::Mask);
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-			"uMaterial.checkAlphaCutoff", program, checkAlphaCutoff
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+			"uMaterial.checkAlphaCutoff", program.get(), checkAlphaCutoff
 		));
 		if (checkAlphaCutoff) {
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				"uMaterial.alphaCutoff", program, material.alphaCutoff
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				"uMaterial.alphaCutoff", program.get(), material.alphaCutoff
 			));
 		}
 	}
 
 
-	void ShaderLoader::readMaterialBindables(const PassSPtr pass, Material& material)
+	void ShaderLoader::readMaterialBindables(const StepRef& step, Material& material)
 	{
-		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
+		step->processTextures([&](const TextureRef& texture) {
+			switch (texture->getTextureUnit()) {
+				case Material::TextureUnits::kBaseColor:
+					material.pbrMetallicRoughness.baseColorTexture = texture;
+					break;
+				case Material::TextureUnits::kMetallicRoughness:
+					material.pbrMetallicRoughness.metallicRoughnessTexture = texture;
+					break;
+				case Material::TextureUnits::kNormal:
+					material.normalTexture = texture;
+					break;
+				case Material::TextureUnits::kOcclusion:
+					material.occlusionTexture = texture;
+					break;
+				case Material::TextureUnits::kEmissive:
+					material.emissiveTexture = texture;
+					break;
+				default:
+					break;
+			}
+		});
+		step->processBindables([&](const std::shared_ptr<graphics::Bindable>& bindable) {
 			if (auto operation = std::dynamic_pointer_cast<graphics::SetOperation>(bindable); operation) {
 				switch (operation->getOperation()) {
 					case graphics::Operation::Blending:
@@ -126,27 +161,6 @@ namespace se::app {
 						break;
 					case graphics::Operation::Culling:
 						material.doubleSided = !operation->isEnabled();
-						break;
-					default:
-						break;
-				}
-			}
-			else if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
-				switch (texture->getTextureUnit()) {
-					case Material::TextureUnits::kBaseColor:
-						material.pbrMetallicRoughness.baseColorTexture = texture;
-						break;
-					case Material::TextureUnits::kMetallicRoughness:
-						material.pbrMetallicRoughness.metallicRoughnessTexture = texture;
-						break;
-					case Material::TextureUnits::kNormal:
-						material.normalTexture = texture;
-						break;
-					case Material::TextureUnits::kOcclusion:
-						material.occlusionTexture = texture;
-						break;
-					case Material::TextureUnits::kEmissive:
-						material.emissiveTexture = texture;
 						break;
 					default:
 						break;
@@ -184,133 +198,138 @@ namespace se::app {
 	}
 
 
-	void ShaderLoader::addSplatmapMaterialBindables(PassSPtr pass, const SplatmapMaterial& material, const ProgramSPtr program)
+	void ShaderLoader::addSplatmapMaterialBindables(StepRef step, const SplatmapMaterial& material, const ProgramRef& program)
 	{
+		// Set the program
+		bool hasProgram = false;
+		step->processPrograms([&](const ProgramRef& program2) {
+			hasProgram |= (program == program2);
+		});
+		if (!hasProgram) {
+			step->addResource(program);
+		}
+
 		// Set the material alphaMode
-		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, false))
+		step->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, false))
 			.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, true));
 
 		// Set face culling
-		pass->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
+		step->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
 
 		// Set uniforms
 		int numMaterials = static_cast<int>(material.materials.size());
-		pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-			"uSMaterial.numMaterials", program, numMaterials
+		step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+			"uSMaterial.numMaterials", program.get(), numMaterials
 		));
 
 		for (int i = 0; i < numMaterials; ++i) {
 			utils::ArrayStreambuf<char, 128> aStreambuf;
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorFactor";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec4>>(
-				aStreambuf.data(), program, material.materials[i].pbrMetallicRoughness.baseColorFactor
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<glm::vec4>>(
+				aStreambuf.data(), program.get(), material.materials[i].pbrMetallicRoughness.baseColorFactor
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.useBaseColorTexture";
-			bool useBaseColorTexture = material.materials[i].pbrMetallicRoughness.baseColorTexture != nullptr;
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, useBaseColorTexture
+			bool useBaseColorTexture = material.materials[i].pbrMetallicRoughness.baseColorTexture;
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), useBaseColorTexture
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorTexture";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i
 			));
 
 			if (useBaseColorTexture) {
-				material.materials[i].pbrMetallicRoughness.baseColorTexture->setTextureUnit(
-					SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i
-				);
-				pass->addBindable(material.materials[i].pbrMetallicRoughness.baseColorTexture);
+				TextureRef texture = material.materials[i].pbrMetallicRoughness.baseColorTexture;
+				texture->setTextureUnit(SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i);
+				step->addResource(std::move(texture));
 			}
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.metallicFactor";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				aStreambuf.data(), program, material.materials[i].pbrMetallicRoughness.metallicFactor
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				aStreambuf.data(), program.get(), material.materials[i].pbrMetallicRoughness.metallicFactor
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.roughnessFactor";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				aStreambuf.data(), program, material.materials[i].pbrMetallicRoughness.roughnessFactor
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				aStreambuf.data(), program.get(), material.materials[i].pbrMetallicRoughness.roughnessFactor
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.useMetallicRoughnessTexture";
-			bool useMetallicRoughnessTexture = material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture != nullptr;
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, useMetallicRoughnessTexture
+			bool useMetallicRoughnessTexture = material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture;
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), useMetallicRoughnessTexture
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.metallicRoughnessTexture";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, SplatmapMaterial::TextureUnits::kMetallicRoughness0 + BasicMaterial::kMaxTextures * i
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), SplatmapMaterial::TextureUnits::kMetallicRoughness0 + BasicMaterial::kMaxTextures * i
 			));
 
 			if (useMetallicRoughnessTexture) {
-				material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture->setTextureUnit(
-					SplatmapMaterial::TextureUnits::kMetallicRoughness0 + BasicMaterial::kMaxTextures * i
-				);
-				pass->addBindable(material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture);
+				TextureRef texture = material.materials[i].pbrMetallicRoughness.metallicRoughnessTexture;
+				texture->setTextureUnit(SplatmapMaterial::TextureUnits::kMetallicRoughness0 + BasicMaterial::kMaxTextures * i);
+				step->addResource(std::move(texture));
 			}
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].useNormalTexture";
-			bool useNormalTexture = material.materials[i].normalTexture != nullptr;
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, useNormalTexture
+			bool useNormalTexture = material.materials[i].normalTexture;
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), useNormalTexture
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].normalTexture";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				aStreambuf.data(), program, SplatmapMaterial::TextureUnits::kNormal0 + BasicMaterial::kMaxTextures * i
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
+				aStreambuf.data(), program.get(), SplatmapMaterial::TextureUnits::kNormal0 + BasicMaterial::kMaxTextures * i
 			));
 
 			aStreambuf = {};
 			std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].normalScale";
-			pass->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
-				aStreambuf.data(), program, material.materials[i].normalScale
+			step->addBindable(std::make_shared<graphics::UniformVariableValue<float>>(
+				aStreambuf.data(), program.get(), material.materials[i].normalScale
 			));
 
 			if (useNormalTexture) {
-				material.materials[i].normalTexture->setTextureUnit(
-					SplatmapMaterial::TextureUnits::kNormal0 + BasicMaterial::kMaxTextures * i
-				);
-				pass->addBindable(material.materials[i].normalTexture);
+				TextureRef texture = material.materials[i].normalTexture;
+				texture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormal0 + BasicMaterial::kMaxTextures * i);
+				step->addResource(std::move(texture));
 			}
 		}
 
-		material.splatmapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kSplatmap);
-		pass->addBindable(material.splatmapTexture)
+		TextureRef texture = material.splatmapTexture;
+		texture->setTextureUnit(SplatmapMaterial::TextureUnits::kSplatmap);
+		step->addResource(std::move(texture))
 			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>(
-				"uSMaterial.splatmapTexture", program, SplatmapMaterial::TextureUnits::kSplatmap
+				"uSMaterial.splatmapTexture", program.get(), SplatmapMaterial::TextureUnits::kSplatmap
 			));
 	}
 
 
-	void ShaderLoader::readSplatmapMaterialBindables(const PassSPtr pass, SplatmapMaterial& material)
+	void ShaderLoader::readSplatmapMaterialBindables(const StepRef& step, SplatmapMaterial& material)
 	{
-		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
-			if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
-				if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kSplatmap) {
-					material.splatmapTexture = texture;
-				}
-			}
-			else if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+		step->processBindables([&](const std::shared_ptr<graphics::Bindable>& bindable) {
+			if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
 				if (uniform->getName() == "uSMaterial.numMaterials") {
 					material.materials.resize(std::dynamic_pointer_cast<graphics::UniformVariableValue<int>>(uniform)->getValue());
 				}
 			}
 		});
 
-		pass->processBindables([&](std::shared_ptr<graphics::Bindable> bindable) {
-			for (int i = 0; i < static_cast<int>(material.materials.size()); ++i) {
-				if (auto texture = std::dynamic_pointer_cast<graphics::Texture>(bindable); texture) {
+		step->processTextures([&](const TextureRef& texture) {
+			if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kSplatmap) {
+				material.splatmapTexture = texture;
+			}
+			else {
+				for (int i = 0; i < static_cast<int>(material.materials.size()); ++i) {
 					if (texture->getTextureUnit() == SplatmapMaterial::TextureUnits::kBaseColor0 + BasicMaterial::kMaxTextures * i) {
 						material.materials[i].pbrMetallicRoughness.baseColorTexture = texture;
 					}
@@ -321,7 +340,12 @@ namespace se::app {
 						material.materials[i].normalTexture = texture;
 					}
 				}
-				else if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+			}
+		});
+
+		step->processBindables([&](const std::shared_ptr<graphics::Bindable>& bindable) {
+			if (auto uniform = std::dynamic_pointer_cast<graphics::IUniformVariable>(bindable); uniform) {
+				for (int i = 0; i < static_cast<int>(material.materials.size()); ++i) {
 					utils::ArrayStreambuf<char, 128> aStreambuf;
 					std::ostream(&aStreambuf) << "uSMaterial.materials[" << i << "].pbrMetallicRoughness.baseColorFactor";
 					if (uniform->getName() == aStreambuf.data()) {
@@ -356,23 +380,31 @@ namespace se::app {
 
 
 	void ShaderLoader::addHeightMapBindables(
-		PassSPtr pass, TextureSPtr heightMap, float size, float maxHeight, const ProgramSPtr program
+		StepRef step, const TextureRef& heightMap, float size, float maxHeight, const ProgramRef& program
 	) {
-		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMap, heightMap->getWidth(), heightMap->getHeight());
+		bool hasProgram = false;
+		step->processPrograms([&](const ProgramRef& program2) {
+			hasProgram |= (program == program2);
+		});
+		if (!hasProgram) {
+			step->addResource(program);
+		}
+
+		auto normalMapTexture = TextureUtils::heightmapToNormalMapLocal(heightMap.get(), heightMap->getWidth(), heightMap->getHeight());
 		normalMapTexture->setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap);
 
-		pass->addBindable(std::move(heightMap))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHeightMap", program, SplatmapMaterial::TextureUnits::kHeightMap))
+		step->addResource(std::move(heightMap))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uHeightMap", program.get(), SplatmapMaterial::TextureUnits::kHeightMap))
 			.addBindable(std::move(normalMapTexture))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormalMap", program, SplatmapMaterial::TextureUnits::kNormalMap))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>("uXZSize", program, size))
-			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>("uMaxHeight", program, maxHeight));
+			.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormalMap", program.get(), SplatmapMaterial::TextureUnits::kNormalMap))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>("uXZSize", program.get(), size))
+			.addBindable(std::make_shared<graphics::UniformVariableValue<float>>("uMaxHeight", program.get(), maxHeight));
 	}
 
 
 	Result ShaderLoader::createProgram(
 		const char* vertexShaderPath, const char* geometryShaderPath, const char* fragmentShaderPath,
-		ProgramSPtr& program
+		std::shared_ptr<graphics::Program>& program
 	) {
 		// 1. Read the shader text from the shader files
 		std::string vertexShaderText;

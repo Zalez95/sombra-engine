@@ -20,7 +20,7 @@ namespace se::app {
 	 * Class CameraSystem, it's the System used for updating the Entities'
 	 * view and projection matrices on their shadow shaders and the shadow
 	 * Renderers
-	 * @note	it will only update the uniforms of the Passes that use the
+	 * @note	it will only update the uniforms of the Steps that use the
 	 *			"shadowRenderer"
 	 */
 	class ShadowSystem : public ISystem

@@ -2,7 +2,7 @@
 #define TERRAIN_COMPONENT_H
 
 #include "../graphics/3D/RenderableTerrain.h"
-#include "RenderableShader.h"
+#include "graphics/RenderableShader.h"
 #include "events/EventManager.h"
 #include "Entity.h"
 
@@ -15,7 +15,7 @@ namespace se::app {
 	class TerrainComponent
 	{
 	private:	// Nested types
-		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
+		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
 
 	private:	// Attributes
 		/** The EventManager used for notifying the TerrainComponent changes */
@@ -28,7 +28,7 @@ namespace se::app {
 		graphics::RenderableTerrain mRenderableTerrain;
 
 		/** The shaders added to the TerrainComponent */
-		std::vector<RenderableShaderSPtr> mShaders;
+		std::vector<RenderableShaderRef> mShaders;
 
 	public:		// Functions
 		/** Creates a new TerrainComponent
@@ -57,7 +57,7 @@ namespace se::app {
 		/** Adds the given RenderableShader to the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
-		void addRenderableShader(const RenderableShaderSPtr& shader);
+		void addRenderableShader(const RenderableShaderRef& shader);
 
 		/** Iterates through all the RenderableShaders of the TerrainComponents
 		 * calling the given callback function
@@ -69,7 +69,7 @@ namespace se::app {
 		/** Removes the given RenderableShader from the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
-		void removeRenderableShader(const RenderableShaderSPtr& shader);
+		void removeRenderableShader(const RenderableShaderRef& shader);
 	};
 
 

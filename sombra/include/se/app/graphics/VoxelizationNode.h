@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include "../../graphics/3D/Renderer3D.h"
+#include "../../graphics/core/Program.h"
 #include "../Repository.h"
 
 namespace se::app {
@@ -31,6 +32,9 @@ namespace se::app {
 
 		/** The index of the 3D texture used for voxelizing the scene */
 		std::size_t mVoxelImage;
+
+		/** The program used by the VoxelizationNode */
+		Repository::ResourceRef<graphics::Program> mProgram;
 
 	public:		// Functions
 		/** Creates a new VoxelizationNode

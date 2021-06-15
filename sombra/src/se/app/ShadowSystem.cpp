@@ -10,7 +10,7 @@
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
 #include "se/app/CameraComponent.h"
-#include "se/app/IViewProjectionUpdater.h"
+#include "se/app/graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
 
@@ -47,11 +47,11 @@ namespace se::app {
 			return mParent->mShadows[mShadowIndex].camera.getProjectionMatrix();
 		};
 
-		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
+		virtual bool shouldAddUniforms(const RenderableShaderStepSPtr& step) const override
 		{
 			return std::find(
 					mParent->mShadows[mShadowIndex].renderers.begin(), mParent->mShadows[mShadowIndex].renderers.end(),
-					&pass->getRenderer()
+					&step->getPass()->getRenderer()
 				) != mParent->mShadows[mShadowIndex].renderers.end();
 		};
 	};
@@ -175,7 +175,7 @@ namespace se::app {
 			for (auto& shadow : mShadows) {
 				shadow.uniformUpdater->addRenderable(mesh->get(i));
 				mesh->processRenderableShaders(i, [&](const auto& shader) {
-					shadow.uniformUpdater->addRenderableShader(mesh->get(i), shader);
+					shadow.uniformUpdater->addRenderableShader(mesh->get(i), shader.get());
 				});
 			}
 		});
@@ -199,7 +199,7 @@ namespace se::app {
 		for (auto& shadow : mShadows) {
 			shadow.uniformUpdater->addRenderable(terrain->get());
 			terrain->processRenderableShaders([&](const auto& shader) {
-				shadow.uniformUpdater->addRenderableShader(terrain->get(), shader);
+				shadow.uniformUpdater->addRenderableShader(terrain->get(), shader.get());
 			});
 		}
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " added successfully";
@@ -311,12 +311,12 @@ namespace se::app {
 		switch (event.getOperation()) {
 			case ShaderEvent::Operation::Add:
 				for (auto& shadow : mShadows) {
-					shadow.uniformUpdater->onAddShaderPass(event.getShader(), event.getPass());
+					shadow.uniformUpdater->onAddShaderStep(event.getShader(), event.getStep());
 				}
 				break;
 			case ShaderEvent::Operation::Remove:
 				for (auto& shadow : mShadows) {
-					shadow.uniformUpdater->onRemoveShaderPass(event.getShader(), event.getPass());
+					shadow.uniformUpdater->onRemoveShaderStep(event.getShader(), event.getStep());
 				}
 				break;
 		}

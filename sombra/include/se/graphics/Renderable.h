@@ -39,7 +39,7 @@ namespace se::graphics {
 		 *
 		 * @param	technique a pointer to the Technique to add
 		 * @return	a reference to the current Renderable object */
-		Renderable& addTechnique(TechniqueSPtr technique);
+		Renderable& addTechnique(const TechniqueSPtr& technique);
 
 		/** Iterates through all the technique of the Renderable calling the
 		 * given callback function
@@ -52,7 +52,7 @@ namespace se::graphics {
 		 *
 		 * @param	technique a pointer to the Technique to remove
 		 * @return	a reference to the current Renderable object */
-		Renderable& removeTechnique(TechniqueSPtr technique);
+		Renderable& removeTechnique(const TechniqueSPtr& technique);
 
 		/** Submits the Renderable to its Techniques */
 		void submit();
