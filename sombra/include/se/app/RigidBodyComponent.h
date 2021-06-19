@@ -71,7 +71,7 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each Force */
 		template <typename F>
-		void processForces(F callback) const
+		void processForces(F&& callback) const
 		{
 			for (auto& force : mForces) {
 				callback(force);

@@ -71,7 +71,7 @@ namespace se::collision {
 		 *
 		 * @param	callback the function to call */
 		template <typename F>
-		void processParts(F callback) const
+		void processParts(F&& callback) const
 		{ for (const auto& part : mParts) { callback(*part); } }
 
 		/** Calls the given callback for each of the overlaping convex parts of

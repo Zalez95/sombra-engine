@@ -13,7 +13,7 @@ namespace game {
 
 	Game::Game() :
 		Application(
-			{ kTitle, kWidth, kHeight },
+			{ kTitle, kWidths[0], kHeights[0] },
 			{	kMaxManifolds, kMinFDifference, kMaxCollisionIterations,
 				kContactPrecision, kContactSeparation, kMaxRayCasterIterations
 			},

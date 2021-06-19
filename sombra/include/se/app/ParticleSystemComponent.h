@@ -180,7 +180,12 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each RenderableShader */
 		template <typename F>
-		void processRenderableShaders(F callback) const;
+		void processRenderableShaders(F&& callback) const
+		{
+			for (auto& shader : mShaders) {
+				callback(shader);
+			}
+		}
 
 		/** Removes the given RenderableShader from the ParticleSystemComponent
 		 *
@@ -212,15 +217,6 @@ namespace se::app {
 		 * @return	true if the Particle is still alive, false otherwise */
 		bool updateParticle(Particle& particle, float elapsedTime);
 	};
-
-
-	template <typename F>
-	void ParticleSystemComponent::processRenderableShaders(F callback) const
-	{
-		for (auto& shader : mShaders) {
-			callback(shader);
-		}
-	}
 
 }
 

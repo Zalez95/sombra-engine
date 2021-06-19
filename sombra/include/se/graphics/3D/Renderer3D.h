@@ -58,7 +58,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each Filter */
 		template <typename F>
-		void processFilters(F callback) const;
+		void processFilters(F&& callback) const;
 
 		/** Removes the given Filter from the Renderer3D
 		 *
@@ -81,7 +81,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Renderer3D::processFilters(F callback) const
+	void Renderer3D::processFilters(F&& callback) const
 	{
 		for (auto& filter : mFilters) {
 			callback(filter);

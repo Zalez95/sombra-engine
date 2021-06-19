@@ -42,6 +42,9 @@ namespace game {
 
 		/** Implements the VSync Buttons action */
 		void onVSync(ButtonOption option);
+
+		/** Implements the Resolution Buttons action */
+		void onResolution(ButtonOption option);
 	};
 
 }

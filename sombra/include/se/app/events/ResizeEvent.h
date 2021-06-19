@@ -6,30 +6,30 @@
 namespace se::app {
 
 	/**
-	 * Class ResizeEvent, its an event used for notifying of a window resize
-	 * by the InputManager
+	 * Class ResizeEvent, its a generic event used for notifying of a resize
 	 */
-	class ResizeEvent : public Event<Topic::Resize>
+	template <Topic t>
+	class ResizeEvent : public Event<t>
 	{
 	private:	// Attributes
-		/** The window width */
+		/** The new width */
 		double mWidth;
 
-		/** The window height */
+		/** The new height */
 		double mHeight;
 
 	public:		// Functions
 		/** Creates a new ResizeEvent
 		 *
-		 * @param	width the new window width
-		 * @param	height the new window height */
+		 * @param	width the new width
+		 * @param	height the new height */
 		ResizeEvent(double width, double height) :
 			mWidth(width), mHeight(height) {};
 
-		/** @return	the window width */
+		/** @return	the new width */
 		double getWidth() const { return mWidth; };
 
-		/** @return	the window height */
+		/** @return	the new height */
 		double getHeight() const { return mHeight; };
 
 		/** Sets the ResizeEvent width
@@ -49,10 +49,14 @@ namespace se::app {
 		 *			current ResizeEvent */
 		virtual void printTo(std::ostream& os) const override
 		{
-			os	<< "{ kTopic : " << kTopic
+			os	<< "{ kTopic : " << this->kTopic
 				<< ", mWidth : " << mWidth << ", mHeight : " << mHeight << " }";
 		};
 	};
+
+
+	using WindowResizeEvent = ResizeEvent<Topic::WindowResize>;
+	using RendererResolutionEvent = ResizeEvent<Topic::RendererResolution>;
 
 }
 

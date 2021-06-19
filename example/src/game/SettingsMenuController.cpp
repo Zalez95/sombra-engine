@@ -1,5 +1,6 @@
 #include <se/utils/Log.h>
 #include <se/window/WindowManager.h>
+#include <se/app/events/ResizeEvent.h>
 #include "SettingsMenuController.h"
 #include "SettingsMenuView.h"
 #include "Game.h"
@@ -52,6 +53,17 @@ namespace game {
 		else {
 			mView->setVSync(SettingsMenuView::SelectionLabel::Yes);
 			mGame.getExternalTools().windowManager->setVSync(true);
+		}
+	}
+
+
+	void SettingsMenuController::onResolution(ButtonOption option)
+	{
+		if (option == ButtonOption::Left) {
+			mGame.getEventManager().publish(new se::app::RendererResolutionEvent(kWidths[0], kHeights[0]));
+		}
+		else {
+			mGame.getEventManager().publish(new se::app::RendererResolutionEvent(kWidths[1], kHeights[1]));
 		}
 	}
 

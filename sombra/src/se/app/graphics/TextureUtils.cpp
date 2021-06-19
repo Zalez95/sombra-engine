@@ -61,8 +61,8 @@ namespace se::app {
 
 		// Create the RenderGraph
 		MyRenderGraph graph;
-		auto frameBufferOutput = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(graph.getNode("resources")->findOutput("frameBuffer"));
-		auto frameBuffer = std::dynamic_pointer_cast<graphics::FrameBuffer>(frameBufferOutput->getBindable());
+		auto resources = graph.getNode("resources");
+		auto frameBuffer = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(resources->findOutput("frameBuffer"))->getTBindable();
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
@@ -127,8 +127,8 @@ namespace se::app {
 
 		// Create the RenderGraph
 		MyRenderGraph graph;
-		auto frameBufferOutput = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(graph.getNode("resources")->findOutput("frameBuffer"));
-		auto frameBuffer = std::dynamic_pointer_cast<graphics::FrameBuffer>(frameBufferOutput->getBindable());
+		auto resources = graph.getNode("resources");
+		auto frameBuffer = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(resources->findOutput("frameBuffer"))->getTBindable();
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
@@ -193,8 +193,8 @@ namespace se::app {
 
 		// Create the RenderGraph
 		MyRenderGraph graph;
-		auto frameBufferOutput = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(graph.getNode("resources")->findOutput("frameBuffer"));
-		auto frameBuffer = std::dynamic_pointer_cast<graphics::FrameBuffer>(frameBufferOutput->getBindable());
+		auto resources = graph.getNode("resources");
+		auto frameBuffer = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(resources->findOutput("frameBuffer"))->getTBindable();
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size)
@@ -268,8 +268,8 @@ namespace se::app {
 
 		// Create the RenderGraph
 		MyRenderGraph graph;
-		auto frameBufferOutput = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(graph.getNode("resources")->findOutput("frameBuffer"));
-		auto frameBuffer = std::dynamic_pointer_cast<graphics::FrameBuffer>(frameBufferOutput->getBindable());
+		auto resources = graph.getNode("resources");
+		auto frameBuffer = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(resources->findOutput("frameBuffer"))->getTBindable();
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, size, size);
@@ -325,8 +325,8 @@ namespace se::app {
 
 		// Create the RenderGraph
 		MyRenderGraph graph;
-		auto frameBufferOutput = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(graph.getNode("resources")->findOutput("frameBuffer"));
-		auto frameBuffer = std::dynamic_pointer_cast<graphics::FrameBuffer>(frameBufferOutput->getBindable());
+		auto resources = graph.getNode("resources");
+		auto frameBuffer = dynamic_cast<graphics::BindableRNodeOutput<graphics::FrameBuffer>*>(resources->findOutput("frameBuffer"))->getTBindable();
 
 		auto depthTexture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		depthTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::Depth, graphics::ColorFormat::Depth24, width, height);

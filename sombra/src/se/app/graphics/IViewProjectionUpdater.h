@@ -3,9 +3,9 @@
 
 #include <unordered_map>
 #include <glm/glm.hpp>
-#include "../../graphics/Renderable.h"
-#include "../../graphics/core/UniformVariable.h"
-#include "RenderableShader.h"
+#include "se/graphics/Renderable.h"
+#include "se/graphics/core/UniformVariable.h"
+#include "se/app/graphics/RenderableShader.h"
 
 namespace se::app {
 

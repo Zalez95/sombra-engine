@@ -12,7 +12,7 @@ namespace se::app {
 		mApplication.getEventManager().subscribe(this, Topic::MouseMove);
 		mApplication.getEventManager().subscribe(this, Topic::MouseScroll);
 		mApplication.getEventManager().subscribe(this, Topic::MouseButton);
-		mApplication.getEventManager().subscribe(this, Topic::Resize);
+		mApplication.getEventManager().subscribe(this, Topic::WindowResize);
 
 		const auto& windowData = mApplication.getExternalTools().windowManager->getWindowData();
 		mUserInput.windowWidth = static_cast<float>(windowData.width);
@@ -22,7 +22,7 @@ namespace se::app {
 
 	ScriptSystem::~ScriptSystem()
 	{
-		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
+		mApplication.getEventManager().unsubscribe(this, Topic::WindowResize);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseButton);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseScroll);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseMove);
@@ -31,13 +31,13 @@ namespace se::app {
 	}
 
 
-	void ScriptSystem::notify(const IEvent& event)
+	bool ScriptSystem::notify(const IEvent& event)
 	{
-		tryCall(&ScriptSystem::onKeyEvent, event);
-		tryCall(&ScriptSystem::onMouseMoveEvent, event);
-		tryCall(&ScriptSystem::onMouseScrollEvent, event);
-		tryCall(&ScriptSystem::onMouseButtonEvent, event);
-		tryCall(&ScriptSystem::onResizeEvent, event);
+		return tryCall(&ScriptSystem::onKeyEvent, event)
+			|| tryCall(&ScriptSystem::onMouseMoveEvent, event)
+			|| tryCall(&ScriptSystem::onMouseScrollEvent, event)
+			|| tryCall(&ScriptSystem::onMouseButtonEvent, event)
+			|| tryCall(&ScriptSystem::onWindowResizeEvent, event);
 	}
 
 
@@ -97,7 +97,7 @@ namespace se::app {
 	}
 
 
-	void ScriptSystem::onResizeEvent(const ResizeEvent& event)
+	void ScriptSystem::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
 		mUserInput.windowWidth = static_cast<float>(event.getWidth());
 		mUserInput.windowHeight = static_cast<float>(event.getHeight());

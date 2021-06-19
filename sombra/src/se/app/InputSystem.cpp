@@ -68,15 +68,15 @@ namespace se::app {
 		windowManager.onResize([&](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) { return event->getTopic() == Topic::Resize; }
+				[](const IEvent* event) { return event->getTopic() == Topic::WindowResize; }
 			);
 			if (itEvent != mEventQueue.end()) {
-				auto event = static_cast<ResizeEvent*>(*itEvent);
+				auto event = static_cast<WindowResizeEvent*>(*itEvent);
 				event->setWidth(x);
 				event->setHeight(y);
 			}
 			else {
-				mEventQueue.push_back(new ResizeEvent(x, y));
+				mEventQueue.push_back(new WindowResizeEvent(x, y));
 			}
 		});
 
@@ -103,12 +103,6 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "InputSystem updated";
-	}
-
-
-	void InputSystem::notify(const IEvent& event)
-	{
-		tryCall(&InputSystem::onSetMousePosEvent, event);
 	}
 
 // Private functions

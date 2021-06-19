@@ -146,7 +146,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call */
 		template <typename F>
-		void iterateInputs(F callback);
+		void iterateInputs(F&& callback);
 
 		/** Searchs a RNodeInput with the same name than the given one
 		 *
@@ -165,7 +165,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call */
 		template <typename F>
-		void iterateOutputs(F callback);
+		void iterateOutputs(F&& callback);
 
 		/** Searchs a RNodeOutput with the same name than the given one
 		 *
@@ -176,7 +176,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void RenderNode::iterateInputs(F callback)
+	void RenderNode::iterateInputs(F&& callback)
 	{
 		for (auto& input : mInputs) {
 			callback(*input);
@@ -185,7 +185,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void RenderNode::iterateOutputs(F callback)
+	void RenderNode::iterateOutputs(F&& callback)
 	{
 		for (auto& output : mOutputs) {
 			callback(*output);

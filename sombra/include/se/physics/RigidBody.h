@@ -181,7 +181,7 @@ namespace se::physics {
 		 *
 		 * @param	callback the function to call for each Force */
 		template <typename F>
-		void processForces(F callback) const;
+		void processForces(F&& callback) const;
 
 		/** Removes the given Force from the RigidBody
 		 *
@@ -211,7 +211,7 @@ namespace se::physics {
 
 
 	template <typename F>
-	void RigidBody::processForces(F callback) const
+	void RigidBody::processForces(F&& callback) const
 	{
 		for (auto& force : mForces) {
 			callback(force);

@@ -235,9 +235,9 @@ namespace editor {
 	}
 
 
-	void Editor::notify(const se::app::IEvent& event)
+	bool Editor::notify(const se::app::IEvent& event)
 	{
-		tryCall(&Editor::onCloseEvent, event);
+		return tryCall(&Editor::onCloseEvent, event);
 	}
 
 // Private functions

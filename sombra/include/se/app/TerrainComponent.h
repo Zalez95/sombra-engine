@@ -64,7 +64,7 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each RenderableShader */
 		template <typename F>
-		void processRenderableShaders(F callback) const;
+		void processRenderableShaders(F&& callback) const;
 
 		/** Removes the given RenderableShader from the TerrainComponent
 		 *
@@ -74,7 +74,7 @@ namespace se::app {
 
 
 	template <typename F>
-	void TerrainComponent::processRenderableShaders(F callback) const
+	void TerrainComponent::processRenderableShaders(F&& callback) const
 	{
 		for (auto& shader : mShaders) {
 			callback(shader);

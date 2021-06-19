@@ -9,8 +9,8 @@
 namespace game {
 
 	static constexpr char kTitle[]							= "< SOMBRA >";
-	static constexpr unsigned int kWidth					= 1280;
-	static constexpr unsigned int kHeight					= 720;
+	static constexpr unsigned int kWidths[]					= { 1280, 1920 };
+	static constexpr unsigned int kHeights[]				= { 720, 1080 };
 	static constexpr std::size_t kMaxManifolds				= 128;
 	static constexpr float kMinFDifference					= 0.00001f;
 	static constexpr std::size_t kMaxCollisionIterations	= 128;

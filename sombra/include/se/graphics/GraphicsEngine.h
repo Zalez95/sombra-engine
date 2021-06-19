@@ -32,6 +32,13 @@ namespace se::graphics {
 		/** @return	the RenderGraph of the GraphicsEngine */
 		RenderGraph& getRenderGraph() { return *mRenderGraph; };
 
+		/** Sets the RenderGraph used for drawing the Renderables
+		 *
+		 * @param	renderGraph a pointer to the new RenderGraph of the
+		 *			GraphicsEngine */
+		void setRenderGraph(std::unique_ptr<RenderGraph> renderGraph)
+		{ mRenderGraph = std::move(renderGraph); };
+
 		/** Adds the given Renderable to the GraphicsEngine so it will be
 		 * rendered
 		 *

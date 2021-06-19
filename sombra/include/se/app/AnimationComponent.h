@@ -83,7 +83,7 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each SkeletonAnimator */
 		template <typename F>
-		void processSAnimators(F callback) const
+		void processSAnimators(F&& callback) const
 		{
 			for (auto& sAnimator : mSAnimators) {
 				callback(sAnimator);

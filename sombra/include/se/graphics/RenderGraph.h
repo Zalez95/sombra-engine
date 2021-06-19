@@ -50,7 +50,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each RenderNode */
 		template <typename F>
-		void processNodes(F callback) const;
+		void processNodes(F&& callback) const;
 
 		/** Removes the given RenderNode from the RenderGraph
 		 *
@@ -81,7 +81,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void RenderGraph::processNodes(F callback) const
+	void RenderGraph::processNodes(F&& callback) const
 	{
 		for (auto& node : mRenderNodes) {
 			callback(node.get());

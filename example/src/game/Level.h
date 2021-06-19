@@ -52,10 +52,8 @@ namespace game {
 		/** @return	the player Entity of the Level */
 		se::app::Entity getPlayer() const { return mPlayerEntity; };
 
-		/** Notifies the Level of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const se::app::IEvent& event) override;
+		/** @copydoc IEventListener::notify(const IEvent&) */
+		virtual bool notify(const se::app::IEvent& event) override;
 
 		/** Makes the Level handle the input or not
 		 *

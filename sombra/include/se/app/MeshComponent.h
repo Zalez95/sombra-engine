@@ -109,7 +109,14 @@ namespace se::app {
 		 * @param	callback the function to call for each RenderableMesh
 		 *			index */
 		template <typename F>
-		void processRenderableIndices(F callback) const;
+		void processRenderableIndices(F&& callback) const
+		{
+			for (std::size_t i = 0; i < mRMeshes.size(); ++i) {
+				if (mRMeshes[i].active) {
+					callback(i);
+				}
+			}
+		}
 
 		/** Removes the selected RenderableMesh
 		 *
@@ -130,7 +137,12 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to process
 		 * @param	callback the function to call for each RenderableShader */
 		template <typename F>
-		void processRenderableShaders(std::size_t rIndex, F callback) const;
+		void processRenderableShaders(std::size_t rIndex, F&& callback) const
+		{
+			for (auto& shader : mRMeshes[rIndex].shaders) {
+				callback(shader);
+			}
+		}
 
 		/** Removes the given RenderableShader from the selected RenderableMesh
 		 *
@@ -140,28 +152,6 @@ namespace se::app {
 			std::size_t rIndex, const RenderableShaderRef& shader
 		);
 	};
-
-
-	template <typename F>
-	void MeshComponent::processRenderableIndices(F callback) const
-	{
-		for (std::size_t i = 0; i < mRMeshes.size(); ++i) {
-			if (mRMeshes[i].active) {
-				callback(i);
-			}
-		}
-	}
-
-
-	template <typename F>
-	void MeshComponent::processRenderableShaders(
-		std::size_t rIndex, F callback
-	) const
-	{
-		for (auto& shader : mRMeshes[rIndex].shaders) {
-			callback(shader);
-		}
-	}
 
 }
 

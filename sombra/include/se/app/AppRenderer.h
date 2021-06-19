@@ -2,9 +2,7 @@
 #define APP_RENDERER_H
 
 #include <glm/glm.hpp>
-#include "../graphics/GraphicsEngine.h"
 #include "../graphics/core/Texture.h"
-#include "../graphics/3D/RenderableMesh.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
 #include "graphics/DeferredLightRenderer.h"
@@ -45,17 +43,11 @@ namespace se::app {
 		/** A pointer to the renderer used for deferred lighting */
 		DeferredLightRenderer* mDeferredLightRenderer;
 
-		/** A pointer to the resources node of the render graph */
-		graphics::BindableRenderNode* mResources;
+		/** A pointer to the last irradiance Texture */
+		graphics::Texture* mLastIrradianceTexture;
 
-		/** The configuration used for rendering the shadows */
-		ShadowData mShadowData;
-
-		/** The bindable index of the irradiance Texture to render with */
-		std::size_t mIrradianceTextureResource;
-
-		/** The bindable index of the prefilter Texture to render with */
-		std::size_t mPrefilterTextureResource;
+		/** A pointer to the last prefilter Texture */
+		graphics::Texture* mLastPrefilterTexture;
 
 		/** The light source Entity used for shadow mapping */
 		Entity mShadowEntity;
@@ -82,7 +74,7 @@ namespace se::app {
 		~AppRenderer();
 
 		/** @copydoc ISystem::notify(const IEvent&) */
-		virtual void notify(const IEvent& event) override;
+		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onNewComponent(
@@ -134,136 +126,23 @@ namespace se::app {
 		 *			removed */
 		void onRemoveLightProbe(Entity entity, LightProbe* lightProbe);
 
-		/** Adds shared resources to the RenderGraph resource node
-		 *
-		 * @param	width the initial width of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @param	height the initial height of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @return	true if the resources were added succesfully,
-		 *			false otherwise */
-		virtual bool addResources(std::size_t width, std::size_t height);
-
-		/** Adds nodes to the RenderGraph and links them. It will add:
-		 *  - "renderer2D" - renders Renderable2Ds
-		 *  - the renderers of @see addShadowRenderers,
-		 *    @see addDeferredRenderers and @see addForwardRenderers
-		 *
-		 * @param	width the initial width of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @param	height the initial height of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @return	true if the nodes were added and linked succesfully,
-		 *			false otherwise */
-		virtual bool addNodes(std::size_t width, std::size_t height);
-
-		/** Creates the Renderer3Ds used for rendering shadows with the names
-		 *	"shadowRendererMesh" - renders RenderableMeshes
-		 *	"shadowRendererTerrain" - renders RenderableTerrains
-		 * The nodes and connections that will be added to the graph looks like
-		 * the following (the resource node already exists):
-		 *
-		 *  [    "resources"    ]                   |attach
-		 *     |shadowBuffer  |shadowTexture   ["startShadow"]
-		 *     |              |                     |attach
-		 *     |input         |                     |
-		 *  ["shadowFBClear"] |           __________|
-		 *     |output        |          |
-		 *     |              |          |
-		 *     |target        |shadow    |attach
-		 *  [    "shadowRendererTerrain"    ]
-		 *     |target        |shadow
-		 *     |              |
-		 *     |target        |shadow
-		 *  [    "shadowRendererMesh"    ]
-		 *     |target        |shadow  |attach
-		 *     |              |        |
-		 *     |              |        |attach
-		 *     |              |   ["endShadow"]
-		 *     |              |        |attach
-		 *
-		 * @note	Any node that should be executed prior to the shadow
-		 *			Renderer3Ds must be attached to the "startShadow" "input"
-		 *			and any node that should be executed after them should be
-		 *			attached to the "endShadow" "output"
-		 *
-		 * @param	renderGraph the RenderGraph where the nodes will be added
-		 * @param	width the initial width of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @param	height the initial height of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @return	true if the nodes where added successfully, false
-		 *			otherwise */
-		bool addShadowRenderers(
-			graphics::RenderGraph& renderGraph,
-			std::size_t width, std::size_t height
-		);
-
-		/** Creates a deferred renderer with the following GBuffer Renderer3Ds:
-		 *	"gBufferRendererTerrain" - renders RenderableTerrains
-		 *	"gBufferRendererMesh" - renders RenderableMeshes
-		 *	"gBufferRendererParticles" - renders ParticleSystems
-		 * The nodes and connections that will be added to the graph looks like
-		 * the following (the resource node already exists):
-		 *
-		 *  [                            "resources"                        ]
-		 *   |gBuffer  |deferredBuffer             |positionTexture
-		 *    \        |________________           |
-		 *    |input                    |           |
-		 *  ["gFBClear"]                |           |
-		 *    |output                   |           |
-		 *    |                         | ["texUnitNodePosition"]
-		 *    |target                   |           |
-		 *  ["gBufferRendererTerrain"]  |           |
-		 *    |target                   |           |
-		 *    |                         |           |
-		 *    |target                   |           |
-		 *  ["gBufferRendererMesh"]     |           |
-		 *    |target                   |           |
-		 *    |                         |           |
-		 *    |target                   |           |
-		 *  ["gBufferRendererParticles"]|           |
-		 *    |target |attach___________|           |___________________
-		 *    |    ___|    /                                           |
-		 *    |   |attach |target |irradiance |prefilter |brdf |shadow |position
-		 *    |  [                "deferredLightRenderer"                ]
-		 *    |                             |target
-		 *
-		 * @note	where position appears, there will be also similar nodes
-		 *			and connections for the normal, albedo, material
-		 *			and emissive textures
-		 *
-		 * @param	renderGraph the RenderGraph where the nodes will be added
-		 * @return	true if the nodes where added successfully, false
-		 *			otherwise */
-		bool addDeferredRenderers(graphics::RenderGraph& renderGraph);
-
-		/** Creates the following forward renderers and adds them to the given
-		 * RenderGraph:
-		 *	"forwardRendererMesh" - renders RenderableMeshes
-		 * The nodes and connections that will be added to the graph looks like
-		 * the following (the resource node already exists):
-		 *
-		 *    |target  |irradiance  |prefilter  |brdf  |shadow  |color  |bright
-		 *  [                    "forwardRendererMesh"                    ]
-		 *                 |target      |color      |bright
-		 *
-		 * @param	renderGraph the RenderGraph where the nodes will be added
-		 * @return	true if the nodes where added successfully, false
-		 *			otherwise */
-		bool addForwardRenderers(graphics::RenderGraph& renderGraph);
-
 		/** Handles the given ContainerEvent by updating the Shadow Entity with
 		 * which the shadow will be rendered
 		 *
 		 * @param	event the ContainerEvent to handle */
 		void onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event);
 
-		/** Handles the given ResizeEvent by notifying the GraphicsEngine of
-		 * the window resize
+		/** Handles the given WindowResizeEvent by notifying the GraphicsEngine
+		 * of the window resize
 		 *
-		 * @param	event the ResizeEvent to handle */
-		void onResizeEvent(const ResizeEvent& event);
+		 * @param	event the WindowResizeEvent to handle */
+		void onWindowResizeEvent(const WindowResizeEvent& event);
+
+		/** Handles the given RendererResolutionEvent by notifying the
+		 * GraphicsEngine of a change in the renderer resolution
+		 *
+		 * @param	event the RendererResolutionEvent to handle */
+		void onRendererResolutionEvent(const RendererResolutionEvent& event);
 	};
 
 }

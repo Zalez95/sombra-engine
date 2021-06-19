@@ -8,22 +8,23 @@ namespace se::app {
 	/** The different Topics that an IEvent can have */
 	enum class Topic : int
 	{
-		Close = 0,		// Notifies window close button pressed
-		MouseMove,		// Notifies mouse movement input events
-		SetMousePos,	// Changes the mouse location
-		MouseScroll,	// Notifies mouse scroll input events
-		MouseButton,	// Notifies mouse button input events
-		Resize,			// Notifies Window resize input events
-		Key,			// Notifies Keyboard input events
-		TextInput,		// Notifies new input code points
-		Collision,		// Notifies collision detection events
-		Camera,			// Camera change events
-		Shadow,			// Shadow LightSource change events
-		RMesh,			// MeshComponent RMesh add/remove
-		RShader,		// Renderable shader update
-		Shader,			// Shader change
-		Application,	// Reserved for client code events
-		NumTopics		// Total number of events
+		Close = 0,			///< Notifies window close button pressed
+		MouseMove,			///< Notifies mouse movement input events
+		SetMousePos,		///< Changes the mouse location
+		MouseScroll,		///< Notifies mouse scroll input events
+		MouseButton,		///< Notifies mouse button input events
+		WindowResize,		///< Notifies Window resize input events
+		RendererResolution,	///< Notifies Renderer framebuffer resize events
+		Key,				///< Notifies Keyboard input events
+		TextInput,			///< Notifies new input code points
+		Collision,			///< Notifies collision detection events
+		Camera,				///< Camera change events
+		Shadow,				///< Shadow LightSource change events
+		RMesh,				///< MeshComponent RMesh add/remove
+		RShader,			///< Renderable shader update
+		Shader,				///< Shader change
+		Application,		///< Reserved for client code events
+		NumTopics			///< Total number of events
 	};
 
 
@@ -35,22 +36,23 @@ namespace se::app {
 	constexpr std::ostream& operator<<(std::ostream& os, const Topic& t)
 	{
 		switch (t) {
-			case Topic::Close:			return os << "Topic::Close";
-			case Topic::MouseMove:		return os << "Topic::MouseMove";
-			case Topic::SetMousePos:	return os << "Topic::SetMousePos";
-			case Topic::MouseScroll:	return os << "Topic::MouseScroll";
-			case Topic::MouseButton:	return os << "Topic::MouseButton";
-			case Topic::Resize:			return os << "Topic::Resize";
-			case Topic::Key:			return os << "Topic::Key";
-			case Topic::TextInput:		return os << "Topic::TextInput";
-			case Topic::Collision:		return os << "Topic::Collision";
-			case Topic::Camera:			return os << "Topic::Camera";
-			case Topic::Shadow:			return os << "Topic::Shadow";
-			case Topic::RMesh:			return os << "Topic::RMesh";
-			case Topic::RShader:		return os << "Topic::RShader";
-			case Topic::Shader:			return os << "Topic::Shader";
-			case Topic::Application:	return os << "Topic::Application";
-			default:					return os;
+			case Topic::Close:				return os << "Topic::Close";
+			case Topic::MouseMove:			return os << "Topic::MouseMove";
+			case Topic::SetMousePos:		return os << "Topic::SetMousePos";
+			case Topic::MouseScroll:		return os << "Topic::MouseScroll";
+			case Topic::MouseButton:		return os << "Topic::MouseButton";
+			case Topic::WindowResize:		return os << "Topic::WindowResize";
+			case Topic::RendererResolution:	return os << "Topic::RendererResolution";
+			case Topic::Key:				return os << "Topic::Key";
+			case Topic::TextInput:			return os << "Topic::TextInput";
+			case Topic::Collision:			return os << "Topic::Collision";
+			case Topic::Camera:				return os << "Topic::Camera";
+			case Topic::Shadow:				return os << "Topic::Shadow";
+			case Topic::RMesh:				return os << "Topic::RMesh";
+			case Topic::RShader:			return os << "Topic::RShader";
+			case Topic::Shader:				return os << "Topic::Shader";
+			case Topic::Application:		return os << "Topic::Application";
+			default:						return os;
 		}
 	}
 

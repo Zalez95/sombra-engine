@@ -32,11 +32,11 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::notify(const IEvent& event)
+	bool TerrainSystem::notify(const IEvent& event)
 	{
-		tryCall(&TerrainSystem::onCameraEvent, event);
-		tryCall(&TerrainSystem::onRenderableShaderEvent, event);
-		tryCall(&TerrainSystem::onShaderEvent, event);
+		return tryCall(&TerrainSystem::onCameraEvent, event)
+			|| tryCall(&TerrainSystem::onRenderableShaderEvent, event)
+			|| tryCall(&TerrainSystem::onShaderEvent, event);
 	}
 
 

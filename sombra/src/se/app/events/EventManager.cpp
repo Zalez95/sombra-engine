@@ -39,7 +39,10 @@ namespace se::app {
 		if (event) {
 			Topic topic = event->getTopic();
 			for (IEventListener* listener : mListenersPerTopic[static_cast<int>(topic)]) {
-				listener->notify(*event);
+				if (!listener->notify(*event)) {
+					SOMBRA_WARN_LOG << "IEventListener " << listener << " is subscribed to " << topic
+						<< " but doesn't handle it's events";
+				}
 			}
 			delete event;
 		}

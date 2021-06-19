@@ -78,8 +78,12 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each AnimationNode */
 		template <typename F>
-		void processNodes(F callback) const
-		{ for (const auto& pair : mJointIndices) { callback(*pair.first); } }
+		void processNodes(F&& callback) const
+		{
+			for (const auto& pair : mJointIndices) {
+				callback(*pair.first);
+			}
+		}
 
 		/** Creates a new SkinComponent from the current one
 		 *

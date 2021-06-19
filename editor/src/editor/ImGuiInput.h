@@ -29,10 +29,8 @@ namespace editor {
 		/** Class destructor */
 		~ImGuiInput();
 
-		/** Notifies the ImGuiInput of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const se::app::IEvent& event) override;
+		/** @copydoc IEventListener::notify(const IEvent&) */
+		virtual bool notify(const se::app::IEvent& event) override;
 	private:
 		/** Handles the given event
 		 *
@@ -61,8 +59,8 @@ namespace editor {
 
 		/** Handles the given event
 		 *
-		 * @param	event the ResizeEvent to handle */
-		void onResizeEvent(const se::app::ResizeEvent& event);
+		 * @param	event the WindowResizeEvent to handle */
+		void onWindowResizeEvent(const se::app::WindowResizeEvent& event);
 	};
 
 }

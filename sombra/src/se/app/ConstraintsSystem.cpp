@@ -36,9 +36,9 @@ namespace se::app {
 	}
 
 
-	void ConstraintsSystem::notify(const IEvent& event)
+	bool ConstraintsSystem::notify(const IEvent& event)
 	{
-		tryCall(&ConstraintsSystem::onCollisionEvent, event);
+		return tryCall(&ConstraintsSystem::onCollisionEvent, event);
 	}
 
 

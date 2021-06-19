@@ -98,7 +98,7 @@ namespace se::physics {
 		 *
 		 * @param	callback the function to call for each Constraint */
 		template <typename F>
-		void processConstraints(F callback) const;
+		void processConstraints(F&& callback) const;
 
 		/** Removes the given Constraint from the ConstraintManager, so the
 		 * movement of the RigidBodies that it holds won't longer be
@@ -113,7 +113,7 @@ namespace se::physics {
 		 *
 		 * @param	callback the function to call for each RigidBody */
 		template <typename F>
-		void processRigidBodies(F callback) const;
+		void processRigidBodies(F&& callback) const;
 
 		/** Iterates through all the Constraints of the ConstraintManager that
 		 * containts the given RigidBody calling the given callback function
@@ -123,7 +123,7 @@ namespace se::physics {
 		 * @param	callback the function to call for each RigidBody */
 		template <typename F>
 		void processRigidBodyConstraints(
-			RigidBody* rigidBody, F callback
+			RigidBody* rigidBody, F&& callback
 		) const;
 
 		/** Removes all the Constraints that constains the given RigidBody
@@ -228,7 +228,7 @@ namespace se::physics {
 
 
 	template <typename F>
-	void ConstraintManager::processConstraints(F callback) const
+	void ConstraintManager::processConstraints(F&& callback) const
 	{
 		for (Constraint* constraint : mConstraints) {
 			callback(*constraint);
@@ -237,7 +237,7 @@ namespace se::physics {
 
 
 	template <typename F>
-	void ConstraintManager::processRigidBodies(F callback) const
+	void ConstraintManager::processRigidBodies(F&& callback) const
 	{
 		for (RigidBody* rigidBody : mRigidBodies) {
 			callback(*rigidBody);
@@ -247,7 +247,7 @@ namespace se::physics {
 
 	template <typename F>
 	void ConstraintManager::processRigidBodyConstraints(
-		RigidBody* rigidBody, F callback
+		RigidBody* rigidBody, F&& callback
 	) const
 	{
 		bool found = false;

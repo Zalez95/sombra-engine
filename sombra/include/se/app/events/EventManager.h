@@ -22,22 +22,26 @@ namespace se::app
 		/** Notifies the IEventListener of the given event
 		 *
 		 * @param	event the IEvent to notify
-		 * @note	you must not send events from code that handles them, nor
-		 *			remove/add listeners to the manager */
-		virtual void notify(const IEvent& event) = 0;
+		 * @return	true if the event was handled, false otherwise
+		 * @note	you must not remove/add listeners to the manager from code
+		 *			that handles events */
+		virtual bool notify(const IEvent& event) = 0;
 	protected:
 		/** Tries to call the given event handler function with the correct
 		 * event type
 		 *
 		 * @param	eventHandler a pointer to the function to call
-		 * @param	event the IEvent to call the function with */
+		 * @param	event the IEvent to call the function with
+		 * @return	true if the event was handled, false otherwise */
 		template <typename C, typename E>
-		void tryCall(void(C::*eventHandler)(const E&), const IEvent& event)
+		bool tryCall(void(C::*eventHandler)(const E&), const IEvent& event)
 		{
 			if (event.getTopic() == E::kTopic) {
 				C* thisC = static_cast<C*>(this);
 				(thisC->*eventHandler)( static_cast<const E&>(event) );
+				return true;
 			}
+			return false;
 		}
 	};
 

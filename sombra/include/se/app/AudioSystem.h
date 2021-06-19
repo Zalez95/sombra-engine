@@ -35,8 +35,8 @@ namespace se::app {
 		~AudioSystem();
 
 		/** @copydoc ISystem::notify(const IEvent&) */
-		virtual void notify(const IEvent& event) override
-		{ tryCall(&AudioSystem::onCameraEvent, event); };
+		virtual bool notify(const IEvent& event) override
+		{ return tryCall(&AudioSystem::onCameraEvent, event); };
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onNewComponent(

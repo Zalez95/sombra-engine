@@ -86,7 +86,7 @@ namespace se::app {
 		~ConstraintsSystem();
 
 		/** @copydoc ISystem::notify(const IEvent&) */
-		virtual void notify(const IEvent& event) override;
+		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onNewComponent(

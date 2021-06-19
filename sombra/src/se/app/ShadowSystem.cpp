@@ -10,7 +10,7 @@
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
 #include "se/app/CameraComponent.h"
-#include "se/app/graphics/IViewProjectionUpdater.h"
+#include "graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
 
@@ -104,12 +104,12 @@ namespace se::app {
 	}
 
 
-	void ShadowSystem::notify(const IEvent& event)
+	bool ShadowSystem::notify(const IEvent& event)
 	{
-		tryCall(&ShadowSystem::onShadowEvent, event);
-		tryCall(&ShadowSystem::onRMeshEvent, event);
-		tryCall(&ShadowSystem::onRenderableShaderEvent, event);
-		tryCall(&ShadowSystem::onShaderEvent, event);
+		return tryCall(&ShadowSystem::onShadowEvent, event)
+			|| tryCall(&ShadowSystem::onRMeshEvent, event)
+			|| tryCall(&ShadowSystem::onRenderableShaderEvent, event)
+			|| tryCall(&ShadowSystem::onShaderEvent, event);
 	}
 
 

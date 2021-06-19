@@ -76,6 +76,10 @@ namespace se::graphics {
 		/** @copydoc BindableRNodeConnector::getBindable() */
 		virtual BindableSPtr getBindable() const override;
 
+		/** @return	a pointer to the typed Bindable resource */
+		std::shared_ptr<T> getTBindable() const
+		{ return std::dynamic_pointer_cast<T>(getBindable()); };
+
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;
 
@@ -113,6 +117,10 @@ namespace se::graphics {
 
 		/** @copydoc BindableRNodeConnector::getBindable() */
 		virtual BindableSPtr getBindable() const override;
+
+		/** @return	a pointer to the typed Bindable resource */
+		std::shared_ptr<T> getTBindable() const
+		{ return std::dynamic_pointer_cast<T>(getBindable()); };
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;

@@ -334,7 +334,7 @@ namespace se::app {
 		virtual ~ISystem() = default;
 
 		/** @copydoc IEventListener::notify(const IEvent&) */
-		virtual void notify(const IEvent& /*event*/) override {};
+		virtual bool notify(const IEvent& /*event*/) override { return false; };
 
 		/** Function that the EntityDatabase will call when an Entity Component
 		 * is added

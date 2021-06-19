@@ -32,11 +32,11 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::notify(const IEvent& event)
+	bool MeshSystem::notify(const IEvent& event)
 	{
-		tryCall(&MeshSystem::onRMeshEvent, event);
-		tryCall(&MeshSystem::onRenderableShaderEvent, event);
-		tryCall(&MeshSystem::onShaderEvent, event);
+		return tryCall(&MeshSystem::onRMeshEvent, event)
+			|| tryCall(&MeshSystem::onRenderableShaderEvent, event)
+			|| tryCall(&MeshSystem::onShaderEvent, event);
 	}
 
 

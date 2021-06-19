@@ -5,7 +5,7 @@
 #include "se/app/Application.h"
 #include "se/app/ECS.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/graphics/IViewProjectionUpdater.h"
+#include "IViewProjectionUpdater.h"
 
 namespace se::app {
 

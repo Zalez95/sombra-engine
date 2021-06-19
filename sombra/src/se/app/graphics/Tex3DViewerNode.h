@@ -2,10 +2,10 @@
 #define TEX3D_VIEWER_NODE_H
 
 #include <glm/glm.hpp>
-#include "../../graphics/BindableRenderNode.h"
-#include "../../graphics/core/Program.h"
-#include "../../graphics/3D/Mesh.h"
-#include "../Repository.h"
+#include "se/graphics/BindableRenderNode.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/3D/Mesh.h"
+#include "se/app/Repository.h"
 
 namespace se::app {
 

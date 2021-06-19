@@ -79,15 +79,13 @@ namespace se::app {
 		 * @param	component a pointer to the IComponent to remove */
 		void remove(IComponent* component);
 
-		/** Notifies the GUIManager of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const IEvent& event) override;
+		/** @copydoc IEventListener::notify(const IEvent&) */
+		virtual bool notify(const IEvent& event) override;
 	private:
 		/** Handles the given event by updating the GUI size
 		 *
-		 * @param	event the ResizeEvent to handle */
-		void onResizeEvent(const ResizeEvent& event);
+		 * @param	event the WindowResizeEvent to handle */
+		void onWindowResizeEvent(const WindowResizeEvent& event);
 
 		/** Handles the given event by dispatching it to the IComponents
 		 * added to the GUIManager

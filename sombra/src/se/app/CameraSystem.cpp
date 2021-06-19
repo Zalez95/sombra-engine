@@ -9,7 +9,7 @@
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
 #include "se/app/ParticleSystemComponent.h"
-#include "se/app/graphics/IViewProjectionUpdater.h"
+#include "graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
 
@@ -97,12 +97,12 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::notify(const IEvent& event)
+	bool CameraSystem::notify(const IEvent& event)
 	{
-		tryCall(&CameraSystem::onCameraEvent, event);
-		tryCall(&CameraSystem::onRMeshEvent, event);
-		tryCall(&CameraSystem::onRenderableShaderEvent, event);
-		tryCall(&CameraSystem::onShaderEvent, event);
+		return tryCall(&CameraSystem::onCameraEvent, event)
+			|| tryCall(&CameraSystem::onRMeshEvent, event)
+			|| tryCall(&CameraSystem::onRenderableShaderEvent, event)
+			|| tryCall(&CameraSystem::onShaderEvent, event);
 	}
 
 

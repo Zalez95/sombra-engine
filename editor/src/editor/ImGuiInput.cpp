@@ -12,7 +12,7 @@ namespace editor {
 		mEventManager.subscribe(this, se::app::Topic::MouseMove);
 		mEventManager.subscribe(this, se::app::Topic::MouseScroll);
 		mEventManager.subscribe(this, se::app::Topic::MouseButton);
-		mEventManager.subscribe(this, se::app::Topic::Resize);
+		mEventManager.subscribe(this, se::app::Topic::WindowResize);
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.KeyMap[ImGuiKey_Tab] = SE_KEY_TAB;
@@ -41,7 +41,7 @@ namespace editor {
 
 	ImGuiInput::~ImGuiInput()
 	{
-		mEventManager.unsubscribe(this, se::app::Topic::Resize);
+		mEventManager.unsubscribe(this, se::app::Topic::WindowResize);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseButton);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseScroll);
 		mEventManager.unsubscribe(this, se::app::Topic::MouseMove);
@@ -50,14 +50,14 @@ namespace editor {
 	}
 
 
-	void ImGuiInput::notify(const se::app::IEvent& event)
+	bool ImGuiInput::notify(const se::app::IEvent& event)
 	{
-		tryCall(&ImGuiInput::onKeyEvent, event);
-		tryCall(&ImGuiInput::onTextInputEvent, event);
-		tryCall(&ImGuiInput::onMouseMoveEvent, event);
-		tryCall(&ImGuiInput::onMouseScrollEvent, event);
-		tryCall(&ImGuiInput::onMouseButtonEvent, event);
-		tryCall(&ImGuiInput::onResizeEvent, event);
+		return tryCall(&ImGuiInput::onKeyEvent, event)
+			|| tryCall(&ImGuiInput::onTextInputEvent, event)
+			|| tryCall(&ImGuiInput::onMouseMoveEvent, event)
+			|| tryCall(&ImGuiInput::onMouseScrollEvent, event)
+			|| tryCall(&ImGuiInput::onMouseButtonEvent, event)
+			|| tryCall(&ImGuiInput::onWindowResizeEvent, event);
 	}
 
 // Private functions
@@ -117,10 +117,11 @@ namespace editor {
 	}
 
 
-	void ImGuiInput::onResizeEvent(const se::app::ResizeEvent& event)
+	void ImGuiInput::onWindowResizeEvent(const se::app::WindowResizeEvent& event)
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		io.DisplaySize = ImVec2(static_cast<float>(event.getWidth()), static_cast<float>(event.getHeight()));
+		mEventManager.publish(new se::app::RendererResolutionEvent(event.getWidth(), event.getHeight()));
 	}
 
 }

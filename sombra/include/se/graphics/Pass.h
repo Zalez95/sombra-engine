@@ -57,7 +57,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each Bindable */
 		template <typename F>
-		void processBindables(F callback) const;
+		void processBindables(F&& callback) const;
 
 		/** Removes a Bindable from the current Pass
 		 *
@@ -79,7 +79,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Pass::processBindables(F callback) const
+	void Pass::processBindables(F&& callback) const
 	{
 		for (auto& bindable : mBindables) {
 			callback(bindable);

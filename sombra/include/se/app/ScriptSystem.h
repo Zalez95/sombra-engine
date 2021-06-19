@@ -36,7 +36,7 @@ namespace se::app {
 		virtual ~ScriptSystem();
 
 		/** @copydoc ISystem::notify(const IEvent&) */
-		virtual void notify(const IEvent& event) override;
+		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onNewComponent(
@@ -89,8 +89,8 @@ namespace se::app {
 
 		/** Handles the given event
 		 *
-		 * @param	event the ResizeEvent to handle */
-		void onResizeEvent(const ResizeEvent& event);
+		 * @param	event the WindowResizeEvent to handle */
+		void onWindowResizeEvent(const WindowResizeEvent& event);
 	};
 
 }

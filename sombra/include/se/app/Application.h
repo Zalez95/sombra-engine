@@ -151,7 +151,7 @@ namespace se::app {
 		GUIManager& getGUIManager() { return *mGUIManager; };
 
 		/** @copydoc IEventListener::notify(const IEvent&) */
-		virtual void notify(const IEvent&) override {};
+		virtual bool notify(const IEvent&) override { return false; };
 
 		/** Function used for starting the Application
 		 * @note	the current thread will be used by the Application until

@@ -2,9 +2,9 @@
 #define VOXELIZATION_NODE_H
 
 #include <glm/glm.hpp>
-#include "../../graphics/3D/Renderer3D.h"
-#include "../../graphics/core/Program.h"
-#include "../Repository.h"
+#include "se/graphics/3D/Renderer3D.h"
+#include "se/graphics/core/Program.h"
+#include "se/app/Repository.h"
 
 namespace se::app {
 

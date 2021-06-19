@@ -80,7 +80,7 @@ namespace editor {
 		void addPanel(IEditorPanel* panel);
 
 		/** @copydoc se::app::Application::notify(const IEvent&) */
-		virtual void notify(const se::app::IEvent&) override;
+		virtual bool notify(const se::app::IEvent&) override;
 	protected:
 		/** Updates the Editor managers and systems each main loop
 		 * iteration
@@ -94,7 +94,7 @@ namespace editor {
 
 		/** Handles the given close Event by closing the Editor
 		 *
-		 * @param	event the ResizeEvent to handle */
+		 * @param	event the Close to handle */
 		void onCloseEvent(const se::app::Event<se::app::Topic::Close>& event);
 	};
 

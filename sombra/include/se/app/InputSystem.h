@@ -38,10 +38,9 @@ namespace se::app {
 		/** Submits all the user input events */
 		virtual void update() override;
 
-		/** Notifies the ImGuiInput of the given event
-		 *
-		 * @param	event the IEvent to notify */
-		virtual void notify(const IEvent& event) override;
+		/** @copydoc ISystem::notify(const IEvent&) */
+		virtual bool notify(const IEvent& event) override
+		{ return tryCall(&InputSystem::onSetMousePosEvent, event); };
 	private:
 		/** Handles the given event
 		 *

@@ -522,7 +522,7 @@ namespace game {
 		mLogoTexture->addTechnique(technique2D.get());
 		mLogoTexture->setZIndex(255);
 		mGame.getExternalTools().graphicsEngine->addRenderable(mLogoTexture);
-		mReticleTexture = new se::graphics::RenderableSprite({ kWidth / 2.0f - 10.0f, kHeight / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture.get());
+		mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture.get());
 		mReticleTexture->addTechnique(technique2D.get());
 		mReticleTexture->setZIndex(255);
 		mGame.getExternalTools().graphicsEngine->addRenderable(mReticleTexture);
@@ -556,7 +556,7 @@ namespace game {
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
 
 			se::app::CameraComponent camera;
-			camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
+			camera.setPerspectiveProjection(glm::radians(kFOV), kWidths[0] / static_cast<float>(kHeights[0]), kZNear, kZFar);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
 
 			spotLight->intensity = 5.0f;
@@ -895,9 +895,9 @@ namespace game {
 	}
 
 
-	void Level::notify(const se::app::IEvent& event)
+	bool Level::notify(const se::app::IEvent& event)
 	{
-		tryCall(&Level::onKeyEvent, event);
+		return tryCall(&Level::onKeyEvent, event);
 	}
 
 

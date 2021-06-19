@@ -14,7 +14,7 @@ namespace se::app {
 
 	GUIManager::GUIManager(Application& application, const glm::vec2& initialWindowSize) : mApplication(application)
 	{
-		mApplication.getEventManager().subscribe(this, Topic::Resize);
+		mApplication.getEventManager().subscribe(this, Topic::WindowResize);
 		mApplication.getEventManager().subscribe(this, Topic::MouseMove);
 		mApplication.getEventManager().subscribe(this, Topic::MouseButton);
 
@@ -62,7 +62,7 @@ namespace se::app {
 	{
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseButton);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseMove);
-		mApplication.getEventManager().unsubscribe(this, Topic::Resize);
+		mApplication.getEventManager().unsubscribe(this, Topic::WindowResize);
 	}
 
 
@@ -78,15 +78,15 @@ namespace se::app {
 	}
 
 
-	void GUIManager::notify(const IEvent& event)
+	bool GUIManager::notify(const IEvent& event)
 	{
-		tryCall(&GUIManager::onResizeEvent, event);
-		tryCall(&GUIManager::onMouseMoveEvent, event);
-		tryCall(&GUIManager::onMouseButtonEvent, event);
+		return tryCall(&GUIManager::onWindowResizeEvent, event)
+			|| tryCall(&GUIManager::onMouseMoveEvent, event)
+			|| tryCall(&GUIManager::onMouseButtonEvent, event);
 	}
 
 // Private functions
-	void GUIManager::onResizeEvent(const ResizeEvent& event)
+	void GUIManager::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
 		float width = static_cast<float>(event.getWidth()),
 			height = static_cast<float>(event.getHeight());

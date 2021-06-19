@@ -58,14 +58,14 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each Resource */
 		template <typename F>
-		void processPrograms(F callback) const;
+		void processPrograms(F&& callback) const;
 
 		/** Iterates through all the Textures of the Step calling the given
 		 * callback function
 		 *
 		 * @param	callback the function to call for each Resource */
 		template <typename F>
-		void processTextures(F callback) const;
+		void processTextures(F&& callback) const;
 
 		/** Removes the given Resource from the Step
 		 *
@@ -90,7 +90,7 @@ namespace se::app {
 		 *
 		 * @param	callback the function to call for each Bindable */
 		template <typename F>
-		void processBindables(F callback) const;
+		void processBindables(F&& callback) const;
 
 		/** Removes a Bindable from the current Step
 		 *
@@ -146,7 +146,7 @@ namespace se::app {
 		 * @param	callback the function to call for each
 		 *			RenderableShaderStep */
 		template <typename F>
-		void processSteps(F callback) const;
+		void processSteps(F&& callback) const;
 
 		/** Removes the given RenderableShaderStep from the RenderableShader,
 		 * notifying the Systems
@@ -158,14 +158,14 @@ namespace se::app {
 
 
 	template <typename F>
-	void RenderableShaderStep::processBindables(F callback) const
+	void RenderableShaderStep::processBindables(F&& callback) const
 	{
 		mPass->processBindables(callback);
 	}
 
 
 	template <typename F>
-	void RenderableShaderStep::processPrograms(F callback) const
+	void RenderableShaderStep::processPrograms(F&& callback) const
 	{
 		for (const ProgramRef& prog : mPrograms) {
 			callback(prog);
@@ -174,7 +174,7 @@ namespace se::app {
 
 
 	template <typename F>
-	void RenderableShaderStep::processTextures(F callback) const
+	void RenderableShaderStep::processTextures(F&& callback) const
 	{
 		for (const TextureRef& tex : mTextures) {
 			callback(tex);
@@ -183,7 +183,7 @@ namespace se::app {
 
 
 	template <typename F>
-	void RenderableShader::processSteps(F callback) const
+	void RenderableShader::processSteps(F&& callback) const
 	{
 		for (auto& bindable : mSteps) {
 			callback(bindable);

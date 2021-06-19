@@ -35,7 +35,7 @@ namespace se::graphics {
 		 *
 		 * @param	callback the function to call for each Pass */
 		template <typename F>
-		void processPasses(F callback) const;
+		void processPasses(F&& callback) const;
 
 		/** Removes a Pass from the current Technique
 		 *
@@ -54,7 +54,7 @@ namespace se::graphics {
 
 
 	template <typename F>
-	void Technique::processPasses(F callback) const
+	void Technique::processPasses(F&& callback) const
 	{
 		for (auto& pass : mPasses) {
 			callback(pass);

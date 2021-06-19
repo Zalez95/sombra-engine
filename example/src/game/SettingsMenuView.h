@@ -38,7 +38,8 @@ namespace game {
 		std::vector<se::app::Button> mButtons;
 
 		/** Pointers to the labels to change its text dynamically */
-		se::app::Label *mSelectedWindowLabel, *mSelectedVSyncLabel;
+		se::app::Label *mSelectedWindowLabel, *mSelectedVSyncLabel,
+			*mResolutionLabel;
 
 		/** The Panel that will Hold all the elements of the SettingsMenu */
 		se::app::Panel mPanel;
@@ -56,8 +57,8 @@ namespace game {
 		{
 			auto arial = game.getRepository().findByName<se::graphics::Font>("arial");
 
-			mLabels.reserve(2 + 2 * 4);
-			mButtons.reserve(1 + 2 * 2);
+			mLabels.reserve(2 + 3 * 4);
+			mButtons.reserve(1 + 3 * 2);
 
 			auto& titleLabel = mLabels.emplace_back(&game.getGUIManager());
 			titleLabel.setFont(arial);
@@ -84,6 +85,12 @@ namespace game {
 				[this]() { mController.onVSync(SettingsMenuController::ButtonOption::Right); }
 			);
 			mSelectedVSyncLabel = &mLabels.back();
+			addParameter(
+				"Resolution", 0.55f,
+				[this]() { mController.onResolution(SettingsMenuController::ButtonOption::Left); },
+				[this]() { mController.onResolution(SettingsMenuController::ButtonOption::Right); }
+			);
+			mResolutionLabel = &mLabels.back();
 
 			auto& backLabel = mLabels.emplace_back(&game.getGUIManager());
 			backLabel.setFont(arial);
@@ -127,6 +134,16 @@ namespace game {
 		void setVSync(SelectionLabel selection)
 		{
 			mSelectedVSyncLabel->setText( getLabel(selection) );
+		};
+
+		/** Sets the Resolution selection Label
+		 *
+		 * @param	width the width of the Label to set
+		 * @param	height the height of the Label to set */
+		void setResolution(std::size_t width, std::size_t height)
+		{
+			std::string label = std::to_string(width) + "x" + std::to_string(height);
+			mResolutionLabel->setText(label.c_str());
 		};
 	private:
 		/** Adds a parameter to set in the settings menu
