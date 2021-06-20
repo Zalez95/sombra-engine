@@ -46,6 +46,10 @@ namespace se::physics {
 		 * @param	point the Point in world coordinates */
 		void setPoint(const glm::vec3& point) { mPoint = point; };
 
+		/** @copydoc Force::clone() */
+		virtual std::unique_ptr<Force> clone() const override
+		{ return std::make_unique<PunctualForce>(*this); };
+
 		/** @copydoc Force::apply(RigidBody&) */
 		virtual void apply(RigidBody& rigidBody) override;
 	};

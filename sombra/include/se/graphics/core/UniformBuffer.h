@@ -78,11 +78,14 @@ namespace se::graphics {
 		 *			copied */
 		void copy(const void* data, std::size_t size, std::size_t offset = 0);
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override;
+
 		/** Binds the Uniform Buffer Object */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the Uniform Buffer Object */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 

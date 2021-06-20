@@ -2,6 +2,7 @@
 #define CONSTRAINT_H
 
 #include <array>
+#include <memory>
 
 namespace se::physics {
 
@@ -58,6 +59,9 @@ namespace se::physics {
 		 * @return	a pointer the the RigidBody */
 		RigidBody* getRigidBody(std::size_t rb) const
 		{ return mRigidBodies[rb]; };
+
+		/** @return	a pointer to a copy of the current Constraint */
+		virtual std::unique_ptr<Constraint> clone() const = 0;
 
 		/** @return	the ConstraintBounds of the Constraint */
 		virtual const ConstraintBounds& getConstraintBounds() const = 0;

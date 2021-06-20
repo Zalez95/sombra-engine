@@ -34,6 +34,19 @@ namespace se::collision {
 		 * @param	parts the multiple colliders in which the CompositeCollider
 		 *			is splitted */
 		CompositeCollider(std::vector<ColliderUPtr> parts = {});
+		CompositeCollider(const CompositeCollider& other);
+		CompositeCollider(CompositeCollider&& other) = default;
+
+		/** Class destructor */
+		~CompositeCollider() = default;
+
+		/** Assignment operator */
+		CompositeCollider& operator=(const CompositeCollider& other);
+		CompositeCollider& operator=(CompositeCollider&& other) = default;
+
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<CompositeCollider>(*this); };
 
 		/** Updates the scale, translation and orientation of the
 		 * CompositeCollider with the given transformations matrix

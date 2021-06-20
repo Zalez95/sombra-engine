@@ -46,6 +46,10 @@ namespace se::collision {
 		 *			the ConvexPolyhedron */
 		void setLocalMesh(const HalfEdgeMesh& meshData);
 
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<ConvexPolyhedron>(*this); };
+
 		/** Updates the scale, translation and orientation of the
 		 * ConvexPolyhedron with the given transformations matrix
 		 *

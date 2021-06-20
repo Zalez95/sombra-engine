@@ -32,6 +32,9 @@ namespace se::graphics {
 		/** The color format of the texture */
 		ColorFormat mColorFormat;
 
+		/** If the texture has multiple mipmap levels or not */
+		bool mHasMipMaps;
+
 	public:		// Functions
 		/** Creates a new Texture
 		 *
@@ -157,6 +160,10 @@ namespace se::graphics {
 		/** @return	the ColorFormat of the Texture */
 		ColorFormat getColorFormat() const { return mColorFormat; };
 
+		/** @return	true if the Texture has multiple mipmap levels, false
+		 *			otherwise */
+		bool hasMipMaps() const { return mHasMipMaps; };
+
 		/** Returns the width of the Texture
 		 *
 		 * @param	mipMapLevel the mip map level to check
@@ -216,11 +223,14 @@ namespace se::graphics {
 		 * @return	a reference to the current Texture object */
 		Texture& generateMipMap();
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override;
+
 		/** Binds the Texture */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the Texture */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 }

@@ -77,6 +77,21 @@ namespace se::graphics {
 	}
 
 
+	std::unique_ptr<Bindable> IndexBuffer::clone() const
+	{
+		std::size_t bufferSize = size();
+
+		auto ret = std::make_unique<IndexBuffer>();
+		ret->resizeAndCopy(nullptr, bufferSize, mIndexType, mIndexCount);
+
+		GL_WRAP( glBindBuffer(GL_COPY_READ_BUFFER, mBufferId) );
+		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER , ret->mBufferId) );
+		GL_WRAP( glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER , 0, 0, bufferSize) );
+
+		return ret;
+	}
+
+
 	void IndexBuffer::bind() const
 	{
 		GL_WRAP( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mBufferId) );

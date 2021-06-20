@@ -25,6 +25,26 @@ namespace se::app {
 	}
 
 
+	std::unique_ptr<RenderableShaderStep> RenderableShaderStep::clone() const
+	{
+		auto ret = std::make_unique<RenderableShaderStep>(mPass->getRenderer());
+		for (const ProgramRef& program : mPrograms) {
+			ret->addResource(program);
+		}
+		for (const TextureRef& texture : mTextures) {
+			ret->addResource(texture);
+		}
+		processBindables([&](const BindableSPtr& bindable) {
+			if (!std::dynamic_pointer_cast<graphics::Texture>(bindable)
+				&& !std::dynamic_pointer_cast<graphics::Program>(bindable)
+			) {
+				ret->addBindable(bindable->clone());
+			}
+		});
+		return ret;
+	}
+
+
 	template <>
 	RenderableShaderStep& RenderableShaderStep::removeResource<graphics::Program>(const ProgramRef& resource, bool removeResource)
 	{
@@ -58,6 +78,17 @@ namespace se::app {
 	{
 		mPass->removeBindable(bindable);
 		return *this;
+	}
+
+
+	std::unique_ptr<RenderableShader> RenderableShader::clone() const
+	{
+		auto ret = std::make_unique<RenderableShader>(mEventManager);
+		processSteps([&](const StepRef& step) {
+			ret->mSteps.push_back(step);
+			ret->mTechnique->addPass(step->getPass());
+		});
+		return ret;
 	}
 
 

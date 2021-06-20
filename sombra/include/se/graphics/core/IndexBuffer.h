@@ -106,11 +106,14 @@ namespace se::graphics {
 		/** @return	the number of indices the buffer */
 		std::size_t getIndexCount() const { return mIndexCount; };
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override;
+
 		/** Binds te Index Buffer Object */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the Index Buffer Object */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 

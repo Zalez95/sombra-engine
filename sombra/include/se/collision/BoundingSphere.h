@@ -41,6 +41,10 @@ namespace se::collision {
 		 * @param	radius the new BoundingSphere radius */
 		void setRadius(float radius);
 
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<BoundingSphere>(*this); };
+
 		/** Updates the scale, translation and orientation of the BoundingSphere
 		 * with the given transformations matrix
 		 *

@@ -28,7 +28,6 @@ namespace se::collision {
 	}
 
 
-
 	void Capsule::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;

@@ -35,6 +35,9 @@ namespace se::graphics {
 		 * @param	renderer the Renderer of the Pass */
 		Pass(Renderer& renderer) : mRenderer(renderer) {};
 
+		/** Class destructor */
+		virtual ~Pass() = default;
+
 		/** @return	the Renderer used by the Pass for submitting the meshes */
 		Renderer& getRenderer() { return mRenderer; };
 
@@ -65,16 +68,20 @@ namespace se::graphics {
 		 * @return	a reference to the current Pass object */
 		Pass& removeBindable(const BindableSPtr& bindable);
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<Pass>(*this); };
+
 		/** Binds the current Pass for using it in the following operations
 		 * @note	the Bindables added to the Pass will be bound in the same
 		 *			order in which they where added to the Pass */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the current Pass so it can't be used in the following
 		 * operations
 		 * @note	the Bindables added to the Pass will be unbound in the
 		 *			reverse order in which they where added to the Pass */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 

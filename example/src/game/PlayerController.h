@@ -12,7 +12,8 @@ namespace game {
 
 
 	/**
-	 * Class PlayerController, TODO:
+	 * Class PlayerController, it's the ScriptComponent used for controlling
+	 * for the player Entity as a FPS
 	 */
 	class PlayerController : public se::app::ScriptComponent
 	{

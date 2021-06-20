@@ -65,6 +65,10 @@ namespace se::collision {
 			std::size_t xSize, std::size_t zSize
 		);
 
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<TerrainCollider>(*this); };
+
 		/** Updates the scale, translation and orientation of the
 		 * TerrainCollider with the given transformations matrix
 		 *

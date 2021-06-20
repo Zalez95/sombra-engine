@@ -42,6 +42,9 @@ namespace se::app {
 		/** @return	the Pass wrapped by the RenderableShader */
 		PassSPtr getPass() const { return mPass; };
 
+		/** @return	a pointer to a copy of the current RenderableShaderStep */
+		std::unique_ptr<RenderableShaderStep> clone() const;
+
 		/** Adds the given Resource to the Step
 		 *
 		 * @param	resource the Resource to add
@@ -132,6 +135,9 @@ namespace se::app {
 
 		/** @return	the Technique wrapped by the RenderableShader */
 		TechniqueSPtr getTechnique() const { return mTechnique; };
+
+		/** @return	a pointer to a copy of the current RenderableShader */
+		std::unique_ptr<RenderableShader> clone() const;
 
 		/** Adds the given RenderableShaderStep to the RenderableShader,
 		 * notifying the Systems

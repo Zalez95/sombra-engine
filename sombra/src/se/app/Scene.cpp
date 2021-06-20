@@ -27,6 +27,34 @@ namespace se::app {
 		repository.init<RenderableShader>();
 		repository.init<animation::SkeletonAnimator>();
 
+		repository.setCloneCallback<graphics::Texture>([](const graphics::Texture& texture) {
+			return std::unique_ptr<graphics::Texture>(dynamic_cast<graphics::Texture*>(texture.clone().release()));
+		});
+		repository.setCloneCallback<graphics::Mesh>([](const graphics::Mesh& mesh) {
+			return std::unique_ptr<graphics::Mesh>(dynamic_cast<graphics::Mesh*>(mesh.clone().release()));
+		});
+		repository.setCloneCallback<physics::Force>([](const physics::Force& force) {
+			return force.clone();
+		});
+		repository.setCloneCallback<Skin>([](const Skin& skin) {
+			return std::make_unique<Skin>(skin);
+		});
+		repository.setCloneCallback<LightSource>([](const LightSource& source) {
+			return std::make_unique<LightSource>(source);
+		});
+		repository.setCloneCallback<ParticleEmitter>([](const ParticleEmitter& emitter) {
+			return std::make_unique<ParticleEmitter>(emitter);
+		});
+		repository.setCloneCallback<RenderableShaderStep>([](const RenderableShaderStep& step) {
+			return step.clone();
+		});
+		repository.setCloneCallback<RenderableShader>([](const RenderableShader& shader) {
+			return shader.clone();
+		});
+		repository.setCloneCallback<animation::SkeletonAnimator>([](const animation::SkeletonAnimator& animator) {
+			return std::unique_ptr<animation::SkeletonAnimator>(dynamic_cast<animation::SkeletonAnimator*>(animator.clone().release()));
+		});
+
 		entities.reserve(application.getEntityDatabase().getMaxEntities());
 	}
 

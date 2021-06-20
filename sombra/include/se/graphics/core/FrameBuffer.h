@@ -105,11 +105,16 @@ namespace se::graphics {
 			TextureFilter filter
 		);
 
+		/** @copydoc Bindable::clone()
+		 * @note	no Textures will be attached to the new FrameBuffer */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<FrameBuffer>(mTarget); };
+
 		/** Binds the Frame Buffer Object */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the Frame Buffer Object */
-		void unbind() const override;
+		virtual void unbind() const override;
 	private:
 		/** Creates a new FrameBuffer
 		 *

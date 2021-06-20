@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <functional>
 #include "../utils/PackedVector.h"
 
 namespace se::app {
@@ -180,6 +181,8 @@ namespace se::app {
 		struct IRepoTable;
 		template <typename T> struct RepoTable;
 		using IRepoTableUPtr = std::unique_ptr<IRepoTable>;
+		template <typename T>
+		using CloneCallback = std::function<std::unique_ptr<T>(const T&)>;
 
 	private:	// Attributes
 		/** The number of different RepoTable types */
@@ -210,6 +213,12 @@ namespace se::app {
 		template <typename T>
 		void init();
 
+		/** Sets the function used for clonying an element of @tparam T type
+		 *
+		 * @param	callback the new function used for clonying the elements */
+		template <typename T>
+		void setCloneCallback(const CloneCallback<T>& callback);
+
 		/** Removes all the elements with @tparam T type from the Repository
 		 * @note	all the references to those objects will be invalidated */
 		template <typename T>
@@ -231,6 +240,15 @@ namespace se::app {
 		ResourceRef<T> insert(
 			const std::shared_ptr<T>& value, const char* name = ""
 		);
+
+		/** Creates a copy of the given Resource
+		 *
+		 * @param	resource a ResourceRef to the Resource to create a copy of
+		 * @return	a ResourceRef to the new copy, it will be invalid if the
+		 *			element couldn't be cloned
+		 * @see		setCloneCallback */
+		template <typename T>
+		ResourceRef<T> clone(const ResourceRef<T>& resource);
 
 		/** Searchs an element in the Repository with the given @tparam T type
 		 * using the given comparison function

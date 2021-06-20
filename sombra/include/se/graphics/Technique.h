@@ -30,6 +30,9 @@ namespace se::graphics {
 		 * @return	a reference to the current Technique object */
 		Technique& addPass(const PassSPtr& pass);
 
+		/** Class destructor */
+		virtual ~Technique() = default;
+
 		/** Iterates through all the Passes of the Technique calling the given
 		 * callback function
 		 *

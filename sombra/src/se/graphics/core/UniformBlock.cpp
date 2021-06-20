@@ -5,13 +5,27 @@
 namespace se::graphics {
 
 	UniformBlock::UniformBlock(const char* name, std::shared_ptr<Program> program) :
-		mProgram(program), mUniformLocation(-1), mSlot(0)
+		mName(name), mProgram(program), mUniformLocation(-1), mSlot(0)
 	{
 		GL_WRAP( mUniformLocation = glGetUniformBlockIndex(mProgram->mProgramId, name) );
 
 		if (mUniformLocation == -1) {
 			SOMBRA_WARN_LOG << "Uniform block \"" << name << "\" wasn't found";
 		}
+	}
+
+
+	bool UniformBlock::found() const
+	{
+		return mUniformLocation >= 0;
+	}
+
+
+	std::unique_ptr<Bindable> UniformBlock::clone() const
+	{
+		auto ret = std::make_unique<UniformBlock>(mName.c_str(), mProgram);
+		ret->mSlot = mSlot;
+		return ret;
 	}
 
 

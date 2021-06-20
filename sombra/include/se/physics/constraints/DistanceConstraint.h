@@ -34,6 +34,10 @@ namespace se::physics {
 			Constraint(rigidBodies),
 			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
 
+		/** @copydoc Constraint::clone() */
+		virtual std::unique_ptr<Constraint> clone() const override
+		{ return std::make_unique<DistanceConstraint>(*this); };
+
 		/** @return	the ConstraintBounds of the Constraint */
 		virtual const ConstraintBounds& getConstraintBounds() const override
 		{ return kConstraintBounds; };

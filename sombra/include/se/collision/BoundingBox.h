@@ -29,6 +29,10 @@ namespace se::collision {
 		 *
 		 * @param	lengths the new lenght in each axis of the BoundingBox */
 		void setLengths(const glm::vec3& lengths);
+
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<BoundingBox>(*this); };
 	private:
 		/** Calculates the HalfEdgeMesh of the BoundingBox from its lenghts in
 		 * each axis

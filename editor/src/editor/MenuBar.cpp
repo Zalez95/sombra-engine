@@ -40,6 +40,14 @@ namespace editor {
 					}
 					mOpen = true;
 				}
+				if (ImGui::MenuItem("Append")) {
+					mWindow.show();
+					mAppend = true;
+				}
+				if (ImGui::MenuItem("Link")) {
+					mWindow.show();
+					mLink = true;
+				}
 				if (ImGui::BeginMenu("Import", mEditor.getScene())) {
 					if (ImGui::MenuItem("GLTF")) {
 						mWindow.show();
@@ -99,6 +107,16 @@ namespace editor {
 				mEditor.createScene();
 				result = SceneSerializer::deserialize(file, *mEditor.getScene());
 				SOMBRA_INFO_LOG << "Open finished";
+			}
+			else if (mAppend) {
+				SOMBRA_INFO_LOG << "Appending " << file << "...";
+				result = SceneSerializer::deserialize(file, *mEditor.getScene());
+				SOMBRA_INFO_LOG << "Append finished";
+			}
+			else if (mLink) {
+				SOMBRA_INFO_LOG << "Linking " << file << "...";
+				// TODO:
+				SOMBRA_INFO_LOG << "Link finished";
 			}
 			else if (mImport) {
 				SOMBRA_INFO_LOG << "Importing from " << file << "...";

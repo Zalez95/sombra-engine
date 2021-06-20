@@ -69,6 +69,21 @@ namespace se::graphics {
 	}
 
 
+	std::unique_ptr<Bindable> VertexBuffer::clone() const
+	{
+		std::size_t bufferSize = size();
+
+		auto ret = std::make_unique<VertexBuffer>();
+		ret->resizeAndCopy(nullptr, bufferSize);
+
+		GL_WRAP( glBindBuffer(GL_COPY_READ_BUFFER, mBufferId) );
+		GL_WRAP( glBindBuffer(GL_COPY_WRITE_BUFFER, ret->mBufferId) );
+		GL_WRAP( glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, bufferSize) );
+
+		return ret;
+	}
+
+
 	void VertexBuffer::bind() const
 	{
 		GL_WRAP( glBindBuffer(GL_ARRAY_BUFFER, mBufferId) );

@@ -44,6 +44,10 @@ namespace se::collision {
 		 *			coordinates */
 		void setLocalVertices(const std::array<glm::vec3, 3>& vertices);
 
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<TriangleCollider>(*this); };
+
 		/** Updates the scale, translation and orientation of the
 		 * TriangleCollider with the given transformations matrix
 		 *

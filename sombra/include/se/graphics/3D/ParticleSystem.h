@@ -85,7 +85,7 @@ namespace se::graphics {
 		 *
 		 * @param	minimum the minimum position of the ParticleSystem
 		 *			at each direction
-		 * @param	minimum the maximum position of the ParticleSystem
+		 * @param	maximum the maximum position of the ParticleSystem
 		 *			at each direction */
 		void setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
 

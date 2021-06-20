@@ -4,11 +4,49 @@
 
 namespace se::animation {
 
+	SkeletonAnimator::SkeletonAnimator(const SkeletonAnimator& other)
+	{
+		mLoopTime = other.mLoopTime;
+		mRootNodes = other.mRootNodes;
+		for (const NodeAnimator& nodeAnimator : other.mNAnimators) {
+			auto transformsAnimator = dynamic_cast<TransformationAnimator*>(nodeAnimator.animator->clone().release());
+
+			NodeAnimator nodeAnimator2;
+			nodeAnimator2.nodeName = nodeAnimator.nodeName;
+			nodeAnimator2.type = nodeAnimator.type;
+			nodeAnimator2.animator = std::unique_ptr<TransformationAnimator>(transformsAnimator);
+			mNAnimators.emplace_back(std::move(nodeAnimator2));
+		}
+	}
+
+
 	SkeletonAnimator::~SkeletonAnimator()
 	{
 		while (!mRootNodes.empty()) {
 			removeNodeHierarchy(*mRootNodes.back());
 		}
+	}
+
+
+	SkeletonAnimator& SkeletonAnimator::operator=(const SkeletonAnimator& other)
+	{
+		while (!mRootNodes.empty()) {
+			removeNodeHierarchy(*mRootNodes.back());
+		}
+
+		mLoopTime = other.mLoopTime;
+		mRootNodes = other.mRootNodes;
+		for (const NodeAnimator& nodeAnimator : other.mNAnimators) {
+			auto transformsAnimator = dynamic_cast<TransformationAnimator*>(nodeAnimator.animator->clone().release());
+
+			NodeAnimator nodeAnimator2;
+			nodeAnimator2.nodeName = nodeAnimator.nodeName;
+			nodeAnimator2.type = nodeAnimator.type;
+			nodeAnimator2.animator = std::unique_ptr<TransformationAnimator>(transformsAnimator);
+			mNAnimators.emplace_back(std::move(nodeAnimator2));
+		}
+
+		return *this;
 	}
 
 

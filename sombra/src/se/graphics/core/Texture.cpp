@@ -8,7 +8,7 @@ namespace se::graphics {
 	static const Texture* sTextureUnits[kMaxTextures] = {};
 
 
-	Texture::Texture(TextureTarget target) : mTarget(target), mTextureUnit(-1), mImageUnit(-1)
+	Texture::Texture(TextureTarget target) : mTarget(target), mTextureUnit(-1), mImageUnit(-1), mHasMipMaps(false)
 	{
 		GL_WRAP( glGenTextures(1, &mTextureId) );
 		SOMBRA_TRACE_LOG << "Created Texture " << mTextureId;
@@ -19,7 +19,8 @@ namespace se::graphics {
 
 	Texture::Texture(Texture&& other) :
 		mTarget(other.mTarget), mTextureId(other.mTextureId),
-		mTextureUnit(other.mTextureUnit), mImageUnit(other.mImageUnit), mColorFormat(other.mColorFormat)
+		mTextureUnit(other.mTextureUnit), mImageUnit(other.mImageUnit),
+		mColorFormat(other.mColorFormat), mHasMipMaps(other.mHasMipMaps)
 	{
 		other.mTextureId = 0;
 	}
@@ -48,6 +49,7 @@ namespace se::graphics {
 		mTextureUnit = other.mTextureUnit;
 		mImageUnit = other.mImageUnit;
 		mColorFormat = other.mColorFormat;
+		mHasMipMaps = other.mHasMipMaps;
 		other.mTextureId = 0;
 
 		return *this;
@@ -274,6 +276,8 @@ namespace se::graphics {
 		ColorFormat textureFormat,
 		std::size_t width, std::size_t height, std::size_t depth, int orientation
 	) {
+		mHasMipMaps = false;
+
 		GLenum glTarget = toGLTextureTarget(mTarget);
 		GLenum glType = toGLType(sourceType);
 		GLenum glFormat = toGLColorFormat(sourceFormat);
@@ -327,8 +331,51 @@ namespace se::graphics {
 	{
 		GL_WRAP( glBindTexture(toGLTextureTarget(mTarget), mTextureId) );
 		GL_WRAP( glGenerateMipmap(toGLTextureTarget(mTarget)) );
+		mHasMipMaps = true;
 
 		return *this;
+	}
+
+
+	std::unique_ptr<Bindable> Texture::clone() const
+	{
+		auto ret = std::make_unique<Texture>(mTarget);
+		ret->mTextureUnit = mTextureUnit;
+		ret->mImageUnit = mImageUnit;
+		ret->mColorFormat = mColorFormat;
+
+		std::size_t width = getWidth();
+		std::size_t height = (mTarget != TextureTarget::Texture1D)? getHeight() : 1;
+		std::size_t depth = ((mTarget != TextureTarget::Texture1D) && (mTarget != TextureTarget::Texture2D))? getDepth() : 1;
+		TypeId type = getTypeId();
+
+		if (mTarget == TextureTarget::CubeMap) {
+			std::size_t sideSize = width * height * depth * toNumberOfComponents(mColorFormat) * toTypeSize(type);
+			std::vector<std::byte> buffer(sideSize);
+			for (int i = 0; i < 6; ++i) {
+				getImage(type, toUnSizedColorFormat(mColorFormat), &buffer[i * sideSize], i);
+				ret->setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(mColorFormat), mColorFormat, width, height, 0, i);
+			}
+		}
+		else {
+			std::vector<std::byte> buffer(width * height * depth * toNumberOfComponents(mColorFormat) * toTypeSize(type));
+			getImage(type, toUnSizedColorFormat(mColorFormat), buffer.data());
+			ret->setImage(buffer.data(), type, toUnSizedColorFormat(mColorFormat), mColorFormat, width, height, depth);
+		}
+
+		TextureFilter min, mag;
+		TextureWrap wrapS, wrapT, wrapR;
+		getFiltering(&min, &mag);
+		getWrapping(&wrapS, &wrapT, &wrapR);
+
+		ret->setFiltering(min, mag)
+			.setWrapping(wrapS, wrapT, wrapR);
+
+		if (mHasMipMaps) {
+			ret->generateMipMap();
+		}
+
+		return ret;
 	}
 
 

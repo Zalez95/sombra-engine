@@ -122,6 +122,10 @@ namespace se::graphics {
 		/** @return	the value stored in the UniformVariableValue */
 		const T& getValue() const { return mValue; };
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<UniformVariableValue>(*this); };
+
 		/** Binds the current UniformVariableValue for using it in the following
 		 * operations */
 		virtual void bind() const override { this->setUniform(mValue); };
@@ -194,6 +198,10 @@ namespace se::graphics {
 		 * @param	capacity the number of variables to reserve */
 		void reserve(std::size_t capacity) { mValue.reserve(capacity); };
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<UniformVariableValueVector>(*this); };
+
 		/** Binds the current UniformVariableValueVector for using it in the
 		 * following operations */
 		virtual void bind() const override
@@ -235,6 +243,10 @@ namespace se::graphics {
 			const char* name, const std::shared_ptr<Program>& program,
 			const Callback& callback
 		) : UniformVariable<T>(name, program), mCallback(callback) {};
+
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<UniformVariableCallback>(*this); };
 
 		/** Binds the current UniformVariableCallback for using it in the
 		 * following operations */

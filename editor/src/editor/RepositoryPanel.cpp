@@ -80,6 +80,19 @@ namespace editor {
 				if (ImGui::SmallButton(("Add" + getIdPrefix() + "AddResource").c_str())) {
 					mShowCreate = true;
 				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton(("Clone" + getIdPrefix() + "CloneResource").c_str())) {
+					auto selected = repository.findByName<T>(mSelectedName.c_str());
+					if (selected) {
+						Repository::ResourceRef<T> cloned = repository.clone<T>(selected);
+						if (cloned) {
+							cloned.setFakeUser();
+
+							setRepoName<T>(cloned.getResource(), mSelectedName.c_str(), repository);
+							mSelectedName = cloned.getResource().getName();
+						}
+					}
+				}
 
 				std::size_t i = 0;
 				if (ImGui::BeginTable((getIdPrefix() + "Elements").c_str(), 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
@@ -124,7 +137,15 @@ namespace editor {
 						selected.getResource().setPath(pathBuffer.data());
 					}
 
+					if (selected.getResource().isLinked()) {
+						ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+						ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+					}
 					draw(repository, selected);
+					if (selected.getResource().isLinked()) {
+						ImGui::PopItemFlag();
+						ImGui::PopStyleVar();
+					}
 				}
 			}
 

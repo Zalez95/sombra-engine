@@ -11,6 +11,29 @@ namespace se::collision {
 	}
 
 
+	CompositeCollider::CompositeCollider(const CompositeCollider& other)
+	{
+		for (const ColliderUPtr& part : other.mParts) {
+			mParts.emplace_back( part->clone() );
+		}
+		mTransformsMatrix = other.mTransformsMatrix;
+		mAABB = other.mAABB;
+	}
+
+
+	CompositeCollider& CompositeCollider::operator=(const CompositeCollider& other)
+	{
+		mParts.clear();
+		for (const ColliderUPtr& part : other.mParts) {
+			mParts.emplace_back( part->clone() );
+		}
+		mTransformsMatrix = other.mTransformsMatrix;
+		mAABB = other.mAABB;
+
+		return *this;
+	}
+
+
 	void CompositeCollider::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;

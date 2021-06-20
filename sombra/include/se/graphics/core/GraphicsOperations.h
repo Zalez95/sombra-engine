@@ -177,6 +177,10 @@ namespace se::graphics {
 		 * @param	active if we want to enable the operation on bind or not */
 		void setEnabled(bool active = true) { mActive = active; };
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<SetOperation>(*this); };
+
 		/** Enables the Operation if mActive is true, disables it otherwise */
 		virtual void bind() const override;
 
@@ -216,6 +220,10 @@ namespace se::graphics {
 		 * @param	active if we want to write to the depth buffer on bind or
 		 *			not */
 		void setEnabled(bool active = true) { mActive = active; };
+
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<SetDepthMask>(*this); };
 
 		/** Enables writing to the depth buffer if mActive is true, disables
 		 * it otherwise */

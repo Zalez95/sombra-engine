@@ -1,6 +1,8 @@
 #ifndef FORCE_H
 #define FORCE_H
 
+#include <memory>
+
 namespace se::physics {
 
 	class RigidBody;
@@ -15,6 +17,9 @@ namespace se::physics {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Force() = default;
+
+		/** @return	a pointer to a copy of the current Force */
+		virtual std::unique_ptr<Force> clone() const = 0;
 
 		/** Applyes the force to the given RigidBody
 		 *

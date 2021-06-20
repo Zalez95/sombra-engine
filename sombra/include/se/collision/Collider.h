@@ -1,6 +1,7 @@
 #ifndef COLLIDER_H
 #define COLLIDER_H
 
+#include <memory>
 #include <glm/glm.hpp>
 #include "AABB.h"
 
@@ -15,6 +16,9 @@ namespace se::collision {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Collider() = default;
+
+		/** @return	a pointer to a copy of the current Collider */
+		virtual std::unique_ptr<Collider> clone() const = 0;
 
 		/** Updates the translation and orientation of the Collider with the
 		 * data of the given transformations matrix

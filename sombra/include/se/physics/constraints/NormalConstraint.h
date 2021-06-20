@@ -79,8 +79,9 @@ namespace se::physics {
 			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mNormal(0.0f), mDeltaTime(0.0f) {};
 
-		/** Class destructor */
-		virtual ~NormalConstraint() = default;
+		/** @copydoc Constraint::clone() */
+		virtual std::unique_ptr<Constraint> clone() const override
+		{ return std::make_unique<NormalConstraint>(*this); };
 
 		/** @return	the ConstraintBounds of the Constraint */
 		virtual const ConstraintBounds& getConstraintBounds() const override

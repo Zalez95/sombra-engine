@@ -138,11 +138,17 @@ namespace se::graphics {
 		 * @param	index the index of the VertexArray attribute to disable */
 		void disableAttribute(unsigned int index);
 
+		/** @copydoc Bindable::clone()
+		 * @note	the IndexBuffers and VertexBuffers won't be bound to the
+		 *			new VAO */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<VertexArray>(); };
+
 		/** Binds the Vertex Array Object */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Unbinds the Vertex Array Object */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 }

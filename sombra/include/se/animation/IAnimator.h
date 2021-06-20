@@ -1,6 +1,7 @@
 #ifndef I_ANIMATOR_H
 #define I_ANIMATOR_H
 
+#include <memory>
 #include <functional>
 #include "AnimationNode.h"
 
@@ -18,6 +19,9 @@ namespace se::animation {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~IAnimator() = default;
+
+		/** @return	a pointer to a copy of the current IAnimator */
+		virtual std::unique_ptr<IAnimator> clone() const = 0;
 
 		/** @return	the elapsed time in seconds since the start of the animation
 		 *			before the animation starts from the begining */

@@ -57,8 +57,9 @@ namespace se::physics {
 			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
 			mTangent(0.0f) {};
 
-		/** Class destructor */
-		virtual ~FrictionConstraint() = default;
+		/** @copydoc Constraint::clone() */
+		virtual std::unique_ptr<Constraint> clone() const override
+		{ return std::make_unique<FrictionConstraint>(*this); };
 
 		/** @return	the ConstraintBounds of the Constraint */
 		virtual const ConstraintBounds& getConstraintBounds() const override

@@ -22,6 +22,9 @@ namespace se::app {
 	{
 		/** All the data stored in the RepoTable */
 		utils::PackedVector<Resource<T>> data;
+
+		/** The function used for clonying a Resource */
+		CloneCallback<T> cloneCallback;
 	};
 
 
@@ -142,6 +145,13 @@ namespace se::app {
 
 
 	template <typename T>
+	void Repository::setCloneCallback(const CloneCallback<T>& callback)
+	{
+		getRepoTable<T>().cloneCallback = callback;
+	}
+
+
+	template <typename T>
 	void Repository::clear()
 	{
 		getRepoTable<T>().data.clear();
@@ -166,6 +176,28 @@ namespace se::app {
 		it->mName = name;
 
 		return ResourceRef<T>(this, it.getIndex());
+	}
+
+
+	template <typename T>
+	Repository::ResourceRef<T> Repository::clone(const ResourceRef<T>& resource)
+	{
+		ResourceRef<T> ret;
+
+		const auto& table = getRepoTable<T>();
+		if (table.cloneCallback) {
+			auto value = table.cloneCallback(*resource);
+			if (value) {
+				ret = insert<T>(std::move(value));
+				ret.getResource().setName( resource.getResource().getName() );
+				ret.getResource().setPath( resource.getResource().getPath() );
+				if (resource.getResource().isLinked()) {
+					ret.getResource().setLinkedFile( resource.getResource().getLinkedFile() );
+				}
+			}
+		}
+
+		return ret;
 	}
 
 

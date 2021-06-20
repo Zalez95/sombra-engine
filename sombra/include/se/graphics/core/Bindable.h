@@ -1,6 +1,8 @@
 #ifndef BINDABLE_H
 #define BINDABLE_H
 
+#include <memory>
+
 namespace se::graphics {
 
 	/**
@@ -13,6 +15,10 @@ namespace se::graphics {
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Bindable() = default;
+
+		/** @return	a pointer to a copy of the current Bindable, nullptr if the
+		 *			Bindable can't be copied */
+		virtual std::unique_ptr<Bindable> clone() const { return nullptr; };
 
 		/** Binds the current object for using it in the following operations */
 		virtual void bind() const = 0;

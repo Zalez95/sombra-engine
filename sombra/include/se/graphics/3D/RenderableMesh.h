@@ -29,7 +29,7 @@ namespace se::graphics {
 		/** Creates a new RenderableMesh
 		 *
 		 * @param	mesh a pointer to the Mesh of the RenderableMesh
-		 * @param	primitiveMesh the type of primitive used for rendering */
+		 * @param	primitiveType the type of primitive used for rendering */
 		RenderableMesh(
 			MeshSPtr mesh = nullptr,
 			PrimitiveType primitiveType = PrimitiveType::Triangle

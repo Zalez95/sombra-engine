@@ -71,6 +71,7 @@ namespace se::app {
 	{
 		nlohmann::json json;
 		std::ifstream dataStream;
+		std::unordered_map<std::size_t, std::size_t> linkedScenesMap;
 		std::unordered_map<std::size_t, Entity> indexEntityMap;
 		std::unordered_map<std::size_t, AnimationNode*> indexNodeMap;
 		nlohmann::json& buffersJson;
@@ -690,11 +691,12 @@ namespace se::app {
 		json["min"] = static_cast<int>(min);
 		json["mag"] = static_cast<int>(mag);
 
-		TextureWrap wrapS, wrapT;
-		texture->getWrapping(&wrapS, &wrapT);
+		TextureWrap wrapS, wrapT, wrapR;
+		texture->getWrapping(&wrapS, &wrapT, &wrapR);
 
 		json["wrapS"] = static_cast<int>(wrapS);
 		json["wrapT"] = static_cast<int>(wrapT);
+		json["wrapR"] = static_cast<int>(wrapR);
 
 		json["textureUnit"] = texture->getTextureUnit();
 	}
@@ -815,12 +817,14 @@ namespace se::app {
 
 		auto itWrapS = json.find("wrapS");
 		auto itWrapT = json.find("wrapT");
+		auto itWrapR = json.find("wrapR");
 		TextureWrap wrapS = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapS->get<int>()) : TextureWrap::ClampToBorder;
-		TextureWrap wrapT = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
+		TextureWrap wrapT = (itWrapT != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
+		TextureWrap wrapR = (itWrapR != json.end())? static_cast<TextureWrap>(itWrapR->get<int>()) : TextureWrap::ClampToBorder;
 
 		textureSPtr->setTextureUnit(*itTextureUnit)
 			.setFiltering(min, mag)
-			.setWrapping(wrapS, wrapT)
+			.setWrapping(wrapS, wrapT, wrapR)
 			.generateMipMap();
 
 		return Result();
@@ -2584,7 +2588,12 @@ namespace se::app {
 		data.scene.repository.iterate<T>([&](const Repository::ResourceRef<T>& r) {
 			nlohmann::json resourceJson;
 			resourceJson["name"] = r.getResource().getName();
-			serializeResource<T>(r, data, resourceJson, dataStream);
+			if (r.getResource().isLinked()) {
+				resourceJson["linkedFile"] = r.getResource().getLinkedFile();
+			}
+			else {
+				serializeResource<T>(r, data, resourceJson, dataStream);
+			}
 			resourcesVJson.emplace_back(std::move(resourceJson));
 		});
 
@@ -2600,19 +2609,31 @@ namespace se::app {
 		if (it != data.json.end()) {
 			for (std::size_t i = 0; i < it->size(); ++i) {
 				auto& resourceJson = (*it)[i];
+				Repository::ResourceRef<T> r;
 
 				auto itName = resourceJson.find("name");
 				if (itName == resourceJson.end()) {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Missing name");
 				}
 
-				Repository::ResourceRef<T> r;
-				if (auto result = deserializeResource<T>(resourceJson, r, data, scene); !result) {
-					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
+				auto itLinkedFile = resourceJson.find("linkedFile");
+				if (itLinkedFile != resourceJson.end()) {
+					std::size_t linkedFile = *itLinkedFile;
+					linkedFile = data.linkedScenesMap[linkedFile];
+					r.getResource().setLinkedFile(linkedFile);
+
+					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: TODO: LINKED FILES NOT IMPLEMENTED YET");
+				}
+				else {
+					if (auto result = deserializeResource<T>(resourceJson, r, data, scene); !result) {
+						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
+					}
+
+					r.getResource().setName(itName->get<std::string>().c_str());
 				}
 
-				r.setFakeUser();
 				r.getResource().setName(itName->get<std::string>().c_str());
+				r.setFakeUser();
 			}
 		}
 
@@ -2688,6 +2709,34 @@ namespace se::app {
 					}
 					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
 				}
+			}
+		}
+
+		return Result();
+	}
+
+
+	void serializeLinkedFiles(SerializeData& data, nlohmann::json& json)
+	{
+		json["linkedFiles"] = data.scene.linkedScenePaths;
+	}
+
+	Result deserializeLinkedFiles(DeserializeData& data, Scene& scene)
+	{
+		auto itLinkedFiles = data.json.find("linkedFiles");
+		if (itLinkedFiles == data.json.end()) {
+			return Result(false, "Missing \"linkedFiles\" property");
+		}
+
+		std::vector<std::string> linkedFiles = *itLinkedFiles;
+		for (std::size_t i = 0; i < linkedFiles.size(); ++i) {
+			auto itFile = std::find(scene.linkedScenePaths.begin(), scene.linkedScenePaths.end(), linkedFiles[i]);
+			if (itFile != scene.linkedScenePaths.end()) {
+				data.linkedScenesMap.emplace(i, std::distance(scene.linkedScenePaths.begin(), itFile));
+			}
+			else {
+				scene.linkedScenePaths.push_back(linkedFiles[i]);
+				data.linkedScenesMap.emplace(i, scene.linkedScenePaths.size() - 1);
 			}
 		}
 
@@ -2867,7 +2916,7 @@ namespace se::app {
 
 		nlohmann::json outputJson;
 		SerializeData data = { scene, {}, {}, {}, {} };
-
+		serializeLinkedFiles(data, outputJson);
 		serializeRepository(data, outputJson, outputDATAStream);
 		serializeNodes(data, outputJson);
 		serializeEntities(data, outputJson);
@@ -2912,7 +2961,10 @@ namespace se::app {
 
 		auto& buffers = *itBuffers;
 		auto& accessors = *itAccessors;
-		DeserializeData data = { std::move(json), std::move(dataStream), {}, {}, buffers, accessors };
+		DeserializeData data = { std::move(json), std::move(dataStream), {}, {}, {}, buffers, accessors };
+		if (auto result = deserializeLinkedFiles(data, output); !result) {
+			return Result(false, "Failed to deserialized the linked files: " + std::string(result.description()));
+		}
 		if (auto result = deserializeRepository(data, output); !result) {
 			return Result(false, "Failed to deserialized the repository: " + std::string(result.description()));
 		}

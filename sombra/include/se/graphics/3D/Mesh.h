@@ -65,6 +65,9 @@ namespace se::graphics {
 		/** @return a reference to the VertexArray of the Mesh */
 		const VertexArray& getVAO() const;
 
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override;
+
 		/** Binds the VAO of the Mesh */
 		virtual void bind() const override;
 

@@ -30,6 +30,10 @@ namespace se::physics {
 		 * @param	value the force value */
 		void setValue(const glm::vec3& value) { mValue = value; };
 
+		/** @copydoc Force::clone() */
+		virtual std::unique_ptr<Force> clone() const override
+		{ return std::make_unique<DirectionalForce>(*this); };
+
 		/** @copydoc Force::apply(RigidBody&) */
 		virtual void apply(RigidBody& rigidBody) override;
 	};

@@ -50,6 +50,10 @@ namespace se::collision {
 		 * @param	height the new height of the Capsule */
 		void setHeight(float height);
 
+		/** @copydoc Collider::clone() */
+		virtual std::unique_ptr<Collider> clone() const override
+		{ return std::make_unique<Capsule>(*this); };
+
 		/** Updates the scale, translation and orientation of the Capsule with
 		 * the given transformations matrix
 		 *

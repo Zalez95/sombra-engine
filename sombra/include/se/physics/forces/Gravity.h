@@ -29,12 +29,16 @@ namespace se::physics {
 		 * @param	value the new gravity acceleration value (m/s2) */
 		void setValue(const float& value) { mGravity = value; };
 
+		/** @copydoc Force::clone() */
+		virtual std::unique_ptr<Force> clone() const override
+		{ return std::make_unique<Gravity>(*this); };
+
 		/** Applies the gravitational force to the given RigidBody based in the
 		 * time
 		 *
 		 * @param	rigidBody the RigidBody to which we want to apply the
 		 *			Force */
-		void apply(RigidBody& rigidBody);
+		virtual void apply(RigidBody& rigidBody) override;
 	};
 
 }

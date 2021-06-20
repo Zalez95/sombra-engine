@@ -47,10 +47,10 @@ namespace se::graphics {
 
 		/** Uses the current shader object so they can be used as part
 		 * of the current rendering state */
-		void bind() const override;
+		virtual void bind() const override;
 
 		/** Resets the current shader object */
-		void unbind() const override;
+		virtual void unbind() const override;
 	};
 
 }

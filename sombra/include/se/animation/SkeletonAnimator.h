@@ -40,9 +40,19 @@ namespace se::animation {
 		 * @param	loopTime the loop time of the SkeletonAnimator, 0 by
 		 *			default */
 		SkeletonAnimator(float loopTime = 0.0f) : mLoopTime(loopTime) {};
+		SkeletonAnimator(const SkeletonAnimator& other);
+		SkeletonAnimator(SkeletonAnimator&& other) = default;
 
 		/** Class destructor */
 		virtual ~SkeletonAnimator();
+
+		/** Assignment operator */
+		SkeletonAnimator& operator=(const SkeletonAnimator& other);
+		SkeletonAnimator& operator=(SkeletonAnimator&& other) = default;
+
+		/** @copydoc IAnimator::clone() */
+		virtual std::unique_ptr<IAnimator> clone() const override
+		{ return std::make_unique<SkeletonAnimator>(*this); };
 
 		/** @copydoc IAnimator::getLoopTime() */
 		virtual float getLoopTime() const;

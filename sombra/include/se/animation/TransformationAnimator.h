@@ -115,11 +115,15 @@ namespace se::animation {
 		 *			length of the given Animation */
 		Vec3Animator(Vec3AnimationSPtr animation);
 
+		/** Class destructor */
+		virtual ~Vec3Animator();
+
 		/** @return	a pointer to the Vec3Animation of the Vec3Animator */
 		Vec3AnimationSPtr getAnimation() const { return mAnimation; };
 
-		/** Class destructor */
-		virtual ~Vec3Animator();
+		/** @copydoc IAnimator::clone() */
+		virtual std::unique_ptr<IAnimator> clone() const override
+		{ return std::make_unique<Vec3Animator>(*this); };
 	protected:
 		/** @copydoc TransformationAnimator::animateNode(AnimatedNode&, float)
 		 * @note	the animation will be applied only to the AnimationNodes
@@ -151,11 +155,15 @@ namespace se::animation {
 		 *			length of the given Animation */
 		QuatAnimator(QuatAnimationSPtr animation);
 
+		/** Class destructor */
+		virtual ~QuatAnimator();
+
 		/** @return	a pointer to the QuatAnimation of the QuatAnimator */
 		QuatAnimationSPtr getAnimation() const { return mAnimation; };
 
-		/** Class destructor */
-		virtual ~QuatAnimator();
+		/** @copydoc IAnimator::clone() */
+		virtual std::unique_ptr<IAnimator> clone() const override
+		{ return std::make_unique<QuatAnimator>(*this); };
 	protected:
 		/** @copydoc TransformationAnimator::animateNode(AnimatedNode&, float)
 		 * @note	the animation will be applied only to the AnimationNodes

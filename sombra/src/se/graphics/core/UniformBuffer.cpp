@@ -64,6 +64,22 @@ namespace se::graphics {
 	}
 
 
+	std::unique_ptr<Bindable> UniformBuffer::clone() const
+	{
+		std::size_t bufferSize = size();
+
+		auto ret = std::make_unique<UniformBuffer>();
+		ret->mSlot = mSlot;
+		ret->resizeAndCopy(nullptr, bufferSize);
+
+		GL_WRAP( glBindBuffer(GL_COPY_READ_BUFFER, mBufferId) );
+		GL_WRAP( glBindBuffer(GL_UNIFORM_BUFFER, ret->mBufferId) );
+		GL_WRAP( glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, bufferSize) );
+
+		return ret;
+	}
+
+
 	void UniformBuffer::bind() const
 	{
 		GL_WRAP( glBindBufferBase(GL_UNIFORM_BUFFER, mSlot, mBufferId) );

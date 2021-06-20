@@ -24,6 +24,12 @@ namespace editor {
 		/** @see mWindow is being used for opening a Scene */
 		bool mOpen = false;
 
+		/** @see mWindow is being used for appending a Scene */
+		bool mAppend = false;
+
+		/** @see mWindow is being used for linking a Scene */
+		bool mLink = false;
+
 		/** @see mWindow is being used for importing a Scene */
 		bool mImport = false;
 
