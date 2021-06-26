@@ -48,28 +48,20 @@ namespace se::collision {
 		virtual std::unique_ptr<Collider> clone() const override
 		{ return std::make_unique<CompositeCollider>(*this); };
 
-		/** Updates the scale, translation and orientation of the
-		 * CompositeCollider with the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the
-		 *			CompositeCollider */
+		/** @copydoc Collider::setTransforms() */
 		virtual void setTransforms(const glm::mat4& transforms) override;
 
-		/** @return	the transformations matrix currently applied to the
-		 *			CompositeCollider */
+		/** @copydoc Collider::getTransforms() */
 		virtual glm::mat4 getTransforms() const override
 		{ return mTransformsMatrix; };
 
-		/** @return the Axis Aligned Bounding Box that contains the
-		 *			CompositeCollider */
+		/** @copydoc Collider::getAABB() */
 		virtual AABB getAABB() const override { return mAABB; };
 
-		/** @return	true if the CompositeCollider has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
+		/** @copydoc Collider::updated() */
 		virtual bool updated() const override;
 
-		/** Resets the updated state of the CompositeCollider */
+		/** @copydoc Collider::resetUpdatedState() */
 		virtual void resetUpdatedState() override;
 
 		/** Adds the given Collider to the CompositeCollider
@@ -87,11 +79,7 @@ namespace se::collision {
 		void processParts(F&& callback) const
 		{ for (const auto& part : mParts) { callback(*part); } }
 
-		/** Calls the given callback for each of the overlaping convex parts of
-		 * the CompositeCollider with the given AABB
-		 *
-		 * @param	aabb the AABB to compare
-		 * @param	callback the function to call */
+		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(
 			const AABB& aabb, const ConvexShapeCallback& callback
 		) const override;

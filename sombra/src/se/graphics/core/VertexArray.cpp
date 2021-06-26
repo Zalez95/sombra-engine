@@ -124,18 +124,19 @@ namespace se::graphics {
 	) const
 	{
 		int iType = 0, iNormalized = 0, iComponentSize = 0;
-		unsigned int uStride = 0, uOffset = 0;
+		unsigned int uStride = 0;
+		void* pOffset = 0;
 		bind();
 		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_TYPE, &iType) );
 		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &iNormalized) );
 		GL_WRAP( glGetVertexAttribIiv(index, GL_VERTEX_ATTRIB_ARRAY_SIZE, &iComponentSize) );
 		GL_WRAP( glGetVertexAttribIuiv(index, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &uStride) );
-		GL_WRAP( glGetVertexAttribIuiv(index, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &uOffset) );
+		GL_WRAP( glGetVertexAttribPointerv(index, GL_VERTEX_ATTRIB_ARRAY_POINTER, &pOffset) );
 		type = fromGLType(iType);
 		normalized = iNormalized != 0;
 		componentSize = iComponentSize;
 		stride = uStride;
-		offset = uOffset;
+		offset = reinterpret_cast<std::size_t>(pOffset);
 	}
 
 
@@ -145,6 +146,35 @@ namespace se::graphics {
 		bind();
 		GL_WRAP( glGetVertexAttribIuiv(index, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &vertexBufferId) );
 		return vertexBufferId == vbo.getVertexBufferId();
+	}
+
+
+	void VertexArray::copyVertexAttribute(unsigned int index, const VertexArray& other)
+	{
+		bool integerAttribute = other.isIntegerAttribute(index);
+		bool doubleAttribute = other.isDoubleAttribute(index);
+		unsigned int attributeDivisor = other.getAttributeDivisor(index);
+
+		TypeId type;
+		bool normalized;
+		int componentSize;
+		std::size_t stride, offset;
+		other.getVertexAttribute(index, type, normalized, componentSize, stride, offset);
+
+		enableAttribute(index);
+		if (integerAttribute) {
+			setVertexIntegerAttribute(index, type, componentSize, stride, offset);
+		}
+		else if (doubleAttribute) {
+			setVertexDoubleAttribute(index, type, componentSize, stride, offset);
+		}
+		else {
+			setVertexAttribute(index, type, normalized, componentSize, stride, offset);
+		}
+
+		if (attributeDivisor > 0) {
+			setAttributeDivisor(index, attributeDivisor);
+		}
 	}
 
 

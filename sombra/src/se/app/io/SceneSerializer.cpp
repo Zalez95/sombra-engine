@@ -1535,7 +1535,7 @@ namespace se::app {
 	nlohmann::json serializeComponent(const T& component, SerializeData& data, std::ostream& dataStream);
 
 	template <typename T>
-	ResultOptional<T> deserializeComponent(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene);
+	ResultOptional<T> deserializeComponent(const nlohmann::json& json, DeserializeData& data, Scene& scene);
 
 
 	template <>
@@ -1547,7 +1547,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<TagComponent> deserializeComponent<TagComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
+	ResultOptional<TagComponent> deserializeComponent<TagComponent>(const nlohmann::json& json, DeserializeData&, Scene&)
 	{
 		auto itName = json.find("name");
 		if (itName != json.end()) {
@@ -1584,7 +1584,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<TransformsComponent> deserializeComponent<TransformsComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
+	ResultOptional<TransformsComponent> deserializeComponent<TransformsComponent>(const nlohmann::json& json, DeserializeData&, Scene&)
 	{
 		TransformsComponent transforms;
 
@@ -1643,7 +1643,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<CameraComponent> deserializeComponent<CameraComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene&)
+	ResultOptional<CameraComponent> deserializeComponent<CameraComponent>(const nlohmann::json& json, DeserializeData&, Scene&)
 	{
 		CameraComponent camera;
 
@@ -1703,9 +1703,9 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<MeshComponent> deserializeComponent<MeshComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<MeshComponent> deserializeComponent<MeshComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
-		MeshComponent mesh(scene.application.getEventManager(), entity);
+		MeshComponent mesh;
 
 		auto itRMeshes = json.find("rMeshes");
 		if (itRMeshes == json.end()) {
@@ -1777,7 +1777,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<TerrainComponent> deserializeComponent<TerrainComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<TerrainComponent> deserializeComponent<TerrainComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
 		auto itSize = json.find("size");
 		if (itSize == json.end()) {
@@ -1802,7 +1802,7 @@ namespace se::app {
 		float size = *itSize;
 		float maxHeight = *itMaxHeight;
 		std::vector<float> lodDistances = *itLodDistances;
-		TerrainComponent terrain(scene.application.getEventManager(), entity, size, maxHeight, lodDistances);
+		TerrainComponent terrain(size, maxHeight, lodDistances);
 
 		for (std::size_t i = 0; i < itShaders->size(); ++i) {
 			std::string shaderKey = (*itShaders)[i];
@@ -1831,7 +1831,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<LightComponent> deserializeComponent<LightComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	ResultOptional<LightComponent> deserializeComponent<LightComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
 		LightComponent light;
 
@@ -1867,7 +1867,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<LightProbe> deserializeComponent<LightProbe>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	ResultOptional<LightProbe> deserializeComponent<LightProbe>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
 		LightProbe lightProbe;
 
@@ -1917,7 +1917,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<RigidBodyComponent> deserializeComponent<RigidBodyComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	ResultOptional<RigidBodyComponent> deserializeComponent<RigidBodyComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
 		RigidBodyComponent rigidBody;
 
@@ -2088,7 +2088,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<std::unique_ptr<Collider>> deserializeComponent<std::unique_ptr<Collider>>(const nlohmann::json& json, Entity entity, DeserializeData& data, Scene& scene)
+	ResultOptional<std::unique_ptr<Collider>> deserializeComponent<std::unique_ptr<Collider>>(const nlohmann::json& json, DeserializeData& data, Scene& scene)
 	{
 		std::unique_ptr<Collider> collider;
 
@@ -2272,7 +2272,7 @@ namespace se::app {
 			std::vector<std::unique_ptr<Collider>> parts;
 			for (std::size_t i = 0; i < itParts->size(); ++i) {
 				auto jsonPart = (*itParts)[i];
-				auto [result, part] = deserializeComponent<std::unique_ptr<Collider>>(jsonPart, entity, data, scene);
+				auto [result, part] = deserializeComponent<std::unique_ptr<Collider>>(jsonPart, data, scene);
 				if (!result) {
 					return { Result(false, "Failed to parse CompositeCollider at parts[" + std::to_string(i) + "]:" + result.description()), std::nullopt };
 				}
@@ -2315,7 +2315,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<SkinComponent> deserializeComponent<SkinComponent>(const nlohmann::json& json, Entity, DeserializeData& data, Scene& scene)
+	ResultOptional<SkinComponent> deserializeComponent<SkinComponent>(const nlohmann::json& json, DeserializeData& data, Scene& scene)
 	{
 		auto itRoot = json.find("root");
 		if (itRoot == json.end()) {
@@ -2386,7 +2386,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<AnimationComponent> deserializeComponent<AnimationComponent>(const nlohmann::json& json, Entity, DeserializeData& data, Scene& scene)
+	ResultOptional<AnimationComponent> deserializeComponent<AnimationComponent>(const nlohmann::json& json, DeserializeData& data, Scene& scene)
 	{
 		auto itRoot = json.find("root");
 		if (itRoot == json.end()) {
@@ -2439,9 +2439,9 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<ParticleSystemComponent> deserializeComponent<ParticleSystemComponent>(const nlohmann::json& json, Entity entity, DeserializeData&, Scene& scene)
+	ResultOptional<ParticleSystemComponent> deserializeComponent<ParticleSystemComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
-		ParticleSystemComponent particleSystem(scene.application.getEventManager(), entity);
+		ParticleSystemComponent particleSystem;
 
 		auto itMesh = json.find("mesh");
 		if (itMesh == json.end()) {
@@ -2494,7 +2494,7 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<AudioSourceComponent> deserializeComponent<AudioSourceComponent>(const nlohmann::json& json, Entity, DeserializeData&, Scene& scene)
+	ResultOptional<AudioSourceComponent> deserializeComponent<AudioSourceComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
 		AudioSourceComponent audioSource;
 
@@ -2696,14 +2696,14 @@ namespace se::app {
 				}
 
 				if constexpr (hasDerived) {
-					auto [result, component] = deserializeComponent<std::unique_ptr<T>>(componentJson, itEntity2->second, data, scene);
+					auto [result, component] = deserializeComponent<std::unique_ptr<T>>(componentJson, data, scene);
 					if (!result) {
 						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 					}
 					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
 				}
 				else {
-					auto [result, component] = deserializeComponent<T>(componentJson, itEntity2->second, data, scene);
+					auto [result, component] = deserializeComponent<T>(componentJson, data, scene);
 					if (!result) {
 						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 					}

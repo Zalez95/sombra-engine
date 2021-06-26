@@ -48,40 +48,22 @@ namespace se::collision {
 		virtual std::unique_ptr<Collider> clone() const override
 		{ return std::make_unique<TriangleCollider>(*this); };
 
-		/** Updates the scale, translation and orientation of the
-		 * TriangleCollider with the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the
-		 *			TriangleCollider */
+		/** @copydoc Collider::setTransforms() */
 		void setTransforms(const glm::mat4& transforms) override;
 
-		/** @return	the transformations matrix currently applied to the
-		 *			TriangleCollider */
+		/** @copydoc Collider::getTransforms() */
 		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
-		/** @return	the Axis Aligned Bounding Box that contains the
-		 *			TriangleCollider */
+		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
 
-		/** @return	true if the TriangleCollider has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
+		/** @copydoc Collider::updated() */
 		bool updated() const override { return mUpdated; };
 
-		/** Resets the updated state of the TriangleCollider */
+		/** @copydoc Collider::resetUpdatedState() */
 		void resetUpdatedState() override { mUpdated = false; };
 
-		/** Calculates the coordinates of the TriangleCollider's furthest point
-		 * in the given direction
-		 *
-		 * @param	direction the direction towards we want to get the furthest
-		 *			point
-		 * @param	pointWorld the vector where we are going to store the
-		 *			coordinates in world space of TriangleCollider's
-		 *			furthest point
-		 * @param	pointLocal the vector where we are going to store the
-		 *			coordinates in local space of TriangleCollider's
-		 *			furthest point */
+		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(
 			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal

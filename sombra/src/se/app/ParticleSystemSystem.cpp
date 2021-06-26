@@ -48,6 +48,8 @@ namespace se::app {
 // Private functions
 	void ParticleSystemSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
 	{
+		particleSystem->setup(&mApplication.getEventManager(), entity);
+
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::ParticleSystem));
@@ -61,6 +63,9 @@ namespace se::app {
 	void ParticleSystemSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
 	{
 		mApplication.getExternalTools().graphicsEngine->removeRenderable(&particleSystem->get());
+
+		particleSystem->setup(nullptr, kNullEntity);
+
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " removed successfully";
 	}
 

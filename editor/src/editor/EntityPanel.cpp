@@ -39,6 +39,16 @@ namespace editor {
 					mEditor.getEntityDatabase().removeEntity(entity);
 				}
 			}
+			ImGui::SameLine();
+			if (ImGui::SmallButton(("Copy##EntityPanel" + std::to_string(mPanelId) + "::Copy").c_str())) {
+				se::app::Entity entity = mEditor.getActiveEntity();
+				auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
+				if (itEntity != scene->entities.end()) {
+					se::app::Entity newEntity = mEditor.getEntityDatabase().copyEntity(entity);
+					scene->entities.push_back(newEntity);
+					mEditor.setActiveEntity(newEntity);
+				}
+			}
 
 			ImGui::BeginChild("Entities");
 			for (se::app::Entity entity : scene->entities) {

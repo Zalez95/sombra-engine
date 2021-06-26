@@ -55,15 +55,9 @@ namespace se::graphics {
 					return mVAO.checkVertexAttributeVBOBound(i, vbo);
 				});
 				if (itVBO != mVBOs.end()) {
-					TypeId type;
-					bool normalized;
-					int componentSize;
-					std::size_t stride, offset;
-					mVAO.getVertexAttribute(i, type, normalized, componentSize, stride, offset);
-
+					vao.bind();
 					vbos[std::distance(mVBOs.begin(), itVBO)].bind();
-					vao.enableAttribute(i);
-					vao.setVertexAttribute(i, type, normalized, componentSize, stride, offset);
+					vao.copyVertexAttribute(i, mVAO);
 				}
 			}
 		}
@@ -71,7 +65,10 @@ namespace se::graphics {
 		vao.bind();
 		ibo.bind();
 
-		return std::make_unique<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+		auto ret = std::make_unique<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
+		ret->mMinimum = mMinimum;
+		ret->mMaximum = mMaximum;
+		return ret;
 	}
 
 

@@ -20,11 +20,11 @@ namespace se::collision {
 		/** @return	a pointer to a copy of the current Collider */
 		virtual std::unique_ptr<Collider> clone() const = 0;
 
-		/** Updates the translation and orientation of the Collider with the
-		 * data of the given transformations matrix
+		/** Updates the scale, translation and orientation of the Collider
+		 * with the data of the given transformations matrix
 		 *
 		 * @param	transforms the transformations matrix used to update the
-		 *			position and orientation of the Collider */
+		 *			scale, position and orientation of the Collider */
 		virtual void setTransforms(const glm::mat4& transforms) = 0;
 
 		/** @return	the transformations matrix currently applied to the

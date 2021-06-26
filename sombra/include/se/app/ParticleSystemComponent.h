@@ -86,7 +86,7 @@ namespace se::app {
 	private:
 		/** The EventManager used for notifying the ParticleSystemComponent
 		 * changes */
-		EventManager& mEventManager;
+		EventManager* mEventManager;
 
 		/** The Entity that owns the ParticleSystemComponent */
 		Entity mEntity;
@@ -118,16 +118,35 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new ParticleSystemComponent
 		 *
-		 * @param	eventManager the EventManager used for notifying the
-		 *			ParticleSystemComponent changes
-		 * @param	entity the Entity that owns the new
-		 *			ParticleSystemComponent
 		 * @param	primitiveType the type of primitive used for rendering */
 		ParticleSystemComponent(
-			EventManager& eventManager, Entity entity,
 			graphics::PrimitiveType primitiveType =
 				graphics::PrimitiveType::Triangle
 		);
+		ParticleSystemComponent(const ParticleSystemComponent& other);
+		ParticleSystemComponent(ParticleSystemComponent&& other) = default;
+
+		/** Class destructor */
+		~ParticleSystemComponent() = default;
+
+		/** Assignment operator */
+		ParticleSystemComponent& operator=(
+			const ParticleSystemComponent& other
+		);
+		ParticleSystemComponent& operator=(
+			ParticleSystemComponent&& other
+		) = default;
+
+		/** Sets the ParticleSystemComponent attributes
+		 *
+		 * @param	eventManager the new EventManager of the
+		 *			ParticleSystemComponent
+		 * @param	entity the new Entity of the ParticleSystemComponent */
+		void setup(EventManager* eventManager, Entity entity)
+		{
+			mEventManager = eventManager;
+			mEntity = entity;
+		};
 
 		/** @return	the Particles of the ParticleSystemComponent */
 		const std::vector<Particle>& getParticles() const

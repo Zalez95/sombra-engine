@@ -121,7 +121,7 @@ namespace editor {
 						mWorkingData.name.data(), mWorkingData.name.size()
 					);
 				}
-				ImGui::Checkbox("Update descendants", &mDescendants);
+				ImGui::Checkbox(("Update descendants" + std::to_string(mPanelId) + "::updateDescendants").c_str(), &mDescendants);
 
 				if (ImGui::Button(("Change##SceneNodesPanel" + std::to_string(mPanelId) + "::Change").c_str())) {
 					mChangeParent = false;

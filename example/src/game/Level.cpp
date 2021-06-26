@@ -579,7 +579,7 @@ namespace game {
 			transforms.scale = glm::vec3(kZFar / 2.0f);
 			mGame.getEntityDatabase().addComponent(skyEntity, std::move(transforms));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(skyEntity, mGame.getEventManager(), skyEntity);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(skyEntity);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderSky));
 
@@ -623,7 +623,7 @@ namespace game {
 				.addStep(stepTerrain);
 
 			auto terrainComponent = mGame.getEntityDatabase().emplaceComponent<se::app::TerrainComponent>(
-				terrain, mGame.getEventManager(), terrain, size, maxHeight, lodDistances
+				terrain, size, maxHeight, lodDistances
 			);
 			terrainComponent->addRenderableShader(terrainShader);
 
@@ -652,7 +652,7 @@ namespace game {
 			transforms.position = glm::vec3(-15.0f, 1.0f, -5.0f);
 			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(plane, mGame.getEventManager(), plane);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(plane);
 			auto rIndex = mesh->add(false, planeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderPlane));
 		}
@@ -699,7 +699,7 @@ namespace game {
 			if (i == 4) {
 				transforms.velocity += glm::vec3(-1, 0, 0);
 
-				auto particleSystem = mGame.getEntityDatabase().emplaceComponent<se::app::ParticleSystemComponent>(cube, mGame.getEventManager(), cube);
+				auto particleSystem = mGame.getEntityDatabase().emplaceComponent<se::app::ParticleSystemComponent>(cube);
 				particleSystem->setMesh(planeMesh);
 				particleSystem->addRenderableShader(shaderParticles);
 				particleSystem->setEmitter(emitter);
@@ -722,7 +722,7 @@ namespace game {
 			shaderCube->addStep(stepShadow)
 				.addStep(stepCube);
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube, mGame.getEventManager(), cube);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderCube));
 		}
@@ -763,7 +763,7 @@ namespace game {
 			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(nonMovableCube, std::move(collider));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(nonMovableCube, mGame.getEventManager(), nonMovableCube);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(nonMovableCube);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, shaderRed);
 		}
@@ -788,7 +788,7 @@ namespace game {
 			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
 			mGame.getEntityDatabase().addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(gravityCube, mGame.getEventManager(), gravityCube);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(gravityCube);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, shaderRed);
 		}
@@ -836,7 +836,7 @@ namespace game {
 
 			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
 			auto sliceMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh)), ("mesh" + name).c_str());
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(tubeSlice, mGame.getEventManager(), tubeSlice);
+			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(tubeSlice);
 			auto rIndex = mesh->add(false, sliceMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderSlice));
 
@@ -865,7 +865,7 @@ namespace game {
 				auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 				mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
 
-				auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube, mGame.getEventManager(), cube);
+				auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube);
 				auto rIndex = mesh->add(false, cubeMesh);
 				mesh->addRenderableShader(rIndex, shaderRandom);
 			}

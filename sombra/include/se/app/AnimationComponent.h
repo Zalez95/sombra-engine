@@ -30,6 +30,8 @@ namespace se::app {
 		 *			to animate */
 		AnimationComponent(animation::AnimationNode* node = nullptr) :
 			mNode(node) {};
+		AnimationComponent(const AnimationComponent& other) = default;
+		AnimationComponent(AnimationComponent&& other) = default;
 
 		/** Class destructor */
 		~AnimationComponent()
@@ -40,6 +42,11 @@ namespace se::app {
 				}
 			}
 		};
+
+		/** Assignment operator */
+		AnimationComponent& operator=(const AnimationComponent& other) =
+			default;
+		AnimationComponent& operator=(AnimationComponent&& other) = default;
 
 		/** Sets the root Animation node of the AnimationComponent
 		 *

@@ -54,36 +54,22 @@ namespace se::collision {
 		virtual std::unique_ptr<Collider> clone() const override
 		{ return std::make_unique<Capsule>(*this); };
 
-		/** Updates the scale, translation and orientation of the Capsule with
-		 * the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the Capsule */
+		/** @copydoc Collider::setTransforms() */
 		void setTransforms(const glm::mat4& transforms) override;
 
-		/** @return	the transformations matrix currently applied to the
-		 *			Capsule */
+		/** @copydoc Collider::getTransforms() */
 		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
-		/** @return	the Axis Aligned Bounding Box that contains the Capsule */
+		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
 
-		/** @return	true if the Capsule has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
+		/** @copydoc Collider::updated() */
 		bool updated() const override { return mUpdated; };
 
-		/** Resets the updated state of the Capsule */
+		/** @copydoc Collider::resetUpdatedState() */
 		void resetUpdatedState() override { mUpdated = false; };
 
-		/** Calculates the coordinates of the Capsule's furthest point in the
-		 * given direction
-		 *
-		 * @param	direction the direction towards we want to get the furthest
-		 *			point
-		 * @param	pointWorld the vector where we are going to store the
-		 *			coordinates in world space of Capsule's furthest point
-		 * @param	pointLocal the vector where we are going to store the
-		 *			coordinates in local space of Capsule's furthest point */
+		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(
 			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal

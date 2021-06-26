@@ -1560,7 +1560,7 @@ namespace se::app {
 			if (itMesh != jsonNode.end()) {
 				std::size_t meshIndex = *itMesh;
 				if (meshIndex < mGLTFData->primitives.size()) {
-					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity, eventManager, node.entity);
+					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity);
 					for (auto& primitive : mGLTFData->primitives[meshIndex]) {
 						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh, primitive.primitiveType);
 						mesh->addRenderableShader(rIndex, primitive.shader);

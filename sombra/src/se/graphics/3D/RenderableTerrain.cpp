@@ -10,21 +10,6 @@ namespace se::graphics {
 	}
 
 
-	RenderableTerrain::RenderableTerrain(const RenderableTerrain& other) :
-		Renderable3D(other),
-		mQuadTree(other.mQuadTree), mMaxHeight(other.mMaxHeight) {}
-
-
-	RenderableTerrain& RenderableTerrain::operator=(const RenderableTerrain& other)
-	{
-		Renderable3D::operator=(other);
-		mQuadTree = other.mQuadTree;
-		mMaxHeight = other.mMaxHeight;
-
-		return *this;
-	}
-
-
 	RenderableTerrain& RenderableTerrain::setModelMatrix(const glm::mat4& modelMatrix)
 	{
 		mModelMatrix = modelMatrix;

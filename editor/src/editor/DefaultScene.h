@@ -184,7 +184,7 @@ namespace editor {
 		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(cubeEntity, "cube");
 		auto cubeTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(cubeEntity);
 		cubeTransforms->position = { 0.0f, 0.5f, 0.0f };
-		auto cubeMeshComponent = scene.application.getEntityDatabase().emplaceComponent<MeshComponent>(cubeEntity, scene.application.getEventManager(), cubeEntity);
+		auto cubeMeshComponent = scene.application.getEntityDatabase().emplaceComponent<MeshComponent>(cubeEntity);
 		std::size_t iRMesh = cubeMeshComponent->add(false, cubeMesh);
 		cubeMeshComponent->addRenderableShader(iRMesh, shaderDefault);
 

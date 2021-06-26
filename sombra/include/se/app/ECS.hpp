@@ -20,6 +20,13 @@ namespace se::app {
 		/** @return	the maximum number of components allowed */
 		virtual std::size_t getMaxComponents() const = 0;
 
+		/** Copies a Component from the source Entity to the destination Entity
+		 *
+		 * @param	source the Entity that owns the Component to copy
+		 * @param	destination the Entity that will own the copied Component
+		 * @return	true if it was copied successfully, false otherwise */
+		virtual bool copyComponent(Entity source, Entity destination) = 0;
+
 		/** Check if the given Entity has a Component
 		 *
 		 * @param	entity the Entity that owns the Component
@@ -102,12 +109,17 @@ namespace se::app {
 		 * Entity */
 		std::unordered_map<const T*, Entity> mComponentEntityMap;
 
+		/** The function used for copying the Components */
+		CopyCallback<T> mCopyCallback;
+
 	public:		// Functions
 		/** Creates a new ComponentTable
 		 *
 		 * @param	maxComponents the maximum number of Components that the
-		 *			ComponentTable can hold */
-		ComponentTable(std::size_t maxComponents)
+		 *			ComponentTable can hold
+		 * @param	copyCB the function used for copying the Components */
+		ComponentTable(std::size_t maxComponents, const CopyCallback<T>& copyCB) :
+			mCopyCallback(copyCB)
 		{
 			mComponents.reserve(maxComponents);
 			mEntityComponentMap.reserve(maxComponents);
@@ -140,6 +152,18 @@ namespace se::app {
 				return &(*it);
 			}
 			return nullptr;
+		};
+
+		/** @copydoc IComponentTable::copyComponent(Entity, Entity) */
+		virtual bool copyComponent(Entity source, Entity destination) override
+		{
+			if (mCopyCallback) {
+				auto component = getComponent(source);
+				if (component) {
+					return addComponent(destination, mCopyCallback(*component));
+				}
+			}
+			return false;
 		};
 
 		/** @copydoc IComponentTable::hasComponent(Entity) */
@@ -211,12 +235,17 @@ namespace se::app {
 		 * Entity */
 		std::unordered_map<const T*, Entity> mComponentEntityMap;
 
+		/** The function used for copying the Components */
+		CopyCallbackUPtr<T> mCopyCallback;
+
 	public:		// Functions
 		/** Creates a new ComponentTableUPtr
 		 *
 		 * @param	maxComponents the maximum number of Components that the
-		 *			ComponentTableUPtr can hold */
-		ComponentTableUPtr(std::size_t maxComponents)
+		 *			ComponentTableUPtr can hold
+		 * @param	copyCB the function used for copying the Components */
+		ComponentTableUPtr(std::size_t maxComponents, const CopyCallbackUPtr<T>& copyCB) :
+			mCopyCallback(copyCB)
 		{
 			mComponents.reserve(maxComponents);
 			mEntityComponentMap.reserve(maxComponents);
@@ -244,6 +273,18 @@ namespace se::app {
 				return it->get();
 			}
 			return nullptr;
+		};
+
+		/** @copydoc IComponentTable::copyComponent(Entity, Entity) */
+		virtual bool copyComponent(Entity source, Entity destination) override
+		{
+			if (mCopyCallback) {
+				auto component = getComponent(source);
+				if (component) {
+					return addComponent(destination, mCopyCallback(*component));
+				}
+			}
+			return false;
 		};
 
 		/** @copydoc IComponentTable::hasComponent(Entity) */
@@ -310,19 +351,34 @@ namespace se::app {
 
 
 	template <typename T, bool hasDerived>
-	void EntityDatabase::addComponentTable(std::size_t maxComponents)
-	{
+	std::enable_if_t<!hasDerived, void> EntityDatabase::addComponentTable(
+		std::size_t maxComponents, const CopyCallback<T>& copyCB
+	) {
 		std::size_t id = getComponentTypeId<T>();
 		while (id >= mComponentTables.size()) {
 			mComponentTables.emplace_back(nullptr);
 		}
 
-		if constexpr (hasDerived) {
-			mComponentTables[id] = std::make_unique<ComponentTableUPtr<T>>(maxComponents);
+		mComponentTables[id] = std::make_unique<ComponentTable<T>>(maxComponents, copyCB);
+
+		std::size_t activeComponentsSize = 2 * mMaxEntities * mComponentTables.size();
+		mActiveComponents.reserve(activeComponentsSize);
+		for (std::size_t i = 0; i < activeComponentsSize; ++i) {
+			mActiveComponents.push_back(i % 2 == 1);
 		}
-		else {
-			mComponentTables[id] = std::make_unique<ComponentTable<T>>(maxComponents);
+	}
+
+
+	template <typename T, bool hasDerived>
+	std::enable_if_t<hasDerived, void> EntityDatabase::addComponentTable(
+		std::size_t maxComponents, const CopyCallbackUPtr<T>& copyCB
+	) {
+		std::size_t id = getComponentTypeId<T>();
+		while (id >= mComponentTables.size()) {
+			mComponentTables.emplace_back(nullptr);
 		}
+
+		mComponentTables[id] = std::make_unique<ComponentTableUPtr<T>>(maxComponents, copyCB);
 
 		std::size_t activeComponentsSize = 2 * mMaxEntities * mComponentTables.size();
 		mActiveComponents.reserve(activeComponentsSize);
@@ -404,6 +460,34 @@ namespace se::app {
 			}
 		}
 		return ret;
+	}
+
+
+	template <typename T>
+	T* EntityDatabase::copyComponent(Entity source, Entity destination)
+	{
+		std::size_t typeId = getComponentTypeId<T>();
+		std::size_t srcComponentsBaseIndex = 2 * (source * mComponentTables.size() + typeId);
+		std::size_t desComponentsBaseIndex = 2 * (destination * mComponentTables.size() + typeId);
+
+		if (mActiveComponents[srcComponentsBaseIndex]) {
+			const auto& table = getTable<T>();
+			if (table.copyComponent(source, destination)) {
+				mActiveComponents[desComponentsBaseIndex] = true;
+				mActiveComponents[desComponentsBaseIndex + 1] = mActiveComponents[srcComponentsBaseIndex + 1];
+
+				if (mActiveComponents[desComponentsBaseIndex + 1]) {
+					for (auto& pair : mSystems) {
+						if (pair.second[typeId]) {
+							pair.first->onNewComponent(destination, ComponentMask().set(typeId, true));
+						}
+					}
+				}
+
+				return table.getComponent(destination);
+			}
+		}
+		return nullptr;
 	}
 
 

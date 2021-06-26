@@ -14,6 +14,17 @@ namespace se::graphics {
 	}
 
 
+	Renderable3D& Renderable3D::clearBindables(Pass* pass)
+	{
+		auto it = mPassBindables.find(pass);
+		if (it != mPassBindables.end()) {
+			mPassBindables.erase(it);
+		}
+
+		return *this;
+	}
+
+
 	Renderable3D& Renderable3D::removePassBindable(Pass* pass, const BindableSPtr& bindable)
 	{
 		auto it = mPassBindables.find(pass);
@@ -30,23 +41,17 @@ namespace se::graphics {
 
 	void Renderable3D::bind(Pass* pass) const
 	{
-		auto it = mPassBindables.find(pass);
-		if (it != mPassBindables.end()) {
-			for (auto& bindable : it->second) {
-				bindable->bind();
-			}
-		}
+		processPassBindables(pass, [](const BindableSPtr& bindable) {
+			bindable->bind();
+		});
 	}
 
 
 	void Renderable3D::unbind(Pass* pass) const
 	{
-		auto it = mPassBindables.find(pass);
-		if (it != mPassBindables.end()) {
-			for (auto itBindable = it->second.rbegin(); itBindable != it->second.rend(); ++itBindable) {
-				(*itBindable)->unbind();
-			}
-		}
+		processPassBindables(pass, [](const BindableSPtr& bindable) {
+			bindable->unbind();
+		});
 	}
 
 }

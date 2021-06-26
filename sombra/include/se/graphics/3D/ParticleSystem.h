@@ -41,6 +41,16 @@ namespace se::graphics {
 			MeshSPtr mesh = nullptr,
 			PrimitiveType primitiveType = PrimitiveType::Triangle
 		) : mPrimitiveType(primitiveType), mNumInstances(0) { setMesh(mesh); };
+		ParticleSystem(const ParticleSystem& other);
+		ParticleSystem(ParticleSystem&& other) = default;
+
+		/** Class destructor */
+		~ParticleSystem() = default;
+
+		/** Assignment operator */
+		ParticleSystem& operator=(const ParticleSystem& other);
+		ParticleSystem& operator=(ParticleSystem&& other) = default;
+
 
 		/** @return	the Mesh pointed by the ParticleSystem */
 		MeshSPtr getMesh() const { return mMesh; };

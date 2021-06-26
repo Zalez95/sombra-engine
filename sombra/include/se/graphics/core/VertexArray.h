@@ -118,6 +118,13 @@ namespace se::graphics {
 			unsigned int index, const VertexBuffer& vbo
 		) const;
 
+		/** Copies the vertex attribute config from the given VertexArray to
+		 * the current one
+		 *
+		 * @param	index the index of the attribute to copy
+		 * @param	vao the other VertexArray to copy from */
+		void copyVertexAttribute(unsigned int index, const VertexArray& other);
+
 		/** Sets rate that a vertex attribute advance each time a instance is
 		 * drawn
 		 *

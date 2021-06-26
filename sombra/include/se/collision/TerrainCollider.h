@@ -69,34 +69,23 @@ namespace se::collision {
 		virtual std::unique_ptr<Collider> clone() const override
 		{ return std::make_unique<TerrainCollider>(*this); };
 
-		/** Updates the scale, translation and orientation of the
-		 * TerrainCollider with the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the TerrainCollider */
+		/** @copydoc Collider::setTransforms() */
 		virtual void setTransforms(const glm::mat4& transforms) override;
 
-		/** @return	the transformations matrix currently applied to the
-		 *			TerrainCollider */
+		/** @copydoc Collider::getTransforms() */
 		virtual glm::mat4 getTransforms() const override
 		{ return mTransformsMatrix; };
 
-		/** @return the Axis Aligned Bounding Box that contains the
-		 *			TerrainCollider */
+		/** @copydoc Collider::getAABB() */
 		virtual AABB getAABB() const override { return mAABB; };
 
-		/** @return	true if the TerrainCollider has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
+		/** @copydoc Collider::updated() */
 		virtual bool updated() const override { return mUpdated; };
 
-		/** Resets the updated state of the TerrainCollider */
+		/** @copydoc Collider::resetUpdatedState() */
 		virtual void resetUpdatedState() override { mUpdated = false; };
 
-		/** Calls the given callback for each of the overlaping convex parts of
-		 * the TerrainCollider with the given AABB
-		 *
-		 * @param	aabb the AABB to compare
-		 * @param	callback the function to call */
+		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(
 			const AABB& aabb, const ConvexShapeCallback& callback
 		) const override;

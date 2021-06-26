@@ -83,6 +83,8 @@ namespace se::app {
 // Private functions
 	void MeshSystem::onNewMesh(Entity entity, MeshComponent* mesh)
 	{
+		mesh->setup(&mApplication.getEventManager(), entity);
+
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
@@ -117,6 +119,8 @@ namespace se::app {
 		if (it != mEntityUniforms.end()) {
 			mEntityUniforms.erase(it);
 		}
+
+		mesh->setup(nullptr, kNullEntity);
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
 	}

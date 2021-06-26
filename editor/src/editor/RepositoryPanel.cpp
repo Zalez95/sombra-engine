@@ -119,9 +119,8 @@ namespace editor {
 
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::CollapsingHeader("Selected element")) {
-				if (!mSelectedName.empty()) {
-					auto selected = repository.findByName<T>(mSelectedName.c_str());
-
+				auto selected = repository.findByName<T>(mSelectedName.c_str());
+				if (selected) {
 					std::array<char, kMaxNameSize> nameBuffer = {};
 					std::strcpy(nameBuffer.data(), selected.getResource().getName());
 					std::string name = "Name" + getIdPrefix() + "TypeNode::name";
@@ -1242,7 +1241,7 @@ namespace editor {
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
 			bool validName = !repository.findByName<Texture>(mNameBuffer.data());
 
-			ImGui::Checkbox("Is HDR", &mIsHDR);
+			ImGui::Checkbox(("Is HDR" + getIdPrefix() + "TextureNode::isHDR").c_str(), &mIsHDR);
 
 			static const char* colorTypeTags[] = { "Red", "RG", "RGB", "RGBA" };
 			int currentType = static_cast<int>(mColorType);

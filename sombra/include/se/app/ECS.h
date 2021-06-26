@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include <unordered_set>
 #include "../utils/PackedVector.h"
 #include "Entity.h"
@@ -67,6 +68,11 @@ namespace se::app {
 			bool get() const;
 		};
 
+		template <typename T>
+		using CopyCallback = std::function<T(const T&)>;
+		template <typename T>
+		using CopyCallbackUPtr = std::function<std::unique_ptr<T>(const T&)>;
+
 	private:	// Attributes
 		/** The number of different Component types */
 		static std::size_t sComponentTypeCount;
@@ -107,10 +113,17 @@ namespace se::app {
 		 *
 		 * @param	maxComponents the maximum number of Components of that type
 		 *			that can be stored in the table
+		 * @param	copyCB the function used for copying the Components
 		 * @note	this function must be called for each Component type
 		 *			before using any other functions */
 		template <typename T, bool hasDerived = false>
-		void addComponentTable(std::size_t maxComponents);
+		std::enable_if_t<!hasDerived, void> addComponentTable(
+			std::size_t maxComponents, const CopyCallback<T>& copyCB = {}
+		);
+		template <typename T, bool hasDerived = true>
+		std::enable_if_t<hasDerived, void> addComponentTable(
+			std::size_t maxComponents, const CopyCallbackUPtr<T>& copyCB = {}
+		);
 
 		/** Adds the given System so it can be notified of new Entities and
 		 * Components
@@ -140,6 +153,13 @@ namespace se::app {
 		 * @note	the Entity will have no Components, but all of them will be
 		 *			enabled by default */
 		Entity addEntity();
+
+		/** Creates a new Entity with the same Components than the given one
+		 *
+		 * @param	source the Entity to copy
+		 * @return	the new Entity, @see kNullEntity if It couldn't be
+		 *			created */
+		Entity copyEntity(Entity source);
 
 		/** Returns the Entity that owns the given Component
 		 *
@@ -173,7 +193,7 @@ namespace se::app {
 		 * @param	entity the Entity that will own the Component
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
-		 * @return	a pointer to tha Component if it was added successfully,
+		 * @return	a pointer to the Component if it was added successfully,
 		 *			nullptr otherwise */
 		template <typename T, typename... Args>
 		T* emplaceComponent(Entity entity, Args&&... args);
@@ -182,7 +202,7 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that will own the Component
 		 * @param	component the Component to add
-		 * @return	a pointer to tha Component if it was added successfully,
+		 * @return	a pointer to the Component if it was added successfully,
 		 *			nullptr otherwise */
 		template <typename T>
 		T* addComponent(Entity entity, T&& component);
@@ -191,10 +211,21 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that will own the Component
 		 * @param	component a pointer to the Component to add
-		 * @return	a pointer to tha Component if it was added successfully,
+		 * @return	a pointer to the Component if it was added successfully,
 		 *			nullptr otherwise */
 		template <typename T>
 		T* addComponent(Entity entity, std::unique_ptr<T> component);
+
+		/** Copies a Component with type @tparam T from the source Entity to
+		 * the destination Entity
+		 *
+		 * @param	source the Entity that owns the Component to copy
+		 * @param	destination the Entity that will own the copied Component
+		 * @return	a pointer to the Component if it was copied successfully,
+		 *			nullptr otherwise
+		 * @see		CopyCallback implements this function */
+		template <typename T>
+		T* copyComponent(Entity source, Entity destination);
 
 		/** Checks if an Entity has all the given Components
 		 *

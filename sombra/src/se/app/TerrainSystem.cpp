@@ -79,6 +79,8 @@ namespace se::app {
 // Private functions
 	void TerrainSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
 	{
+		terrain->setup(&mApplication.getEventManager(), entity);
+
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
@@ -109,6 +111,8 @@ namespace se::app {
 		if (it != mEntityUniforms.end()) {
 			mEntityUniforms.erase(it);
 		}
+
+		terrain->setup(nullptr, kNullEntity);
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RenderableTerrain " << terrain << " removed successfully";
 	}

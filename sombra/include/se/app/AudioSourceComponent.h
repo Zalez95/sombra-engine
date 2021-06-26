@@ -23,6 +23,24 @@ namespace se::app {
 		BufferRef mBuffer;
 
 	public:		// Functions
+		/** Creates a new Source */
+		AudioSourceComponent() = default;
+		AudioSourceComponent(const AudioSourceComponent& other) :
+			mBuffer(other.mBuffer) { mSource.bind(*mBuffer); };
+		AudioSourceComponent(AudioSourceComponent&& other) = default;
+
+		/** Class destructor */
+		~AudioSourceComponent() = default;
+
+		/** Assignment operator */
+		AudioSourceComponent& operator=(const AudioSourceComponent& other)
+		{
+			mBuffer = other.mBuffer;
+			mSource.bind(*mBuffer);
+			return *this;
+		};
+		AudioSourceComponent& operator=(AudioSourceComponent&& other) = default;
+
 		/** @return	the raw audio source of the AudioSourceComponent */
 		audio::Source& get() { return mSource; };
 

@@ -9,9 +9,8 @@
 
 namespace se::app {
 
-	ParticleSystemComponent::ParticleSystemComponent(
-		EventManager& eventManager, Entity entity, graphics::PrimitiveType primitiveType
-	) : mEventManager(eventManager), mEntity(entity), mParticleSystem(nullptr, primitiveType),
+	ParticleSystemComponent::ParticleSystemComponent(graphics::PrimitiveType primitiveType) :
+		mEventManager(nullptr), mEntity(kNullEntity), mParticleSystem(nullptr, primitiveType),
 		mInitialPosition(0.0f), mInitialOrientation(1.0f, glm::vec3(0.0f)), mAccumulatedTime(0.0f)
 	{
 		auto& vao = mParticleSystem.getVAO();
@@ -37,6 +36,43 @@ namespace se::app {
 	}
 
 
+	ParticleSystemComponent::ParticleSystemComponent(const ParticleSystemComponent& other) :
+		mParticles(other.mParticles), mParticleSystem(other.mParticleSystem), mShaders(other.mShaders),
+		mInitialPosition(other.mInitialPosition), mInitialOrientation(other.mInitialOrientation),
+		mAccumulatedTime(other.mAccumulatedTime),
+		mMesh(other.mMesh), mEmitter(other.mEmitter)
+	{
+		processRenderableShaders([&](const RenderableShaderRef& shader) {
+			shader->processSteps([&](const RenderableShader::StepRef& step) {
+				mParticleSystem.clearBindables(step->getPass().get());
+			});
+		});
+	}
+
+
+	ParticleSystemComponent& ParticleSystemComponent::operator=(const ParticleSystemComponent& other)
+	{
+		mEventManager = nullptr;
+		mEntity = kNullEntity;
+		mParticles = other.mParticles;
+		mParticleSystem = other.mParticleSystem;
+		mShaders = other.mShaders;
+		mInitialPosition = other.mInitialPosition;
+		mInitialOrientation = other.mInitialOrientation;
+		mAccumulatedTime = other.mAccumulatedTime;
+		mMesh = other.mMesh;
+		mEmitter = other.mEmitter;
+
+		processRenderableShaders([&](const RenderableShaderRef& shader) {
+			shader->processSteps([&](const RenderableShader::StepRef& step) {
+				mParticleSystem.clearBindables(step->getPass().get());
+			});
+		});
+
+		return *this;
+	}
+
+
 	void ParticleSystemComponent::setMesh(const MeshRef& mesh)
 	{
 		mMesh = mesh;
@@ -55,17 +91,21 @@ namespace se::app {
 	{
 		mShaders.emplace_back(shader);
 		mParticleSystem.addTechnique(shader->getTechnique());
-		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
-		));
+		if (mEventManager) {
+			mEventManager->publish(new RenderableShaderEvent(
+				RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
+			));
+		}
 	}
 
 
 	void ParticleSystemComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
-		mEventManager.publish(new RenderableShaderEvent(
-			RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
-		));
+		if (mEventManager) {
+			mEventManager->publish(new RenderableShaderEvent(
+				RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
+			));
+		}
 		mParticleSystem.removeTechnique(shader->getTechnique());
 		mShaders.erase(std::remove(mShaders.begin(), mShaders.end(), shader), mShaders.end());
 	}

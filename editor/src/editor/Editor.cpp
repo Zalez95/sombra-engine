@@ -151,7 +151,7 @@ namespace editor {
 
 		mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mGridEntity);
 
-		auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity, *mEventManager, mGridEntity);
+		auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity);
 		auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
 		auto gridMeshSPtr = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
 		auto gridMesh = mRepository->insert(std::move(gridMeshSPtr), "gridMesh");

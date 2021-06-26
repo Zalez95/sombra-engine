@@ -83,6 +83,35 @@ namespace se::app {
 	}
 
 
+	Entity EntityDatabase::copyEntity(Entity source)
+	{
+		Entity ret = addEntity();
+
+		std::size_t numComponents = mComponentTables.size();
+		for (std::size_t i = 0; i < numComponents; ++i) {
+			std::size_t srcComponentsBaseIndex = 2 * (source * mComponentTables.size() + i);
+			std::size_t desComponentsBaseIndex = 2 * (ret * mComponentTables.size() + i);
+
+			mActiveComponents[desComponentsBaseIndex + 1] = mActiveComponents[srcComponentsBaseIndex + 1];
+			if (mActiveComponents[srcComponentsBaseIndex]) {
+				if (mComponentTables[i]->copyComponent(source, ret)) {
+					mActiveComponents[desComponentsBaseIndex] = true;
+
+					if (mActiveComponents[desComponentsBaseIndex + 1]) {
+						for (auto& pair : mSystems) {
+							if (pair.second[i]) {
+								pair.first->onNewComponent(ret, ComponentMask().set(i, true));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return ret;
+	}
+
+
 	void EntityDatabase::removeEntity(Entity entity)
 	{
 		std::size_t numComponents = mComponentTables.size();

@@ -19,7 +19,7 @@ namespace se::app {
 
 	private:	// Attributes
 		/** The EventManager used for notifying the TerrainComponent changes */
-		EventManager& mEventManager;
+		EventManager* mEventManager;
 
 		/** The Entity that owns the TerrainComponent */
 		Entity mEntity;
@@ -33,19 +33,34 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new TerrainComponent
 		 *
-		 * @param	eventManager the EventManager used for notifying the
-		 *			TerrainComponent changes
-		 * @param	entity the Entity that owns the new TerrainComponent
 		 * @param	size the size of the terrain in the XZ plane
 		 * @param	maxHeight the maximum height of the vertices of the terrain
 		 * @param	lodDistances the minimum distance to the camera at each
 		 *			level of detail */
 		TerrainComponent(
-			EventManager& eventManager, Entity entity,
 			float size = 0.0f, float maxHeight = 0.0f,
 			const std::vector<float>& lodDistances = {}
-		) : mEventManager(eventManager), mEntity(entity),
+		) : mEventManager(nullptr), mEntity(kNullEntity),
 			mRenderableTerrain(size, maxHeight, lodDistances) {};
+		TerrainComponent(const TerrainComponent& other);
+		TerrainComponent(TerrainComponent&& other) = default;
+
+		/** Class destructor */
+		~TerrainComponent() = default;
+
+		/** Assignment operator */
+		TerrainComponent& operator=(const TerrainComponent& other);
+		TerrainComponent& operator=(TerrainComponent&& other) = default;
+
+		/** Sets the TerrainComponent attributes
+		 *
+		 * @param	eventManager the new EventManager of the TerrainComponent
+		 * @param	entity the new Entity of the TerrainComponent */
+		void setup(EventManager* eventManager, Entity entity)
+		{
+			mEventManager = eventManager;
+			mEntity = entity;
+		};
 
 		/** @return	the RenderableTerrain of the TerrainComponent */
 		graphics::RenderableTerrain& get() { return mRenderableTerrain; };

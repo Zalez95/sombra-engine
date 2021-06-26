@@ -133,21 +133,16 @@ namespace se::app {
 
 
 	template <typename T>
-	void Repository::init()
+	void Repository::init(const CloneCallback<T>& cloneCB)
 	{
 		std::size_t id = getRepoTableTypeId<T>();
 		while (id >= mRepoTables.size()) {
 			mRepoTables.emplace_back(nullptr);
 		}
 
-		mRepoTables[id] = std::make_unique<RepoTable<T>>();
-	}
-
-
-	template <typename T>
-	void Repository::setCloneCallback(const CloneCallback<T>& callback)
-	{
-		getRepoTable<T>().cloneCallback = callback;
+		auto table = std::make_unique<RepoTable<T>>();
+		table->cloneCallback = cloneCB;
+		mRepoTables[id] = std::move(table);
 	}
 
 

@@ -177,12 +177,12 @@ namespace se::app {
 			void setFakeUser(bool fakeUser = true);
 		};
 
+		template <typename T>
+		using CloneCallback = std::function<std::unique_ptr<T>(const T&)>;
 	private:
 		struct IRepoTable;
 		template <typename T> struct RepoTable;
 		using IRepoTableUPtr = std::unique_ptr<IRepoTable>;
-		template <typename T>
-		using CloneCallback = std::function<std::unique_ptr<T>(const T&)>;
 
 	private:	// Attributes
 		/** The number of different RepoTable types */
@@ -206,18 +206,14 @@ namespace se::app {
 		Repository& operator=(Repository&& other) = default;
 
 		/** Initializes the Repository so it can hold elements of @tparam T type
+		 *
+		 * @param	cloneCB the function used for clonying the elements
 		 * @note	it must be called only once before trying to add, remove or
 		 *			search elements of the given types. On destroy, the objects
 		 *			will be cleared in reverse order than they were
 		 *			initialized */
 		template <typename T>
-		void init();
-
-		/** Sets the function used for clonying an element of @tparam T type
-		 *
-		 * @param	callback the new function used for clonying the elements */
-		template <typename T>
-		void setCloneCallback(const CloneCallback<T>& callback);
+		void init(const CloneCallback<T>& cloneCB = {});
 
 		/** Removes all the elements with @tparam T type from the Repository
 		 * @note	all the references to those objects will be invalidated */

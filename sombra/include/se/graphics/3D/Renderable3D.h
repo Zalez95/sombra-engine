@@ -58,6 +58,19 @@ namespace se::graphics {
 		 * @return	a reference to the current Renderable3D object */
 		Renderable3D& addPassBindable(Pass* pass, const BindableSPtr& bindable);
 
+		/** Iterates through all the Bindables mapped with the given Pass of
+		 * the Renderable3D calling the given callback function
+		 *
+		 * @param	pass a pointer to the Pass related to the Bindables
+		 * @param	callback the function to call for each Bindable */
+		template <typename F>
+		void processPassBindables(Pass* pass, F&& callback) const;
+
+		/** Removes all the bindables related to the given Pass
+		 *
+		 * @param	pass a pointer to the Pass related to the Bindables */
+		Renderable3D& clearBindables(Pass* pass);
+
 		/** Removes a Bindable from the current Renderable3D
 		 *
 		 * @param	pass a pointer to the Pass used for binding the Bindable
@@ -79,6 +92,18 @@ namespace se::graphics {
 		 * @param	pass a pointer to the Pass used for binding the Bindables */
 		void unbind(Pass* pass) const;
 	};
+
+
+	template <typename F>
+	void Renderable3D::processPassBindables(Pass* pass, F&& callback) const
+	{
+		auto it = mPassBindables.find(pass);
+		if (it != mPassBindables.end()) {
+			for (auto& bindable : it->second) {
+				callback(bindable);
+			}
+		}
+	}
 
 }
 

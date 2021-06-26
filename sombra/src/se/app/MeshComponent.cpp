@@ -1,8 +1,39 @@
 #include <algorithm>
+#include "se/app/events/RMeshEvent.h"
 #include "se/app/MeshComponent.h"
 #include "se/app/events/RenderableShaderEvent.h"
 
 namespace se::app {
+
+	MeshComponent::MeshComponent(const MeshComponent& other) : mRMeshes(other.mRMeshes)
+	{
+		processRenderableIndices([&](std::size_t i) {
+			processRenderableShaders(i, [&](const RenderableShaderRef& shader) {
+				shader->processSteps([&](const RenderableShader::StepRef& step) {
+					mRMeshes[i].renderable.clearBindables(step->getPass().get());
+				});
+			});
+		});
+	}
+
+
+	MeshComponent& MeshComponent::operator=(const MeshComponent& other)
+	{
+		mEventManager = nullptr;
+		mEntity = kNullEntity;
+		mRMeshes = other.mRMeshes;
+
+		processRenderableIndices([&](std::size_t i) {
+			processRenderableShaders(i, [&](const RenderableShaderRef& shader) {
+				shader->processSteps([&](const RenderableShader::StepRef& step) {
+					mRMeshes[i].renderable.clearBindables(step->getPass().get());
+				});
+			});
+		});
+
+		return *this;
+	}
+
 
 	bool MeshComponent::full() const
 	{
@@ -29,7 +60,9 @@ namespace se::app {
 			it->renderable = graphics::RenderableMesh(mesh.get(), primitiveType);
 			ret = std::distance(mRMeshes.begin(), it);
 
-			mEventManager.publish(new RMeshEvent(RMeshEvent::Operation::Add, mEntity, ret));
+			if (mEventManager) {
+				mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Add, mEntity, ret));
+			}
 		}
 
 		return ret;
@@ -38,7 +71,9 @@ namespace se::app {
 
 	void MeshComponent::remove(std::size_t rIndex)
 	{
-		mEventManager.publish(new RMeshEvent(RMeshEvent::Operation::Remove, mEntity, rIndex));
+		if (mEventManager) {
+			mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Remove, mEntity, rIndex));
+		}
 		mRMeshes[rIndex] = {};
 	}
 
@@ -47,13 +82,17 @@ namespace se::app {
 	{
 		mRMeshes[rIndex].shaders.emplace_back(shader);
 		mRMeshes[rIndex].renderable.addTechnique(shader->getTechnique());
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader.get()));
+		if (mEventManager) {
+			mEventManager->publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader.get()));
+		}
 	}
 
 
 	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
 	{
-		mEventManager.publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));
+		if (mEventManager) {
+			mEventManager->publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));
+		}
 		mRMeshes[rIndex].renderable.removeTechnique(shader->getTechnique());
 		mRMeshes[rIndex].shaders.erase(
 			std::remove(mRMeshes[rIndex].shaders.begin(), mRMeshes[rIndex].shaders.end(), shader),

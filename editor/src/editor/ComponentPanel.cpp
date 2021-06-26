@@ -306,7 +306,7 @@ namespace editor {
 
 				std::string name3 = "Environment Map" + getIdPrefix() + "LightProbeComponentNode::ChangeEnvironment";
 				addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture);
-				ImGui::Checkbox("Is cube map", &mIsCubeMap);
+				ImGui::Checkbox(("Is cube map" + getIdPrefix() + "LightProbeComponentNode::isCubeMap").c_str(), &mIsCubeMap);
 				if (!mIsCubeMap) {
 					ImGui::DragInt("New cube map resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
 				}
@@ -352,7 +352,7 @@ namespace editor {
 		virtual const char* getName() const override
 		{ return "Mesh"; };
 		virtual void create(Entity entity) override
-		{ getEditor().getEntityDatabase().emplaceComponent<MeshComponent>(entity, getEditor().getEventManager(), entity); };
+		{ getEditor().getEntityDatabase().emplaceComponent<MeshComponent>(entity); };
 		virtual void draw(Entity entity) override
 		{
 			auto [mesh] = getEditor().getEntityDatabase().getComponents<MeshComponent>(entity);
@@ -368,7 +368,7 @@ namespace editor {
 				mesh->add(mHasSkinning, gMesh);
 			}
 			ImGui::SameLine();
-			ImGui::Checkbox("Has Skinning", &mHasSkinning);
+			ImGui::Checkbox(("Has Skinning" + getIdPrefix() + "MeshComponentNode::hasSkinning").c_str(), &mHasSkinning);
 			if (!canAddRMesh) {
 				ImGui::PopItemFlag();
 				ImGui::PopStyleVar();
@@ -438,7 +438,7 @@ namespace editor {
 		{
 			const float size = 500.0f, maxHeight = 10.0f;
 			const std::vector<float> lodDistances = { 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			getEditor().getEntityDatabase().emplaceComponent<TerrainComponent>(entity, getEditor().getEventManager(), entity, size, maxHeight, lodDistances);
+			getEditor().getEntityDatabase().emplaceComponent<TerrainComponent>(entity, size, maxHeight, lodDistances);
 		};
 		virtual void draw(Entity entity) override
 		{
@@ -857,7 +857,7 @@ namespace editor {
 		{ return "ParticleSystem"; };
 		virtual void create(Entity entity) override
 		{
-			getEditor().getEntityDatabase().emplaceComponent<ParticleSystemComponent>(entity, getEditor().getEventManager(), entity);
+			getEditor().getEntityDatabase().emplaceComponent<ParticleSystemComponent>(entity);
 		};
 		virtual void draw(Entity entity) override
 		{
@@ -982,10 +982,12 @@ namespace editor {
 					ImGui::EndPopup();
 				}
 
+				std::size_t iComponent = 0;
 				for (IComponentNode* node : mNodes) {
 					if (node->active(selectedEntity)) {
 						bool enabled = node->enabled(selectedEntity);
-						if (ImGui::Checkbox("", &enabled)) {
+						std::string name1 = "##" + std::to_string(mPanelId) + "enableComponent" + std::to_string(iComponent++);
+						if (ImGui::Checkbox(name1.c_str(), &enabled)) {
 							if (enabled) {
 								node->enable(selectedEntity);
 							}

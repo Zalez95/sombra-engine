@@ -5,7 +5,6 @@
 #include "../graphics/3D/RenderableMesh.h"
 #include "graphics/RenderableShader.h"
 #include "events/EventManager.h"
-#include "events/RMeshEvent.h"
 #include "Entity.h"
 
 namespace se::app {
@@ -35,22 +34,36 @@ namespace se::app {
 		static constexpr std::size_t kMaxMeshes = 128;
 	private:
 		/** The EventManager used for notifying the MeshComponent changes */
-		EventManager& mEventManager;
+		EventManager* mEventManager = nullptr;
 
 		/** The Entity that owns the MeshComponent */
-		Entity mEntity;
+		Entity mEntity = kNullEntity;
 
 		/** All the RenderableMeshes added to the MeshComponent */
 		std::array<RMesh, kMaxMeshes> mRMeshes;
 
 	public:		// Functions
-		/** Creates a new MeshComponent
+		/** Creates a new MeshComponent */
+		MeshComponent() = default;
+		MeshComponent(const MeshComponent& other);
+		MeshComponent(MeshComponent&& other) = default;
+
+		/** Class destructor */
+		~MeshComponent() = default;
+
+		/** Assignment operator */
+		MeshComponent& operator=(const MeshComponent& other);
+		MeshComponent& operator=(MeshComponent&& other) = default;
+
+		/** Sets the MeshComponent attributes
 		 *
-		 * @param	eventManager the EventManager used for notifying the
-		 *			MeshComponent changes
-		 * @param	entity the Entity that owns the new MeshComponent */
-		MeshComponent(EventManager& eventManager, Entity entity) :
-			mEventManager(eventManager), mEntity(entity) {};
+		 * @param	eventManager the new EventManager of the MeshComponent
+		 * @param	entity the new Entity of the MeshComponent */
+		void setup(EventManager* eventManager, Entity entity)
+		{
+			mEventManager = eventManager;
+			mEntity = entity;
+		};
 
 		/** @return	true if no more RenderableMeshes can be added, false
 		 *			otherwise */

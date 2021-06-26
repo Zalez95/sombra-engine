@@ -50,40 +50,22 @@ namespace se::collision {
 		virtual std::unique_ptr<Collider> clone() const override
 		{ return std::make_unique<ConvexPolyhedron>(*this); };
 
-		/** Updates the scale, translation and orientation of the
-		 * ConvexPolyhedron with the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the
-		 *			ConvexPolyhedron */
+		/** @copydoc Collider::setTransforms() */
 		void setTransforms(const glm::mat4& transforms) override;
 
-		/** @return	the transformations matrix currently applied to the
-		 *			ConvexPolyhedron */
+		/** @copydoc Collider::getTransforms() */
 		glm::mat4 getTransforms() const override { return mTransformsMatrix; };
 
-		/** @return	the Axis Aligned Bounding Box that contains the
-		 *			ConvexPolyhedron */
+		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
 
-		/** @return	true if the ConvexPolyhedron has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
+		/** @copydoc Collider::updated() */
 		bool updated() const override { return mUpdated; };
 
-		/** Resets the updated state of the ConvexPolyhedron */
+		/** @copydoc Collider::resetUpdatedState() */
 		void resetUpdatedState() override { mUpdated = false; };
 
-		/** Calculates the coordinates of the ConvexPolyhedron's furthest point
-		 * in the given direction
-		 *
-		 * @param	direction the direction towards we want to get the furthest
-		 *			point
-		 * @param	pointWorld the vector where we are going to store the
-		 *			coordinates in world space of ConvexPolyhedron's
-		 *			furthest point
-		 * @param	pointLocal the vector where we are going to store the
-		 *			coordinates in local space of ConvexPolyhedron's
-		 *			furthest point */
+		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(
 			const glm::vec3& direction,
 			glm::vec3& pointWorld, glm::vec3& pointLocal

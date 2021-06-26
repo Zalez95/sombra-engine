@@ -14,28 +14,6 @@ namespace se::collision {
 		/** Class destructor */
 		virtual ~ConvexCollider() = default;
 
-		/** Updates the scale, translation and orientation of the ConvexCollider
-		 * with the given transformations matrix
-		 *
-		 * @param	transforms the transformations matrix used to update the
-		 *			scale, translation and orientation of the ConvexCollider */
-		void setTransforms(const glm::mat4& transforms) override = 0;
-
-		/** @return	the transformations matrix currently applied to the
-		 *			ConvexCollider */
-		glm::mat4 getTransforms() const override = 0;
-
-		/** @return the Axis Aligned Bounding Box that contains the
-		 *			ConvexCollider */
-		AABB getAABB() const override = 0;
-
-		/** @return	true if the ConvexCollider has been updated since the last
-		 *			call to the resetUpdatedState function, false otherwise */
-		virtual bool updated() const override = 0;
-
-		/** Resets the updated state of the ConvexCollider */
-		virtual void resetUpdatedState() override = 0;
-
 		/** Calculates the coordinates of the ConvexCollider's furthest point
 		 * in the given direction
 		 *

@@ -88,20 +88,48 @@ namespace se::app {
 
 			// Entities
 			mEntityDatabase = new EntityDatabase(kMaxEntities);
-			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<AnimationComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras);
-			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes);
-			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains);
-			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities);
-			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities);
-			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities, [](const TagComponent& tag) {
+				return TagComponent(tag);
+			});
+			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities, [](const TransformsComponent& transforms) {
+				return TransformsComponent(transforms);
+			});
+			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities, [](const SkinComponent& skin) {
+				return SkinComponent(skin);
+			});
+			mEntityDatabase->addComponentTable<AnimationComponent>(kMaxEntities, [](const AnimationComponent& animation) {
+				return AnimationComponent(animation);
+			});
+			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras, [](const CameraComponent& camera) {
+				return CameraComponent(camera);
+			});
+			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities, [](const LightComponent& light) {
+				return LightComponent(light);
+			});
+			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes, [](const LightProbe& lightProbe) {
+				return LightProbe(lightProbe);
+			});
+			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities, [](const MeshComponent& mesh) {
+				return MeshComponent(mesh);
+			});
+			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains, [](const TerrainComponent& terrain) {
+				return TerrainComponent(terrain);
+			});
+			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities, [](const ParticleSystemComponent& particleSystem) {
+				return ParticleSystemComponent(particleSystem);
+			});
+			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities, [](const RigidBodyComponent& rigidBody) {
+				return RigidBodyComponent(rigidBody);
+			});
+			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities, [](const collision::Collider& collider) {
+				return collider.clone();
+			});
+			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities, [](const ScriptComponent& script) {
+				return std::make_unique<ScriptComponent>(script);
+			});
+			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities, [](const AudioSourceComponent& source) {
+				return AudioSourceComponent(source);
+			});
 
 			// Systems
 			ShadowData shadowData;
