@@ -24,7 +24,7 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~Renderer() = default;
 
-		/** Executes the current RenderNode */
+		/** @copydoc RenderNode::execute() */
 		virtual void execute() override;
 
 		/** Submits the given Renderable for rendering
@@ -32,9 +32,15 @@ namespace se::graphics {
 		 * @param	renderable the Renderable to submit for rendering
 		 * @param	pass the Pass with which the Renderable will be drawn */
 		virtual void submit(Renderable& renderable, Pass& pass) = 0;
+	protected:
+		/** Sorts the queue with all the submitted Renderables */
+		virtual void sortQueue() = 0;
 
-		/** Renders all the submitted Renderables */
+		/** Renders all the Renderables submitted to the Renderer Queue */
 		virtual void render() = 0;
+
+		/** Clears the queue with all the submitted Renderables */
+		virtual void clearQueue() = 0;
 	};
 
 }

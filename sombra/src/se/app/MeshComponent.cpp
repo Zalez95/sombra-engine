@@ -78,6 +78,19 @@ namespace se::app {
 	}
 
 
+	void MeshComponent::clear()
+	{
+		if (mEventManager) {
+			for (std::size_t i = 0; i < kMaxMeshes; ++i) {
+				if (mRMeshes[i].active) {
+					mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Remove, mEntity, i));
+					mRMeshes[i] = {};
+				}
+			}
+		}
+	}
+
+
 	void MeshComponent::addRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
 	{
 		mRMeshes[rIndex].shaders.emplace_back(shader);

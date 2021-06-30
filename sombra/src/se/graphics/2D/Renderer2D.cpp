@@ -97,34 +97,6 @@ namespace se::graphics {
 	}
 
 
-	void Renderer2D::render()
-	{
-		if (mRenderQueue.empty()) { return; }
-
-		// Sort by the Renderable2Ds z-index and by their Pass
-		std::sort(
-			mRenderQueue.begin(), mRenderQueue.end(),
-			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) {
-				return (lhs.first->getZIndex() < rhs.first->getZIndex())
-					|| ((lhs.first->getZIndex() == rhs.first->getZIndex()) && (lhs.second < rhs.second));
-			}
-		);
-
-		// Submit and draw the batches
-		mPass = mRenderQueue.front().second;
-		for (auto& [renderable, pass] : mRenderQueue) {
-			if (pass != mPass) {
-				drawBatch();
-				mPass = pass;
-			}
-
-			renderable->submitVertices(*this);
-		}
-		drawBatch();
-		mRenderQueue.clear();
-	}
-
-
 	void Renderer2D::submitVertices(
 		BatchVertex* vertices, std::size_t vertexCount,
 		const unsigned short* indices, std::size_t indexCount,
@@ -163,6 +135,43 @@ namespace se::graphics {
 	}
 
 // Private functions
+	void Renderer2D::sortQueue()
+	{
+		// Sort by the Renderable2Ds z-index and by their Pass
+		std::sort(
+			mRenderQueue.begin(), mRenderQueue.end(),
+			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) {
+				return (lhs.first->getZIndex() < rhs.first->getZIndex())
+					|| ((lhs.first->getZIndex() == rhs.first->getZIndex()) && (lhs.second < rhs.second));
+			}
+		);
+	}
+
+
+	void Renderer2D::render()
+	{
+		if (mRenderQueue.empty()) { return; }
+
+		// Submit and draw the batches
+		mPass = mRenderQueue.front().second;
+		for (auto& [renderable, pass] : mRenderQueue) {
+			if (pass != mPass) {
+				drawBatch();
+				mPass = pass;
+			}
+
+			renderable->submitVertices(*this);
+		}
+		drawBatch();
+	}
+
+
+	void Renderer2D::clearQueue()
+	{
+		mRenderQueue.clear();
+	}
+
+
 	void Renderer2D::drawBatch()
 	{
 		mPass->bind();

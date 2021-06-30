@@ -8,21 +8,21 @@
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/events/ContainerEvent.h"
+#include "se/app/graphics/DeferredLightRenderer.h"
 
 namespace se::app {
 
-	AppRenderer::AppRenderer(Application& application, const ShadowData& shadowData, std::size_t width, std::size_t height) :
+	AppRenderer::AppRenderer(Application& application, std::size_t width, std::size_t height) :
 		ISystem(application.getEntityDatabase()), mApplication(application),
 		mDeferredLightRenderer(nullptr), mLastIrradianceTexture(nullptr), mLastPrefilterTexture(nullptr),
-		mShadowEntity(kNullEntity), mLightProbeEntity(kNullEntity)
+		mLightProbeEntity(kNullEntity)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::WindowResize);
 		mApplication.getEventManager().subscribe(this, Topic::RendererResolution);
-		mApplication.getEventManager().subscribe(this, Topic::Shadow);
-		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightComponent>().set<LightProbe>());
+		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightProbe>());
 
 		SOMBRA_INFO_LOG << graphics::GraphicsOperations::getGraphicsInfo();
-		auto graph = std::make_unique<AppRenderGraph>(application.getRepository(), shadowData, width, height);
+		auto graph = std::make_unique<AppRenderGraph>(application.getRepository(), width, height);
 		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(graph->getNode("deferredLightRenderer"));
 		mApplication.getExternalTools().graphicsEngine->setRenderGraph(std::move(graph));
 
@@ -35,7 +35,6 @@ namespace se::app {
 		mApplication.getExternalTools().graphicsEngine->getRenderGraph().clearNodes();
 		mApplication.getRepository().findByName<graphics::Mesh>("plane").setFakeUser(false);
 		mApplication.getEntityDatabase().removeSystem(this);
-		mApplication.getEventManager().unsubscribe(this, Topic::Shadow);
 		mApplication.getEventManager().unsubscribe(this, Topic::RendererResolution);
 		mApplication.getEventManager().unsubscribe(this, Topic::WindowResize);
 	}
@@ -43,23 +42,8 @@ namespace se::app {
 
 	bool AppRenderer::notify(const IEvent& event)
 	{
-		return tryCall(&AppRenderer::onShadowEvent, event)
-			|| tryCall(&AppRenderer::onWindowResizeEvent, event)
+		return tryCall(&AppRenderer::onWindowResizeEvent, event)
 			|| tryCall(&AppRenderer::onRendererResolutionEvent, event);
-	}
-
-
-	void AppRenderer::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
-	{
-		tryCallC(&AppRenderer::onNewLight, entity, mask);
-		tryCallC(&AppRenderer::onNewLightProbe, entity, mask);
-	}
-
-
-	void AppRenderer::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
-	{
-		tryCallC(&AppRenderer::onRemoveLight, entity, mask);
-		tryCallC(&AppRenderer::onRemoveLightProbe, entity, mask);
 	}
 
 
@@ -86,34 +70,31 @@ namespace se::app {
 		}
 
 		// Update light sources and shadows
-		unsigned int i = 0, iShadowLight = DeferredLightRenderer::kMaxLights;
+		unsigned int i = 0;
 		std::array<DeferredLightRenderer::ShaderLightSource, DeferredLightRenderer::kMaxLights> uBaseLights;
 		mEntityDatabase.iterateComponents<TransformsComponent, LightComponent>(
-			[&](Entity entity, TransformsComponent* transforms, LightComponent* light) {
-				if (light->source && (i < DeferredLightRenderer::kMaxLights)) {
-					uBaseLights[i].type = static_cast<unsigned int>(light->source->type);
+			[&](Entity, TransformsComponent* transforms, LightComponent* light) {
+				if (light->getSource() && (i < DeferredLightRenderer::kMaxLights)) {
+					uBaseLights[i].type = static_cast<unsigned int>(light->getSource()->type);
 					uBaseLights[i].position = transforms->position;
 					uBaseLights[i].direction = glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
-					uBaseLights[i].color = { light->source->color, 1.0f };
-					uBaseLights[i].intensity = light->source->intensity;
-					switch (light->source->type) {
+					uBaseLights[i].shadowIndices = light->getShadowIndices();
+					uBaseLights[i].color = { light->getSource()->color, 1.0f };
+					uBaseLights[i].intensity = light->getSource()->intensity;
+					switch (light->getSource()->type) {
 						case LightSource::Type::Directional: {
 							uBaseLights[i].range = std::numeric_limits<float>::max();
 						} break;
 						case LightSource::Type::Point: {
-							uBaseLights[i].range = light->source->range;
+							uBaseLights[i].range = light->getSource()->range;
 						} break;
 						case LightSource::Type::Spot: {
-							float cosInner = std::cos(light->source->innerConeAngle);
-							float cosOuter = std::cos(light->source->outerConeAngle);
-							uBaseLights[i].range = light->source->range;
+							float cosInner = std::cos(light->getSource()->innerConeAngle);
+							float cosOuter = std::cos(light->getSource()->outerConeAngle);
+							uBaseLights[i].range = light->getSource()->range;
 							uBaseLights[i].lightAngleScale = 1.0f / std::max(0.001f, cosInner - cosOuter);
 							uBaseLights[i].lightAngleOffset = -cosOuter * uBaseLights[i].lightAngleScale;
 						} break;
-					}
-
-					if (mShadowEntity == entity) {
-						iShadowLight = i;
 					}
 					++i;
 				}
@@ -122,7 +103,6 @@ namespace se::app {
 		);
 
 		mDeferredLightRenderer->setLights(uBaseLights.data(), i);
-		mDeferredLightRenderer->setShadowLightIndex(iShadowLight);
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
@@ -136,23 +116,6 @@ namespace se::app {
 	}
 
 // Private functions
-	void AppRenderer::onNewLight(Entity entity, LightComponent* light)
-	{
-		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " added successfully";
-	}
-
-
-	void AppRenderer::onRemoveLight(Entity entity, LightComponent* light)
-	{
-		if (mShadowEntity == entity) {
-			mShadowEntity = kNullEntity;
-			SOMBRA_INFO_LOG << "Active Shadow Camera removed";
-		}
-
-		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
-	}
-
-
 	void AppRenderer::onNewLightProbe(Entity entity, LightProbe* lightProbe)
 	{
 		mLightProbeEntity = entity;
@@ -177,17 +140,6 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";
-	}
-
-
-	void AppRenderer::onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event)
-	{
-		if (mEntityDatabase.hasComponents<TransformsComponent, LightComponent>(event.getValue())) {
-			mShadowEntity = event.getValue();
-		}
-		else {
-			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Shadow Entity";
-		}
 	}
 
 

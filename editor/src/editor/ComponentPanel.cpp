@@ -271,8 +271,40 @@ namespace editor {
 
 			ImGui::Text("Source:");
 			ImGui::SameLine();
+
+			auto source = light->getSource();
 			std::string name = getIdPrefix() + "LightComponentNode::ChangeSource";
-			addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, light->source);
+			if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, source)) {
+				light->setSource(source);
+			}
+
+			bool castShadows = light->hasShadows();
+			if (ImGui::Checkbox(("Cast shadows" + getIdPrefix() + "LightComponentNode::castShadows").c_str(), &castShadows)) {
+				if (castShadows) {
+					light->setShadowData(std::make_unique<ShadowData>());
+				}
+				else {
+					light->setShadowData(nullptr);
+				}
+			}
+
+			if (castShadows) {
+				bool updated = false;
+
+				ShadowData shadowData = *light->getShadowData();
+				int resolution = static_cast<int>(shadowData.resolution);
+				int numCascades =static_cast<int>(shadowData.numCascades);
+				updated |= ImGui::DragInt("Resolution", &resolution, 1.0f, -0, 4096);
+				updated |= ImGui::DragFloat("Size", &shadowData.size, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragFloat("zNear", &shadowData.zNear, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragFloat("zFar", &shadowData.zFar, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragInt("number of Cascades", &numCascades, 1.0f, 0, ShadowData::kMaxShadowsPerLight);
+				if (updated) {
+					shadowData.resolution = resolution;
+					shadowData.numCascades = numCascades;
+					light->setShadowData(std::make_unique<ShadowData>(shadowData));
+				}
+			}
 		};
 	};
 
@@ -755,7 +787,7 @@ namespace editor {
 				std::string name1 = "Build terrain" + getIdPrefix() + "ColliderComponentNode::BuildTerrain";
 				if (ImGui::Button(name1.c_str())) {
 					auto image = TextureUtils::textureToImage<unsigned char>(
-						*heightTexture, TypeId::UnsignedByte, ColorFormat::Red, mSize1, mSize2
+						*heightTexture, TypeId::UnsignedByte, ColorFormat::R, mSize1, mSize2
 					);
 					auto heights = MeshLoader::calculateHeights(image.pixels.get(), image.width, image.height);
 					terrain.setHeights(heights.data(), image.width, image.height);

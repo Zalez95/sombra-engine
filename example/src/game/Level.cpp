@@ -32,6 +32,7 @@
 
 #include <se/graphics/Renderer.h>
 #include <se/graphics/3D/RenderableMesh.h>
+#include <se/graphics/core/UniformVariable.h>
 #include <se/graphics/core/GraphicsOperations.h>
 
 #include <se/collision/BoundingBox.h>
@@ -402,7 +403,7 @@ namespace game {
 				.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
 				.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
 				.setImage(
-					heightMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::Red, se::graphics::ColorFormat::Red,
+					heightMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::R, se::graphics::ColorFormat::R,
 					heightMap1.width, heightMap1.height
 				);
 
@@ -563,10 +564,18 @@ namespace game {
 			spotLight->range = 20.0f;
 			spotLight->innerConeAngle = glm::pi<float>() / 12.0f;
 			spotLight->outerConeAngle = glm::pi<float>() / 6.0f;
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, se::app::LightComponent{ spotLight });
+			se::app::LightComponent lightComponent;
+			lightComponent.setSource(spotLight);
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(lightComponent));
 
 			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
 		}
+
+		mGame.getEntityDatabase().iterateComponents<se::app::LightComponent>([](se::app::Entity, se::app::LightComponent* light) {
+			if (light->getSource()->type == se::app::LightSource::Type::Directional) {
+				light->setShadowData(std::make_unique<se::app::ShadowData>());
+			}
+		}, true);
 
 		// Sky
 		{
@@ -687,7 +696,7 @@ namespace game {
 			}
 			if (i == 2) {
 				se::app::AudioSourceComponent source1;
-				source1.setBuffer(sound);
+				//source1.setBuffer(sound);
 				source1.get().setLooping(true);
 				source1.get().play();
 				mGame.getEntityDatabase().addComponent(cube, std::move(source1));

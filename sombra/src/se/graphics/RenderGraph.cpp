@@ -82,7 +82,10 @@ namespace se::graphics {
 
 	void RenderGraph::clearNodes()
 	{
-		mRenderNodes.clear();
+		while (!mRenderNodes.empty()) {
+			mRenderNodes.back()->disconnect();
+			mRenderNodes.pop_back();
+		}
 	}
 
 
@@ -128,30 +131,29 @@ namespace se::graphics {
 		sortedNodes.reserve(mRenderNodes.size());
 
 		std::vector<SortStackContent> stack;
-		stack.reserve(mRenderNodes.size());
-
 		for (std::size_t i = 0; i < mRenderNodes.size(); ++i) { if (leafNodes[i]) {
 			stack.push_back({ mRenderNodes[i].get(), false });
 			while (!stack.empty()) {
-				auto& top = stack.back();
-				if (std::any_of(sortedNodes.begin(), sortedNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == top.node; })) {
+				std::size_t iTop = stack.size() - 1;
+				if (std::any_of(sortedNodes.begin(), sortedNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == stack[iTop].node; })) {
 					stack.pop_back();
 				}
-				else if (top.parentsSubmitted) {
-					auto itNode = std::find_if(mRenderNodes.begin(), mRenderNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == top.node; });
+				else if (stack[iTop].parentsSubmitted) {
+					auto itNode = std::find_if(mRenderNodes.begin(), mRenderNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == stack[iTop].node; });
 					if (itNode != mRenderNodes.end()) {
 						sortedNodes.emplace_back(std::move(*itNode));
 					}
 					stack.pop_back();
 				}
 				else {
-					top.node->iterateInputs([&](RNodeInput& input) {
+					RenderNode* node = stack[iTop].node;
+					node->iterateInputs([&](RNodeInput& input) {
 						RNodeOutput* connectedOutput = input.getConnectedOutput();
 						if (connectedOutput && connectedOutput->getParentNode()) {
 							stack.push_back({ connectedOutput->getParentNode(), false });
 						}
 					});
-					top.parentsSubmitted = true;
+					stack[iTop].parentsSubmitted = true;
 				}
 			}
 		} }

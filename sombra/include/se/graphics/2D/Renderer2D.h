@@ -145,9 +145,6 @@ namespace se::graphics {
 		/** @copydoc Renderer::submit(Renderable&, Pass&) */
 		virtual void submit(Renderable& renderable, Pass& pass) override;
 
-		/** @copydoc Renderer::render() */
-		virtual void render() override;
-
 		/** Submits the given vertices to the Renderer2D
 		 *
 		 * @param	vertices a pointer to the vertices to submit
@@ -160,7 +157,16 @@ namespace se::graphics {
 			const unsigned short* indices, std::size_t indexCount,
 			Texture* texture = nullptr
 		);
-	private:
+	protected:
+		/** @copydoc Renderer::sortQueue() */
+		virtual void sortQueue() override;
+
+		/** @copydoc Renderer::render() */
+		virtual void render() override;
+
+		/** @copydoc Renderer::clearQueue() */
+		virtual void clearQueue() override;
+
 		/** Draws the batch with the current Pass and clears the texture
 		 * array of Texture uniforms */
 		void drawBatch();

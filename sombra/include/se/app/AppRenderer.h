@@ -5,13 +5,13 @@
 #include "../graphics/core/Texture.h"
 #include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
-#include "graphics/DeferredLightRenderer.h"
 #include "ECS.h"
 #include "LightComponent.h"
 
 namespace se::app {
 
 	class Application;
+	class DeferredLightRenderer;
 
 
 	/**
@@ -49,9 +49,6 @@ namespace se::app {
 		/** A pointer to the last prefilter Texture */
 		graphics::Texture* mLastPrefilterTexture;
 
-		/** The light source Entity used for shadow mapping */
-		Entity mShadowEntity;
-
 		/** The light Probe Entity used for rendering */
 		Entity mLightProbeEntity;
 
@@ -60,14 +57,12 @@ namespace se::app {
 		 *
 		 * @param	application a reference to the Application that holds the
 		 *			current System
-		 * @param	shadowData the configuration used for rendering the shadows
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
 		 * @param	height the initial height of the FrameBuffer where the
 		 *			Entities are going to be rendered */
 		AppRenderer(
-			Application& application, const ShadowData& shadowData,
-			std::size_t width, std::size_t height
+			Application& application, std::size_t width, std::size_t height
 		);
 
 		/** Class destructor */
@@ -79,12 +74,14 @@ namespace se::app {
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onNewComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override;
+		) override
+		{ tryCallC(&AppRenderer::onNewLightProbe, entity, mask); };
 
 		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
 		virtual void onRemoveComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override;
+		) override
+		{ tryCallC(&AppRenderer::onRemoveLightProbe, entity, mask); };
 
 		/** Updates the light sources with the Entities
 		 *
@@ -98,20 +95,6 @@ namespace se::app {
 		 *			Graphics API context (probably thread 0) */
 		void render();
 	private:
-		/** Function called when a LightComponent is added to an Entity
-		 *
-		 * @param	entity the Entity that holds the LightComponent
-		 * @param	light a pointer to the new LightComponent */
-		void onNewLight(Entity entity, LightComponent* light);
-
-		/** Function called when a LightComponent is going to be removed from
-		 * an Entity
-		 *
-		 * @param	entity the Entity that holds the LightComponent
-		 * @param	light a pointer to the LightComponent that is going to be
-		 *			removed */
-		void onRemoveLight(Entity entity, LightComponent* light);
-
 		/** Function called when a LightProbe is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the LightProbe
@@ -125,12 +108,6 @@ namespace se::app {
 		 * @param	lightProbe a pointer to the LightProbe that is going to be
 		 *			removed */
 		void onRemoveLightProbe(Entity entity, LightProbe* lightProbe);
-
-		/** Handles the given ContainerEvent by updating the Shadow Entity with
-		 * which the shadow will be rendered
-		 *
-		 * @param	event the ContainerEvent to handle */
-		void onShadowEvent(const ContainerEvent<Topic::Shadow, Entity>& event);
 
 		/** Handles the given WindowResizeEvent by notifying the GraphicsEngine
 		 * of the window resize

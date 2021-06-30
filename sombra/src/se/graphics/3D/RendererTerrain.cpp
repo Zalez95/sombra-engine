@@ -107,16 +107,19 @@ namespace se::graphics {
 		mBottomLeft(kBottomLeft, 16), mBottomRight(kBottomRight, 16), mTopLeft(kTopLeft, 16), mTopRight(kTopRight, 16)
 	{}
 
-
-	void RendererTerrain::render()
+// Private functions
+	void RendererTerrain::sortQueue()
 	{
 		// Sort the render queue by Pass
 		std::sort(
 			mRenderQueue.begin(), mRenderQueue.end(),
 			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) { return lhs.second < rhs.second; }
 		);
+	}
 
-		// Draw all the renderables
+
+	void RendererTerrain::render()
+	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
@@ -138,10 +141,15 @@ namespace se::graphics {
 			mTopLeft.drawInstances();
 			mTopRight.drawInstances();
 		}
+	}
+
+
+	void RendererTerrain::clearQueue()
+	{
 		mRenderQueue.clear();
 	}
 
-// Private functions
+
 	void RendererTerrain::submitRenderable3D(Renderable3D& renderable, Pass& pass)
 	{
 		auto renderableTerrain = dynamic_cast<RenderableTerrain*>(&renderable);

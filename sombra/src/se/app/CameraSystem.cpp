@@ -9,6 +9,8 @@
 #include "se/app/MeshComponent.h"
 #include "se/app/TerrainComponent.h"
 #include "se/app/ParticleSystemComponent.h"
+#include "graphics/DeferredLightRenderer.h"
+#include "graphics/ShadowRenderSubGraph.h"
 #include "graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
@@ -16,35 +18,18 @@ namespace se::app {
 	class CameraSystem::CameraUniformsUpdater : public IViewProjectionUpdater
 	{
 	private:
-		CameraSystem* mParent;
 		std::vector<graphics::Renderer*> mRenderers;
 
 	public:		// Functions
 		CameraUniformsUpdater(
-			CameraSystem* parent, std::vector<graphics::Renderer*> renderers,
+			std::vector<graphics::Renderer*> renderers,
 			const char* viewMatUniformName, const char* projectionMatUniformName
 		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName),
-			mParent(parent), mRenderers(renderers) {};
+			mRenderers(renderers) {};
 
-		virtual glm::mat4 getViewMatrix() const override
+		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
 		{
-			if (mParent->mCamera) {
-				return mParent->mCamera->getViewMatrix();
-			}
-			return glm::mat4(1.0f);
-		};
-
-		virtual glm::mat4 getProjectionMatrix() const override
-		{
-			if (mParent->mCamera) {
-				return mParent->mCamera->getProjectionMatrix();
-			}
-			return glm::mat4(1.0f);
-		};
-
-		virtual bool shouldAddUniforms(const RenderableShaderStepSPtr& step) const override
-		{
-			return std::find(mRenderers.begin(), mRenderers.end(), &step->getPass()->getRenderer()) != mRenderers.end();
+			return std::find(mRenderers.begin(), mRenderers.end(), &pass->getRenderer()) != mRenderers.end();
 		};
 	};
 
@@ -70,9 +55,10 @@ namespace se::app {
 		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
 		auto gBufferRendererParticles = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererParticles"));
 		mDeferredLightRenderer = dynamic_cast<DeferredLightRenderer*>(renderGraph.getNode("deferredLightRenderer"));
+		mShadowRenderSubGraph = dynamic_cast<ShadowRenderSubGraph*>(renderGraph.getNode("shadowRenderSubGraph"));
 
 		mCameraUniformsUpdater = new CameraUniformsUpdater(
-			this, { forwardRendererMesh, gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles },
+			{ forwardRendererMesh, gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles },
 			"uViewMatrix", "uProjectionMatrix"
 		);
 
@@ -139,13 +125,16 @@ namespace se::app {
 		);
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
-		mCameraUniformsUpdater->update();
+		glm::mat4 viewMatrix = (mCamera)? mCamera->getViewMatrix() : glm::mat4(1.0f);
+		glm::mat4 projectionMatrix = (mCamera)? mCamera->getProjectionMatrix() : glm::mat4(1.0f);
+		mCameraUniformsUpdater->update(viewMatrix, projectionMatrix);
 
 		if (mCamera) {
 			SOMBRA_DEBUG_LOG << "Updating the Renderers";
 			glm::mat4 viewProjectionMatrix = mCamera->getProjectionMatrix() * mCamera->getViewMatrix();
 			mFrustumFilter->updateFrustum(viewProjectionMatrix);
 			mDeferredLightRenderer->setViewPosition(mCamera->getPosition());
+			mShadowRenderSubGraph->setInvCameraViewProjectionMatrix(glm::inverse(viewProjectionMatrix));
 		}
 
 		SOMBRA_INFO_LOG << "Update end";
@@ -179,7 +168,7 @@ namespace se::app {
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mCameraUniformsUpdater->addRenderable(mesh->get(i));
 			mesh->processRenderableShaders(i, [&](const auto& shader) {
-				mCameraUniformsUpdater->addRenderableShader(mesh->get(i), shader.get());
+				mCameraUniformsUpdater->addRenderableTechnique(mesh->get(i), shader->getTechnique());
 			});
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
@@ -199,7 +188,7 @@ namespace se::app {
 	{
 		mCameraUniformsUpdater->addRenderable(terrain->get());
 		terrain->processRenderableShaders([&](const auto& shader) {
-			mCameraUniformsUpdater->addRenderableShader(terrain->get(), shader.get());
+			mCameraUniformsUpdater->addRenderableTechnique(terrain->get(), shader->getTechnique());
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " added successfully";
 	}
@@ -216,7 +205,7 @@ namespace se::app {
 	{
 		mCameraUniformsUpdater->addRenderable(particleSystem->get());
 		particleSystem->processRenderableShaders([&](const auto& shader) {
-			mCameraUniformsUpdater->addRenderableShader(particleSystem->get(), shader.get());
+			mCameraUniformsUpdater->addRenderableTechnique(particleSystem->get(), shader->getTechnique());
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " added successfully";
 	}
@@ -264,10 +253,10 @@ namespace se::app {
 			if (mesh) {
 				switch (event.getOperation()) {
 					case RenderableShaderEvent::Operation::Add:
-						mCameraUniformsUpdater->addRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
 						break;
 					case RenderableShaderEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderableShader(mesh->get(event.getRIndex()), event.getShader());
+						mCameraUniformsUpdater->removeRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
 						break;
 				}
 			}
@@ -286,10 +275,10 @@ namespace se::app {
 			if (renderable) {
 				switch (event.getOperation()) {
 					case RenderableShaderEvent::Operation::Add:
-						mCameraUniformsUpdater->addRenderableShader(*renderable, event.getShader());
+						mCameraUniformsUpdater->addRenderableTechnique(*renderable, event.getShader()->getTechnique());
 						break;
 					case RenderableShaderEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderableShader(*renderable, event.getShader());
+						mCameraUniformsUpdater->removeRenderableTechnique(*renderable, event.getShader()->getTechnique());
 						break;
 				}
 			}
@@ -301,10 +290,10 @@ namespace se::app {
 	{
 		switch (event.getOperation()) {
 			case ShaderEvent::Operation::Add:
-				mCameraUniformsUpdater->onAddShaderStep(event.getShader(), event.getStep());
+				mCameraUniformsUpdater->onAddTechniquePass(event.getShader()->getTechnique(), event.getStep()->getPass());
 				break;
 			case ShaderEvent::Operation::Remove:
-				mCameraUniformsUpdater->onRemoveShaderStep(event.getShader(), event.getStep());
+				mCameraUniformsUpdater->onRemoveTechniquePass(event.getShader()->getTechnique(), event.getStep()->getPass());
 				break;
 		}
 	}

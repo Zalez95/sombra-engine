@@ -48,20 +48,17 @@ namespace se::app {
 		mLightsBuffer = std::make_shared<UniformBuffer>();
 		utils::FixedVector<ShaderLightSource, kMaxLights> lightsBufferData(kMaxLights);
 		mLightsBuffer->resizeAndCopy(lightsBufferData.data(), lightsBufferData.size());
-		mShadowLightIndex = std::make_shared<UniformVariableValue<unsigned int>>("uShadowLightIndex", mProgram.get(), kMaxLights);
-		mShadowViewProjectionMatrix = std::make_shared<UniformVariableValue<glm::mat4>>("uShadowViewProjectionMatrix", mProgram.get(), glm::mat4(1.0f));
 
 		addBindable(mProgram.get());
 		addBindable(std::make_shared<SetDepthMask>(false));
 		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
 		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
 		addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(mShadowViewProjectionMatrix);
 		addBindable(mViewPosition);
 		addBindable(std::make_shared<UniformVariableValue<int>>("uIrradianceMap", mProgram.get(), TexUnits::kIrradianceMap));
 		addBindable(std::make_shared<UniformVariableValue<int>>("uPrefilterMap", mProgram.get(), TexUnits::kPrefilterMap));
 		addBindable(std::make_shared<UniformVariableValue<int>>("uBRDFMap", mProgram.get(), TexUnits::kBRDFMap));
-		addBindable(std::make_shared<UniformVariableValue<int>>("uShadowMap", mProgram.get(), TexUnits::kShadowMap));
+		addBindable(std::make_shared<UniformVariableValue<int>>("uShadows", mProgram.get(), TexUnits::kShadows));
 		addBindable(std::make_shared<UniformVariableValue<int>>("uPosition", mProgram.get(), TexUnits::kPosition));
 		addBindable(std::make_shared<UniformVariableValue<int>>("uNormal", mProgram.get(), TexUnits::kNormal));
 		addBindable(std::make_shared<UniformVariableValue<int>>("uAlbedo", mProgram.get(), TexUnits::kAlbedo));
@@ -69,7 +66,6 @@ namespace se::app {
 		addBindable(std::make_shared<UniformVariableValue<int>>("uEmissive", mProgram.get(), TexUnits::kEmissive));
 		addBindable(mLightsBuffer);
 		addBindable(mNumLights);
-		addBindable(mShadowLightIndex);
 		addBindable(std::make_shared<UniformBlock>("LightsBlock", mProgram.get()));
 	}
 
@@ -84,18 +80,6 @@ namespace se::app {
 	{
 		mLightsBuffer->copy(lightSources, lightSourceCount);
 		mNumLights->setValue(lightSourceCount);
-	}
-
-
-	void DeferredLightRenderer::setShadowLightIndex(unsigned int shadowLightIndex)
-	{
-		mShadowLightIndex->setValue(shadowLightIndex);
-	}
-
-
-	void DeferredLightRenderer::setShadowViewProjectionMatrix(const glm::mat4& shadowViewProjectionMatrix)
-	{
-		mShadowViewProjectionMatrix->setValue(shadowViewProjectionMatrix);
 	}
 
 

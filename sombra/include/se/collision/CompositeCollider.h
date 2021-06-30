@@ -27,6 +27,9 @@ namespace se::collision {
 		/** The AABB of the CompositeCollider */
 		AABB mAABB;
 
+		/** If the CompositeCollider has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new CompositeCollider located at the origin of coordinates
 		 * from the given convex pieces

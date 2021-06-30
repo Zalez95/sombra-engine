@@ -13,8 +13,10 @@ namespace se::graphics {
 
 	void Renderer::execute()
 	{
+		sortQueue();
 		bind();
 		render();
+		clearQueue();
 	}
 
 }

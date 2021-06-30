@@ -2,7 +2,6 @@
 #define CAMERA_SYSTEM_H
 
 #include "../graphics/3D/FrustumFilter.h"
-#include "graphics/DeferredLightRenderer.h"
 #include "events/ContainerEvent.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
@@ -16,6 +15,8 @@ namespace se::app {
 	class MeshComponent;
 	class TerrainComponent;
 	class ParticleSystemComponent;
+	class DeferredLightRenderer;
+	class ShadowRenderSubGraph;
 
 
 	/**
@@ -49,6 +50,9 @@ namespace se::app {
 		/** A pointer to the deferred light renderer used for computing the
 		 * lighting */
 		DeferredLightRenderer* mDeferredLightRenderer;
+
+		/** A pointer to the renderer used for computing the shadows */
+		ShadowRenderSubGraph* mShadowRenderSubGraph;
 
 	public:		// Functions
 		/** Creates a new CameraSystem

@@ -1085,17 +1085,17 @@ namespace editor {
 											(setOperation->getOperation() == Operation::ScissorTest)? "ScissorTest" :
 											"Blending";
 					if (!ImGui::TreeNode(treeId.c_str(), "SetOperation %s", operation)) { return; }
-					bool isEnabled = setOperation->isEnabled();
-					if (ImGui::Checkbox("Enabled", &isEnabled)) {
-						setOperation->setEnabled(isEnabled);
+					bool enable = setOperation->getEnable();
+					if (ImGui::Checkbox("Enable", &enable)) {
+						setOperation->setEnable(enable);
 					}
 					ImGui::TreePop();
 				}
 				else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
 					if (!ImGui::TreeNode(treeId.c_str(), "SetDepthMask")) { return; }
-					bool isEnabled = setDepthMask->isEnabled();
-					if (ImGui::Checkbox("Enabled", &isEnabled)) {
-						setDepthMask->setEnabled(isEnabled);
+					bool enable = setDepthMask->getEnable();
+					if (ImGui::Checkbox("Enable", &enable)) {
+						setDepthMask->setEnable(enable);
 					}
 					ImGui::TreePop();
 				}
@@ -1286,7 +1286,7 @@ namespace editor {
 			}
 
 			auto texture = repository.insert(textureSPtr, mNameBuffer.data());
-			texture.getResource().setPath(mNameBuffer.data());
+			texture.getResource().setPath(path);
 			texture.setFakeUser();
 
 			return true;

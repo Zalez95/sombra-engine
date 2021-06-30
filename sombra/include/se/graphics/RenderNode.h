@@ -8,6 +8,7 @@
 namespace se::graphics {
 
 	class RenderNode;
+	class RNodeInput;
 
 
 	/**
@@ -40,6 +41,17 @@ namespace se::graphics {
 
 		/** @return	the RenderNode where the RNodeConnector is located */
 		RenderNode* getParentNode() const { return mParentNode; };
+
+		/** Connects the current RNodeConnector to the given RNodeConnector
+		 *
+		 * @param	connector a pointer to the RNodeConnector to connect
+		 * @return	true if the RNodeConnector was connected succesfully, false
+		 *			otherwise */
+		virtual bool connect(RNodeConnector* /*connector*/) { return true; };
+
+		/** Disconnects the current RNodeConnector from any other
+		 * RNodeConnector that is connected */
+		virtual void disconnect() {};
 	};
 
 
@@ -49,6 +61,12 @@ namespace se::graphics {
 	 */
 	class RNodeOutput : public RNodeConnector
 	{
+	protected:	// Attributes
+		friend class RNodeInput;
+
+		/** The connected RNodeInputs to the current RNodeOutput */
+		std::vector<RNodeInput*> mConnectedInputs;
+
 	public:		// Functions
 		/** Creates a new RNodeOutput
 		 *
@@ -60,6 +78,22 @@ namespace se::graphics {
 
 		/** Class destructor */
 		virtual ~RNodeOutput() = default;
+
+		/** @return	true if the RenderNode has any connections, false
+		 *			otherwise */
+		bool hasConnections() const { return !mConnectedInputs.empty(); };
+
+		/** @copydoc RNodeConnector::connect(RNodeConnector*) */
+		virtual bool connect(RNodeConnector* connector) override;
+
+		/** @copydoc RNodeConnector::disconnect() */
+		virtual void disconnect() override;
+	protected:
+		/** Adds the given RNodeInput to @see mConnectedInputs */
+		void addInput(RNodeInput* input);
+
+		/** Removes the given RNodeInput from @see mConnectedInputs */
+		void removeInput(RNodeInput* input);
 	};
 
 
@@ -89,13 +123,12 @@ namespace se::graphics {
 		 *			nullptr if there is no connection */
 		RNodeOutput* getConnectedOutput() const { return mConnectedOutput; };
 
-		/** Connects the current RNodeInput to the given RNodeOutput
-		 *
-		 * @param	output a pointer to the RNodeOutput to connect
-		 * @return	true if the RNodeOutput was connected succesfully, false
-		 *			otherwise
+		/** @copydoc RNodeConnector::connect(RNodeConnector*)
 		 * @note	you can't connect the same RNodeInput more than one time */
-		virtual bool connect(RNodeOutput* output);
+		virtual bool connect(RNodeConnector* connector) override;
+
+		/** @copydoc RNodeConnector::disconnect() */
+		virtual void disconnect() override;
 	};
 
 
@@ -154,6 +187,13 @@ namespace se::graphics {
 		 * @return	a pointer to the RNodeInput, nullptr if it wasn't found */
 		RNodeInput* findInput(const std::string& name) const;
 
+		/** Removes the input with the same name than the given one
+		 *
+		 * @param	input a pointer to the RNodeInput to remove
+		 * @return	true if the RNodeInput was removed succesfully, false
+		 *			otherwise */
+		bool removeInput(RNodeInput* input);
+
 		/** Adds the given RNodeOutput to the RenderNode
 		 *
 		 * @param	output a pointer to the new RNodeOutput of the RenderNode
@@ -172,6 +212,16 @@ namespace se::graphics {
 		 * @param	name the name of the RNodeOutput to search
 		 * @return	a pointer to the RNodeOutput, nullptr if it wasn't found */
 		RNodeOutput* findOutput(const std::string& name) const;
+
+		/** Removes the output with the same name than the given one
+		 *
+		 * @param	output a pointer to the RNodeOutput to remove
+		 * @return	true if the RNodeOutput was removed succesfully, false
+		 *			otherwise */
+		bool removeOutput(RNodeOutput* output);
+
+		/** Disconnects all the RNodeConnectors from the RenderNode */
+		void disconnect();
 	};
 
 

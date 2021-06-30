@@ -3,42 +3,44 @@
 
 #include <unordered_map>
 #include <glm/glm.hpp>
+#include "se/graphics/Pass.h"
+#include "se/graphics/Technique.h"
 #include "se/graphics/Renderable.h"
 #include "se/graphics/core/UniformVariable.h"
-#include "se/app/graphics/RenderableShader.h"
+#include "se/utils/PackedVector.h"
 
 namespace se::app {
 
 	/**
 	 * Class IViewProjectionUpdater, it's used for updating the view and
-	 * projection matrix uniform variables on the Renderables' shaders.
+	 * projection matrix uniform variables of the Renderables' shaders.
 	 */
 	class IViewProjectionUpdater
 	{
 	protected:	// Nested types
-		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
-		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
+		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using TechniqueSPtr = std::shared_ptr<graphics::Technique>;
 		using IndexVector = std::vector<std::size_t>;
 		using Mat4Uniform = graphics::UniformVariableValue<glm::mat4>;
 		using Mat4UniformSPtr = std::shared_ptr<Mat4Uniform>;
 
-		/** Struct StepData, holds the shared Step uniform variables between the
-		 * Shaders */
-		struct StepData
+		/** Struct PassData, holds the shared Pass uniform variables between the
+		 * Techniques */
+		struct PassData
 		{
 			std::size_t userCount = 0;
-			RenderableShaderStepSPtr step;
+			PassSPtr pass;
 			Mat4UniformSPtr viewMatrix;
 			Mat4UniformSPtr projectionMatrix;
 		};
 
-		/** Struct ShaderData, holds the shared Shader data between the
+		/** Struct TechniqueData, holds the shared Technique data between the
 		 * Renderables */
-		struct ShaderData
+		struct TechniqueData
 		{
 			std::size_t userCount = 0;
-			RenderableShaderSPtr shader;
-			IndexVector stepIndices;
+			TechniqueSPtr technique;
+			IndexVector passIndices;
 		};
 
 	protected:	// Attributes
@@ -48,15 +50,15 @@ namespace se::app {
 		/** The name of the Projection matrix uniform variable */
 		std::string mProjectionMatUniformName;
 
-		/** The shared uniform variables of the Steps */
-		utils::PackedVector<StepData> mStepsData;
+		/** The shared uniform variables of the Pass */
+		utils::PackedVector<PassData> mPassesData;
 
-		/** Holds the steps of the Shaders */
-		utils::PackedVector<ShaderData> mShadersData;
+		/** Holds the techniques of the Renderables */
+		utils::PackedVector<TechniqueData> mTechniquesData;
 
-		/** Maps each Renderable with its respective Shader indices */
+		/** Maps each Renderable with its respective Technique indices */
 		std::unordered_map<graphics::Renderable*, IndexVector>
-			mRenderableShaders;
+			mRenderableTechniques;
 
 	public:		// Functions
 		/** Creates a new IViewProjectionUpdater
@@ -83,85 +85,77 @@ namespace se::app {
 		 * @param	renderable the Renderable to remove */
 		void removeRenderable(graphics::Renderable& renderable);
 
-		/** Adds the given renderable with the given shader to the
-		 * IViewProjectionUpdater so its steps be updated with the new view
+		/** Adds the given Renderable with the given Technique to the
+		 * IViewProjectionUpdater so its passes be updated with the new view
 		 * and projection matrices.
 		 *
 		 * @param	renderable the Renderable to add
-		 * @param	shader a pointer to the new Shader */
-		void addRenderableShader(
-			graphics::Renderable& renderable, const RenderableShaderSPtr& shader
+		 * @param	technique a pointer to the new Technique */
+		void addRenderableTechnique(
+			graphics::Renderable& renderable, const TechniqueSPtr& technique
 		);
 
-		/** Removes the given renderable with the given shader from the
-		 * IViewProjectionUpdater so its steps won't longer updated with the
+		/** Removes the given Renderable with the given Technique from the
+		 * IViewProjectionUpdater so its passes won't longer updated with the
 		 * new view and projection matrices.
 		 *
 		 * @param	renderable the Renderable to remove
-		 * @param	shader a pointer to the Shader to remove */
-		void removeRenderableShader(
-			graphics::Renderable& renderable, const RenderableShaderSPtr& shader
+		 * @param	technique a pointer to the Technique to remove */
+		void removeRenderableTechnique(
+			graphics::Renderable& renderable, const TechniqueSPtr& technique
 		);
 
-		/** Updates the stored Shader data with the given new
-		 * RenderableShaderStep
+		/** Updates the stored Technique data with the given new Technique
 		 *
-		 * @param	shader a pointer to the Shader updated
-		 * @param	step a pointer to the new RenderableShaderStep added to the
-		 *			Shader */
-		void onAddShaderStep(
-			const RenderableShaderSPtr& shader,
-			const RenderableShaderStepSPtr& step
+		 * @param	technique a pointer to the Technique updated
+		 * @param	pass a pointer to the new Pass added to the Technique */
+		void onAddTechniquePass(
+			const TechniqueSPtr& technique, const PassSPtr& pass
 		);
 
-		/** Updates the stored Shader data with the given removed
-		 * RenderableShaderStep
+		/** Updates the stored Technique data with the given removed Technique
 		 *
-		 * @param	shader a pointer to the Shader updated
-		 * @param	step a pointer to the RenderableShaderStep removed from the
-		 *			Shader */
-		void onRemoveShaderStep(
-			const RenderableShaderSPtr& shader,
-			const RenderableShaderStepSPtr& step
+		 * @param	technique a pointer to the Technique updated
+		 * @param	pass a pointer to the Pass removed from the Technique */
+		void onRemoveTechniquePass(
+			const TechniqueSPtr& technique, const PassSPtr& pass
 		);
 
-		/** Updates the Steps uniform variables sources with the new view
-		 * and projection matrix */
-		void update();
+		/** Updates the Passes uniform variables with the new view and
+		 * projection matrix
+		 *
+		 * @param	viewMatrix the new value of the view matrix
+		 * @param	projectionMatrix the new value of the projection matrix */
+		void update(
+			const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
+		);
 	protected:
-		/** @return	the current value of the view matrix */
-		virtual glm::mat4 getViewMatrix() const = 0;
-
-		/** @return	the current value of the projection matrix */
-		virtual glm::mat4 getProjectionMatrix() const = 0;
-
 		/** Checks if the IViewProjectionUpdater must add the uniform variables
-		 * to the given RenderableShaderStep
+		 * to the given Technique
 		 *
-		 * @param	step a pointer to the RenderableShaderStep to check
-		 * @return	true if the uniform variables must be added to the
-		 *			RenderableShaderStep, false otherwise */
-		virtual
-		bool shouldAddUniforms(const RenderableShaderStepSPtr& step) const = 0;
+		 * @param	pass a pointer to the Pass to check
+		 * @return	true if the uniform variables must be added to the Pass,
+		 *			false otherwise */
+		virtual bool shouldAddUniforms(const PassSPtr& pass) const = 0;
 	private:
-		/** Adds the given RenderableShaderStep to the Shader, and adds its
-		 * uniforms if they weren't added before
+		/** Adds the given Pass to the Technique, and adds its uniforms if they
+		 * weren't added before
 		 *
-		 * @param	iShader the index of the Shader
-		 * @param	step a pointer to the new RenderableShaderStep */
-		void addStep(std::size_t iShader, const RenderableShaderStepSPtr& step);
+		 * @param	iTechnique the index of the Technique
+		 * @param	pass a pointer to the new Pass */
+		void addPass(std::size_t iTechnique, const PassSPtr& pass);
 
-		/** Removes the given RenderableShaderStep from the Shader, and removes
-		 * its uniforms if it's the last shader user
+		/** Removes the given Pass from the Technique, and removes its uniforms
+		 * if it's the last Technique user
 		 *
-		 * @param	iShader the index of the Shader
-		 * @param	the index of the RenderableShaderStep to remove */
-		void removeStep(std::size_t iShader, std::size_t iStep);
+		 * @param	iTechnique the index of the Technique
+		 * @param	iPass the index of the Pass to remove */
+		void removePass(std::size_t iTechnique, std::size_t iPass);
 
-		/** Removes the given Shader
+		/** Removes the given Technique
 		 *
-		 * @param	iShader the index of the Shader */
-		void removeShader(std::size_t iShader);
+		 * @param	iTechnique the index of the Technique */
+		void removeTechnique(std::size_t iTechnique);
 	};
 
 }

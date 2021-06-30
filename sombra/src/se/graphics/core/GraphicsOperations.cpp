@@ -155,6 +155,25 @@ namespace se::graphics {
 	}
 
 
+	void GraphicsOperations::setWireframe(bool active)
+	{
+		if (active) {
+			GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
+		}
+		else {
+			GL_WRAP( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
+		}
+	}
+
+
+	bool GraphicsOperations::hasWireframe()
+	{
+		int glMode = -1;
+		GL_WRAP( glGetIntegerv(GL_POLYGON_MODE, &glMode) );
+		return glMode == GL_FILL;
+	}
+
+
 	void GraphicsOperations::setScissorBox(int x, int y, std::size_t width, std::size_t height)
 	{
 		GL_WRAP( glScissor(x, y, static_cast<GLsizei>(width), static_cast<GLsizei>(height)) );
@@ -187,36 +206,19 @@ namespace se::graphics {
 	}
 
 
-	void SetOperation::bind() const
+	void BindableOperation::bind() const
 	{
-		mLastActive = GraphicsOperations::hasOperation(mOperation);
+		mLastActive = isEnabled();
 		if (mActive != mLastActive) {
-			GraphicsOperations::setOperation(mOperation, mActive);
+			enable(mActive);
 		}
 	}
 
 
-	void SetOperation::unbind() const
+	void BindableOperation::unbind() const
 	{
 		if (mActive != mLastActive) {
-			GraphicsOperations::setOperation(mOperation, mLastActive);
-		}
-	}
-
-
-	void SetDepthMask::bind() const
-	{
-		mLastActive = GraphicsOperations::hasDepthMask();
-		if (mActive != mLastActive) {
-			GraphicsOperations::setDepthMask(mActive);
-		}
-	}
-
-
-	void SetDepthMask::unbind() const
-	{
-		if (mActive != mLastActive) {
-			GraphicsOperations::setDepthMask(mLastActive);
+			enable(mLastActive);
 		}
 	}
 

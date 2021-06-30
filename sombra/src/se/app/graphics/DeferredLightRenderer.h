@@ -1,12 +1,12 @@
 #ifndef DEFERRED_LIGHT_RENDERER_H
 #define DEFERRED_LIGHT_RENDERER_H
 
-#include "../Repository.h"
-#include "../../graphics/BindableRenderNode.h"
-#include "../../graphics/core/Program.h"
-#include "../../graphics/core/UniformVariable.h"
-#include "../../graphics/core/UniformBuffer.h"
-#include "../../graphics/3D/Mesh.h"
+#include "se/graphics/BindableRenderNode.h"
+#include "se/graphics/core/Program.h"
+#include "se/graphics/core/UniformVariable.h"
+#include "se/graphics/core/UniformBuffer.h"
+#include "se/graphics/3D/Mesh.h"
+#include "se/app/Repository.h"
 
 namespace se::app {
 
@@ -23,9 +23,9 @@ namespace se::app {
 		struct ShaderLightSource
 		{
 			glm::vec3 position;
-			float padding[1];
-			glm::vec3 direction;
 			unsigned int type;
+			glm::vec3 direction;
+			int shadowIndices;
 			glm::vec4 color;
 			float intensity;
 			float range;
@@ -38,7 +38,7 @@ namespace se::app {
 			static constexpr int kIrradianceMap	= 0;
 			static constexpr int kPrefilterMap	= 1;
 			static constexpr int kBRDFMap		= 2;
-			static constexpr int kShadowMap		= 3;
+			static constexpr int kShadows		= 3;
 			static constexpr int kPosition		= 4;
 			static constexpr int kNormal		= 5;
 			static constexpr int kAlbedo		= 6;
@@ -68,16 +68,6 @@ namespace se::app {
 		/** The UniformBuffer where the lights data will be stored */
 		std::shared_ptr<graphics::UniformBuffer> mLightsBuffer;
 
-		/** The uniform variable that holds the index of the LightSource used
-		 * for rendering the Shadows */
-		std::shared_ptr<graphics::UniformVariableValue<unsigned int>>
-			mShadowLightIndex;
-
-		/** The uniform variable with the view-projection matrix of the shadow
-		 * mapping */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-			mShadowViewProjectionMatrix;
-
 	public:
 		/** Creates a new DeferredLightRenderer
 		 *
@@ -99,20 +89,6 @@ namespace se::app {
 		 * @param	lightSourceCount the number of lights in ligthSources */
 		void setLights(
 			const ShaderLightSource* lightSources, unsigned int lightSourceCount
-		);
-
-		/** Sets the shadow light index uniform
-		 *
-		 * @param	shadowLightIndex the index of the light used for casting
-		 *			the shadows in the light sources array */
-		void setShadowLightIndex(unsigned int shadowLightIndex);
-
-		/** Sets the shadow view-projection matrix uniform
-		 *
-		 * @param	shadowViewProjectionMatrix the view-projection matrix used
-		 *			for rendering the shadows */
-		void setShadowViewProjectionMatrix(
-			const glm::mat4& shadowViewProjectionMatrix
 		);
 
 		/** Executes the current RenderNode */

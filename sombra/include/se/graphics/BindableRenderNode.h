@@ -1,6 +1,7 @@
 #ifndef BINDABLE_RENDER_NODE_H
 #define BINDABLE_RENDER_NODE_H
 
+#include "../utils/PackedVector.h"
 #include "core/Bindable.h"
 #include "RenderNode.h"
 
@@ -55,12 +56,7 @@ namespace se::graphics {
 	class BindableRNodeOutput :
 		public RNodeOutput, public BindableRNodeConnector
 	{
-	private:	// Attributes
-		/** The connected BindableRNodeInputs to the current
-		 * BindableRNodeOutput */
-		std::vector<BindableRNodeInput<T>*> mConnectedInputs;
-
-	public:
+	public:		// Functions
 		/** Creates a new BindableRNodeOutput
 		 *
 		 * @param	name the name of the new BindableRNodeOutput
@@ -71,7 +67,8 @@ namespace se::graphics {
 		BindableRNodeOutput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		);
+		) : RNodeOutput(name, parentNode),
+			BindableRNodeConnector(bindableIndex) {};
 
 		/** @copydoc BindableRNodeConnector::getBindable() */
 		virtual BindableSPtr getBindable() const override;
@@ -82,9 +79,6 @@ namespace se::graphics {
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;
-
-		/** Adds the given BindableRNodeInput to @see mConnectedInputs */
-		void addInput(BindableRNodeInput<T>* input);
 	};
 
 
@@ -108,12 +102,18 @@ namespace se::graphics {
 		BindableRNodeInput(
 			const std::string& name, BindableRenderNode* parentNode,
 			std::size_t bindableIndex
-		);
+		) : RNodeInput(name, parentNode),
+			BindableRNodeConnector(bindableIndex) {};
 
-		/** @copydoc RNodeInput::connect(RNodeOutput* output)
-		 * @note It will also append the RNodeOutput's Bindable to the parent
+		/** @copydoc RNodeConnector::connect(RNodeConnector*)
+		 * @note It will also append the RNodeConnector's Bindable to the parent
 		 * BindableRenderNode */
-		virtual bool connect(RNodeOutput* output) override;
+		virtual bool connect(RNodeConnector* connector) override;
+
+		/** @copydoc RNodeConnector::disconnect()
+		 * @note It will also remove the RNodeConnector's Bindable from
+		 * the parent BindableRenderNodes */
+		virtual void disconnect() override;
 
 		/** @copydoc BindableRNodeConnector::getBindable() */
 		virtual BindableSPtr getBindable() const override;
@@ -139,7 +139,7 @@ namespace se::graphics {
 
 	private:	// Attributes
 		/** All the Bindables added to the BindableRenderNode */
-		std::vector<BindableData> mBindables;
+		utils::PackedVector<BindableData> mBindables;
 
 	public:		// Functions
 		/** Creates a new BindableRenderNode
@@ -158,7 +158,7 @@ namespace se::graphics {
 		 *			BindableRenderNode @see bind function is called
 		 * @return	the index of the new Bindable inside the
 		 *			BindableRenderNode */
-		std::size_t addBindable(
+		virtual std::size_t addBindable(
 			BindableSPtr bindable = nullptr, bool mustBind = true
 		);
 
@@ -167,13 +167,20 @@ namespace se::graphics {
 		 * @param	bindableIndex the index of the Bindable to return inside the
 		 *			BindableRenderNode
 		 * @return	a pointer to the Bindable */
-		BindableSPtr getBindable(std::size_t bindableIndex) const;
+		virtual BindableSPtr getBindable(std::size_t bindableIndex) const;
 
 		/** Replaces the requested Bindable inside the BindableRenderNode
 		 *
 		 * @param	bindableIndex the index of the Bindable to replace
 		 * @param	bindable the new Bindable */
-		void setBindable(std::size_t bindableIndex, BindableSPtr bindable);
+		virtual void setBindable(
+			std::size_t bindableIndex, const BindableSPtr& bindable
+		);
+
+		/** Removes the requested Bindable from the BindableRenderNode
+		 *
+		 * @param	bindableIndex the index of the Bindable to remove */
+		virtual void removeBindable(std::size_t bindableIndex);
 	protected:
 		/** Binds the current object for using it in the following operations */
 		virtual void bind() const override;

@@ -77,7 +77,7 @@ namespace se::app {
 		);
 
 		/** Creates a Sphere mesh from the given data. The generated RawMesh
-		 * will only have setted the positions and face indices.
+		 * will only have setted the positions, uvs and face indices.
 		 *
 		 * @param	name the name of the mesh
 		 * @param	segments the number of segments of the Sphere mesh
@@ -90,7 +90,7 @@ namespace se::app {
 		);
 
 		/** Creates a Dome mesh from the given data. The generated RawMesh
-		 * will only have setted the positions and face indices.
+		 * will only have setted the positions, uvs and face indices.
 		 *
 		 * @param	name the name of the mesh
 		 * @param	segments the number of segments of the Dome mesh
@@ -100,6 +100,19 @@ namespace se::app {
 		static RawMesh createDomeMesh(
 			const std::string& name,
 			std::size_t segments, std::size_t rings, float radius
+		);
+
+		/** Creates a Cone mesh from the given data. The generated RawMesh
+		 * will only have setted the positions, uvs and face indices.
+		 *
+		 * @param	name the name of the mesh
+		 * @param	segments the number of segments of the Cone mesh
+		 * @param	radius the radius of the Cone mesh
+		 * @param	height the height of the Cone mesh
+		 * @return	the new RawMesh */
+		static RawMesh createConeMesh(
+			const std::string& name,
+			std::size_t segments, float radius, float height
 		);
 
 		/** Calculates the Normals of the given vertices

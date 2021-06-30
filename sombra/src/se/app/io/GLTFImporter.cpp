@@ -738,7 +738,7 @@ namespace se::app {
 
 			graphics::ColorFormat format = graphics::ColorFormat::RGB;
 			switch (image.channels) {
-				case 1:	format = graphics::ColorFormat::Red;	break;
+				case 1:	format = graphics::ColorFormat::R;		break;
 				case 2:	format = graphics::ColorFormat::RG;		break;
 				case 3:	format = graphics::ColorFormat::RGB;	break;
 				case 4:	format = graphics::ColorFormat::RGBA;	break;
@@ -1589,7 +1589,8 @@ namespace se::app {
 					if (itLight != itLightsPunctual->end()) {
 						std::size_t lightIndex = *itLight;
 						if (lightIndex < mGLTFData->lightSources.size()) {
-							LightComponent lightComponent = { mGLTFData->lightSources[lightIndex] };
+							LightComponent lightComponent;
+							lightComponent.setSource(mGLTFData->lightSources[lightIndex]);
 							entityDB.addComponent(node.entity, std::move(lightComponent));
 						}
 						else {

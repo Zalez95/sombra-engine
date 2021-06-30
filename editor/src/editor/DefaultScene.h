@@ -192,7 +192,7 @@ namespace editor {
 		scene.entities.push_back(lightEntity);
 		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(lightEntity, "pointLight");
 		auto lightComponent = scene.application.getEntityDatabase().emplaceComponent<LightComponent>(lightEntity);
-		lightComponent->source = pointLight;
+		lightComponent->setSource(pointLight);
 		auto lightTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(lightEntity);
 		lightTransforms->position = { 3.0f, 7.5f, -1.0f };
 	}

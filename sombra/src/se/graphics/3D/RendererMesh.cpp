@@ -4,15 +4,18 @@
 
 namespace se::graphics {
 
-	void RendererMesh::render()
+	void RendererMesh::sortQueue()
 	{
 		// Sort the render queue by Pass
 		std::sort(
 			mRenderQueue.begin(), mRenderQueue.end(),
 			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) { return lhs.second < rhs.second; }
 		);
+	}
 
-		// Draw all the renderables
+
+	void RendererMesh::render()
+	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
@@ -23,10 +26,15 @@ namespace se::graphics {
 			renderable->bind(pass);
 			renderable->draw();
 		}
+	}
+
+
+	void RendererMesh::clearQueue()
+	{
 		mRenderQueue.clear();
 	}
 
-// Private functions
+
 	void RendererMesh::submitRenderable3D(Renderable3D& renderable, Pass& pass)
 	{
 		auto renderableMesh = dynamic_cast<RenderableMesh*>(&renderable);

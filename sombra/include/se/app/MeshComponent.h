@@ -136,6 +136,9 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to remove */
 		void remove(std::size_t rIndex);
 
+		/** Removes all the Meshes from the MeshComponent */
+		void clear();
+
 		/** Adds the given RenderableShader to the selected RenderableMesh
 		 *
 		 * @param	rIndex the index of the RenderableMesh to update

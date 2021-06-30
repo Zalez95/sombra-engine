@@ -706,7 +706,7 @@ namespace se::app {
 	{
 		auto toColorFormat = [](int channels) {
 			switch (channels) {
-				case 1:		return ColorFormat::Red;
+				case 1:		return ColorFormat::R;
 				case 2:		return ColorFormat::RG;
 				case 3:		return ColorFormat::RGB;
 				default:	return ColorFormat::RGBA;
@@ -1001,10 +1001,10 @@ namespace se::app {
 				}
 			}
 			else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
-				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->isEnabled() } };
+				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->getEnable() } };
 			}
 			else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
-				bindableJson = { { "type", "SetDepthMask" }, { "active", setDepthMask->isEnabled() } };
+				bindableJson = { { "type", "SetDepthMask" }, { "active", setDepthMask->getEnable() } };
 			}
 
 			if (!bindableJson.empty()) {
@@ -1823,8 +1823,18 @@ namespace se::app {
 	{
 		nlohmann::json json;
 
-		if (light.source) {
-			json["sourceName"] = light.source.getResource().getName();
+		if (light.getSource()) {
+			json["sourceName"] = light.getSource().getResource().getName();
+		}
+
+		if (light.hasShadows()) {
+			nlohmann::json shadowDataJson;
+			shadowDataJson["resolution"] = light.getShadowData()->resolution;
+			shadowDataJson["size"] = light.getShadowData()->size;
+			shadowDataJson["zNear"] = light.getShadowData()->zNear;
+			shadowDataJson["zFar"] = light.getShadowData()->zFar;
+			shadowDataJson["numCascades"] = light.getShadowData()->numCascades;
+			json["shadowData"] = std::move(shadowDataJson);
 		}
 
 		return json;
@@ -1839,11 +1849,47 @@ namespace se::app {
 		if (itSourceName != json.end()) {
 			std::string name = *itSourceName;
 			if (auto source = scene.repository.findByName<LightSource>(name.c_str())) {
-				light.source = source;
+				light.setSource(source);
 			}
 			else {
 				return { Result(false, "sourceName \"" + name + "\" not found"), std::nullopt };
 			}
+		}
+
+		auto itShadowData = json.find("shadowData");
+		if (itShadowData != json.end()) {
+			auto itResolution = itShadowData->find("resolution");
+			if (itResolution == itShadowData->end()) {
+				return { Result("Failed to parse \"shadowData\": Missing \"resolution\" property"), std::nullopt };
+			}
+
+			auto itSize = itShadowData->find("size");
+			if (itSize == itShadowData->end()) {
+				return { Result("Failed to parse \"shadowData\": Missing \"size\" property"), std::nullopt };
+			}
+
+			auto itZNear = itShadowData->find("zNear");
+			if (itZNear == itShadowData->end()) {
+				return { Result("Failed to parse \"shadowData\": Missing \"zNear\" property"), std::nullopt };
+			}
+
+			auto itZFar = itShadowData->find("zFar");
+			if (itZFar == itShadowData->end()) {
+				return { Result("Failed to parse \"shadowData\": Missing \"zFar\" property"), std::nullopt };
+			}
+
+			auto itNumCascades = itShadowData->find("numCascades");
+			if (itNumCascades == itShadowData->end()) {
+				return { Result("Failed to parse \"shadowData\": Missing \"numCascades\" property"), std::nullopt };
+			}
+
+			auto shadowData = std::make_unique<ShadowData>();
+			shadowData->resolution = *itResolution;
+			shadowData->size = *itSize;
+			shadowData->zNear = *itZNear;
+			shadowData->zFar = *itZFar;
+			shadowData->numCascades = *itNumCascades;
+			light.setShadowData(std::move(shadowData));
 		}
 
 		return { Result(), std::move(light) };

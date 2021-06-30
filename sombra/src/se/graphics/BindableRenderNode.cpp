@@ -4,7 +4,7 @@ namespace se::graphics {
 
 	std::size_t BindableRenderNode::addBindable(BindableSPtr bindable, bool mustBind)
 	{
-		mBindables.emplace_back(bindable, mustBind);
+		mBindables.emplace(bindable, mustBind);
 		return mBindables.size() - 1;
 	}
 
@@ -15,7 +15,7 @@ namespace se::graphics {
 	}
 
 
-	void BindableRenderNode::setBindable(std::size_t bindableIndex, BindableSPtr bindable)
+	void BindableRenderNode::setBindable(std::size_t bindableIndex, const BindableSPtr& bindable)
 	{
 		mBindables[bindableIndex].first = bindable;
 		iterateOutputs([&](RNodeOutput& output) {
@@ -25,6 +25,12 @@ namespace se::graphics {
 				}
 			}
 		});
+	}
+
+
+	void BindableRenderNode::removeBindable(std::size_t bindableIndex)
+	{
+		mBindables.erase(mBindables.begin().setIndex(bindableIndex));
 	}
 
 

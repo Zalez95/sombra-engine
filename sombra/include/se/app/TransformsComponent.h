@@ -26,7 +26,6 @@ namespace se::app {
 			Animation,
 			AudioSource,
 			Skin,
-			Shadow,
 			Count		///< The number of indices
 		};
 

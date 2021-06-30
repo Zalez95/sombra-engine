@@ -48,7 +48,7 @@ namespace se::app {
 	}
 
 
-	void VoxelizationNode::render()
+	void VoxelizationNode::execute()
 	{
 		int originX, originY;
 		std::size_t dimensionsX, dimensionsY;
@@ -73,7 +73,7 @@ namespace se::app {
 		std::static_pointer_cast<graphics::UniformVariableValue<glm::mat4>>( getBindable(mProjectionMatrices[2]) )
 			->setValue(T * S);		// Z projection
 
-		graphics::Renderer3D::render();
+		graphics::Renderer3D::execute();
 
 		graphics::GraphicsOperations::imageMemoryBarrier();
 		std::static_pointer_cast<graphics::Texture>( getBindable(mVoxelImage) )->generateMipMap();

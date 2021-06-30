@@ -9,7 +9,11 @@
 
 namespace se::app {
 
-	static void createInternalRingsMesh(RawMesh&, std::size_t, std::size_t, float, glm::vec2);
+	static void createInternalRingsMesh(
+		RawMesh& rawMesh,
+		std::size_t segments, std::size_t rings, float radius, const glm::vec2& latitude,
+		float uvScale = 1.0f, const glm::vec2& uvOffset = glm::vec2(0.0f)
+	);
 
 
 	graphics::Mesh MeshLoader::createGraphicsMesh(const RawMesh& rawMesh)
@@ -301,29 +305,31 @@ namespace se::app {
 		std::size_t segments, std::size_t rings, float radius
 	) {
 		RawMesh rawMesh(name);
-		rawMesh.positions.reserve((rings - 1) * segments + 2);
-		rawMesh.indices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+		rawMesh.positions.reserve(2 * ((rings / 2 + 1) * segments + 1));
+		rawMesh.texCoords.reserve(2 * ((rings / 2 + 1) * segments + 1));
+		rawMesh.indices.reserve(2 * (6 * (rings / 2) * segments + 3 * segments));
 
 		// Creates the bottom skullcap
 		rawMesh.positions.push_back({ 0.0f, -radius, 0.0f });
+		rawMesh.texCoords.push_back({ 0.25f, 0.25f });
 		for (std::size_t j = 0; j < segments; ++j) {
 			rawMesh.indices.push_back(0);
 			rawMesh.indices.push_back(static_cast<unsigned short>(j + 1));
-			rawMesh.indices.push_back(static_cast<unsigned short>((j + 1 < segments)? j + 2 : 1));
+			rawMesh.indices.push_back(static_cast<unsigned short>((j + 1) % segments + 1));
 		}
 
 		// Creates the internal rings
-		float ringAngle = glm::pi<float>() / rings;
-		createInternalRingsMesh(rawMesh, segments, rings-2, radius, { ringAngle - glm::half_pi<float>(), glm::half_pi<float>() - ringAngle });
+		float ringAngle = glm::half_pi<float>() / (rings / 2 + 1);
+		createInternalRingsMesh(rawMesh, segments, rings/2, radius, { ringAngle - glm::half_pi<float>(), 0.0f }, 0.5f);
+		createInternalRingsMesh(rawMesh, segments, rings/2, radius, { 0.0f, glm::half_pi<float>() - ringAngle }, 0.5f, glm::vec2(0.5f, 0.0f));
 
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
+		rawMesh.texCoords.push_back({ 0.75f, 0.25f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 2 - segments + j));
+			rawMesh.indices.push_back(static_cast<unsigned short>(1 + (2 * (rings / 2) + 1) * segments + j));
 			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 1));
-			rawMesh.indices.push_back(static_cast<unsigned short>(
-				(j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments
-			));
+			rawMesh.indices.push_back(static_cast<unsigned short>(1 + (2 * (rings / 2) + 1) * segments + (j + 1) % segments));
 		}
 
 		return rawMesh;
@@ -335,21 +341,57 @@ namespace se::app {
 		std::size_t segments, std::size_t rings, float radius
 	) {
 		RawMesh rawMesh(name);
-		rawMesh.positions.reserve(rings * segments + 1);
-		rawMesh.indices.reserve(6 * (rings - 2) * segments + 3 * 2 * segments);
+		rawMesh.positions.reserve((rings + 1) * segments + 1);
+		rawMesh.texCoords.reserve((rings + 1) * segments + 1);
+		rawMesh.indices.reserve(6 * rings * segments + 3 * segments);
 
 		// Creates the internal rings
-		float ringAngle = glm::pi<float>() / rings;
-		createInternalRingsMesh(rawMesh, segments, rings-1, radius, { 0, glm::half_pi<float>() - ringAngle });
+		float ringAngle = glm::half_pi<float>() / (rings + 1);
+		createInternalRingsMesh(rawMesh, segments, rings, radius, { 0.0f, glm::half_pi<float>() - ringAngle });
 
 		// Creates the top skullcap
 		rawMesh.positions.push_back({ 0.0f, radius, 0.0f });
+		rawMesh.texCoords.push_back({ 0.5f, 0.5f });
 		for (std::size_t j = 0; j < segments; ++j) {
-			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 2 - segments + j));
+			rawMesh.indices.push_back(static_cast<unsigned short>(rings * segments + j));
 			rawMesh.indices.push_back(static_cast<unsigned short>(rawMesh.positions.size() - 1));
-			rawMesh.indices.push_back(static_cast<unsigned short>(
-				(j + 1 < segments)? rawMesh.positions.size() - 1 - segments + j : rawMesh.positions.size() - 2 - segments
-			));
+			rawMesh.indices.push_back(static_cast<unsigned short>(rings * segments + (j + 1) % segments));
+		}
+
+		return rawMesh;
+	}
+
+
+	RawMesh MeshLoader::createConeMesh(
+		const std::string& name,
+		std::size_t segments, float radius, float height
+	) {
+		RawMesh rawMesh(name);
+		rawMesh.positions.reserve(2 * segments + 1);
+		rawMesh.texCoords.reserve(2 * segments + 1);
+		rawMesh.indices.reserve(6 * (segments - 1));
+
+		float segmentAngle = glm::two_pi<float>() / segments;
+		float halfHeight = 0.5f * height;
+		for (std::size_t i = 0; i < 2 * segments; ++i) {
+			float currentSegmenAngle = i * segmentAngle - glm::pi<float>();
+			float c = glm::cos(currentSegmenAngle);
+			float s = glm::sin(currentSegmenAngle);
+			rawMesh.positions.push_back({ radius * c, -halfHeight, radius * s });
+			rawMesh.texCoords.push_back({ 0.25f * c + 0.25f + 0.5f * (i / segments), 0.25f * s + 0.25f });
+		}
+		rawMesh.positions.push_back({ 0.0f, halfHeight, 0.0f });
+		rawMesh.texCoords.push_back({ 0.25f, 0.25f });
+
+		for (std::size_t i = 0; i < segments; ++i) {
+			rawMesh.indices.push_back(static_cast<unsigned short>(i));
+			rawMesh.indices.push_back(static_cast<unsigned short>(2 * segments));
+			rawMesh.indices.push_back(static_cast<unsigned short>((i + 1) % segments));
+		}
+		for (std::size_t i = 1; i < segments - 1; ++i) {
+			rawMesh.indices.push_back(static_cast<unsigned short>(segments));
+			rawMesh.indices.push_back(static_cast<unsigned short>(segments + i));
+			rawMesh.indices.push_back(static_cast<unsigned short>(segments + (i + 1) % segments));
 		}
 
 		return rawMesh;
@@ -435,25 +477,31 @@ namespace se::app {
 
 	void createInternalRingsMesh(
 		RawMesh& rawMesh,
-		std::size_t segments, std::size_t rings, float radius,
-		glm::vec2 latitude
+		std::size_t segments, std::size_t rings, float radius, const glm::vec2& latitude,
+		float uvScale, const glm::vec2& uvOffset
 	) {
 		unsigned short currentRingIndex = static_cast<unsigned short>(rawMesh.positions.size());
 
 		// Creates the vertices
 		float segmentAngle = glm::two_pi<float>() / segments;
 		float ringAngle = (latitude[1] - latitude[0]) / rings;
+		float halfUVScale = 0.5f * uvScale;
 
 		for (std::size_t i = 0; i < rings + 1; ++i) {
 			float currentRingLatitude = i * ringAngle + latitude[0];
-			float currentRingRadius = radius * glm::cos(currentRingLatitude);
+			float ringScale = glm::cos(currentRingLatitude);
+			float currentRingRadius = radius * ringScale;
 
 			float y = radius * glm::sin(currentRingLatitude);
 			for (std::size_t j = 0; j < segments; ++j) {
 				float currentSegmentLongitude = j * segmentAngle - glm::pi<float>();
-				float x = currentRingRadius * glm::cos(currentSegmentLongitude);
-				float z = currentRingRadius * glm::sin(currentSegmentLongitude);
-				rawMesh.positions.push_back({ x, y, z });
+				float c = glm::cos(currentSegmentLongitude);
+				float s = glm::sin(currentSegmentLongitude);
+				rawMesh.positions.push_back({ currentRingRadius * c, y, currentRingRadius * s });
+				rawMesh.texCoords.push_back({
+					halfUVScale * ringScale * c + halfUVScale + uvOffset.x,
+					halfUVScale * ringScale * s + halfUVScale + uvOffset.y
+				});
 			}
 		}
 

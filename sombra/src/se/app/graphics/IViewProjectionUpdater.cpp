@@ -15,17 +15,17 @@ namespace se::app {
 
 	void IViewProjectionUpdater::addRenderable(graphics::Renderable& renderable)
 	{
-		mRenderableShaders.emplace(&renderable, IndexVector());
+		mRenderableTechniques.emplace(&renderable, IndexVector());
 	}
 
 
 	void IViewProjectionUpdater::removeRenderable(graphics::Renderable& renderable)
 	{
-		auto itRenderable = mRenderableShaders.find(&renderable);
-		if (itRenderable != mRenderableShaders.end()) {
-			for (std::size_t iShader : itRenderable->second) {
-				if (--mShadersData[iShader].userCount == 0) {
-					removeShader(iShader);
+		auto itRenderable = mRenderableTechniques.find(&renderable);
+		if (itRenderable != mRenderableTechniques.end()) {
+			for (std::size_t iTechnique : itRenderable->second) {
+				if (--mTechniquesData[iTechnique].userCount == 0) {
+					removeTechnique(iTechnique);
 				}
 			}
 		}
@@ -35,26 +35,25 @@ namespace se::app {
 	}
 
 
-	void IViewProjectionUpdater::addRenderableShader(
-		graphics::Renderable& renderable, const RenderableShaderSPtr& shader
-	) {
-		auto itRenderable = mRenderableShaders.find(&renderable);
-		if (itRenderable != mRenderableShaders.end()) {
-			auto itShader = std::find_if(mShadersData.begin(), mShadersData.end(), [&](const auto& sData) {
-				return sData.shader == shader;
+	void IViewProjectionUpdater::addRenderableTechnique(graphics::Renderable& renderable, const TechniqueSPtr& technique)
+	{
+		auto itRenderable = mRenderableTechniques.find(&renderable);
+		if (itRenderable != mRenderableTechniques.end()) {
+			auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
+				return tData.technique == technique;
 			});
-			if (itShader == mShadersData.end()) {
-				itShader = mShadersData.emplace();
-				itShader->shader = shader;
-				shader->processSteps([&](const auto& step) {
-					if (shouldAddUniforms(step.get())) {
-						addStep(itShader.getIndex(), step.get());
+			if (itTechnique == mTechniquesData.end()) {
+				itTechnique = mTechniquesData.emplace();
+				itTechnique->technique = technique;
+				technique->processPasses([&](const PassSPtr& pass) {
+					if (shouldAddUniforms(pass)) {
+						addPass(itTechnique.getIndex(), pass);
 					}
 				});
 			}
 
-			itShader->userCount++;
-			itRenderable->second.push_back(itShader.getIndex());
+			itTechnique->userCount++;
+			itRenderable->second.push_back(itTechnique.getIndex());
 		}
 		else {
 			SOMBRA_WARN_LOG << "Renderable " << &renderable << " not found";
@@ -62,25 +61,25 @@ namespace se::app {
 	}
 
 
-	void IViewProjectionUpdater::removeRenderableShader(
-		graphics::Renderable& renderable, const RenderableShaderSPtr& shader
+	void IViewProjectionUpdater::removeRenderableTechnique(
+		graphics::Renderable& renderable, const TechniqueSPtr& technique
 	) {
-		auto itRenderable = mRenderableShaders.find(&renderable);
-		if (itRenderable != mRenderableShaders.end()) {
-			auto itShader = std::find_if(mShadersData.begin(), mShadersData.end(), [&](const auto& sData) {
-				return sData.shader == shader;
+		auto itRenderable = mRenderableTechniques.find(&renderable);
+		if (itRenderable != mRenderableTechniques.end()) {
+			auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
+				return tData.technique == technique;
 			});
-			if (itShader != mShadersData.end()) {
+			if (itTechnique != mTechniquesData.end()) {
 				itRenderable->second.erase(
-					std::remove(itRenderable->second.begin(), itRenderable->second.end(), itShader.getIndex()),
+					std::remove(itRenderable->second.begin(), itRenderable->second.end(), itTechnique.getIndex()),
 					itRenderable->second.end()
 				);
-				if (--itShader->userCount == 0) {
-					removeShader(itShader.getIndex());
+				if (--itTechnique->userCount == 0) {
+					removeTechnique(itTechnique.getIndex());
 				}
 			}
 			else {
-				SOMBRA_WARN_LOG << "Shader " << shader << " not found";
+				SOMBRA_WARN_LOG << "Technique " << technique << " not found";
 			}
 		}
 		else {
@@ -89,66 +88,63 @@ namespace se::app {
 	}
 
 
-	void IViewProjectionUpdater::onAddShaderStep(const RenderableShaderSPtr& shader, const RenderableShaderStepSPtr& step)
+	void IViewProjectionUpdater::onAddTechniquePass(const TechniqueSPtr& technique, const PassSPtr& pass)
 	{
-		auto itShader = std::find_if(mShadersData.begin(), mShadersData.end(), [&](const auto& sData) {
-			return sData.shader == shader;
+		auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
+			return tData.technique == technique;
 		});
-		if (itShader != mShadersData.end()) {
-			if (shouldAddUniforms(step)) {
-				addStep(itShader.getIndex(), step);
+		if (itTechnique != mTechniquesData.end()) {
+			if (shouldAddUniforms(pass)) {
+				addPass(itTechnique.getIndex(), pass);
 			}
 		}
 		else {
-			SOMBRA_WARN_LOG << "Shader " << shader << " not found";
+			SOMBRA_WARN_LOG << "Technique " << technique << " not found";
 		}
 	}
 
 
-	void IViewProjectionUpdater::onRemoveShaderStep(const RenderableShaderSPtr& shader, const RenderableShaderStepSPtr& step)
+	void IViewProjectionUpdater::onRemoveTechniquePass(const TechniqueSPtr& technique, const PassSPtr& pass)
 	{
-		auto itShader = std::find_if(mShadersData.begin(), mShadersData.end(), [&](const auto& sData) {
-			return sData.shader == shader;
+		auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
+			return tData.technique == technique;
 		});
-		if (itShader != mShadersData.end()) {
-			auto itStep = std::find_if(mStepsData.begin(), mStepsData.end(), [&](const auto& pData) {
-				return pData.step == step;
+		if (itTechnique != mTechniquesData.end()) {
+			auto itPass = std::find_if(mPassesData.begin(), mPassesData.end(), [&](const auto& pData) {
+				return pData.pass == pass;
 			});
-			if (itStep != mStepsData.end()) {
-				removeStep(itShader.getIndex(), itStep.getIndex());
+			if (itPass != mPassesData.end()) {
+				removePass(itTechnique.getIndex(), itPass.getIndex());
 			}
 		}
 		else {
-			SOMBRA_WARN_LOG << "Shader " << shader << " not found";
+			SOMBRA_WARN_LOG << "Technique " << technique << " not found";
 		}
 	}
 
 
-	void IViewProjectionUpdater::update()
+	void IViewProjectionUpdater::update(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 	{
-		SOMBRA_DEBUG_LOG << "Updating the Steps uniforms";
+		SOMBRA_DEBUG_LOG << "Updating the Passes uniforms";
 
-		auto viewMatrix = getViewMatrix();
-		auto projectionMatrix = getProjectionMatrix();
-
-		for (auto& stepData : mStepsData) {
-			stepData.viewMatrix->setValue(viewMatrix);
-			stepData.projectionMatrix->setValue(projectionMatrix);
+		for (PassData& passData : mPassesData) {
+			passData.viewMatrix->setValue(viewMatrix);
+			passData.projectionMatrix->setValue(projectionMatrix);
 		}
 
 		SOMBRA_INFO_LOG << "Update end";
 	}
 
 // Private functions
-	void IViewProjectionUpdater::addStep(std::size_t iShader, const RenderableShaderStepSPtr& step)
+	void IViewProjectionUpdater::addPass(std::size_t iTechnique, const PassSPtr& pass)
 	{
-		auto itStep = std::find_if(mStepsData.begin(), mStepsData.end(), [&](const auto& pData) {
-			return pData.step == step;
+		auto itPass = std::find_if(mPassesData.begin(), mPassesData.end(), [&](const auto& pData) {
+			return pData.pass == pass;
 		});
-		if (itStep == mStepsData.end()) {
+		if (itPass == mPassesData.end()) {
 			std::shared_ptr<graphics::Program> program;
 			Mat4UniformSPtr viewMatrix, projectionMatrix;
-			step->processBindables([&](const auto& bindable) {
+			pass->processBindables([&](const auto& bindable) {
 				if (auto prog = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
 					program = prog;
 				}
@@ -163,59 +159,59 @@ namespace se::app {
 			});
 
 			if (!program) {
-				SOMBRA_WARN_LOG << "Trying to add a Step " << step << " with no program";
+				SOMBRA_WARN_LOG << "Trying to add a Pass " << pass << " with no program";
 				return;
 			}
 
 			if (!viewMatrix) {
 				viewMatrix = std::make_shared<Mat4Uniform>(mViewMatUniformName.c_str(), program);
 				if (viewMatrix->found()) {
-					step->addBindable(viewMatrix);
+					pass->addBindable(viewMatrix);
 				}
 			}
 
 			if (!projectionMatrix) {
 				projectionMatrix = std::make_shared<Mat4Uniform>(mProjectionMatUniformName.c_str(), program);
 				if (projectionMatrix->found()) {
-					step->addBindable(projectionMatrix);
+					pass->addBindable(projectionMatrix);
 				}
 			}
 
-			itStep = mStepsData.emplace(StepData{ 0, step, viewMatrix, projectionMatrix });
+			itPass = mPassesData.emplace(PassData{ 0, pass, viewMatrix, projectionMatrix });
 		}
 
-		itStep->userCount++;
-		mShadersData[iShader].stepIndices.push_back(itStep.getIndex());
+		itPass->userCount++;
+		mTechniquesData[iTechnique].passIndices.push_back(itPass.getIndex());
 	}
 
 
-	void IViewProjectionUpdater::removeStep(std::size_t iShader, std::size_t iStep)
+	void IViewProjectionUpdater::removePass(std::size_t iTechnique, std::size_t iPass)
 	{
-		auto& stepIndices = mShadersData[iShader].stepIndices;
-		stepIndices.erase(
-			std::remove(stepIndices.begin(), stepIndices.end(), iStep),
-			stepIndices.end()
+		auto& passIndices = mTechniquesData[iTechnique].passIndices;
+		passIndices.erase(
+			std::remove(passIndices.begin(), passIndices.end(), iPass),
+			passIndices.end()
 		);
 
-		if (--mStepsData[iStep].userCount == 0) {
-			if (mStepsData[iStep].viewMatrix->found()) {
-				mStepsData[iStep].step->removeBindable(mStepsData[iStep].viewMatrix);
+		if (--mPassesData[iPass].userCount == 0) {
+			if (mPassesData[iPass].viewMatrix->found()) {
+				mPassesData[iPass].pass->removeBindable(mPassesData[iPass].viewMatrix);
 			}
-			if (mStepsData[iStep].projectionMatrix->found()) {
-				mStepsData[iStep].step->removeBindable(mStepsData[iStep].projectionMatrix);
+			if (mPassesData[iPass].projectionMatrix->found()) {
+				mPassesData[iPass].pass->removeBindable(mPassesData[iPass].projectionMatrix);
 			}
 
-			mStepsData.erase(mStepsData.begin().setIndex(iStep));
+			mPassesData.erase(mPassesData.begin().setIndex(iPass));
 		}
 	}
 
 
-	void IViewProjectionUpdater::removeShader(std::size_t iShader)
+	void IViewProjectionUpdater::removeTechnique(std::size_t iTechnique)
 	{
-		for (std::size_t iStep : mShadersData[iShader].stepIndices) {
-			removeStep(iShader, iStep);
+		for (std::size_t iPass : mTechniquesData[iTechnique].passIndices) {
+			removePass(iTechnique, iPass);
 		}
-		mShadersData.erase( mShadersData.begin().setIndex(iShader) );
+		mTechniquesData.erase( mTechniquesData.begin().setIndex(iTechnique) );
 	}
 
 }

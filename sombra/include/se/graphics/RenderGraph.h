@@ -36,7 +36,7 @@ namespace se::graphics {
 		RenderGraph();
 
 		/** Class destructor */
-		virtual ~RenderGraph() = default;
+		virtual ~RenderGraph() { clearNodes(); };
 
 		/** Adds the given RenderNode to the RenderGraph
 		 *

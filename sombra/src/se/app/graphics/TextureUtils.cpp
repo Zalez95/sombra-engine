@@ -387,7 +387,7 @@ namespace se::app {
 		ret.width = width;
 		ret.height = height;
 		switch (color) {
-			case graphics::ColorFormat::Red:	ret.channels = 1;	break;
+			case graphics::ColorFormat::R:		ret.channels = 1;	break;
 			case graphics::ColorFormat::RG:		ret.channels = 2;	break;
 			case graphics::ColorFormat::RGB:	ret.channels = 3;	break;
 			case graphics::ColorFormat::RGBA:	ret.channels = 4;	break;

@@ -6,14 +6,6 @@
 namespace se::graphics {
 
 	template <typename T>
-	BindableRNodeOutput<T>::BindableRNodeOutput(
-		const std::string& name, BindableRenderNode* parentNode,
-		std::size_t bindableIndex
-	) : RNodeOutput(name, parentNode),
-		BindableRNodeConnector(bindableIndex) {}
-
-
-	template <typename T>
 	typename BindableRNodeOutput<T>::BindableSPtr BindableRNodeOutput<T>::getBindable() const
 	{
 		return static_cast<const BindableRenderNode*>(mParentNode)->getBindable(mBindableIndex);
@@ -23,36 +15,19 @@ namespace se::graphics {
 	template <typename T>
 	void BindableRNodeOutput<T>::onBindableUpdate()
 	{
-		for (auto input : mConnectedInputs) {
-			input->onBindableUpdate();
+		for (RNodeInput* input : mConnectedInputs) {
+			static_cast<BindableRNodeInput<T>*>(input)->onBindableUpdate();
 		}
 	}
 
 
 	template <typename T>
-	void BindableRNodeOutput<T>::addInput(BindableRNodeInput<T>* input)
+	bool BindableRNodeInput<T>::connect(RNodeConnector* connector)
 	{
-		mConnectedInputs.push_back(input);
-	}
-
-
-	template <typename T>
-	BindableRNodeInput<T>::BindableRNodeInput(
-		const std::string& name, BindableRenderNode* parentNode,
-		std::size_t bindableIndex
-	) : RNodeInput(name, parentNode),
-		BindableRNodeConnector(bindableIndex) {}
-
-
-	template <typename T>
-	bool BindableRNodeInput<T>::connect(RNodeOutput* output)
-	{
-		if (auto tOutput = dynamic_cast<BindableRNodeOutput<T>*>(output)) {
-			if (RNodeInput::connect(tOutput)) {
+		if (auto output = dynamic_cast<BindableRNodeOutput<T>*>(connector)) {
+			if (RNodeInput::connect(connector)) {
 				auto parent = static_cast<BindableRenderNode*>(mParentNode);
-
-				tOutput->addInput(this);
-				parent->setBindable(mBindableIndex, tOutput->getBindable());
+				parent->setBindable(mBindableIndex, output->getBindable());
 				return true;
 			}
 			else {
@@ -60,10 +35,22 @@ namespace se::graphics {
 			}
 		}
 		else {
-			SOMBRA_ERROR_LOG << "Trying to attach " << output->getParentNode()->getName() << "[" << output->getName() << "]"
+			SOMBRA_ERROR_LOG << "Trying to attach " << connector->getParentNode()->getName() << "[" << connector->getName() << "]"
 				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
 			return false;
 		}
+	}
+
+
+	template <typename T>
+	void BindableRNodeInput<T>::disconnect()
+	{
+		if (mConnectedOutput) {
+			auto parent = static_cast<BindableRenderNode*>(mParentNode);
+			parent->setBindable(mBindableIndex, nullptr);
+		}
+
+		RNodeInput::disconnect();
 	}
 
 

@@ -28,6 +28,19 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~ViewportResolutionNode() = default;
 
+		/** Returns the current viewport coordinates and size to set when
+		 * @see execute is called
+		 *
+		 * @param	x the origin (lower-left) of the viewport in the X axis
+		 *			(return parameter)
+		 * @param	y the origin (lower-left) of the viewport in the Y axis
+		 *			(return parameter)
+		 * @param	width the width of the viewport (return parameter)
+		 * @param	height the height of the viewport (return parameter) */
+		void getViewportSize(
+			int& x, int& y, std::size_t& width, std::size_t& height
+		);
+
 		/** Sets the viewport coordinates and size to set when @see execute is
 		 * called
 		 *

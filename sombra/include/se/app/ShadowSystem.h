@@ -1,19 +1,20 @@
 #ifndef SHADOW_SYSTEM_H
 #define SHADOW_SYSTEM_H
 
-#include "graphics/DeferredLightRenderer.h"
 #include "events/ContainerEvent.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
-#include "LightComponent.h"
 #include "ECS.h"
 
 namespace se::app {
 
 	class Application;
+	class LightComponent;
 	class MeshComponent;
 	class TerrainComponent;
+	class ShadowRenderSubGraph;
+	class DeferredLightRenderer;
 
 
 	/**
@@ -25,32 +26,27 @@ namespace se::app {
 	 */
 	class ShadowSystem : public ISystem
 	{
-	private:	// Nested Types
-		struct Shadow;
-		class ShadowUniformsUpdater;
-
 	private:	// Attributes
 		/** The Application that holds the Entities */
 		Application& mApplication;
 
-		/** The Entity that holds the current light that creates the shadows */
-		Entity mShadowEntity;
-
-		/** The objects used for rendering each the shadow */
-		std::vector<Shadow> mShadows;
+		/** A pointer to the ShadowRenderSubGraph used for rendering the
+		 * Shadows */
+		ShadowRenderSubGraph* mShadowRenderSubGraph;
 
 		/** A pointer to the deferred light renderer used for computing the
 		 * lighting */
 		DeferredLightRenderer* mDeferredLightRenderer;
 
+		/** Maps each Entity with its shadow indices */
+		std::unordered_map<Entity, std::vector<std::size_t>> mShadowEntityMap;
+
 	public:		// Functions
 		/** Creates a new ShadowSystem
 		 *
 		 * @param	application a reference to the Application that holds the
-		 *			current System
-		 * @param	shadowData the configuration used for rendering the
-		 *			Shadows */
-		ShadowSystem(Application& application, const ShadowData& shadowData);
+		 *			current System */
+		ShadowSystem(Application& application);
 
 		/** Class destructor */
 		~ShadowSystem();
@@ -135,6 +131,31 @@ namespace se::app {
 		 *
 		 * @param	event the ShaderEvent to handle */
 		void onShaderEvent(const ShaderEvent& event);
+
+		/** Adds the given number of shadows to the given Entity
+		 *
+		 * @param	entity the Entity that will hold the Shadows
+		 * @param	light a pointer to the LightComponent of the Entity
+		 * @param	numShadows the number of shadows to add */
+		void addShadows(
+			Entity entity, LightComponent* light, std::size_t numShadows
+		);
+
+		/** Removes the given number of shadows from the given Entity
+		 *
+		 * @param	entity the Entity that holds the Shadows
+		 * @param	light a pointer to the LightComponent of the Entity
+		 * @param	numShadows the number of shadows to remove */
+		void removeShadows(
+			Entity entity, LightComponent* light, std::size_t numShadows
+		);
+
+		/** Calculates the ShadowIndices of the given Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent to
+		 *			calculate its shadow indices value
+		 * @param	light a pointer to the LightComponent of the Entity */
+		void setShadowIndices(Entity entity, LightComponent* light) const;
 	};
 
 }

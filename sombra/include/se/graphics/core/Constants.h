@@ -90,17 +90,17 @@ namespace se::graphics {
 	/** The Color format for the Textures */
 	enum class ColorFormat
 	{
-		Red,
+		R,
 		RG,
 		RGB,
 		RGBA,
 		Depth, Depth16, Depth24, Depth32,
 		DepthStencil,
-		RedInteger,
+		RInteger,
 		RGInteger,
 		RGBInteger,
 		RGBAInteger,
-		Red32ui,
+		R8, R16ui, R16f, R32ui, R32f,
 		RG8, RG16ui, RG16f, RG32ui, RG32f,
 		RGB8, RGB16ui, RGB16f, RGB32ui, RGB32f,
 		RGBA8, RGBA16ui, RGBA16f, RGBA32ui, RGBA32f
@@ -121,10 +121,14 @@ namespace se::graphics {
 				return ColorFormat::Depth;
 			case ColorFormat::DepthStencil:
 				return ColorFormat::DepthStencil;
-			case ColorFormat::Red:
-			case ColorFormat::RedInteger:
-			case ColorFormat::Red32ui:
-				return ColorFormat::Red;
+			case ColorFormat::R:
+			case ColorFormat::RInteger:
+			case ColorFormat::R8:
+			case ColorFormat::R16ui:
+			case ColorFormat::R16f:
+			case ColorFormat::R32ui:
+			case ColorFormat::R32f:
+				return ColorFormat::R;
 			case ColorFormat::RG:
 			case ColorFormat::RGInteger:
 			case ColorFormat::RG8:
@@ -158,7 +162,7 @@ namespace se::graphics {
 				return 1;
 			case ColorFormat::DepthStencil:
 				return 2;
-			case ColorFormat::Red:
+			case ColorFormat::R:
 				return 1;
 			case ColorFormat::RG:
 				return 2;

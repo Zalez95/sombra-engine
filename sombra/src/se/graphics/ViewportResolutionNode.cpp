@@ -11,6 +11,15 @@ namespace se::graphics {
 	}
 
 
+	void ViewportResolutionNode::getViewportSize(int& x, int& y, std::size_t& width, std::size_t& height)
+	{
+		x = mX;
+		y = mY;
+		width = mWidth;
+		height = mHeight;
+	}
+
+
 	void ViewportResolutionNode::setViewportSize(int x, int y, std::size_t width, std::size_t height)
 	{
 		mX = x;

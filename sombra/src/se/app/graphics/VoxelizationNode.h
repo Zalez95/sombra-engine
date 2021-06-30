@@ -55,8 +55,8 @@ namespace se::app {
 			const glm::vec3& minPosition, const glm::vec3& maxPosition
 		);
 
-		/** Renders all the submitted Renderables */
-		virtual void render() override;
+		/** @copydoc graphics::Renderer::execute() */
+		virtual void execute() override;
 	};
 
 }

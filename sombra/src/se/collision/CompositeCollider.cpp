@@ -5,7 +5,7 @@
 namespace se::collision {
 
 	CompositeCollider::CompositeCollider(std::vector<ColliderUPtr> parts) :
-		mParts(std::move(parts)), mTransformsMatrix(1.0f)
+		mParts(std::move(parts)), mTransformsMatrix(1.0f), mUpdated(true)
 	{
 		calculateAABB();
 	}
@@ -18,6 +18,7 @@ namespace se::collision {
 		}
 		mTransformsMatrix = other.mTransformsMatrix;
 		mAABB = other.mAABB;
+		mUpdated = other.mUpdated;
 	}
 
 
@@ -29,6 +30,7 @@ namespace se::collision {
 		}
 		mTransformsMatrix = other.mTransformsMatrix;
 		mAABB = other.mAABB;
+		mUpdated = other.mUpdated;
 
 		return *this;
 	}
@@ -37,6 +39,7 @@ namespace se::collision {
 	void CompositeCollider::setTransforms(const glm::mat4& transforms)
 	{
 		mTransformsMatrix = transforms;
+		mUpdated = true;
 
 		for (ColliderUPtr& part : mParts) {
 			part->setTransforms(transforms);
@@ -48,12 +51,10 @@ namespace se::collision {
 
 	bool CompositeCollider::updated() const
 	{
-		bool ret = false;
+		bool ret = mUpdated;
 
 		for (const ColliderUPtr& part : mParts) {
-			if (part->updated()) {
-				ret = true;
-			}
+			ret |= part->updated();
 		}
 
 		return ret;
@@ -64,6 +65,7 @@ namespace se::collision {
 	{
 		mParts.emplace_back(std::move(part));
 		calculateAABB();
+		mUpdated = true;
 
 		return *this;
 	}
@@ -71,6 +73,7 @@ namespace se::collision {
 
 	void CompositeCollider::resetUpdatedState()
 	{
+		mUpdated = false;
 		for (ColliderUPtr& part : mParts) {
 			part->resetUpdatedState();
 		}
@@ -99,6 +102,7 @@ namespace se::collision {
 			mParts.end()
 		);
 		calculateAABB();
+		mUpdated = true;
 
 		return *this;
 	}

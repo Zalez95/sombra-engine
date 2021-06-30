@@ -4,8 +4,51 @@
 
 namespace se::graphics {
 
-	bool RNodeInput::connect(RNodeOutput* output)
+	bool RNodeOutput::connect(RNodeConnector* connector)
 	{
+		RNodeInput* input = dynamic_cast<RNodeInput*>(connector);
+		if (!input) {
+			SOMBRA_ERROR_LOG << "Trying to attach " << connector->getParentNode()->getName() << "[" << connector->getName() << "]"
+				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
+			return false;
+		}
+
+		return input->connect(this);
+	}
+
+
+	void RNodeOutput::disconnect()
+	{
+		while (!mConnectedInputs.empty()) {
+			mConnectedInputs.back()->disconnect();
+		}
+	}
+
+
+	void RNodeOutput::addInput(RNodeInput* input)
+	{
+		mConnectedInputs.push_back(input);
+	}
+
+
+	void RNodeOutput::removeInput(RNodeInput* input)
+	{
+		mConnectedInputs.erase(
+			std::remove(mConnectedInputs.begin(), mConnectedInputs.end(), input),
+			mConnectedInputs.end()
+		);
+	}
+
+
+	bool RNodeInput::connect(RNodeConnector* connector)
+	{
+		RNodeOutput* output = dynamic_cast<RNodeOutput*>(connector);
+		if (!output) {
+			SOMBRA_ERROR_LOG << "Trying to attach " << connector->getParentNode()->getName() << "[" << connector->getName() << "]"
+				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
+			return false;
+		}
+
 		if (mConnectedOutput) {
 			SOMBRA_ERROR_LOG << mParentNode->getName() << "[" << mName << "] is already connected to "
 				<< mConnectedOutput->getParentNode()->getName() + "[" + mConnectedOutput->getName() << "]"
@@ -14,7 +57,17 @@ namespace se::graphics {
 		}
 
 		mConnectedOutput = output;
+		mConnectedOutput->addInput(this);
 		return true;
+	}
+
+
+	void RNodeInput::disconnect()
+	{
+		if (mConnectedOutput) {
+			mConnectedOutput->removeInput(this);
+			mConnectedOutput = nullptr;
+		}
 	}
 
 
@@ -47,6 +100,21 @@ namespace se::graphics {
 	}
 
 
+	bool RenderNode::removeInput(RNodeInput* input)
+	{
+		if (input->getConnectedOutput()) {
+			SOMBRA_ERROR_LOG << getName() << "[" << input->getName() << "] has connections, it can't be removed";
+			return false;
+		}
+
+		mInputs.erase(
+			std::remove_if(mInputs.begin(), mInputs.end(), [&](const InputUPtr& input2) { return input == input2.get(); }),
+			mInputs.end()
+		);
+		return true;
+	}
+
+
 	bool RenderNode::addOutput(OutputUPtr output)
 	{
 		if (std::none_of(
@@ -73,6 +141,32 @@ namespace se::graphics {
 			return itOutput->get();
 		}
 		return nullptr;
+	}
+
+
+	bool RenderNode::removeOutput(RNodeOutput* output)
+	{
+		if (output->hasConnections()) {
+			SOMBRA_ERROR_LOG << getName() << "[" << output->getName() << "] has connections, it can't be removed";
+			return false;
+		}
+
+		mOutputs.erase(
+			std::remove_if(mOutputs.begin(), mOutputs.end(), [&](const OutputUPtr& output2) { return output == output2.get(); }),
+			mOutputs.end()
+		);
+		return true;
+	}
+
+
+	void RenderNode::disconnect()
+	{
+		for (auto& output : mOutputs) {
+			output->disconnect();
+		}
+		for (auto& input : mInputs) {
+			input->disconnect();
+		}
 	}
 
 }

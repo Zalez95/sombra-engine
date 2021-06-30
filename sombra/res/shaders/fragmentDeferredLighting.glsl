@@ -24,8 +24,9 @@ const vec2 POISSON_DISK[16] = vec2[](
 struct BaseLight
 {
 	vec3 position;
-	vec3 direction;
 	uint type;
+	vec3 direction;
+	int shadowIndices;
 	vec4 color;
 	float intensity;
 	float range;
@@ -40,16 +41,14 @@ in vec3 vsPosition;
 
 // Uniform variables
 uniform uint uNumLights;
-uniform uint uShadowLightIndex;
 layout (std140) uniform LightsBlock
 {
 	BaseLight uBaseLights[MAX_LIGHTS];
 };
 
 uniform vec3 uViewPosition;						// Camera position in World space
-uniform mat4 uShadowViewProjectionMatrix;		// World space to NDC space Matrix (shadow mapping)
 
-uniform sampler2D uShadowMap;
+uniform sampler2D uShadows;
 uniform samplerCube uIrradianceMap;
 uniform samplerCube uPrefilterMap;
 uniform sampler2D uBRDFMap;
@@ -73,28 +72,19 @@ float rand(vec2 seed)
 
 
 /* Calculates wether the given point is in shadow or not */
-float calculateShadow(vec4 position, vec3 normal)
+float calculateShadow(uint shadowIndex, vec4 shadows)
 {
-	vec3 projCoords = position.xyz / position.w;	// Perspective divide
-	projCoords = projCoords * 0.5 + 0.5;			// [0,1] range
+	uint q = shadowIndex / 4u;
+	uint r = shadowIndex % 4u;
 
-	bool isDirectional = uBaseLights[uShadowLightIndex].type == DIRECTIONAL_LIGHT;
-	vec3 lightDirection1 = normalize(-uBaseLights[uShadowLightIndex].direction);
-	vec3 lightDirection2 = normalize(uBaseLights[uShadowLightIndex].position - position.xyz);
-	vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
-	float bias = max(0.005 * (1.0 - dot(normal, lightDirection)), 0.0005);
+	uint value = (q == 0u)? uint(shadows.r) : (q == 1u)? uint(shadows.g) : (q == 2u)? uint(shadows.b) : uint(shadows.a);
+	uint v1 = value / 16777216u;
+	uint v2 = (value - v1) / 65536u;
+	uint v3 = (value - v1 - v2) / 256u;
+	uint v4 = value - v1 - v2 - v3;
+	value = (r == 0u)? v1 : (r == 1u)? v2 : (r == 2u)? v3 : v4;
 
-	float shadow = 0.0;
-	for (uint i = 0u; i < 4u; ++i) {
-		int randomIndex = int(16.0 * rand(i * gl_FragCoord.xy));
-		float shadowMapDepth = texture(uShadowMap, projCoords.xy + POISSON_DISK[randomIndex] / 700.0).r;
-		float currentDepth = projCoords.z;
-		if (currentDepth - bias > shadowMapDepth){
-			shadow += 0.25;
-		}
-	}
-
-	return float(position.z <= 1.0) * shadow;
+	return float(value) / 255.0;
 }
 
 
@@ -169,7 +159,7 @@ vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance
 
 /* Calculates the color of the current fragment point with all the lights
  * of the scene and irradiance map */
-vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, float roughness, float ao)
+vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, float roughness, float ao, vec4 shadows)
 {
 	vec3 totalLightColor = vec3(0.0);
 
@@ -177,10 +167,6 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 	vec3 viewDirection		= normalize(uViewPosition - position);
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(normalDirection, viewDirection), 0.0);
-
-	// ---- Calculate shadow mapping ---
-	vec4 shadowPosition = uShadowViewProjectionMatrix * vec4(position, 1.0);
-	float shadow = calculateShadow(shadowPosition, normal);
 
 	// ---- Calculate Direct lighting ----
 	for (uint i = 0u; i < uNumLights; ++i) {
@@ -217,7 +203,9 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 			vec3 diffuseRatio = (vec3(1.0) - f) * (1.0 - metallic);
 			vec3 currentLightColor = (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
 
-			bool isShadowLight = i == uShadowLightIndex;
+			// Calculate shadow mapping
+			float shadow = calculateShadow(i, shadows);
+			bool isShadowLight = uBaseLights[i].shadowIndices >= 0;
 			totalLightColor += (float(isShadowLight) * (1.0 - shadow) + float(!isShadowLight)) * currentLightColor;
 		}
 	}
@@ -253,6 +241,7 @@ void main()
 	vec3 position = texture(uPosition, texCoords).rgb;
 	vec3 normal = texture(uNormal, texCoords).rgb;
 	vec3 albedo = texture(uAlbedo, texCoords).rgb;
+	vec4 shadows = texture(uShadows, texCoords);
 
 	vec4 material = texture(uMaterial, texCoords);
 	float metallic = material.r;
@@ -262,7 +251,7 @@ void main()
 	vec3 emissive = texture(uEmissive, texCoords).rgb;
 
 	// Calculate the output color
-	vec3 color = calculateLighting(position, normal, albedo, metallic, roughness, surfaceAO);
+	vec3 color = calculateLighting(position, normal, albedo, metallic, roughness, surfaceAO, shadows);
 	color += emissive;
 	oColor = vec4(color, 1.0);
 

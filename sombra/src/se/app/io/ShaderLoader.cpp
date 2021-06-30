@@ -154,13 +154,13 @@ namespace se::app {
 			if (auto operation = std::dynamic_pointer_cast<graphics::SetOperation>(bindable); operation) {
 				switch (operation->getOperation()) {
 					case graphics::Operation::Blending:
-						material.alphaMode = operation->isEnabled()? graphics::AlphaMode::Blend : graphics::AlphaMode::Opaque;
+						material.alphaMode = operation->getEnable()? graphics::AlphaMode::Blend : graphics::AlphaMode::Opaque;
 						break;
 					case graphics::Operation::DepthTest:
-						material.alphaMode = operation->isEnabled()? graphics::AlphaMode::Opaque : graphics::AlphaMode::Blend;
+						material.alphaMode = operation->getEnable()? graphics::AlphaMode::Opaque : graphics::AlphaMode::Blend;
 						break;
 					case graphics::Operation::Culling:
-						material.doubleSided = !operation->isEnabled();
+						material.doubleSided = !operation->getEnable();
 						break;
 					default:
 						break;

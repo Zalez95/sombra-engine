@@ -4,15 +4,18 @@
 
 namespace se::graphics {
 
-	void RendererParticles::render()
+	void RendererParticles::sortQueue()
 	{
 		// Sort the render queue by Pass
 		std::sort(
 			mRenderQueue.begin(), mRenderQueue.end(),
 			[](const RenderablePassPair& lhs, const RenderablePassPair& rhs) { return lhs.second < rhs.second; }
 		);
+	}
 
-		// Draw all the renderables
+
+	void RendererParticles::render()
+	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
@@ -23,10 +26,15 @@ namespace se::graphics {
 			renderable->bind(pass);
 			renderable->drawInstances();
 		}
+	}
+
+
+	void RendererParticles::clearQueue()
+	{
 		mRenderQueue.clear();
 	}
 
-// Private functions
+
 	void RendererParticles::submitRenderable3D(Renderable3D& renderable, Pass& pass)
 	{
 		auto particleSystem = dynamic_cast<ParticleSystem*>(&renderable);

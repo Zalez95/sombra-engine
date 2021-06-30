@@ -26,10 +26,16 @@ namespace se::graphics {
 
 		/** Class destructor */
 		virtual ~RendererMesh() = default;
+	protected:
+		/** @copydoc Renderer::sortQueue() */
+		virtual void sortQueue() override;
 
 		/** @copydoc Renderer::render() */
 		virtual void render() override;
-	protected:
+
+		/** @copydoc Renderer::clearQueue() */
+		virtual void clearQueue() override;
+
 		/** @copydoc Renderer3D::submitRenderable3D(Renderable3D&, Pass&) */
 		virtual
 		void submitRenderable3D(Renderable3D& renderable, Pass& pass) override;

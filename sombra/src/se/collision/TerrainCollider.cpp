@@ -21,6 +21,7 @@ namespace se::collision {
 		mXSize = xSize;
 		mZSize = zSize;
 		calculateAABB();
+		mUpdated = true;
 	}
 
 

@@ -171,7 +171,7 @@ namespace se::graphics {
 	constexpr GLenum toGLColorFormat(ColorFormat format)
 	{
 		switch (format) {
-			case ColorFormat::Red:			return GL_RED;
+			case ColorFormat::R:			return GL_RED;
 			case ColorFormat::RG:			return GL_RG;
 			case ColorFormat::RGB:			return GL_RGB;
 			case ColorFormat::RGBA:			return GL_RGBA;
@@ -180,11 +180,15 @@ namespace se::graphics {
 			case ColorFormat::Depth24:		return GL_DEPTH_COMPONENT24;
 			case ColorFormat::Depth32:		return GL_DEPTH_COMPONENT32F;
 			case ColorFormat::DepthStencil:	return GL_DEPTH_STENCIL;
-			case ColorFormat::RedInteger:	return GL_RED_INTEGER;
+			case ColorFormat::RInteger:		return GL_RED_INTEGER;
 			case ColorFormat::RGInteger:	return GL_RG_INTEGER;
 			case ColorFormat::RGBInteger:	return GL_RGB_INTEGER;
 			case ColorFormat::RGBAInteger:	return GL_RGBA_INTEGER;
-			case ColorFormat::Red32ui:		return GL_R32UI;
+			case ColorFormat::R8:			return GL_R8;
+			case ColorFormat::R16ui:		return GL_R16UI;
+			case ColorFormat::R16f:			return GL_R16F;
+			case ColorFormat::R32ui:		return GL_R32UI;
+			case ColorFormat::R32f:			return GL_R32F;
 			case ColorFormat::RG8:			return GL_RG8;
 			case ColorFormat::RG16ui:		return GL_RG16UI;
 			case ColorFormat::RG16f:		return GL_RG16F;
@@ -216,11 +220,15 @@ namespace se::graphics {
 			case GL_DEPTH_COMPONENT24:	return ColorFormat::Depth24;
 			case GL_DEPTH_COMPONENT32F:	return ColorFormat::Depth32;
 			case GL_DEPTH_STENCIL:		return ColorFormat::DepthStencil;
-			case GL_RED_INTEGER:		return ColorFormat::RedInteger;
+			case GL_RED_INTEGER:		return ColorFormat::RInteger;
 			case GL_RG_INTEGER:			return ColorFormat::RGInteger;
 			case GL_RGB_INTEGER:		return ColorFormat::RGBInteger;
 			case GL_RGBA_INTEGER:		return ColorFormat::RGBAInteger;
-			case GL_R32UI:				return ColorFormat::Red32ui;
+			case GL_R8:					return ColorFormat::R8;
+			case GL_R16UI:				return ColorFormat::R16ui;
+			case GL_R16F:				return ColorFormat::R16f;
+			case GL_R32UI:				return ColorFormat::R32ui;
+			case GL_R32F:				return ColorFormat::R32f;
 			case GL_RG8:				return ColorFormat::RG8;
 			case GL_RG16UI:				return ColorFormat::RG16ui;
 			case GL_RG16F:				return ColorFormat::RG16f;
@@ -236,7 +244,7 @@ namespace se::graphics {
 			case GL_RGBA16F:			return ColorFormat::RGBA16f;
 			case GL_RGBA32UI:			return ColorFormat::RGBA32ui;
 			case GL_RGBA32F:			return ColorFormat::RGBA32f;
-			default:					return ColorFormat::Red;
+			default:					return ColorFormat::R;
 		}
 	}
 

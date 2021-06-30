@@ -3,7 +3,6 @@
 
 #include "../../graphics/RenderGraph.h"
 #include "se/app/Repository.h"
-#include "se/app/LightComponent.h"
 
 namespace se::app {
 
@@ -17,23 +16,27 @@ namespace se::app {
 	 * them must output position, normal, albedo, material and emissive
 	 * textures in that order, later those textures will be used for rendering
 	 * in a PBR pipeline. The "forwardRendererMesh" is reserved for special
-	 * cases that can't be rendered this way.
+	 * cases that can't be rendered this way (mostrly transparency), and they
+	 * can't cast nor receive shadows.
+	 * For rendering shadows there are available a "shadowRendererMesh" and a
+	 * "shadowRendererTerrain" renderers, particle can't cast shadows.
 	 * For the Renderable2Ds, there is a "renderer2D" for submitting them
 	 */
 	class AppRenderGraph : public graphics::RenderGraph
 	{
+	private:	// Nested types
+		class CombineNode;
+
 	public:		// Functions
 		/** Creates a new AppRenderGraph
 		 *
 		 * @param	repository the Repository that holds the Resources
-		 * @param	shadowData the configuration used for rendering the shadows
 		 * @param	width the initial width of the FrameBuffers where the
 		 *			Renderables will be drawn
 		 * @param	height the initial height of the FrameBuffers where the
 		 *			Renderables will be drawn */
 		AppRenderGraph(
-			Repository& repository, const ShadowData& shadowData,
-			std::size_t width, std::size_t height
+			Repository& repository, std::size_t width, std::size_t height
 		);
 
 		/** Class destructor */
@@ -51,7 +54,6 @@ namespace se::app {
 		/** Adds shared resources to the RenderGraph resource node
 		 *
 		 * @param	repository the Repository that holds the Resources
-		 * @param	shadowData the configuration used for rendering the shadows
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
 		 * @param	height the initial height of the FrameBuffer where the
@@ -59,8 +61,7 @@ namespace se::app {
 		 * @return	true if the resources were added succesfully,
 		 *			false otherwise */
 		bool addResources(
-			Repository& repository, const ShadowData& shadowData,
-			std::size_t width, std::size_t height
+			Repository& repository, std::size_t width, std::size_t height
 		);
 
 		/** Adds nodes to the RenderGraph and links them. It will add:
@@ -85,37 +86,26 @@ namespace se::app {
 		 * The nodes and connections that will be added to the graph looks like
 		 * the following (the resource node already exists):
 		 *
-		 *  [    "resources"    ]                   |attach
-		 *     |shadowBuffer  |shadowTexture   ["startShadow"]
-		 *     |              |                     |attach
-		 *     |input         |                     |
-		 *  ["shadowFBClear"] |           __________|
-		 *     |output        |          |
-		 *     |              |          |
-		 *     |target        |shadow    |attach
-		 *  [    "shadowRendererTerrain"    ]
-		 *     |target        |shadow
-		 *     |              |
-		 *     |target        |shadow
-		 *  [    "shadowRendererMesh"    ]
-		 *     |target        |shadow  |attach
-		 *     |              |        |
-		 *     |              |        |attach
-		 *     |              |   ["endShadow"]
-		 *     |              |        |attach
+		 *  [        "resources"        ]     |                   |attach
+		 *     |shadowTexture |shadowBuffer   |attach  ["shadowRendererTerrain"]
+		 *     |              |        ["shadowRendererMesh"]     |attach
+		 *     |     ["shadowFBClear"]       |attach              |
+		 *     |              |_________     |__         _________|
+		 *     |                       |       |        |
+		 *     |    |position | normal |target |attach1 |attach2
+		 *     |  [        "shadowRenderSubGraph"        ]
+		 *     |                       |target
 		 *
-		 * @note	Any node that should be executed prior to the shadow
-		 *			Renderer3Ds must be attached to the "startShadow" "input"
-		 *			and any node that should be executed after them should be
-		 *			attached to the "endShadow" "output"
-		 *
+		 * @param	repository the Repository that holds the Resources
 		 * @param	width the initial width of the FrameBuffer where the
 		 *			Entities are going to be rendered
 		 * @param	height the initial height of the FrameBuffer where the
 		 *			Entities are going to be rendered
 		 * @return	true if the nodes where added successfully, false
 		 *			otherwise */
-		bool addShadowRenderers(std::size_t width, std::size_t height);
+		bool addShadowRenderers(
+			Repository& repository, std::size_t width, std::size_t height
+		);
 
 		/** Creates a deferred renderer with the following GBuffer Renderer3Ds:
 		 *	"gBufferRendererTerrain" - renders RenderableTerrains
@@ -125,28 +115,30 @@ namespace se::app {
 		 * the following (the resource node already exists):
 		 *
 		 *  [                            "resources"                        ]
-		 *   |gBuffer  |deferredBuffer             |positionTexture
-		 *    \        |________________           |
-		 *    |input                    |           |
-		 *  ["gFBClear"]                |           |
-		 *    |output                   |           |
-		 *    |                         | ["texUnitNodePosition"]
-		 *    |target                   |           |
-		 *  ["gBufferRendererTerrain"]  |           |
-		 *    |target                   |           |
-		 *    |                         |           |
-		 *    |target                   |           |
-		 *  ["gBufferRendererMesh"]     |           |
-		 *    |target                   |           |
-		 *    |                         |           |
-		 *    |target                   |           |
-		 *  ["gBufferRendererParticles"]|           |
-		 *    |target |attach___________|           |___________________
-		 *    |    ___|    /                                           |
-		 *    |   |attach |target |irradiance |prefilter |brdf |shadow |position
-		 *    |  [                "deferredLightRenderer"                ]
-		 *    |                             |target
+		 *    |gBuffer  |deferredBuffer              |positionTexture
+		 *    \         |________________            |
+		 *    |input                    |            |
+		 *  ["gFBClear"]                |            |
+		 *    |output                   |            |
+		 *    |                         |  ["texUnitNodePosition"]
+		 *    |target                   |            |
+		 *  ["gBufferRendererTerrain"]  |            |
+		 *    |target                   |            |
+		 *    |                         |            |
+		 *    |target                   |            |
+		 *  ["gBufferRendererMesh"]     |            |
+		 *    |target                   |            |
+		 *    |                         |            |
+		 *    |target                   |            |
+		 *  ["gBufferRendererParticles"]|            |
+		 *    |target |attach         __|            |__________
+		 *    |   ____|             /                          |
+		 *    |  |attach1 |attach2 |target |irradiance |shadow |position
+		 *    | [            "deferredLightRenderer"            ]
+		 *    |                         |target
 		 *
+		 * @note	where irradiance appears, there will be also simila
+		 *			connections for prefilter and brdf textures
 		 * @note	where position appears, there will be also similar nodes
 		 *			and connections for the normal, albedo, material
 		 *			and emissive textures
@@ -162,7 +154,7 @@ namespace se::app {
 		 * The nodes and connections that will be added to the graph looks like
 		 * the following (the resource node already exists):
 		 *
-		 *    |target  |irradiance  |prefilter  |brdf  |shadow  |color  |bright
+		 *      |target  |irradiance  |prefilter  |brdf  |color  |bright
 		 *  [                    "forwardRendererMesh"                    ]
 		 *                 |target      |color      |bright
 		 *

@@ -195,6 +195,7 @@ namespace editor {
 		}
 		if (mMenuBar) { delete mMenuBar; }
 
+		mImGuiRenderer->disconnect();
 		mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
 		if (mImGuiInput) { delete mImGuiInput; }
 		if (mImGuiContext) { ImGui::DestroyContext(mImGuiContext); }
