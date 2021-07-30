@@ -424,8 +424,9 @@ namespace game {
 			skyTexture->setTextureUnit(0);
 			stepSky->addResource(programSky)
 				.addResource(skyTexture)
-				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", programSky.get(), 0))
-				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
+				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", programSky.get(), 0));
 
 			shaderSky = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderSky");
 			shaderSky->addStep(stepSky);

@@ -10,8 +10,8 @@ namespace se::graphics {
 	{
 		Byte,	UnsignedByte,
 		Short,	UnsignedShort,
-		Int,	UnsignedInt,
-		Float,	HalfFloat,
+		Int,	UnsignedInt,	UnsignedInt24_8,
+		Float,	HalfFloat,		Float32UnsignedInt8,
 		Double
 	};
 
@@ -82,8 +82,37 @@ namespace se::graphics {
 	{
 		Culling,
 		DepthTest,
+		StencilTest,
 		ScissorTest,
 		Blending
+	};
+
+
+	/** The different blend equations that can be used with the RGB and Alpha
+	 * colors */
+	enum class BlendEquation
+	{
+		Min, Max, Add, Substract, ReverseSubstract
+	};
+
+
+	/** The different blend functions that can be used */
+	enum class BlendFunction
+	{
+		Zero, One,
+		SourceColor, OneMinusSourceColor,
+		DestinationColor, OneMinusDestinationColor,
+		SourceAlpha, OneMinusSourceAlpha,
+		DestinationAlpha, OneMinusDestinationAlpha,
+		ConstantColor, OneMinusConstantColor,
+		ConstantAlpha, OneMinusConstantAlpha
+	};
+
+
+	/** The different functions that can be used with the stencil buffer */
+	enum class StencilFunction
+	{
+		Never, Less, LessEqual, Greater, GreaterEqual, Equal, NotEqual, Always
 	};
 
 
@@ -95,7 +124,7 @@ namespace se::graphics {
 		RGB,
 		RGBA,
 		Depth, Depth16, Depth24, Depth32,
-		DepthStencil,
+		DepthStencil, Depth24Stencil8, Depth32Stencil8, Stencil8,
 		RInteger,
 		RGInteger,
 		RGBInteger,
@@ -120,6 +149,9 @@ namespace se::graphics {
 			case ColorFormat::Depth32:
 				return ColorFormat::Depth;
 			case ColorFormat::DepthStencil:
+			case ColorFormat::Depth24Stencil8:
+			case ColorFormat::Depth32Stencil8:
+			case ColorFormat::Stencil8:
 				return ColorFormat::DepthStencil;
 			case ColorFormat::R:
 			case ColorFormat::RInteger:
@@ -217,6 +249,14 @@ namespace se::graphics {
 	};
 
 
+	/** The different actions that can be done after a stencil test */
+	enum class StencilAction
+	{
+		Keep, Zero, Replace, Invert,
+		Increment, IncrementAndWrap, Decrement, DecrementAndWrap
+	};
+
+
 	/** The different targets that a FrameBuffer can be bound to */
 	enum class FrameBufferTarget
 	{
@@ -243,7 +283,8 @@ namespace se::graphics {
 	{
 		static constexpr unsigned int kStencil = 0;
 		static constexpr unsigned int kDepth = 1;
-		static constexpr unsigned int kColor0 = 2;
+		static constexpr unsigned int kDepthStencil = 2;
+		static constexpr unsigned int kColor0 = 3;
 		static constexpr unsigned int kMaxColorAttachments = 8;
 	}
 

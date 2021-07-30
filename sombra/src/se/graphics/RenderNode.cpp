@@ -6,14 +6,18 @@ namespace se::graphics {
 
 	bool RNodeOutput::connect(RNodeConnector* connector)
 	{
-		RNodeInput* input = dynamic_cast<RNodeInput*>(connector);
-		if (!input) {
+		if (!connector) {
+			SOMBRA_ERROR_LOG << "Trying to attach NULL connector to " << mParentNode->getName() << "[" << mName << "]";
+			return false;
+		}
+		else if (RNodeInput* input = dynamic_cast<RNodeInput*>(connector)) {
+			return input->connect(this);
+		}
+		else {
 			SOMBRA_ERROR_LOG << "Trying to attach " << connector->getParentNode()->getName() << "[" << connector->getName() << "]"
 				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
 			return false;
 		}
-
-		return input->connect(this);
 	}
 
 
@@ -42,23 +46,26 @@ namespace se::graphics {
 
 	bool RNodeInput::connect(RNodeConnector* connector)
 	{
-		RNodeOutput* output = dynamic_cast<RNodeOutput*>(connector);
-		if (!output) {
+		if (!connector) {
+			SOMBRA_ERROR_LOG << "Trying to attach NULL connector to " << mParentNode->getName() << "[" << mName << "]";
+			return false;
+		}
+		else if (mConnectedOutput) {
+			SOMBRA_ERROR_LOG << mParentNode->getName() << "[" << mName << "] is already connected to "
+				<< mConnectedOutput->getParentNode()->getName() + "[" + mConnectedOutput->getName() << "]"
+				<< ": Can't create new connection with " << connector->getParentNode()->getName() << "[" << connector->getName() << "]";
+			return false;
+		}
+		else if (RNodeOutput* output = dynamic_cast<RNodeOutput*>(connector)) {
+			mConnectedOutput = output;
+			mConnectedOutput->addInput(this);
+			return true;
+		}
+		else {
 			SOMBRA_ERROR_LOG << "Trying to attach " << connector->getParentNode()->getName() << "[" << connector->getName() << "]"
 				<< " with invalid type to " << mParentNode->getName() << "[" << mName << "]";
 			return false;
 		}
-
-		if (mConnectedOutput) {
-			SOMBRA_ERROR_LOG << mParentNode->getName() << "[" << mName << "] is already connected to "
-				<< mConnectedOutput->getParentNode()->getName() + "[" + mConnectedOutput->getName() << "]"
-				<< ": Can't create new connection with " << output->getParentNode()->getName() << "[" << output->getName() << "]";
-			return false;
-		}
-
-		mConnectedOutput = output;
-		mConnectedOutput->addInput(this);
-		return true;
 	}
 
 
@@ -81,7 +88,7 @@ namespace se::graphics {
 			return true;
 		}
 		else {
-			SOMBRA_ERROR_LOG << "Input found with the same name";
+			SOMBRA_ERROR_LOG << "Input [" << input->getName() << "] found with the same name in " << getName();
 			return false;
 		}
 	}
@@ -125,7 +132,7 @@ namespace se::graphics {
 			return true;
 		}
 		else {
-			SOMBRA_ERROR_LOG << "Output found with the same name";
+			SOMBRA_ERROR_LOG << "Output [" << output->getName() << "] found with the same name in " << getName();
 			return false;
 		}
 	}

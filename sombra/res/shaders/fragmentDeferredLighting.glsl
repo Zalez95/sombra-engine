@@ -23,11 +23,8 @@ const vec2 POISSON_DISK[16] = vec2[](
 // ____ DATATYPES ____
 struct BaseLight
 {
-	vec3 position;
 	uint type;
-	vec3 direction;
-	int shadowIndices;
-	vec4 color;
+	vec3 color;
 	float intensity;
 	float range;
 	float lightAngleScale;
@@ -40,23 +37,16 @@ struct BaseLight
 in vec3 vsPosition;
 
 // Uniform variables
-uniform uint uNumLights;
-layout (std140) uniform LightsBlock
-{
-	BaseLight uBaseLights[MAX_LIGHTS];
-};
+uniform mat4 uModelMatrix;
+uniform vec3 uViewPosition;
+uniform vec2 uResolution;
+uniform BaseLight uBaseLight;
 
-uniform vec3 uViewPosition;						// Camera position in World space
-
-uniform sampler2D uShadows;
-uniform samplerCube uIrradianceMap;
-uniform samplerCube uPrefilterMap;
-uniform sampler2D uBRDFMap;
 uniform sampler2D uPosition;
 uniform sampler2D uNormal;
 uniform sampler2D uAlbedo;
 uniform sampler2D uMaterial;
-uniform sampler2D uEmissive;
+uniform sampler2D uShadow;
 
 // Output data
 layout (location = 0) out vec4 oColor;
@@ -135,100 +125,76 @@ vec3 fresnelSchlick(float cosTheta, vec3 reflectivity)
 
 /* Calculates the radiance of the given light. If the light distance is
  * negative then distance attenuation will not be applied */
-vec3 calculateRadiance(uint lightIndex, vec3 lightDirection, float lightDistance)
+vec4 calculateRadiance(vec3 lightDirection, float lightDistance, vec3 lightForward)
 {
 	// Calculate the attenuation of the light due to the distance
-	float distanceAttenuation = clamp(1.0 - pow(lightDistance / uBaseLights[lightIndex].range, 4.0), 0.0, 1.0);
+	float distanceAttenuation = clamp(1.0 - pow(lightDistance / uBaseLight.range, 4.0), 0.0, 1.0);
 	distanceAttenuation /= lightDistance * lightDistance;
 
 	bool hasDistanceAttenuation = lightDistance >= 0.0;
 	distanceAttenuation = (distanceAttenuation * float(hasDistanceAttenuation)) + float(!hasDistanceAttenuation);
 
 	// Calculate the angular attenuation of the light (for spot lights)
-	float cd = dot(-uBaseLights[lightIndex].direction, lightDirection);
-	float angularAttenuation = clamp(cd * uBaseLights[lightIndex].lightAngleScale + uBaseLights[lightIndex].lightAngleOffset, 0.0, 1.0);
+	float cd = dot(-lightForward, lightDirection);
+	float angularAttenuation = clamp(cd * uBaseLight.lightAngleScale + uBaseLight.lightAngleOffset, 0.0, 1.0);
 	angularAttenuation *= angularAttenuation;
 
-	bool hasAngularAttenuation = uBaseLights[lightIndex].type == SPOT_LIGHT;
+	bool hasAngularAttenuation = uBaseLight.type == SPOT_LIGHT;
 	angularAttenuation = (angularAttenuation * float(hasAngularAttenuation)) + float(!hasAngularAttenuation);
 
 	// Calculate the light radiance
-	return distanceAttenuation * angularAttenuation * vec3(uBaseLights[lightIndex].color) * uBaseLights[lightIndex].intensity;
+	return distanceAttenuation * angularAttenuation * vec4(uBaseLight.color, 1.0) * uBaseLight.intensity;
 }
 
 
-/* Calculates the color of the current fragment point with all the lights
- * of the scene and irradiance map */
-vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, float roughness, float ao, vec4 shadows)
+/* Calculates the color of the current fragment point with the current light
+ * of the scene */
+vec4 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, float roughness, vec4 shadow)
 {
-	vec3 totalLightColor = vec3(0.0);
+	vec4 totalLightColor = vec4(0.0);
 
 	vec3 normalDirection	= normalize(normal);
 	vec3 viewDirection		= normalize(uViewPosition - position);
 	vec3 reflectivity		= mix(BASE_REFLECTIVITY, albedo, metallic);
 	float normalDotView		= max(dot(normalDirection, viewDirection), 0.0);
+	vec3 lightPosition		= vec3(uModelMatrix[3]);
+	vec3 lightForward		= mat3(uModelMatrix) * vec3(0.0, 0.0, 1.0);
 
-	// ---- Calculate Direct lighting ----
-	for (uint i = 0u; i < uNumLights; ++i) {
-		// Calculate the light direction and distance from the current point
-		vec3 lightDirection1 = -uBaseLights[i].direction;
-		float lightDistance1 = -1.0;
+	// Calculate the light direction and distance from the current point
+	vec3 lightDirection1 = -lightForward;
+	float lightDistance1 = -1.0;
 
-		vec3 lightDirection2 = uBaseLights[i].position - position;
-		float lightDistance2 = length(lightDirection2);
-		lightDirection2 /= lightDistance2;
+	vec3 lightDirection2 = lightPosition - position;
+	float lightDistance2 = length(lightDirection2);
+	lightDirection2 /= lightDistance2;
 
-		bool isDirectional = uBaseLights[i].type == DIRECTIONAL_LIGHT;
-		vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
-		float lightDistance = (lightDistance1 * float(isDirectional)) + (lightDistance2 * float(!isDirectional));
-		if (isDirectional || (lightDistance < uBaseLights[i].range)) {
-			// Calculate the light radiance
-			vec3 radiance = calculateRadiance(i, lightDirection, lightDistance);
+	bool isDirectional = uBaseLight.type == DIRECTIONAL_LIGHT;
+	vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
+	float lightDistance = (lightDistance1 * float(isDirectional)) + (lightDistance2 * float(!isDirectional));
+	if (isDirectional || (lightDistance < uBaseLight.range)) {
+		// Calculate the light radiance
+		vec4 radiance = calculateRadiance(lightDirection, lightDistance, lightForward);
 
-			// Calculate the Lambertian diffuse color
-			vec3 diffuseColor = albedo / PI;
+		// Calculate the Lambertian diffuse color
+		vec3 diffuseColor = albedo / PI;
 
-			// Calculate the Cook-Torrance brdf specular color
-			vec3 halfwayDirection = normalize(lightDirection + viewDirection);
-			float halfwayDotView = clamp(dot(halfwayDirection, viewDirection), 0.0, 1.0);
+		// Calculate the Cook-Torrance brdf specular color
+		vec3 halfwayDirection = normalize(lightDirection + viewDirection);
+		float halfwayDotView = clamp(dot(halfwayDirection, viewDirection), 0.0, 1.0);
 
-			float n	= normalDistributionGGX(normalDirection, halfwayDirection, roughness);
-			vec3 f	= fresnelSchlick(halfwayDotView, reflectivity);
-			float g	= geometrySchlickGGX(normalDirection, viewDirection, lightDirection, roughness);
+		float n	= normalDistributionGGX(normalDirection, halfwayDirection, roughness);
+		vec3 f	= fresnelSchlick(halfwayDotView, reflectivity);
+		float g	= geometrySchlickGGX(normalDirection, viewDirection, lightDirection, roughness);
 
-			float normalDotLight = max(dot(normalDirection, lightDirection), 0.0);
-			vec3 specularColor = (n * f * g) / max(4 * normalDotView * normalDotLight, 0.001);
+		float normalDotLight = max(dot(normalDirection, lightDirection), 0.0);
+		vec3 specularColor = (n * f * g) / max(4 * normalDotView * normalDotLight, 0.001);
 
-			// Add the current light color if it's being lit
-			vec3 diffuseRatio = (vec3(1.0) - f) * (1.0 - metallic);
-			vec3 currentLightColor = (diffuseRatio * diffuseColor + specularColor) * radiance * normalDotLight;
-
-			// Calculate shadow mapping
-			float shadow = calculateShadow(i, shadows);
-			bool isShadowLight = uBaseLights[i].shadowIndices >= 0;
-			totalLightColor += (float(isShadowLight) * (1.0 - shadow) + float(!isShadowLight)) * currentLightColor;
-		}
+		// Add the current light color if it's being lit
+		vec3 diffuseRatio = (vec3(1.0) - f) * (1.0 - metallic);
+		totalLightColor = vec4(diffuseRatio * diffuseColor + specularColor, 1.0) * radiance * normalDotLight;
 	}
 
-	// ---- Calculate Indirect lighting ----
-	vec3 f = fresnelSchlick(normalDotView, reflectivity);
-
-	// Calculate the ambient lighting due to IBL
-	vec3 irradiance = texture(uIrradianceMap, normalDirection).rgb;
-	vec3 diffuse = irradiance * albedo;
-
-	// Calculate the specular lighting due to IBL
-	vec3 reflectDirection = reflect(-viewDirection, normalDirection);
-	vec3 prefilteredColor = textureLod(uPrefilterMap, reflectDirection, roughness * MAX_REFLECTION_LOD).rgb;
-
-	vec2 environmentBRDF = texture(uBRDFMap, vec2(normalDotView, roughness)).rg;
-	vec3 specular = prefilteredColor * (f * environmentBRDF.x + environmentBRDF.y);
-
-	// Add the IBL lighting
-	vec3 diffuseRatio = (1.0 - f);
-	vec3 ambient = (diffuseRatio * diffuse + specular) * ao;
-
-	return totalLightColor + ambient;
+	return totalLightColor;
 }
 
 
@@ -236,24 +202,19 @@ vec3 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 void main()
 {
 	// Extract the data from the GBuffer
-	vec2 texCoords = (0.5 * vsPosition + 0.5).xy;
+	vec2 texCoords = gl_FragCoord.xy / uResolution;
 
 	vec3 position = texture(uPosition, texCoords).rgb;
 	vec3 normal = texture(uNormal, texCoords).rgb;
 	vec3 albedo = texture(uAlbedo, texCoords).rgb;
-	vec4 shadows = texture(uShadows, texCoords);
+	vec4 shadow = texture(uShadow, texCoords);
 
 	vec4 material = texture(uMaterial, texCoords);
 	float metallic = material.r;
 	float roughness = material.g;
-	float surfaceAO = material.b;
-
-	vec3 emissive = texture(uEmissive, texCoords).rgb;
 
 	// Calculate the output color
-	vec3 color = calculateLighting(position, normal, albedo, metallic, roughness, surfaceAO, shadows);
-	color += emissive;
-	oColor = vec4(color, 1.0);
+	oColor = calculateLighting(position, normal, albedo, metallic, roughness, shadow);
 
 	// Calculate the output bright color
 	bool isBright = dot(oColor.rgb, vec3(0.2126, 0.7152, 0.0722)) > 1.0;

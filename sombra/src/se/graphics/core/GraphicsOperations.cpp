@@ -31,7 +31,7 @@ namespace se::graphics {
 		GL_WRAP( glClearColor(0.0f, 0.0f, 0.0f, 1.0f) );
 
 		// Set blending mode
-		GL_WRAP( glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) );
+		graphics::GraphicsOperations::setBlendFunction(graphics::BlendFunction::SourceAlpha, graphics::BlendFunction::OneMinusSourceAlpha);
 
 		return true;
 	}
@@ -149,6 +149,34 @@ namespace se::graphics {
 	}
 
 
+	void GraphicsOperations::setBlendEquation(BlendEquation equation)
+	{
+		GL_WRAP( glBlendEquation(toGLBlendEquation(equation)) );
+	}
+
+
+	void GraphicsOperations::setBlendFunction(BlendFunction sourceFactor, BlendFunction destinationFactor)
+	{
+		GL_WRAP( glBlendFunc(toGLBlendFunction(sourceFactor), toGLBlendFunction(destinationFactor)) );
+	}
+
+
+	void GraphicsOperations::setStencilFunction(StencilFunction function, int referenceValue, unsigned int mask)
+	{
+		GL_WRAP( glStencilFunc(toGLStencilFunction(function), referenceValue, mask) );
+	}
+
+
+	void GraphicsOperations::setStencilAction(FaceMode face, StencilAction stencilFailAction, StencilAction depthFailAction, StencilAction passAction)
+	{
+		GLenum glFace = toGLFaceMode(face);
+		GLenum glSFail = toGLStencilAction(stencilFailAction);
+		GLenum glDPFail = toGLStencilAction(depthFailAction);
+		GLenum glDPPass = toGLStencilAction(passAction);
+		GL_WRAP( glStencilOpSeparate(glFace, glSFail, glDPFail, glDPPass) );
+	}
+
+
 	void GraphicsOperations::setCullingMode(FaceMode mode)
 	{
 		GL_WRAP( glCullFace(toGLFaceMode(mode)) );
@@ -192,6 +220,12 @@ namespace se::graphics {
 	}
 
 
+	void GraphicsOperations::setStencilMask(bool active)
+	{
+		GL_WRAP( glStencilMask(active) );
+	}
+
+
 	bool GraphicsOperations::hasDepthMask()
 	{
 		GLint ret;
@@ -206,20 +240,19 @@ namespace se::graphics {
 	}
 
 
-	void BindableOperation::bind() const
-	{
-		mLastActive = isEnabled();
-		if (mActive != mLastActive) {
-			enable(mActive);
-		}
-	}
-
-
-	void BindableOperation::unbind() const
-	{
-		if (mActive != mLastActive) {
-			enable(mLastActive);
-		}
-	}
+	EnableOperation::EnableOperation(bool active) :
+		BindableOperation(
+			[this]() {
+				mLastActive = isEnabled();
+				if (mActive != mLastActive) {
+					enable(mActive);
+				}
+			},
+			[this]() {
+				if (mActive != mLastActive) {
+					enable(mLastActive);
+				}
+			}
+		), mActive(active), mLastActive(false) {}
 
 }

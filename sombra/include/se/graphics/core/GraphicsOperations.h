@@ -2,7 +2,6 @@
 #define GRAPHICS_OPERATIONS_H
 
 #include <string>
-#include <bitset>
 #include <functional>
 #include "Bindable.h"
 #include "Constants.h"
@@ -105,6 +104,46 @@ namespace se::graphics {
 		/** @return	true if the operation is enabled, false otherwise */
 		static bool hasOperation(Operation operation);
 
+		/** Changes the alpha blend equation to use
+		 *
+		 * @param	equation the new blend equation */
+		static void setBlendEquation(BlendEquation equation);
+
+		/** Changes the alpha blend functions to use
+		 *
+		 * @param	sourceFactor specifies how the source blending factors
+		 *			are computed
+		 * @param	destinationFactor specifies how the destination blending
+		 *			factors are computed */
+		static void setBlendFunction(
+			BlendFunction sourceFactor, BlendFunction destinationFactor
+		);
+
+		/** Changes the current stencil function to use
+		 *
+		 * @param	function the new Stencil function
+		 * @param	referenceValue the reference value used for comparing
+		 *			during the stencil test
+		 * @param	mask a mask of bits that will be ANDed with both the
+		 *			referenceValue and the stored stencil one */
+		static void setStencilFunction(
+			StencilFunction function, int referenceValue, unsigned int mask
+		);
+
+		/** Sets the actions to take when the stencil test is done
+		 *
+		 * @param	face the face should be updated
+		 * @param	stencilFailAction the action to take when the stencil test
+		 *			fails
+		 * @param	depthFailAction the action to take when the stencil test
+		 *			passes but the depth test fails
+		 * @param	passAction the action to take when the stencil and depth
+		 *			tests passes successfully */
+		static void setStencilAction(
+			FaceMode face, StencilAction stencilFailAction,
+			StencilAction depthFailAction, StencilAction passAction
+		);
+
 		/** Sets the faces to cull
 		 *
 		 * @param	mode the faces to cull */
@@ -142,6 +181,12 @@ namespace se::graphics {
 		 * @param	active if the we should write to the depth buffer or not */
 		static void setDepthMask(bool active);
 
+		/** Enables or disables writing to the stencil buffer
+		 *
+		 * @param	active if the we should write to the stencil buffer or
+		 *			not */
+		static void setStencilMask(bool active);
+
 		/** @return	true if writting to the depth buffer is enabled or not */
 		static bool hasDepthMask();
 
@@ -151,10 +196,51 @@ namespace se::graphics {
 
 
 	/**
-	 * Class BindableOperation, it's a Bindable used for enabling or disabling
-	 * a Graphics Operation
+	 * Class BindableOperation, it's a Bindable used for interacting with the
+	 * Graphics API on bind or unbind
 	 */
 	class BindableOperation : public Bindable
+	{
+	public:		// Nested types
+		using Callback = std::function<void()>;
+
+	private:	// Attributes
+		/** The function to call on bind */
+		Callback mBindCallback;
+
+		/** The function to call on unbind */
+		Callback mUnbindCallback;
+
+	public:		// Functions
+		/** Creates a new BindableOperation
+		 *
+		 * @param	bindCallback the function to call on bind
+		 * @param	unbindCallback the function to call on unbind */
+		BindableOperation(
+			const Callback& bindCallback = Callback(),
+			const Callback& unbindCallback = Callback()
+		) : mBindCallback(bindCallback), mUnbindCallback(unbindCallback) {};
+
+		/** Class destructor */
+		virtual ~BindableOperation() = default;
+
+		/** @copydoc Bindable::clone() */
+		virtual std::unique_ptr<Bindable> clone() const override
+		{ return std::make_unique<BindableOperation>(*this); };
+
+		/** @copydoc Bindable::bind() */
+		virtual void bind() const override { mBindCallback(); };
+
+		/** @copydoc Bindable::unbind() */
+		virtual void unbind() const override { mUnbindCallback(); };
+	};
+
+
+	/**
+	 * Class EnableOperation, it's a BindableOperation used for enabling or
+	 * disabling a Graphics Operation
+	 */
+	class EnableOperation : public BindableOperation
 	{
 	private:	// Attributes
 		/** If we want to enable or disable the operation on bind */
@@ -164,14 +250,14 @@ namespace se::graphics {
 		mutable bool mLastActive;
 
 	public:		// Functions
-		/** Creates a new BindableOperation
+		/** Creates a new EnableOperation
 		 *
 		 * @param	active if we want to write to enable or disable the
 		 *			operation */
-		BindableOperation(bool active) : mActive(active), mLastActive(false) {};
+		EnableOperation(bool active = true);
 
 		/** Class destructor */
-		virtual ~BindableOperation() = default;
+		virtual ~EnableOperation() = default;
 
 		/** @return	true if the operation will be enabled on bind, false
 		 *			otherwise */
@@ -181,13 +267,6 @@ namespace se::graphics {
 		 *
 		 * @param	active if we want to enable the operation on bind or not */
 		void setEnable(bool active = true) { mActive = active; };
-
-		/** Enables the operation if mActive is true, disables it otherwise */
-		virtual void bind() const override;
-
-		/** Recovers the previous state of the BindableOperation after calling
-		 * @see bind */
-		virtual void unbind() const override;
 	protected:
 		/** The operation to call on bind
 		 *
@@ -201,10 +280,10 @@ namespace se::graphics {
 
 
 	/**
-	 * Class SetOperation, it's a BindableOperation used for enabling or
+	 * Class SetOperation, it's a EnableOperation used for enabling or
 	 * disabling an operation
 	 */
-	class SetOperation : public BindableOperation
+	class SetOperation : public EnableOperation
 	{
 	private:	// Attributes
 		/** The operation to enable/disable */
@@ -216,7 +295,7 @@ namespace se::graphics {
 		 * @param	operation the operation to enable/disable
 		 * @param	active if the operation should be enabled or not */
 		SetOperation(Operation operation, bool active = true) :
-			BindableOperation(active), mOperation(operation) {};
+			EnableOperation(active), mOperation(operation) {};
 
 		/** @return	the Operation to enable/disable */
 		Operation getOperation() const { return mOperation; };
@@ -225,65 +304,65 @@ namespace se::graphics {
 		virtual std::unique_ptr<Bindable> clone() const override
 		{ return std::make_unique<SetOperation>(*this); };
 	protected:
-		/** @copydoc BindableOperation::enable(bool) */
+		/** @copydoc EnableOperation::enable(bool) */
 		virtual void enable(bool enable) const override
 		{ return GraphicsOperations::setOperation(mOperation, enable); };
 
-		/** @copydoc BindableOperation::isEnabled() */
+		/** @copydoc EnableOperation::isEnabled() */
 		virtual bool isEnabled() const override
 		{ return GraphicsOperations::hasOperation(mOperation); };
 	};
 
 
 	/**
-	 * Class SetDepthMask, it's a BindableOperation used for enabling or
+	 * Class SetDepthMask, it's a EnableOperation used for enabling or
 	 * disabling writing to the depth buffer
 	 */
-	class SetDepthMask : public BindableOperation
+	class SetDepthMask : public EnableOperation
 	{
 	public:		// Functions
 		/** Creates a new SetDepthMask
 		 *
 		 * @param	active if we want to write to the depth buffer on bind or
 		 *			not */
-		SetDepthMask(bool active = true) : BindableOperation(active) {};
+		SetDepthMask(bool active = true) : EnableOperation(active) {};
 
 		/** @copydoc Bindable::clone() */
 		virtual std::unique_ptr<Bindable> clone() const override
 		{ return std::make_unique<SetDepthMask>(*this); };
 	protected:
-		/** @copydoc BindableOperation::enable(bool) */
+		/** @copydoc EnableOperation::enable(bool) */
 		virtual void enable(bool enable) const override
 		{ return GraphicsOperations::setDepthMask(enable); };
 
-		/** @copydoc BindableOperation::isEnabled() */
+		/** @copydoc EnableOperation::isEnabled() */
 		virtual bool isEnabled() const override
 		{ return GraphicsOperations::hasDepthMask(); };
 	};
 
 
 	/**
-	 * Class SetDeptWireframeModeOperationhMask, it's a BindableOperation used
+	 * Class SetDeptWireframeModeOperationhMask, it's a EnableOperation used
 	 * for enabling or disabling the wireframe mode
 	 */
-	class WireframeMode : public BindableOperation
+	class WireframeMode : public EnableOperation
 	{
 	public:		// Functions
 		/** Creates a new WireframeMode
 		 *
 		 * @param	active if we want to enable the wireframe mode on bind or
 		 *			not */
-		WireframeMode(bool active = true) : BindableOperation(active) {};
+		WireframeMode(bool active = true) : EnableOperation(active) {};
 
 		/** @copydoc Bindable::clone() */
 		virtual std::unique_ptr<Bindable> clone() const override
 		{ return std::make_unique<WireframeMode>(*this); };
 	protected:
-		/** @copydoc BindableOperation::enable(bool) */
+		/** @copydoc EnableOperation::enable(bool) */
 		virtual void enable(bool enable) const override
 		{ return GraphicsOperations::setWireframe(enable); };
 
-		/** @copydoc BindableOperation::isEnabled() */
+		/** @copydoc EnableOperation::isEnabled() */
 		virtual bool isEnabled() const override
 		{ return GraphicsOperations::hasWireframe(); };
 	};

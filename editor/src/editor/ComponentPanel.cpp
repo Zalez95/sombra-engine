@@ -337,7 +337,10 @@ namespace editor {
 				auto environmentTexture = getEditor().getScene()->repository.findByName<Texture>(mEnvironmentTextureName.c_str());
 
 				std::string name3 = "Environment Map" + getIdPrefix() + "LightProbeComponentNode::ChangeEnvironment";
-				addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture);
+				if (addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture)) {
+					mEnvironmentTextureName = environmentTexture.getResource().getName();
+				}
+
 				ImGui::Checkbox(("Is cube map" + getIdPrefix() + "LightProbeComponentNode::isCubeMap").c_str(), &mIsCubeMap);
 				if (!mIsCubeMap) {
 					ImGui::DragInt("New cube map resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
@@ -346,6 +349,10 @@ namespace editor {
 				ImGui::DragInt("Irradiance map resolution", &mIrradianceMapSize, 0.01f, 0, INT_MAX);
 				ImGui::DragInt("Prefilter map resolution", &mPrefilterMapSize, 0.01f, 0, INT_MAX);
 
+				if (!environmentTexture) {
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
 				if (ImGui::Button(("Build probe" + getIdPrefix() + "LightProbeComponentNode::BuildProbe").c_str())) {
 					auto cubeMapSPtr = environmentTexture.get();
 					if (!mIsCubeMap) {
@@ -367,6 +374,10 @@ namespace editor {
 						lightProbe->prefilterMap.getResource(),
 						(mEnvironmentTextureName + "PrefilterMap").c_str(), getEditor().getScene()->repository
 					);
+				}
+				if (!environmentTexture) {
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
 				}
 				ImGui::TreePop();
 			}

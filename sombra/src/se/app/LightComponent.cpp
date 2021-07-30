@@ -19,9 +19,15 @@ namespace se::app {
 		if (other.mShadowData) {
 			mShadowData = std::make_unique<ShadowData>(*other.mShadowData);
 		}
-		mShadowIndices = 0;
 
 		return *this;
+	}
+
+
+	void LightComponent::setup(EventManager* eventManager, Entity entity)
+	{
+		mEventManager = eventManager;
+		mEntity = entity;
 	}
 
 

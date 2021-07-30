@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include "../graphics/core/Texture.h"
+#include "../graphics/3D/RenderableMesh.h"
 #include "events/EventManager.h"
 #include "Entity.h"
 #include "Repository.h"
@@ -91,14 +92,14 @@ namespace se::app {
 		/** The Entity that owns the LightComponent */
 		Entity mEntity = kNullEntity;
 
+		/** The RenderableMesh used for rendering the LightComponent */
+		graphics::RenderableMesh mRMesh;
+
 		/** A pointer to the LightSource that is going to be used */
 		Repository::ResourceRef<LightSource> mSource;
 
 		/** The data used for rendering the shadows */
 		std::unique_ptr<ShadowData> mShadowData;
-
-		/** The indices of the Shadows of the light, 4 bits for each index */
-		int mShadowIndices = 0;
 
 	public:		// Functions
 		/** Creates a new LightComponent */
@@ -117,11 +118,10 @@ namespace se::app {
 		 *
 		 * @param	eventManager the new EventManager of the MeshComponent
 		 * @param	entity the new Entity of the MeshComponent */
-		void setup(EventManager* eventManager, Entity entity)
-		{
-			mEventManager = eventManager;
-			mEntity = entity;
-		};
+		void setup(EventManager* eventManager, Entity entity);
+
+		/** @return	the RenderableMesh used for rendering the LightComponent */
+		graphics::RenderableMesh& getLightRenderable() { return mRMesh; };
 
 		/** @return	a reference to the LightSource of the LightComponent */
 		const Repository::ResourceRef<LightSource>& getSource() const
@@ -146,16 +146,6 @@ namespace se::app {
 		 *
 		 * @param	data the new ShadowData of the LightComponent */
 		void setShadowData(std::unique_ptr<ShadowData> data);
-
-		/** @return	the shadow indices of the LightComponent */
-		int getShadowIndices() const { return mShadowIndices; };
-
-		/** Sets the Shadow indices of the LightComponent
-		 *
-		 * @param	shadowIndices the new Shadow indices of the
-		 *			LightComponent */
-		void setShadowIndices(int shadowIndices)
-		{ mShadowIndices = shadowIndices; };
 	};
 
 

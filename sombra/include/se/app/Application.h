@@ -17,12 +17,13 @@ namespace se::app {
 
 	class InputSystem;
 	class ScriptSystem;
-	class CameraSystem;
-	class ShadowSystem;
 	class AppRenderer;
+	class LightSystem;
+	class LightProbeSystem;
 	class MeshSystem;
 	class TerrainSystem;
 	class ParticleSystemSystem;
+	class CameraSystem;
 	class DynamicsSystem;
 	class ConstraintsSystem;
 	class CollisionSystem;
@@ -102,12 +103,13 @@ namespace se::app {
 		/** The Systems that hold and update the data of the entities */
 		InputSystem* mInputSystem;
 		ScriptSystem* mScriptSystem;
-		CameraSystem* mCameraSystem;
-		ShadowSystem* mShadowSystem;
 		AppRenderer* mAppRenderer;
+		LightSystem* mLightSystem;
+		LightProbeSystem* mLightProbeSystem;
 		MeshSystem* mMeshSystem;
 		TerrainSystem* mTerrainSystem;
 		ParticleSystemSystem* mParticleSystemSystem;
+		CameraSystem* mCameraSystem;
 		DynamicsSystem* mDynamicsSystem;
 		ConstraintsSystem* mConstraintsSystem;
 		CollisionSystem* mCollisionSystem;

@@ -6,7 +6,6 @@
 #include "se/graphics/3D/RendererMesh.h"
 #include "se/graphics/3D/RendererTerrain.h"
 #include "se/graphics/3D/RendererParticles.h"
-#include "se/graphics/3D/FrustumFilter.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformBlock.h"
 #include "se/graphics/core/UniformVariable.h"
@@ -15,7 +14,8 @@
 #include "se/app/io/ShaderLoader.h"
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/graphics/TextureUtils.h"
-#include "se/app/graphics/DeferredLightRenderer.h"
+#include "se/app/graphics/DeferredAmbientRenderer.h"
+#include "se/app/graphics/DeferredLightSubGraph.h"
 #include "se/app/graphics/ShadowRenderSubGraph.h"
 #include "se/app/graphics/AppRenderGraph.h"
 
@@ -58,6 +58,7 @@ namespace se::app {
 			}
 
 			addBindable(mProgram.get());
+			addBindable(std::make_shared<SetOperation>(Operation::DepthTest, false));
 			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
 			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
 			addBindable(std::make_shared<UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
@@ -107,7 +108,7 @@ namespace se::app {
 		auto albedoTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("albedoTexture"))->getTBindable();
 		auto materialTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("materialTexture"))->getTBindable();
 		auto emissiveTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("emissiveTexture"))->getTBindable();
-		auto depthTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("depthTexture"))->getTBindable();
+		auto depthStencilTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("depthStencilTexture"))->getTBindable();
 		auto colorTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("colorTexture"))->getTBindable();
 		auto brightTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("brightTexture"))->getTBindable();
 		zTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height);
@@ -116,7 +117,7 @@ namespace se::app {
 		albedoTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
 		materialTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
 		emissiveTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
-		depthTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height);
+		depthStencilTexture->setImage(nullptr, TypeId::UnsignedInt24_8, ColorFormat::DepthStencil, ColorFormat::Depth24Stencil8, width, height);
 		colorTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
 		brightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
 	}
@@ -147,7 +148,7 @@ namespace se::app {
 			return false;
 		}
 
-		brdfTexture->setTextureUnit(DeferredLightRenderer::TexUnits::kBRDFMap);
+		brdfTexture->setTextureUnit(DeferredAmbientRenderer::TexUnits::kBRDFMap);
 		auto iBRDFTextureResource = resources->addBindable(brdfTexture);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brdfTexture", resources, iBRDFTextureResource) )) {
 			return false;
@@ -242,13 +243,13 @@ namespace se::app {
 			return false;
 		}
 
-		auto depthTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		depthTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height)
+		auto depthStencilTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		depthStencilTexture->setImage(nullptr, TypeId::UnsignedInt24_8, ColorFormat::DepthStencil, ColorFormat::Depth24Stencil8, width, height)
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		deferredBuffer->attach(*depthTexture, FrameBufferAttachment::kDepth);
-		auto iDepthTextureResource = resources->addBindable(depthTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("depthTexture", resources, iDepthTextureResource) )) {
+		deferredBuffer->attach(*depthStencilTexture, FrameBufferAttachment::kDepthStencil);
+		auto iDepthStencilTextureResource = resources->addBindable(depthStencilTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("depthStencilTexture", resources, iDepthStencilTextureResource) )) {
 			return false;
 		}
 
@@ -279,7 +280,7 @@ namespace se::app {
 	bool AppRenderGraph::addNodes(Repository& repository, std::size_t width, std::size_t height)
 	{
 		if (!addShadowRenderers(repository, width, height)
-			|| !addDeferredRenderers(repository)
+			|| !addDeferredRenderers(repository, width, height)
 			|| !addForwardRenderers()
 		) {
 			return false;
@@ -289,15 +290,8 @@ namespace se::app {
 		auto defaultFBClear = std::make_unique<FBClearNode>("defaultFBClear", clearMask);
 
 		// Node used for setting the irradiance and prefilter textures of the renderers
-		auto irradianceTexUnitNode = std::make_unique<TextureUnitNode>("irradianceTexUnitNode", DeferredLightRenderer::TexUnits::kIrradianceMap);
-		auto prefilterTexUnitNode = std::make_unique<TextureUnitNode>("prefilterTexUnitNode", DeferredLightRenderer::TexUnits::kPrefilterMap);
-
-		// Node used for combining the shadow renderers and the forward and deferred renderers
-		auto texUnitNodeShadow = std::make_unique<TextureUnitNode>("texUnitNodeShadow", DeferredLightRenderer::TexUnits::kShadows);
-
-		// Node used for combining the zBuffer of the deferred and forward renderers
-		auto zBufferCopy = std::make_unique<FBCopyNode>("zBufferCopy", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
-		zBufferCopy->setDimensions1(0, 0, width, height).setDimensions2(0, 0, width, height);
+		auto irradianceTexUnitNode = std::make_unique<TextureUnitNode>("irradianceTexUnitNode", DeferredAmbientRenderer::TexUnits::kIrradianceMap);
+		auto prefilterTexUnitNode = std::make_unique<TextureUnitNode>("prefilterTexUnitNode", DeferredAmbientRenderer::TexUnits::kPrefilterMap);
 
 		// Nodes used for blurring the bright colors (bloom)
 		auto hBlurNode = std::make_unique<GaussianBlurNode>("hBlurNode", repository, width, height, true);
@@ -317,22 +311,18 @@ namespace se::app {
 		auto resources = getNode("resources"),
 			shadowRenderSubGraph = getNode("shadowRenderSubGraph"),
 			gBufferRendererParticles = getNode("gBufferRendererParticles"),
-			deferredLightRenderer = getNode("deferredLightRenderer"),
+			deferredAmbientRenderer = getNode("deferredAmbientRenderer"),
+			deferredLightSubGraph = getNode("deferredLightSubGraph"),
 			forwardRendererMesh = getNode("forwardRendererMesh");
 
 		return defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") )
 			&& irradianceTexUnitNode->findInput("input")->connect( resources->findOutput("irradianceTexture") )
 			&& prefilterTexUnitNode->findInput("input")->connect( resources->findOutput("prefilterTexture") )
-			&& texUnitNodeShadow->findInput("input")->connect( resources->findOutput("shadowTexture") )
 			&& shadowRenderSubGraph->findInput("attach3")->connect( gBufferRendererParticles->findOutput("attach") )
-			&& deferredLightRenderer->findInput("attach2")->connect( shadowRenderSubGraph->findOutput("attach") )
-			&& deferredLightRenderer->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
-			&& deferredLightRenderer->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
-			&& deferredLightRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
-			&& deferredLightRenderer->findInput("shadow")->connect( texUnitNodeShadow->findOutput("output") )
-			&& zBufferCopy->findInput("input1")->connect( deferredLightRenderer->findOutput("target") )
-			&& zBufferCopy->findInput("input2")->connect( gBufferRendererParticles->findOutput("target") )
-			&& forwardRendererMesh->findInput("target")->connect( zBufferCopy->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
+			&& forwardRendererMesh->findInput("target")->connect( deferredLightSubGraph->findOutput("target") )
 			&& forwardRendererMesh->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
 			&& forwardRendererMesh->findInput("prefilter")->connect( prefilterTexUnitNode->findOutput("output") )
 			&& forwardRendererMesh->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
@@ -351,8 +341,6 @@ namespace se::app {
 			&& addNode( std::move(defaultFBClear) )
 			&& addNode( std::move(irradianceTexUnitNode) )
 			&& addNode( std::move(prefilterTexUnitNode) )
-			&& addNode( std::move(texUnitNodeShadow) )
-			&& addNode( std::move(zBufferCopy) )
 			&& addNode( std::move(hBlurNode) )
 			&& addNode( std::move(vBlurNode) )
 			&& addNode( std::move(hBlurTexUnitNode) )
@@ -364,7 +352,7 @@ namespace se::app {
 	}
 
 
-	bool AppRenderGraph::addDeferredRenderers(Repository& repository)
+	bool AppRenderGraph::addDeferredRenderers(Repository& repository, std::size_t width, std::size_t height)
 	{
 		// Create the nodes
 		auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
@@ -376,15 +364,29 @@ namespace se::app {
 		auto gBufferRendererParticles = std::make_unique<RendererParticles>("gBufferRendererParticles");
 		gBufferRendererParticles->addOutput( std::make_unique<RNodeOutput>("attach", gBufferRendererParticles.get()) );
 
-		auto deferredLightRenderer = std::make_unique<DeferredLightRenderer>("deferredLightRenderer", repository);
-		deferredLightRenderer->addInput( std::make_unique<RNodeInput>("attach1", deferredLightRenderer.get()) );
-		deferredLightRenderer->addInput( std::make_unique<RNodeInput>("attach2", deferredLightRenderer.get()) );
+		auto texUnitNodeAmbientPosition = std::make_unique<TextureUnitNode>("texUnitNodeAmbientPosition", DeferredAmbientRenderer::TexUnits::kPosition);
+		auto texUnitNodeAmbientNormal = std::make_unique<TextureUnitNode>("texUnitNodeAmbientNormal", DeferredAmbientRenderer::TexUnits::kNormal);
+		auto texUnitNodeAmbientAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeAmbientAlbedo", DeferredAmbientRenderer::TexUnits::kAlbedo);
+		auto texUnitNodeAmbientMaterial = std::make_unique<TextureUnitNode>("texUnitNodeAmbientMaterial", DeferredAmbientRenderer::TexUnits::kMaterial);
+		auto texUnitNodeAmbientEmissive = std::make_unique<TextureUnitNode>("texUnitNodeAmbientEmissive", DeferredAmbientRenderer::TexUnits::kEmissive);
 
-		auto texUnitNodePosition = std::make_unique<TextureUnitNode>("texUnitNodePosition", DeferredLightRenderer::TexUnits::kPosition);
-		auto texUnitNodeNormal = std::make_unique<TextureUnitNode>("texUnitNodeNormal", DeferredLightRenderer::TexUnits::kNormal);
-		auto texUnitNodeAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeAlbedo", DeferredLightRenderer::TexUnits::kAlbedo);
-		auto texUnitNodeMaterial = std::make_unique<TextureUnitNode>("texUnitNodeMaterial", DeferredLightRenderer::TexUnits::kMaterial);
-		auto texUnitNodeEmissive = std::make_unique<TextureUnitNode>("texUnitNodeEmissive", DeferredLightRenderer::TexUnits::kEmissive);
+		auto deferredAmbientRenderer = std::make_unique<DeferredAmbientRenderer>("deferredAmbientRenderer", repository);
+		deferredAmbientRenderer->addInput( std::make_unique<RNodeInput>("attach", deferredAmbientRenderer.get()) );
+
+		auto texUnitNodeLightPosition = std::make_unique<TextureUnitNode>("texUnitNodeLightPosition", DeferredLightSubGraph::TexUnits::kPosition);
+		auto texUnitNodeLightNormal = std::make_unique<TextureUnitNode>("texUnitNodeLightNormal", DeferredLightSubGraph::TexUnits::kNormal);
+		auto texUnitNodeLightAlbedo = std::make_unique<TextureUnitNode>("texUnitNodeLightAlbedo", DeferredLightSubGraph::TexUnits::kAlbedo);
+		auto texUnitNodeLightMaterial = std::make_unique<TextureUnitNode>("texUnitNodeLightMaterial", DeferredLightSubGraph::TexUnits::kMaterial);
+
+		auto zBufferCopy = std::make_unique<FBCopyNode>("zBufferCopy", FrameBufferMask::Mask().set(FrameBufferMask::kDepth));
+		zBufferCopy->setDimensions1(0, 0, width, height).setDimensions2(0, 0, width, height);
+
+		auto deferredLightSubGraph = std::make_unique<DeferredLightSubGraph>("deferredLightSubGraph");
+		deferredLightSubGraph->addInput( std::make_unique<RNodeInput>("attach1", deferredLightSubGraph.get()) );
+		deferredLightSubGraph->addInput( std::make_unique<RNodeInput>("attach2", deferredLightSubGraph.get()) );
+
+		auto lightStencilRenderer = std::make_unique<LightStencilRenderer>("lightStencilRenderer", *deferredLightSubGraph);
+		auto lightColorRenderer = std::make_unique<LightColorRenderer>("lightColorRenderer", *deferredLightSubGraph);
 
 		// Add the nodes and their connections
 		RenderNode* resources = getNode("resources");
@@ -394,29 +396,50 @@ namespace se::app {
 			&& gBufferRendererTerrain->findInput("target")->connect( gFBClear->findOutput("output") )
 			&& gBufferRendererMesh->findInput("target")->connect( gBufferRendererTerrain->findOutput("target") )
 			&& gBufferRendererParticles->findInput("target")->connect( gBufferRendererMesh->findOutput("target") )
-			&& texUnitNodePosition->findInput("input")->connect( resources->findOutput("positionTexture") )
-			&& texUnitNodeNormal->findInput("input")->connect( resources->findOutput("normalTexture") )
-			&& texUnitNodeAlbedo->findInput("input")->connect( resources->findOutput("albedoTexture") )
-			&& texUnitNodeMaterial->findInput("input")->connect( resources->findOutput("materialTexture") )
-			&& texUnitNodeEmissive->findInput("input")->connect( resources->findOutput("emissiveTexture") )
-			&& deferredLightRenderer->findInput("attach1")->connect( gBufferRendererParticles->findOutput("attach") )
-			&& deferredLightRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
-			&& deferredLightRenderer->findInput("position")->connect( texUnitNodePosition->findOutput("output") )
-			&& deferredLightRenderer->findInput("normal")->connect( texUnitNodeNormal->findOutput("output") )
-			&& deferredLightRenderer->findInput("albedo")->connect( texUnitNodeAlbedo->findOutput("output") )
-			&& deferredLightRenderer->findInput("material")->connect( texUnitNodeMaterial->findOutput("output") )
-			&& deferredLightRenderer->findInput("emissive")->connect( texUnitNodeEmissive->findOutput("output") )
+			&& texUnitNodeAmbientPosition->findInput("input")->connect( resources->findOutput("positionTexture") )
+			&& texUnitNodeAmbientNormal->findInput("input")->connect( resources->findOutput("normalTexture") )
+			&& texUnitNodeAmbientAlbedo->findInput("input")->connect( resources->findOutput("albedoTexture") )
+			&& texUnitNodeAmbientMaterial->findInput("input")->connect( resources->findOutput("materialTexture") )
+			&& texUnitNodeAmbientEmissive->findInput("input")->connect( resources->findOutput("emissiveTexture") )
+			&& deferredAmbientRenderer->findInput("attach")->connect( gBufferRendererParticles->findOutput("attach") )
+			&& deferredAmbientRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("position")->connect( texUnitNodeAmbientPosition->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("normal")->connect( texUnitNodeAmbientNormal->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("albedo")->connect( texUnitNodeAmbientAlbedo->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("material")->connect( texUnitNodeAmbientMaterial->findOutput("output") )
+			&& deferredAmbientRenderer->findInput("emissive")->connect( texUnitNodeAmbientEmissive->findOutput("output") )
+			&& texUnitNodeLightPosition->findInput("input")->connect( resources->findOutput("positionTexture") )
+			&& texUnitNodeLightNormal->findInput("input")->connect( resources->findOutput("normalTexture") )
+			&& texUnitNodeLightAlbedo->findInput("input")->connect( resources->findOutput("albedoTexture") )
+			&& texUnitNodeLightMaterial->findInput("input")->connect( resources->findOutput("materialTexture") )
+			&& zBufferCopy->findInput("input1")->connect( deferredAmbientRenderer->findOutput("target") )
+			&& zBufferCopy->findInput("input2")->connect( gBufferRendererParticles->findOutput("target") )
+			&& deferredLightSubGraph->findInput("attach1")->connect( lightStencilRenderer->findOutput("attach") )
+			&& deferredLightSubGraph->findInput("attach2")->connect( lightColorRenderer->findOutput("attach") )
+			&& deferredLightSubGraph->findInput("target")->connect( zBufferCopy->findOutput("output") )
+			&& deferredLightSubGraph->findInput("position")->connect( texUnitNodeLightPosition->findOutput("output") )
+			&& deferredLightSubGraph->findInput("normal")->connect( texUnitNodeLightNormal->findOutput("output") )
+			&& deferredLightSubGraph->findInput("albedo")->connect( texUnitNodeLightAlbedo->findOutput("output") )
+			&& deferredLightSubGraph->findInput("material")->connect( texUnitNodeLightMaterial->findOutput("output") )
 			&& addNode( std::move(gFBClear) )
 			&& addNode( std::move(deferredFBClear) )
 			&& addNode( std::move(gBufferRendererTerrain) )
 			&& addNode( std::move(gBufferRendererMesh) )
 			&& addNode( std::move(gBufferRendererParticles) )
-			&& addNode( std::move(texUnitNodePosition) )
-			&& addNode( std::move(texUnitNodeNormal) )
-			&& addNode( std::move(texUnitNodeAlbedo) )
-			&& addNode( std::move(texUnitNodeMaterial) )
-			&& addNode( std::move(texUnitNodeEmissive) )
-			&& addNode( std::move(deferredLightRenderer) );
+			&& addNode( std::move(texUnitNodeAmbientPosition) )
+			&& addNode( std::move(texUnitNodeAmbientNormal) )
+			&& addNode( std::move(texUnitNodeAmbientAlbedo) )
+			&& addNode( std::move(texUnitNodeAmbientMaterial) )
+			&& addNode( std::move(texUnitNodeAmbientEmissive) )
+			&& addNode( std::move(deferredAmbientRenderer) )
+			&& addNode( std::move(zBufferCopy) )
+			&& addNode( std::move(lightStencilRenderer) )
+			&& addNode( std::move(lightColorRenderer) )
+			&& addNode( std::move(texUnitNodeLightPosition) )
+			&& addNode( std::move(texUnitNodeLightNormal) )
+			&& addNode( std::move(texUnitNodeLightAlbedo) )
+			&& addNode( std::move(texUnitNodeLightMaterial) )
+			&& addNode( std::move(deferredLightSubGraph) );
 	}
 
 

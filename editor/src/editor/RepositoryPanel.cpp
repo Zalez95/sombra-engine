@@ -646,7 +646,7 @@ namespace editor {
 		{
 			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation", "SetDepthMask" };
 			const char* uniformTypeTags[] = { "int", "unsigned int", "float", "vec2", "ivec2", "vec3", "ivec3", "vec4", "ivec4", "mat3", "mat4", "mat3x4" };
-			const char* operationTypeTags[] = { "Culling", "DepthTest", "ScissorTest" };
+			const char* operationTypeTags[] = { "Culling", "DepthTest", "StencilTest", "ScissorTest", "Blending" };
 
 			std::string name = "Bindable Type" + getIdPrefix() + "RenderableShaderStepNode::BindableType";
 			if (addDropdown(name.c_str(), bindableTypeTags, IM_ARRAYSIZE(bindableTypeTags), mBindableTypeSelected)) {
@@ -738,7 +738,9 @@ namespace editor {
 						switch (mSubTypeSelected) {
 							case 0:		step.addBindable(std::make_shared<SetOperation>(Operation::Culling));		break;
 							case 1:		step.addBindable(std::make_shared<SetOperation>(Operation::DepthTest));		break;
-							default:	step.addBindable(std::make_shared<SetOperation>(Operation::ScissorTest));	break;
+							case 2:		step.addBindable(std::make_shared<SetOperation>(Operation::StencilTest));	break;
+							case 3:		step.addBindable(std::make_shared<SetOperation>(Operation::ScissorTest));	break;
+							default:	step.addBindable(std::make_shared<SetOperation>(Operation::Blending));		break;
 						}
 					} break;
 					default: {

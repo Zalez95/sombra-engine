@@ -41,7 +41,7 @@ namespace se::app {
 		/** The Texture unit where the Normal texture must be attached */
 		static constexpr unsigned int kNormalTextureUnit = kMaxShadows + 1;
 	private:
-		/** The program used by the DeferredLightRenderer */
+		/** The program used by the MergeShadowsNode */
 		Repository::ResourceRef<graphics::Program> mProgram;
 
 		/** The plane used for rendering */

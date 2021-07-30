@@ -24,20 +24,6 @@ namespace se::graphics {
 	};
 
 
-	/** Struct KDHitStackContent, its the data structure used in the
-	 * RenderGraph sort algorithm for storing its state in a stack instead of
-	 * using a recursive algorithm */
-	struct RenderGraph::SortStackContent
-	{
-		/** The current RenderNode in with which we are working */
-		RenderNode* node;
-
-		/** If the parent RenderNode of the current one has been submitted or
-		 * not */
-		bool parentsSubmitted;
-	};
-
-
 	RenderGraph::RenderGraph()
 	{
 		auto resourcesNode = std::make_unique<ResourceNode>("resources");
@@ -129,34 +115,11 @@ namespace se::graphics {
 		// Sort the Graph
 		std::vector<RenderNodeUPtr> sortedNodes;
 		sortedNodes.reserve(mRenderNodes.size());
-
-		std::vector<SortStackContent> stack;
-		for (std::size_t i = 0; i < mRenderNodes.size(); ++i) { if (leafNodes[i]) {
-			stack.push_back({ mRenderNodes[i].get(), false });
-			while (!stack.empty()) {
-				std::size_t iTop = stack.size() - 1;
-				if (std::any_of(sortedNodes.begin(), sortedNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == stack[iTop].node; })) {
-					stack.pop_back();
-				}
-				else if (stack[iTop].parentsSubmitted) {
-					auto itNode = std::find_if(mRenderNodes.begin(), mRenderNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == stack[iTop].node; });
-					if (itNode != mRenderNodes.end()) {
-						sortedNodes.emplace_back(std::move(*itNode));
-					}
-					stack.pop_back();
-				}
-				else {
-					RenderNode* node = stack[iTop].node;
-					node->iterateInputs([&](RNodeInput& input) {
-						RNodeOutput* connectedOutput = input.getConnectedOutput();
-						if (connectedOutput && connectedOutput->getParentNode()) {
-							stack.push_back({ connectedOutput->getParentNode(), false });
-						}
-					});
-					stack[iTop].parentsSubmitted = true;
-				}
+		for (std::size_t i = 0; i < mRenderNodes.size(); ++i) {
+			if (leafNodes[i]) {
+				addSorted(sortedNodes, mRenderNodes[i].get());
 			}
-		} }
+		}
 
 		std::swap(sortedNodes, mRenderNodes);
 	}
@@ -166,6 +129,26 @@ namespace se::graphics {
 	{
 		for (auto& node : mRenderNodes) {
 			node->execute();
+		}
+	}
+
+// Private functions
+	void RenderGraph::addSorted(std::vector<RenderNodeUPtr>& sortedNodes, RenderNode* node)
+	{
+		if (std::any_of(sortedNodes.begin(), sortedNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == node; })) {
+			return;
+		}
+
+		node->iterateInputs([&](RNodeInput& input) {
+			RNodeOutput* connectedOutput = input.getConnectedOutput();
+			if (connectedOutput && connectedOutput->getParentNode()) {
+				addSorted(sortedNodes, connectedOutput->getParentNode());
+			}
+		});
+
+		auto itNode = std::find_if(mRenderNodes.begin(), mRenderNodes.end(), [&](const RenderNodeUPtr& node2) { return node2.get() == node; });
+		if (itNode != mRenderNodes.end()) {
+			sortedNodes.emplace_back(std::move(*itNode));
 		}
 	}
 

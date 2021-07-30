@@ -24,7 +24,11 @@ namespace se::graphics {
 	template <typename T>
 	bool BindableRNodeInput<T>::connect(RNodeConnector* connector)
 	{
-		if (auto output = dynamic_cast<BindableRNodeOutput<T>*>(connector)) {
+		if (!connector) {
+			SOMBRA_ERROR_LOG << "Trying to attach NULL connector to " << mParentNode->getName() << "[" << mName << "]";
+			return false;
+		}
+		else if (auto output = dynamic_cast<BindableRNodeOutput<T>*>(connector)) {
 			if (RNodeInput::connect(connector)) {
 				auto parent = static_cast<BindableRenderNode*>(mParentNode);
 				parent->setBindable(mBindableIndex, output->getBindable());

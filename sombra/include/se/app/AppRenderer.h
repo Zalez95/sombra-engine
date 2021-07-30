@@ -11,7 +11,6 @@
 namespace se::app {
 
 	class Application;
-	class DeferredLightRenderer;
 
 
 	/**
@@ -40,18 +39,6 @@ namespace se::app {
 		 * the Entities */
 		Application& mApplication;
 
-		/** A pointer to the renderer used for deferred lighting */
-		DeferredLightRenderer* mDeferredLightRenderer;
-
-		/** A pointer to the last irradiance Texture */
-		graphics::Texture* mLastIrradianceTexture;
-
-		/** A pointer to the last prefilter Texture */
-		graphics::Texture* mLastPrefilterTexture;
-
-		/** The light Probe Entity used for rendering */
-		Entity mLightProbeEntity;
-
 	public:		// Functions
 		/** Creates a new AppRenderer
 		 *
@@ -71,44 +58,12 @@ namespace se::app {
 		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
-		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&AppRenderer::onNewLightProbe, entity, mask); };
-
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
-		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&AppRenderer::onRemoveLightProbe, entity, mask); };
-
-		/** Updates the light sources with the Entities
-		 *
-		 * @note	this function must be called from the thread with the
-		 *			Graphics API context (probably thread 0) */
-		virtual void update() override;
-
 		/** Renders the graphics data of the Entities
 		 *
 		 * @note	this function must be called from the thread with the
 		 *			Graphics API context (probably thread 0) */
 		void render();
 	private:
-		/** Function called when a LightProbe is added to an Entity
-		 *
-		 * @param	entity the Entity that holds the LightProbe
-		 * @param	lightProbe a pointer to the new LightProbe */
-		void onNewLightProbe(Entity entity, LightProbe* lightProbe);
-
-		/** Function called when a LightProbe is going to be removed from an
-		 * Entity
-		 *
-		 * @param	entity the Entity that holds the LightProbe
-		 * @param	lightProbe a pointer to the LightProbe that is going to be
-		 *			removed */
-		void onRemoveLightProbe(Entity entity, LightProbe* lightProbe);
-
 		/** Handles the given WindowResizeEvent by notifying the GraphicsEngine
 		 * of the window resize
 		 *

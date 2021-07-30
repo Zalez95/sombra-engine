@@ -17,12 +17,13 @@
 #include "se/app/Application.h"
 #include "se/app/InputSystem.h"
 #include "se/app/ScriptSystem.h"
-#include "se/app/CameraSystem.h"
-#include "se/app/ShadowSystem.h"
 #include "se/app/AppRenderer.h"
+#include "se/app/LightSystem.h"
+#include "se/app/LightProbeSystem.h"
 #include "se/app/MeshSystem.h"
 #include "se/app/TerrainSystem.h"
 #include "se/app/ParticleSystemSystem.h"
+#include "se/app/CameraSystem.h"
 #include "se/app/DynamicsSystem.h"
 #include "se/app/ConstraintsSystem.h"
 #include "se/app/CollisionSystem.h"
@@ -53,8 +54,9 @@ namespace se::app {
 		mTaskManager(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
 		mRepository(nullptr), mEntityDatabase(nullptr),
 		mInputSystem(nullptr), mScriptSystem(nullptr),
-		mCameraSystem(nullptr), mShadowSystem(nullptr), mAppRenderer(nullptr),
+		mAppRenderer(nullptr), mLightSystem(nullptr), mLightProbeSystem(nullptr),
 		mMeshSystem(nullptr), mTerrainSystem(nullptr), mParticleSystemSystem(nullptr),
+		mCameraSystem(nullptr),
 		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
 		mAnimationSystem(nullptr), mAudioSystem(nullptr),
 		mGUIManager(nullptr)
@@ -140,11 +142,12 @@ namespace se::app {
 			mInputSystem = new InputSystem(*this);
 			mScriptSystem = new ScriptSystem(*this);
 			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
-			mCameraSystem = new CameraSystem(*this);
-			mShadowSystem = new ShadowSystem(*this);
+			mLightSystem = new LightSystem(*this, windowConfig.width, windowConfig.height);
+			mLightProbeSystem = new LightProbeSystem(*this);
 			mMeshSystem = new MeshSystem(*this);
 			mTerrainSystem = new TerrainSystem(*this);
 			mParticleSystemSystem = new ParticleSystemSystem(*this);
+			mCameraSystem = new CameraSystem(*this);
 			mDynamicsSystem = new DynamicsSystem(*this);
 			mConstraintsSystem = new ConstraintsSystem(*this);
 			mCollisionSystem = new CollisionSystem(*this);
@@ -170,11 +173,12 @@ namespace se::app {
 		if (mCollisionSystem) { delete mCollisionSystem; }
 		if (mConstraintsSystem) { delete mConstraintsSystem; }
 		if (mDynamicsSystem) { delete mDynamicsSystem; }
+		if (mCameraSystem) { delete mCameraSystem; }
 		if (mParticleSystemSystem) { delete mParticleSystemSystem; }
 		if (mTerrainSystem) { delete mTerrainSystem; }
 		if (mMeshSystem) { delete mMeshSystem; }
-		if (mShadowSystem) { delete mShadowSystem; }
-		if (mCameraSystem) { delete mCameraSystem; }
+		if (mLightProbeSystem) { delete mLightProbeSystem; }
+		if (mLightSystem) { delete mLightSystem; }
 		if (mAppRenderer) { delete mAppRenderer; }
 		if (mScriptSystem) { delete mScriptSystem; }
 		if (mInputSystem) { delete mInputSystem; }
@@ -311,10 +315,15 @@ namespace se::app {
 			mCameraSystem->setDeltaTime(deltaTime);
 			mCameraSystem->update();
 		});
-		auto shadowTask = taskSet.createTask([&]() {
-			utils::TimeGuard t("shadowsys");
-			mShadowSystem->setDeltaTime(deltaTime);
-			mShadowSystem->update();
+		auto lightTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("lightsys");
+			mLightSystem->setDeltaTime(deltaTime);
+			mLightSystem->update();
+		});
+		auto lightProbeTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("lightProbesys");
+			mLightProbeSystem->setDeltaTime(deltaTime);
+			mLightProbeSystem->update();
 		});
 		auto rmeshTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("meshsys");
@@ -334,7 +343,8 @@ namespace se::app {
 		taskSet.depends(audioTask, constraintsTask);
 		taskSet.depends(audioTask, animationTask);
 		taskSet.depends(cameraTask, constraintsTask);
-		taskSet.depends(shadowTask, constraintsTask);
+		taskSet.depends(lightTask, constraintsTask);
+		taskSet.depends(lightProbeTask, constraintsTask);
 		taskSet.depends(rmeshTask, constraintsTask);
 		taskSet.depends(rterrainTask, cameraTask);
 

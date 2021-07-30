@@ -169,8 +169,9 @@ namespace editor {
 		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 		auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");
 		stepGrid->addResource(program3D)
-			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)))
-			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false));
+			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
+			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
+			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)));
 		auto shaderGrid = mRepository->insert(std::make_shared<se::app::RenderableShader>(*mEventManager), "shaderGrid");
 		shaderGrid->addStep(stepGrid);
 		mesh->addRenderableShader(gridIndex, shaderGrid);

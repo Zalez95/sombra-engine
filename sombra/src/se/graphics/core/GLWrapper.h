@@ -43,16 +43,18 @@ namespace se::graphics {
 	constexpr GLenum toGLType(TypeId type)
 	{
 		switch (type) {
-			case TypeId::Byte:			return GL_BYTE;
-			case TypeId::UnsignedByte:	return GL_UNSIGNED_BYTE;
-			case TypeId::Short:			return GL_SHORT;
-			case TypeId::UnsignedShort:	return GL_UNSIGNED_SHORT;
-			case TypeId::Int:			return GL_INT;
-			case TypeId::UnsignedInt:	return GL_UNSIGNED_INT;
-			case TypeId::Float:			return GL_FLOAT;
-			case TypeId::HalfFloat:		return GL_HALF_FLOAT;
-			case TypeId::Double:		return GL_DOUBLE;
-			default:					return GL_NONE;
+			case TypeId::Byte:					return GL_BYTE;
+			case TypeId::UnsignedByte:			return GL_UNSIGNED_BYTE;
+			case TypeId::Short:					return GL_SHORT;
+			case TypeId::UnsignedShort:			return GL_UNSIGNED_SHORT;
+			case TypeId::Int:					return GL_INT;
+			case TypeId::UnsignedInt:			return GL_UNSIGNED_INT;
+			case TypeId::UnsignedInt24_8:		return GL_UNSIGNED_INT_24_8;
+			case TypeId::Float:					return GL_FLOAT;
+			case TypeId::HalfFloat:				return GL_HALF_FLOAT;
+			case TypeId::Float32UnsignedInt8:	return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+			case TypeId::Double:				return GL_DOUBLE;
+			default:							return GL_NONE;
 		}
 	}
 
@@ -111,6 +113,57 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLBlendEquation(BlendEquation equation)
+	{
+		switch (equation) {
+			case BlendEquation::Min:				return GL_MIN;
+			case BlendEquation::Max:				return GL_MAX;
+			case BlendEquation::Add:				return GL_FUNC_ADD;
+			case BlendEquation::Substract:			return GL_FUNC_SUBTRACT;
+			case BlendEquation::ReverseSubstract:	return GL_FUNC_REVERSE_SUBTRACT;
+			default:								return GL_NONE;
+		}
+	}
+
+
+	constexpr GLenum toGLBlendFunction(BlendFunction function)
+	{
+		switch (function) {
+			case BlendFunction::Zero:						return GL_ZERO;
+			case BlendFunction::One:						return GL_ONE;
+			case BlendFunction::SourceColor:				return GL_SRC_COLOR;
+			case BlendFunction::OneMinusSourceColor:		return GL_ONE_MINUS_SRC_COLOR;
+			case BlendFunction::DestinationColor:			return GL_DST_COLOR;
+			case BlendFunction::OneMinusDestinationColor:	return GL_ONE_MINUS_DST_COLOR;
+			case BlendFunction::SourceAlpha:				return GL_SRC_ALPHA;
+			case BlendFunction::OneMinusSourceAlpha:		return GL_ONE_MINUS_SRC_ALPHA;
+			case BlendFunction::DestinationAlpha:			return GL_DST_ALPHA;
+			case BlendFunction::OneMinusDestinationAlpha:	return GL_ONE_MINUS_DST_ALPHA;
+			case BlendFunction::ConstantColor:				return GL_CONSTANT_COLOR;
+			case BlendFunction::OneMinusConstantColor:		return GL_ONE_MINUS_CONSTANT_COLOR;
+			case BlendFunction::ConstantAlpha:				return GL_CONSTANT_ALPHA;
+			case BlendFunction::OneMinusConstantAlpha:		return GL_ONE_MINUS_CONSTANT_ALPHA;
+			default:										return GL_NONE;
+		}
+	}
+
+
+	constexpr GLenum toGLStencilAction(StencilAction action)
+	{
+		switch (action) {
+			case StencilAction::Keep:				return GL_KEEP;
+			case StencilAction::Zero:				return GL_ZERO;
+			case StencilAction::Replace:			return GL_REPLACE;
+			case StencilAction::Invert:				return GL_INVERT;
+			case StencilAction::Increment:			return GL_INCR;
+			case StencilAction::IncrementAndWrap:	return GL_INCR_WRAP;
+			case StencilAction::Decrement:			return GL_DECR;
+			case StencilAction::DecrementAndWrap:	return GL_DECR_WRAP;
+			default:								return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLFrameBufferTarget(FrameBufferTarget target)
 	{
 		switch (target) {
@@ -135,8 +188,9 @@ namespace se::graphics {
 	constexpr GLenum toGLFrameBufferAttachment(unsigned int attachment)
 	{
 		switch (attachment) {
-			case FrameBufferAttachment::kStencil:	return GL_STENCIL_ATTACHMENT;
-			case FrameBufferAttachment::kDepth:		return GL_DEPTH_ATTACHMENT;
+			case FrameBufferAttachment::kStencil:		return GL_STENCIL_ATTACHMENT;
+			case FrameBufferAttachment::kDepth:			return GL_DEPTH_ATTACHMENT;
+			case FrameBufferAttachment::kDepthStencil:	return GL_DEPTH_STENCIL_ATTACHMENT;
 			default:
 				unsigned int colorIndex = attachment - FrameBufferAttachment::kColor0;
 				return GL_COLOR_ATTACHMENT0 + colorIndex;
@@ -161,6 +215,7 @@ namespace se::graphics {
 		switch (operation) {
 			case Operation::Culling:		return GL_CULL_FACE;
 			case Operation::DepthTest:		return GL_DEPTH_TEST;
+			case Operation::StencilTest:	return GL_STENCIL_TEST;
 			case Operation::ScissorTest:	return GL_SCISSOR_TEST;
 			case Operation::Blending:		return GL_BLEND;
 			default:						return GL_NONE;
@@ -168,43 +223,62 @@ namespace se::graphics {
 	}
 
 
+	constexpr GLenum toGLStencilFunction(StencilFunction function)
+	{
+		switch (function) {
+			case StencilFunction::Never:		return GL_NEVER;
+			case StencilFunction::Less:			return GL_LESS;
+			case StencilFunction::LessEqual:	return GL_LEQUAL;
+			case StencilFunction::Greater:		return GL_GREATER;
+			case StencilFunction::GreaterEqual:	return GL_GEQUAL;
+			case StencilFunction::Equal:		return GL_EQUAL;
+			case StencilFunction::NotEqual:		return GL_NOTEQUAL;
+			case StencilFunction::Always:		return GL_ALWAYS;
+			default:							return GL_NONE;
+		}
+	}
+
+
 	constexpr GLenum toGLColorFormat(ColorFormat format)
 	{
 		switch (format) {
-			case ColorFormat::R:			return GL_RED;
-			case ColorFormat::RG:			return GL_RG;
-			case ColorFormat::RGB:			return GL_RGB;
-			case ColorFormat::RGBA:			return GL_RGBA;
-			case ColorFormat::Depth:		return GL_DEPTH_COMPONENT;
-			case ColorFormat::Depth16:		return GL_DEPTH_COMPONENT16;
-			case ColorFormat::Depth24:		return GL_DEPTH_COMPONENT24;
-			case ColorFormat::Depth32:		return GL_DEPTH_COMPONENT32F;
-			case ColorFormat::DepthStencil:	return GL_DEPTH_STENCIL;
-			case ColorFormat::RInteger:		return GL_RED_INTEGER;
-			case ColorFormat::RGInteger:	return GL_RG_INTEGER;
-			case ColorFormat::RGBInteger:	return GL_RGB_INTEGER;
-			case ColorFormat::RGBAInteger:	return GL_RGBA_INTEGER;
-			case ColorFormat::R8:			return GL_R8;
-			case ColorFormat::R16ui:		return GL_R16UI;
-			case ColorFormat::R16f:			return GL_R16F;
-			case ColorFormat::R32ui:		return GL_R32UI;
-			case ColorFormat::R32f:			return GL_R32F;
-			case ColorFormat::RG8:			return GL_RG8;
-			case ColorFormat::RG16ui:		return GL_RG16UI;
-			case ColorFormat::RG16f:		return GL_RG16F;
-			case ColorFormat::RG32ui:		return GL_RG32UI;
-			case ColorFormat::RG32f:		return GL_RG32F;
-			case ColorFormat::RGB8:			return GL_RGB8;
-			case ColorFormat::RGB16ui:		return GL_RGB16UI;
-			case ColorFormat::RGB16f:		return GL_RGB16F;
-			case ColorFormat::RGB32ui:		return GL_RGB32UI;
-			case ColorFormat::RGB32f:		return GL_RGB32F;
-			case ColorFormat::RGBA8:		return GL_RGBA8;
-			case ColorFormat::RGBA16ui:		return GL_RGBA16UI;
-			case ColorFormat::RGBA16f:		return GL_RGBA16F;
-			case ColorFormat::RGBA32ui:		return GL_RGBA32UI;
-			case ColorFormat::RGBA32f:		return GL_RGBA32F;
-			default:						return GL_NONE;
+			case ColorFormat::R:				return GL_RED;
+			case ColorFormat::RG:				return GL_RG;
+			case ColorFormat::RGB:				return GL_RGB;
+			case ColorFormat::RGBA:				return GL_RGBA;
+			case ColorFormat::Depth:			return GL_DEPTH_COMPONENT;
+			case ColorFormat::Depth16:			return GL_DEPTH_COMPONENT16;
+			case ColorFormat::Depth24:			return GL_DEPTH_COMPONENT24;
+			case ColorFormat::Depth32:			return GL_DEPTH_COMPONENT32F;
+			case ColorFormat::DepthStencil:		return GL_DEPTH_STENCIL;
+			case ColorFormat::Depth24Stencil8:	return GL_DEPTH24_STENCIL8;
+			case ColorFormat::Depth32Stencil8:	return GL_DEPTH32F_STENCIL8;
+			case ColorFormat::Stencil8:			return GL_STENCIL_INDEX8;
+			case ColorFormat::RInteger:			return GL_RED_INTEGER;
+			case ColorFormat::RGInteger:		return GL_RG_INTEGER;
+			case ColorFormat::RGBInteger:		return GL_RGB_INTEGER;
+			case ColorFormat::RGBAInteger:		return GL_RGBA_INTEGER;
+			case ColorFormat::R8:				return GL_R8;
+			case ColorFormat::R16ui:			return GL_R16UI;
+			case ColorFormat::R16f:				return GL_R16F;
+			case ColorFormat::R32ui:			return GL_R32UI;
+			case ColorFormat::R32f:				return GL_R32F;
+			case ColorFormat::RG8:				return GL_RG8;
+			case ColorFormat::RG16ui:			return GL_RG16UI;
+			case ColorFormat::RG16f:			return GL_RG16F;
+			case ColorFormat::RG32ui:			return GL_RG32UI;
+			case ColorFormat::RG32f:			return GL_RG32F;
+			case ColorFormat::RGB8:				return GL_RGB8;
+			case ColorFormat::RGB16ui:			return GL_RGB16UI;
+			case ColorFormat::RGB16f:			return GL_RGB16F;
+			case ColorFormat::RGB32ui:			return GL_RGB32UI;
+			case ColorFormat::RGB32f:			return GL_RGB32F;
+			case ColorFormat::RGBA8:			return GL_RGBA8;
+			case ColorFormat::RGBA16ui:			return GL_RGBA16UI;
+			case ColorFormat::RGBA16f:			return GL_RGBA16F;
+			case ColorFormat::RGBA32ui:			return GL_RGBA32UI;
+			case ColorFormat::RGBA32f:			return GL_RGBA32F;
+			default:							return GL_NONE;
 		}
 	}
 

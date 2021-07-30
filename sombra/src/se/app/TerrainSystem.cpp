@@ -122,6 +122,8 @@ namespace se::app {
 	{
 		mCameraEntity = event.getValue();
 		mCameraUpdated = true;
+
+		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 
 

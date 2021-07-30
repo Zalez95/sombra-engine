@@ -144,9 +144,15 @@ namespace se::app {
 		 *			and emissive textures
 		 *
 		 * @param	repository the Repository that holds the Resources
+		 * @param	width the initial width of the FrameBuffer where the
+		 *			Entities are going to be rendered
+		 * @param	height the initial height of the FrameBuffer where the
+		 *			Entities are going to be rendered
 		 * @return	true if the nodes where added successfully, false
 		 *			otherwise */
-		bool addDeferredRenderers(Repository& repository);
+		bool addDeferredRenderers(
+			Repository& repository, std::size_t width, std::size_t height
+		);
 
 		/** Creates the following forward renderers and adds them to the given
 		 * RenderGraph:

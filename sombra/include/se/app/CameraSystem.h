@@ -14,8 +14,8 @@ namespace se::app {
 	class CameraComponent;
 	class MeshComponent;
 	class TerrainComponent;
+	class LightComponent;
 	class ParticleSystemComponent;
-	class DeferredLightRenderer;
 	class ShadowRenderSubGraph;
 
 
@@ -46,10 +46,6 @@ namespace se::app {
 		/** A pointer to the frustum filter shared between all the
 		 * Renderer3Ds */
 		FrustumFilterSPtr mFrustumFilter;
-
-		/** A pointer to the deferred light renderer used for computing the
-		 * lighting */
-		DeferredLightRenderer* mDeferredLightRenderer;
 
 		/** A pointer to the renderer used for computing the shadows */
 		ShadowRenderSubGraph* mShadowRenderSubGraph;
@@ -139,6 +135,21 @@ namespace se::app {
 		void onRemoveParticleSys(
 			Entity entity, ParticleSystemComponent* particleSystem
 		);
+
+		/** Function called when a LightComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	particleSystem a pointer to the new
+		 *			LightComponent */
+		void onNewLight(Entity entity, LightComponent* light);
+
+		/** Function called when a LightComponent is going to be
+		 * removed from an Entity
+		 *
+		 * @param	entity the Entity that holds the LightComponent
+		 * @param	particleSystem a pointer to the LightComponent
+		 *			that is going to be removed */
+		void onRemoveLight(Entity entity, LightComponent* light);
 
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered

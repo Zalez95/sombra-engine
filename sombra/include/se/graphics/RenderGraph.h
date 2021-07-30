@@ -25,7 +25,6 @@ namespace se::graphics {
 	private:	// Nested types
 		using RenderNodeUPtr = std::unique_ptr<RenderNode>;
 		class ResourceNode;
-		struct SortStackContent;
 
 	private:	// Attributes
 		/** All the RenderNodes of the RenderGraph */
@@ -72,11 +71,20 @@ namespace se::graphics {
 		 * RenderNodes
 		 *
 		 * @note this function must be called before calling @see execute
-		 * each time a node is added or removed from the RenderGraph */
+		 * each time a node or connection is added or removed from the
+		 * RenderGraph */
 		void prepareGraph();
 
 		/** Executes the RenderNodes added to the RenderGraph */
 		void execute();
+	private:
+		/** Moves the given node and its parents to the given vector in order
+		 *
+		 * @param	sortedNodes the vector where the nodes will be moved
+		 * @param	node the node to move with its parent nodes */
+		void addSorted(
+			std::vector<RenderNodeUPtr>& sortedNodes, RenderNode* node
+		);
 	};
 
 
