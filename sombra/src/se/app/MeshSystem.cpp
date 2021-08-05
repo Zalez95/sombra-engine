@@ -77,7 +77,7 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
@@ -128,6 +128,8 @@ namespace se::app {
 
 	void MeshSystem::onRMeshEvent(const RMeshEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto itEntity = mEntityUniforms.find(event.getEntity());
 		if (itEntity == mEntityUniforms.end()) {
 			return;
@@ -159,6 +161,8 @@ namespace se::app {
 
 	void MeshSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto itEntity = mEntityUniforms.find(event.getEntity());
 		if ((itEntity == mEntityUniforms.end())
 			|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh)
@@ -183,6 +187,8 @@ namespace se::app {
 
 	void MeshSystem::onShaderEvent(const ShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		mEntityDatabase.iterateComponents<MeshComponent>(
 			[&](Entity entity, MeshComponent* mesh) {
 				mesh->processRenderableIndices([&](std::size_t i) {

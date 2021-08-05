@@ -95,11 +95,7 @@ namespace se::app {
 		 * @param	yOffset the new scroll Y offset */
 		void setYOffset(double yOffset) { mYOffset = yOffset; };
 	private:
-		/** Appends the current MouseScrollEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current MouseScrollEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic
@@ -155,11 +151,7 @@ namespace se::app {
 			}
 		};
 
-		/** Appends the current MouseButtonEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current MouseButtonEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic

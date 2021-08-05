@@ -37,6 +37,7 @@
 #include "se/app/SkinComponent.h"
 #include "se/app/AnimationComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/LightProbeComponent.h"
 #include "se/app/RigidBodyComponent.h"
 #include "se/app/AudioSourceComponent.h"
 
@@ -598,42 +599,99 @@ namespace se::app {
 	template <>
 	void serializeResource<LightSource>(const Repository::ResourceRef<LightSource>& light, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		json["type"] = static_cast<int>(light->type);
-		json["color"] = toJson(light->color);
-		json["intensity"] = light->intensity;
-		json["range"] = light->range;
-		json["innerConeAngle"] = light->innerConeAngle;
-		json["outerConeAngle"] = light->outerConeAngle;
+		json["type"] = static_cast<int>(light->getType());
+		json["color"] = toJson(light->getColor());
+		json["intensity"] = light->getIntensity();
+		json["range"] = light->getRange();
+
+		if (light->getType() == LightSource::Type::Spot) {
+			float innerConeAngle, outerConeAngle;
+			light->getSpotLightRange(innerConeAngle, outerConeAngle);
+			json["innerConeAngle"] = innerConeAngle;
+			json["outerConeAngle"] = outerConeAngle;
+		}
+
+		json["castsShadows"] = light->castsShadows();
+		if (light->castsShadows()) {
+			float size, zNear, zFar;
+			std::size_t resolution, numCascades;
+			light->getShadows(resolution, zNear, zFar, size, numCascades);
+
+			json["shadowResolution"] = resolution;
+			json["shadowZNear"] = zNear;
+			json["shadowZFar"] = zFar;
+			json["shadowSize"] = size;
+			json["shadowNumCascades"] = numCascades;
+		}
 	}
 
 	template <>
 	Result deserializeResource<LightSource>(const nlohmann::json& json, Repository::ResourceRef<LightSource>& light, DeserializeData&, Scene& scene)
 	{
-		auto lightSPtr = std::make_shared<LightSource>();
-
 		auto itType = json.find("type");
-		if (itType != json.end()) {
-			lightSPtr->type = static_cast<LightSource::Type>(itType->get<int>());
+		if (itType == json.end()) {
+			return Result(false, "Missing \"type\" property");
 		}
+
+		auto lightSPtr = std::make_shared<LightSource>(scene.application.getEventManager(), static_cast<LightSource::Type>(itType->get<int>()));
 
 		auto itColor = json.find("color");
 		if (itColor != json.end()) {
-			toVec(*itColor, lightSPtr->color);
+			glm::vec3 color;
+			if (toVec(*itColor, color)) {
+				lightSPtr->setColor(color);
+			}
 		}
 
 		auto itIntensity = json.find("intensity");
 		if (itIntensity != json.end()) {
-			lightSPtr->intensity = *itIntensity;
+			lightSPtr->setIntensity(itIntensity->get<float>());
 		}
 
-		auto itInnerConeAngle = json.find("innerConeAngle");
-		if (itInnerConeAngle != json.end()) {
-			lightSPtr->innerConeAngle = *itInnerConeAngle;
+		auto itRange = json.find("range");
+		if (itRange != json.end()) {
+			lightSPtr->setRange(itRange->get<float>());
 		}
 
-		auto itOuterConeAngle = json.find("outerConeAngle");
-		if (itOuterConeAngle != json.end()) {
-			lightSPtr->outerConeAngle = *itOuterConeAngle;
+		if (lightSPtr->getType() == LightSource::Type::Spot) {
+			auto itInnerConeAngle = json.find("innerConeAngle");
+			auto itOuterConeAngle = json.find("outerConeAngle");
+			if ((itInnerConeAngle != json.end()) && (itOuterConeAngle != json.end())) {
+				lightSPtr->setSpotLightRange(itInnerConeAngle->get<float>(), itOuterConeAngle->get<float>());
+			}
+		}
+
+		auto itCastsShadows = json.find("castsShadows");
+		if ((itCastsShadows != json.end()) && itCastsShadows->get<bool>()) {
+			float size = 10.0f, zNear = -1.0f, zFar = 1.0f;
+			std::size_t resolution = 1024, numCascades = 1;
+
+			auto itResolution = json.find("shadowResolution");
+			if (itResolution != json.end()) {
+				resolution = *itResolution;
+			}
+
+			auto itZNear = json.find("shadowZNear");
+			if (itZNear != json.end()) {
+				zNear = *itZNear;
+			}
+
+			auto itZFar = json.find("shadowZFar");
+			if (itZFar != json.end()) {
+				zFar = *itZFar;
+			}
+
+			auto itSize = json.find("shadowSize");
+			if (itSize != json.end()) {
+				size = *itSize;
+			}
+
+			auto itNumCascades = json.find("shadowNumCascades");
+			if (itNumCascades != json.end()) {
+				numCascades = *itNumCascades;
+			}
+
+			lightSPtr->setShadows(resolution, zNear, zFar, size, numCascades);
 		}
 
 		light = scene.repository.insert(std::move(lightSPtr));
@@ -1003,9 +1061,6 @@ namespace se::app {
 			else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
 				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->getEnable() } };
 			}
-			else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
-				bindableJson = { { "type", "SetDepthMask" }, { "active", setDepthMask->getEnable() } };
-			}
 
 			if (!bindableJson.empty()) {
 				bindablesVJson.emplace_back(std::move(bindableJson));
@@ -1286,13 +1341,6 @@ namespace se::app {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: SetOperation missing \"active\" property");
 				}
 				bindable = std::make_shared<SetOperation>(static_cast<Operation>(itOperation->get<int>()), *itActive);
-			}
-			else if (*itType == "SetDepthMask") {
-				auto itActive = jBindable.find("active");
-				if (itActive == jBindable.end()) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: SetDepthMask missing \"active\" property");
-				}
-				bindable = std::make_shared<SetDepthMask>(*itActive);
 			}
 			else {
 				return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Wrong \"type\" property = " + itType->get<std::string>());
@@ -1827,16 +1875,6 @@ namespace se::app {
 			json["sourceName"] = light.getSource().getResource().getName();
 		}
 
-		if (light.hasShadows()) {
-			nlohmann::json shadowDataJson;
-			shadowDataJson["resolution"] = light.getShadowData()->resolution;
-			shadowDataJson["size"] = light.getShadowData()->size;
-			shadowDataJson["zNear"] = light.getShadowData()->zNear;
-			shadowDataJson["zFar"] = light.getShadowData()->zFar;
-			shadowDataJson["numCascades"] = light.getShadowData()->numCascades;
-			json["shadowData"] = std::move(shadowDataJson);
-		}
-
 		return json;
 	}
 
@@ -1856,48 +1894,12 @@ namespace se::app {
 			}
 		}
 
-		auto itShadowData = json.find("shadowData");
-		if (itShadowData != json.end()) {
-			auto itResolution = itShadowData->find("resolution");
-			if (itResolution == itShadowData->end()) {
-				return { Result("Failed to parse \"shadowData\": Missing \"resolution\" property"), std::nullopt };
-			}
-
-			auto itSize = itShadowData->find("size");
-			if (itSize == itShadowData->end()) {
-				return { Result("Failed to parse \"shadowData\": Missing \"size\" property"), std::nullopt };
-			}
-
-			auto itZNear = itShadowData->find("zNear");
-			if (itZNear == itShadowData->end()) {
-				return { Result("Failed to parse \"shadowData\": Missing \"zNear\" property"), std::nullopt };
-			}
-
-			auto itZFar = itShadowData->find("zFar");
-			if (itZFar == itShadowData->end()) {
-				return { Result("Failed to parse \"shadowData\": Missing \"zFar\" property"), std::nullopt };
-			}
-
-			auto itNumCascades = itShadowData->find("numCascades");
-			if (itNumCascades == itShadowData->end()) {
-				return { Result("Failed to parse \"shadowData\": Missing \"numCascades\" property"), std::nullopt };
-			}
-
-			auto shadowData = std::make_unique<ShadowData>();
-			shadowData->resolution = *itResolution;
-			shadowData->size = *itSize;
-			shadowData->zNear = *itZNear;
-			shadowData->zFar = *itZFar;
-			shadowData->numCascades = *itNumCascades;
-			light.setShadowData(std::move(shadowData));
-		}
-
 		return { Result(), std::move(light) };
 	}
 
 
 	template <>
-	nlohmann::json serializeComponent<LightProbe>(const LightProbe& lightProbe, SerializeData&, std::ostream&)
+	nlohmann::json serializeComponent<LightProbeComponent>(const LightProbeComponent& lightProbe, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
@@ -1913,9 +1915,9 @@ namespace se::app {
 	}
 
 	template <>
-	ResultOptional<LightProbe> deserializeComponent<LightProbe>(const nlohmann::json& json, DeserializeData&, Scene& scene)
+	ResultOptional<LightProbeComponent> deserializeComponent<LightProbeComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
-		LightProbe lightProbe;
+		LightProbeComponent lightProbe;
 
 		auto itIrradianceMap = json.find("irradianceMap");
 		if (itIrradianceMap != json.end()) {
@@ -2924,7 +2926,7 @@ namespace se::app {
 		serializeCVector<MeshComponent>("meshComponents", data, json, dataStream);
 		serializeCVector<TerrainComponent>("terrainComponents", data, json, dataStream);
 		serializeCVector<LightComponent>("lights", data, json, dataStream);
-		serializeCVector<LightProbe>("lightProbes", data, json, dataStream);
+		serializeCVector<LightProbeComponent>("lightProbes", data, json, dataStream);
 		serializeCVector<RigidBodyComponent>("rigidBodies", data, json, dataStream);
 		serializeCVector<Collider>("colliders", data, json, dataStream);
 		serializeCVector<SkinComponent>("skinComponents", data, json, dataStream);
@@ -2941,7 +2943,7 @@ namespace se::app {
 		if (auto result = deserializeCVector<MeshComponent>("meshComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<TerrainComponent>("terrainComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
-		if (auto result = deserializeCVector<LightProbe>("lightProbes", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<LightProbeComponent>("lightProbes", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<RigidBodyComponent>("rigidBodies", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<Collider, true>("colliders", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }

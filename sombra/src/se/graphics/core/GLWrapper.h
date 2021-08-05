@@ -201,11 +201,13 @@ namespace se::graphics {
 	constexpr int toGLTextureTarget(TextureTarget target)
 	{
 		switch (target) {
-			case TextureTarget::Texture1D:	return GL_TEXTURE_1D;
-			case TextureTarget::Texture2D:	return GL_TEXTURE_2D;
-			case TextureTarget::Texture3D:	return GL_TEXTURE_3D;
-			case TextureTarget::CubeMap:	return GL_TEXTURE_CUBE_MAP;
-			default:						return GL_NONE;
+			case TextureTarget::Texture1D:		return GL_TEXTURE_1D;
+			case TextureTarget::Texture2D:		return GL_TEXTURE_2D;
+			case TextureTarget::Texture3D:		return GL_TEXTURE_3D;
+			case TextureTarget::Texture1DArray:	return GL_TEXTURE_1D_ARRAY;
+			case TextureTarget::Texture2DArray:	return GL_TEXTURE_2D_ARRAY;
+			case TextureTarget::CubeMap:		return GL_TEXTURE_CUBE_MAP;
+			default:							return GL_NONE;
 		}
 	}
 

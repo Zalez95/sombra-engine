@@ -22,7 +22,7 @@ namespace se::app {
 
 	void DynamicsSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Start";
+		SOMBRA_DEBUG_LOG << "Start";
 
 		mApplication.getExternalTools().physicsEngine->resetRigidBodiesState();
 
@@ -58,7 +58,7 @@ namespace se::app {
 			true
 		);
 
-		SOMBRA_INFO_LOG << "End";
+		SOMBRA_DEBUG_LOG << "End";
 	}
 
 // Private functions

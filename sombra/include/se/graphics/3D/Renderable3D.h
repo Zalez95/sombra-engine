@@ -24,14 +24,6 @@ namespace se::graphics {
 		/** Maps each Pass with the Bindables to bind before drawing */
 		std::unordered_map<Pass*, std::vector<BindableSPtr>> mPassBindables;
 
-		/** The minimum position of the Renderable3D at each direction in world
-		 * space */
-		glm::vec3 mMinimum = {};
-
-		/** The maximum position of the Renderable3D at each direction in world
-		 * space */
-		glm::vec3 mMaximum = {};
-
 	public:		// Functions
 		/** Creates a new Renderable3D */
 		Renderable3D() = default;
@@ -47,8 +39,7 @@ namespace se::graphics {
 
 		/** @return	the minimum and maximum position of Renderable3D in each
 		 *			direction */
-		std::pair<glm::vec3, glm::vec3> getBounds() const
-		{ return { mMinimum, mMaximum }; };
+		virtual std::pair<glm::vec3, glm::vec3> getBounds() const = 0;
 
 		/** Adds a Bindable to the current Renderable3D. This bindable will be
 		 * bound only for the given Pass

@@ -24,7 +24,7 @@ namespace se::app {
 
 	void AudioSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Updating the AudioSystem";
+		SOMBRA_DEBUG_LOG << "Updating the AudioSystem";
 
 		SOMBRA_DEBUG_LOG << "Updating the Listener";
 		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListenerEntity, true);
@@ -55,7 +55,7 @@ namespace se::app {
 			true
 		);
 
-		SOMBRA_INFO_LOG << "AudioSystem updated";
+		SOMBRA_DEBUG_LOG << "AudioSystem updated";
 	}
 
 // Private functions
@@ -78,6 +78,7 @@ namespace se::app {
 
 	void AudioSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mListenerEntity = event.getValue();
 	}
 

@@ -8,8 +8,8 @@ namespace se::graphics {
 
 	/**
 	 * Texture Class, it's a Bindable that hold data in an image format. It
-	 * could be a 1D, 2D, 3D or CubeMap image. Texture can be accesed as variables
-	 * from Shaders or as Render targets.
+	 * could be a 1D, 2D, 3D, 1D Array, 2D Array or CubeMap image.
+	 * Texture can be accesed as variables from Shaders or as Render targets.
 	 * @note	When the texture is a CubeMap, the Texture functions must use
 	 *			an orientation parameter to operate with a specific side of the
 	 *			cubemap.
@@ -207,8 +207,8 @@ namespace se::graphics {
 		 *			unsized)
 		 * @param	textureFormat the ColorFormat of the texture
 		 * @param	width the width of the new Texture
-		 * @param	height the height of the new Texture
-		 * @param	depth the depth of the new Texture
+		 * @param	height the height of the new Texture (or number of layers)
+		 * @param	depth the depth of the new Texture (or number of layers)
 		 * @param	orientation which face of the CubeMap is going to be set
 		 * @return	a reference to the current Texture object */
 		Texture& setImage(

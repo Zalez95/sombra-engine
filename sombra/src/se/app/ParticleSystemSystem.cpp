@@ -42,7 +42,7 @@ namespace se::app {
 			true
 		);
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions

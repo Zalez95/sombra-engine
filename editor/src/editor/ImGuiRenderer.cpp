@@ -22,6 +22,8 @@ namespace editor {
 		std::shared_ptr<se::graphics::UniformVariableValue<glm::mat4>> uProjectionMatrix;
 		std::shared_ptr<se::graphics::VertexBuffer> vbo;
 		std::shared_ptr<se::graphics::IndexBuffer> ibo;
+
+		static constexpr int kDrawTextureUnit = 0;
 	};
 
 
@@ -118,12 +120,16 @@ namespace editor {
 
 						// Bind texture, Draw
 						se::graphics::Texture* texture = static_cast<se::graphics::Texture*>(pcmd->TextureId);
-						mImpl->uTextureUniform->setValue(texture->getTextureUnit()).bind();
+						int oldTexUnit = texture->getTextureUnit();
+						texture->setTextureUnit(Impl::kDrawTextureUnit);
+
 						texture->bind();
 						se::graphics::GraphicsOperations::drawIndexed(se::graphics::PrimitiveType::Triangle, pcmd->ElemCount,
 							(sizeof(ImDrawIdx) == 2)? se::graphics::TypeId::UnsignedShort : se::graphics::TypeId::UnsignedInt,
 							pcmd->IdxOffset * sizeof(ImDrawIdx)
 						);
+
+						texture->setTextureUnit(oldTexUnit);
 					}
 				}
 			}
@@ -179,6 +185,8 @@ namespace editor {
 
 			mImpl->uTextureUniform = std::make_shared<se::graphics::UniformVariableValue<int>>("Texture", mImpl->program);
 			mImpl->uProjectionMatrix = std::make_shared<se::graphics::UniformVariableValue<glm::mat4>>("ProjMtx", mImpl->program);
+
+			mImpl->uTextureUniform->setValue(Impl::kDrawTextureUnit);
 
 			// Create buffers
 			mImpl->vbo = std::make_shared<se::graphics::VertexBuffer>();

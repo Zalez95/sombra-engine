@@ -17,6 +17,8 @@ add_library(OpenGL INTERFACE)
 target_include_directories(OpenGL INTERFACE "${OPENGL_INCLUDE_DIR}")
 target_link_libraries(OpenGL INTERFACE "${OPENGL_LIBRARIES}")
 
+set(original_cmake_build_type ${CMAKE_BUILD_TYPE})
+
 find_package(GLM "0.9.9.8" QUIET)
 if(GLM_FOUND AND INSTALLED_GLM)
 	message("GLM FOUND: Using system library")
@@ -92,3 +94,5 @@ if(SOMBRA_BUILD_TESTS)
 		include(ExternalGTest)
 	endif()
 endif()
+
+set(CMAKE_BUILD_TYPE "${original_cmake_build_type}" CACHE INTERNAL "")

@@ -89,6 +89,10 @@ namespace se::graphics {
 			case TextureTarget::Texture3D:
 				GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level, layer) );
 				break;
+			case TextureTarget::Texture1DArray:
+			case TextureTarget::Texture2DArray:
+				GL_WRAP( glFramebufferTextureLayer(GL_FRAMEBUFFER, glAttachment, texture.getTextureId(), level, layer) );
+				break;
 			case TextureTarget::CubeMap:
 				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture.getTextureId(), level) );
 				break;

@@ -16,7 +16,6 @@ namespace se::app {
 	class TerrainComponent;
 	class LightComponent;
 	class ParticleSystemComponent;
-	class ShadowRenderSubGraph;
 
 
 	/**
@@ -46,9 +45,6 @@ namespace se::app {
 		/** A pointer to the frustum filter shared between all the
 		 * Renderer3Ds */
 		FrustumFilterSPtr mFrustumFilter;
-
-		/** A pointer to the renderer used for computing the shadows */
-		ShadowRenderSubGraph* mShadowRenderSubGraph;
 
 	public:		// Functions
 		/** Creates a new CameraSystem

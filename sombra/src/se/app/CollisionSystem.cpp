@@ -25,7 +25,7 @@ namespace se::app {
 
 	void CollisionSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Updating the CollisionSystem";
+		SOMBRA_DEBUG_LOG << "Updating the CollisionSystem";
 		auto& collisionWorld = *mApplication.getExternalTools().collisionWorld;
 
 		SOMBRA_DEBUG_LOG << "Updating Colliders";
@@ -55,7 +55,7 @@ namespace se::app {
 			}
 		});
 
-		SOMBRA_INFO_LOG << "CollisionSystem updated";
+		SOMBRA_DEBUG_LOG << "CollisionSystem updated";
 	}
 
 

@@ -24,6 +24,7 @@
 #include "se/app/TerrainComponent.h"
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
+#include <se/app/LightProbeComponent.h>
 #include <se/app/ParticleSystemComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/RigidBodyComponent.h>
@@ -230,7 +231,7 @@ namespace game {
 		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 		auto gBufferRendererParticles = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
 		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
-		auto shadowRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
+		auto shadowMeshProxyRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowMeshProxyRenderer"));
 
 		se::app::Image<unsigned char> heightMap1, splatMap1, logo1, reticle1;
 		se::app::Image<float> environment1;
@@ -414,10 +415,10 @@ namespace game {
 			}
 
 			// Shaders
-			stepShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowRendererMesh), "stepShadow");
+			stepShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadow");
 			stepShadow->addResource(programShadow);
 
-			stepShadowSkinning = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowRendererMesh), "stepShadowSkinning");
+			stepShadowSkinning = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadowSkinning");
 			stepShadowSkinning->addResource(programShadowSkinning);
 
 			auto stepSky = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*forwardRendererMesh), "stepSky");
@@ -502,7 +503,7 @@ namespace game {
 			sound.setFakeUser();
 
 			// Lights
-			spotLight = mScene.repository.insert(std::make_shared<se::app::LightSource>(se::app::LightSource::Type::Spot), "spotLight");
+			spotLight = mScene.repository.insert(std::make_shared<se::app::LightSource>(mGame.getEventManager(), se::app::LightSource::Type::Spot), "spotLight");
 
 			// Forces
 			gravity = mScene.repository.insert<se::physics::Force>(std::make_shared<se::physics::Gravity>(-9.8f), "gravity");
@@ -561,10 +562,9 @@ namespace game {
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidths[0] / static_cast<float>(kHeights[0]), kZNear, kZFar);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
 
-			spotLight->intensity = 5.0f;
-			spotLight->range = 20.0f;
-			spotLight->innerConeAngle = glm::pi<float>() / 12.0f;
-			spotLight->outerConeAngle = glm::pi<float>() / 6.0f;
+			spotLight->setIntensity(5.0f);
+			spotLight->setRange(20.0f);
+			spotLight->setSpotLightRange(glm::pi<float>() / 12.0f, glm::pi<float>() / 6.0f);
 			se::app::LightComponent lightComponent;
 			lightComponent.setSource(spotLight);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(lightComponent));
@@ -573,8 +573,9 @@ namespace game {
 		}
 
 		mGame.getEntityDatabase().iterateComponents<se::app::LightComponent>([](se::app::Entity, se::app::LightComponent* light) {
-			if (light->getSource()->type == se::app::LightSource::Type::Directional) {
-				light->setShadowData(std::make_unique<se::app::ShadowData>());
+			auto source = light->getSource();
+			if (source->getType() == se::app::LightSource::Type::Directional) {
+				source->setShadows();
 			}
 		}, true);
 
@@ -593,7 +594,7 @@ namespace game {
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderSky));
 
-			se::app::LightProbe lightProbe = { environmentTexture, prefilterTexture };
+			se::app::LightProbeComponent lightProbe = { environmentTexture, prefilterTexture };
 			mGame.getEntityDatabase().addComponent(skyEntity, std::move(lightProbe));
 		}
 
@@ -619,8 +620,8 @@ namespace game {
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
 
-			auto shadowRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererTerrain"));
-			auto stepTerrainShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowRendererTerrain), "stepTerrainShadow");
+			auto shadowTerrainProxyRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowTerrainProxyRenderer"));
+			auto stepTerrainShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowTerrainProxyRenderer), "stepTerrainShadow");
 			se::app::ShaderLoader::addHeightMapBindables(stepTerrainShadow, heightMapTexture, size, maxHeight, programShadowTerrain);
 
 			auto gBufferRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));

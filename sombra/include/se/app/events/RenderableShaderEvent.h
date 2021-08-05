@@ -22,7 +22,7 @@ namespace se::app {
 
 		/** The different Renderable components where a RenderableShader
 		 * can be attached */
-		enum class RComponentType { Mesh, Terrain, ParticleSystem };
+		enum class RComponentType { Mesh, Terrain, ParticleSystem, Light };
 
 	private:	// Attributes
 		/** The Operation of the RenderableShaderEvent */
@@ -86,6 +86,54 @@ namespace se::app {
 
 		/** @return	a pointer to the RenderableShader used in the Operaion */
 		RenderableShaderSPtr getShader() const { return mShader; };
+	private:
+		/** Prints the operation to the given stream
+		 *
+		 * @param	os the stream to print to
+		 * @param	o the operation to print
+		 * @return	the stream */
+		friend constexpr std::ostream& operator<<(
+			std::ostream& os, const Operation& o
+		) {
+			switch (o) {
+				case Operation::Add:	return os << "Operation::Add";
+				case Operation::Remove:	return os << "Operation::Remove";
+				default:				return os;
+			}
+		};
+
+		/** Prints the RComponentType to the given stream
+		 *
+		 * @param	os the stream to print to
+		 * @param	r the RComponentType to print
+		 * @return	the stream */
+		friend constexpr std::ostream& operator<<(
+			std::ostream& os, const RComponentType& r
+		) {
+			switch (r) {
+				case RComponentType::Mesh:
+					return os << "RComponentType::Mesh";
+				case RComponentType::Terrain:
+					return os << "RComponentType::Terrain";
+				case RComponentType::ParticleSystem:
+					return os << "RComponentType::ParticleSystem";
+				case RComponentType::Light:
+					return os << "RComponentType::Light";
+				default:
+					return os;
+			}
+		};
+
+		/** @copydoc Event::printTo() */
+		virtual void printTo(std::ostream& os) const override
+		{
+			os	<< "{ kTopic : " << kTopic
+				<< ", mOperation : " << mOperation
+				<< ", mEntity : " << mEntity
+				<< ", mRComponentType : " << mRComponentType
+				<< ", mRIndex : " << mRIndex
+				<< ", mShader : " << mShader.get() << " }";
+		};
 	};
 
 }

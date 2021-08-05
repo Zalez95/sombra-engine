@@ -28,11 +28,7 @@ namespace se::app {
 		/** @return	the value */
 		T& getValue() { return mValue; };
 	protected:
-		/** Appends the current ContainerEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current ContainerEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << this->kTopic

@@ -1431,19 +1431,19 @@ namespace se::app {
 		auto itType = jsonLight.find("type");
 		if (itType != jsonLight.end()) {
 			if (*itType == "directional") {
-				lightSource = std::make_shared<app::LightSource>(app::LightSource::Type::Directional);
+				lightSource = std::make_shared<LightSource>(mGLTFData->scene.application.getEventManager(), LightSource::Type::Directional);
 			}
 			else if (*itType == "point") {
-				lightSource = std::make_shared<app::LightSource>(app::LightSource::Type::Point);
+				lightSource = std::make_shared<LightSource>(mGLTFData->scene.application.getEventManager(), LightSource::Type::Point);
 
 				auto itRange = jsonLight.find("range");
-				lightSource->range = (itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max();
+				lightSource->setRange((itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max());
 			}
 			else if (*itType == "spot") {
-				lightSource = std::make_shared<app::LightSource>(app::LightSource::Type::Spot);
+				lightSource = std::make_shared<LightSource>(mGLTFData->scene.application.getEventManager(), LightSource::Type::Spot);
 
 				auto itRange = jsonLight.find("range");
-				lightSource->range = (itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max();
+				lightSource->setRange((itRange != jsonLight.end())? itRange->get<float>() : std::numeric_limits<float>::max());
 
 				auto itSpot = jsonLight.find("spot");
 				if (itSpot == jsonLight.end()) {
@@ -1451,10 +1451,12 @@ namespace se::app {
 				}
 
 				auto itInnerConeAngle = itSpot->find("innerConeAngle");
-				lightSource->innerConeAngle = (itInnerConeAngle != itSpot->end())? itInnerConeAngle->get<float>() : 0.0f;
+				float innerConeAngle = (itInnerConeAngle != itSpot->end())? itInnerConeAngle->get<float>() : 0.0f;
 
 				auto itOuterConeAngle = itSpot->find("outerConeAngle");
-				lightSource->outerConeAngle = (itOuterConeAngle != itSpot->end())? itOuterConeAngle->get<float>() : glm::quarter_pi<float>();
+				float outerConeAngle = (itOuterConeAngle != itSpot->end())? itOuterConeAngle->get<float>() : glm::quarter_pi<float>();
+
+				lightSource->setSpotLightRange(innerConeAngle, outerConeAngle);
 			}
 			else {
 				return Result(false, "Invalid type property \"" + itType->get<std::string>() + "\"");
@@ -1464,14 +1466,15 @@ namespace se::app {
 			return Result(false, "A light must have a type property");
 		}
 
-		lightSource->color = glm::vec3(1.0f);
+		glm::vec3 color(1.0f);
 		auto itColor = jsonLight.find("color");
 		if (itColor != jsonLight.end()) {
-			toVec(*itColor, lightSource->color);
+			toVec(*itColor, color);
 		}
+		lightSource->setColor(color);
 
 		auto itIntensity = jsonLight.find("intensity");
-		lightSource->intensity = (itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f;
+		lightSource->setIntensity((itIntensity != jsonLight.end())? itIntensity->get<float>() : 1.0f);
 
 		auto lightSourceRef = mGLTFData->scene.repository.insert(std::move(lightSource), name.c_str());
 		if (!lightSourceRef) {
@@ -1539,8 +1542,8 @@ namespace se::app {
 		if ((itCamera != jsonNode.end()) || (itMesh != jsonNode.end())
 			|| (itSkin != jsonNode.end()) || (itExtensions != jsonNode.end())
 		) {
-			se::app::EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
-			se::app::EventManager& eventManager = mGLTFData->scene.application.getEventManager();
+			EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
+			EventManager& eventManager = mGLTFData->scene.application.getEventManager();
 			node.entity = entityDB.addEntity();
 			mGLTFData->scene.entities.push_back(node.entity);
 
@@ -1603,11 +1606,6 @@ namespace se::app {
 				if ((itActiveCamera != itExtensions->end()) && (*itActiveCamera == true)) {
 					eventManager.publish(new ContainerEvent<Topic::Camera, Entity>(node.entity));
 				}
-
-				auto itProjectShadows = itExtensions->find("project_shadows");
-				if ((itProjectShadows != itExtensions->end()) && (*itProjectShadows == true)) {
-					eventManager.publish(new ContainerEvent<Topic::Shadow, Entity>(node.entity));
-				}
 			}
 		}
 
@@ -1618,7 +1616,7 @@ namespace se::app {
 
 	Result GLTFImporter::parseScene(const nlohmann::json& jsonScene)
 	{
-		se::app::EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
+		EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
 
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {

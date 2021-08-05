@@ -75,11 +75,6 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~IViewProjectionUpdater() = default;
 
-		/** Adds the given Renderable
-		 *
-		 * @param	renderable the Renderable to add */
-		void addRenderable(graphics::Renderable& renderable);
-
 		/** Removes the given Renderable
 		 *
 		 * @param	renderable the Renderable to remove */

@@ -108,8 +108,8 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities, [](const LightComponent& light) {
 				return LightComponent(light);
 			});
-			mEntityDatabase->addComponentTable<LightProbe>(kMaxLightProbes, [](const LightProbe& lightProbe) {
-				return LightProbe(lightProbe);
+			mEntityDatabase->addComponentTable<LightProbeComponent>(kMaxLightProbes, [](const LightProbeComponent& lightProbe) {
+				return LightProbeComponent(lightProbe);
 			});
 			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities, [](const MeshComponent& mesh) {
 				return MeshComponent(mesh);
@@ -134,15 +134,10 @@ namespace se::app {
 			});
 
 			// Systems
-			ShadowData shadowData;
-			shadowData.resolution = kShadowResolution;
-			shadowData.zNear = 0.1f;
-			shadowData.zFar = 100.0f;
-
 			mInputSystem = new InputSystem(*this);
 			mScriptSystem = new ScriptSystem(*this);
 			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
-			mLightSystem = new LightSystem(*this, windowConfig.width, windowConfig.height);
+			mLightSystem = new LightSystem(*this, kShadowSplitLogFactor);
 			mLightProbeSystem = new LightProbeSystem(*this);
 			mMeshSystem = new MeshSystem(*this);
 			mTerrainSystem = new TerrainSystem(*this);

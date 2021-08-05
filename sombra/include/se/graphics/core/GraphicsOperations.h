@@ -304,40 +304,13 @@ namespace se::graphics {
 		virtual std::unique_ptr<Bindable> clone() const override
 		{ return std::make_unique<SetOperation>(*this); };
 	protected:
-		/** @copydoc EnableOperation::enable(bool) */
+		/** @copydoc EnableOperation::enable() */
 		virtual void enable(bool enable) const override
 		{ return GraphicsOperations::setOperation(mOperation, enable); };
 
 		/** @copydoc EnableOperation::isEnabled() */
 		virtual bool isEnabled() const override
 		{ return GraphicsOperations::hasOperation(mOperation); };
-	};
-
-
-	/**
-	 * Class SetDepthMask, it's a EnableOperation used for enabling or
-	 * disabling writing to the depth buffer
-	 */
-	class SetDepthMask : public EnableOperation
-	{
-	public:		// Functions
-		/** Creates a new SetDepthMask
-		 *
-		 * @param	active if we want to write to the depth buffer on bind or
-		 *			not */
-		SetDepthMask(bool active = true) : EnableOperation(active) {};
-
-		/** @copydoc Bindable::clone() */
-		virtual std::unique_ptr<Bindable> clone() const override
-		{ return std::make_unique<SetDepthMask>(*this); };
-	protected:
-		/** @copydoc EnableOperation::enable(bool) */
-		virtual void enable(bool enable) const override
-		{ return GraphicsOperations::setDepthMask(enable); };
-
-		/** @copydoc EnableOperation::isEnabled() */
-		virtual bool isEnabled() const override
-		{ return GraphicsOperations::hasDepthMask(); };
 	};
 
 
@@ -358,7 +331,7 @@ namespace se::graphics {
 		virtual std::unique_ptr<Bindable> clone() const override
 		{ return std::make_unique<WireframeMode>(*this); };
 	protected:
-		/** @copydoc EnableOperation::enable(bool) */
+		/** @copydoc EnableOperation::enable() */
 		virtual void enable(bool enable) const override
 		{ return GraphicsOperations::setWireframe(enable); };
 

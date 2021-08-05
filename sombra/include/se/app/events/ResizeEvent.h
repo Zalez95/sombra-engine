@@ -42,11 +42,7 @@ namespace se::app {
 		 * @param	height the new ResizeEvent height */
 		void setHeight(double height) { mHeight = height; };
 	protected:
-		/** Appends the current ResizeEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current ResizeEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << this->kTopic

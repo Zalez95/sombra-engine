@@ -42,11 +42,7 @@ namespace se::app {
 		/** @return	a pointer to the collision Manifold */
 		const collision::Manifold* getManifold() const { return mManifold; };
 	private:
-		/** Appends the current CollisionEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current CollisionEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic << ", mEntities : [ "

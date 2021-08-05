@@ -8,6 +8,7 @@
 #include <se/app/TagComponent.h>
 #include <se/app/CameraComponent.h>
 #include <se/app/LightComponent.h>
+#include <se/app/LightProbeComponent.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TerrainComponent.h>
 #include <se/app/TransformsComponent.h>
@@ -277,44 +278,15 @@ namespace editor {
 			if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, source)) {
 				light->setSource(source);
 			}
-
-			bool castShadows = light->hasShadows();
-			if (ImGui::Checkbox(("Cast shadows" + getIdPrefix() + "LightComponentNode::castShadows").c_str(), &castShadows)) {
-				if (castShadows) {
-					light->setShadowData(std::make_unique<ShadowData>());
-				}
-				else {
-					light->setShadowData(nullptr);
-				}
-			}
-
-			if (castShadows) {
-				bool updated = false;
-
-				ShadowData shadowData = *light->getShadowData();
-				int resolution = static_cast<int>(shadowData.resolution);
-				int numCascades =static_cast<int>(shadowData.numCascades);
-				updated |= ImGui::DragInt("Resolution", &resolution, 1.0f, -0, 4096);
-				updated |= ImGui::DragFloat("Size", &shadowData.size, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
-				updated |= ImGui::DragFloat("zNear", &shadowData.zNear, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
-				updated |= ImGui::DragFloat("zFar", &shadowData.zFar, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
-				updated |= ImGui::DragInt("number of Cascades", &numCascades, 1.0f, 0, ShadowData::kMaxShadowsPerLight);
-				if (updated) {
-					shadowData.resolution = resolution;
-					shadowData.numCascades = numCascades;
-					light->setShadowData(std::make_unique<ShadowData>(shadowData));
-				}
-			}
 		};
 	};
 
 
-	class ComponentPanel::LightProbeComponentNode : public ComponentPanel::ComponentNode<LightProbe>
+	class ComponentPanel::LightProbeComponentNode : public ComponentPanel::ComponentNode<LightProbeComponent>
 	{
 	private:	// Attributes
 		std::string mEnvironmentTextureName;
 		bool mIsCubeMap = false;
-		int mCubeMapSize = 512;
 		int mIrradianceMapSize = 32;
 		int mPrefilterMapSize = 128;
 
@@ -323,10 +295,10 @@ namespace editor {
 		virtual const char* getName() const override
 		{ return "Light Probe"; };
 		virtual void create(Entity entity) override
-		{ getEditor().getEntityDatabase().emplaceComponent<LightProbe>(entity); };
+		{ getEditor().getEntityDatabase().emplaceComponent<LightProbeComponent>(entity); };
 		virtual void draw(Entity entity) override
 		{
-			auto [lightProbe] = getEditor().getEntityDatabase().getComponents<LightProbe>(entity);
+			auto [lightProbe] = getEditor().getEntityDatabase().getComponents<LightProbeComponent>(entity);
 
 			std::string name1 = "Irradiance map" + getIdPrefix() + "LightProbeComponentNode::ChangeIrradiance";
 			addRepoDropdownShowSelected(name1.c_str(), getEditor().getScene()->repository, lightProbe->irradianceMap);
@@ -341,11 +313,6 @@ namespace editor {
 					mEnvironmentTextureName = environmentTexture.getResource().getName();
 				}
 
-				ImGui::Checkbox(("Is cube map" + getIdPrefix() + "LightProbeComponentNode::isCubeMap").c_str(), &mIsCubeMap);
-				if (!mIsCubeMap) {
-					ImGui::DragInt("New cube map resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
-				}
-
 				ImGui::DragInt("Irradiance map resolution", &mIrradianceMapSize, 0.01f, 0, INT_MAX);
 				ImGui::DragInt("Prefilter map resolution", &mPrefilterMapSize, 0.01f, 0, INT_MAX);
 
@@ -355,11 +322,6 @@ namespace editor {
 				}
 				if (ImGui::Button(("Build probe" + getIdPrefix() + "LightProbeComponentNode::BuildProbe").c_str())) {
 					auto cubeMapSPtr = environmentTexture.get();
-					if (!mIsCubeMap) {
-						cubeMapSPtr = TextureUtils::equirectangularToCubeMap(environmentTexture.get(), mCubeMapSize);
-						auto cubeMap = getEditor().getScene()->repository.insert(cubeMapSPtr);
-						setRepoName<Texture>(cubeMap.getResource(), (mEnvironmentTextureName + "CubeMap").c_str(), getEditor().getScene()->repository);
-					}
 
 					auto irradianceMapSPtr = TextureUtils::convoluteCubeMap(cubeMapSPtr, mIrradianceMapSize);
 					lightProbe->irradianceMap = getEditor().getScene()->repository.insert(std::move(irradianceMapSPtr));

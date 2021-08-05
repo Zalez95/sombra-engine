@@ -22,6 +22,7 @@
 #include <se/app/io/SceneImporter.h>
 #include <se/app/io/ShaderLoader.h>
 #include <se/app/graphics/RenderableShader.h>
+#include <se/app/graphics/TextureUtils.h>
 #include "Editor.h"
 #include "ImGuiUtils.h"
 #include "RepositoryPanel.h"
@@ -125,7 +126,7 @@ namespace editor {
 					std::strcpy(nameBuffer.data(), selected.getResource().getName());
 					std::string name = "Name" + getIdPrefix() + "TypeNode::name";
 					if (ImGui::InputText(name.c_str(), nameBuffer.data(), nameBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
-						setRepoName<T>(selected.getResource(), name.data(), repository);
+						setRepoName<T>(selected.getResource(), nameBuffer.data(), repository);
 						mSelectedName = selected.getResource().getName();
 					}
 
@@ -274,19 +275,65 @@ namespace editor {
 		virtual void draw(Repository&, Repository::ResourceRef<LightSource> source) override
 		{
 			static const char* lightTypeTags[] = { "Directional", "Point", "Spot" };
-			int currentType = static_cast<int>(source->type);
+			int currentType = static_cast<int>(source->getType());
 			std::string name = "Type" + getIdPrefix() + "LightSourceNode::type";
 			if (addDropdown(name.c_str(), lightTypeTags, IM_ARRAYSIZE(lightTypeTags), currentType)) {
-				source->type = static_cast<LightSource::Type>(currentType);
+				source->setType(static_cast<LightSource::Type>(currentType));
 			}
-			ImGui::ColorPicker3("Color", glm::value_ptr(source->color));
-			ImGui::DragFloat("Intensity", &source->intensity, 0.005f, 0, FLT_MAX, "%.3f", 1.0f);
-			if (source->type != LightSource::Type::Point) {
-				ImGui::DragFloat("Range", &source->range, 0.005f, 0, FLT_MAX, "%.3f", 1.0f);
+
+			glm::vec3 color = source->getColor();
+			if (ImGui::ColorPicker3("Color", glm::value_ptr(color))) {
+				source->setColor(color);
 			}
-			if (source->type == LightSource::Type::Spot) {
-				ImGui::DragFloat("Inner cone range", &source->innerConeAngle, 0.005f, 0, glm::pi<float>(), "%.3f", 1.0f);
-				ImGui::DragFloat("Outer cone range", &source->outerConeAngle, 0.005f, 0, glm::pi<float>(), "%.3f", 1.0f);
+
+			float intensity = source->getIntensity();
+			if (ImGui::DragFloat("Intensity", &intensity, 0.005f, 0, FLT_MAX, "%.3f", 1.0f)) {
+				source->setIntensity(intensity);
+			}
+
+			float range = source->getRange();
+			if (ImGui::DragFloat("Range", &range, 0.005f, 0, FLT_MAX, "%.3f", 1.0f)) {
+				source->setRange(range);
+			}
+
+			if (source->getType() == LightSource::Type::Spot) {
+				float innerConeAngle, outerConeAngle;
+				source->getSpotLightRange(innerConeAngle, outerConeAngle);
+
+				bool updated = false;
+				updated |= ImGui::DragFloat("Inner cone range", &innerConeAngle, 0.005f, 0, glm::pi<float>(), "%.3f", 1.0f);
+				updated |= ImGui::DragFloat("Outer cone range", &outerConeAngle, 0.005f, 0, glm::pi<float>(), "%.3f", 1.0f);
+				if (updated) {
+					source->setSpotLightRange(innerConeAngle, outerConeAngle);
+				}
+			}
+
+			bool castsShadows = source->castsShadows();
+			if (ImGui::Checkbox(("Cast shadows" + getIdPrefix() + "LightComponentNode::castShadows").c_str(), &castsShadows)) {
+				if (castsShadows) {
+					source->setShadows();
+				}
+				else {
+					source->disableShadows();
+				}
+			}
+
+			if (castsShadows) {
+				bool updated = false;
+
+				float size, zNear, zFar;
+				std::size_t resolution, numCascades;
+				source->getShadows(resolution, zNear, zFar, size, numCascades);
+
+				int iResolution = static_cast<int>(resolution), iNumCascades = static_cast<int>(numCascades);
+				updated |= ImGui::DragInt("Resolution", &iResolution, 1.0f, -0, 4096);
+				updated |= ImGui::DragFloat("Size", &size, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragFloat("zNear", &zNear, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragFloat("zFar", &zFar, 0.05f, 0.0f, FLT_MAX, "%.3f", 1.0f);
+				updated |= ImGui::DragInt("number of Cascades", &iNumCascades, 1.0f, 1, RenderableLight::kMaxShadowMaps);
+				if (updated) {
+					source->setShadows(iResolution, zNear, zFar, size, iNumCascades);
+				}
 			}
 		};
 
@@ -306,7 +353,10 @@ namespace editor {
 			ImGui::SameLine();
 
 			if (confirmButton(validName)) {
-				auto source = repository.insert(std::make_shared<LightSource>(LightSource::Type::Directional), mNameBuffer.data());
+				auto source = repository.insert(
+					std::make_shared<LightSource>(getEditor().getEventManager(), LightSource::Type::Directional),
+					mNameBuffer.data()
+				);
 				source.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
@@ -644,7 +694,7 @@ namespace editor {
 	private:
 		void addBindable(Repository& repository, RenderableShaderStep& step)
 		{
-			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation", "SetDepthMask" };
+			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation" };
 			const char* uniformTypeTags[] = { "int", "unsigned int", "float", "vec2", "ivec2", "vec3", "ivec3", "vec4", "ivec4", "mat3", "mat4", "mat3x4" };
 			const char* operationTypeTags[] = { "Culling", "DepthTest", "StencilTest", "ScissorTest", "Blending" };
 
@@ -734,7 +784,7 @@ namespace editor {
 							step.addResource(program);
 						}
 					} break;
-					case 4: {
+					default: {
 						switch (mSubTypeSelected) {
 							case 0:		step.addBindable(std::make_shared<SetOperation>(Operation::Culling));		break;
 							case 1:		step.addBindable(std::make_shared<SetOperation>(Operation::DepthTest));		break;
@@ -743,9 +793,6 @@ namespace editor {
 							default:	step.addBindable(std::make_shared<SetOperation>(Operation::Blending));		break;
 						}
 					} break;
-					default: {
-						step.addBindable(std::make_shared<SetDepthMask>());
-					} break;
 				}
 			}
 		};
@@ -753,12 +800,14 @@ namespace editor {
 		void showBindables(Repository& repository, RenderableShaderStep& step)
 		{
 			std::size_t numBindables = 0;
+
+			Repository::ResourceRef<Program> programToRemove;
 			step.processPrograms([&](const auto& program) {
 				std::size_t bindableIndex = numBindables++;
 
 				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
 				if (ImGui::Button(name.c_str())) {
-					step.removeResource(program);
+					programToRemove = program;
 				}
 				ImGui::SameLine();
 
@@ -772,12 +821,17 @@ namespace editor {
 				}
 				ImGui::TreePop();
 			});
+			if (programToRemove) {
+				step.removeResource(programToRemove);
+			}
+
+			Repository::ResourceRef<Texture> textureToRemove;
 			step.processTextures([&](const auto& texture) {
 				std::size_t bindableIndex = numBindables++;
 
 				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
 				if (ImGui::Button(name.c_str())) {
-					step.removeResource(texture);
+					textureToRemove = texture;
 				}
 				ImGui::SameLine();
 
@@ -791,7 +845,12 @@ namespace editor {
 				}
 				ImGui::TreePop();
 			});
-			step.processBindables([&](std::shared_ptr<Bindable> bindable) {
+			if (textureToRemove) {
+				step.removeResource(textureToRemove);
+			}
+
+			std::shared_ptr<Bindable> bindableToRemove;
+			step.processBindables([&](const auto& bindable) {
 				if (std::dynamic_pointer_cast<Program>(bindable) || std::dynamic_pointer_cast<Texture>(bindable)) {
 					return;
 				}
@@ -800,7 +859,7 @@ namespace editor {
 
 				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
 				if (ImGui::Button(name.c_str())) {
-					step.removeBindable(bindable);
+					bindableToRemove = bindable;
 				}
 				ImGui::SameLine();
 
@@ -1093,15 +1152,10 @@ namespace editor {
 					}
 					ImGui::TreePop();
 				}
-				else if (auto setDepthMask = std::dynamic_pointer_cast<SetDepthMask>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "SetDepthMask")) { return; }
-					bool enable = setDepthMask->getEnable();
-					if (ImGui::Checkbox("Enable", &enable)) {
-						setDepthMask->setEnable(enable);
-					}
-					ImGui::TreePop();
-				}
 			});
+			if (bindableToRemove) {
+				step.removeBindable(bindableToRemove);
+			}
 		};
 	};
 
@@ -1172,6 +1226,7 @@ namespace editor {
 		std::array<char, kMaxNameSize> mNameBuffer;
 		ColorFormat mColorType = ColorFormat::RGB;
 		bool mIsHDR = false;
+		int mCubeMapSize = 512, mNormalMapHeight = 512, mNormalMapWidth = 512;
 
 	public:		// Functions
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
@@ -1180,6 +1235,18 @@ namespace editor {
 		virtual void draw(Repository&, Repository::ResourceRef<Texture> texture) override
 		{
 			ImGui::Image(static_cast<void*>(texture.get().get()), ImVec2{ 200.0f, 200.0f });
+
+			TextureTarget target = texture->getTarget();
+			static const char* textureTargetTags[] = { "Texture1D", "Texture2D", "Texture3D", "Texture1DArray", "Texture2DArray", "CubeMap" };
+			ImGui::LabelText("Target", "%s", textureTargetTags[static_cast<int>(target)]);
+
+			ImGui::LabelText("Width", "%u", texture->getWidth());
+			if (target != TextureTarget::Texture1D) {
+				ImGui::LabelText("Height", "%u", texture->getHeight());
+				if (target != TextureTarget::Texture2D) {
+					ImGui::LabelText("Depth", "%u", texture->getDepth());
+				}
+			}
 
 			int textureUnit = texture->getTextureUnit();
 			if (ImGui::DragInt("Texture Unit", &textureUnit, 1, 0, 16)) {
@@ -1216,14 +1283,14 @@ namespace editor {
 				wrapS = static_cast<TextureWrap>(iWrapS);
 				set = true;
 			}
-			if (texture->getTarget() != TextureTarget::Texture1D) {
+			if (target != TextureTarget::Texture1D) {
 				std::string name3 = getIdPrefix() + "TextureNode::WrapT";
 				if (addDropdown(name3.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapT)) {
 					wrapT = static_cast<TextureWrap>(iWrapT);
 					set = true;
 				}
 
-				if (texture->getTarget() != TextureTarget::Texture2D) {
+				if (target != TextureTarget::Texture2D) {
 					std::string name4 = getIdPrefix() + "TextureNode::WrapR";
 					if (addDropdown(name4.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapR)) {
 						wrapR = static_cast<TextureWrap>(iWrapR);
@@ -1234,6 +1301,30 @@ namespace editor {
 
 			if (set) {
 				texture->setWrapping(wrapS, wrapT, wrapR);
+			}
+
+			if (ImGui::TreeNode("Generate CubeMap")) {
+				ImGui::DragInt("Resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
+
+				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
+					auto cubeMapSPtr = TextureUtils::equirectangularToCubeMap(texture.get(), mCubeMapSize);
+					auto cubeMap = getEditor().getScene()->repository.insert(cubeMapSPtr);
+					cubeMap.setFakeUser(true);
+					setRepoName<Texture>(cubeMap.getResource(), (std::string(texture.getResource().getName()) + "CubeMap").c_str(), getEditor().getScene()->repository);
+				}
+				ImGui::TreePop();
+			}
+			if (ImGui::TreeNode("Generate Normal Map")) {
+				ImGui::DragInt("Width", &mNormalMapWidth, 0.01f, 0, INT_MAX);
+				ImGui::DragInt("Height", &mNormalMapHeight, 0.01f, 0, INT_MAX);
+
+				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
+					auto normalMapSPtr = TextureUtils::heightmapToNormalMapLocal(texture.get(), mNormalMapWidth, mNormalMapHeight);
+					auto normalMap = getEditor().getScene()->repository.insert(normalMapSPtr);
+					normalMap.setFakeUser(true);
+					setRepoName<Texture>(normalMap.getResource(), (std::string(texture.getResource().getName()) + "NormalMap").c_str(), getEditor().getScene()->repository);
+				}
+				ImGui::TreePop();
 			}
 		};
 

@@ -5,7 +5,7 @@
 #include "../graphics/core/Texture.h"
 #include "events/ContainerEvent.h"
 #include "ECS.h"
-#include "LightComponent.h"
+#include "LightProbeComponent.h"
 
 namespace se::app {
 
@@ -52,13 +52,13 @@ namespace se::app {
 		/** @copydoc ISystem::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent() */
 		virtual void onNewComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask
 		) override
 		{ tryCallC(&LightProbeSystem::onNewLightProbe, entity, mask); };
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent() */
 		virtual void onRemoveComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask
 		) override
@@ -70,19 +70,19 @@ namespace se::app {
 		 *			Graphics API context (probably thread 0) */
 		virtual void update() override;
 	private:
-		/** Function called when a LightProbe is added to an Entity
+		/** Function called when a LightProbeComponent is added to an Entity
 		 *
-		 * @param	entity the Entity that holds the LightProbe
-		 * @param	lightProbe a pointer to the new LightProbe */
-		void onNewLightProbe(Entity entity, LightProbe* lightProbe);
+		 * @param	entity the Entity that holds the LightProbeComponent
+		 * @param	lightProbe a pointer to the new LightProbeComponent */
+		void onNewLightProbe(Entity entity, LightProbeComponent* lightProbe);
 
-		/** Function called when a LightProbe is going to be removed from an
-		 * Entity
+		/** Function called when a LightProbeComponent is going to be removed
+		 * from an Entity
 		 *
-		 * @param	entity the Entity that holds the LightProbe
-		 * @param	lightProbe a pointer to the LightProbe that is going to be
-		 *			removed */
-		void onRemoveLightProbe(Entity entity, LightProbe* lightProbe);
+		 * @param	entity the Entity that holds the LightProbeComponent
+		 * @param	lightProbe a pointer to the LightProbeComponent that is
+		 *			going to be removed */
+		void onRemoveLightProbe(Entity entity, LightProbeComponent* lightProbe);
 
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered

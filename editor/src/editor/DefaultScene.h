@@ -29,9 +29,9 @@ namespace editor {
 		auto cubeMesh = scene.repository.insert<Mesh>(std::move(cubeMeshSPtr), "cube");
 		cubeMesh.setFakeUser();
 
-		auto pointLightSPtr = std::make_shared<LightSource>(LightSource::Type::Point);
-		pointLightSPtr->range = 20.0f;
-		pointLightSPtr->intensity = 10.0f;
+		auto pointLightSPtr = std::make_shared<LightSource>(scene.application.getEventManager(), LightSource::Type::Point);
+		pointLightSPtr->setIntensity(10.0f);
+		pointLightSPtr->setRange(20.0f);
 		auto pointLight = scene.repository.insert<LightSource>(std::move(pointLightSPtr), "pointLight");
 		pointLight.setFakeUser();
 
@@ -115,19 +115,21 @@ namespace editor {
 		programGBufParticles.setFakeUser();
 		programGBufParticles.getResource().setPath("res/shaders/vertexParticlesFaceCamera.glsl||res/shaders/fragmentGBufMaterial.glsl");
 
-		auto shadowRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowRendererMesh"));
+		auto shadowMeshProxyRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowMeshProxyRenderer"));
+		auto shadowTerrainProxyRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowTerrainProxyRenderer"));
+		auto gBufferRendererTerrain = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));
 		auto gBufferRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 		auto gBufferRendererParticles = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
 
-		auto stepShadow = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowRendererMesh), "stepShadow");
+		auto stepShadow = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadow");
 		stepShadow.setFakeUser();
 		stepShadow->addResource(programShadow);
 
-		auto stepShadowSkinning = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowRendererMesh), "stepShadowSkinning");
+		auto stepShadowSkinning = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadowSkinning");
 		stepShadowSkinning.setFakeUser();
 		stepShadowSkinning->addResource(programShadowSkinning);
 
-		auto stepShadowTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowRendererMesh), "stepShadowTerrain");
+		auto stepShadowTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowTerrainProxyRenderer), "stepShadowTerrain");
 		stepShadowTerrain.setFakeUser();
 		ShaderLoader::addHeightMapBindables(stepShadowTerrain, chessTexture, 2.0f, 0.5f, programShadowTerrain);
 
@@ -145,10 +147,10 @@ namespace editor {
 		SplatmapMaterial sMaterial;
 		sMaterial.splatmapTexture = chessTexture;
 		sMaterial.materials.push_back(BasicMaterial{
-			PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
+			PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), {}, 0.2f, 0.5f, {} },
 			{}, 1.0f
 		});
-		auto stepDefaultTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererMesh), "stepDefaultTerrain");
+		auto stepDefaultTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererTerrain), "stepDefaultTerrain");
 		stepDefaultTerrain.setFakeUser();
 		ShaderLoader::addSplatmapMaterialBindables(stepDefaultTerrain, sMaterial, programGBufSplatmap);
 		ShaderLoader::addHeightMapBindables(stepDefaultTerrain, chessTexture, 2.0f, 0.5f, programGBufSplatmap);

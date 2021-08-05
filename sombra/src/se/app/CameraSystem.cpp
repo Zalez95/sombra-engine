@@ -10,7 +10,7 @@
 #include "se/app/TerrainComponent.h"
 #include "se/app/ParticleSystemComponent.h"
 #include "se/app/LightComponent.h"
-#include "graphics/ShadowRenderSubGraph.h"
+#include "graphics/DeferredLightSubGraph.h"
 #include "graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
@@ -36,7 +36,7 @@ namespace se::app {
 
 	CameraSystem::CameraSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application), mCamera(nullptr),
-		mCameraUniformsUpdater(nullptr), mShadowRenderSubGraph(nullptr)
+		mCameraUniformsUpdater(nullptr)
 	{
 		mApplication.getEventManager()
 			.subscribe(this, Topic::Camera)
@@ -55,17 +55,18 @@ namespace se::app {
 		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
 		auto gBufferRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererTerrain"));
 		auto gBufferRendererParticles = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererParticles"));
+		auto deferredLightSubGraph = dynamic_cast<DeferredLightSubGraph*>(renderGraph.getNode("deferredLightSubGraph"));
 		auto forwardRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("forwardRendererMesh"));
-		auto lightStencilRenderer = dynamic_cast<graphics::Renderer*>(renderGraph.getNode("lightStencilRenderer"));
-		auto lightColorRenderer = dynamic_cast<graphics::Renderer*>(renderGraph.getNode("lightColorRenderer"));
-		mShadowRenderSubGraph = dynamic_cast<ShadowRenderSubGraph*>(renderGraph.getNode("shadowRenderSubGraph"));
+		auto deferredLightStencilRenderer = deferredLightSubGraph->getStencilRenderer();
+		auto deferredLightColorRenderer = deferredLightSubGraph->getColorRenderer();
 
 		mCameraUniformsUpdater = new CameraUniformsUpdater(
-			{ gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles, lightStencilRenderer, lightColorRenderer, forwardRendererMesh },
+			{ gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles, deferredLightStencilRenderer, deferredLightColorRenderer, forwardRendererMesh },
 			"uViewMatrix", "uProjectionMatrix"
 		);
 
 		mFrustumFilter = std::make_shared<graphics::FrustumFilter>();
+		deferredLightSubGraph->addFilter(mFrustumFilter);
 		forwardRendererMesh->addFilter(mFrustumFilter);
 		gBufferRendererTerrain->addFilter(mFrustumFilter);
 		gBufferRendererMesh->addFilter(mFrustumFilter);
@@ -132,16 +133,14 @@ namespace se::app {
 		glm::mat4 viewMatrix = (mCamera)? mCamera->getViewMatrix() : glm::mat4(1.0f);
 		glm::mat4 projectionMatrix = (mCamera)? mCamera->getProjectionMatrix() : glm::mat4(1.0f);
 		glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
-		glm::mat4 invViewProjectionMatrix = glm::inverse(viewProjectionMatrix);
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
 		mCameraUniformsUpdater->update(viewMatrix, projectionMatrix);
 
 		SOMBRA_DEBUG_LOG << "Updating the Renderers";
 		mFrustumFilter->updateFrustum(viewProjectionMatrix);
-		mShadowRenderSubGraph->setInvCameraViewProjectionMatrix(invViewProjectionMatrix);
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
@@ -170,7 +169,6 @@ namespace se::app {
 	void CameraSystem::onNewMesh(Entity entity, MeshComponent* mesh)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-			mCameraUniformsUpdater->addRenderable(mesh->get(i));
 			mesh->processRenderableShaders(i, [&](const auto& shader) {
 				mCameraUniformsUpdater->addRenderableTechnique(mesh->get(i), shader->getTechnique());
 			});
@@ -190,7 +188,6 @@ namespace se::app {
 
 	void CameraSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
 	{
-		mCameraUniformsUpdater->addRenderable(terrain->get());
 		terrain->processRenderableShaders([&](const auto& shader) {
 			mCameraUniformsUpdater->addRenderableTechnique(terrain->get(), shader->getTechnique());
 		});
@@ -207,7 +204,6 @@ namespace se::app {
 
 	void CameraSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
 	{
-		mCameraUniformsUpdater->addRenderable(particleSystem->get());
 		particleSystem->processRenderableShaders([&](const auto& shader) {
 			mCameraUniformsUpdater->addRenderableTechnique(particleSystem->get(), shader->getTechnique());
 		});
@@ -224,9 +220,9 @@ namespace se::app {
 
 	void CameraSystem::onNewLight(Entity entity, LightComponent* light)
 	{
-		mCameraUniformsUpdater->addRenderable(light->getLightRenderable());
-		light->getLightRenderable().processTechniques([&](const auto& technique) {
-			mCameraUniformsUpdater->addRenderableTechnique(light->getLightRenderable(), technique);
+		auto renderable = light->getRenderable().getRenderableMesh();
+		renderable.processTechniques([&](const auto& technique) {
+			mCameraUniformsUpdater->addRenderableTechnique(renderable, technique);
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " added successfully";
 	}
@@ -234,16 +230,20 @@ namespace se::app {
 
 	void CameraSystem::onRemoveLight(Entity entity, LightComponent* light)
 	{
-		mCameraUniformsUpdater->removeRenderable(light->getLightRenderable());
+		auto renderable = light->getRenderable().getRenderableMesh();
+		mCameraUniformsUpdater->removeRenderable(renderable);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
 	}
 
 
 	void CameraSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue(), true);
 		if (camera) {
 			mCamera = camera;
+			SOMBRA_INFO_LOG << "Entity " << event.getValue() << " setted as camera";
 		}
 		else {
 			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
@@ -253,11 +253,15 @@ namespace se::app {
 
 	void CameraSystem::onRMeshEvent(const RMeshEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 		if (mesh) {
 			switch (event.getOperation()) {
 				case RMeshEvent::Operation::Add:
-					mCameraUniformsUpdater->addRenderable(mesh->get(event.getRIndex()));
+					mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+						mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
+					});
 					break;
 				case RMeshEvent::Operation::Remove:
 					mCameraUniformsUpdater->removeRenderable(mesh->get(event.getRIndex()));
@@ -269,6 +273,8 @@ namespace se::app {
 
 	void CameraSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
 			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
 			if (mesh) {
@@ -292,6 +298,10 @@ namespace se::app {
 				auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(event.getEntity(), true);
 				renderable = &particleSystem->get();
 			}
+			else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Light) {
+				auto [light] = mEntityDatabase.getComponents<LightComponent>(event.getEntity(), true);
+				renderable = &light->getRenderable().getRenderableMesh();
+			}
 
 			if (renderable) {
 				switch (event.getOperation()) {
@@ -309,6 +319,8 @@ namespace se::app {
 
 	void CameraSystem::onShaderEvent(const ShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		switch (event.getOperation()) {
 			case ShaderEvent::Operation::Add:
 				mCameraUniformsUpdater->onAddTechniquePass(event.getShader()->getTechnique(), event.getStep()->getPass());

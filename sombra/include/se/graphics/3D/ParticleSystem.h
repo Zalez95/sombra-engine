@@ -29,7 +29,15 @@ namespace se::graphics {
 		PrimitiveType mPrimitiveType;
 
 		/** The number of Particle instances to draw */
-		std::size_t mNumInstances;
+		std::size_t mNumInstances = 0;
+
+		/** The minimum position of the ParticleSystem at each direction in
+		 * world space */
+		glm::vec3 mMinimum = {};
+
+		/** The maximum position of the ParticleSystem at each direction in
+		 * world space */
+		glm::vec3 mMaximum = {};
 
 	public:		// Functions
 		/** Creates a new ParticleSystem from the given data
@@ -40,7 +48,7 @@ namespace se::graphics {
 		ParticleSystem(
 			MeshSPtr mesh = nullptr,
 			PrimitiveType primitiveType = PrimitiveType::Triangle
-		) : mPrimitiveType(primitiveType), mNumInstances(0) { setMesh(mesh); };
+		) : mPrimitiveType(primitiveType) { setMesh(mesh); };
 		ParticleSystem(const ParticleSystem& other);
 		ParticleSystem(ParticleSystem&& other) = default;
 
@@ -50,7 +58,6 @@ namespace se::graphics {
 		/** Assignment operator */
 		ParticleSystem& operator=(const ParticleSystem& other);
 		ParticleSystem& operator=(ParticleSystem&& other) = default;
-
 
 		/** @return	the Mesh pointed by the ParticleSystem */
 		MeshSPtr getMesh() const { return mMesh; };
@@ -90,6 +97,10 @@ namespace se::graphics {
 		 * @param	numInstances the new number of Particle instances */
 		void setNumInstances(std::size_t numInstances)
 		{ mNumInstances = numInstances; };
+
+		/** @copydoc Renderable3D::getBounds() */
+		virtual std::pair<glm::vec3, glm::vec3> getBounds() const override
+		{ return { mMinimum, mMaximum }; };
 
 		/** Sets the bounds of the ParticleSystem
 		 *

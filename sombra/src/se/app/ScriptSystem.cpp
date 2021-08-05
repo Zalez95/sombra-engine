@@ -52,7 +52,7 @@ namespace se::app {
 			true
 		);
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
@@ -73,12 +73,14 @@ namespace se::app {
 
 	void ScriptSystem::onKeyEvent(const KeyEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mUserInput.keys[event.getKeyCode()] = (event.getState() != KeyEvent::State::Released);
 	}
 
 
 	void ScriptSystem::onMouseMoveEvent(const MouseMoveEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mUserInput.mouseX = static_cast<float>(event.getX());
 		mUserInput.mouseY = static_cast<float>(event.getY());
 	}
@@ -86,6 +88,7 @@ namespace se::app {
 
 	void ScriptSystem::onMouseScrollEvent(const MouseScrollEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mUserInput.scrollOffsetX = static_cast<float>(event.getXOffset());
 		mUserInput.scrollOffsetY = static_cast<float>(event.getYOffset());
 	}
@@ -93,12 +96,14 @@ namespace se::app {
 
 	void ScriptSystem::onMouseButtonEvent(const MouseButtonEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mUserInput.mouseButtons[event.getButtonCode()] = (event.getState() == MouseButtonEvent::State::Pressed);
 	}
 
 
 	void ScriptSystem::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
 		mUserInput.windowWidth = static_cast<float>(event.getWidth());
 		mUserInput.windowHeight = static_cast<float>(event.getHeight());
 	}

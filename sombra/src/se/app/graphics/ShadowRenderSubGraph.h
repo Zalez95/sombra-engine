@@ -1,14 +1,12 @@
 #ifndef SHADOW_RENDER_SUB_GRAPH_H
 #define SHADOW_RENDER_SUB_GRAPH_H
 
-#include "se/graphics/Renderer.h"
 #include "se/graphics/RenderGraph.h"
-#include "se/graphics/FBClearNode.h"
 #include "se/graphics/3D/RendererMesh.h"
 #include "se/graphics/3D/RendererTerrain.h"
 #include "se/graphics/3D/FrustumFilter.h"
+#include "se/app/graphics/RenderableLight.h"
 #include "IViewProjectionUpdater.h"
-#include "MergeShadowsNode.h"
 
 namespace se::app {
 
@@ -19,24 +17,25 @@ namespace se::app {
 	class ShadowUniformsUpdater : public IViewProjectionUpdater
 	{
 	private:	// Attributes
-		/** The renderers of the Passes that can be updated */
-		std::vector<graphics::Renderer*> mRenderers;
+		/** The ShadowRenderSubGraph used by the Proxies */
+		const graphics::RenderNode* mRenderNode;
 
 	public:		// Functions
 		/** Creates a new ShadowUniformsUpdater
 		 *
 		 * @param	viewMatUniformName the name of the View matrix uniform
 		 *			variable
-		* @param	projectionMatUniform Name te name of the Projection matrix
-		*			uniform variable */
+		* @param	projectionMatUniform Name te name of the Projection
+		*			matrix uniform variable
+		* @param	renderNode the RenderNode of the Passes tha can be
+		*			updated */
 		ShadowUniformsUpdater(
-			const char* viewMatUniformName, const char* projectionMatUniformName
-		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName)
-		{};
-
-		/** Sets the Renderers of the Passes that can be updated */
-		void setRenderers(const std::vector<graphics::Renderer*>& renderers)
-		{ mRenderers = renderers; };
+			const char* viewMatUniformName,
+			const char* projectionMatUniformName,
+			const graphics::RenderNode* renderNode
+		) : IViewProjectionUpdater(
+				viewMatUniformName, projectionMatUniformName
+			), mRenderNode(renderNode) {};
 
 		/** @copydoc IViewProjectionUpdater::shouldAddUniforms() */
 		virtual bool shouldAddUniforms(const PassSPtr& pass) const override;
@@ -46,137 +45,108 @@ namespace se::app {
 	/**
 	 * Class ShadowRenderSubGraph, it's the BindableRenderNode used for
 	 * rendering the Shadows. This RenderNode can't be attached to the Passes,
-	 * for that you must use it conjuction with @see ShadowRendererMesh and
-	 * @see ShadowRendererTerrain. It has a Framebuffer "target" input and
-	 * output where the shadows can be attached and retrieved from the Camera
-	 * perspective. It also has "position" and "normal" inputs where the
-	 * position and normal Textures must be attached. These textures are the
-	 * one rendered from the camera perspective and they're used for
-	 * calculating the final shadow map.
+	 * for that you must use it conjuction with @see ShadowMeshProxyRenderer and
+	 * @see ShadowTerrainProxyRenderer. It only has a "shadow" Texture output.
+	 * This subgraph internally has the following structure:
+	 *      [ resources ]
+	 *            |shadowTarget
+	 *            |
+	 *            |input
+	 *        [fbClear]
+	 *            |output
+	 *            |
+	 *            |target
+	 * [shadowTerrainRenderer]
+	 *            |target
+	 *            |
+	 *            |target
+	 *   [shadowMeshRenderer]
 	 */
 	class ShadowRenderSubGraph : public graphics::BindableRenderNode
 	{
 	private:	// Nested types
-		class StartShadowNode;
-		class EndShadowNode;
-
-		/** Struct ShadowRenderSubGraph, holds all the variables, resources and
-		 * RenderNodes used for rendering a single Shadow */
-		struct Shadow
+		struct RenderQueueData
 		{
-			bool active = false;
-
-			glm::mat4 viewMatrix = glm::mat4(1.0f);
-			glm::mat4 projectionMatrix = glm::mat4(1.0f);
-
-			StartShadowNode* startNode = nullptr;
-			graphics::FBClearNode* clearFB = nullptr;
-			graphics::RendererMesh* rendererMesh = nullptr;
-			graphics::RendererTerrain* rendererTerrain = nullptr;
-			graphics::FrustumFilter* frustum = nullptr;
+			graphics::Renderable* renderable = nullptr;
+			graphics::Pass* pass = nullptr;
 		};
 
 	private:	// Attributes
-		/** The graph used by the RenderNode */
+		/** The RenderGraph used for drawing the Shadows */
 		graphics::RenderGraph mGraph;
 
-		/** The MergeShadowsNode used in @see mGraph */
-		MergeShadowsNode* mMergeShadowsNode;
+		/** A pointer to the resources node of @see mGraph */
+		graphics::BindableRenderNode* mResources = nullptr;
 
-		/** The bindable index of the target framebuffer used for rendering the
+		/** A pointer to the RendererTerrain of @see mGraph */
+		graphics::RendererTerrain* mShadowTerrainRenderer = nullptr;
+
+		/** A pointer to the RendererMesh of @see mGraph */
+		graphics::RendererMesh* mShadowMeshRenderer = nullptr;
+
+		/** The frustum used for filtering Renderables by the Renderers */
+		graphics::FrustumFilter* mRenderersFrustum = nullptr;
+
+		/** The index of the ShadowMap Bindable resource in @see mResources */
+		std::size_t mShadowTargetBindableIndex;
+
+		/** The index of the ShadowMap Bindable output */
+		std::size_t mShadowBindableIndex;
+
+		/** The Render queue used for drawing the RenderableTerrains to the
 		 * Shadows */
-		std::size_t mTargetBindableIndex;
+		std::vector<RenderQueueData> mTerrainRenderQueue;
 
-		/** The bindable index of the position texture used for rendering
-		 * the Shadows */
-		std::size_t mPositionTextureBindableIndex;
-
-		/** The bindable index of the normal texture used for rendering
-		 * the Shadows */
-		std::size_t mNormalTextureBindableIndex;
-
-		/** All the Shadows to render */
-		std::array<Shadow, MergeShadowsNode::kMaxShadows> mShadows;
+		/** The Render queue used for drawing the RenderableMeshes to the
+		 * Shadows */
+		std::vector<RenderQueueData> mMeshRenderQueue;
 
 		/** The IViewProjectionUpdater used for updating the view and
 		 * projection matrix uniform variables of the Passes */
-		ShadowUniformsUpdater* mShadowUniformsUpdater;
+		ShadowUniformsUpdater mShadowUniformsUpdater;
+
+		/** The width and height of the viewport */
+		std::size_t mWidth, mHeight;
+
+		/** A pointer to the RenderableLight used for rendering the Shadows */
+		const RenderableLight* mRenderableLight = nullptr;
 
 	public:		// Functions
 		/** Creates a new ShadowRenderSubGraph
 		 *
-		 * @param	name the name of the new ShadowRenderSubGraph
-		 * @param	repository the Repository that holds the Resources */
-		ShadowRenderSubGraph(const char* name, Repository& repository);
+		 * @param	name the name of the new ShadowRenderSubGraph */
+		ShadowRenderSubGraph(const std::string& name);
 
-		/** Class destructor */
-		virtual ~ShadowRenderSubGraph();
+		/** Sets the resolution of the viewport after the Shadows have been
+		 * drawn
+		 *
+		 * @param	width the new width of the viewport
+		 * @param	height the new height of the viewport */
+		void setResolution(std::size_t width, std::size_t height)
+		{ mWidth = width; mHeight = height; };
 
-		/** @copydoc RenderNode::execute()
-		 * @note	the viewport resolution will be changed after calling this
-		 *			function to @see setResolution */
-		virtual void execute() override;
-
-		/** @copydoc BindableRenderNode::setBindable() */
-		virtual void setBindable(
-			std::size_t bindableIndex, const BindableSPtr& bindable
-		) override;
-
-		/** @return	a pointer to the ShadowUniformsUpdater used by the
-		 *			ShadowRenderSubGraph to update the view and projection
-		 *			matrices uniform variables */
-		ShadowUniformsUpdater* getShadowUniformsUpdater() const
+		/** @return	a pointer to the ShadowUniformsUpdater of the
+		 *			ShadowRenderSubGraph */
+		ShadowUniformsUpdater& getShadowUniformsUpdater()
 		{ return mShadowUniformsUpdater; };
 
-		/** Sets the inverse view projection matrix of the camera
+		/** Prepares the ShadowRenderSubGraph for a new render
 		 *
-		 * @param	invVPMatrix the new inverse Camera view projection matrix */
-		void setInvCameraViewProjectionMatrix(const glm::mat4& invVPMatrix);
+		 * @param	renderableLight the RenderableLight used for rendering the
+		 *			Shadows
+		 * @note	if the renderableLight doesn't casts shadows, the
+		 *			ShadowRenderSubGraph won't do anything on @see execute */
+		void startRender(const RenderableLight& renderableLight);
 
-		/** Sets the resolution used for rendering to the final Shadow
-		 * framebuffer
-		 *
-		 * @param	width the width of the viewport
-		 * @param	height the height of the viewport */
-		void setCameraResolution(std::size_t width, std::size_t height);
+		/** @copydoc graphics::RenderNode::execute() */
+		virtual void execute() override;
 
-		/** Adds a new Shadow to the ShadowRenderSubGraph
-		 *
-		 * @param	resolution the resolution used for the shadow maps
-		 * @param	viewMatrix the view matrix used for rendering the shadow
-		 * @param	projectionMatrix the projection matrix used for rendering
-		 *			the shadow
-		 * @return	the index of the shadow, if it can't be added more textures
-		 *			this index will be larger than
-		 *			@see MergeShadowsNode::kMaxShadows */
-		std::size_t addShadow(
-			std::size_t resolution,
-			const glm::mat4& viewMatrix = glm::mat4(1.0f),
-			const glm::mat4& projectionMatrix = glm::mat4(1.0f)
-		);
+		/** Clears the ShadowRenderSubGraph after a render */
+		void endRender();
 
-		/** Changes the view projection matrices of the shadow map of the given
-		 * shadow
-		 *
-		 * @param	shadowIndex the index of the shadow to update
-		 * @param	viewMatrix the view matrix used for rendering the shadow
-		 * @param	projectionMatrix the projection matrix used for rendering
-		 *			the shadow */
-		void setShadowVPMatrix(
-			std::size_t shadowIndex,
-			const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
-		);
-
-		/** Changes the resolution of the shadow map of the given shadow
-		 *
-		 * @param	shadowIndex the index of the shadow to update
-		 * @param	resolution the new resolution of the shadow map */
-		void setShadowResolution(std::size_t shadowIndex, std::size_t resolution);
-
-		/** Removes the given Shadow from the ShadowRenderSubGraph
-		 *
-		 * @param	shadowIndex the index of the shadow to update */
-		void removeShadow(std::size_t shadowIndex);
+		/** Clears the Queues of the ShadowRenderSubGraph after all the Renders
+		 * of a frame have been done */
+		void clearQueues();
 
 		/** Submits a Renderable and it's pass to the ShadowRenderSubGraph's
 		 * RendererTerrains
@@ -225,63 +195,69 @@ namespace se::app {
 		/** Class destructor */
 		~ShadowProxyRenderer() = default;
 
+		/** @return the ShadowRenderSubGraph of the ShadowProxyRenderer */
+		const ShadowRenderSubGraph& getShadowRenderSubGraph()
+		{ return mShadowRenderSubGraph; };
+
 		/** @copydoc graphics::RenderNode::execute() */
 		virtual void execute() override {};
 	protected:
-		/** @copydoc graphics::Renderer3D::sortQueue() */
+		/** @copydoc graphics::Renderer::sortQueue() */
 		virtual void sortQueue() override {};
 
-		/** @copydoc graphics::Renderer3D::render() */
+		/** @copydoc graphics::Renderer::render() */
 		virtual void render() override {};
 
-		/** @copydoc graphics::Renderer3D::clearQueue() */
+		/** @copydoc graphics::Renderer::clearQueue() */
 		virtual void clearQueue() override {};
 	};
 
 
 	/**
-	 * Class ShadowRendererMesh, it's a ShadowProxyRenderer used for
-	 * submitting RenderableMeshes
+	 * Class ShadowTerrainProxyRenderer, it's a ShadowProxyRenderer used for
+	 * submitting RenderableTerrains to the ShadowTerrainProxyRenderer of the
+	 * ShadowProxyRenderer
 	 */
-	class ShadowRendererMesh : public ShadowProxyRenderer
+	class ShadowTerrainProxyRenderer : public ShadowProxyRenderer
 	{
 	public:		// Functions
-		/** Creates a new ShadowRendererMesh
+		/** Creates a new ShadowTerrainProxyRenderer
 		 *
-		 * @param	name the name of the new ShadowRendererMesh
+		 * @param	name the name of the new ShadowTerrainProxyRenderer
 		 * @param	subGraph the ShadowRenderSubGraph that will be used for
 		 *			rendering the Shadows */
-		ShadowRendererMesh(
+		ShadowTerrainProxyRenderer(
 			const std::string& name, ShadowRenderSubGraph& subGraph
 		) : ShadowProxyRenderer(name, subGraph) {};
 
-		/** @copydoc graphics::Renderer3D::submit() */
+		/** @copydoc graphics::Renderer::submit() */
 		virtual void submit(
 			graphics::Renderable& renderable, graphics::Pass& pass
-		) { mShadowRenderSubGraph.submitMesh(renderable, pass); };
+		) override { mShadowRenderSubGraph.submitTerrain(renderable, pass); };
 	};
 
 
 	/**
-	 * Class ShadowRendererTerrain, it's a ShadowProxyRenderer used for
-	 * submitting RenderableTerrains
+	 * Class ShadowMeshProxyRenderer, it's a ShadowProxyRenderer used for
+	 * submitting RenderableTerrains to the ShadowMeshProxyRenderer of the
+	 * ShadowProxyRenderer
 	 */
-	class ShadowRendererTerrain : public ShadowProxyRenderer
+	class ShadowMeshProxyRenderer : public ShadowProxyRenderer
 	{
 	public:		// Functions
-		/** Creates a new ShadowRendererTerrain
+		/** Creates a new ShadowMeshProxyRenderer
 		 *
-		 * @param	name the name of the new ShadowRendererTerrain
+		 * @param	name the name of the new ShadowMeshProxyRenderer
 		 * @param	subGraph the ShadowRenderSubGraph that will be used for
 		 *			rendering the Shadows */
-		ShadowRendererTerrain(
+		ShadowMeshProxyRenderer(
 			const std::string& name, ShadowRenderSubGraph& subGraph
 		) : ShadowProxyRenderer(name, subGraph) {};
 
-		/** @copydoc graphics::Renderer3D::submit() */
+		/** @copydoc graphics::Renderer::submit() */
 		virtual void submit(
 			graphics::Renderable& renderable, graphics::Pass& pass
-		) { mShadowRenderSubGraph.submitTerrain(renderable, pass); };
+		) override { mShadowRenderSubGraph.submitMesh(renderable, pass); };
 	};
 
 }

@@ -54,6 +54,29 @@ namespace se::app {
 		/** @return	a pointer to the RenderableShaderStep to notify */
 		const RenderableShaderStepSPtr& getStep() const
 		{ return mStep; };
+	private:
+		/** Prints the operation to the given stream
+		 *
+		 * @param	os the stream to print to
+		 * @param	o the operation to print
+		 * @return	the stream */
+		friend constexpr std::ostream& operator<<(
+			std::ostream& os, const Operation& o
+		) {
+			switch (o) {
+				case Operation::Add:	return os << "Operation::Add";
+				case Operation::Remove:	return os << "Operation::Remove";
+				default:				return os;
+			}
+		};
+
+		/** @copydoc Event::printTo() */
+		virtual void printTo(std::ostream& os) const override
+		{
+			os	<< "{ kTopic : " << kTopic
+				<< ", mRenderableShader : " << mRenderableShader.get()
+				<< ", mStep : " << mStep.get() << " }";
+		};
 	};
 
 }

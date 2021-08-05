@@ -19,10 +19,10 @@ namespace se::app {
 		TextInput,			///< Notifies new input code points
 		Collision,			///< Notifies collision detection events
 		Camera,				///< Camera change events
-		Shadow,				///< Shadow LightSource change events
 		RMesh,				///< MeshComponent RMesh add/remove
 		RShader,			///< Renderable shader update
 		Shader,				///< Shader change
+		LightSource,		///< LightSource change
 		Application,		///< Reserved for client code events
 		NumTopics			///< Total number of events
 	};
@@ -47,10 +47,10 @@ namespace se::app {
 			case Topic::TextInput:			return os << "Topic::TextInput";
 			case Topic::Collision:			return os << "Topic::Collision";
 			case Topic::Camera:				return os << "Topic::Camera";
-			case Topic::Shadow:				return os << "Topic::Shadow";
 			case Topic::RMesh:				return os << "Topic::RMesh";
 			case Topic::RShader:			return os << "Topic::RShader";
 			case Topic::Shader:				return os << "Topic::Shader";
+			case Topic::LightSource:		return os << "Topic::LightSource";
 			case Topic::Application:		return os << "Topic::Application";
 			default:						return os;
 		}

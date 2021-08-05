@@ -23,7 +23,7 @@ namespace se::app {
 
 	void AnimationSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Start";
+		SOMBRA_DEBUG_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
 		mEntityDatabase.iterateComponents<TransformsComponent, AnimationComponent>(
@@ -78,7 +78,7 @@ namespace se::app {
 			true
 		);
 
-		SOMBRA_INFO_LOG << "End";
+		SOMBRA_DEBUG_LOG << "End";
 	}
 
 // Private functions

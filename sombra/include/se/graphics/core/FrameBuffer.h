@@ -70,7 +70,7 @@ namespace se::graphics {
 		 * @param	level specifies the mip map level of the texture to attach
 		 *			to the framebuffer
 		 * @param	layer specifies the layer of a 2-dimensional image within a
-		 *			Texture3D
+		 *			Texture3D or a Texture2DArray
 		 * @param	orientation which face of the CubeMap is going to be set
 		 *			(0 = positive X, 1 = negative X, 2 = positive Y,
 		 *			3 = negative Y, 4 = positive Z, 5 = negative Z)

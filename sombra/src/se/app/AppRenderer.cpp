@@ -38,14 +38,16 @@ namespace se::app {
 
 	void AppRenderer::render()
 	{
-		SOMBRA_INFO_LOG << "Render start";
+		SOMBRA_DEBUG_LOG << "Render start";
 		mApplication.getExternalTools().graphicsEngine->render();
-		SOMBRA_INFO_LOG << "Render end";
+		SOMBRA_DEBUG_LOG << "Render end";
 	}
 
 // Private functions
 	void AppRenderer::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto width = static_cast<std::size_t>(event.getWidth());
 		auto height = static_cast<std::size_t>(event.getHeight());
 		graphics::GraphicsOperations::setViewport(0, 0, width, height);
@@ -54,6 +56,8 @@ namespace se::app {
 
 	void AppRenderer::onRendererResolutionEvent(const RendererResolutionEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto graphicsEngine = mApplication.getExternalTools().graphicsEngine;
 		if (auto graph = dynamic_cast<AppRenderGraph*>(&graphicsEngine->getRenderGraph())) {
 			auto width = static_cast<std::size_t>(event.getWidth());

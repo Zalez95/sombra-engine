@@ -73,7 +73,7 @@ namespace se::app {
 
 		mCameraUpdated = false;
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
@@ -120,15 +120,18 @@ namespace se::app {
 
 	void TerrainSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		mCameraEntity = event.getValue();
 		mCameraUpdated = true;
-
 		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 
 
 	void TerrainSystem::onRenderableShaderEvent(const RenderableShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		auto itEntity = mEntityUniforms.find(event.getEntity());
 		if ((itEntity == mEntityUniforms.end())
 			|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Terrain)
@@ -153,6 +156,8 @@ namespace se::app {
 
 	void TerrainSystem::onShaderEvent(const ShaderEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		mEntityDatabase.iterateComponents<TerrainComponent>(
 			[&](Entity entity, TerrainComponent* terrain) {
 				bool hasShader = false;

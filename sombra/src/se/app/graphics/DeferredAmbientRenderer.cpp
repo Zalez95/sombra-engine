@@ -43,7 +43,6 @@ namespace se::app {
 		mViewPosition = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", mProgram.get(), glm::vec3(0.0f));
 
 		addBindable(mProgram.get());
-		addBindable(std::make_shared<graphics::SetDepthMask>(false));
 		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
 		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
 		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
@@ -67,12 +66,16 @@ namespace se::app {
 
 	void DeferredAmbientRenderer::execute()
 	{
+		graphics::GraphicsOperations::setDepthMask(false);
+
 		bind();
 		mPlane->bind();
 		graphics::GraphicsOperations::drawIndexed(
 			graphics::PrimitiveType::Triangle,
 			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
 		);
+
+		graphics::GraphicsOperations::setDepthMask(true);
 	}
 
 }

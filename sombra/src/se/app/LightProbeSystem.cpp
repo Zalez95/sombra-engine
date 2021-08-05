@@ -13,7 +13,7 @@ namespace se::app {
 		mLightProbeEntity(kNullEntity), mCameraEntity(kNullEntity)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
-		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightProbe>());
+		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightProbeComponent>());
 
 		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		mDeferredAmbientRenderer = dynamic_cast<DeferredAmbientRenderer*>(renderGraph.getNode("deferredAmbientRenderer"));
@@ -39,7 +39,7 @@ namespace se::app {
 
 		// Update light probe
 		if (mLightProbeEntity != kNullEntity) {
-			auto [lightProbe] = mEntityDatabase.getComponents<LightProbe>(mLightProbeEntity, true);
+			auto [lightProbe] = mEntityDatabase.getComponents<LightProbeComponent>(mLightProbeEntity, true);
 			if (lightProbe->irradianceMap && lightProbe->prefilterMap
 				&& ((mLastIrradianceTexture != lightProbe->irradianceMap.get())
 					|| (mLastPrefilterTexture != lightProbe->prefilterMap.get()))
@@ -64,18 +64,18 @@ namespace se::app {
 			}
 		}
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
-	void LightProbeSystem::onNewLightProbe(Entity entity, LightProbe* lightProbe)
+	void LightProbeSystem::onNewLightProbe(Entity entity, LightProbeComponent* lightProbe)
 	{
 		mLightProbeEntity = entity;
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
 	}
 
 
-	void LightProbeSystem::onRemoveLightProbe(Entity entity, LightProbe* lightProbe)
+	void LightProbeSystem::onRemoveLightProbe(Entity entity, LightProbeComponent* lightProbe)
 	{
 		if (mLightProbeEntity == entity) {
 			mLightProbeEntity = kNullEntity;
@@ -97,8 +97,9 @@ namespace se::app {
 
 	void LightProbeSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
-		mCameraEntity = event.getValue();
+		SOMBRA_INFO_LOG << event;
 
+		mCameraEntity = event.getValue();
 		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 

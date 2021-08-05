@@ -24,6 +24,14 @@ namespace se::graphics {
 		/** The maximum height of the vertices of the terrain */
 		float mMaxHeight;
 
+		/** The minimum position of the RenderableTerrain at each direction in
+		 * world space */
+		glm::vec3 mMinimum = {};
+
+		/** The maximum position of the RenderableTerrain at each direction in
+		 * world space */
+		glm::vec3 mMaximum = {};
+
 	public:		// Functions
 		/** Creates a new RenderableTerrain
 		 *
@@ -57,6 +65,10 @@ namespace se::graphics {
 		 * @param	maxHeight the new maximum height of the vertices of the
 		 *			terrain */
 		void setMaxHeight(float maxHeight);
+
+		/** @copydoc Renderable3D::getBounds() */
+		virtual std::pair<glm::vec3, glm::vec3> getBounds() const override
+		{ return { mMinimum, mMaximum }; };
 
 		/** @return	the size of the RenderableTerrain in the XZ plane */
 		float getSize() const { return mQuadTree.getSize(); };

@@ -92,7 +92,7 @@ namespace se::app {
 
 	void InputSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Updating the InputSystem. EventQueue size = " << mEventQueue.size();
+		SOMBRA_DEBUG_LOG << "Updating the InputSystem. EventQueue size = " << mEventQueue.size();
 
 		auto& eventManager = mApplication.getEventManager();
 		while (!mEventQueue.empty()) {
@@ -102,12 +102,14 @@ namespace se::app {
 			eventManager.publish(currentEvent);
 		}
 
-		SOMBRA_INFO_LOG << "InputSystem updated";
+		SOMBRA_DEBUG_LOG << "InputSystem updated";
 	}
 
 // Private functions
 	void InputSystem::onSetMousePosEvent(const SetMousePosEvent& event)
 	{
+		SOMBRA_INFO_LOG << event;
+
 		mApplication.getExternalTools().windowManager->setMousePosition(event.getX(), event.getY());
 		mEventQueue.push_back(new MouseMoveEvent(event.getX(), event.getY()));
 	}

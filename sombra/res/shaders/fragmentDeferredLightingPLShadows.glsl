@@ -8,7 +8,24 @@ const uint	MAX_LIGHTS			= 32u;
 const uint	DIRECTIONAL_LIGHT	= 0u;
 const uint	POINT_LIGHT			= 1u;
 const uint	SPOT_LIGHT			= 2u;
-
+const float	MAX_SHADOW_BIAS		= 0.005;
+const float	MIN_SHADOW_BIAS		= 0.001;
+const uint	CUBE_SIDES			= 6u;
+const vec3 FACE_DIRECTIONS[CUBE_SIDES] = vec3[](
+	vec3( 1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),
+	vec3( 0.0, 1.0, 0.0), vec3( 0.0,-1.0, 0.0),
+	vec3( 0.0, 0.0, 1.0), vec3( 0.0, 0.0,-1.0)
+);
+const vec2 POISSON_DISK[16] = vec2[](
+	vec2(0.282571, 0.023957), vec2(0.792657, 0.945738),
+	vec2(0.922361, 0.411756), vec2(0.165838, 0.552995),
+	vec2(0.566027, 0.216651), vec2(0.335398, 0.783654),
+	vec2(0.0190741, 0.318522), vec2(0.647572, 0.581896),
+	vec2(0.916288, 0.0120243), vec2(0.0278329, 0.866634),
+	vec2(0.398053, 0.4214), vec2(0.00289926, 0.051149),
+	vec2(0.517624, 0.989044), vec2(0.963744, 0.719901),
+	vec2(0.76867, 0.018128), vec2(0.684194, 0.167302)
+);
 
 // ____ DATATYPES ____
 struct BaseLight
@@ -30,11 +47,13 @@ in vec3 vsPosition;
 uniform mat4 uModelMatrix;
 uniform vec3 uViewPosition;
 uniform BaseLight uBaseLight;
+uniform mat4 uShadowVPMatrices[CUBE_SIDES];
 
 uniform sampler2D uPosition;
 uniform sampler2D uNormal;
 uniform sampler2D uAlbedo;
 uniform sampler2D uMaterial;
+uniform samplerCube uShadow;
 
 // Output data
 layout (location = 0) out vec4 oColor;
@@ -118,6 +137,44 @@ vec4 calculateRadiance(vec3 lightDirection, float lightDistance, vec3 lightForwa
 }
 
 
+/** Checks wether the current fragment is in shadow or not */
+float calculateShadow(vec3 position, vec3 normal, vec3 lightDirection)
+{
+	// Calculate the shadow bias
+	float shadowBias = max(MAX_SHADOW_BIAS * (1.0 - dot(normal, lightDirection)), MIN_SHADOW_BIAS);
+
+	// Find the closest CubeMap side
+	float maxDot = -1.0;
+	uint iVPMatrix = 0u;
+	for (uint i = 0u; i < CUBE_SIDES; ++i) {
+		float curDot = dot(-lightDirection, FACE_DIRECTIONS[i]);
+		if (curDot > maxDot) {
+			maxDot = curDot;
+			iVPMatrix = i;
+		}
+	}
+
+	// Calculate the current shadow depth
+	vec4 shadowPosition = uShadowVPMatrices[iVPMatrix] * vec4(position, 1.0);
+	vec3 shadowTexCoord = shadowPosition.xyz / shadowPosition.w;	// Perspective divide
+	shadowTexCoord = shadowTexCoord * 0.5 + 0.5;					// [0,1] range
+	float currentDepth = shadowTexCoord.z;
+
+	// Compare the current depth with the shadow map using PCF with Poisson Sampling
+	float shadow = 0.0;
+	for (uint i = 0u; i < 4u; ++i) {
+		uint randomIndex = uint(16.0 * rand(i * gl_FragCoord.xy)) % 16u;	// This always returns the same value for a screen coordinate
+		vec3 directionOffset = normalize(vec3(POISSON_DISK[randomIndex], 1.0)) / 40.0;
+		float closestDepth = texture(uShadow, -lightDirection + directionOffset).r;
+
+		bool inShadow = (currentDepth <= 1.0) && (currentDepth - shadowBias > closestDepth);
+		shadow += float(inShadow) * 0.25;
+	}
+
+	return shadow;
+}
+
+
 /* Calculates the color of the current fragment point with the current light
  * of the scene */
 vec4 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, float roughness)
@@ -132,17 +189,11 @@ vec4 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 	vec3 lightForward		= normalize(mat3(uModelMatrix) * vec3(0.0, 0.0,-1.0));	// Point towards -Z so it matches the camera direction
 
 	// Calculate the light direction and distance from the current point
-	vec3 lightDirection1 = -lightForward;
-	float lightDistance1 = 1.0;
+	vec3 lightDirection = lightPosition - position;
+	float lightDistance = length(lightDirection);
+	lightDirection /= lightDistance;
 
-	vec3 lightDirection2 = lightPosition - position;
-	float lightDistance2 = length(lightDirection2);
-	lightDirection2 /= lightDistance2;
-
-	bool isDirectional = uBaseLight.type == DIRECTIONAL_LIGHT;
-	vec3 lightDirection = (lightDirection1 * float(isDirectional)) + (lightDirection2 * float(!isDirectional));
-	float lightDistance = (lightDistance1 * float(isDirectional)) + (lightDistance2 * float(!isDirectional));
-	if (isDirectional || (lightDistance < uBaseLight.range)) {
+	if (lightDistance < uBaseLight.range) {
 		// Calculate the light radiance
 		vec4 radiance = calculateRadiance(lightDirection, lightDistance, lightForward);
 
@@ -163,6 +214,9 @@ vec4 calculateLighting(vec3 position, vec3 normal, vec3 albedo, float metallic, 
 		// Add the current light color if it's being lit
 		vec3 diffuseRatio = (vec3(1.0) - f) * (1.0 - metallic);
 		lightColor = vec4(diffuseRatio * diffuseColor + specularColor, 1.0) * radiance * normalDotLight;
+
+		// Calculate shadow mapping
+		lightColor *= (1.0 - calculateShadow(position, normal, lightDirection));
 	}
 
 	return lightColor;

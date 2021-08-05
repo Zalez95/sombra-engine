@@ -16,14 +16,22 @@ namespace se::graphics {
 		using MeshSPtr = std::shared_ptr<Mesh>;
 
 	private:	// Attributes
-		/** The matrix that transforms from local space to world space */
-		glm::mat4 mModelMatrix = glm::mat4(1.0f);
-
 		/** The Mesh of the RenderableMesh */
 		MeshSPtr mMesh;
 
 		/** The type of primitive used for rendering @see mMesh */
 		PrimitiveType mPrimitiveType;
+
+		/** The minimum position of the RenderableMesh at each direction in
+		 * world space */
+		glm::vec3 mMinimum = {};
+
+		/** The maximum position of the RenderableMesh at each direction in
+		 * world space */
+		glm::vec3 mMaximum = {};
+
+		/** The matrix that transforms from local space to world space */
+		glm::mat4 mModelMatrix = glm::mat4(1.0f);
 
 	public:		// Functions
 		/** Creates a new RenderableMesh
@@ -58,6 +66,10 @@ namespace se::graphics {
 		 *			RenderableMesh
 		 * @return	a reference to the current RenderableMesh */
 		RenderableMesh& setMesh(MeshSPtr mesh);
+
+		/** @copydoc Renderable3D::getBounds() */
+		virtual std::pair<glm::vec3, glm::vec3> getBounds() const override
+		{ return { mMinimum, mMaximum }; };
 
 		/** Draws the current RenderableMesh (drawcall) */
 		void draw();

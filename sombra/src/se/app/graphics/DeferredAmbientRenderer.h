@@ -47,7 +47,9 @@ namespace se::app {
 		 *
 		 * @param	name the name of the RenderNode
 		 * @param	repository the Repository that holds the programs */
-		DeferredAmbientRenderer(const std::string& name, Repository& repository);
+		DeferredAmbientRenderer(
+			const std::string& name, Repository& repository
+		);
 
 		/** Class destructor */
 		virtual ~DeferredAmbientRenderer() = default;

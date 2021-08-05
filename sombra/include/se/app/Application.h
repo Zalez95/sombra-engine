@@ -62,15 +62,15 @@ namespace se::app {
 		};
 
 	protected:	// Attributes
-		static constexpr int kMaxEntities			= 1024;
-		static constexpr int kMaxTerrains			= 4;
-		static constexpr int kMaxCameras			= 4;
-		static constexpr int kMaxLightProbes		= 1;
-		static constexpr int kMaxTasks				= 1024;
-		static constexpr int kShadowResolution		= 1024;
-		static constexpr float kBaseBias			= 0.1f;
-		const glm::vec3 kMinPhysicsAABB = glm::vec3(-1000.0f);
-		const glm::vec3 kMaxPhysicsAABB = glm::vec3( 1000.0f);
+		static constexpr int kMaxEntities				= 1024;
+		static constexpr int kMaxTerrains				= 4;
+		static constexpr int kMaxCameras				= 4;
+		static constexpr int kMaxLightProbes			= 1;
+		static constexpr int kMaxTasks					= 1024;
+		static constexpr float kShadowSplitLogFactor	= 0.95f;
+		static constexpr float kBaseBias				= 0.1f;
+		const glm::vec3 kMinPhysicsAABB					= glm::vec3(-1000.0f);
+		const glm::vec3 kMaxPhysicsAABB					= glm::vec3( 1000.0f);
 
 		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;

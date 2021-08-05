@@ -52,11 +52,7 @@ namespace se::app {
 			}
 		};
 
-		/** Appends the current KeyEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current KeyEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic
@@ -85,11 +81,7 @@ namespace se::app {
 		/** @return	the code point of the TextInputEvent */
 		unsigned int getCodePoint() const { return mCodePoint; };
 	private:
-		/** Appends the current TextInputEvent formated as text to the given
-		 * ostream
-		 *
-		 * @param	os a reference to the ostream where we want to print the
-		 *			current TextInputEvent */
+		/** @copydoc Event::printTo() */
 		virtual void printTo(std::ostream& os) const override
 		{
 			os	<< "{ kTopic : " << kTopic

@@ -44,7 +44,7 @@ namespace se::app {
 
 	void ConstraintsSystem::update()
 	{
-		SOMBRA_INFO_LOG << "Start";
+		SOMBRA_DEBUG_LOG << "Start";
 		auto& physicsEngine = *mApplication.getExternalTools().physicsEngine;
 
 		physicsEngine.resetRigidBodiesState();
@@ -89,7 +89,7 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Putting the RigidBodies to sleep";
 		physicsEngine.checkSleepyRigidBodies(mDeltaTime);
 
-		SOMBRA_INFO_LOG << "End";
+		SOMBRA_DEBUG_LOG << "End";
 	}
 
 // Private functions
@@ -134,7 +134,7 @@ namespace se::app {
 
 	void ConstraintsSystem::onCollisionEvent(const CollisionEvent& event)
 	{
-		SOMBRA_TRACE_LOG << "Received CollisionEvent: " << event;
+		SOMBRA_INFO_LOG << event;
 
 		auto [rb1] = mEntityDatabase.getComponents<RigidBodyComponent>(event.getEntity(0), true);
 		auto [rb2] = mEntityDatabase.getComponents<RigidBodyComponent>(event.getEntity(1), true);

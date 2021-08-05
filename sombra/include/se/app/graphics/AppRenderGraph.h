@@ -18,8 +18,8 @@ namespace se::app {
 	 * in a PBR pipeline. The "forwardRendererMesh" is reserved for special
 	 * cases that can't be rendered this way (mostrly transparency), and they
 	 * can't cast nor receive shadows.
-	 * For rendering shadows there are available a "shadowRendererMesh" and a
-	 * "shadowRendererTerrain" renderers, particle can't cast shadows.
+	 * For rendering shadows there are available a "shadowTerrainProxyRenderer"
+	 * and a "shadowMeshProxyRenderer" renderers, particle can't cast shadows.
 	 * For the Renderable2Ds, there is a "renderer2D" for submitting them
 	 */
 	class AppRenderGraph : public graphics::RenderGraph
@@ -49,7 +49,7 @@ namespace se::app {
 		 *			Renderables will be drawn
 		 * @param	height the new height of the FrameBuffers where the
 		 *			Renderables will be drawn */
-		virtual void setResolution(std::size_t width, std::size_t height);
+		void setResolution(std::size_t width, std::size_t height);
 	private:
 		/** Adds shared resources to the RenderGraph resource node
 		 *
@@ -80,68 +80,51 @@ namespace se::app {
 			Repository& repository, std::size_t width, std::size_t height
 		);
 
-		/** Creates the Renderer3Ds used for rendering shadows with the names
-		 *	"shadowRendererMesh" - renders RenderableMeshes
-		 *	"shadowRendererTerrain" - renders RenderableTerrains
-		 * The nodes and connections that will be added to the graph looks like
-		 * the following (the resource node already exists):
-		 *
-		 *  [        "resources"        ]     |                   |attach
-		 *     |shadowTexture |shadowBuffer   |attach  ["shadowRendererTerrain"]
-		 *     |              |        ["shadowRendererMesh"]     |attach
-		 *     |     ["shadowFBClear"]       |attach              |
-		 *     |              |_________     |__         _________|
-		 *     |                       |       |        |
-		 *     |    |position | normal |target |attach1 |attach2
-		 *     |  [        "shadowRenderSubGraph"        ]
-		 *     |                       |target
-		 *
-		 * @param	repository the Repository that holds the Resources
-		 * @param	width the initial width of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @param	height the initial height of the FrameBuffer where the
-		 *			Entities are going to be rendered
-		 * @return	true if the nodes where added successfully, false
-		 *			otherwise */
-		bool addShadowRenderers(
-			Repository& repository, std::size_t width, std::size_t height
-		);
-
 		/** Creates a deferred renderer with the following GBuffer Renderer3Ds:
 		 *	"gBufferRendererTerrain" - renders RenderableTerrains
 		 *	"gBufferRendererMesh" - renders RenderableMeshes
 		 *	"gBufferRendererParticles" - renders ParticleSystems
+		 *	"shadowTerrainProxyRenderer" - renders RenderableTerrains shadows
+		 *	"shadowMeshProxyRenderer" - renders RenderableMeshes shadows
 		 * The nodes and connections that will be added to the graph looks like
 		 * the following (the resource node already exists):
 		 *
 		 *  [                            "resources"                        ]
-		 *    |gBuffer  |deferredBuffer              |positionTexture
-		 *    \         |________________            |
-		 *    |input                    |            |
-		 *  ["gFBClear"]                |            |
-		 *    |output                   |            |
-		 *    |                         |  ["texUnitNodePosition"]
-		 *    |target                   |            |
-		 *  ["gBufferRendererTerrain"]  |            |
-		 *    |target                   |            |
-		 *    |                         |            |
-		 *    |target                   |            |
-		 *  ["gBufferRendererMesh"]     |            |
-		 *    |target                   |            |
-		 *    |                         |            |
-		 *    |target                   |            |
-		 *  ["gBufferRendererParticles"]|            |
-		 *    |target |attach         __|            |__________
-		 *    |   ____|             /                          |
-		 *    |  |attach1 |attach2 |target |irradiance |shadow |position
-		 *    | [            "deferredLightRenderer"            ]
-		 *    |                         |target
+		 *    |gBuffer  |deferredBuffer                  |positionTexture
+		 *    \         |_______________                 |
+		 *    |input                    |input           |__________________
+		 *  ["gFBClear"]       ["deferredFBClear"]       |                  |
+		 *    |output                   |output          |                  |
+		 *    |                         |                |input             |
+		 *    |target                   |   ["texUnitNodeAmbientPosition"]  |
+		 *  ["gBufferRendererTerrain"]  |                |output            |
+		 *    |target                   |                |                  |
+		 *    |                         |                |        __________|
+		 *    |target                   |                |       |
+		 *  ["gBufferRendererMesh"]     |                |       |
+		 *    |target                   |                |       |
+		 *    |                         |                |       |
+		 *    |target                   |                |       |
+		 *  ["gBufferRendererParticles"]|                |       |
+		 *    |target |attach   ________| _______________|       |
+		 *    |       |        |         /                       |
+		 *    |       |attach  |target  |position                |input
+		 *    |   ["deferredAmbientRenderer"]       ["texUnitNodeLightPosition"]
+		 *    |        ________|target                           |output
+		 *    |input1 |input2                                    |
+		 *  ["zBufferCopy"]      ["shadowMeshProxyRenderer"]     |
+		 *    |output                         |attach            |
+		 *    | ["shadowTerrainProxyRenderer"]|                  |
+		 *    |              |attach          |                  |
+		 *    |______        |         _______| _________________|
+		 *           |target |attach1 |attach2 |position
+		 *        [    "deferredLightSubGraph"    ]
+		 *                       |target
 		 *
-		 * @note	where irradiance appears, there will be also simila
-		 *			connections for prefilter and brdf textures
 		 * @note	where position appears, there will be also similar nodes
 		 *			and connections for the normal, albedo, material
-		 *			and emissive textures
+		 *			and emissive textures (emissive only for the
+		 *			deferredAmbientRenderer)
 		 *
 		 * @param	repository the Repository that holds the Resources
 		 * @param	width the initial width of the FrameBuffer where the

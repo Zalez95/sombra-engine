@@ -13,50 +13,62 @@ namespace se::app {
 		mViewMatUniformName(viewMatUniformName), mProjectionMatUniformName(projectionMatUniformName) {}
 
 
-	void IViewProjectionUpdater::addRenderable(graphics::Renderable& renderable)
-	{
-		mRenderableTechniques.emplace(&renderable, IndexVector());
-	}
-
-
 	void IViewProjectionUpdater::removeRenderable(graphics::Renderable& renderable)
 	{
+		SOMBRA_DEBUG_LOG << "Removing " << &renderable;
+
 		auto itRenderable = mRenderableTechniques.find(&renderable);
 		if (itRenderable != mRenderableTechniques.end()) {
 			for (std::size_t iTechnique : itRenderable->second) {
+				// Remove the Technique if it has no users
 				if (--mTechniquesData[iTechnique].userCount == 0) {
 					removeTechnique(iTechnique);
 				}
 			}
-		}
-		else {
-			SOMBRA_WARN_LOG << "Renderable " << &renderable << " not found";
 		}
 	}
 
 
 	void IViewProjectionUpdater::addRenderableTechnique(graphics::Renderable& renderable, const TechniqueSPtr& technique)
 	{
-		auto itRenderable = mRenderableTechniques.find(&renderable);
-		if (itRenderable != mRenderableTechniques.end()) {
-			auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
-				return tData.technique == technique;
-			});
-			if (itTechnique == mTechniquesData.end()) {
-				itTechnique = mTechniquesData.emplace();
-				itTechnique->technique = technique;
-				technique->processPasses([&](const PassSPtr& pass) {
-					if (shouldAddUniforms(pass)) {
-						addPass(itTechnique.getIndex(), pass);
-					}
-				});
-			}
+		SOMBRA_DEBUG_LOG << "Adding Technique " << &technique << " to Renderable " << &renderable;
 
-			itTechnique->userCount++;
-			itRenderable->second.push_back(itTechnique.getIndex());
+		bool newRenderable = false, newTechnique = false, passAdded = false;
+
+		// Add renderable if it wasn't already
+		auto itRenderable = mRenderableTechniques.find(&renderable);
+		if (itRenderable == mRenderableTechniques.end()) {
+			itRenderable = mRenderableTechniques.emplace(&renderable, IndexVector()).first;
+			newRenderable = true;
 		}
-		else {
-			SOMBRA_WARN_LOG << "Renderable " << &renderable << " not found";
+
+		// Add technique if it wasn't already
+		auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
+			return tData.technique == technique;
+		});
+		if (itTechnique == mTechniquesData.end()) {
+			itTechnique = mTechniquesData.emplace();
+			itTechnique->technique = technique;
+			newTechnique = true;
+
+			technique->processPasses([&](const PassSPtr& pass) {
+				if (shouldAddUniforms(pass)) {
+					addPass(itTechnique.getIndex(), pass);
+					passAdded = true;
+				}
+			});
+		}
+
+		// Map the renderable with th technique
+		itTechnique->userCount++;
+		itRenderable->second.push_back(itTechnique.getIndex());
+
+		// Remove the new data shouldAddUniforms failed for every pass
+		if (newTechnique && !passAdded) {
+			removeRenderableTechnique(renderable, technique);
+			if (newRenderable) {
+				removeRenderable(renderable);
+			}
 		}
 	}
 
@@ -64,6 +76,8 @@ namespace se::app {
 	void IViewProjectionUpdater::removeRenderableTechnique(
 		graphics::Renderable& renderable, const TechniqueSPtr& technique
 	) {
+		SOMBRA_DEBUG_LOG << "Removing Technique " << &technique << " from Renderable " << &renderable;
+
 		auto itRenderable = mRenderableTechniques.find(&renderable);
 		if (itRenderable != mRenderableTechniques.end()) {
 			auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
@@ -74,22 +88,20 @@ namespace se::app {
 					std::remove(itRenderable->second.begin(), itRenderable->second.end(), itTechnique.getIndex()),
 					itRenderable->second.end()
 				);
+
+				// Remove the Technique if it has no users
 				if (--itTechnique->userCount == 0) {
 					removeTechnique(itTechnique.getIndex());
 				}
 			}
-			else {
-				SOMBRA_WARN_LOG << "Technique " << technique << " not found";
-			}
-		}
-		else {
-			SOMBRA_WARN_LOG << "Renderable " << &renderable << " not found";
 		}
 	}
 
 
 	void IViewProjectionUpdater::onAddTechniquePass(const TechniqueSPtr& technique, const PassSPtr& pass)
 	{
+		SOMBRA_DEBUG_LOG << "Adding Pass " << &pass << " to Technique " << &technique;
+
 		auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
 			return tData.technique == technique;
 		});
@@ -98,14 +110,13 @@ namespace se::app {
 				addPass(itTechnique.getIndex(), pass);
 			}
 		}
-		else {
-			SOMBRA_WARN_LOG << "Technique " << technique << " not found";
-		}
 	}
 
 
 	void IViewProjectionUpdater::onRemoveTechniquePass(const TechniqueSPtr& technique, const PassSPtr& pass)
 	{
+		SOMBRA_DEBUG_LOG << "Removing Pass " << &pass << " from Technique " << &technique;
+
 		auto itTechnique = std::find_if(mTechniquesData.begin(), mTechniquesData.end(), [&](const auto& tData) {
 			return tData.technique == technique;
 		});
@@ -116,9 +127,6 @@ namespace se::app {
 			if (itPass != mPassesData.end()) {
 				removePass(itTechnique.getIndex(), itPass.getIndex());
 			}
-		}
-		else {
-			SOMBRA_WARN_LOG << "Technique " << technique << " not found";
 		}
 	}
 
@@ -132,7 +140,7 @@ namespace se::app {
 			passData.projectionMatrix->setValue(projectionMatrix);
 		}
 
-		SOMBRA_INFO_LOG << "Update end";
+		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions

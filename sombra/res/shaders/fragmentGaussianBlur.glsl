@@ -24,17 +24,10 @@ void main()
 
 	vec3 color = vec3(0.0);
 
-	if (uHorizontal) {
-		for (int i = 0; i < 5; ++i) {
-			color += texture(uColor, texCoords + vec2(texOffset.x * i, 0.0)).rgb * WEIGHTS[i];
-			color += texture(uColor, texCoords - vec2(texOffset.x * i, 0.0)).rgb * WEIGHTS[i];
-		}
-	}
-	else {
-		for (int i = 0; i < 5; ++i) {
-			color += texture(uColor, texCoords + vec2(0.0, texOffset.y * i)).rgb * WEIGHTS[i];
-			color += texture(uColor, texCoords - vec2(0.0, texOffset.y * i)).rgb * WEIGHTS[i];
-		}
+	for (uint i = 0u; i < 5u; ++i) {
+		vec2 curTexOffset = float(i) * texOffset * vec2(float(uHorizontal), float(!uHorizontal));
+		color += texture(uColor, texCoords + curTexOffset).rgb * WEIGHTS[i];
+		color += texture(uColor, texCoords - curTexOffset).rgb * WEIGHTS[i];
 	}
 
 	glFragColor = vec4(color, 1.0);

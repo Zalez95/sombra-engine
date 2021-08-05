@@ -31,7 +31,7 @@ namespace editor {
 		static constexpr float kUpdateTime						= 0.016f;
 		static constexpr float kFOV								= 60.0f;
 		static constexpr float kZNear							= 0.1f;
-		static constexpr float kZFar							= 2000.0f;
+		static constexpr float kZFar							= 1000.0f;
 
 		ImGuiContext* mImGuiContext;
 		ImGuiInput* mImGuiInput;

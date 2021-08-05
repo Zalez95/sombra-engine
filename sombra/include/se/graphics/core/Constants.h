@@ -73,6 +73,8 @@ namespace se::graphics {
 		Texture1D,
 		Texture2D,
 		Texture3D,
+		Texture1DArray,
+		Texture2DArray,
 		CubeMap
 	};
 

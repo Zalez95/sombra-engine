@@ -1,4 +1,3 @@
-#include <cassert>
 #include "se/graphics/core/Texture.h"
 #include "GLWrapper.h"
 
@@ -58,8 +57,6 @@ namespace se::graphics {
 
 	Texture& Texture::setTextureUnit(int unit)
 	{
-		assert((unit >= 0) && (unit < kMaxTextures) && "Texture unit not valid");
-
 		unbind();
 		mTextureUnit = unit;
 		return *this;
@@ -297,6 +294,7 @@ namespace se::graphics {
 				) );
 				break;
 			case TextureTarget::Texture2D:
+			case TextureTarget::Texture1DArray:
 				GL_WRAP( glTexImage2D(
 					glTarget, 0, glInternalFormat,
 					static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0,
@@ -304,6 +302,7 @@ namespace se::graphics {
 				) );
 				break;
 			case TextureTarget::Texture3D:
+			case TextureTarget::Texture2DArray:
 				GL_WRAP( glTexImage3D(
 					glTarget, 0, glInternalFormat,
 					static_cast<GLsizei>(width), static_cast<GLsizei>(height), static_cast<GLsizei>(depth), 0,
