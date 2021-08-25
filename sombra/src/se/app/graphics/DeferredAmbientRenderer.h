@@ -29,6 +29,7 @@ namespace se::app {
 			static constexpr int kAlbedo		= 5;
 			static constexpr int kMaterial		= 6;
 			static constexpr int kEmissive		= 7;
+			static constexpr int kSSAO			= 8;
 		};
 
 	private:	// Attributes

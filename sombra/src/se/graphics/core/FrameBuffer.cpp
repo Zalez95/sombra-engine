@@ -7,7 +7,7 @@
 
 namespace se::graphics {
 
-	FrameBuffer::FrameBuffer(FrameBufferTarget target) : mTarget(target)
+	FrameBuffer::FrameBuffer(FrameBufferTarget target) : mTarget(target), mColorAttachments{}
 	{
 		// Create the FBO
 		GL_WRAP( glGenFramebuffers(1, &mBufferId) );
@@ -71,31 +71,34 @@ namespace se::graphics {
 
 
 	FrameBuffer& FrameBuffer::attach(
-		const Texture& texture, unsigned int attachment,
+		const TextureSPtr& texture, unsigned int attachment,
 		int level, int layer, int orientation
 	) {
-		GLenum glTarget = toGLTextureTarget(texture.getTarget());
 		GLenum glAttachment = toGLFrameBufferAttachment(attachment);
 
 		bind();
 
-		switch (texture.getTarget()) {
-			case TextureTarget::Texture1D:
-				GL_WRAP( glFramebufferTexture1D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level) );
-				break;
-			case TextureTarget::Texture2D:
-				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level) );
-				break;
-			case TextureTarget::Texture3D:
-				GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture.getTextureId(), level, layer) );
-				break;
-			case TextureTarget::Texture1DArray:
-			case TextureTarget::Texture2DArray:
-				GL_WRAP( glFramebufferTextureLayer(GL_FRAMEBUFFER, glAttachment, texture.getTextureId(), level, layer) );
-				break;
-			case TextureTarget::CubeMap:
-				GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture.getTextureId(), level) );
-				break;
+		if (texture) {
+			GLenum glTarget = toGLTextureTarget(texture->getTarget());
+
+			switch (texture->getTarget()) {
+				case TextureTarget::Texture1D:
+					GL_WRAP( glFramebufferTexture1D(GL_FRAMEBUFFER, glAttachment, glTarget, texture->getTextureId(), level) );
+					break;
+				case TextureTarget::Texture2D:
+					GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, glTarget, texture->getTextureId(), level) );
+					break;
+				case TextureTarget::Texture3D:
+					GL_WRAP( glFramebufferTexture3D(GL_FRAMEBUFFER, glAttachment, glTarget, texture->getTextureId(), level, layer) );
+					break;
+				case TextureTarget::Texture1DArray:
+				case TextureTarget::Texture2DArray:
+					GL_WRAP( glFramebufferTextureLayer(GL_FRAMEBUFFER, glAttachment, texture->getTextureId(), level, layer) );
+					break;
+				case TextureTarget::CubeMap:
+					GL_WRAP( glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_CUBE_MAP_POSITIVE_X + orientation, texture->getTextureId(), level) );
+					break;
+			}
 		}
 
 		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
@@ -106,7 +109,7 @@ namespace se::graphics {
 		// Set the color attachments to render to
 		if (attachment >= FrameBufferAttachment::kColor0) {
 			unsigned int colorIndex = attachment - FrameBufferAttachment::kColor0;
-			mColorAttachments[colorIndex] = true;
+			mColorAttachments[colorIndex] = (texture != nullptr);
 
 			utils::FixedVector<GLenum, FrameBufferAttachment::kMaxColorAttachments> glAttachments;
 			for (unsigned int i = 0; i < FrameBufferAttachment::kMaxColorAttachments; ++i) {

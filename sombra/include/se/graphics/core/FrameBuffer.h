@@ -17,6 +17,9 @@ namespace se::graphics {
 	 */
 	class FrameBuffer : public Bindable
 	{
+	private:	// Nested types
+		using TextureSPtr = std::shared_ptr<Texture>;
+
 	private:	// Attributes
 		/** The id of the Frame Buffer Object */
 		unsigned int mBufferId;
@@ -65,7 +68,8 @@ namespace se::graphics {
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
 		 *
-		 * @param	texture the Texture to Attach to the FrameBuffer
+		 * @param	texture the Texture to Attach to the FrameBuffer. If it's
+		 *			nullptr the texture attachment will be removed
 		 * @param	attachment the @see FrameBufferAttachment of the texture
 		 * @param	level specifies the mip map level of the texture to attach
 		 *			to the framebuffer
@@ -76,7 +80,7 @@ namespace se::graphics {
 		 *			3 = negative Y, 4 = positive Z, 5 = negative Z)
 		 @return	a reference to the current FrameBuffer */
 		FrameBuffer& attach(
-			const Texture& texture, unsigned int attachment,
+			const TextureSPtr& texture, unsigned int attachment,
 			int level = 0, int layer = 0, int orientation = 0
 		);
 

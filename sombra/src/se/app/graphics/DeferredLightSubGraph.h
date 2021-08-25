@@ -70,7 +70,7 @@ namespace se::app {
 		/** The RenderQueue used for rendering the Lights Renderables */
 		std::vector<RenderableLight*> mLightsRenderQueue;
 
-	public:
+	public:		// Functions
 		/** Creates a new DeferredLightSubGraph
 		 *
 		 * @param	name the name of the RenderNode */

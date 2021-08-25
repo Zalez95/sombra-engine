@@ -20,6 +20,7 @@ uniform sampler2D uNormal;
 uniform sampler2D uAlbedo;
 uniform sampler2D uMaterial;
 uniform sampler2D uEmissive;
+uniform sampler2D uSSAO;
 
 // Output data
 layout (location = 0) out vec4 oColor;
@@ -81,9 +82,11 @@ void main()
 	float surfaceAO = material.b;
 
 	vec3 emissive = texture(uEmissive, texCoords).rgb;
+	float ssao = texture(uSSAO, texCoords).r;
 
 	// Calculate the output color
-	vec3 color = calculateAmbient(position, normal, albedo, metallic, roughness, surfaceAO);
+	float ao = surfaceAO * ssao;
+	vec3 color = calculateAmbient(position, normal, albedo, metallic, roughness, ao);
 	color += emissive;
 	oColor = vec4(color, 1.0);
 

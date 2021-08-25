@@ -16,7 +16,7 @@ namespace se::graphics {
 	{
 	private:	// Attributes
 		/** The frustum planes */
-		std::array<glm::vec4, 6> mFrustumPlanes;
+		std::array<glm::vec4, 6> mFrustumPlanes = {};
 
 	public:		// Functions
 		/** Updates the frustum needed for the frustum culling

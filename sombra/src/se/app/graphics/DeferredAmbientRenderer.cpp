@@ -3,26 +3,12 @@
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/graphics/DeferredAmbientRenderer.h"
 #include "se/app/io/ShaderLoader.h"
-#include "se/app/io/MeshLoader.h"
 
 namespace se::app {
 
 	DeferredAmbientRenderer::DeferredAmbientRenderer(const std::string& name, Repository& repository) :
 		BindableRenderNode(name)
 	{
-		auto iTargetBindable = addBindable();
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
-		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
-
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("irradiance", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("prefilter", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("brdf", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("position", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("normal", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("albedo", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("material", this, addBindable()) );
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("emissive", this, addBindable()) );
-
 		mProgram = repository.findByName<graphics::Program>("programDeferredAmbient");
 		if (!mProgram) {
 			std::shared_ptr<graphics::Program> program;
@@ -55,6 +41,21 @@ namespace se::app {
 		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", mProgram.get(), TexUnits::kAlbedo));
 		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", mProgram.get(), TexUnits::kMaterial));
 		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uEmissive", mProgram.get(), TexUnits::kEmissive));
+		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uSSAO", mProgram.get(), TexUnits::kSSAO));
+
+		auto iTargetBindable = addBindable();
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
+		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
+
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("irradiance", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("prefilter", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("brdf", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("position", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("normal", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("albedo", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("material", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("emissive", this, addBindable()) );
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("ssao", this, addBindable()) );
 	}
 
 

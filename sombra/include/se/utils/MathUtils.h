@@ -48,6 +48,16 @@ namespace se::utils {
 	{ return (exponent == 0)? 1 : base * ipow(base, exponent - 1); }
 
 
+	/** Linearly interpolates the given values
+	 *
+	 * @param	a the initial value to interpolate
+	 * @param	b the final value to interpolate
+	 * @param	f the value used for interpolating between a and b */
+	template <typename T>
+	T lerp(T a, T b, T f)
+	{ return a + f * (b - a); }
+
+
 	/** Calculates the closest point to p in the given edge
 	 *
 	 * @param	p the point

@@ -16,6 +16,8 @@ namespace se::app {
 	class TerrainComponent;
 	class LightComponent;
 	class ParticleSystemComponent;
+	class SSAONode;
+	class DeferredAmbientRenderer;
 
 
 	/**
@@ -35,12 +37,20 @@ namespace se::app {
 		/** The Application that holds the Entities */
 		Application& mApplication;
 
-		/** The active CameraComponent of the Entity */
-		CameraComponent* mCamera;
+		/** The Camera Entity used for rendering */
+		Entity mCameraEntity;
 
 		/** The object used for updating the camera uniforms in the Entities
 		 * steps */
 		CameraUniformsUpdater* mCameraUniformsUpdater;
+
+		/** A pointer to the SSAONode used for computing the ambient
+		 * occlussion */
+		SSAONode* mSSAONode;
+
+		/** A pointer to the deferred ambient renderer used for computing the
+		 * ambient lighting */
+		DeferredAmbientRenderer* mDeferredAmbientRenderer;
 
 		/** A pointer to the frustum filter shared between all the
 		 * Renderer3Ds */

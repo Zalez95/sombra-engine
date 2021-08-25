@@ -2,28 +2,20 @@
 #include "se/app/graphics/GaussianBlurNode.h"
 #include "se/app/io/ShaderLoader.h"
 #include "se/graphics/core/Texture.h"
-#include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
 
 namespace se::app {
 
-	GaussianBlurNode::GaussianBlurNode(
-		const std::string& name, Repository& repository,
-		std::size_t width, std::size_t height, bool horizontal
-	) : BindableRenderNode(name)
+	GaussianBlurNode::GaussianBlurNode(const std::string& name, Repository& repository, bool horizontal) :
+		BindableRenderNode(name), mFrameBuffer(nullptr)
 	{
 		auto iColorTexBindable = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, iColorTexBindable) );
 
-		auto frameBuffer = std::make_unique<graphics::FrameBuffer>();
-		auto outputTexture = std::make_unique<graphics::Texture>(graphics::TextureTarget::Texture2D);
-		outputTexture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGBA, graphics::ColorFormat::RGBA16f, width, height)
-			.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
-			.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear);
-		frameBuffer->attach(*outputTexture, graphics::FrameBufferAttachment::kColor0);
-		auto iOutputTexBindable = addBindable(std::move(outputTexture), false);
-		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, iOutputTexBindable) );
+		mOutputTextureBindableIndex = addBindable(nullptr, false);
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("output", this, mOutputTextureBindableIndex) );
+		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, mOutputTextureBindableIndex) );
 
 		mProgram = repository.findByName<graphics::Program>("programGaussianBlur");
 		if (!mProgram) {
@@ -42,6 +34,9 @@ namespace se::app {
 			return;
 		}
 
+		auto frameBuffer = std::make_unique<graphics::FrameBuffer>();
+		mFrameBuffer = frameBuffer.get();
+
 		addBindable(std::move(frameBuffer));
 		addBindable(mProgram.get());
 		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
@@ -52,10 +47,13 @@ namespace se::app {
 	}
 
 
-	void GaussianBlurNode::setTextureDimensions(std::size_t width, std::size_t height)
+	void GaussianBlurNode::setBindable(std::size_t bindableIndex, const BindableSPtr& bindable)
 	{
-		auto texture = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(findOutput("output"))->getTBindable();
-		texture->setImage(nullptr, graphics::TypeId::Float, graphics::ColorFormat::RGBA, graphics::ColorFormat::RGBA16f, width, height);
+		if (bindableIndex == mOutputTextureBindableIndex) {
+			mFrameBuffer->attach(std::dynamic_pointer_cast<graphics::Texture>(bindable), graphics::FrameBufferAttachment::kColor0);
+		}
+
+		BindableRenderNode::setBindable(bindableIndex, bindable);
 	}
 
 

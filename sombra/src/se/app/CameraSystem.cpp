@@ -10,7 +10,9 @@
 #include "se/app/TerrainComponent.h"
 #include "se/app/ParticleSystemComponent.h"
 #include "se/app/LightComponent.h"
+#include "graphics/SSAONode.h"
 #include "graphics/DeferredLightSubGraph.h"
+#include "graphics/DeferredAmbientRenderer.h"
 #include "graphics/IViewProjectionUpdater.h"
 
 namespace se::app {
@@ -35,8 +37,8 @@ namespace se::app {
 
 
 	CameraSystem::CameraSystem(Application& application) :
-		ISystem(application.getEntityDatabase()), mApplication(application), mCamera(nullptr),
-		mCameraUniformsUpdater(nullptr)
+		ISystem(application.getEntityDatabase()), mApplication(application), mCameraEntity(kNullEntity),
+		mCameraUniformsUpdater(nullptr), mDeferredAmbientRenderer(nullptr), mSSAONode(nullptr)
 	{
 		mApplication.getEventManager()
 			.subscribe(this, Topic::Camera)
@@ -57,6 +59,8 @@ namespace se::app {
 		auto gBufferRendererParticles = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererParticles"));
 		auto deferredLightSubGraph = dynamic_cast<DeferredLightSubGraph*>(renderGraph.getNode("deferredLightSubGraph"));
 		auto forwardRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("forwardRendererMesh"));
+		mDeferredAmbientRenderer = dynamic_cast<DeferredAmbientRenderer*>(renderGraph.getNode("deferredAmbientRenderer"));
+		mSSAONode = dynamic_cast<SSAONode*>(renderGraph.getNode("ssaoNode"));
 		auto deferredLightStencilRenderer = deferredLightSubGraph->getStencilRenderer();
 		auto deferredLightColorRenderer = deferredLightSubGraph->getColorRenderer();
 
@@ -130,14 +134,19 @@ namespace se::app {
 			true
 		);
 
-		glm::mat4 viewMatrix = (mCamera)? mCamera->getViewMatrix() : glm::mat4(1.0f);
-		glm::mat4 projectionMatrix = (mCamera)? mCamera->getProjectionMatrix() : glm::mat4(1.0f);
+		auto [transforms, camera] = mEntityDatabase.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
+		glm::vec3 viewPosition = (transforms)? transforms->position : glm::vec3(0.0f);
+		glm::mat4 viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
+		glm::mat4 projectionMatrix = (camera)? camera->getProjectionMatrix() : glm::mat4(1.0f);
 		glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
 		mCameraUniformsUpdater->update(viewMatrix, projectionMatrix);
 
 		SOMBRA_DEBUG_LOG << "Updating the Renderers";
+		mDeferredAmbientRenderer->setViewPosition(viewPosition);
+		mSSAONode->setViewMatrix(viewMatrix);
+		mSSAONode->setProjectionMatrix(projectionMatrix);
 		mFrustumFilter->updateFrustum(viewProjectionMatrix);
 
 		SOMBRA_DEBUG_LOG << "Update end";
@@ -157,8 +166,8 @@ namespace se::app {
 
 	void CameraSystem::onRemoveCamera(Entity entity, CameraComponent* camera)
 	{
-		if (mCamera == camera) {
-			mCamera = nullptr;
+		if (mCameraEntity == entity) {
+			mCameraEntity = kNullEntity;
 			SOMBRA_INFO_LOG << "Active Camera removed";
 		}
 
@@ -240,14 +249,8 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue(), true);
-		if (camera) {
-			mCamera = camera;
-			SOMBRA_INFO_LOG << "Entity " << event.getValue() << " setted as camera";
-		}
-		else {
-			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
-		}
+		mCameraEntity = event.getValue();
+		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 
 

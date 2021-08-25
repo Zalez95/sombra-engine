@@ -10,7 +10,6 @@
 namespace se::app {
 
 	class Application;
-	class DeferredAmbientRenderer;
 
 
 	/**
@@ -23,10 +22,6 @@ namespace se::app {
 		 * the Entities */
 		Application& mApplication;
 
-		/** A pointer to the deferred ambient renderer used for computing the
-		 * ambient lighting */
-		DeferredAmbientRenderer* mDeferredAmbientRenderer;
-
 		/** The light Probe Entity used for rendering */
 		Entity mLightProbeEntity;
 
@@ -35,9 +30,6 @@ namespace se::app {
 
 		/** A pointer to the last prefilter Texture */
 		std::shared_ptr<graphics::Texture> mLastPrefilterTexture;
-
-		/** The Camera Entity used for rendering */
-		Entity mCameraEntity;
 
 	public:		// Functions
 		/** Creates a new LightProbeSystem
@@ -48,9 +40,6 @@ namespace se::app {
 
 		/** Class destructor */
 		~LightProbeSystem();
-
-		/** @copydoc ISystem::notify(const IEvent&) */
-		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent() */
 		virtual void onNewComponent(
@@ -83,12 +72,6 @@ namespace se::app {
 		 * @param	lightProbe a pointer to the LightProbeComponent that is
 		 *			going to be removed */
 		void onRemoveLightProbe(Entity entity, LightProbeComponent* lightProbe);
-
-		/** Handles the given ContainerEvent by updating the Camera Entity with
-		 * which the Scene will be rendered
-		 *
-		 * @param	event the ContainerEvent to handle */
-		void onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event);
 	};
 
 }

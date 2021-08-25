@@ -9,27 +9,15 @@
 namespace se::app {
 
 	LightProbeSystem::LightProbeSystem(Application& application) :
-		ISystem(application.getEntityDatabase()), mApplication(application), mDeferredAmbientRenderer(nullptr),
-		mLightProbeEntity(kNullEntity), mCameraEntity(kNullEntity)
+		ISystem(application.getEntityDatabase()), mApplication(application), mLightProbeEntity(kNullEntity)
 	{
-		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mApplication.getEntityDatabase().addSystem(this, EntityDatabase::ComponentMask().set<LightProbeComponent>());
-
-		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
-		mDeferredAmbientRenderer = dynamic_cast<DeferredAmbientRenderer*>(renderGraph.getNode("deferredAmbientRenderer"));
 	}
 
 
 	LightProbeSystem::~LightProbeSystem()
 	{
 		mApplication.getEntityDatabase().removeSystem(this);
-		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
-	}
-
-
-	bool LightProbeSystem::notify(const IEvent& event)
-	{
-		return tryCall(&LightProbeSystem::onCameraEvent, event);
 	}
 
 
@@ -53,14 +41,6 @@ namespace se::app {
 				resources->setBindable(prefilterTexture->getBindableIndex(), lightProbe->prefilterMap.get());
 				mLastIrradianceTexture = lightProbe->irradianceMap.get();
 				mLastPrefilterTexture = lightProbe->prefilterMap.get();
-			}
-		}
-
-		// Update the view position
-		if (mCameraEntity != kNullEntity) {
-			auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity, true);
-			if (camTransforms) {
-				mDeferredAmbientRenderer->setViewPosition(camTransforms->position);
 			}
 		}
 
@@ -92,15 +72,6 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";
-	}
-
-
-	void LightProbeSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
-	{
-		SOMBRA_INFO_LOG << event;
-
-		mCameraEntity = event.getValue();
-		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 
 }

@@ -81,10 +81,10 @@ namespace se::app {
 			viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 			if (mRenderableLight->isPointLight()) {
-				shadowTarget->attach(*mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, 0, static_cast<int>(i));
+				shadowTarget->attach(mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, 0, static_cast<int>(i));
 			}
 			else {
-				shadowTarget->attach(*mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, static_cast<int>(i));
+				shadowTarget->attach(mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, static_cast<int>(i));
 			}
 
 			mShadowUniformsUpdater.update(viewMatrix, projectionMatrix);
