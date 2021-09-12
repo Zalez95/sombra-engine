@@ -29,4 +29,3 @@ void main()
 
 	glFragColor = vec4(color, 1.0);
 }
-//TODO:shadow?

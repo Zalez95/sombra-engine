@@ -51,9 +51,9 @@ namespace se::app {
 	 *      [ resources ]
 	 *            |shadowTarget
 	 *            |
-	 *            |input
+	 *            |target
 	 *        [fbClear]
-	 *            |output
+	 *            |target
 	 *            |
 	 *            |target
 	 * [shadowTerrainRenderer]

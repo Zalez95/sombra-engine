@@ -9,8 +9,8 @@ namespace se::graphics {
 
 	/**
 	 * Class FBClearNode, it's RenderNode that can clean FrameBuffers. It has
-	 * an "input" BindableRNodeInput where the FrameBuffer to clean can be
-	 * inserted and an "output" BindableRNodeOutput where the same FrameBuffer
+	 * an "target" BindableRNodeInput where the FrameBuffer to clean can be
+	 * inserted and an "target" BindableRNodeOutput where the same FrameBuffer
 	 * can be recovered
 	 */
 	class FBClearNode : public BindableRenderNode

@@ -14,7 +14,7 @@ namespace se::app {
 	/**
 	 * Class SSAONode, It's the node used for calculatin the Screen Space
 	 * Ambient Occlusion based on the gBuffer contents.
-	 * It has a "input" input and an "output" output Texture where the SSAO
+	 * It has a "target" input and output FrameBuffer where the SSAO
 	 * texture will be written to. It also has a "position" and "normal"
 	 * texture inputs.
 	 */
@@ -46,13 +46,6 @@ namespace se::app {
 		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
 			mProjectionMatrix;
 
-		/** A pointer to the FrameBuffer used for rendering the SSAO texture */
-		graphics::FrameBuffer* mFrameBuffer;
-
-		/** The bindable index of the texture where the SSAO image will
-		 * be stored */
-		std::size_t mSSAOTextureBindableIndex;
-
 	public:		// Functions
 		/** Creates a new SSAONode
 		 *
@@ -72,11 +65,6 @@ namespace se::app {
 		 *
 		 * @param	projectionMatrix the new projection matrix of the Camera */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
-
-		/** @copydoc graphics::BindableRenderNode::setBindable() */
-		virtual void setBindable(
-			std::size_t bindableIndex, const BindableSPtr& bindable
-		) override;
 
 		/** Executes the current RenderNode */
 		virtual void execute() override;

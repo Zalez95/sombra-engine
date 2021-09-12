@@ -170,23 +170,33 @@ namespace editor {
 	{
 	private:	// Attributes
 		std::string mPath;
+		std::string mError;
+		bool mShowWindow;
 		FileWindow mFileWindow;
 
 	public:		// Functions
 		ImportTypeNode(RepositoryPanel& panel) :
-			TypeNode<T>(panel), mFileWindow((TypeNode<T>::getIdPrefix() + "ImportFile").c_str()) {};
+			TypeNode<T>(panel), mShowWindow(false), mFileWindow((TypeNode<T>::getIdPrefix() + "ImportFile").c_str()) {};
 		virtual ~ImportTypeNode() = default;
 	protected:
 		virtual bool create(Repository& repository) override
 		{
 			bool ret = false;
-			Alert importErrorPopUp((TypeNode<T>::getIdPrefix() + "ErrorAlert").c_str(), "Error", "Failed to import, see logs for more details", "Close");
+			Alert importErrorPopUp((TypeNode<T>::getIdPrefix() + "ErrorAlert").c_str(), "Error", ("Failed to import: " + mError).c_str(), "Close");
 
 			std::string label = (mPath.empty()? "Open File..." : ("Selected: " + mPath)) + TypeNode<T>::getIdPrefix() + "OpenFile";
 			if (ImGui::Button(label.c_str())) {
-				mFileWindow.show();
+				mShowWindow = true;
 			}
-			mFileWindow.execute(mPath);
+			if (mShowWindow) {
+				switch (mFileWindow.execute(mPath)) {
+					case FileWindow::Result::Nothing:
+						break;
+					default:
+						mShowWindow = false;
+						break;
+				}
+			}
 
 			bool validOptions = options(repository);
 
@@ -196,14 +206,25 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validOptions && !mPath.empty())) {
-				if (load(repository, mPath.c_str())) {
+				auto result = load(repository, mPath.c_str());
+				if (result) {
 					ret = true;
 				}
 				else {
-					importErrorPopUp.show();
+					mError = result.description();
+					SOMBRA_ERROR_LOG << result.description();
 				}
 			}
-			importErrorPopUp.execute();
+
+			if (!mError.empty()) {
+				switch (importErrorPopUp.execute()) {
+					case Alert::Result::Nothing:
+						break;
+					default:
+						mError = "";
+						break;
+				}
+			}
 
 			return ret;
 		};
@@ -211,7 +232,7 @@ namespace editor {
 		/** @return	true if the options are valid, false otherwise */
 		virtual bool options(Repository& /*repository*/) { return true; };
 		/** @return	true on success, false otherwise */
-		virtual bool load(Repository& /*repository*/, const char* /*path*/) { return true; };
+		virtual Result load(Repository& /*repository*/, const char* /*path*/) { return Result(); };
 	};
 
 
@@ -237,15 +258,11 @@ namespace editor {
 			return true;
 		};
 
-		virtual bool load(Repository& repository, const char* path) override
+		virtual Result load(Repository& repository, const char* path) override
 		{
 			DefaultShaderBuilder shaderBuilder(TypeNode<T>::getEditor(), repository);
 			auto SceneImporter = SceneImporter::createSceneImporter(mFileType, shaderBuilder);
-			auto result = SceneImporter->load(path, *TypeNode<T>::getEditor().getScene());
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-			}
-			return result;
+			return SceneImporter->load(path, *TypeNode<T>::getEditor().getScene());
 		};
 	};
 
@@ -397,12 +414,11 @@ namespace editor {
 			return validName;
 		};
 
-		virtual bool load(Repository& repository, const char* path) override
+		virtual Result load(Repository& repository, const char* path) override
 		{
 			AudioFile<float> audioFile;
 			if (!audioFile.load(path)) {
-				SOMBRA_ERROR_LOG << "Error reading the audio file " << path;
-				return false;
+				return Result(false, "Error reading the audio file " + std::string(path));
 			}
 
 			auto bufferSPtr = std::make_shared<Buffer>(
@@ -414,7 +430,7 @@ namespace editor {
 			buffer.getResource().setPath(path);
 			buffer.setFakeUser();
 
-			return true;
+			return Result();
 		};
 	};
 
@@ -547,18 +563,20 @@ namespace editor {
 		std::array<char, kMaxNameSize> mNameBuffer;
 		std::string mPathVertex, mPathGeometry, mPathFragment;
 		std::string* mPath;
+		std::string mError;
+		bool mShowWindow;
 		FileWindow mFileWindow;
 
 	public:		// Functions
 		ProgramNode(RepositoryPanel& panel) :
 			TypeNode(panel), mNameBuffer{}, mPath(nullptr),
-			mFileWindow((getIdPrefix() + "ProgramFile").c_str()) {};
+			mShowWindow(false), mFileWindow((getIdPrefix() + "ProgramFile").c_str()) {};
 		virtual const char* getName() const override { return "Program"; };
 	protected:
 		virtual bool create(Repository& repository) override
 		{
 			bool ret = false;
-			Alert importErrorPopUp((getIdPrefix() + "ErrorAlert").c_str(), "Error", "Failed to import, see logs for more details", "Close");
+			Alert importErrorPopUp((getIdPrefix() + "ErrorAlert").c_str(), "Error", ("Failed to import: " + mError).c_str(), "Close");
 
 			std::string name = "Name" + getIdPrefix() + "ProgramNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
@@ -577,23 +595,26 @@ namespace editor {
 			std::string vLabel = (mPathVertex.empty()? "Open Vertex Shader..." : "Selected: " + mPathVertex) + getIdPrefix() + "OpenVertex";
 			if (ImGui::Button(vLabel.c_str())) {
 				mPath = &mPathVertex;
-				mFileWindow.show();
 			}
 
 			std::string gLabel = (mPathGeometry.empty()? "Open Geometry Shader..." : "Selected: " + mPathGeometry) + getIdPrefix() + "OpenGeometry";
 			if (ImGui::Button(gLabel.c_str())) {
 				mPath = &mPathGeometry;
-				mFileWindow.show();
 			}
 
 			std::string fLabel = (mPathFragment.empty()? "Open Fragment Shader..." : "Selected: " + mPathFragment) + getIdPrefix() + "OpenFragment";
 			if (ImGui::Button(fLabel.c_str())) {
 				mPath = &mPathFragment;
-				mFileWindow.show();
 			}
 
 			if (mPath) {
-				mFileWindow.execute(*mPath);
+				switch (mFileWindow.execute(*mPath)) {
+					case FileWindow::Result::Nothing:
+						break;
+					default:
+						mPath = nullptr;
+						break;
+				}
 			}
 
 			ImGui::Separator();
@@ -618,12 +639,21 @@ namespace editor {
 					ret = true;
 				}
 				else {
+					mError = result.description();
 					SOMBRA_ERROR_LOG << result.description();
-					importErrorPopUp.show();
 				}
 			}
 
-			importErrorPopUp.execute();
+			if (!mError.empty()) {
+				switch (importErrorPopUp.execute()) {
+					case Alert::Result::Nothing:
+						break;
+					default:
+						mError = "";
+						break;
+				}
+			}
+
 			return ret;
 		};
 	};
@@ -1346,7 +1376,7 @@ namespace editor {
 			return validName;
 		};
 
-		virtual bool load(Repository& repository, const char* path) override
+		virtual Result load(Repository& repository, const char* path) override
 		{
 			auto textureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
 			textureSPtr->setTextureUnit(0);
@@ -1355,8 +1385,7 @@ namespace editor {
 				Image<float> image;
 				auto result = ImageReader::readHDR(path, image);
 				if (!result) {
-					SOMBRA_ERROR_LOG << result.description();
-					return false;
+					return result;
 				}
 
 				textureSPtr->setImage(
@@ -1368,8 +1397,7 @@ namespace editor {
 				Image<unsigned char> image;
 				auto result = ImageReader::read(path, image);
 				if (!result) {
-					SOMBRA_ERROR_LOG << result.description();
-					return false;
+					return result;
 				}
 
 				textureSPtr->setImage(
@@ -1382,7 +1410,7 @@ namespace editor {
 			texture.getResource().setPath(path);
 			texture.setFakeUser();
 
-			return true;
+			return Result();
 		};
 	};
 

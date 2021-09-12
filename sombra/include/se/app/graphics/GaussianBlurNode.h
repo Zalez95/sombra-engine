@@ -1,7 +1,6 @@
 #ifndef GAUSSIAN_BLUR_NODE_H
 #define GAUSSIAN_BLUR_NODE_H
 
-#include <glm/glm.hpp>
 #include "../../graphics/BindableRenderNode.h"
 #include "../../graphics/core/FrameBuffer.h"
 #include "../../graphics/core/Program.h"
@@ -13,8 +12,8 @@ namespace se::app {
 	/**
 	 * Class GaussianBlurNode, its a BindableRenderNode used for applying
 	 * Gaussian blur in one direction to a Texture. It has an "input" input
-	 * where the Texture to blur can be attached and an "output" input and
-	 * output Textures for the blurred Texture
+	 * where the Texture to blur can be attached and an "target" input and
+	 * output FrameBuffer for the blurred Texture
 	 */
 	class GaussianBlurNode : public graphics::BindableRenderNode
 	{
@@ -28,13 +27,6 @@ namespace se::app {
 		/** The Mesh used for rendering to the FrameBuffers */
 		Repository::ResourceRef<graphics::Mesh> mPlane;
 
-		/** The bindable index of the texture where the blurred image will
-		 * be stored */
-		std::size_t mOutputTextureBindableIndex;
-
-		/** A pointer to the FrameBuffer used for rendering the blurred image */
-		graphics::FrameBuffer* mFrameBuffer;
-
 	public:		// Functions
 		/** Creates a new GaussianBlurNode
 		 *
@@ -47,12 +39,7 @@ namespace se::app {
 			const std::string& name, Repository& repository, bool horizontal
 		);
 
-		/** @copydoc graphics::BindableRenderNode::setBindable() */
-		virtual void setBindable(
-			std::size_t bindableIndex, const BindableSPtr& bindable
-		) override;
-
-		/** Adds the Gaussian blur */
+		/** Blurs the Texture */
 		virtual void execute() override;
 	};
 

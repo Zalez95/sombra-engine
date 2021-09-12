@@ -8,8 +8,8 @@ const uint	MAX_LIGHTS			= 32u;
 const uint	DIRECTIONAL_LIGHT	= 0u;
 const uint	POINT_LIGHT			= 1u;
 const uint	SPOT_LIGHT			= 2u;
-const float	MAX_SHADOW_BIAS		= 0.005;
-const float	MIN_SHADOW_BIAS		= 0.001;
+const float	MAX_SHADOW_BIAS		= 0.0001;
+const float	MIN_SHADOW_BIAS		= 0.000001;
 const uint	CUBE_SIDES			= 6u;
 const vec3 FACE_DIRECTIONS[CUBE_SIDES] = vec3[](
 	vec3( 1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),

@@ -39,8 +39,8 @@ namespace se::app {
 		shadowMeshRenderer->addFilter(frustum);
 		mShadowMeshRenderer = shadowMeshRenderer.get();
 
-		if (fbClear->findInput("input")->connect( mResources->findOutput("shadowTarget") )
-			&& shadowTerrainRenderer->findInput("target")->connect( fbClear->findOutput("output") )
+		if (fbClear->findInput("target")->connect( mResources->findOutput("shadowTarget") )
+			&& shadowTerrainRenderer->findInput("target")->connect( fbClear->findOutput("target") )
 			&& shadowMeshRenderer->findInput("target")->connect( shadowTerrainRenderer->findOutput("target") )
 			&& mGraph.addNode( std::move(fbClear) )
 			&& mGraph.addNode( std::move(shadowTerrainRenderer) )
@@ -101,7 +101,7 @@ namespace se::app {
 		}
 
 		// Reset the viewport size to the previous one
-		graphics::GraphicsOperations::setCullingMode(graphics::FaceMode::Front);
+		graphics::GraphicsOperations::setCullingMode(graphics::FaceMode::Back);
 		graphics::GraphicsOperations::setViewport(0, 0, mWidth, mHeight);
 	}
 

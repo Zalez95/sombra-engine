@@ -8,8 +8,8 @@ const uint	MAX_LIGHTS			= 32u;
 const uint	DIRECTIONAL_LIGHT	= 0u;
 const uint	POINT_LIGHT			= 1u;
 const uint	SPOT_LIGHT			= 2u;
-const float	MAX_SHADOW_BIAS		= 0.005;
-const float	MIN_SHADOW_BIAS		= 0.001;
+const float	MAX_SHADOW_BIAS		= 0.0001;
+const float	MIN_SHADOW_BIAS		= 0.000001;
 const uint	MAX_CASCADES		= 6u;
 const vec2 POISSON_DISK[16] = vec2[](
 	vec2(0.282571, 0.023957), vec2(0.792657, 0.945738),

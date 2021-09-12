@@ -1790,7 +1790,7 @@ namespace se::app {
 			std::size_t iMesh = mesh.add(hasSkinning, value, primitive);
 
 			for (std::size_t j = 0; j < itShaders->size(); ++j) {
-				auto jShader = (*itShaders)[i];
+				auto jShader = (*itShaders)[j];
 
 				std::string shaderKey = jShader.get<std::string>();
 				auto shader = scene.repository.findByName<RenderableShader>(shaderKey.c_str());

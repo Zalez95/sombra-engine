@@ -132,9 +132,9 @@ namespace se::app {
 		// Connections
 		if (texUnitNodeShadow->findInput("input")->connect( shadowRenderSubGraph->findOutput("shadow") )
 			&& startDLRenderNode->findInput("attach")->connect( texUnitNodeShadow->findOutput("attach") )
-			&& stencilFBClear->findInput("input")->connect( resources->findOutput("lightTarget") )
+			&& stencilFBClear->findInput("target")->connect( resources->findOutput("lightTarget") )
 			&& stencilFBClear->findInput("attach")->connect( startDLRenderNode->findOutput("attach") )
-			&& stencilRenderer->findInput("target")->connect( stencilFBClear->findOutput("output") )
+			&& stencilRenderer->findInput("target")->connect( stencilFBClear->findOutput("target") )
 			&& colorRenderer->findInput("target")->connect( stencilRenderer->findOutput("target") )
 			&& colorRenderer->findInput("position")->connect( resources->findOutput("position") )
 			&& colorRenderer->findInput("normal")->connect( resources->findOutput("normal") )

@@ -67,16 +67,12 @@ namespace se::app {
 
 	void DeferredAmbientRenderer::execute()
 	{
-		graphics::GraphicsOperations::setDepthMask(false);
-
 		bind();
 		mPlane->bind();
 		graphics::GraphicsOperations::drawIndexed(
 			graphics::PrimitiveType::Triangle,
 			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
 		);
-
-		graphics::GraphicsOperations::setDepthMask(true);
 	}
 
 }

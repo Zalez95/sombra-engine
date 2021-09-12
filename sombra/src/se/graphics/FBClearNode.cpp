@@ -9,8 +9,8 @@ namespace se::graphics {
 	{
 		auto bindableIndex = addBindable();
 
-		addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("input", this, bindableIndex) );
-		addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("output", this, bindableIndex) );
+		addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", this, bindableIndex) );
+		addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, bindableIndex) );
 	}
 
 

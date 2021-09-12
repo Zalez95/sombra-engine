@@ -39,8 +39,8 @@ namespace se::app {
 
 			auto rendererMesh = std::make_unique<graphics::RendererMesh>("rendererMesh");
 
-			fbClearNode->findInput("input")->connect(resources->findOutput("frameBuffer"));
-			rendererMesh->findInput("target")->connect(fbClearNode->findOutput("output"));
+			fbClearNode->findInput("target")->connect(resources->findOutput("frameBuffer"));
+			rendererMesh->findInput("target")->connect(fbClearNode->findOutput("target"));
 			addNode(std::move(rendererMesh));
 			addNode(std::move(fbClearNode));
 

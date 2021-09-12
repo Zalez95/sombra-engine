@@ -13,6 +13,7 @@
 #include "se/app/io/MeshLoader.h"
 #include "se/app/io/ShaderLoader.h"
 #include "se/app/graphics/GaussianBlurNode.h"
+#include "se/app/graphics/FXAANode.h"
 #include "se/app/graphics/TextureUtils.h"
 #include "se/app/graphics/SSAONode.h"
 #include "se/app/graphics/DeferredAmbientRenderer.h"
@@ -104,20 +105,26 @@ namespace se::app {
 		auto albedoTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("albedoTexture"))->getTBindable();
 		auto materialTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("materialTexture"))->getTBindable();
 		auto emissiveTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("emissiveTexture"))->getTBindable();
+		auto ssaoTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("ssaoTexture"))->getTBindable();
+		auto ssaoHBlurTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("ssaoHBlurTexture"))->getTBindable();
 		auto depthStencilTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("depthStencilTexture"))->getTBindable();
 		auto colorTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("colorTexture"))->getTBindable();
 		auto brightTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("brightTexture"))->getTBindable();
-		auto hBlurBrightTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("hBlurBrightTexture"))->getTBindable();
+		auto bloomHBlurTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("bloomHBlurTexture"))->getTBindable();
+		auto combineTexture = dynamic_cast<BindableRNodeOutput<Texture>*>(resources->findOutput("combineTexture"))->getTBindable();
 		zTexture->setImage(nullptr, TypeId::Float, ColorFormat::Depth, ColorFormat::Depth24, width, height);
 		positionTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height);
 		normalTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB16f, width, height);
 		albedoTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
 		materialTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
 		emissiveTexture->setImage(nullptr, TypeId::UnsignedByte, ColorFormat::RGB, ColorFormat::RGB, width, height);
+		ssaoTexture->setImage(nullptr, TypeId::Float, ColorFormat::R, ColorFormat::R, width, height);
+		ssaoHBlurTexture->setImage(nullptr, TypeId::Float, ColorFormat::R, ColorFormat::R, width, height);
 		depthStencilTexture->setImage(nullptr, TypeId::UnsignedInt24_8, ColorFormat::DepthStencil, ColorFormat::Depth24Stencil8, width, height);
 		colorTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
 		brightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
-		hBlurBrightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
+		bloomHBlurTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
+		combineTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height);
 	}
 
 // Private functions
@@ -218,12 +225,25 @@ namespace se::app {
 			return false;
 		}
 
+		auto ssaoBuffer = std::make_shared<FrameBuffer>();
+		auto iSSAOBufferResource = resources->addBindable(ssaoBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("ssaoBuffer", resources, iSSAOBufferResource) )) {
+			return false;
+		}
+
 		auto ssaoTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
 		ssaoTexture->setImage(nullptr, TypeId::Float, ColorFormat::R, ColorFormat::R, width, height)
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		ssaoBuffer->attach(ssaoTexture, FrameBufferAttachment::kColor0);
 		auto iSSAOTextureResource = resources->addBindable(ssaoTexture);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("ssaoTexture", resources, iSSAOTextureResource) )) {
+			return false;
+		}
+
+		auto ssaoHBlurBuffer = std::make_shared<FrameBuffer>();
+		auto iSSAOHBlurBufferResource = resources->addBindable(ssaoHBlurBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("ssaoHBlurBuffer", resources, iSSAOHBlurBufferResource) )) {
 			return false;
 		}
 
@@ -231,6 +251,7 @@ namespace se::app {
 		ssaoHBlurTexture->setImage(nullptr, TypeId::Float, ColorFormat::R, ColorFormat::R, width, height)
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		ssaoHBlurBuffer->attach(ssaoHBlurTexture, FrameBufferAttachment::kColor0);
 		auto iSSAOHBlurTextureResource = resources->addBindable(ssaoHBlurTexture);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("ssaoHBlurTexture", resources, iSSAOHBlurTextureResource) )) {
 			return false;
@@ -239,6 +260,18 @@ namespace se::app {
 		auto deferredBuffer = std::make_shared<FrameBuffer>();
 		auto iDeferredBufferResource = resources->addBindable(deferredBuffer);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("deferredBuffer", resources, iDeferredBufferResource) )) {
+			return false;
+		}
+
+		auto bloomHBlurBuffer = std::make_shared<FrameBuffer>();
+		auto iBloomHBlurBufferResource = resources->addBindable(bloomHBlurBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("bloomHBlurBuffer", resources, iBloomHBlurBufferResource) )) {
+			return false;
+		}
+
+		auto bloomVBlurBuffer = std::make_shared<FrameBuffer>();
+		auto iBloomVBlurBufferResource = resources->addBindable(bloomVBlurBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("bloomVBlurBuffer", resources, iBloomVBlurBufferResource) )) {
 			return false;
 		}
 
@@ -267,17 +300,35 @@ namespace se::app {
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
 		deferredBuffer->attach(brightTexture, FrameBufferAttachment::kColor0 + 1);
+		bloomVBlurBuffer->attach(brightTexture, FrameBufferAttachment::kColor0);
 		auto iBrightTextureResource = resources->addBindable(brightTexture);
 		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("brightTexture", resources, iBrightTextureResource) )) {
 			return false;
 		}
 
-		auto hBlurBrightTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
-		hBlurBrightTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
+		auto bloomHBlurTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		bloomHBlurTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
 			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
 			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
-		auto iHBlurBrightTextureResource = resources->addBindable(hBlurBrightTexture);
-		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("hBlurBrightTexture", resources, iHBlurBrightTextureResource) )) {
+		bloomHBlurBuffer->attach(bloomHBlurTexture, FrameBufferAttachment::kColor0);
+		auto iBloomHBlurTextureResource = resources->addBindable(bloomHBlurTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("bloomHBlurTexture", resources, iBloomHBlurTextureResource) )) {
+			return false;
+		}
+
+		auto combineBuffer = std::make_shared<FrameBuffer>();
+		auto iCombineBufferResource = resources->addBindable(combineBuffer);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("combineBuffer", resources, iCombineBufferResource) )) {
+			return false;
+		}
+
+		auto combineTexture = std::make_shared<Texture>(TextureTarget::Texture2D);
+		combineTexture->setImage(nullptr, TypeId::Float, ColorFormat::RGBA, ColorFormat::RGBA16f, width, height)
+			.setWrapping(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge)
+			.setFiltering(TextureFilter::Linear, TextureFilter::Linear);
+		combineBuffer->attach(combineTexture, FrameBufferAttachment::kColor0);
+		auto iCombineTextureResource = resources->addBindable(combineTexture);
+		if (!resources->addOutput( std::make_unique<BindableRNodeOutput<Texture>>("combineTexture", resources, iCombineTextureResource) )) {
 			return false;
 		}
 
@@ -295,21 +346,35 @@ namespace se::app {
 
 		auto clearMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
 		auto defaultFBClear = std::make_unique<FBClearNode>("defaultFBClear", clearMask);
+		auto bloomHBlurFBClear = std::make_unique<FBClearNode>("bloomHBlueFBClear", clearMask);
+		auto bloomVBlurFBClear = std::make_unique<FBClearNode>("bloomVBlurFBClear", clearMask);
+		bloomVBlurFBClear->addInput( std::make_unique<RNodeInput>("attach", bloomVBlurFBClear.get()) );
+		auto combineFBClear = std::make_unique<FBClearNode>("combineFBClear", clearMask);
 
 		// Node used for setting the irradiance and prefilter textures of the renderers
 		auto irradianceTexUnitNode = std::make_unique<TextureUnitNode>("irradianceTexUnitNode", DeferredAmbientRenderer::TexUnits::kIrradianceMap);
 		auto prefilterTexUnitNode = std::make_unique<TextureUnitNode>("prefilterTexUnitNode", DeferredAmbientRenderer::TexUnits::kPrefilterMap);
 
 		// Nodes used for blurring the bright colors (bloom)
-		auto hBlurNode = std::make_unique<GaussianBlurNode>("hBlurNode", repository, true);
-		auto vBlurNode = std::make_unique<GaussianBlurNode>("vBlurNode", repository, false);
-		auto hBlurTexUnitNode = std::make_unique<TextureUnitNode>("hBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
-		auto vBlurTexUnitNode = std::make_unique<TextureUnitNode>("vBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto bloomHBlurTexUnitNode = std::make_unique<TextureUnitNode>("bloomHBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto bloomHBlurNode = std::make_unique<GaussianBlurNode>("bloomHBlurNode", repository, true);
+		bloomHBlurNode->addOutput( std::make_unique<RNodeOutput>("attach", bloomHBlurNode.get()) );
+
+		auto bloomVBlurTexUnitNode = std::make_unique<TextureUnitNode>("bloomVBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto bloomVBlurNode = std::make_unique<GaussianBlurNode>("bloomVBlurNode", repository, false);
+		bloomVBlurNode->addOutput( std::make_unique<RNodeOutput>("attach", bloomVBlurNode.get()) );
 
 		// Node used for combining the bloom and color
 		auto combine0TexUnitNode = std::make_unique<TextureUnitNode>("combine0TexUnitNode", CombineNode::kColor0);
 		auto combine1TexUnitNode = std::make_unique<TextureUnitNode>("combine1TexUnitNode", CombineNode::kColor1);
+		combine1TexUnitNode->addInput( std::make_unique<RNodeInput>("attach", combine1TexUnitNode.get()) );
 		auto combineBloomNode = std::make_unique<CombineNode>("combineBloomNode", repository);
+		combineBloomNode->addOutput( std::make_unique<RNodeOutput>("attach", combineBloomNode.get()) );
+
+		// Node used for applying FXAA the 3D scene
+		auto fxaaTexUnitNode = std::make_unique<TextureUnitNode>("fxaaTexUnitNode", FXAANode::kColorTextureUnit);
+		auto fxaaNode = std::make_unique<FXAANode>("fxaaNode", repository);
+		fxaaNode->addInput( std::make_unique<RNodeInput>("attach", fxaaNode.get()) );
 
 		// Node used for drawing 2D renderables
 		auto renderer2D = std::make_unique<Renderer2D>("renderer2D");
@@ -320,7 +385,7 @@ namespace se::app {
 			deferredLightSubGraph = getNode("deferredLightSubGraph"),
 			forwardRendererMesh = getNode("forwardRendererMesh");
 
-		return defaultFBClear->findInput("input")->connect( resources->findOutput("defaultFB") )
+		return defaultFBClear->findInput("target")->connect( resources->findOutput("defaultFB") )
 			&& irradianceTexUnitNode->findInput("input")->connect( resources->findOutput("irradianceTexture") )
 			&& prefilterTexUnitNode->findInput("input")->connect( resources->findOutput("prefilterTexture") )
 			&& deferredAmbientRenderer->findInput("irradiance")->connect( irradianceTexUnitNode->findOutput("output") )
@@ -332,28 +397,42 @@ namespace se::app {
 			&& forwardRendererMesh->findInput("brdf")->connect( resources->findOutput("brdfTexture") )
 			&& forwardRendererMesh->findInput("color")->connect( resources->findOutput("colorTexture") )
 			&& forwardRendererMesh->findInput("bright")->connect( resources->findOutput("brightTexture") )
-			&& hBlurTexUnitNode->findInput("input")->connect( forwardRendererMesh->findOutput("bright") )
-			&& hBlurNode->findInput("input")->connect( hBlurTexUnitNode->findOutput("output") )
-			&& hBlurNode->findInput("output")->connect( resources->findOutput("hBlurBrightTexture") )
-			&& vBlurTexUnitNode->findInput("input")->connect( hBlurNode->findOutput("output") )
-			&& vBlurNode->findInput("input")->connect( vBlurTexUnitNode->findOutput("output") )
-			&& vBlurNode->findInput("output")->connect( forwardRendererMesh->findOutput("bright") )
+			&& bloomHBlurTexUnitNode->findInput("input")->connect( forwardRendererMesh->findOutput("bright") )
+			&& bloomHBlurFBClear->findInput("target")->connect( resources->findOutput("bloomHBlurBuffer") )
+			&& bloomHBlurNode->findInput("input")->connect( bloomHBlurTexUnitNode->findOutput("output") )
+			&& bloomHBlurNode->findInput("target")->connect( bloomHBlurFBClear->findOutput("target") )
+			&& bloomVBlurTexUnitNode->findInput("input")->connect( resources->findOutput("bloomHBlurTexture") )
+			&& bloomVBlurFBClear->findInput("attach")->connect( bloomHBlurNode->findOutput("attach") )
+			&& bloomVBlurFBClear->findInput("target")->connect( resources->findOutput("bloomVBlurBuffer") )
+			&& bloomVBlurNode->findInput("input")->connect( bloomVBlurTexUnitNode->findOutput("output") )
+			&& bloomVBlurNode->findInput("target")->connect( bloomVBlurFBClear->findOutput("target") )
 			&& combine0TexUnitNode->findInput("input")->connect( forwardRendererMesh->findOutput("color") )
-			&& combine1TexUnitNode->findInput("input")->connect( vBlurNode->findOutput("output") )
-			&& combineBloomNode->findInput("target")->connect( defaultFBClear->findOutput("output") )
+			&& combine1TexUnitNode->findInput("attach")->connect( bloomVBlurNode->findOutput("attach") )
+			&& combine1TexUnitNode->findInput("input")->connect( forwardRendererMesh->findOutput("bright") )
+			&& combineFBClear->findInput("target")->connect( resources->findOutput("combineBuffer") )
 			&& combineBloomNode->findInput("color0")->connect( combine0TexUnitNode->findOutput("output") )
 			&& combineBloomNode->findInput("color1")->connect( combine1TexUnitNode->findOutput("output") )
-			&& renderer2D->findInput("target")->connect( combineBloomNode->findOutput("target") )
+			&& combineBloomNode->findInput("target")->connect( combineFBClear->findOutput("target") )
+			&& fxaaTexUnitNode->findInput("input")->connect( resources->findOutput("combineTexture") )
+			&& fxaaNode->findInput("attach")->connect( combineBloomNode->findOutput("attach") )
+			&& fxaaNode->findInput("input")->connect( fxaaTexUnitNode->findOutput("output") )
+			&& fxaaNode->findInput("target")->connect( defaultFBClear->findOutput("target") )
+			&& renderer2D->findInput("target")->connect( fxaaNode->findOutput("target") )
 			&& addNode( std::move(defaultFBClear) )
+			&& addNode( std::move(bloomHBlurFBClear) )
+			&& addNode( std::move(bloomVBlurFBClear) )
 			&& addNode( std::move(irradianceTexUnitNode) )
 			&& addNode( std::move(prefilterTexUnitNode) )
-			&& addNode( std::move(hBlurNode) )
-			&& addNode( std::move(vBlurNode) )
-			&& addNode( std::move(hBlurTexUnitNode) )
-			&& addNode( std::move(vBlurTexUnitNode) )
+			&& addNode( std::move(bloomHBlurNode) )
+			&& addNode( std::move(bloomVBlurNode) )
+			&& addNode( std::move(bloomHBlurTexUnitNode) )
+			&& addNode( std::move(bloomVBlurTexUnitNode) )
 			&& addNode( std::move(combine0TexUnitNode) )
 			&& addNode( std::move(combine1TexUnitNode) )
+			&& addNode( std::move(combineFBClear) )
 			&& addNode( std::move(combineBloomNode) )
+			&& addNode( std::move(fxaaTexUnitNode) )
+			&& addNode( std::move(fxaaNode) )
 			&& addNode( std::move(renderer2D) );
 	}
 
@@ -364,6 +443,12 @@ namespace se::app {
 		auto colorDepthMask = FrameBufferMask::Mask().set(FrameBufferMask::kColor).set(FrameBufferMask::kDepth);
 		auto gFBClear = std::make_unique<FBClearNode>("gFBClear", colorDepthMask);
 		auto deferredFBClear = std::make_unique<FBClearNode>("deferredFBClear", colorDepthMask);
+		auto ssaoFBClear = std::make_unique<FBClearNode>("ssaoFBClear", colorDepthMask);
+		ssaoFBClear->addInput( std::make_unique<RNodeInput>("attach", ssaoFBClear.get()) );
+		auto ssaoHBlurFBClear = std::make_unique<FBClearNode>("ssaoHBlurFBClear", colorDepthMask);
+		ssaoHBlurFBClear->addInput( std::make_unique<RNodeInput>("attach", ssaoHBlurFBClear.get()) );
+		auto ssaoVBlurFBClear = std::make_unique<FBClearNode>("ssaoVBlurFBClear", colorDepthMask);
+		ssaoVBlurFBClear->addInput( std::make_unique<RNodeInput>("attach", ssaoVBlurFBClear.get()) );
 
 		auto gBufferRendererTerrain = std::make_unique<RendererTerrain>("gBufferRendererTerrain");
 		auto gBufferRendererMesh = std::make_unique<RendererMesh>("gBufferRendererMesh");
@@ -376,14 +461,17 @@ namespace se::app {
 		auto ssaoNode = std::make_unique<SSAONode>("ssaoNode", repository);
 		std::size_t ssaoPositionBindableIndex = dynamic_cast<graphics::BindableRNodeInput<Texture>*>(ssaoNode->findInput("position"))->getBindableIndex();
 		std::size_t ssaoNormalBindableIndex = dynamic_cast<graphics::BindableRNodeInput<Texture>*>(ssaoNode->findInput("normal"))->getBindableIndex();
-		ssaoNode->addInput( std::make_unique<RNodeInput>("attach", ssaoNode.get()) );
+		ssaoNode->addOutput( std::make_unique<RNodeOutput>("attach", ssaoNode.get()) );
 		ssaoNode->addOutput( std::make_unique<graphics::BindableRNodeOutput<Texture>>("position", ssaoNode.get(), ssaoPositionBindableIndex) );
 		ssaoNode->addOutput( std::make_unique<graphics::BindableRNodeOutput<Texture>>("normal", ssaoNode.get(), ssaoNormalBindableIndex) );
 
-		auto ssaoHBlurNode = std::make_unique<GaussianBlurNode>("ssaoHBlurNode", repository, true);
-		auto ssaoVBlurNode = std::make_unique<GaussianBlurNode>("ssaoVBlurNode", repository, false);
 		auto ssaoHBlurTexUnitNode = std::make_unique<TextureUnitNode>("ssaoHBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto ssaoHBlurNode = std::make_unique<GaussianBlurNode>("ssaoHBlurNode", repository, true);
+		ssaoHBlurNode->addOutput( std::make_unique<RNodeOutput>("attach", ssaoHBlurNode.get()) );
+
 		auto ssaoVBlurTexUnitNode = std::make_unique<TextureUnitNode>("ssaoVBlurTexUnitNode", GaussianBlurNode::kColorTextureUnit);
+		auto ssaoVBlurNode = std::make_unique<GaussianBlurNode>("ssaoVBlurNode", repository, false);
+		ssaoVBlurNode->addOutput( std::make_unique<RNodeOutput>("attach", ssaoVBlurNode.get()) );
 
 		auto texUnitNodeAmbientPosition = std::make_unique<TextureUnitNode>("texUnitNodeAmbientPosition", DeferredAmbientRenderer::TexUnits::kPosition);
 		auto texUnitNodeAmbientNormal = std::make_unique<TextureUnitNode>("texUnitNodeAmbientNormal", DeferredAmbientRenderer::TexUnits::kNormal);
@@ -391,6 +479,7 @@ namespace se::app {
 		auto texUnitNodeAmbientMaterial = std::make_unique<TextureUnitNode>("texUnitNodeAmbientMaterial", DeferredAmbientRenderer::TexUnits::kMaterial);
 		auto texUnitNodeAmbientEmissive = std::make_unique<TextureUnitNode>("texUnitNodeAmbientEmissive", DeferredAmbientRenderer::TexUnits::kEmissive);
 		auto texUnitNodeAmbientSSAO = std::make_unique<TextureUnitNode>("texUnitNodeAmbientSSAO", DeferredAmbientRenderer::TexUnits::kSSAO);
+		texUnitNodeAmbientSSAO->addInput( std::make_unique<RNodeInput>("attach", texUnitNodeAmbientSSAO.get()) );
 
 		auto deferredAmbientRenderer = std::make_unique<DeferredAmbientRenderer>("deferredAmbientRenderer", repository);
 
@@ -415,30 +504,36 @@ namespace se::app {
 		// Add the nodes and their connections
 		RenderNode* resources = getNode("resources");
 
-		return gFBClear->findInput("input")->connect( resources->findOutput("gBuffer") )
-			&& deferredFBClear->findInput("input")->connect( resources->findOutput("deferredBuffer") )
-			&& gBufferRendererTerrain->findInput("target")->connect( gFBClear->findOutput("output") )
+		return gFBClear->findInput("target")->connect( resources->findOutput("gBuffer") )
+			&& deferredFBClear->findInput("target")->connect( resources->findOutput("deferredBuffer") )
+			&& gBufferRendererTerrain->findInput("target")->connect( gFBClear->findOutput("target") )
 			&& gBufferRendererMesh->findInput("target")->connect( gBufferRendererTerrain->findOutput("target") )
 			&& gBufferRendererParticles->findInput("target")->connect( gBufferRendererMesh->findOutput("target") )
 			&& texUnitNodeSSAOPosition->findInput("input")->connect( resources->findOutput("positionTexture") )
 			&& texUnitNodeSSAONormal->findInput("input")->connect( resources->findOutput("normalTexture") )
-			&& ssaoNode->findInput("attach")->connect( gBufferRendererParticles->findOutput("attach") )
-			&& ssaoNode->findInput("input")->connect( resources->findOutput("ssaoTexture") )
+			&& ssaoFBClear->findInput("attach")->connect( gBufferRendererParticles->findOutput("attach") )
+			&& ssaoFBClear->findInput("target")->connect( resources->findOutput("ssaoBuffer") )
+			&& ssaoNode->findInput("target")->connect( ssaoFBClear->findOutput("target") )
 			&& ssaoNode->findInput("position")->connect( texUnitNodeSSAOPosition->findOutput("output") )
 			&& ssaoNode->findInput("normal")->connect( texUnitNodeSSAONormal->findOutput("output") )
-			&& ssaoHBlurTexUnitNode->findInput("input")->connect( ssaoNode->findOutput("output") )
+			&& ssaoHBlurTexUnitNode->findInput("input")->connect( resources->findOutput("ssaoTexture") )
+			&& ssaoHBlurFBClear->findInput("attach")->connect( ssaoNode->findOutput("attach") )
+			&& ssaoHBlurFBClear->findInput("target")->connect( resources->findOutput("ssaoHBlurBuffer") )
 			&& ssaoHBlurNode->findInput("input")->connect( ssaoHBlurTexUnitNode->findOutput("output") )
-			&& ssaoHBlurNode->findInput("output")->connect( resources->findOutput("ssaoHBlurTexture") )
-			&& ssaoVBlurTexUnitNode->findInput("input")->connect( ssaoHBlurNode->findOutput("output") )
+			&& ssaoHBlurNode->findInput("target")->connect( ssaoHBlurFBClear->findOutput("target") )
+			&& ssaoVBlurTexUnitNode->findInput("input")->connect( resources->findOutput("ssaoHBlurTexture") )
+			&& ssaoVBlurFBClear->findInput("attach")->connect( ssaoHBlurNode->findOutput("attach") )
+			&& ssaoVBlurFBClear->findInput("target")->connect( ssaoNode->findOutput("target") )
 			&& ssaoVBlurNode->findInput("input")->connect( ssaoVBlurTexUnitNode->findOutput("output") )
-			&& ssaoVBlurNode->findInput("output")->connect( resources->findOutput("ssaoTexture") )
+			&& ssaoVBlurNode->findInput("target")->connect( ssaoVBlurFBClear->findOutput("target") )
 			&& texUnitNodeAmbientPosition->findInput("input")->connect( ssaoNode->findOutput("position") )
 			&& texUnitNodeAmbientNormal->findInput("input")->connect( ssaoNode->findOutput("normal") )
 			&& texUnitNodeAmbientAlbedo->findInput("input")->connect( resources->findOutput("albedoTexture") )
 			&& texUnitNodeAmbientMaterial->findInput("input")->connect( resources->findOutput("materialTexture") )
 			&& texUnitNodeAmbientEmissive->findInput("input")->connect( resources->findOutput("emissiveTexture") )
-			&& texUnitNodeAmbientSSAO->findInput("input")->connect( ssaoVBlurNode->findOutput("output") )
-			&& deferredAmbientRenderer->findInput("target")->connect( deferredFBClear->findOutput("output") )
+			&& texUnitNodeAmbientSSAO->findInput("attach")->connect( ssaoVBlurNode->findOutput("attach") )
+			&& texUnitNodeAmbientSSAO->findInput("input")->connect( resources->findOutput("ssaoTexture") )
+			&& deferredAmbientRenderer->findInput("target")->connect( deferredFBClear->findOutput("target") )
 			&& deferredAmbientRenderer->findInput("position")->connect( texUnitNodeAmbientPosition->findOutput("output") )
 			&& deferredAmbientRenderer->findInput("normal")->connect( texUnitNodeAmbientNormal->findOutput("output") )
 			&& deferredAmbientRenderer->findInput("albedo")->connect( texUnitNodeAmbientAlbedo->findOutput("output") )
@@ -459,6 +554,9 @@ namespace se::app {
 			&& deferredLightSubGraph->findInput("albedo")->connect( texUnitNodeLightAlbedo->findOutput("output") )
 			&& deferredLightSubGraph->findInput("material")->connect( texUnitNodeLightMaterial->findOutput("output") )
 			&& addNode( std::move(gFBClear) )
+			&& addNode( std::move(ssaoFBClear) )
+			&& addNode( std::move(ssaoHBlurFBClear) )
+			&& addNode( std::move(ssaoVBlurFBClear) )
 			&& addNode( std::move(deferredFBClear) )
 			&& addNode( std::move(gBufferRendererTerrain) )
 			&& addNode( std::move(gBufferRendererMesh) )

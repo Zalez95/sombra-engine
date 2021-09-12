@@ -154,14 +154,11 @@ namespace editor {
 	}
 
 
-	bool Alert::execute()
+	Alert::Result Alert::execute()
 	{
-		bool ret = false;
+		Result ret = Result::Nothing;
 
-		if (mShow) {
-			ImGui::OpenPopup((mTitle + "##" + mTag + "::Title").c_str());
-			mShow = false;
-		}
+		ImGui::OpenPopup((mTitle + "##" + mTag + "::Title").c_str());
 
 		ImVec2 center(0.5f * ImGui::GetIO().DisplaySize.x, 0.5f * ImGui::GetIO().DisplaySize.y);
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -172,12 +169,13 @@ namespace editor {
 
 			if (ImGui::Button((mButton + "##" + mTag + "::Button").c_str())) {
 				ImGui::CloseCurrentPopup();
-				ret = true;
+				ret = Result::Button;
 			}
 			ImGui::SetItemDefaultFocus();
 			ImGui::SameLine();
 			if (ImGui::Button(("Cancel##" + mTag + "::Cancel").c_str())) {
 				ImGui::CloseCurrentPopup();
+				ret = Result::Cancel;
 			}
 			ImGui::EndPopup();
 		}
@@ -186,17 +184,13 @@ namespace editor {
 	}
 
 
-	bool FileWindow::execute(std::string& outPath)
+	FileWindow::Result FileWindow::execute(std::string& outPath)
 	{
-		bool ret = false;
+		Result ret = Result::Nothing;
 
-		if (!mShow) {
-			return ret;
-		}
-
-		if (!ImGui::Begin(("File##" + mTag + "::File").c_str(), &mShow)) {
+		if (!ImGui::Begin(("File##" + mTag + "::File").c_str())) {
 			ImGui::End();
-			return ret;
+			return Result::Cancel;
 		}
 
 		// Top bar
@@ -224,7 +218,7 @@ namespace editor {
 		// Content
 		bool open = false;
 
-		const float reservedForFooter = 6 * ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+		const float reservedForFooter = 7 * ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reservedForFooter), false, ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::Columns(4, "filecolumns");
 		ImGui::Separator();
@@ -300,7 +294,7 @@ namespace editor {
 		ImGui::InputText(("Name##" + mTag + "::Name").c_str(), mSelected.data(), mSelected.size(), ImGuiInputTextFlags_EnterReturnsTrue);
 
 		if (ImGui::Button(("Close##" + mTag + "::Close").c_str())) {
-			mShow = false;
+			ret = Result::Cancel;
 		}
 		ImGui::SameLine();
 		if (mSelected.empty()) {
@@ -328,8 +322,7 @@ namespace editor {
 			}
 			else {
 				outPath = selectedPath.string();
-				mShow = false;
-				ret = true;
+				ret = Result::Open;
 			}
 		}
 

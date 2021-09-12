@@ -21,6 +21,18 @@ namespace editor {
 		/** The window used for opening/importing/saving files */
 		FileWindow mWindow;
 
+		/** If an operation should be cancelled or not */
+		bool mCancel = false;
+
+		/** The error string, empty if the error popup must not be shown */
+		std::string mError;
+
+		/** If the current scene must be closed or not */
+		bool mClose = false;
+
+		/** If a new scene must be created or not */
+		bool mCreate = false;
+
 		/** @see mWindow is being used for opening a Scene */
 		bool mOpen = false;
 
@@ -50,6 +62,25 @@ namespace editor {
 
 		/** Draws the current menu bar */
 		void render();
+
+		/** Error handling */
+		void doError();
+
+		/** Closes the current Scene if the user want's to */
+		void closeScene();
+
+		/** Creates a new Scene, closing the current one if the user want's
+		 * to */
+		void createScene();
+
+		/** Window handling */
+		void doWindow();
+
+		/** Shows the Controls window */
+		void showControls();
+
+		/** Shows the About window */
+		void showAbout();
 	};
 
 }

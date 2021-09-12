@@ -113,6 +113,10 @@ namespace editor {
 	 */
 	class Alert
 	{
+	public:		// Nested types
+		/** Which action was selected by the User */
+		enum class Result : int { Nothing = 0, Cancel, Button };
+
 	private:	// Attributes
 		/** The tag used in the Alert ImGui elements */
 		std::string mTag;
@@ -126,9 +130,6 @@ namespace editor {
 		/** The text that the accept button must show */
 		std::string mButton;
 
-		/** If the pop up must be shown or not */
-		bool mShow;
-
 	public:		// Functions
 		/** Creates a new Alert
 		 *
@@ -140,16 +141,12 @@ namespace editor {
 			const char* tag,
 			const char* title, const char* message, const char* button
 		) : mTag(tag),
-			mTitle(title), mMessage(message), mButton(button), mShow(false) {};
-
-		/** If the pop up must be shown */
-		void show() { mShow = true; };
+			mTitle(title), mMessage(message), mButton(button) {};
 
 		/** Draws the current pop up if @see show was called before
 		 *
-		 * @return	true if the pop up accept button was pressed, false
-		 *			otherwise */
-		bool execute();
+		 * @return	the Result of the user interaction with the Alert window */
+		Result execute();
 	};
 
 
@@ -159,12 +156,13 @@ namespace editor {
 	 */
 	class FileWindow
 	{
+	public:		// Nested types
+		/** Which action was selected by the User */
+		enum class Result : int { Nothing = 0, Cancel, Open };
+
 	private:	// Attributes
 		/** The maximum length of a Filename */
 		static constexpr std::size_t kMaxFilename = 256;
-
-		/** If the window must be shown or not */
-		bool mShow = false;
 
 		/** The prefix used for all the ImGui elements of the FileWindow */
 		std::string mTag;
@@ -186,14 +184,11 @@ namespace editor {
 		FileWindow(const char* tag) :
 			mTag(tag), mCurrentPath(std::filesystem::current_path()) {};
 
-		/** If the window must be shown */
-		void show() { mShow = true; };
-
 		/** Draws the current window if @see show was called before
 		 *
 		 * @param	outPath the path of the file selected (return value)
 		 * @return	true if a file was selected, false otherwise */
-		bool execute(std::string& outPath);
+		Result execute(std::string& outPath);
 	};
 
 }

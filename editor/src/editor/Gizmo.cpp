@@ -13,29 +13,23 @@ namespace editor {
 	{
 		bool open = true;
 		if (ImGui::Begin(("Gizmo Panel##GizmoPanel" + std::to_string(mPanelId)).c_str(), &open)) {
-			if (ImGui::BeginTable("GizmoTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("Operation");
-				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("Mode");
+			ImGui::Text("Operation");
+			ImGui::SameLine();
+			if (ImGui::Selectable("T", mOperation == Operation::Translation, 0, ImVec2(15, 15))) { mOperation = Operation::Translation; }
+			ImGui::SameLine();
+			if (ImGui::Selectable("R", mOperation == Operation::Rotation, 0, ImVec2(15, 15))) { mOperation = Operation::Rotation; }
+			ImGui::SameLine();
+			if (ImGui::Selectable("S", mOperation == Operation::Scale, 0, ImVec2(15, 15))) { mOperation = Operation::Scale; }
 
-				ImGui::TableNextRow();
+			ImGui::SameLine();
+			ImGui::Text("|");
+			ImGui::SameLine();
 
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::RadioButton("Translation", mOperation == Operation::Translation)) { mOperation = Operation::Translation; }
-				ImGui::SameLine();
-				if (ImGui::RadioButton("Rotation", mOperation == Operation::Rotation)) { mOperation = Operation::Rotation; }
-				ImGui::SameLine();
-				if (ImGui::RadioButton("Scale", mOperation == Operation::Scale)) { mOperation = Operation::Scale; }
-
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::RadioButton("World", mWorld)) { mWorld = true; }
-				ImGui::SameLine();
-				if (ImGui::RadioButton("Local", !mWorld)) { mWorld = false; }
-
-				ImGui::EndTable();
-			}
+			ImGui::Text("Mode");
+			ImGui::SameLine();
+			if (ImGui::Selectable("World", mWorld, 0, ImVec2(40, 15))) { mWorld = true; }
+			ImGui::SameLine();
+			if (ImGui::Selectable("Local", !mWorld, 0, ImVec2(40, 15))) { mWorld = false; }
 		}
 		ImGui::End();
 

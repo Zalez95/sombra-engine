@@ -92,9 +92,9 @@ namespace se::app {
 		 *  [                            "resources"                        ]
 		 *    |gBuffer  |deferredBuffer                  |positionTexture
 		 *    \         |_______________                 |
-		 *    |input                    |input           |__________________
+		 *    |target                    |target           |__________________
 		 *  ["gFBClear"]       ["deferredFBClear"]       |                  |
-		 *    |output                   |output          |                  |
+		 *    |target                   |target          |                  |
 		 *    |                         |                |input             |
 		 *    |target                   |   ["texUnitNodeAmbientPosition"]  |
 		 *  ["gBufferRendererTerrain"]  |                |output            |
