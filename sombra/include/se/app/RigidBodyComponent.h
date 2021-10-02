@@ -29,9 +29,9 @@ namespace se::app {
 		 * @param	config the configuration data of the RigidBodyComponent
 		 * @param	data the initial movement data of the RigidBodyComponent */
 		RigidBodyComponent(
-			const physics::RigidBodyConfig& config = physics::RigidBodyConfig(),
-			const physics::RigidBodyData& data = physics::RigidBodyData()
-		) : mRigidBody(config, data) {};
+			const physics::RigidBodyProperties& properties = {},
+			const physics::RigidBodyState& state = {}
+		) : mRigidBody(properties, state) {};
 
 		/** @return	the raw RigidBody of the RigidBodyComponent */
 		physics::RigidBody& get() { return mRigidBody; };
@@ -39,21 +39,58 @@ namespace se::app {
 		/** @return	the raw audio source of the RigidBodyComponent */
 		const physics::RigidBody& get() const { return mRigidBody; };
 
-		/** @return	the RigidBodyConfig of the RigidBodyComponent */
-		const physics::RigidBodyConfig& getConfig() const
-		{ return mRigidBody.getConfig(); };
+		/** @return	the RigidBodyProperties of the RigidBodyComponent */
+		const physics::RigidBodyProperties& getProperties() const
+		{ return mRigidBody.getProperties(); };
 
-		/** @return	the RigidBodyConfig of the RigidBodyComponent */
-		physics::RigidBodyConfig& getConfig()
-		{ return mRigidBody.getConfig(); };
+		/** Sets the RigidBodyProperties of the RigidBodyComponent
+		 *
+		 * @param	state the new RigidBodyProperties of the RigidBodyComponent
+		 * @return	a reference to the current RigidBodyComponent object */
+		RigidBodyComponent& setProperties(
+			const physics::RigidBodyProperties& properties
+		) { mRigidBody.setProperties(properties); return *this; };
 
-		/** @return	the current RigidBodyData of the RigidBodyComponent */
-		const physics::RigidBodyData& getData() const
-		{ return mRigidBody.getData(); };
+		/** @return	the current RigidBodyState of the RigidBodyComponent */
+		const physics::RigidBodyState& getState() const
+		{ return mRigidBody.getState(); };
 
-		/** @return	the current RigidBodyData of the RigidBodyComponent */
-		physics::RigidBodyData& getData()
-		{ return mRigidBody.getData(); };
+		/** Sets the RigidBodyState of the RigidBodyComponent
+		 *
+		 * @param	state the new RigidBodyState of the RigidBodyComponent
+		 * @return	a reference to the current RigidBodyComponent object */
+		RigidBodyComponent& setState(const physics::RigidBodyState& state)
+		{ mRigidBody.setState(state); return *this; };
+
+		/** @return	a pointer to the current Collider of the RigidBodyComponent,
+		 *			nullptr if it doesn't have one */
+		physics::Collider* getCollider() const
+		{ return mRigidBody.getCollider(); };
+
+		/** Sets the Collider of the RigidBodyComponent
+		 *
+		 * @param	collider a pointer to the new Collider of the
+		 *			RigidBodyComponent
+		 * @return	a reference to the current RigidBodyComponent object */
+		RigidBodyComponent& setCollider(
+			std::unique_ptr<physics::Collider>&& collider
+		) { mRigidBody.setCollider(std::move(collider)); return *this; };
+
+		/** @return	the Collider local trasforms of the RigidBodyComponent */
+		const glm::mat4& getColliderLocalTransforms() const
+		{ return mRigidBody.getColliderLocalTransforms(); };
+
+		/** Sets the local trasforms matrix of the Collider
+		 *
+		 * @param	localTransforms the new local transforms matrix of
+		 *			the Collider
+		 * @return	a reference to the current RigidBodyComponent object */
+		RigidBodyComponent& setColliderLocalTrasforms(
+			const glm::mat4& localTransforms
+		) {
+			mRigidBody.setColliderLocalTrasforms(localTransforms);
+			return *this;
+		};
 
 		/** Adds a Force to the RigidBody
 		 *

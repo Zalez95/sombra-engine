@@ -22,7 +22,6 @@ namespace se::app {
 			Terrain,
 			ParticleSystem,
 			RigidBody,
-			Collider,
 			Animation,
 			AudioSource,
 			Skin,

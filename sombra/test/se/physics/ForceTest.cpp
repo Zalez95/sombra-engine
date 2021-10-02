@@ -4,7 +4,7 @@
 #include <se/physics/forces/PunctualForce.h>
 #include <se/physics/forces/DirectionalForce.h>
 #include <se/physics/forces/Gravity.h>
-#include <se/physics/PhysicsEngine.h>
+#include <se/physics/RigidBodyWorld.h>
 
 using namespace se::physics;
 static constexpr float kTolerance = 0.000001f;
@@ -20,35 +20,35 @@ TEST(Force, gravity)
 	const glm::vec3 expectedAngularAcceleration(0.0f, 0.0f, 0.0f);
 	const glm::vec3 expectedTorqueSum(0.0f);
 
-	se::physics::RigidBodyConfig config(2.0f, glm::mat3(0.8f));
-	config.sleepMotion = 0.5f;
-	se::physics::RigidBodyData data;
-	data.position			= glm::vec3(0.0f, 1.0f, 0.0f);
-	data.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
-	data.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
-	data.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
-	data.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
+	RigidBodyProperties properties(2.0f, glm::mat3(0.8f));
+	properties.sleepMotion = 0.5f;
+	RigidBodyState state;
+	state.position			= glm::vec3(0.0f, 1.0f, 0.0f);
+	state.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
+	state.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
+	state.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
+	state.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
 
-	se::physics::RigidBody rb(config, data);
+	RigidBody rb(properties, state);
 
-	auto gravityForce = std::make_shared<se::physics::Gravity>(-9.8f);
+	auto gravityForce = std::make_shared<Gravity>(-9.8f);
 	rb.addForce(gravityForce);
 
-	se::physics::PhysicsEngine physicsEngine(0.1f, glm::vec3(-1000.f), glm::vec3(1000.0f));
-	physicsEngine.addRigidBody(&rb);
-	physicsEngine.integrate(0.0f);
+	RigidBodyWorld rigidBodyWorld;
+	rigidBodyWorld.addRigidBody(&rb);
+	rigidBodyWorld.update(0.0f);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(rb.getData().position[i], expectedPosition[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().forceSum[i], expectedForceSum[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().torqueSum[i], expectedTorqueSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().position[i], expectedPosition[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().forceSum[i], expectedForceSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().torqueSum[i], expectedTorqueSum[i], kTolerance);
 	}
 	for (int i = 0; i < 4; ++i) {
-		EXPECT_NEAR(rb.getData().orientation[i], expectedOrientation[i], kTolerance);
+		EXPECT_NEAR(rb.getState().orientation[i], expectedOrientation[i], kTolerance);
 	}
 }
 
@@ -64,35 +64,35 @@ TEST(Force, punctualForce)
 	const glm::vec3 expectedAngularAcceleration(10.217813491f, 40.583122253f, 2.346875190f);
 	const glm::vec3 expectedTorqueSum(8.174250602f, 32.466499328f, 1.877500057f);
 
-	se::physics::RigidBodyConfig config(2.0f, glm::mat3(0.8f));
-	config.sleepMotion = 0.5f;
-	se::physics::RigidBodyData data;
-	data.position			= glm::vec3(0.0f, 1.0f, 0.0f);
-	data.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
-	data.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
-	data.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
-	data.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
+	RigidBodyProperties properties(2.0f, glm::mat3(0.8f));
+	properties.sleepMotion = 0.5f;
+	RigidBodyState state;
+	state.position			= glm::vec3(0.0f, 1.0f, 0.0f);
+	state.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
+	state.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
+	state.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
+	state.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
 
-	se::physics::RigidBody rb(config, data);
+	RigidBody rb(properties, state);
 
-	auto punctualForce = std::make_shared<se::physics::PunctualForce>(glm::vec3(-5.0f, 1.255f, 0.067f), glm::vec3(0.5f, 1.25f, -6.5f));
+	auto punctualForce = std::make_shared<PunctualForce>(glm::vec3(-5.0f, 1.255f, 0.067f), glm::vec3(0.5f, 1.25f, -6.5f));
 	rb.addForce(punctualForce);
 
-	se::physics::PhysicsEngine physicsEngine(0.1f, glm::vec3(-1000.f), glm::vec3(1000.0f));
-	physicsEngine.addRigidBody(&rb);
-	physicsEngine.integrate(0.0f);
+	RigidBodyWorld rigidBodyWorld;
+	rigidBodyWorld.addRigidBody(&rb);
+	rigidBodyWorld.update(0.0f);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(rb.getData().position[i], expectedPosition[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().forceSum[i], expectedForceSum[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().torqueSum[i], expectedTorqueSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().position[i], expectedPosition[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().forceSum[i], expectedForceSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().torqueSum[i], expectedTorqueSum[i], kTolerance);
 	}
 	for (int i = 0; i < 4; ++i) {
-		EXPECT_NEAR(rb.getData().orientation[i], expectedOrientation[i], kTolerance);
+		EXPECT_NEAR(rb.getState().orientation[i], expectedOrientation[i], kTolerance);
 	}
 }
 
@@ -108,34 +108,34 @@ TEST(Force, directionalForce)
 	const glm::vec3 expectedAngularAcceleration(0.0f, 0.0f, 0.0f);
 	const glm::vec3 expectedTorqueSum(0.0f);
 
-	se::physics::RigidBodyConfig config(2.0f, glm::mat3(0.8f));
-	config.sleepMotion = 0.5f;
-	se::physics::RigidBodyData data;
-	data.position			= glm::vec3(0.0f, 1.0f, 0.0f);
-	data.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
-	data.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
-	data.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
-	data.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
+	RigidBodyProperties properties(2.0f, glm::mat3(0.8f));
+	properties.sleepMotion = 0.5f;
+	RigidBodyState state;
+	state.position			= glm::vec3(0.0f, 1.0f, 0.0f);
+	state.linearVelocity		= glm::vec3(1.0f, 0.0f, 0.0f);
+	state.angularVelocity	= glm::vec3(0.0f, glm::pi<float>(), 0.0f);
+	state.forceSum			= glm::vec3(0.1f, 0.0f, 0.0f);
+	state.torqueSum			= glm::vec3(0.0f, 0.1f, 0.0f);
 
-	se::physics::RigidBody rb(config, data);
+	RigidBody rb(properties, state);
 
-	auto directionalForce = std::make_shared<se::physics::DirectionalForce>(glm::vec3(0.8f, 3.2f, -6.5f));
+	auto directionalForce = std::make_shared<DirectionalForce>(glm::vec3(0.8f, 3.2f, -6.5f));
 	rb.addForce(directionalForce);
 
-	se::physics::PhysicsEngine physicsEngine(0.1f, glm::vec3(-1000.f), glm::vec3(1000.0f));
-	physicsEngine.addRigidBody(&rb);
-	physicsEngine.integrate(0.0f);
+	RigidBodyWorld rigidBodyWorld;
+	rigidBodyWorld.addRigidBody(&rb);
+	rigidBodyWorld.update(0.0f);
 
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(rb.getData().position[i], expectedPosition[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().forceSum[i], expectedForceSum[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
-		EXPECT_NEAR(rb.getData().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
-		EXPECT_NEAR(rb.getData().torqueSum[i], expectedTorqueSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().position[i], expectedPosition[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearVelocity[i], expectedLinearVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().linearAcceleration[i], expectedLinearAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().forceSum[i], expectedForceSum[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularVelocity[i], expectedAngularVelocity[i], kTolerance);
+		EXPECT_NEAR(rb.getState().angularAcceleration[i], expectedAngularAcceleration[i], kTolerance);
+		EXPECT_NEAR(rb.getState().torqueSum[i], expectedTorqueSum[i], kTolerance);
 	}
 	for (int i = 0; i < 4; ++i) {
-		EXPECT_NEAR(rb.getData().orientation[i], expectedOrientation[i], kTolerance);
+		EXPECT_NEAR(rb.getState().orientation[i], expectedOrientation[i], kTolerance);
 	}
 }

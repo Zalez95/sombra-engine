@@ -1,7 +1,6 @@
 #ifndef PUNCTUAL_FORCE_H
 #define PUNCTUAL_FORCE_H
 
-#include <glm/glm.hpp>
 #include "Force.h"
 
 namespace se::physics {
@@ -50,8 +49,8 @@ namespace se::physics {
 		virtual std::unique_ptr<Force> clone() const override
 		{ return std::make_unique<PunctualForce>(*this); };
 
-		/** @copydoc Force::apply(RigidBody&) */
-		virtual void apply(RigidBody& rigidBody) override;
+		/** @copydoc Force::calculate(const RigidBody&) */
+		ForceTorquePair calculate(const RigidBody& rigidBody) const override;
 	};
 
 }

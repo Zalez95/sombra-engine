@@ -9,6 +9,7 @@ namespace se::physics {
 
 	class RigidBody;
 	class Constraint;
+	class RigidBodyWorld;
 
 
 	/**
@@ -22,9 +23,8 @@ namespace se::physics {
 		using IndexPair = std::array<std::size_t, 2>;
 
 	private:	// Attributes
-		/** The maximum number of iterations that the Gauss-Seidel algorithm
-		 * should run */
-		static constexpr int kMaxIterations = 10;
+		/** A reference to the RigidBodyWorld that holds the RigidBodies */
+		RigidBodyWorld& mParentWorld;
 
 		/** The vector that holds the registered Constraints in the
 		 * ConstraintManager */
@@ -82,6 +82,13 @@ namespace se::physics {
 		std::vector<glm::vec3> mForceExtMatrix;
 
 	public:		// Constraints
+		/** Creates a new ConstraintManager
+		 *
+		 * @param	parentWorld the RigidBodyWorld that holds all the
+		 *			RigidBodies to update */
+		ConstraintManager(RigidBodyWorld& parentWorld) :
+			mParentWorld(parentWorld) {};
+
 		/** Registers the given Constraint in the ConstraintManager, so the
 		 * movement of the RigidBodies that it holds will be restricted.
 		 *

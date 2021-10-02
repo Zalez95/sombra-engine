@@ -1,16 +1,16 @@
-#include <algorithm>
 #include "se/physics/RigidBody.h"
-#include "se/physics/forces/Force.h"
 #include "RigidBodyDynamics.h"
 
 namespace se::physics {
 
 	void RigidBodyDynamics::processForces(RigidBody& rigidBody)
 	{
-		rigidBody.getData().forceSum = glm::vec3(0.0f);
-		rigidBody.getData().torqueSum = glm::vec3(0.0f);
-		rigidBody.processForces([&](std::shared_ptr<Force> force) {
-			force->apply(rigidBody);
+		rigidBody.mState.forceSum = glm::vec3(0.0f);
+		rigidBody.mState.torqueSum = glm::vec3(0.0f);
+		rigidBody.processForces([&](const std::shared_ptr<Force>& force) {
+			auto [curForce, curTorque] = force->calculate(rigidBody);
+			rigidBody.mState.forceSum += curForce;
+			rigidBody.mState.torqueSum += curTorque;
 		});
 	}
 
@@ -31,86 +31,41 @@ namespace se::physics {
 
 	void RigidBodyDynamics::applyForces(RigidBody& rigidBody)
 	{
-		rigidBody.mData.linearAcceleration = rigidBody.mConfig.invertedMass * rigidBody.mData.forceSum;
+		rigidBody.mState.linearAcceleration = rigidBody.mProperties.invertedMass * rigidBody.mState.forceSum;
 	}
 
 
 	void RigidBodyDynamics::applyTorques(RigidBody& rigidBody)
 	{
-		rigidBody.mData.angularAcceleration = rigidBody.mInvertedInertiaTensorWorld * rigidBody.mData.torqueSum;
+		rigidBody.mState.angularAcceleration = rigidBody.mState.invertedInertiaTensorWorld * rigidBody.mState.torqueSum;
 	}
 
 
 	void RigidBodyDynamics::integrateLinearAcceleration(RigidBody& rigidBody, float deltaTime)
 	{
-		rigidBody.mData.linearVelocity = rigidBody.mData.linearVelocity * glm::pow(rigidBody.mConfig.linearDrag, deltaTime)
-			+ rigidBody.mData.linearAcceleration * deltaTime;
+		rigidBody.mState.linearVelocity = rigidBody.mState.linearVelocity * glm::pow(1.0f - rigidBody.mProperties.linearDrag, deltaTime)
+			+ rigidBody.mState.linearAcceleration * deltaTime;
 	}
 
 
 	void RigidBodyDynamics::integrateAngularAcceleration(RigidBody& rigidBody, float deltaTime)
 	{
-		rigidBody.mData.angularVelocity = rigidBody.mData.angularVelocity * glm::pow(rigidBody.mConfig.angularDrag, deltaTime)
-			+ rigidBody.mData.angularAcceleration * deltaTime;
+		rigidBody.mState.angularVelocity = rigidBody.mState.angularVelocity * glm::pow(1.0f - rigidBody.mProperties.angularDrag, deltaTime)
+			+ rigidBody.mState.angularAcceleration * deltaTime;
 	}
 
 
 	void RigidBodyDynamics::integrateLinearVelocity(RigidBody& rigidBody, float deltaTime)
 	{
-		rigidBody.mData.position += rigidBody.mData.linearVelocity * deltaTime;
+		rigidBody.mState.position += rigidBody.mState.linearVelocity * deltaTime;
 	}
 
 
 	void RigidBodyDynamics::integrateAngularVelocity(RigidBody& rigidBody, float deltaTime)
 	{
-		const glm::quat angularVelocityQuat(0.0f, rigidBody.mData.angularVelocity);
-		rigidBody.mData.orientation += (0.5f * deltaTime * angularVelocityQuat) * rigidBody.mData.orientation;
-		rigidBody.mData.orientation = glm::normalize(rigidBody.mData.orientation);
-	}
-
-
-	void RigidBodyDynamics::updateTransformsMatrix(RigidBody& rigidBody)
-	{
-		// Update the transforms matrix of the RigidBody
-		glm::mat4 translation	= glm::translate(glm::mat4(1.0f), rigidBody.mData.position);
-		glm::mat4 rotation		= glm::mat4_cast(rigidBody.mData.orientation);
-		rigidBody.mTransformsMatrix = translation * rotation;
-
-		// Update the inertia tensor of the RigidBody
-		glm::mat3 inverseTransformsMat3 = glm::inverse(rigidBody.mTransformsMatrix);
-		rigidBody.mInvertedInertiaTensorWorld = glm::transpose(inverseTransformsMat3)
-			* rigidBody.mConfig.invertedInertiaTensor
-			* inverseTransformsMat3;
-	}
-
-
-	void RigidBodyDynamics::updateMotion(RigidBody& rigidBody, float bias, float maxMotion)
-	{
-		float motion = glm::dot(rigidBody.mData.linearVelocity, rigidBody.mData.linearVelocity)
-			+ glm::dot(rigidBody.mData.angularVelocity, rigidBody.mData.angularVelocity);
-		motion = bias * rigidBody.mMotion + (1.0f - bias) * motion;
-		rigidBody.mMotion = std::min(motion, maxMotion);
-	}
-
-
-	void RigidBodyDynamics::setState(RigidBody& rigidBody, RigidBodyState state, bool value)
-	{
-		if (value) {
-			rigidBody.mState.set( static_cast<int>(state) );
-
-			// Set the motion of the RigidBody to a larger value than
-			// mSleepEpsilon to prevent it from falling sleep instantly
-			if (state == RigidBodyState::Sleeping) {
-				rigidBody.mMotion = 2.0f * rigidBody.mConfig.sleepMotion;
-			}
-		}
-		else {
-			rigidBody.mState.reset( static_cast<int>(state) );
-
-			if (state == RigidBodyState::Sleeping) {
-				rigidBody.mMotion = 0.0f;
-			}
-		}
+		const glm::quat angularVelocityQuat(0.0f, rigidBody.mState.angularVelocity);
+		rigidBody.mState.orientation += (0.5f * deltaTime * angularVelocityQuat) * rigidBody.mState.orientation;
+		rigidBody.mState.orientation = glm::normalize(rigidBody.mState.orientation);
 	}
 
 }

@@ -36,16 +36,15 @@
 #include <se/graphics/core/UniformVariable.h>
 #include <se/graphics/core/GraphicsOperations.h>
 
-#include <se/collision/BoundingBox.h>
-#include <se/collision/BoundingSphere.h>
-#include <se/collision/ConvexPolyhedron.h>
-#include <se/collision/CompositeCollider.h>
-#include "se/collision/TerrainCollider.h"
-#include <se/collision/HalfEdgeMeshExt.h>
-#include <se/collision/QuickHull.h>
-#include <se/collision/HACD.h>
-
-#include <se/physics/PhysicsEngine.h>
+#include <se/physics/collision/BoundingBox.h>
+#include <se/physics/collision/BoundingSphere.h>
+#include <se/physics/collision/ConvexPolyhedron.h>
+#include <se/physics/collision/CompositeCollider.h>
+#include "se/physics/collision/TerrainCollider.h"
+#include <se/physics/collision/HalfEdgeMeshExt.h>
+#include <se/physics/collision/QuickHull.h>
+#include <se/physics/collision/HACD.h>
+#include <se/physics/RigidBodyWorld.h>
 #include <se/physics/forces/Gravity.h>
 #include <se/physics/constraints/DistanceConstraint.h>
 
@@ -103,58 +102,58 @@ namespace game {
 	};
 
 
-	se::collision::HalfEdgeMesh createTestTube1()
+	se::physics::HalfEdgeMesh createTestTube1()
 	{
-		se::collision::HalfEdgeMesh meshData;
+		se::physics::HalfEdgeMesh meshData;
 		std::array<int, 48> vertexIndices = {
-			se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.0f, 1.0f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.0f, 1.0f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f }),
-			se::collision::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f }),
-			se::collision::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f }),
-			se::collision::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f }),
-			se::collision::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f }),
-			se::collision::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f }),
-			se::collision::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f }),
-			se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f }),
-			se::collision::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f })
+			se::physics::addVertex(meshData, { -0.000000014f, 0.499999761f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.000000014f, 0.499999761f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.249999970f, 0.433012485f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.249999970f, 0.433012485f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.433012694f, 0.249999791f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.433012694f, 0.249999791f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.5f, -0.000000210f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.5f, -0.000000210f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.433012694f, -0.250000208f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.433012694f, -0.250000208f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.250000029f, -0.433012902f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.250000029f, -0.433012902f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.00000006f, -0.500000178f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.00000006f, -0.500000178f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.249999910f, -0.433012962f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.249999910f, -0.433012962f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.433012634f, -0.250000357f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.433012634f, -0.250000357f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.5f, -0.000000421f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.5f, -0.000000421f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.433012872f, 0.249999567f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.433012872f, 0.249999567f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.250000327f, 0.433012336f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.250000327f, 0.433012336f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.0f, 1.0f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.0f, 1.0f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.5f, 0.866025388f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.5f, 0.866025388f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.866025447f, 0.499999970f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.866025447f, 0.499999970f, 1.0f }),
+			se::physics::addVertex(meshData, { 1.0f, -0.000000043f, -1.0f }),
+			se::physics::addVertex(meshData, { 1.0f, -0.000000043f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.866025388f, -0.500000059f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.866025388f, -0.500000059f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.500000059f, -0.866025388f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.500000059f, -0.866025388f, 1.0f }),
+			se::physics::addVertex(meshData, { 0.00000015f, -1.0f, -1.0f }),
+			se::physics::addVertex(meshData, { 0.00000015f, -1.0f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.499999791f, -0.866025507f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.499999791f, -0.866025507f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.866025209f, -0.500000298f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.866025209f, -0.500000298f, 1.0f }),
+			se::physics::addVertex(meshData, { -1.0f, -0.000000464f, -1.0f }),
+			se::physics::addVertex(meshData, { -1.0f, -0.000000464f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.866025686f, 0.499999493f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.866025686f, 0.499999493f, 1.0f }),
+			se::physics::addVertex(meshData, { -0.500000596f, 0.866025090f, -1.0f }),
+			se::physics::addVertex(meshData, { -0.500000596f, 0.866025090f, 1.0f })
 		};
 		std::array<std::array<int, 4>, 48> faceIndices = {{
 			{{ vertexIndices[0], vertexIndices[2], vertexIndices[3], vertexIndices[1] }},
@@ -225,8 +224,8 @@ namespace game {
 		/*********************************************************************
 		 * GRAPHICS DATA
 		 *********************************************************************/
-		se::collision::QuickHull qh(0.0001f);
-		se::collision::HACD hacd(0.002f, 0.0002f);
+		se::physics::QuickHull qh(0.0001f);
+		se::physics::HACD hacd(0.002f, 0.0002f);
 
 		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 		auto gBufferRendererParticles = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
@@ -548,15 +547,18 @@ namespace game {
 			transforms.position = glm::vec3(0.0f, 1.0f, 10.0f);
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
 
-			se::physics::RigidBodyConfig config;
-			config.invertedMass = 1.0f / 40.0f;	// No inertia tensor so the player can't rotate due to collisions
-			config.linearDrag = 0.01f;
-			config.angularDrag = 0.01f;
-			config.frictionCoefficient = 1.16f;
-			mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(mPlayerEntity, config);
+			se::physics::RigidBodyProperties properties(1.0f, glm::mat3(1.0f));
+			properties.invertedInertiaTensor = glm::mat3(0.0f);	// Prevent the player from rotating due to collisions
+			properties.linearDrag = 0.99f;
+			properties.angularDrag = 0.99f;
+			properties.frictionCoefficient = 1.16f;
 
-			auto collider = std::make_unique<se::collision::BoundingSphere>(0.5f);
-			mGame.getEntityDatabase().addComponent<se::collision::Collider>(mPlayerEntity, std::move(collider));
+			auto collider = std::make_unique<se::physics::BoundingSphere>(0.5f);
+
+			se::app::RigidBodyComponent rbComponent(properties);
+			rbComponent.setCollider(std::move(collider));
+
+			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(rbComponent));
 
 			se::app::CameraComponent camera;
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidths[0] / static_cast<float>(kHeights[0]), kZNear, kZFar);
@@ -639,17 +641,18 @@ namespace game {
 			terrainComponent->addRenderableShader(terrainShader);
 
 			// Physics data
-			se::physics::RigidBodyConfig config;
-			config.frictionCoefficient = 1.0f;
-			config.sleepMotion = 0.2f;
-			mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(terrain, config);
+			se::physics::RigidBodyProperties properties;
+			properties.frictionCoefficient = 1.0f;
+			properties.sleepMotion = 0.2f;
 
-			// Collider data
 			auto heights = se::app::MeshLoader::calculateHeights(heightMap1.pixels.get(), heightMap1.width, heightMap1.height);
-			auto collider = std::make_unique<se::collision::TerrainCollider>();
+			auto collider = std::make_unique<se::physics::TerrainCollider>();
 			collider->setHeights(heights.data(), heightMap1.width, heightMap1.height);
-			collider->setTransforms(glm::scale(glm::mat4(1.0f), scaleVector));
-			mGame.getEntityDatabase().addComponent<se::collision::Collider>(terrain, std::move(collider));
+
+			se::app::RigidBodyComponent rbComponent(properties);
+			rbComponent.setCollider(std::move(collider));
+			rbComponent.setColliderLocalTrasforms(glm::scale(glm::mat4(1.0f), scaleVector));
+			mGame.getEntityDatabase().addComponent(terrain, std::move(rbComponent));
 		}
 
 		// Plane
@@ -688,11 +691,13 @@ namespace game {
 			transforms.position = cubePositions[i];
 			mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
 
-			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
-			config.linearDrag = 0.95f;
-			config.angularDrag = 0.95f;
-			config.frictionCoefficient = 0.5f;
-			auto rb = mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(cube, config);
+			se::physics::RigidBodyProperties properties(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
+			properties.linearDrag = 0.05f;
+			properties.angularDrag = 0.05f;
+			properties.frictionCoefficient = 0.5f;
+
+			se::physics::RigidBodyState state;
+
 			if (i == 1) {
 				e1 = cube;
 			}
@@ -704,7 +709,7 @@ namespace game {
 				mGame.getEntityDatabase().addComponent(cube, std::move(source1));
 			}
 			if (i == 3) {
-				rb->getData().angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
+				state.angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
 				e2 = cube;
 			}
 			if (i == 4) {
@@ -716,8 +721,11 @@ namespace game {
 				particleSystem->setEmitter(emitter);
 			}
 
-			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
-			mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
+			auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
+
+			se::app::RigidBodyComponent rbComponent(properties, state);
+			rbComponent.setCollider(std::move(collider));
+			mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
 
 			auto stepCube = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
 			se::app::ShaderLoader::addMaterialBindables(
@@ -740,7 +748,7 @@ namespace game {
 
 		auto [rb1] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e1);
 		auto [rb2] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e2);
-		mGame.getExternalTools().physicsEngine->getConstraintManager().addConstraint(new se::physics::DistanceConstraint({ &rb1->get(), &rb2->get() }));
+		mGame.getExternalTools().rigidBodyWorld->getConstraintManager().addConstraint(new se::physics::DistanceConstraint({ &rb1->get(), &rb2->get() }));
 
 		auto stepRed = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepRed");
 		se::app::ShaderLoader::addMaterialBindables(
@@ -767,12 +775,14 @@ namespace game {
 			transforms.scale = glm::vec3(10.0f, 1.0f, 10.0f);
 			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(transforms));
 
-			se::physics::RigidBodyConfig config;
-			config.frictionCoefficient = 0.75f;
-			mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(nonMovableCube, config);
+			se::physics::RigidBodyProperties properties;
+			properties.frictionCoefficient = 0.75f;
 
-			auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
-			mGame.getEntityDatabase().addComponent<se::collision::Collider>(nonMovableCube, std::move(collider));
+			auto collider = std::make_unique<se::physics::BoundingBox>(transforms.scale);
+
+			se::app::RigidBodyComponent rbComponent(properties);
+			rbComponent.setCollider(std::move(collider));
+			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(rbComponent));
 
 			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(nonMovableCube);
 			auto rIndex = mesh->add(false, cubeMesh);
@@ -789,15 +799,18 @@ namespace game {
 			transforms.position = glm::vec3(-50.0f, 2.0f, -40.0f);
 			mGame.getEntityDatabase().addComponent(gravityCube, std::move(transforms));
 
-			se::physics::RigidBodyConfig config(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
-			config.linearDrag = 0.95f;
-			config.angularDrag = 0.95f;
-			config.frictionCoefficient = 0.65f;
-			auto rb = mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(gravityCube, config);
-			rb->addForce(gravity);
+			se::physics::RigidBodyProperties properties(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
+			properties.linearDrag = 0.05f;
+			properties.angularDrag = 0.05f;
+			properties.frictionCoefficient = 0.65f;
 
-			auto collider3 = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f));
-			mGame.getEntityDatabase().addComponent<se::collision::Collider>(gravityCube, std::move(collider3));
+			auto collider3 = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f));
+
+			se::app::RigidBodyComponent rbComponent(properties);
+			rbComponent.setCollider(std::move(collider3));
+			rbComponent.addForce(gravity);
+
+			mGame.getEntityDatabase().addComponent(gravityCube, std::move(rbComponent));
 
 			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(gravityCube);
 			auto rIndex = mesh->add(false, cubeMesh);
@@ -806,11 +819,11 @@ namespace game {
 
 		// HACD Tube
 		std::size_t iSlice = 0;
-		se::collision::HalfEdgeMesh tube = createTestTube1();
-		glm::vec3 tubeCentroid = se::collision::calculateCentroid(tube);
+		se::physics::HalfEdgeMesh tube = createTestTube1();
+		glm::vec3 tubeCentroid = se::physics::calculateCentroid(tube);
 		hacd.calculate(tube);
 		for (const auto& [heMesh, normals] : hacd.getMeshes()) {
-			glm::vec3 sliceCentroid = se::collision::calculateCentroid(heMesh);
+			glm::vec3 sliceCentroid = se::physics::calculateCentroid(heMesh);
 			glm::vec3 displacement = sliceCentroid - tubeCentroid;
 			if (glm::length(displacement) > 0.0f) {
 				displacement = glm::normalize(displacement);
@@ -866,15 +879,17 @@ namespace game {
 				transforms.position = glm::ballRand(50.0f) + glm::vec3(0.0f, 50.0f, 0.0f);
 				mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
 
-				se::physics::RigidBodyConfig config(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
-				config.linearDrag = 0.9f;
-				config.angularDrag = 0.9f;
-				config.frictionCoefficient = 0.5f;
-				auto rb = mGame.getEntityDatabase().emplaceComponent<se::app::RigidBodyComponent>(cube, config);
-				rb->addForce(gravity);
+				se::physics::RigidBodyProperties properties(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
+				properties.linearDrag = 0.1f;
+				properties.angularDrag = 0.1f;
+				properties.frictionCoefficient = 0.5f;
 
-				auto collider = std::make_unique<se::collision::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
-				mGame.getEntityDatabase().addComponent<se::collision::Collider>(cube, std::move(collider));
+				auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
+
+				se::app::RigidBodyComponent rbComponent(properties);
+				rbComponent.setCollider(std::move(collider));
+				rbComponent.addForce(gravity);
+				mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
 
 				auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube);
 				auto rIndex = mesh->add(false, cubeMesh);

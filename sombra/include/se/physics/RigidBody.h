@@ -6,27 +6,28 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "collision/Collider.h"
+#include "forces/Force.h"
 
 namespace se::physics {
 
-	class Force;
-
-
-	/** The different states in which a RigidBody can be */
-	enum class RigidBodyState : int
-	{
-		Sleeping,			///< The RigidBody simulation is stopped
-		Integrated,			///< Changed due to the dynamics simulation
-		ConstraintsSolved,	///< Changed due to the constraints
-		Count				///< The number of States
-	};
-
-
 	/**
-	 * Struct RigidBodyConfig, holds all the constant properties of a RigidBody.
+	 * Struct RigidBodyProperties, holds all the configurable properties of a
+	 * RigidBody.
 	 */
-	struct RigidBodyConfig
+	struct RigidBodyProperties
 	{
+		/** The different types of RigidBodies available */
+		enum class Type : int
+		{
+			Static,				///< The RigidBody doesn't move
+			Dynamic,			///< The RigidBody can move
+			Count				///< The number of types
+		};
+
+		/** The type of RigidBody to use */
+		Type type = Type::Static;
+
 		/** The inverse of the mass of the RigidBody
 		 * @note	We store the mass inverted because it's more useful for
 		 *			storing RigidBodies with infinite mass */
@@ -40,11 +41,15 @@ namespace se::physics {
 		glm::mat3 invertedInertiaTensor = glm::mat3(0.0f);
 
 		/** The factor by which the linear velocity of the RigidBody is going to
-		 * be slowed down over time */
+		 * be slowed down over time (only used with dynamic RigidBodies).
+		 * It must be a value between 0 and 1, 0 meaning no drag at all and 1
+		 * being full drag */
 		float linearDrag = 0.0f;
 
 		/** The factor by which the angular velocity of a RigidBody is going to
-		 * be slowed down over time */
+		 * be slowed down over time (only used with dynamic RigidBodies).
+		 * It must be a value between 0 and 1, 0 meaning no drag at all and 1
+		 * being full drag */
 		float angularDrag = 0.0f;
 
 		/** The friction coefficient for the friction constraints (we use the
@@ -52,29 +57,42 @@ namespace se::physics {
 		float frictionCoefficient = 0.0f;
 
 		/** The maximum motion value that the RigidBody can have before being
-		 * put to Sleeping state */
+		 * put to Sleeping state (only used with dynamic RigidBodies) */
 		float sleepMotion = 0.001f;
 
-		/** Creates a new RigidBodyConfig with infinite mass */
-		RigidBodyConfig() {};
+		/** Unused property, it can be used by the client program to store
+		 * stuff */
+		void* userData = nullptr;
 
-		/** Creates a new RigidBodyConfig
+		/** Creates a new static RigidBodyProperties */
+		RigidBodyProperties() {};
+
+		/** Creates a new dynamic RigidBodyProperties
 		 *
 		 * @param	mass the mass of the RigidBody
 		 * @param	inertiaTensor a 3x3 matrix that stores all the moments of
 		 *			inertia of the RigidBody */
-		RigidBodyConfig(
-			float mass, const glm::mat3& inertiaTensor
-		);
+		RigidBodyProperties(float mass, const glm::mat3& inertiaTensor);
 	};
 
 
 	/**
-	 * Struct RigidBodyData, holds the position, orientation and other movement
+	 * Struct RigidBodyState, holds the position, orientation and other movement
 	 * data of a RigidBody.
 	 */
-	struct RigidBodyData
+	struct RigidBodyState
 	{
+		/** The different statues in which a RigidBody can be */
+		enum class Status : int
+		{
+			Sleeping,			///< The RigidBody simulation is stopped
+			UpdatedByUser,		///< Changed due to the user
+			Count				///< The number of States
+		};
+
+		/** The current status of the RigidBody */
+		std::bitset< static_cast<int>(Status::Count) > status;
+
 		/** The linear position of the origin (center of mass) of the RigidBody
 		 * in world space */
 		glm::vec3 position = glm::vec3(0.0f);
@@ -103,72 +121,114 @@ namespace se::physics {
 		/** A vector with the sum of all the torques currently applied to
 		 * the RigidBody */
 		glm::vec3 torqueSum = glm::vec3(0.0f);
+
+		/** The value used for determining if the RigidBody should be put to a
+		 * Sleeping state */
+		float motion = 0.0f;
+
+		/** The matrix that holds all the current tranformations of the
+		 * RigidBody (translation and orientation) in world space */
+		glm::mat4 transformsMatrix = glm::mat4(1.0f);
+
+		/** The inertia tensor of the RigidBody in world space
+		 * @see		RigidBodyProperties.mInvertedInertiaTensor */
+		glm::mat3 invertedInertiaTensorWorld = glm::mat4(1.0f);
 	};
 
 
 	/**
-	 * Class RigidBody
+	 * Class RigidBody, it's the physics entity that can be simulated by the
+	 * physics engine
 	 */
 	class RigidBody
 	{
 	private:	// Nested types
 		using ForceSPtr = std::shared_ptr<Force>;
+		using ColliderUPtr = std::unique_ptr<Collider>;
 		friend class RigidBodyDynamics;
+		friend class ConstraintManager;
 
 	private:	// Attributes
-		/** The current state of the RigidBody */
-		std::bitset< static_cast<int>(RigidBodyState::Count) > mState;
-
-		/** The initial configuration properties of the RigidBody */
-		RigidBodyConfig mConfig;
+		/** The configuration properties of the RigidBody */
+		RigidBodyProperties mProperties;
 
 		/** The current movement data of the RigidBody */
-		RigidBodyData mData;
+		RigidBodyState mState;
+
+		/** The collider of the RigidBody */
+		ColliderUPtr mCollider;
+
+		/** The local transforms matrix of the Collider, it's used for scaling
+		 * it or adding some offset or rotation to the collider other than the
+		 * one the RigidBody has. It's local in relatio to the RigidBody
+		 * transforms matrix */
+		glm::mat4 mColliderLocalTransforms;
 
 		/** The forces to apply to the RigidBody */
 		std::vector<ForceSPtr> mForces;
 
-		/** The matrix that holds all the current tranformations of the
-		 * RigidBody (translation and orientation) in world space */
-		glm::mat4 mTransformsMatrix;
-
-		/** The inertia tensor of the RigidBody in world space
-		 * @see		mInvertedInertiaTensor */
-		glm::mat3 mInvertedInertiaTensorWorld;
-
-		/** The value used for determining if the RigidBody should be put to a
-		 * Sleeping state */
-		float mMotion;
-
 	public:		// Functions
 		/** Creates a new RigidBody
 		 *
-		 * @param	config the configuration data of the RigidBody
-		 * @param	data the initial movement data of the RigidBody */
+		 * @param	properties the initial properties of the RigidBody
+		 * @param	state the initial movement data of the RigidBody
+		 * @param	collider the collider of the RigidBody
+		 * @param	colliderLocalTransforms the local transforms matrix of the
+		 *			Collider */
 		RigidBody(
-			const RigidBodyConfig& config = RigidBodyConfig(),
-			const RigidBodyData& data = RigidBodyData()
+			const RigidBodyProperties& properties = RigidBodyProperties(),
+			const RigidBodyState& state = RigidBodyState(),
+			ColliderUPtr&& collider = nullptr,
+			const glm::mat4& colliderLocalTransforms = glm::mat4(1.0f)
 		);
+		RigidBody(const RigidBody& other);
+		RigidBody(RigidBody&& other);
 
-		/** Check if the RigidBody is in the given state
+		/** Class destructor */
+		~RigidBody() = default;
+
+		/** Assignment operator */
+		RigidBody& operator=(const RigidBody& other);
+		RigidBody& operator=(RigidBody&& other);
+
+		/** @return	the RigidBodyProperties of the RigidBody */
+		const RigidBodyProperties& getProperties() const
+		{ return mProperties; };
+
+		/** Sets RigidBodyProperties of the RigidBody
 		 *
-		 * @param	state the state to check
-		 * @return	true if the RigidBody is in the given state, false
-		 *			otherwise */
-		bool checkState(RigidBodyState state) const
-		{ return mState[static_cast<int>(state)]; };
+		 * @param	properties the new properties of the RigidBody
+		 * @return	a reference to the current RigidBody object */
+		RigidBody& setProperties(const RigidBodyProperties& properties);
 
-		/** @return	the RigidBodyConfig of the RigidBody */
-		const RigidBodyConfig& getConfig() const { return mConfig; };
+		/** @return	the current RigidBodyState of the RigidBody */
+		const RigidBodyState& getState() const { return mState; };
 
-		/** @return	the RigidBodyConfig of the RigidBody */
-		RigidBodyConfig& getConfig() { return mConfig; };
+		/** Sets the RigidBodyState of the RigidBody
+		 *
+		 * @param	state the new movement data of the RigidBody
+		 * @return	a reference to the current RigidBody object */
+		RigidBody& setState(const RigidBodyState& state);
 
-		/** @return	the current RigidBodyData of the RigidBody */
-		const RigidBodyData& getData() const { return mData; };
+		/** @return	the Collider of the RigidBody */
+		Collider* getCollider() const { return mCollider.get(); };
 
-		/** @return	the current RigidBodyData of the RigidBody */
-		RigidBodyData& getData() { return mData; };
+		/** Sets the Collider of the RigidBody
+		 *
+		 * @param	collider the new Collider of the RigidBody
+		 * @return	a reference to the current RigidBody object */
+		RigidBody& setCollider(ColliderUPtr&& collider);
+
+		/** @return	the Collider local trasforms of the RigidBody */
+		const glm::mat4& getColliderLocalTransforms() const
+		{ return mColliderLocalTransforms; };
+
+		/** Sets the local trasforms matrix of the Collider
+		 *
+		 * @param	localTransforms the new local transforms matrix of
+		 *			the Collider
+		 * @return	a reference to the current RigidBody object */
+		RigidBody& setColliderLocalTrasforms(const glm::mat4& localTransforms);
 
 		/** Adds the given Force to the RigidBody
 		 *
@@ -189,24 +249,34 @@ namespace se::physics {
 		 * @return	the current RigidBody object */
 		RigidBody& removeForce(ForceSPtr force);
 
-		/** @return	the current transformation matrix of the RigidBody */
-		const glm::mat4& getTransformsMatrix() const
-		{ return mTransformsMatrix; };
-
-		/** @return	the inverse of the intertia tensor matrix of the RigidBody
-		 *			in world space */
-		const glm::mat3& getInvertedInertiaTensorWorld() const
-		{ return mInvertedInertiaTensorWorld; };
-
-		/** @return	the motion value of the RigidBody */
-		float getMotion() const { return mMotion; };
-
-		/** Synchronizes the internal state of the RigidBody with the changes
-		 * made to its data struct.
+		/** Checks if the RigidBody is in the given Status
 		 *
-		 * @note	this function must be called each time the RigidBody's
-		 *			RigidBodyData is changed */
-		void synchWithData();
+		 * @param	status the Status to check
+		 * @return	true if the RigidBody is in the given state, false
+		 *			otherwise */
+		bool getStatus(RigidBodyState::Status status) const
+		{ return mState.status[static_cast<int>(status)]; };
+
+		/** Sets the RigidBody's status to the given value
+		 *
+		 * @param	status the status to set
+		 * @param	value the new value of the status */
+		void setStatus(RigidBodyState::Status status, bool value);
+
+		/** Updates the RigidBody's transform matrix and inertia tensor in
+		 * world coordinates with the changes made to the RigidBody's position
+		 * and orientation. It also updates it's Collider trasforms if it has
+		 * one */
+		void updateTransforms();
+
+		/** Updates the motion value of the RigidBody. The motion value
+		 * is calculated as a recency-weighted average of its current value and
+		 * its old ones
+		 *
+		 * @param	bias the proportion of the new motion value due to its old
+		 *			value
+		 * @param	maxMotion the maximum motion value */
+		void updateMotion(float bias, float maxMotion);
 	};
 
 

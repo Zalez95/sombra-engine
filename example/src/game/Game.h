@@ -11,12 +11,20 @@ namespace game {
 	static constexpr char kTitle[]							= "< SOMBRA >";
 	static constexpr unsigned int kWidths[]					= { 1280, 1920 };
 	static constexpr unsigned int kHeights[]				= { 720, 1080 };
-	static constexpr std::size_t kMaxManifolds				= 128;
+	static constexpr float kMotionBias						= 0.1f;
+	const glm::vec3 kMinPhysicsAABB							= glm::vec3(-1000.0f);
+	const glm::vec3 kMaxPhysicsAABB							= glm::vec3( 1000.0f);
+	static constexpr std::size_t kMaxCollidingRBs			= 128;
 	static constexpr float kMinFDifference					= 0.00001f;
 	static constexpr std::size_t kMaxCollisionIterations	= 128;
 	static constexpr float kContactPrecision				= 0.0000001f;
 	static constexpr float kContactSeparation				= 0.00001f;
-	static constexpr int kMaxRayCasterIterations			= 32;
+	static constexpr float kCollisionBeta					= 0.1f;
+	static constexpr float kCollisionRestitutionFactor		= 0.2f;
+	static constexpr float kCollisionSlopPenetration		= 0.005f;
+	static constexpr float kCollisionSlopRestitution		= 0.5f;
+	static constexpr float kFrictionGravityAcceleration		= 9.8f;
+	static constexpr std::size_t kMaxConstraintIterations	= 10;
 	static constexpr float kUpdateTime						= 0.016f;
 
 	enum class GameState : se::utils::StateMachine::State

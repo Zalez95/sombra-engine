@@ -18,8 +18,8 @@ namespace game {
 	class PlayerController : public se::app::ScriptComponent
 	{
 	private:	// Attributes
-		static constexpr float kRunSpeed	= 2.5f;
-		static constexpr float kJumpSpeed	= 3.0f;
+		static constexpr float kRunSpeed	= 100.0f;
+		static constexpr float kJumpSpeed	= 150.0f;
 		static constexpr float kMouseSpeed	= 100.0f;
 		static constexpr float kPitchLimit	= 0.05f;
 

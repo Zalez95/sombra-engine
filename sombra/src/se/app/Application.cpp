@@ -10,8 +10,6 @@
 #include "se/graphics/Technique.h"
 #include "se/graphics/2D/Font.h"
 #include "se/graphics/3D/Mesh.h"
-#include "se/physics/PhysicsEngine.h"
-#include "se/collision/Collider.h"
 #include "se/animation/AnimationEngine.h"
 #include "se/audio/AudioEngine.h"
 #include "se/app/Application.h"
@@ -24,9 +22,7 @@
 #include "se/app/TerrainSystem.h"
 #include "se/app/ParticleSystemSystem.h"
 #include "se/app/CameraSystem.h"
-#include "se/app/DynamicsSystem.h"
-#include "se/app/ConstraintsSystem.h"
-#include "se/app/CollisionSystem.h"
+#include "se/app/PhysicsSystem.h"
 #include "se/app/AnimationSystem.h"
 #include "se/app/AudioSystem.h"
 #include "se/app/gui/GUIManager.h"
@@ -48,7 +44,7 @@ namespace se::app {
 
 	Application::Application(
 		const window::WindowData& windowConfig,
-		const collision::CollisionWorldData& collisionConfig,
+		const physics::WorldProperties& physicsWorldProperties,
 		float updateTime
 	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
 		mTaskManager(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
@@ -56,10 +52,8 @@ namespace se::app {
 		mInputSystem(nullptr), mScriptSystem(nullptr),
 		mAppRenderer(nullptr), mLightSystem(nullptr), mLightProbeSystem(nullptr),
 		mMeshSystem(nullptr), mTerrainSystem(nullptr), mParticleSystemSystem(nullptr),
-		mCameraSystem(nullptr),
-		mDynamicsSystem(nullptr), mConstraintsSystem(nullptr), mCollisionSystem(nullptr),
-		mAnimationSystem(nullptr), mAudioSystem(nullptr),
-		mGUIManager(nullptr)
+		mCameraSystem(nullptr), mPhysicsSystem(nullptr), mAnimationSystem(nullptr),
+		mAudioSystem(nullptr), mGUIManager(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 
@@ -70,8 +64,7 @@ namespace se::app {
 			mExternalTools = new ExternalTools();
 			mExternalTools->windowManager = new window::WindowManager(windowConfig);
 			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
-			mExternalTools->physicsEngine = new physics::PhysicsEngine(kBaseBias, kMinPhysicsAABB, kMaxPhysicsAABB);
-			mExternalTools->collisionWorld = new collision::CollisionWorld(collisionConfig);
+			mExternalTools->rigidBodyWorld = new physics::RigidBodyWorld(physicsWorldProperties);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
 			mExternalTools->audioEngine = new audio::AudioEngine();
 
@@ -123,9 +116,6 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities, [](const RigidBodyComponent& rigidBody) {
 				return RigidBodyComponent(rigidBody);
 			});
-			mEntityDatabase->addComponentTable<collision::Collider, true>(kMaxEntities, [](const collision::Collider& collider) {
-				return collider.clone();
-			});
 			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities, [](const ScriptComponent& script) {
 				return std::make_unique<ScriptComponent>(script);
 			});
@@ -143,9 +133,7 @@ namespace se::app {
 			mTerrainSystem = new TerrainSystem(*this);
 			mParticleSystemSystem = new ParticleSystemSystem(*this);
 			mCameraSystem = new CameraSystem(*this);
-			mDynamicsSystem = new DynamicsSystem(*this);
-			mConstraintsSystem = new ConstraintsSystem(*this);
-			mCollisionSystem = new CollisionSystem(*this);
+			mPhysicsSystem = new PhysicsSystem(*this);
 			mAnimationSystem = new AnimationSystem(*this);
 			mAudioSystem = new AudioSystem(*this);
 			mGUIManager = new GUIManager(*this, { windowConfig.width, windowConfig.height });
@@ -165,9 +153,7 @@ namespace se::app {
 		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioSystem) { delete mAudioSystem; }
 		if (mAnimationSystem) { delete mAnimationSystem; }
-		if (mCollisionSystem) { delete mCollisionSystem; }
-		if (mConstraintsSystem) { delete mConstraintsSystem; }
-		if (mDynamicsSystem) { delete mDynamicsSystem; }
+		if (mPhysicsSystem) { delete mPhysicsSystem; }
 		if (mCameraSystem) { delete mCameraSystem; }
 		if (mParticleSystemSystem) { delete mParticleSystemSystem; }
 		if (mTerrainSystem) { delete mTerrainSystem; }
@@ -182,8 +168,7 @@ namespace se::app {
 		if (mEventManager) { delete mEventManager; }
 		if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
 		if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
-		if (mExternalTools->collisionWorld) { delete mExternalTools->collisionWorld; }
-		if (mExternalTools->physicsEngine) { delete mExternalTools->physicsEngine; }
+		if (mExternalTools->rigidBodyWorld) { delete mExternalTools->rigidBodyWorld; }
 		if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
 		if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
 		if (mExternalTools) { delete mExternalTools; }
@@ -285,20 +270,10 @@ namespace se::app {
 			mAnimationSystem->setDeltaTime(deltaTime);
 			mAnimationSystem->update();
 		});
-		auto dynamicsTask = taskSet.createTask([&]() {
-			utils::TimeGuard t("dynamicssys");
-			mDynamicsSystem->setDeltaTime(deltaTime);
-			mDynamicsSystem->update();
-		});
-		auto collisionTask = taskSet.createTask([&]() {
-			utils::TimeGuard t("collisionsys");
-			mCollisionSystem->setDeltaTime(deltaTime);
-			mCollisionSystem->update();
-		});
-		auto constraintsTask = taskSet.createTask([&]() {
-			utils::TimeGuard t("constraintssys");
-			mConstraintsSystem->setDeltaTime(deltaTime);
-			mConstraintsSystem->update();
+		auto physicsTask = taskSet.createTask([&]() {
+			utils::TimeGuard t("physicsssys");
+			mPhysicsSystem->setDeltaTime(deltaTime);
+			mPhysicsSystem->update();
 		});
 		auto audioTask = taskSet.createTask([&]() {
 			utils::TimeGuard t("audiosys");
@@ -331,16 +306,13 @@ namespace se::app {
 			mTerrainSystem->update();
 		});
 
-		taskSet.depends(dynamicsTask, scriptTask);
 		taskSet.depends(animationTask, scriptTask);
-		taskSet.depends(collisionTask, dynamicsTask);
-		taskSet.depends(constraintsTask, collisionTask);
-		taskSet.depends(audioTask, constraintsTask);
-		taskSet.depends(audioTask, animationTask);
-		taskSet.depends(cameraTask, constraintsTask);
-		taskSet.depends(lightTask, constraintsTask);
-		taskSet.depends(lightProbeTask, constraintsTask);
-		taskSet.depends(rmeshTask, constraintsTask);
+		taskSet.depends(physicsTask, animationTask);
+		taskSet.depends(audioTask, physicsTask);
+		taskSet.depends(cameraTask, physicsTask);
+		taskSet.depends(lightTask, physicsTask);
+		taskSet.depends(lightProbeTask, physicsTask);
+		taskSet.depends(rmeshTask, physicsTask);
 		taskSet.depends(rterrainTask, cameraTask);
 
 		taskSet.submitAndWait();

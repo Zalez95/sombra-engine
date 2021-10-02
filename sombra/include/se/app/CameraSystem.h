@@ -44,13 +44,13 @@ namespace se::app {
 		 * steps */
 		CameraUniformsUpdater* mCameraUniformsUpdater;
 
-		/** A pointer to the SSAONode used for computing the ambient
-		 * occlussion */
-		SSAONode* mSSAONode;
-
 		/** A pointer to the deferred ambient renderer used for computing the
 		 * ambient lighting */
 		DeferredAmbientRenderer* mDeferredAmbientRenderer;
+
+		/** A pointer to the SSAONode used for computing the ambient
+		 * occlussion */
+		SSAONode* mSSAONode;
 
 		/** A pointer to the frustum filter shared between all the
 		 * Renderer3Ds */

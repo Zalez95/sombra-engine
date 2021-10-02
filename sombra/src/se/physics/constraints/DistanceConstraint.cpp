@@ -5,8 +5,8 @@ namespace se::physics {
 
 	std::array<float, 12> DistanceConstraint::getJacobianMatrix() const
 	{
-		glm::vec3 p1 = mRigidBodies[0]->getData().position + mAnchorPoints[0];
-		glm::vec3 p2 = mRigidBodies[1]->getData().position + mAnchorPoints[1];
+		glm::vec3 p1 = mRigidBodies[0]->getState().position + mAnchorPoints[0];
+		glm::vec3 p2 = mRigidBodies[1]->getState().position + mAnchorPoints[1];
 		glm::vec3 distance = p2 - p1;
 
 		glm::vec3 r1xd = glm::cross(mAnchorPoints[0], distance);

@@ -7,10 +7,11 @@ namespace se::physics {
 		mValue(value), mPoint(point) {}
 
 
-	void PunctualForce::apply(RigidBody& rigidBody)
+	Force::ForceTorquePair PunctualForce::calculate(const RigidBody& rigidBody) const
 	{
-		rigidBody.getData().forceSum += mValue;
-		rigidBody.getData().torqueSum += glm::cross(mPoint - rigidBody.getData().position, mValue);
+		glm::vec3 force = mValue;
+		glm::vec3 torque = glm::cross(mPoint - rigidBody.getState().position, mValue);
+		return { force, torque };
 	}
 
 }

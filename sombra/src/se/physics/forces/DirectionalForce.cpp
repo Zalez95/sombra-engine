@@ -7,9 +7,9 @@ namespace se::physics {
 		mValue(value) {}
 
 
-	void DirectionalForce::apply(RigidBody& rigidBody)
+	Force::ForceTorquePair DirectionalForce::calculate(const RigidBody&) const
 	{
-		rigidBody.getData().forceSum += mValue;
+		return { mValue, glm::vec3(0.0f) };
 	}
 
 }

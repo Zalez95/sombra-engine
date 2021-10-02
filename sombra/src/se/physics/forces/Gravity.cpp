@@ -6,13 +6,16 @@ namespace se::physics {
 	Gravity::Gravity(const float& gravity) : mGravity(gravity) {}
 
 
-	void Gravity::apply(RigidBody& rigidBody)
+	Force::ForceTorquePair Gravity::calculate(const RigidBody& rigidBody) const
 	{
-		float invertedMass = rigidBody.getConfig().invertedMass;
+		glm::vec3 force(0.0f), torque(0.0f);
 
+		float invertedMass = rigidBody.getProperties().invertedMass;
 		if (invertedMass > 0.0f) {
-			rigidBody.getData().forceSum += glm::vec3(0.0f, mGravity / invertedMass, 0.0f);
+			force = glm::vec3(0.0f, mGravity / invertedMass, 0.0f);
 		}
+
+		return { force, torque };
 	}
 
 }

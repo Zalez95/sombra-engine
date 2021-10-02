@@ -2,7 +2,7 @@
 #define MESH_LOADER_H
 
 #include "../../graphics/3D/Mesh.h"
-#include "../../collision/HalfEdgeMesh.h"
+#include "../../physics/collision/HalfEdgeMesh.h"
 #include "../graphics/RawMesh.h"
 
 namespace se::app {
@@ -40,7 +40,7 @@ namespace se::app {
 		 * @param	rawMesh the data with which we will create the HalfEdgeMesh
 		 * @return	a pair with the loaded HafEdgeMesh and a bool that indicates
 		 *			if the HalfEdgeMesh was loaded correctly or not */
-		static std::pair<collision::HalfEdgeMesh, bool> createHalfEdgeMesh(
+		static std::pair<physics::HalfEdgeMesh, bool> createHalfEdgeMesh(
 			const RawMesh& rawMesh
 		);
 
@@ -51,7 +51,7 @@ namespace se::app {
 		 * @return	a pair with the created RawMesh and a bool that indicates
 		 *			if the HalfEdgeMesh was loaded correctly or not */
 		static std::pair<RawMesh, bool> createRawMesh(
-			const collision::HalfEdgeMesh& heMesh,
+			const physics::HalfEdgeMesh& heMesh,
 			const utils::PackedVector<glm::vec3>& normals
 		);
 

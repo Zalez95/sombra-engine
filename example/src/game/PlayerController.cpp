@@ -10,7 +10,6 @@
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
 #include <se/app/TransformsComponent.h>
-#include <se/app/CollisionSystem.h>
 #include <se/app/Scene.h>
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
@@ -125,7 +124,7 @@ namespace game {
 		if (userInput.keys[SE_KEY_A]) { direction -= right; }
 		float length = glm::length(direction);
 		if (length > 0.0f) {
-			transforms->velocity += kRunSpeed * direction / length;
+			transforms->velocity += kRunSpeed * elapsedTime * direction / length;
 			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.reset();
 		}
@@ -136,7 +135,7 @@ namespace game {
 		if (userInput.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
 		length = glm::length(direction);
 		if (length > 0.0f) {
-			transforms->velocity += kJumpSpeed * direction;
+			transforms->velocity += kJumpSpeed * elapsedTime * direction;
 			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.reset();
 		}

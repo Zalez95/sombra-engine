@@ -1,6 +1,6 @@
 #ifndef COLLISION_EVENT_H
 #define COLLISION_EVENT_H
-
+#if 0
 #include "Event.h"
 #include "../../collision/Manifold.h"
 #include "../Entity.h"
@@ -52,5 +52,5 @@ namespace se::app {
 	};
 
 }
-
+#endif
 #endif		// COLLISION_EVENT_H

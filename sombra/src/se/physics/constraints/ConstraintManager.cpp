@@ -1,9 +1,9 @@
 #include <numeric>
 #include <algorithm>
-#include "se/physics/RigidBody.h"
-#include "se/physics/RigidBodyDynamics.h"
+#include "se/physics/RigidBodyWorld.h"
 #include "se/physics/constraints/Constraint.h"
 #include "se/physics/constraints/ConstraintManager.h"
+#include "../RigidBodyDynamics.h"
 
 namespace se::physics {
 
@@ -26,12 +26,12 @@ namespace se::physics {
 			else {
 				mRigidBodies.emplace_back(rb);
 				mShouldSolveMatrix.emplace_back(true);
-				mInverseMassMatrix.emplace_back(rb->getConfig().invertedMass);
-				mInverseMassMatrix.emplace_back(rb->getInvertedInertiaTensorWorld());
-				mVelocityMatrix.emplace_back(rb->getData().linearVelocity);
-				mVelocityMatrix.emplace_back(rb->getData().angularVelocity);
-				mForceExtMatrix.emplace_back(rb->getData().forceSum);
-				mForceExtMatrix.emplace_back(rb->getData().torqueSum);
+				mInverseMassMatrix.emplace_back(rb->mProperties.invertedMass);
+				mInverseMassMatrix.emplace_back(rb->mState.invertedInertiaTensorWorld);
+				mVelocityMatrix.emplace_back(rb->mState.linearVelocity);
+				mVelocityMatrix.emplace_back(rb->mState.angularVelocity);
+				mForceExtMatrix.emplace_back(rb->mState.forceSum);
+				mForceExtMatrix.emplace_back(rb->mState.torqueSum);
 				rbIndices[i] = mRigidBodies.size() - 1;
 			}
 		}
@@ -183,8 +183,7 @@ namespace se::physics {
 	{
 		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
 			mShouldSolveMatrix[iRB] = mShouldSolveMatrix[iRB]
-				|| mRigidBodies[iRB]->checkState(RigidBodyState::Integrated)
-				|| !mRigidBodies[iRB]->checkState(RigidBodyState::Sleeping);
+				|| !mRigidBodies[iRB]->getStatus(RigidBodyState::Status::Sleeping);
 		}
 	}
 
@@ -192,8 +191,8 @@ namespace se::physics {
 	void ConstraintManager::updateInverseMassMatrix()
 	{
 		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
-			mInverseMassMatrix[2*iRB] = glm::mat3(mRigidBodies[iRB]->getConfig().invertedMass);
-			mInverseMassMatrix[2*iRB + 1] = mRigidBodies[iRB]->getInvertedInertiaTensorWorld();
+			mInverseMassMatrix[2*iRB] = glm::mat3(mRigidBodies[iRB]->mProperties.invertedMass);
+			mInverseMassMatrix[2*iRB + 1] = mRigidBodies[iRB]->mState.invertedInertiaTensorWorld;
 		}
 	}
 
@@ -201,8 +200,8 @@ namespace se::physics {
 	void ConstraintManager::updateVelocityMatrix()
 	{
 		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
-			mVelocityMatrix[2*iRB] = mRigidBodies[iRB]->getData().linearVelocity;
-			mVelocityMatrix[2*iRB + 1] = mRigidBodies[iRB]->getData().angularVelocity;
+			mVelocityMatrix[2*iRB] = mRigidBodies[iRB]->mState.linearVelocity;
+			mVelocityMatrix[2*iRB + 1] = mRigidBodies[iRB]->mState.angularVelocity;
 		}
 	}
 
@@ -210,8 +209,8 @@ namespace se::physics {
 	void ConstraintManager::updateForceExtMatrix()
 	{
 		for (std::size_t iRB = 0; iRB < mRigidBodies.size(); ++iRB) {
-			mForceExtMatrix[2*iRB] = mRigidBodies[iRB]->getData().forceSum;
-			mForceExtMatrix[2*iRB + 1] = mRigidBodies[iRB]->getData().torqueSum;
+			mForceExtMatrix[2*iRB] = mRigidBodies[iRB]->mState.forceSum;
+			mForceExtMatrix[2*iRB + 1] = mRigidBodies[iRB]->mState.torqueSum;
 		}
 	}
 
@@ -229,7 +228,7 @@ namespace se::physics {
 		std::vector<float> invMJLambdaMatrix = calculateInvMJLambdaMatrix(invMassJacobianMatrix, mLambdaMatrix);
 
 		// We use a fixed number of iterations for the Gauss-Seidel algorithm
-		for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
+		for (std::size_t iteration = 0; iteration < mParentWorld.mProperties.maxConstraintIterations; ++iteration) {
 			for (std::size_t i = 0; i < mConstraints.size(); ++i) {
 				std::size_t iRB1 = mConstraintRBMap[i][0], iRB2 = mConstraintRBMap[i][1];
 
@@ -398,19 +397,18 @@ namespace se::physics {
 
 				glm::vec3 v2 = v1 + inverseMass * deltaTime * (jLambda + forceExt);
 				if (j == 0) {
-					mRigidBodies[i]->getData().linearVelocity = v2;
+					mRigidBodies[i]->mState.linearVelocity = v2;
 					RigidBodyDynamics::integrateLinearVelocity(*mRigidBodies[i], deltaTime);
 				}
 				else {
-					mRigidBodies[i]->getData().angularVelocity = v2;
+					mRigidBodies[i]->mState.angularVelocity = v2;
 					RigidBodyDynamics::integrateAngularVelocity(*mRigidBodies[i], deltaTime);
 				}
 			}
 
 			// Update the RigidBody internal state
-			RigidBodyDynamics::updateTransformsMatrix(*mRigidBodies[i]);
-			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::ConstraintsSolved, true);
-			RigidBodyDynamics::setState(*mRigidBodies[i], RigidBodyState::Sleeping, false);
+			mRigidBodies[i]->updateTransforms();
+			mRigidBodies[i]->setStatus(RigidBodyState::Status::Sleeping, false);
 		}
 	}
 

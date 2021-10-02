@@ -4,11 +4,10 @@
 #include <glm/glm.hpp>
 #include "events/EventManager.h"
 #include "../window/WindowManager.h"
-#include "../collision/CollisionWorld.h"
+#include "../physics/RigidBodyWorld.h"
 #include "ECS.h"
 
-namespace se::graphics { struct GraphicsData; class GraphicsEngine; }
-namespace se::physics { class PhysicsEngine; }
+namespace se::graphics { class GraphicsEngine; }
 namespace se::animation { class AnimationEngine; }
 namespace se::audio { class AudioEngine; }
 namespace se::utils { class TaskManager; }
@@ -24,9 +23,7 @@ namespace se::app {
 	class TerrainSystem;
 	class ParticleSystemSystem;
 	class CameraSystem;
-	class DynamicsSystem;
-	class ConstraintsSystem;
-	class CollisionSystem;
+	class PhysicsSystem;
 	class AnimationSystem;
 	class AudioSystem;
 	class GUIManager;
@@ -55,8 +52,7 @@ namespace se::app {
 		{
 			window::WindowManager* windowManager;
 			graphics::GraphicsEngine* graphicsEngine;
-			physics::PhysicsEngine* physicsEngine;
-			collision::CollisionWorld* collisionWorld;
+			physics::RigidBodyWorld* rigidBodyWorld;
 			animation::AnimationEngine* animationEngine;
 			audio::AudioEngine* audioEngine;
 		};
@@ -68,9 +64,6 @@ namespace se::app {
 		static constexpr int kMaxLightProbes			= 1;
 		static constexpr int kMaxTasks					= 1024;
 		static constexpr float kShadowSplitLogFactor	= 0.95f;
-		static constexpr float kBaseBias				= 0.1f;
-		const glm::vec3 kMinPhysicsAABB					= glm::vec3(-1000.0f);
-		const glm::vec3 kMaxPhysicsAABB					= glm::vec3( 1000.0f);
 
 		/** The minimum elapsed time between updates in seconds */
 		const float mUpdateTime;
@@ -110,9 +103,7 @@ namespace se::app {
 		TerrainSystem* mTerrainSystem;
 		ParticleSystemSystem* mParticleSystemSystem;
 		CameraSystem* mCameraSystem;
-		DynamicsSystem* mDynamicsSystem;
-		ConstraintsSystem* mConstraintsSystem;
-		CollisionSystem* mCollisionSystem;
+		PhysicsSystem* mPhysicsSystem;
 		AnimationSystem* mAnimationSystem;
 		AudioSystem* mAudioSystem;
 
@@ -124,13 +115,13 @@ namespace se::app {
 		 *
 		 * @param	windowConfig the initial configuration with which the
 		 *			window is going to be created
-		 * @param	collisionConfig the initial configuration with which the
-		 *			CollisionWorld is going to be created
+		 * @param	physicsWorldProperties the configuration with which the
+		 *			RigidBodyWorld is going to be created
 		 * @param	updateTime the minimum elapsed time between updates in
 		 *			seconds */
 		Application(
 			const window::WindowData& windowConfig,
-			const collision::CollisionWorldData& collisionConfig,
+			const physics::WorldProperties& physicsWorldProperties,
 			float updateTime
 		);
 

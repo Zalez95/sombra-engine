@@ -4,7 +4,7 @@
 #include "se/graphics/core/VertexBuffer.h"
 #include "se/graphics/core/IndexBuffer.h"
 #include "se/graphics/core/VertexArray.h"
-#include "se/collision/HalfEdgeMeshExt.h"
+#include "se/physics/collision/HalfEdgeMeshExt.h"
 #include "se/utils/FixedVector.h"
 
 namespace se::app {
@@ -155,15 +155,15 @@ namespace se::app {
 	}
 
 
-	std::pair<collision::HalfEdgeMesh, bool> MeshLoader::createHalfEdgeMesh(const RawMesh& rawMesh)
+	std::pair<physics::HalfEdgeMesh, bool> MeshLoader::createHalfEdgeMesh(const RawMesh& rawMesh)
 	{
-		collision::HalfEdgeMesh heMesh;
+		physics::HalfEdgeMesh heMesh;
 
 		// Add the HEVertices
 		std::vector<int> heVertexIndices;
 		heVertexIndices.reserve(rawMesh.positions.size());
 		for (const glm::vec3& position : rawMesh.positions) {
-			heVertexIndices.push_back( collision::addVertex(heMesh, position) );
+			heVertexIndices.push_back( physics::addVertex(heMesh, position) );
 		}
 
 		// Add the HEFaces
@@ -174,18 +174,18 @@ namespace se::app {
 				heVertexIndices[ rawMesh.indices[i+1] ],
 				heVertexIndices[ rawMesh.indices[i+2] ]
 			};
-			if (collision::addFace(heMesh, vertexIndices.begin(), vertexIndices.end()) < 0) {
+			if (physics::addFace(heMesh, vertexIndices.begin(), vertexIndices.end()) < 0) {
 				allFacesLoaded = false;
 			}
 		}
 
 		// Validate the HEMesh
-		return std::pair(heMesh, allFacesLoaded && collision::validateMesh(heMesh).first);
+		return std::pair(heMesh, allFacesLoaded && physics::validateMesh(heMesh).first);
 	}
 
 
 	std::pair<RawMesh, bool> MeshLoader::createRawMesh(
-		const collision::HalfEdgeMesh& heMesh,
+		const physics::HalfEdgeMesh& heMesh,
 		const utils::PackedVector<glm::vec3>& normals
 	) {
 		if (heMesh.faces.size() != normals.size()) { return std::pair(RawMesh(), false); }
@@ -193,7 +193,7 @@ namespace se::app {
 		RawMesh rawMesh("heMeshTriangles");
 
 		// The faces must be triangles
-		collision::HalfEdgeMesh heMeshTriangles = collision::triangulateFaces(heMesh);
+		physics::HalfEdgeMesh heMeshTriangles = physics::triangulateFaces(heMesh);
 
 		rawMesh.positions.reserve(heMeshTriangles.vertices.size());
 		rawMesh.normals.reserve(heMeshTriangles.vertices.size());
@@ -201,7 +201,7 @@ namespace se::app {
 
 		std::unordered_map<std::size_t, std::size_t> vertexMap;
 		for (auto itVertex = heMeshTriangles.vertices.begin(); itVertex != heMeshTriangles.vertices.end(); ++itVertex) {
-			glm::vec3 normal = collision::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
+			glm::vec3 normal = physics::calculateVertexNormal(heMesh, normals, itVertex.getIndex());
 
 			glm::vec3 c1 = glm::cross(normal, glm::vec3(0.0f, 0.0f, 1.0f));
 			glm::vec3 c2 = glm::cross(normal, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -215,7 +215,7 @@ namespace se::app {
 
 		for (auto itFace = heMeshTriangles.faces.begin(); itFace != heMeshTriangles.faces.end(); ++itFace) {
 			utils::FixedVector<int, 3> faceIndices;
-			collision::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
+			physics::getFaceIndices(heMeshTriangles, itFace.getIndex(), std::back_inserter(faceIndices));
 			for (int iVertex : faceIndices) {
 				rawMesh.indices.push_back(static_cast<unsigned short>(vertexMap[iVertex]));
 			}

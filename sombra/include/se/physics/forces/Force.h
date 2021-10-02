@@ -2,6 +2,7 @@
 #define FORCE_H
 
 #include <memory>
+#include <glm/glm.hpp>
 
 namespace se::physics {
 
@@ -14,6 +15,9 @@ namespace se::physics {
 	 */
 	class Force
 	{
+	public:		// Nested types
+		using ForceTorquePair = std::pair<glm::vec3, glm::vec3>;
+
 	public:		// Functions
 		/** Class destructor */
 		virtual ~Force() = default;
@@ -21,11 +25,12 @@ namespace se::physics {
 		/** @return	a pointer to a copy of the current Force */
 		virtual std::unique_ptr<Force> clone() const = 0;
 
-		/** Applyes the force to the given RigidBody
+		/** Calculates the force and torque to apply to the given RigidBody
 		 *
 		 * @param	rigidBody the RigidBody to which we want to apply the
-		 *			Force */
-		virtual void apply(RigidBody& rigidBody) = 0;
+		 *			Force
+		 * @return	a pair with the Force and Torque to apply */
+		virtual ForceTorquePair calculate(const RigidBody& rigidBody) const = 0;
 	};
 
 }

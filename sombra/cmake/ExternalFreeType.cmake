@@ -2,7 +2,7 @@ include(FetchContent)
 
 FetchContent_Declare(
 	FreeType
-	GIT_REPOSITORY https://git.sv.nongnu.org/r/freetype/freetype2.git
+	GIT_REPOSITORY https://github.com/freetype/freetype.git
 	GIT_TAG VER-2-10-1
 )
 FetchContent_GetProperties(FreeType)

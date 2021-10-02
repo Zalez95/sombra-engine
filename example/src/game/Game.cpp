@@ -3,6 +3,7 @@
 #include <se/app/Repository.h>
 #include <se/app/io/FontReader.h>
 #include <se/graphics/GraphicsEngine.h>
+#include <se/physics/RigidBodyWorld.h>
 #include "Game.h"
 #include "Level.h"
 #include "MainMenuController.h"
@@ -13,9 +14,12 @@ namespace game {
 
 	Game::Game() :
 		Application(
-			{ kTitle, kWidths[0], kHeights[0] },
-			{	kMaxManifolds, kMinFDifference, kMaxCollisionIterations,
-				kContactPrecision, kContactSeparation, kMaxRayCasterIterations
+			se::window::WindowData{ kTitle, static_cast<int>(kWidths[0]), static_cast<int>(kHeights[0]) },
+			se::physics::WorldProperties{
+				kMotionBias, kMinPhysicsAABB, kMaxPhysicsAABB, kMaxCollidingRBs, kMaxCollisionIterations,
+				kMinFDifference, kContactPrecision, kContactSeparation, kCollisionBeta,
+				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
+				kFrictionGravityAcceleration, kMaxConstraintIterations
 			},
 			kUpdateTime
 		),

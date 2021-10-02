@@ -25,10 +25,8 @@ namespace editor {
 
 	Editor::Editor() :
 		se::app::Application(
-			{ kTitle, kWidth, kHeight },
-			{	kMaxManifolds, kMinFDifference, kMaxCollisionIterations,
-				kContactPrecision, kContactSeparation, kMaxRayCasterIterations
-			},
+			se::window::WindowData{ kTitle, kWidth, kHeight },
+			se::physics::WorldProperties(),
 			kUpdateTime
 		),
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),

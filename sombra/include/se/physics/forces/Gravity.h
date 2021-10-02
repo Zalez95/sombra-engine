@@ -1,7 +1,6 @@
 #ifndef GRAVITY_H
 #define GRAVITY_H
 
-#include <glm/glm.hpp>
 #include "Force.h"
 
 namespace se::physics {
@@ -33,12 +32,8 @@ namespace se::physics {
 		virtual std::unique_ptr<Force> clone() const override
 		{ return std::make_unique<Gravity>(*this); };
 
-		/** Applies the gravitational force to the given RigidBody based in the
-		 * time
-		 *
-		 * @param	rigidBody the RigidBody to which we want to apply the
-		 *			Force */
-		virtual void apply(RigidBody& rigidBody) override;
+		/** @copydoc Force::calculate(const RigidBody&) */
+		ForceTorquePair calculate(const RigidBody& rigidBody) const override;
 	};
 
 }

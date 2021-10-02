@@ -25,7 +25,6 @@ namespace editor {
 		class MeshComponentNode;
 		class TerrainComponentNode;
 		class RigidBodyComponentNode;
-		class ColliderComponentNode;
 		class ParticleSystemComponentNode;
 		class AudioSourceComponentNode;
 

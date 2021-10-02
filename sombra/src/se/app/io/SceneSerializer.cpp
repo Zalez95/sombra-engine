@@ -8,12 +8,12 @@
 #include "se/physics/forces/PunctualForce.h"
 #include "se/physics/forces/DirectionalForce.h"
 #include "se/physics/forces/Gravity.h"
-#include "se/collision/BoundingBox.h"
-#include "se/collision/BoundingSphere.h"
-#include "se/collision/Capsule.h"
-#include "se/collision/TriangleCollider.h"
-#include "se/collision/TerrainCollider.h"
-#include "se/collision/CompositeCollider.h"
+#include "se/physics/collision/BoundingBox.h"
+#include "se/physics/collision/BoundingSphere.h"
+#include "se/physics/collision/Capsule.h"
+#include "se/physics/collision/TriangleCollider.h"
+#include "se/physics/collision/TerrainCollider.h"
+#include "se/physics/collision/CompositeCollider.h"
 #include "se/animation/SkeletonAnimator.h"
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
@@ -44,7 +44,6 @@
 using namespace se::utils;
 using namespace se::graphics;
 using namespace se::physics;
-using namespace se::collision;
 using namespace se::animation;
 using namespace se::audio;
 
@@ -1945,70 +1944,7 @@ namespace se::app {
 	}
 
 
-	template <>
-	nlohmann::json serializeComponent<RigidBodyComponent>(const RigidBodyComponent& rigidBody, SerializeData&, std::ostream&)
-	{
-		auto forces = nlohmann::json::array();
-		rigidBody.processForces([&](const auto& force) {
-			forces.push_back(force.getResource().getName());
-		});
-
-		nlohmann::json json;
-		json["invertedMass"] = rigidBody.getConfig().invertedMass;
-		json["invertedInertiaTensor"] = toJson(rigidBody.getConfig().invertedInertiaTensor);
-		json["linearDrag"] = rigidBody.getConfig().linearDrag;
-		json["angularDrag"] = rigidBody.getConfig().angularDrag;
-		json["frictionCoefficient"] = rigidBody.getConfig().frictionCoefficient;
-		json["sleepMotion"] = rigidBody.getConfig().sleepMotion;
-		json["forces"] = std::move(forces);
-		return json;
-	}
-
-	template <>
-	ResultOptional<RigidBodyComponent> deserializeComponent<RigidBodyComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
-	{
-		RigidBodyComponent rigidBody;
-
-		auto itInvertedMass = json.find("invertedMass"), itInvertedInertiaTensor = json.find("invertedInertiaTensor"),
-			itLinearDrag = json.find("linearDrag"), itAngularDrag = json.find("angularDrag"),
-			itFrictionCoefficient = json.find("frictionCoefficient"), itSleepMotion = json.find("sleepMotion"),
-			itForces = json.find("forces");
-
-		if ((itInvertedMass == json.end()) || (itInvertedInertiaTensor == json.end())
-			|| (itLinearDrag == json.end()) || (itAngularDrag == json.end())
-			|| (itFrictionCoefficient == json.end()) || (itSleepMotion == json.end())
-			|| (itForces == json.end())
-		) {
-			return { Result(false, "Missing properties"), std::nullopt };
-		}
-
-		rigidBody.getConfig().invertedMass = *itInvertedMass;
-		if (!toMat(*itInvertedInertiaTensor, rigidBody.getConfig().invertedInertiaTensor)) {
-			return { Result(false, "Failed to parse the invertedInertiaTensor"), std::nullopt };
-		}
-
-		rigidBody.getConfig().linearDrag = *itLinearDrag;
-		rigidBody.getConfig().angularDrag = *itAngularDrag;
-		rigidBody.getConfig().frictionCoefficient = *itFrictionCoefficient;
-		rigidBody.getConfig().sleepMotion = *itSleepMotion;
-
-		for (std::size_t i = 0; i < itForces->size(); ++i) {
-			std::string forceJson = (*itForces)[i];
-			auto force = scene.repository.findByName<Force>(forceJson.c_str());
-			if (force) {
-				rigidBody.addForce(force);
-			}
-			else {
-				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Name " + forceJson + " not found"), std::nullopt };
-			}
-		}
-
-		return { Result(), std::move(rigidBody) };
-	}
-
-
-	template <>
-	nlohmann::json serializeComponent<Collider>(const Collider& collider, SerializeData& data, std::ostream& dataStream)
+	nlohmann::json serializeCollider(const Collider& collider, SerializeData& data, std::ostream& dataStream)
 	{
 		nlohmann::json json;
 
@@ -2125,7 +2061,7 @@ namespace se::app {
 		else if (auto composite = dynamic_cast<const CompositeCollider*>(&collider)) {
 			auto colliderPartsJson = nlohmann::json::array();
 			composite->processParts([&](const Collider& part) {
-				colliderPartsJson.emplace_back( serializeComponent<Collider>(part, data, dataStream) );
+				colliderPartsJson.emplace_back( serializeCollider(part, data, dataStream) );
 			});
 
 			json["type"] = "CompositeCollider";
@@ -2135,8 +2071,7 @@ namespace se::app {
 		return json;
 	}
 
-	template <>
-	ResultOptional<std::unique_ptr<Collider>> deserializeComponent<std::unique_ptr<Collider>>(const nlohmann::json& json, DeserializeData& data, Scene& scene)
+	ResultOptional<std::unique_ptr<Collider>> deserializeCollider(const nlohmann::json& json, DeserializeData& data)
 	{
 		std::unique_ptr<Collider> collider;
 
@@ -2320,7 +2255,7 @@ namespace se::app {
 			std::vector<std::unique_ptr<Collider>> parts;
 			for (std::size_t i = 0; i < itParts->size(); ++i) {
 				auto jsonPart = (*itParts)[i];
-				auto [result, part] = deserializeComponent<std::unique_ptr<Collider>>(jsonPart, data, scene);
+				auto [result, part] = deserializeCollider(jsonPart, data);
 				if (!result) {
 					return { Result(false, "Failed to parse CompositeCollider at parts[" + std::to_string(i) + "]:" + result.description()), std::nullopt };
 				}
@@ -2333,6 +2268,102 @@ namespace se::app {
 		}
 
 		return { Result(), std::move(collider) };
+	}
+
+	template <>
+	nlohmann::json serializeComponent<RigidBodyComponent>(const RigidBodyComponent& rigidBody, SerializeData& data, std::ostream& dataStream)
+	{
+		auto forces = nlohmann::json::array();
+		rigidBody.processForces([&](const auto& force) {
+			forces.push_back(force.getResource().getName());
+		});
+
+		nlohmann::json json;
+		json["type"] = static_cast<int>(rigidBody.getProperties().type);
+		json["invertedMass"] = rigidBody.getProperties().invertedMass;
+		json["invertedInertiaTensor"] = toJson(rigidBody.getProperties().invertedInertiaTensor);
+		json["linearDrag"] = rigidBody.getProperties().linearDrag;
+		json["angularDrag"] = rigidBody.getProperties().angularDrag;
+		json["frictionCoefficient"] = rigidBody.getProperties().frictionCoefficient;
+		json["sleepMotion"] = rigidBody.getProperties().sleepMotion;
+		json["forces"] = std::move(forces);
+
+		if (const Collider* collider = rigidBody.getCollider()) {
+			nlohmann::json jsonCollider = serializeCollider(*collider, data, dataStream);
+			jsonCollider["localTransforms"] = toJson(rigidBody.getColliderLocalTransforms());
+			json["collider"] = std::move(jsonCollider);
+		}
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<RigidBodyComponent> deserializeComponent<RigidBodyComponent>(const nlohmann::json& json, DeserializeData& data, Scene& scene)
+	{
+		RigidBodyProperties rbProperties;
+
+		auto itType = json.find("type"),
+			itInvertedMass = json.find("invertedMass"), itInvertedInertiaTensor = json.find("invertedInertiaTensor"),
+			itLinearDrag = json.find("linearDrag"), itAngularDrag = json.find("angularDrag"),
+			itFrictionCoefficient = json.find("frictionCoefficient"), itSleepMotion = json.find("sleepMotion"),
+			itCollider = json.find("collider"), itForces = json.find("forces");
+
+		if ((itType == json.end())
+			|| (itInvertedMass == json.end()) || (itInvertedInertiaTensor == json.end())
+			|| (itLinearDrag == json.end()) || (itAngularDrag == json.end())
+			|| (itFrictionCoefficient == json.end()) || (itSleepMotion == json.end())
+			|| (itForces == json.end())
+		) {
+			return { Result(false, "Missing properties"), std::nullopt };
+		}
+
+		rbProperties.type = static_cast<RigidBodyProperties::Type>(itType->get<int>());
+		if (rbProperties.type == RigidBodyProperties::Type::Dynamic) {
+			rbProperties.invertedMass = *itInvertedMass;
+			if (!toMat(*itInvertedInertiaTensor, rbProperties.invertedInertiaTensor)) {
+				return { Result(false, "Failed to parse the invertedInertiaTensor"), std::nullopt };
+			}
+
+			rbProperties.linearDrag = *itLinearDrag;
+			rbProperties.angularDrag = *itAngularDrag;
+		}
+
+		rbProperties.frictionCoefficient = *itFrictionCoefficient;
+		rbProperties.sleepMotion = *itSleepMotion;
+
+		std::unique_ptr<Collider> collider;
+		glm::mat4 colliderLocalTransforms(1.0f);
+		if (itCollider == json.end()) {
+			auto [result, collider2] = deserializeCollider(*itCollider, data);
+			if (!result) {
+				return { Result(false, "Failed to parse the collider: " + std::string(result.description())), std::nullopt };
+			}
+			collider = std::move(*collider2);
+
+			auto itColliderLocalTransforms = itCollider->find("colliderLocalTransforms");
+			if (itColliderLocalTransforms != itCollider->end()) {
+				if (!toMat(*itColliderLocalTransforms, colliderLocalTransforms)) {
+					return { Result(false, "Failed to parse colliderLocalTransforms"), std::nullopt };
+				}
+			}
+		}
+
+		RigidBodyComponent rigidBodyComponent(rbProperties);
+		rigidBodyComponent.setCollider(std::move(collider));
+		rigidBodyComponent.setColliderLocalTrasforms(colliderLocalTransforms);
+
+		for (std::size_t i = 0; i < itForces->size(); ++i) {
+			std::string forceJson = (*itForces)[i];
+			auto force = scene.repository.findByName<Force>(forceJson.c_str());
+			if (force) {
+				rigidBodyComponent.addForce(force);
+			}
+			else {
+				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Name " + forceJson + " not found"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(rigidBodyComponent) };
 	}
 
 
@@ -2928,7 +2959,6 @@ namespace se::app {
 		serializeCVector<LightComponent>("lights", data, json, dataStream);
 		serializeCVector<LightProbeComponent>("lightProbes", data, json, dataStream);
 		serializeCVector<RigidBodyComponent>("rigidBodies", data, json, dataStream);
-		serializeCVector<Collider>("colliders", data, json, dataStream);
 		serializeCVector<SkinComponent>("skinComponents", data, json, dataStream);
 		serializeCVector<AnimationComponent>("animationComponents", data, json, dataStream);
 		serializeCVector<ParticleSystemComponent>("particleSystemComponents", data, json, dataStream);
@@ -2945,7 +2975,6 @@ namespace se::app {
 		if (auto result = deserializeCVector<LightComponent>("lights", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<LightProbeComponent>("lightProbes", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<RigidBodyComponent>("rigidBodies", data, scene); !result) { return result; }
-		if (auto result = deserializeCVector<Collider, true>("colliders", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<ParticleSystemComponent>("particleSystemComponents", data, scene); !result) { return result; }
