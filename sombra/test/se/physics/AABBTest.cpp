@@ -47,7 +47,7 @@ TEST(AABB, overlaps)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
 	const AABB aabb2{ glm::vec3(-2.0f, -0.85f, 1.0f), glm::vec3(-1.0f, 1.15f, 3.0f) };
-	EXPECT_TRUE(overlaps(aabb1, aabb2));
+	EXPECT_TRUE(overlaps(aabb1, aabb2, kTolerance));
 }
 
 
@@ -55,7 +55,7 @@ TEST(AABB, overlapsVertex)
 {
 	const AABB aabb1{ glm::vec3(-4.0f, -2.5f, -3.5f), glm::vec3(-2.0f, -1.5f, -1.5f) };
 	const AABB aabb2{ glm::vec3(-2.0f, -3.5f, -1.5f), glm::vec3(-1.0f, -2.5f, -0.5f) };
-	EXPECT_TRUE(overlaps(aabb1, aabb2));
+	EXPECT_TRUE(overlaps(aabb1, aabb2, kTolerance));
 }
 
 
@@ -63,7 +63,7 @@ TEST(AABB, overlapsEdge)
 {
 	const AABB aabb1{ glm::vec3(-4.0f, -2.5f, -3.5f), glm::vec3(-2.0f, -1.5f, -1.5f) };
 	const AABB aabb2{ glm::vec3(-3.5f, -1.5f, -4.5f), glm::vec3(-2.5f, -0.5f, -3.5f) };
-	EXPECT_TRUE(overlaps(aabb1, aabb2));
+	EXPECT_TRUE(overlaps(aabb1, aabb2, kTolerance));
 }
 
 
@@ -71,7 +71,7 @@ TEST(AABB, overlapsFace)
 {
 	const AABB aabb1{ glm::vec3(-4.0f, -2.5f, -3.5f), glm::vec3(-2.0f, -1.5f, -1.5f) };
 	const AABB aabb2{ glm::vec3(-3.5f, -3.5f, -3.0f), glm::vec3(-2.5f, -2.5f, -2.0f) };
-	EXPECT_TRUE(overlaps(aabb1, aabb2));
+	EXPECT_TRUE(overlaps(aabb1, aabb2, kTolerance));
 }
 
 
@@ -79,7 +79,7 @@ TEST(AABB, overlapsFalse)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
 	const AABB aabb2{ glm::vec3(0.5f, -0.85f, 1.0f), glm::vec3(1.5f, 1.15f, 3.0f) };
-	EXPECT_FALSE(overlaps(aabb1, aabb2));
+	EXPECT_FALSE(overlaps(aabb1, aabb2, kTolerance));
 }
 
 
@@ -139,4 +139,16 @@ TEST(AABB, transforms1)
 		EXPECT_NEAR(res.minimum[i], expectedAABB.minimum[i], kTolerance);
 		EXPECT_NEAR(res.maximum[i], expectedAABB.maximum[i], kTolerance);
 	}
+}
+
+
+TEST(AABB, area1)
+{
+	float expectedArea = 10.0f;
+	const AABB aabb1{
+		glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f)
+	};
+
+	auto res = calculateArea(aabb1);
+	EXPECT_NEAR(res, expectedArea, kTolerance);
 }

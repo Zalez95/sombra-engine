@@ -25,9 +25,13 @@ namespace se::physics {
 		/** The maximum number of simultaneous colliding RigidBodies */
 		std::size_t maxCollidingRBs = 128;
 
-		/** The maximum number of iterations of the collision detection
+		/** The epsilon value used during the coarse collision detection step
+		 * for testing intersections with the Colliders AABBs */
+		float coarseCollisionEpsilon = 0.0001f;
+
+		/** The maximum number of iterations of the collision/intersection
 		 * algorithms */
-		std::size_t maxCollisionIterations = 100;
+		std::size_t maxIterations = 100;
 
 		/** The threshold value needed for checking if the closest face in
 		 * contact was found */
@@ -39,6 +43,9 @@ namespace se::physics {
 		/** The minimum distance between the coordinates of two Contact used for
 		 * used for checking if a contact is the same than another one */
 		float contactSeparation = 0.00001f;
+
+		/** The precision of the calculated ray casts */
+		float raycastPrecision = 0.0000001f;
 
 		/** The velocity of the constraint resolution process of the
 		 * NormalConstraints */

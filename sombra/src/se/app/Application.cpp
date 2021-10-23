@@ -150,6 +150,7 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
+		mEntityDatabase->clearEntities();
 		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioSystem) { delete mAudioSystem; }
 		if (mAnimationSystem) { delete mAnimationSystem; }
@@ -259,54 +260,54 @@ namespace se::app {
 		utils::TimeGuard t0("onUpdate");
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
-		utils::TaskSet taskSet(*mTaskManager);
-		auto scriptTask = taskSet.createTask([&]() {
+		//utils::TaskSet taskSet(*mTaskManager);
+		/*auto scriptTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("scriptsys");
 			mScriptSystem->setDeltaTime(deltaTime);
 			mScriptSystem->update();
-		});
-		auto animationTask = taskSet.createTask([&]() {
+		}//);
+		/*auto animationTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("animsys");
 			mAnimationSystem->setDeltaTime(deltaTime);
 			mAnimationSystem->update();
-		});
-		auto physicsTask = taskSet.createTask([&]() {
+		}//);
+		/*auto physicsTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("physicsssys");
 			mPhysicsSystem->setDeltaTime(deltaTime);
 			mPhysicsSystem->update();
-		});
-		auto audioTask = taskSet.createTask([&]() {
+		}//);
+		/*auto audioTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("audiosys");
 			mAudioSystem->setDeltaTime(deltaTime);
 			mAudioSystem->update();
-		});
-		auto cameraTask = taskSet.createTask([&]() {
+		}//);
+		/*auto cameraTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("camerasys");
 			mCameraSystem->setDeltaTime(deltaTime);
 			mCameraSystem->update();
-		});
-		auto lightTask = taskSet.createTask([&]() {
+		}//);
+		/*auto lightTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("lightsys");
 			mLightSystem->setDeltaTime(deltaTime);
 			mLightSystem->update();
-		});
-		auto lightProbeTask = taskSet.createTask([&]() {
+		}//);
+		/*auto lightProbeTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("lightProbesys");
 			mLightProbeSystem->setDeltaTime(deltaTime);
 			mLightProbeSystem->update();
-		});
-		auto rmeshTask = taskSet.createTask([&]() {
+		}//);
+		/*auto rmeshTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("meshsys");
 			mMeshSystem->setDeltaTime(deltaTime);
 			mMeshSystem->update();
-		});
-		auto rterrainTask = taskSet.createTask([&]() {
+		}//);
+		/*auto rterrainTask = taskSet.createTask([&]() */{
 			utils::TimeGuard t("terrainsys");
 			mTerrainSystem->setDeltaTime(deltaTime);
 			mTerrainSystem->update();
-		});
+		}//);
 
-		taskSet.depends(animationTask, scriptTask);
+		/*taskSet.depends(animationTask, scriptTask);
 		taskSet.depends(physicsTask, animationTask);
 		taskSet.depends(audioTask, physicsTask);
 		taskSet.depends(cameraTask, physicsTask);
@@ -315,7 +316,7 @@ namespace se::app {
 		taskSet.depends(rmeshTask, physicsTask);
 		taskSet.depends(rterrainTask, cameraTask);
 
-		taskSet.submitAndWait();
+		taskSet.submitAndWait();*/
 
 		// The ParticleSystemSystem update function must be called from thread 0
 		{ utils::TimeGuard t("particlessys");

@@ -26,7 +26,7 @@ namespace game {
 		mLevel(level), mPickText(pickText)
 	{
 		auto& scene = mLevel.getScene();
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRenderer"));
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
@@ -65,6 +65,10 @@ namespace game {
 
 		mShaderYellow = scene.repository.insert(std::make_shared<se::app::RenderableShader>(mLevel.getGame().getEventManager()), "shaderYellow");
 		mShaderYellow->addStep(stepYellow);
+
+		mLightYellow = scene.repository.emplace<se::app::LightSource>(mLevel.getGame().getEventManager(), se::app::LightSource::Type::Point);
+		mLightYellow.getResource().setName("yellow");
+		mLightYellow->setColor({ 1.0f, 1.0f, 0.0f });
 	}
 
 
@@ -145,31 +149,38 @@ namespace game {
 			PRINT = !PRINT;
 		}
 
-		/*if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
+		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
 			std::string names;
-			for (const auto& [entity, rayCast] : mGame.getExternalTools(). collisionSystem->getEntities(transforms->position, forward)) {
+			auto [collider, rayCast] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(transforms->position + 1.5f * forward, forward);
+			if (collider) {
 				// Blue tetrahedron = separation direction from collider 1 to collider 0
 				glm::vec3 new_z = rayCast.contactNormal;
 				glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
 				glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
 
-				auto pointEntity = mGame.getEntityDatabase().addEntity();
+				auto pointEntity = mLevel.getGame().getEntityDatabase().addEntity();
+				mLevel.getScene().entities.push_back(pointEntity);
 
-				se::app::TransformsComponent transforms;
-				transforms.position = rayCast.contactPointWorld;
-				transforms.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
-				mGame.getEntityDatabase().addComponent(pointEntity, std::move(transforms));
+				se::app::TransformsComponent transforms2;
+				transforms2.position = rayCast.contactPointWorld;
+				transforms2.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
+				mLevel.getGame().getEntityDatabase().addComponent(pointEntity, std::move(transforms2));
 
 				se::app::MeshComponent mesh;
-				mesh.rMeshes.emplace_back(mTetrahedronMesh).addTechnique(mYellowTechnique);
-				mGame.getEntityDatabase().addComponent(pointEntity, std::move(mesh));
+				std::size_t iTetraMesh = mesh.add(false, mTetrahedronMesh);
+				mesh.addRenderableShader(iTetraMesh, mShaderYellow);
+				mLevel.getGame().getEntityDatabase().addComponent(pointEntity, std::move(mesh));
 
-				auto [tag] = mGame.getEntityDatabase().getComponents<se::app::TagComponent>(entity, true);
-				names += std::string(tag->getName()) + "; ";
+				auto light = mLevel.getGame().getEntityDatabase().emplaceComponent<se::app::LightComponent>(pointEntity);
+				light->setSource(mLightYellow);
+
+				se::app::Entity selectedEntity = static_cast<se::app::Entity>(reinterpret_cast<intptr_t>(collider->getParent()->getProperties().userData));
+				auto [tag] = mLevel.getGame().getEntityDatabase().getComponents<se::app::TagComponent>(selectedEntity, true);
+				names += std::string(tag? tag->getName() : "") + "; ";
 			}
 
 			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
-		}*/
+		}
 	}
 
 }

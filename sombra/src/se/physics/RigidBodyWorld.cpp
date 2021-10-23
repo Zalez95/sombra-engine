@@ -23,6 +23,9 @@ namespace se::physics {
 		if (!rigidBody) { return; }
 
 		mRigidBodies.push_back(rigidBody);
+		if (rigidBody->getCollider()) {
+			mCollisionDetector.addCollider(rigidBody->getCollider());
+		}
 	}
 
 
@@ -32,7 +35,9 @@ namespace se::physics {
 
 		mCollisionSolver.removeRigidBody(rigidBody);
 		mConstraintManager.removeRigidBody(rigidBody);
-		mCollisionDetector.removeRigidBody(rigidBody);
+		if (rigidBody->getCollider()) {
+			mCollisionDetector.removeCollider(rigidBody->getCollider());
+		}
 
 		mRigidBodies.erase(
 			std::remove(mRigidBodies.begin(), mRigidBodies.end(), rigidBody),

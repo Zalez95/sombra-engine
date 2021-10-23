@@ -5,6 +5,9 @@
 
 namespace se::physics {
 
+	class TriangleCollider;
+
+
 	/**
 	 * Class TerrainCollider, it's a Collider used to represent a terrain mesh.
 	 * The triangles of the terrain mesh will be generated from the
@@ -17,6 +20,9 @@ namespace se::physics {
 	 */
 	class TerrainCollider : public ConcaveCollider
 	{
+	private:	// Nested types
+		using TriangleCallback = std::function<void(const TriangleCollider&)>;
+
 	private:	// Attributes
 		/** The positions in the Y axis of the TerrainCollider's vertices in
 		 * the range [-0.5, 0.5] */
@@ -87,21 +93,43 @@ namespace se::physics {
 
 		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(
-			const AABB& aabb, const ConvexShapeCallback& callback
+			const AABB& aabb, float epsilon, const ConvexShapeCallback& callback
+		) const override;
+
+		/** @copydoc ConcaveCollider::processIntersectingParts() */
+		virtual void processIntersectingParts(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			float epsilon, const ConvexShapeCallback& callback
 		) const override;
 	private:
 		/** Calculates the AABB of the TerrainCollider with its local heights
 		 * and transforms matrix */
 		void calculateAABB();
 
+		/** Calculates the TriangleColliders located between the given indices
+		 * of the HeightMap, calling the given callback function
+		 *
+		 * @param	iMinX the minimum position in the X Axis
+		 * @param	iMinZ the minimum position in the Z Axis
+		 * @param	iMaxX the maximum position in the X Axis
+		 * @param	iMaxZ the maximum position in the Z Axis
+		 * @param	callback the function to call for each Triangle */
+		void processTriangles(
+			std::size_t iMinX, std::size_t iMinZ,
+			std::size_t iMaxX, std::size_t iMaxZ,
+			const TriangleCallback& callback
+		) const;
+
 		/** Checks if the given AABB is inside the given triangle in the Y axis
 		 *
 		 * @param	aabb the AABB in local space
 		 * @param	vertices the vertices of the triangle
+		 * @param	epsilon the precision of the check
 		 * @return	true if the AABB (or part of it) is inside the triangle in
 		 *			the Y axis, false otherwise */
 		bool checkYAxis(
-			const AABB& aabb, const std::array<glm::vec3, 3>& vertices
+			const AABB& aabb, const std::array<glm::vec3, 3>& vertices,
+			float epsilon
 		) const;
 	};
 

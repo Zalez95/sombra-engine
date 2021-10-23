@@ -11,16 +11,16 @@ namespace se::physics {
 	struct RayCast
 	{
 		/** The distance from the ray origin */
-		float distance;
+		float distance = 0.0f;
 
 		/** The world coordinates of the contact point */
-		glm::vec3 contactPointWorld;
+		glm::vec3 contactPointWorld = {};
 
 		/** The local coordinates of the contact point */
-		glm::vec3 contactPointLocal;
+		glm::vec3 contactPointLocal = {};
 
 		/** The normal at the surface of contact */
-		glm::vec3 contactNormal;
+		glm::vec3 contactNormal = {};
 	};
 
 }

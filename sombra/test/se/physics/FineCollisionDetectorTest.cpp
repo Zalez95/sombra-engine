@@ -10,10 +10,12 @@
 
 using namespace se::physics;
 static constexpr float kTolerance			= 0.0001f;
+static constexpr float kCoarseEpsilon		= 0.0001f;
 static constexpr float kMinFDifference		= 0.0001f;
 static constexpr std::size_t kMaxIterations	= 128;
 static constexpr float kContactPrecision	= 0.0000001f;
 static constexpr float kContactSeparation	= 0.0000001f;
+static constexpr float kRaycastPrecision	= 0.0000001f;
 
 TEST(FineCollisionDetector, SphereSphere1)
 {
@@ -31,8 +33,10 @@ TEST(FineCollisionDetector, SphereSphere1)
 
 	Manifold manifold(&bs1, &bs2);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
@@ -66,8 +70,10 @@ TEST(FineCollisionDetector, SphereSphere2)
 
 	Manifold manifold(&bs1, &bs2);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
@@ -100,8 +106,10 @@ TEST(FineCollisionDetector, CPolyCPolyNonColliding)
 
 	Manifold manifold(&bb1, &bb2);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
@@ -133,8 +141,10 @@ TEST(FineCollisionDetector, CPolyCPolyVertexFace)
 
 	Manifold manifold(&bb1, &bb2);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
@@ -178,8 +188,10 @@ TEST(FineCollisionDetector, CPolyCPolyVertexVertex)
 
 	Manifold manifold(&bb1, &bb2);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
@@ -225,8 +237,10 @@ TEST(FineCollisionDetector, SphereCPoly1)
 
 	Manifold manifold(&bs1, &cp1);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_TRUE(fineCollisionDetector.collide(manifold));
@@ -265,9 +279,40 @@ TEST(FineCollisionDetector, TriangleCPoly1)
 
 	Manifold manifold(&tr1, &bb1);
 	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
 		kMinFDifference, kMaxIterations,
-		kContactPrecision, kContactSeparation
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
 	);
 
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
 }
+
+
+// TODO: concave
+
+
+TEST(Raycast, Cube1)
+{
+	glm::quat rayOrientation(0.032990694f, 0.853827714f, 0.276134550f, -0.440044879f);
+	glm::vec3 rayOrigin(-46.464401245f, 1.976649999f, -36.986301422f);
+
+	glm::vec3 p1(-49.965099334f, 1.075446844f, -39.965072631f);
+	glm::quat o1(0.996992051f, 0.054803427f, -0.000430180f, -0.054803423f);
+	BoundingBox bb1(glm::vec3(1.0f));
+	glm::mat4 r1 = glm::mat4_cast(o1);
+	glm::mat4 t1 = glm::translate(glm::mat4(1.0f), p1);
+	bb1.setTransforms(t1 * r1);
+
+	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
+		kMinFDifference, kMaxIterations,
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
+	);
+
+	bool res = fineCollisionDetector.intersects(rayOrigin, rayOrientation * glm::vec3(0.0f, 0.0f, 1.0f), bb1).first;
+	ASSERT_TRUE(res);
+}
+
+// TODO: other colliders

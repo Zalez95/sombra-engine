@@ -17,17 +17,17 @@ namespace se::physics {
 	}
 
 
-	bool overlaps(const AABB& aabb1, const AABB& aabb2)
+	bool overlaps(const AABB& aabb1, const AABB& aabb2, float epsilon)
 	{
 		const AABB *b1 = &aabb1, *b2 = &aabb2;
 		if (b2->minimum.x < b1->minimum.x) { std::swap(b1, b2); }
-		bool intersecX = (b1->maximum.x >= b2->minimum.x) && (b1->minimum.x <= b2->maximum.x);
+		bool intersecX = (b1->maximum.x + epsilon >= b2->minimum.x) && (b1->minimum.x - epsilon <= b2->maximum.x);
 
 		if (b2->minimum.y < b1->minimum.y) { std::swap(b1, b2); }
-		bool intersecY = (b1->maximum.y >= b2->minimum.y) && (b1->minimum.y <= b2->maximum.y);
+		bool intersecY = (b1->maximum.y + epsilon >= b2->minimum.y) && (b1->minimum.y - epsilon <= b2->maximum.y);
 
 		if (b2->minimum.z < b1->minimum.z) { std::swap(b1, b2); }
-		bool intersecZ = (b1->maximum.z >= b2->minimum.z) && (b1->minimum.z <= b2->maximum.z);
+		bool intersecZ = (b1->maximum.z + epsilon >= b2->minimum.z) && (b1->minimum.z - epsilon <= b2->maximum.z);
 
 		return (intersecX && intersecY && intersecZ);
 	}
@@ -77,6 +77,13 @@ namespace se::physics {
 		}
 
 		return ret;
+	}
+
+
+	float calculateArea(const AABB& aabb)
+	{
+		glm::vec3 diagonal = aabb.maximum - aabb.minimum;
+		return 2.0f * (diagonal.x * diagonal.y + diagonal.y * diagonal.z + diagonal.z * diagonal.x);
 	}
 
 }

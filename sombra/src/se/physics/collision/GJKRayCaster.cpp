@@ -22,7 +22,7 @@ namespace se::physics {
 		utils::FixedVector<bool, 4> closestSimplexPoints;
 
 		float dist2 = glm::dot(v, v);
-		int iteration = 0;
+		std::size_t iteration = 0;
 		while ((dist2 > mEpsilon * mEpsilon) && (iteration < mMaxIterations)) {
 			// Search a new point in the v direction
 			glm::vec3 pointWorld(0.0f), pointLocal(0.0f);

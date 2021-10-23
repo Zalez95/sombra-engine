@@ -138,4 +138,12 @@ namespace se::app {
 		}
 	}
 
+
+	void EntityDatabase::clearEntities()
+	{
+		iterateEntities([this](Entity entity) {
+			removeEntity(entity);
+		});
+	}
+
 }

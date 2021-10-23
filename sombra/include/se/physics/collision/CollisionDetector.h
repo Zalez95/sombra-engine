@@ -9,7 +9,6 @@
 
 namespace se::physics {
 
-	class RigidBody;
 	class RigidBodyWorld;
 
 
@@ -42,7 +41,9 @@ namespace se::physics {
 	 */
 	class CollisionDetector
 	{
-	private:	// Nested types
+	public:		// Nested types
+		using RayCastCallback = std::function<void(Collider*, const RayCast&)>;
+	private:
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
 		using ManifoldUPtr = std::unique_ptr<Manifold>;
 		using ManifoldCallback = std::function<void(const Manifold&)>;
@@ -82,11 +83,17 @@ namespace se::physics {
 		 * the RigidBodies */
 		void update();
 
-		/** Removes all the Manifolds that references the given RigidBody
+		/** Adds the given Collider to the CollisionDetection so it will check
+		 * if it collides or intersects
 		 *
-		 * @param	rigidBody a pointer to the RigidBody to remove
+		 * @param	collider a pointer to the Collider to add */
+		void addCollider(Collider* collider);
+
+		/** Removes all the references to the given Collider
+		 *
+		 * @param	collider a pointer to the Collider to remove
 		 * @note	the removed Manifolds won't be notified */
-		void removeRigidBody(const RigidBody* rigidBody);
+		void removeCollider(Collider* collider);
 
 		/** Adds the given ICollisionListener to the CollisionDetector so it
 		 * will be updated of the collisions
@@ -99,6 +106,28 @@ namespace se::physics {
 		 *
 		 * @param	listener a pointer to the ICollisionListener to remove */
 		void removeListener(ICollisionListener* listener);
+
+		/** Calculates all the intersections with the given ray
+		 *
+		 * @param	rayOrigin the origin of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @param	callback the function that must be called for
+		 *			of the Colliders intersecting with the ray */
+		void rayCastAll(
+			const glm::vec3 origin, const glm::vec3& direction,
+			const RayCastCallback& callback
+		);
+
+		/** Calculates the first intersection with the given ray
+		 *
+		 * @param	rayOrigin the origin of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @return	a pair with a pointer to the intersected Collider, nullptr
+		 *			if it didn't intersect anything, and a RayCast object with
+		 *			the result of the RayCast */
+		std::pair<Collider*, RayCast> rayCastFirst(
+			const glm::vec3 origin, const glm::vec3& direction
+		);
 	};
 
 }

@@ -17,8 +17,6 @@ TEST(RigidBodyWorld, velocityIntegration)
 	const glm::vec3 expectedAngularVelocity(-0.13f, -3.6f, 10.125f);
 
 	RigidBodyProperties properties(3.5f, glm::mat3(2.0f / 5.0f * 3.5f * static_cast<float>(std::pow(2.0f, 2))));
-	properties.linearDrag = 1.0f;
-	properties.angularDrag = 1.0f;
 	properties.sleepMotion = 0.5f;
 
 	RigidBodyState state;
@@ -55,8 +53,6 @@ TEST(RigidBodyWorld, forceIntegration)
 	const glm::vec3 expectedLinearAcceleration(1.797428965f, -2.285017728f, -1.509840369f);
 
 	RigidBodyProperties properties(4.512f, glm::mat3(2.0f / 5.0f * 4.512f * static_cast<float>(std::pow(2.0f, 2))));
-	properties.linearDrag = 1.0f;
-	properties.angularDrag = 1.0f;
 	properties.sleepMotion = 0.5f;
 
 	RigidBodyState state;
@@ -93,8 +89,6 @@ TEST(RigidBodyWorld, torqueIntegration)
 	const glm::vec3 expectedAngularAcceleration(4.974330902f, 1.776694655f, -6.642519950f);
 
 	RigidBodyProperties properties(3.953f, glm::mat3(2.0f / 5.0f * 3.953f * static_cast<float>(std::pow(2.0f, 2))));
-	properties.linearDrag = 1.0f;
-	properties.angularDrag = 1.0f;
 	properties.sleepMotion = 0.5f;
 
 	RigidBodyState state;
@@ -139,8 +133,6 @@ TEST(RigidBodyWorld, transformsIntegration)
 	const glm::vec3 expectedLinearAcceleration(1.188229441f, 0.751120924f, -0.517487585f);
 	const glm::vec3 expectedAngularAcceleration(1.072137355f, -3.708540916f, -2.921071290f);
 	RigidBodyProperties properties(6.1781f, glm::mat3(6.1781f * static_cast<float>(std::pow(3.21f, 2) / 6.0f)));
-	properties.linearDrag = 1.0f;
-	properties.angularDrag = 1.0f;
 	properties.sleepMotion = 0.2f;
 
 	RigidBodyState state;
@@ -178,8 +170,6 @@ TEST(RigidBodyWorld, transformsIntegration)
 TEST(RigidBodyWorld, rigidBodyStatus)
 {
 	RigidBodyProperties properties(6.1781f, glm::mat3(6.1781f * static_cast<float>(std::pow(3.21f, 2)) / 6.0f));
-	properties.linearDrag = 1.0f;
-	properties.angularDrag = 1.0f;
 	properties.sleepMotion = 0.2f;
 
 	RigidBodyState state1;

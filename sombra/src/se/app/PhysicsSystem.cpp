@@ -68,6 +68,10 @@ namespace se::app {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
 		}
 
+		auto properties = rigidBody->getProperties();
+		properties.userData = reinterpret_cast<void*>(entity);
+		rigidBody->setProperties(properties);
+
 		mApplication.getExternalTools().rigidBodyWorld->addRigidBody(&rigidBody->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBodyComponent " << rigidBody << " added successfully";
 	}

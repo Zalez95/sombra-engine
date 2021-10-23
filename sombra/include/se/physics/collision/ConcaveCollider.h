@@ -25,9 +25,22 @@ namespace se::physics {
 		 * the ConcaveCollider with the given AABB
 		 *
 		 * @param	aabb the AABB to compare
+		 * @param	epsilon the epsilon value used for AABB overlap checks
 		 * @param	callback the function to call */
 		virtual void processOverlapingParts(
-			const AABB& aabb, const ConvexShapeCallback& callback
+			const AABB& aabb, float epsilon, const ConvexShapeCallback& callback
+		) const = 0;
+
+		/** Calls the given callback for each of the intersecting convex parts
+		 * of the ConcaveCollider with the given ray
+		 *
+		 * @param	rayOrigin the origin of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @param	epsilon the epsilon value used for ray intersection checks
+		 * @param	callback the function to call */
+		virtual void processIntersectingParts(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			float epsilon, const ConvexShapeCallback& callback
 		) const = 0;
 	};
 

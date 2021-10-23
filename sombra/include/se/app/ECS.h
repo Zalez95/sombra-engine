@@ -184,6 +184,9 @@ namespace se::app {
 		 * @param	entity the Entity to remove */
 		void removeEntity(Entity entity);
 
+		/** Removes all the Entities stored in the EntityDatabase */
+		void clearEntities();
+
 		/** @return	the maximum number of Components with @tparam T allowed */
 		template <typename T>
 		std::size_t getMaxComponents() const;

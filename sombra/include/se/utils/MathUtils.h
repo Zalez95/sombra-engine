@@ -146,6 +146,19 @@ namespace se::utils {
 	float calculateTriangleArea(const std::array<glm::vec3, 3>& triangle);
 
 
+	/** Checks if the given triangles are the same or not
+	 *
+	 * @param	triangle1 the first triangle
+	 * @param	triangle2 the second triangle
+	 * @param	epsilon the epsilon value used for comparing both triangles
+	 * @return	true if both triangles are the same, false otherwise */
+	bool compareTriangles(
+		const std::array<glm::vec3, 3>& triangle1,
+		const std::array<glm::vec3, 3>& triangle2,
+		float epsilon
+	);
+
+
 	/** Calculates the Bounds in world space
 	 *
 	 * @param	localMin the minimum value in each axis in local space

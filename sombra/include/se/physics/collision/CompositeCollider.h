@@ -84,7 +84,13 @@ namespace se::physics {
 
 		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(
-			const AABB& aabb, const ConvexShapeCallback& callback
+			const AABB& aabb, float epsilon, const ConvexShapeCallback& callback
+		) const override;
+
+		/** @copydoc ConcaveCollider::processIntersectingParts() */
+		virtual void processIntersectingParts(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			float epsilon, const ConvexShapeCallback& callback
 		) const override;
 
 		/** Removes a Collider from the current CompositeCollider

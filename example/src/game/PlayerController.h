@@ -4,6 +4,7 @@
 #include <se/graphics/3D/Mesh.h>
 #include <se/graphics/2D/RenderableText.h>
 #include <se/app/graphics/RenderableShader.h>
+#include <se/app/LightComponent.h>
 #include <se/app/ScriptComponent.h>
 
 namespace game {
@@ -33,6 +34,8 @@ namespace game {
 			mTetrahedronMesh;
 		se::app::Repository::ResourceRef<se::app::RenderableShader>
 			mShaderYellow;
+		se::app::Repository::ResourceRef<se::app::LightSource>
+			mLightYellow;
 
 	public:		// Functions
 		/** Creates a new PlayerController

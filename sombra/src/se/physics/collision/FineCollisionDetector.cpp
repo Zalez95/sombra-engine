@@ -8,15 +8,19 @@
 #include "se/physics/collision/FineCollisionDetector.h"
 #include "GJKCollisionDetector.h"
 #include "EPACollisionDetector.h"
+#include "GJKRayCaster.h"
 
 namespace se::physics {
 
 	FineCollisionDetector::FineCollisionDetector(
+		float coarseEpsilon,
 		float minFDifference, std::size_t maxIterations,
-		float contactPrecision, float contactSeparation
+		float contactPrecision, float contactSeparation,
+		float raycastPrecision
 	) : mGJKCollisionDetector( std::make_unique<GJKCollisionDetector>(contactPrecision, maxIterations) ),
 		mEPACollisionDetector( std::make_unique<EPACollisionDetector>(minFDifference, maxIterations, contactPrecision) ),
-		mContactSeparation2(contactSeparation * contactSeparation) {}
+		mGJKRayCaster( std::make_unique<GJKRayCaster>(raycastPrecision, maxIterations) ),
+		mCoarseEpsilon(coarseEpsilon), mContactSeparation2(contactSeparation * contactSeparation) {}
 
 
 	FineCollisionDetector::~FineCollisionDetector() {}
@@ -49,6 +53,34 @@ namespace se::physics {
 				return collideConcave(*concaveCollider1, *concaveCollider2, manifold);
 			}
 		}
+	}
+
+
+	std::pair<bool, RayCast> FineCollisionDetector::intersects(
+		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+		const Collider& collider
+	) {
+		bool intersects = false;
+		RayCast rayCast;
+		rayCast.distance = std::numeric_limits<float>::max();
+
+		if (auto convexCollider = dynamic_cast<const ConvexCollider*>(&collider)) {
+			std::tie(intersects, rayCast) = mGJKRayCaster->calculateRayCast(rayOrigin, rayDirection, *convexCollider);
+		}
+		else if (auto concaveCollider = dynamic_cast<const ConcaveCollider*>(&collider)) {
+			concaveCollider->processIntersectingParts(
+				rayOrigin, rayDirection, mCoarseEpsilon,
+				[&](const ConvexCollider& convexCollider2) {
+					auto [intersects2, rayCast2] = mGJKRayCaster->calculateRayCast(rayOrigin, rayDirection, convexCollider2);
+					if (intersects2 && (!intersects || (rayCast2.distance < rayCast.distance))) {
+						intersects = intersects2;
+						rayCast = rayCast2;
+					}
+				}
+			);
+		}
+
+		return { intersects, rayCast };
 	}
 
 // Private functions
@@ -97,7 +129,7 @@ namespace se::physics {
 
 		// Get the overlapping convex parts of the concave collider with the
 		// convex one
-		concaveCollider.processOverlapingParts(convexCollider.getAABB(), [&](const ConvexCollider& part) {
+		concaveCollider.processOverlapingParts(convexCollider.getAABB(), mCoarseEpsilon, [&](const ConvexCollider& part) {
 			// GJK algorithm
 			auto [collides, simplex] = (convexFirst)?
 				mGJKCollisionDetector->calculateIntersection(convexCollider, part) :
@@ -148,8 +180,8 @@ namespace se::physics {
 		int nNewContacts = 0;
 
 		// Get the overlapping convex parts of each concave collider
-		collider1.processOverlapingParts(collider2.getAABB(), [&](const ConvexCollider& part1) {
-			collider2.processOverlapingParts(part1.getAABB(), [&](const ConvexCollider& part2) {
+		collider1.processOverlapingParts(collider2.getAABB(), mCoarseEpsilon, [&](const ConvexCollider& part1) {
+			collider2.processOverlapingParts(part1.getAABB(), mCoarseEpsilon, [&](const ConvexCollider& part2) {
 				// GJK algorithm
 				auto [collides, simplex] = mGJKCollisionDetector->calculateIntersection(part1, part2);
 				if (!collides) {

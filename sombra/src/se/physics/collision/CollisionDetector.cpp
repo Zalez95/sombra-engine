@@ -7,9 +7,12 @@ namespace se::physics {
 
 	CollisionDetector::CollisionDetector(RigidBodyWorld& parentWorld) :
 		mParentWorld(parentWorld),
+		mCoarseCollisionDetector(mParentWorld.mProperties.coarseCollisionEpsilon),
 		mFineCollisionDetector(
-			mParentWorld.mProperties.minFDifference, mParentWorld.mProperties.maxCollisionIterations,
-			mParentWorld.mProperties.contactPrecision, mParentWorld.mProperties.contactSeparation
+			mParentWorld.mProperties.coarseCollisionEpsilon,
+			mParentWorld.mProperties.minFDifference, mParentWorld.mProperties.maxIterations,
+			mParentWorld.mProperties.contactPrecision, mParentWorld.mProperties.contactSeparation,
+			mParentWorld.mProperties.raycastPrecision
 		)
 	{
 		mManifolds.reserve(mParentWorld.mProperties.maxCollidingRBs);
@@ -17,10 +20,18 @@ namespace se::physics {
 	}
 
 
-	void CollisionDetector::removeRigidBody(const RigidBody* rigidBody)
+	void CollisionDetector::addCollider(Collider* collider)
 	{
+		mCoarseCollisionDetector.add(collider);
+	}
+
+
+	void CollisionDetector::removeCollider(Collider* collider)
+	{
+		mCoarseCollisionDetector.remove(collider);
+
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end();) {
-			if ((rigidBody == it->first.first->getParent()) || (rigidBody == it->first.second->getParent())) {
+			if ((collider == it->first.first) || (collider == it->first.second)) {
 				mManifolds.erase(mManifolds.begin().setIndex(it->second));
 				it = mCollidersManifoldMap.erase(it);
 			}
@@ -48,12 +59,8 @@ namespace se::physics {
 		}
 
 		// Broad collision phase
-		for (const RigidBody* rigidBody : mParentWorld.mRigidBodies) {
-			if (const Collider* collider = rigidBody->getCollider()) {
-				mCoarseCollisionDetector.submit(collider);
-			}
-		}
-		mCoarseCollisionDetector.processIntersectingColliders([this](const ColliderPair& pair) {
+		mCoarseCollisionDetector.update();
+		mCoarseCollisionDetector.calculateCollisions([this](const ColliderPair& pair) {
 			// Skip non updated Colliders
 			if (pair.first->updated() || pair.second->updated()) {
 				// Find a Manifold between the given colliders
@@ -91,11 +98,9 @@ namespace se::physics {
 		});
 
 		// Reset the updated state of all the Colliders
-		for (RigidBody* rigidBody : mParentWorld.mRigidBodies) {
-			if (Collider* collider = rigidBody->getCollider()) {
-				collider->resetUpdatedState();
-			}
-		}
+		mCoarseCollisionDetector.processColliders([](Collider* collider) {
+			collider->resetUpdatedState();
+		});
 
 		// Notify the ICollisionListeners
 		for (ICollisionListener* listener : mListeners) {
@@ -120,6 +125,38 @@ namespace se::physics {
 			std::remove(mListeners.begin(), mListeners.end(), listener),
 			mListeners.end()
 		);
+	}
+
+
+	void CollisionDetector::rayCastAll(
+		const glm::vec3 origin, const glm::vec3& direction,
+		const RayCastCallback& callback
+	) {
+		mCoarseCollisionDetector.calculateIntersections(origin, direction, [&](Collider* collider) {
+			auto [intersects, rayCast] = mFineCollisionDetector.intersects(origin, direction, *collider);
+			if (intersects) {
+				callback(collider, rayCast);
+			}
+		});
+	}
+
+
+	std::pair<Collider*, RayCast> CollisionDetector::rayCastFirst(
+		const glm::vec3 origin, const glm::vec3& direction
+	) {
+		Collider* collider = nullptr;
+		RayCast rayCast;
+		rayCast.distance = std::numeric_limits<float>::max();
+
+		mCoarseCollisionDetector.calculateIntersections(origin, direction, [&](Collider* collider2) {
+			auto [intersects, rayCast2] = mFineCollisionDetector.intersects(origin, direction, *collider2);
+			if (intersects && (!collider || (rayCast2.distance < rayCast.distance))) {
+				collider = collider2;
+				rayCast = rayCast2;
+			}
+		});
+
+		return { collider, rayCast };
 	}
 
 }

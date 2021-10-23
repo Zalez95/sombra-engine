@@ -25,7 +25,7 @@ namespace se::physics {
 		const float mEpsilon;
 
 		/** The maximum number of iterations of the algorithm */
-		const int mMaxIterations;
+		const std::size_t mMaxIterations;
 
 	public:		// Functions
 		/** Creates a new GJKRayCaster
@@ -33,7 +33,7 @@ namespace se::physics {
 		 * @param	epsilon the comparison precision of the algorithm
 		 * @param	maxIterations the maximum number of iterations of the
 		 *			algorithm */
-		GJKRayCaster(float epsilon, int maxIterations) :
+		GJKRayCaster(float epsilon, std::size_t maxIterations) :
 			mEpsilon(epsilon), mMaxIterations(maxIterations) {};
 
 		/** Checks if the given ray intersects the given collider

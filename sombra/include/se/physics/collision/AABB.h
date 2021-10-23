@@ -33,8 +33,9 @@ namespace se::physics {
 	 *
 	 * @param	aabb1 the first of the fiven AABBs to check
 	 * @param	aabb2 the second of the fiven AABBs to check
+	 * @param	epsilon the precision of the calculation
 	 * @return true if the given AABB overlaps each other, false otherwise */
-	bool overlaps(const AABB& aabb1, const AABB& aabb2);
+	bool overlaps(const AABB& aabb1, const AABB& aabb2, float epsilon);
 
 
 	/** Checks if the given ray intersects the given AABB
@@ -42,7 +43,7 @@ namespace se::physics {
 	 * @param	aabb the AABB to test
 	 * @param	origin the origin point of the ray
 	 * @param	direction the direction vector of the ray
-	 * @param	epsilon the precission of the calculation
+	 * @param	epsilon the precision of the calculation
 	 * @return	true if the ray intersects the AABB, false otherwise */
 	bool intersects(
 		const AABB& aabb,
@@ -57,6 +58,13 @@ namespace se::physics {
 	 * @param	transforms the transformation matrix
 	 * @return	the new AABB */
 	AABB transform(const AABB& aabb, const glm::mat4& transforms);
+
+
+	/** Calculates the Area of the given AABB
+	 *
+	 * @param	aabb the AABB to calculate its area
+	 * @return	the area of the AABB */
+	float calculateArea(const AABB& aabb);
 
 }
 

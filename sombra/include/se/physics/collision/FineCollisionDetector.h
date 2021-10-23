@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "Manifold.h"
+#include "RayCast.h"
 
 namespace se::physics {
 
@@ -11,6 +12,7 @@ namespace se::physics {
 	class ConcaveCollider;
 	class GJKCollisionDetector;
 	class EPACollisionDetector;
+	class GJKRayCaster;
 
 
 	/**
@@ -28,6 +30,13 @@ namespace se::physics {
 		 * Contact between the two ConvexColliders that are intersecting */
 		std::unique_ptr<EPACollisionDetector> mEPACollisionDetector;
 
+		/** The class that implements the GJK RayCast algorithm for calculating
+		 * the intersections between ConvexColliders and rays */
+		std::unique_ptr<GJKRayCaster> mGJKRayCaster;
+
+		/** The precision of the AABB tests */
+		const float mCoarseEpsilon;
+
 		/** The square of the minimum distance between the coordinates of two
 		 * Contacts used for checking if one contact is the same than the
 		 * other one */
@@ -36,6 +45,7 @@ namespace se::physics {
 	public:		// Functions
 		/** Creates a new FineCollisionDetector
 		 *
+		 * @param	coarseEpsilon the precision of the AABB tests
 		 * @param	minFDifference the minimum difference between the distances
 		 *			to the origin of two faces needed for the EPA algorithm
 		 * @param	maxIterations the maximum number of iterations of the GJK
@@ -44,10 +54,13 @@ namespace se::physics {
 		 *			points
 		 * @param	contactSeparation the minimum distance between the
 		 *			coordinates of two Contacts used for checking if a contact
-		 *			is the same than another one */
+		 *			is the same than another one
+		 * @param	raycastPrecision the precision of the calculated RayCasts */
 		FineCollisionDetector(
+			float coarseEpsilon,
 			float minFDifference, std::size_t maxIterations,
-			float contactPrecision, float contactSeparation
+			float contactPrecision, float contactSeparation,
+			float raycastPrecision
 		);
 
 		/** Class destructor */
@@ -63,6 +76,19 @@ namespace se::physics {
 		 * @return	true if the given Colliders are intersecting, false
 		 *			otherwise */
 		bool collide(Manifold& manifold);
+
+		/** Checks if the given ray intersects with the given Collider
+		 *
+		 * @param	rayOrigin the origin of the ray
+		 * @param	rayDirection the direction of the ray
+		 * @param	collider the Collider to check for an intersection
+		 * @return	a pair with a boolean that tells if the ray intersects,
+		 *			and a RayCast object where the result of the RayCast
+		 *			on the Collider will be stored if the ray intersects */
+		std::pair<bool, RayCast> intersects(
+			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
+			const Collider& collider
+		);
 	private:
 		/** Calculates the contact data of the collision that happened between
 		 * the given ConvexColliders

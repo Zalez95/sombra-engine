@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "se/utils/MathUtils.h"
 
 namespace se::utils {
@@ -119,6 +120,25 @@ namespace se::utils {
 		glm::vec3 v12 = triangle[1] - triangle[0];
 		glm::vec3 v13 = triangle[2] - triangle[0];
 		return 0.5f * glm::length(glm::cross(v12, v13));
+	}
+
+
+	bool compareTriangles(
+		const std::array<glm::vec3, 3>& triangle1,
+		const std::array<glm::vec3, 3>& triangle2,
+		float epsilon
+	) {
+		bool sameVertices = std::all_of(triangle1.begin(), triangle1.end(), [&](const glm::vec3& v1) {
+			return std::any_of(triangle2.begin(), triangle2.end(), [&](const glm::vec3& v2) {
+				return glm::all(glm::epsilonEqual(v1, v2, epsilon));
+			});
+		});
+
+		glm::vec3 normal1 = glm::cross(triangle1[1] - triangle1[0], triangle1[2] - triangle1[0]);
+		glm::vec3 normal2 = glm::cross(triangle2[1] - triangle2[0], triangle2[2] - triangle2[0]);
+		bool sameNormalDirection = glm::dot(normal1, normal2) > 0;
+
+		return sameVertices && sameNormalDirection;
 	}
 
 

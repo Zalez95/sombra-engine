@@ -15,10 +15,12 @@ namespace game {
 	const glm::vec3 kMinPhysicsAABB							= glm::vec3(-1000.0f);
 	const glm::vec3 kMaxPhysicsAABB							= glm::vec3( 1000.0f);
 	static constexpr std::size_t kMaxCollidingRBs			= 128;
-	static constexpr float kMinFDifference					= 0.00001f;
+	static constexpr float kCoarseCollisionEpsilon			= 0.0001f;
 	static constexpr std::size_t kMaxCollisionIterations	= 128;
+	static constexpr float kMinFDifference					= 0.00001f;
 	static constexpr float kContactPrecision				= 0.0000001f;
 	static constexpr float kContactSeparation				= 0.00001f;
+	static constexpr float kRaycastPrecision				= 0.0000001f;
 	static constexpr float kCollisionBeta					= 0.1f;
 	static constexpr float kCollisionRestitutionFactor		= 0.2f;
 	static constexpr float kCollisionSlopPenetration		= 0.005f;
