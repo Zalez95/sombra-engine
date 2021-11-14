@@ -2,8 +2,8 @@
 #include <sstream>
 #include <iomanip>
 #include <optional>
-#include "GLMJSON.h"
 #include <AudioFile.h>
+#include "GLMJSON.h"
 #include "se/physics/forces/Gravity.h"
 #include "se/physics/forces/PunctualForce.h"
 #include "se/physics/forces/DirectionalForce.h"
@@ -13,6 +13,7 @@
 #include "se/physics/collision/Capsule.h"
 #include "se/physics/collision/TriangleCollider.h"
 #include "se/physics/collision/TerrainCollider.h"
+#include "se/physics/collision/TriangleMeshCollider.h"
 #include "se/physics/collision/CompositeCollider.h"
 #include "se/animation/SkeletonAnimator.h"
 #include "se/animation/StepAnimations.h"
@@ -702,6 +703,30 @@ namespace se::app {
 	template <>
 	void serializeResource<Texture>(const Repository::ResourceRef<Texture>& texture, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
+		TextureTarget target = texture->getTarget();
+		json["target"] = static_cast<int>(target);
+
+		TypeId type = texture->getTypeId();
+		json["type"] = static_cast<int>(type);
+
+		ColorFormat color = texture->getColorFormat();
+		json["color"] = static_cast<int>(color);
+
+		TextureFilter min, mag;
+		texture->getFiltering(&min, &mag);
+
+		json["min"] = static_cast<int>(min);
+		json["mag"] = static_cast<int>(mag);
+
+		TextureWrap wrapS, wrapT, wrapR;
+		texture->getWrapping(&wrapS, &wrapT, &wrapR);
+
+		json["wrapS"] = static_cast<int>(wrapS);
+		json["wrapT"] = static_cast<int>(wrapT);
+		json["wrapR"] = static_cast<int>(wrapR);
+
+		json["textureUnit"] = texture->getTextureUnit();
+
 		std::string path = texture.getResource().getPath();
 		if (!path.empty()) {
 			// Use the path to the image file
@@ -709,12 +734,9 @@ namespace se::app {
 		}
 		else {
 			// Save the texture to a buffer in the dataStream
-			TextureTarget target = texture->getTarget();
 			std::size_t width = texture->getWidth();
 			std::size_t height = (target != TextureTarget::Texture1D)? texture->getHeight() : 1;
 			std::size_t depth = ((target != TextureTarget::Texture1D) && (target != TextureTarget::Texture2D))? texture->getDepth() : 1;
-			TypeId type = texture->getTypeId();
-			ColorFormat color = texture->getColorFormat();
 
 			std::vector<std::byte> bufferData;
 			if (target == TextureTarget::CubeMap) {
@@ -733,44 +755,53 @@ namespace se::app {
 			serializeBuffer(bufferData.data(), bufferData.size(), bufferJson, dataStream);
 			data.buffersJson.emplace_back(std::move(bufferJson));
 
-			json["target"] = static_cast<int>(target);
 			json["width"] = width;
 			json["height"] = height;
 			json["depth"] = depth;
-			json["type"] = static_cast<int>(type);
-			json["color"] = static_cast<int>(color);
 			json["buffer"] = data.buffersJson.size() - 1;
 		}
-
-		TextureFilter min, mag;
-		texture->getFiltering(&min, &mag);
-
-		json["min"] = static_cast<int>(min);
-		json["mag"] = static_cast<int>(mag);
-
-		TextureWrap wrapS, wrapT, wrapR;
-		texture->getWrapping(&wrapS, &wrapT, &wrapR);
-
-		json["wrapS"] = static_cast<int>(wrapS);
-		json["wrapT"] = static_cast<int>(wrapT);
-		json["wrapR"] = static_cast<int>(wrapR);
-
-		json["textureUnit"] = texture->getTextureUnit();
 	}
 
 	template <>
 	Result deserializeResource<Texture>(const nlohmann::json& json, Repository::ResourceRef<Texture>& texture, DeserializeData& data, Scene& scene)
 	{
-		auto toColorFormat = [](int channels) {
-			switch (channels) {
-				case 1:		return ColorFormat::R;
-				case 2:		return ColorFormat::RG;
-				case 3:		return ColorFormat::RGB;
-				default:	return ColorFormat::RGBA;
-			}
-		};
+		auto itTarget = json.find("target");
+		if (itTarget == json.end()) {
+			return Result(false, "Missing \"target\" property");
+		}
+		TextureTarget target = static_cast<TextureTarget>(itTarget->get<int>());
 
-		std::shared_ptr<Texture> textureSPtr;
+		auto itType = json.find("type");
+		if (itType == json.end()) {
+			return Result(false, "Missing \"type\" property");
+		}
+		TypeId type = static_cast<TypeId>(itType->get<int>());
+
+		auto itColor = json.find("color");
+		if (itColor == json.end()) {
+			return Result(false, "Missing \"color\" property");
+		}
+		ColorFormat color = static_cast<ColorFormat>(itColor->get<int>());
+
+		auto itTextureUnit = json.find("textureUnit");
+		if (itTextureUnit == json.end()) {
+			return Result(false, "Missing \"textureUnit\" property");
+		}
+		int textureUnit = *itTextureUnit;
+
+		auto itMin = json.find("min");
+		auto itMag = json.find("mag");
+		TextureFilter min = (itMin != json.end())? static_cast<TextureFilter>(itMin->get<int>()) : TextureFilter::Nearest;
+		TextureFilter mag = (itMag != json.end())? static_cast<TextureFilter>(itMag->get<int>()) : TextureFilter::Nearest;
+
+		auto itWrapS = json.find("wrapS");
+		auto itWrapT = json.find("wrapT");
+		auto itWrapR = json.find("wrapR");
+		TextureWrap wrapS = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapS->get<int>()) : TextureWrap::ClampToBorder;
+		TextureWrap wrapT = (itWrapT != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
+		TextureWrap wrapR = (itWrapR != json.end())? static_cast<TextureWrap>(itWrapR->get<int>()) : TextureWrap::ClampToBorder;
+
+		auto textureSPtr = std::make_shared<Texture>(target);
 
 		auto itPath = json.find("path");
 		auto itBuffer = json.find("buffer");
@@ -778,36 +809,29 @@ namespace se::app {
 			// Load from file, ONLY TEXTURE2D
 			std::string path = *itPath;
 
-			textureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
 			if ((path.size() > 3) && (path.substr(path.size() - 3, 3) == "hdr")) {
 				Image<float> image;
-				auto result = ImageReader::readHDR(path.c_str(), image);
+				auto result = ImageReader::readHDR(path.c_str(), image, static_cast<int>(toNumberOfComponents(color)));
 				if (!result) {
 					return Result(false, "Failed to read the HDR Image: " + std::string(result.description()));
 				}
 
-				ColorFormat format = toColorFormat(image.channels);
-				textureSPtr->setImage(image.pixels.get(), TypeId::Float, format, format, image.width, image.height);
+				textureSPtr->setImage(image.pixels.get(), TypeId::Float, color, color, image.width, image.height);
 			}
 			else {
 				Image<unsigned char> image;
-				auto result = ImageReader::read(path.c_str(), image);
+				auto result = ImageReader::read(path.c_str(), image, static_cast<int>(toNumberOfComponents(color)));
 				if (!result) {
 					return Result(false, "Failed to read the Image: " + std::string(result.description()));
 				}
 
-				ColorFormat format = toColorFormat(image.channels);
-				textureSPtr->setImage(image.pixels.get(), TypeId::UnsignedByte, format, format, image.width, image.height);
+				textureSPtr->setImage(image.pixels.get(), TypeId::UnsignedByte, color, color, image.width, image.height);
 			}
 
 			texture = scene.repository.insert(textureSPtr);
 			texture.getResource().setPath(path.c_str());
 		}
 		else if (itBuffer != json.end()) {
-			auto itTarget = json.find("target");
-			if (itTarget == json.end()) {
-				return Result(false, "Missing \"target\" property");
-			}
 			auto itWidth = json.find("width");
 			if (itWidth == json.end()) {
 				return Result(false, "Missing \"width\" property");
@@ -820,19 +844,8 @@ namespace se::app {
 			if (itDepth == json.end()) {
 				return Result(false, "Missing \"depth\" property");
 			}
-			auto itType = json.find("type");
-			if (itType == json.end()) {
-				return Result(false, "Missing \"type\" property");
-			}
-			auto itColor = json.find("color");
-			if (itColor == json.end()) {
-				return Result(false, "Missing \"color\" property");
-			}
 
-			TextureTarget target = static_cast<TextureTarget>(itTarget->get<int>());
 			std::size_t width = *itWidth, height = *itHeight, depth = *itDepth;
-			TypeId type = static_cast<TypeId>(itType->get<int>());
-			ColorFormat color = static_cast<ColorFormat>(itColor->get<int>());
 			std::size_t iBuffer = *itBuffer;
 
 			if (*itBuffer >= data.buffersJson.size()) {
@@ -845,7 +858,6 @@ namespace se::app {
 				return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
 			}
 
-			textureSPtr = std::make_shared<Texture>(target);
 			if (target == TextureTarget::CubeMap) {
 				std::size_t sideSize = width * height * toNumberOfComponents(color) * toTypeSize(type);
 				for (int i = 0; i < 6; ++i) {
@@ -862,24 +874,7 @@ namespace se::app {
 			return Result(false, "Missing \"path\" and \"buffer\" properties");
 		}
 
-		auto itTextureUnit = json.find("textureUnit");
-		if (itTextureUnit == json.end()) {
-			return Result(false, "Missing \"textureUnit\" property");
-		}
-
-		auto itMin = json.find("min");
-		auto itMag = json.find("mag");
-		TextureFilter min = (itMin != json.end())? static_cast<TextureFilter>(itMin->get<int>()) : TextureFilter::Nearest;
-		TextureFilter mag = (itMag != json.end())? static_cast<TextureFilter>(itMag->get<int>()) : TextureFilter::Nearest;
-
-		auto itWrapS = json.find("wrapS");
-		auto itWrapT = json.find("wrapT");
-		auto itWrapR = json.find("wrapR");
-		TextureWrap wrapS = (itWrapS != json.end())? static_cast<TextureWrap>(itWrapS->get<int>()) : TextureWrap::ClampToBorder;
-		TextureWrap wrapT = (itWrapT != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
-		TextureWrap wrapR = (itWrapR != json.end())? static_cast<TextureWrap>(itWrapR->get<int>()) : TextureWrap::ClampToBorder;
-
-		textureSPtr->setTextureUnit(*itTextureUnit)
+		textureSPtr->setTextureUnit(textureUnit)
 			.setFiltering(min, mag)
 			.setWrapping(wrapS, wrapT, wrapR)
 			.generateMipMap();
@@ -2058,6 +2053,27 @@ namespace se::app {
 			json["zSize"] = terrain->getZSize();
 			json["heights"] = data.buffersJson.size() - 1;
 		}
+		else if (auto triangleMesh = dynamic_cast<const TriangleMeshCollider*>(&collider)) {
+			nlohmann::json vertexBufferJson;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>( glm::value_ptr(triangleMesh->getVertices()[0]) ),
+				3 * triangleMesh->getNumVertices() * sizeof(float),
+				vertexBufferJson, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(vertexBufferJson));
+
+			nlohmann::json indexBufferJson;
+			serializeBuffer(
+				reinterpret_cast<const std::byte*>(triangleMesh->getIndices()),
+				triangleMesh->getNumIndices() * sizeof(unsigned short),
+				indexBufferJson, dataStream
+			);
+			data.buffersJson.emplace_back(std::move(indexBufferJson));
+
+			json["type"] = "TriangleMeshCollider";
+			json["vertices"] = data.buffersJson.size() - 2;
+			json["indices"] = data.buffersJson.size() - 1;
+		}
 		else if (auto composite = dynamic_cast<const CompositeCollider*>(&collider)) {
 			auto colliderPartsJson = nlohmann::json::array();
 			composite->processParts([&](const Collider& part) {
@@ -2221,22 +2237,22 @@ namespace se::app {
 		else if (*itType == "TerrainCollider") {
 			auto itHeights = json.find("heights");
 			if (itHeights == json.end()) {
-				return { Result(false, "Missing TriangleCollider \"heights\" property"), std::nullopt };
+				return { Result(false, "Missing TerrainCollider \"heights\" property"), std::nullopt };
 			}
 
 			std::size_t heights = *itHeights;
-			if (*itHeights >= data.buffersJson.size()) {
+			if (heights >= data.buffersJson.size()) {
 				return { Result(false, "Heights buffer " + std::to_string(heights) + " out of bounds"), std::nullopt };
 			}
 
 			auto itXSize = json.find("xSize");
 			if (itXSize == json.end()) {
-				return { Result(false, "Missing TriangleCollider \"xSize\" property"), std::nullopt };
+				return { Result(false, "Missing TerrainCollider \"xSize\" property"), std::nullopt };
 			}
 
 			auto itZSize = json.find("zSize");
 			if (itZSize == json.end()) {
-				return { Result(false, "Missing TriangleCollider \"zSize\" property"), std::nullopt };
+				return { Result(false, "Missing TerrainCollider \"zSize\" property"), std::nullopt };
 			}
 
 			std::vector<std::byte> buffer;
@@ -2244,7 +2260,40 @@ namespace se::app {
 
 			auto terrain = std::make_unique<TerrainCollider>();
 			terrain->setHeights(reinterpret_cast<const float*>(buffer.data()), *itXSize, *itZSize);
-			collider = std::move(collider);
+			collider = std::move(terrain);
+		}
+		else if (*itType == "TriangleMeshCollider") {
+			auto itVertices = json.find("vertices");
+			if (itVertices == json.end()) {
+				return { Result(false, "Missing TriangleMeshCollider \"vertices\" property"), std::nullopt };
+			}
+
+			std::size_t vertices = *itVertices;
+			if (vertices >= data.buffersJson.size()) {
+				return { Result(false, "Vertices buffer " + std::to_string(vertices) + " out of bounds"), std::nullopt };
+			}
+
+			std::vector<std::byte> vertexBuffer;
+			deserializeBuffer(data.buffersJson[vertices], data.dataStream, vertexBuffer);
+
+			auto itIndices = json.find("indices");
+			if (itIndices == json.end()) {
+				return { Result(false, "Missing TriangleMeshCollider \"indices\" property"), std::nullopt };
+			}
+
+			std::size_t indices = *itIndices;
+			if (indices >= data.buffersJson.size()) {
+				return { Result(false, "Indices buffer " + std::to_string(indices) + " out of bounds"), std::nullopt };
+			}
+
+			std::vector<std::byte> indexBuffer;
+			deserializeBuffer(data.buffersJson[indices], data.dataStream, indexBuffer);
+
+			auto triangleMesh = std::make_unique<TriangleMeshCollider>(
+				reinterpret_cast<glm::vec3*>(vertexBuffer.data()), vertexBuffer.size() / sizeof(glm::vec3),
+				reinterpret_cast<unsigned short*>(indexBuffer.data()), indexBuffer.size() / sizeof(unsigned short)
+			);
+			collider = std::move(triangleMesh);
 		}
 		else if (*itType == "CompositeCollider") {
 			auto itParts = json.find("parts");
@@ -2290,7 +2339,7 @@ namespace se::app {
 
 		if (const Collider* collider = rigidBody.getCollider()) {
 			nlohmann::json jsonCollider = serializeCollider(*collider, data, dataStream);
-			jsonCollider["localTransforms"] = toJson(rigidBody.getColliderLocalTransforms());
+			jsonCollider["colliderLocalTransforms"] = toJson(rigidBody.getColliderLocalTransforms());
 			json["collider"] = std::move(jsonCollider);
 		}
 
@@ -2333,7 +2382,7 @@ namespace se::app {
 
 		std::unique_ptr<Collider> collider;
 		glm::mat4 colliderLocalTransforms(1.0f);
-		if (itCollider == json.end()) {
+		if (itCollider != json.end()) {
 			auto [result, collider2] = deserializeCollider(*itCollider, data);
 			if (!result) {
 				return { Result(false, "Failed to parse the collider: " + std::string(result.description())), std::nullopt };

@@ -250,7 +250,26 @@ namespace se::graphics {
 		GLenum glType = toGLType(destinationType);
 		GLenum glFormat = toGLColorFormat(destinationFormat);
 
-		if ((destinationFormat == ColorFormat::RGB) || (destinationFormat == ColorFormat::RGB8)) {
+		bool align1 = false;
+		switch (destinationFormat) {
+			case ColorFormat::R:				case ColorFormat::RGInteger:
+			case ColorFormat::RG:				case ColorFormat::RGBInteger:
+			case ColorFormat::RGB:				case ColorFormat::R8:
+			case ColorFormat::Depth:			case ColorFormat::R16ui:
+			case ColorFormat::Depth16:			case ColorFormat::R16f:
+			case ColorFormat::Depth24:			case ColorFormat::RG8:
+			case ColorFormat::DepthStencil:		case ColorFormat::RGB8:
+			case ColorFormat::Depth32Stencil8:	case ColorFormat::RGB16ui:
+			case ColorFormat::Stencil8:			case ColorFormat::RGB16f:
+			case ColorFormat::RInteger:
+				align1 = true;
+				break;
+			default:
+				align1 = false;
+				break;
+		}
+
+		if (align1) {
 			GL_WRAP( glPixelStorei(GL_PACK_ALIGNMENT, 1) );
 		}
 
@@ -260,7 +279,7 @@ namespace se::graphics {
 		}
 		GL_WRAP( glGetTexImage(glTarget, 0, glFormat, glType, buffer) );
 
-		if ((destinationFormat == ColorFormat::RGB) || (destinationFormat == ColorFormat::RGB8)) {
+		if (align1) {
 			GL_WRAP( glPixelStorei(GL_PACK_ALIGNMENT, 4) );
 		}
 
@@ -280,7 +299,21 @@ namespace se::graphics {
 		GLenum glFormat = toGLColorFormat(sourceFormat);
 		GLint glInternalFormat = toGLColorFormat(mColorFormat = textureFormat);
 
-		if (sourceFormat == ColorFormat::RGB) {
+		bool align1 = false;
+		switch (sourceFormat) {
+			case ColorFormat::R:
+			case ColorFormat::RG:
+			case ColorFormat::RGB:
+			case ColorFormat::Depth:
+			case ColorFormat::DepthStencil:
+				align1 = true;
+				break;
+			default:
+				align1 = false;
+				break;
+		}
+
+		if (align1) {
 			GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 1) );
 		}
 
@@ -318,7 +351,7 @@ namespace se::graphics {
 				break;
 		}
 
-		if (sourceFormat == ColorFormat::RGB) {
+		if (align1) {
 			GL_WRAP( glPixelStorei(GL_UNPACK_ALIGNMENT, 4) );
 		}
 

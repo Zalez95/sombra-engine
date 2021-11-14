@@ -294,8 +294,10 @@ TEST(FineCollisionDetector, TriangleCPoly1)
 
 TEST(Raycast, Cube1)
 {
-	glm::quat rayOrientation(0.032990694f, 0.853827714f, 0.276134550f, -0.440044879f);
-	glm::vec3 rayOrigin(-46.464401245f, 1.976649999f, -36.986301422f);
+	const Ray ray1(
+		glm::vec3(-46.464401245f, 1.976649999f, -36.986301422f),
+		glm::quat(0.032990694f, 0.853827714f, 0.276134550f, -0.440044879f) * glm::vec3(0.0f, 0.0f, 1.0f)
+	);
 
 	glm::vec3 p1(-49.965099334f, 1.075446844f, -39.965072631f);
 	glm::quat o1(0.996992051f, 0.054803427f, -0.000430180f, -0.054803423f);
@@ -311,7 +313,7 @@ TEST(Raycast, Cube1)
 		kRaycastPrecision
 	);
 
-	bool res = fineCollisionDetector.intersects(rayOrigin, rayOrientation * glm::vec3(0.0f, 0.0f, 1.0f), bb1).first;
+	bool res = fineCollisionDetector.intersects(ray1, bb1).first;
 	ASSERT_TRUE(res);
 }
 

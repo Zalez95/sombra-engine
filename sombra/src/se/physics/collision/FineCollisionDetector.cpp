@@ -56,31 +56,26 @@ namespace se::physics {
 	}
 
 
-	std::pair<bool, RayCast> FineCollisionDetector::intersects(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		const Collider& collider
-	) {
+	std::pair<bool, RayHit> FineCollisionDetector::intersects(const Ray& ray, const Collider& collider)
+	{
 		bool intersects = false;
-		RayCast rayCast;
-		rayCast.distance = std::numeric_limits<float>::max();
+		RayHit rayHit;
+		rayHit.distance = std::numeric_limits<float>::max();
 
 		if (auto convexCollider = dynamic_cast<const ConvexCollider*>(&collider)) {
-			std::tie(intersects, rayCast) = mGJKRayCaster->calculateRayCast(rayOrigin, rayDirection, *convexCollider);
+			std::tie(intersects, rayHit) = mGJKRayCaster->calculateRayCast(ray, *convexCollider);
 		}
 		else if (auto concaveCollider = dynamic_cast<const ConcaveCollider*>(&collider)) {
-			concaveCollider->processIntersectingParts(
-				rayOrigin, rayDirection, mCoarseEpsilon,
-				[&](const ConvexCollider& convexCollider2) {
-					auto [intersects2, rayCast2] = mGJKRayCaster->calculateRayCast(rayOrigin, rayDirection, convexCollider2);
-					if (intersects2 && (!intersects || (rayCast2.distance < rayCast.distance))) {
-						intersects = intersects2;
-						rayCast = rayCast2;
-					}
+			concaveCollider->processIntersectingParts(ray, mCoarseEpsilon, [&](const ConvexCollider& convexCollider2) {
+				auto [intersects2, rayHit2] = mGJKRayCaster->calculateRayCast(ray, convexCollider2);
+				if (intersects2 && (!intersects || (rayHit2.distance < rayHit.distance))) {
+					intersects = intersects2;
+					rayHit = rayHit2;
 				}
-			);
+			});
 		}
 
-		return { intersects, rayCast };
+		return { intersects, rayHit };
 	}
 
 // Private functions

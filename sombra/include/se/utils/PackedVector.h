@@ -279,10 +279,12 @@ namespace se::utils {
 		 * active indices
 		 *
 		 * @param	other the PackedVector to replicate
+		 * @param	value the default value with which the elements will be
+		 *			created
 		 * @note	the elements currently stored in the vector will be removed
 		 *			and the new ones will be default initialized */
 		template <typename U>
-		void replicate(const PackedVector<U>& other);
+		void replicate(const PackedVector<U>& other, const T& value = T());
 	};
 
 }

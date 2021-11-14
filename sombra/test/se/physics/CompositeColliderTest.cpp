@@ -148,16 +148,14 @@ TEST(CompositeCollider, processIntersectingParts)
 	auto expectedRes = std::make_unique<ConvexPolyhedron>(meshData);
 	expectedRes->setTransforms(transforms);
 
-	const glm::vec3 origin1(1.809948921f, -5.249191284f, -2.433004856f);
-	const glm::vec3 direction1(0.460511147f, 0.311967968f, -0.831026732f);
-	cc1.processIntersectingParts(origin1, direction1, kTolerance, [&](const ConvexCollider& part) {
+	const Ray ray1({ 1.809948921f, -5.249191284f, -2.433004856f }, { 0.460511147f, 0.311967968f, -0.831026732f });
+	cc1.processIntersectingParts(ray1, kTolerance, [&](const ConvexCollider& part) {
 		EXPECT_EQ(&part, cp1Ptr);
 	});
 
 	bool cp1Intersected = false, bs1Intersected = false;
-	const glm::vec3 origin2(1.108878493f, -4.109610080f, -11.952915191f);
-	const glm::vec3 direction2(0.711826264f, 0.625769793f, 0.318928629f);
-	cc1.processIntersectingParts(origin2, direction2, kTolerance, [&](const ConvexCollider& part) {
+	const Ray ray2({ 1.108878493f, -4.109610080f, -11.952915191f }, { 0.711826264f, 0.625769793f, 0.318928629f });
+	cc1.processIntersectingParts(ray2, kTolerance, [&](const ConvexCollider& part) {
 		if (&part == cp1Ptr) {
 			cp1Intersected = true;
 		}

@@ -1,7 +1,7 @@
 #ifndef AABB_H
 #define AABB_H
 
-#include <glm/glm.hpp>
+#include "Ray.h"
 
 namespace se::physics {
 
@@ -41,15 +41,10 @@ namespace se::physics {
 	/** Checks if the given ray intersects the given AABB
 	 *
 	 * @param	aabb the AABB to test
-	 * @param	origin the origin point of the ray
-	 * @param	direction the direction vector of the ray
+	 * @param	ray the ray to test
 	 * @param	epsilon the precision of the calculation
 	 * @return	true if the ray intersects the AABB, false otherwise */
-	bool intersects(
-		const AABB& aabb,
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		float epsilon
-	);
+	bool intersects(const AABB& aabb, const Ray& ray, float epsilon);
 
 
 	/** Creates a new AABB by computing the AABB of the transformed initial AABB

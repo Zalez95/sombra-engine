@@ -13,3 +13,4 @@ se::physics::HalfEdgeMesh createTestPlane1();
 se::physics::HalfEdgeMesh createTestPlane2();
 se::physics::HalfEdgeMesh createTestTube1();
 std::vector<se::physics::HalfEdgeMesh> createTestTube2();
+std::pair<std::vector<glm::vec3>, std::vector<unsigned short>> createTestTriangleMesh();

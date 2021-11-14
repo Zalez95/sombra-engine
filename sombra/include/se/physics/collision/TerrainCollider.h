@@ -98,8 +98,7 @@ namespace se::physics {
 
 		/** @copydoc ConcaveCollider::processIntersectingParts() */
 		virtual void processIntersectingParts(
-			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-			float epsilon, const ConvexShapeCallback& callback
+			const Ray& ray, float epsilon, const ConvexShapeCallback& callback
 		) const override;
 	private:
 		/** Calculates the AABB of the TerrainCollider with its local heights

@@ -340,7 +340,7 @@ namespace se::physics {
 			const glm::vec3& vertexLocation = itVertex->location;
 			const glm::vec3& vertexNormal = calculateVertexNormal(originalMesh, faceNormals, itVertex.getIndex());
 
-			RayHit rayHit = convexHullRaycast.closestHit(vertexLocation, vertexNormal);
+			HEMRayHit rayHit = convexHullRaycast.closestHit( Ray(vertexLocation, vertexNormal) );
 			if (rayHit.intersects) {
 				maxConcavity = std::max(maxConcavity, rayHit.distance);
 			}
@@ -354,7 +354,7 @@ namespace se::physics {
 
 			glm::vec3 rayDirection = faceNormal;
 			glm::vec3 rayOrigin = centroidLocation + 2 * mEpsilon * rayDirection;
-			RayHit chRayHit = convexHullRaycast.closestHit(rayOrigin, rayDirection);
+			HEMRayHit chRayHit = convexHullRaycast.closestHit( Ray(rayOrigin, rayDirection) );
 			if (chRayHit.intersects) {
 				maxConcavity = std::max(maxConcavity, chRayHit.distance + 2 * mEpsilon);
 			}
@@ -363,11 +363,11 @@ namespace se::physics {
 			// in the direction of its HEFace normal
 			rayDirection = -faceNormal;
 			rayOrigin = centroidLocation + 2 * mEpsilon * rayDirection;
-			RayHit meshRayHit = mMeshRaycast.closestHit(rayOrigin, rayDirection);
+			HEMRayHit meshRayHit = mMeshRaycast.closestHit( Ray(rayOrigin, rayDirection) );
 			if (meshRayHit.intersects) {
 				rayDirection = mFaceNormals[meshRayHit.iFace];
 				rayOrigin = meshRayHit.intersection;
-				chRayHit = convexHullRaycast.closestHit(rayOrigin, rayDirection);
+				chRayHit = convexHullRaycast.closestHit( Ray(rayOrigin, rayDirection) );
 				if (chRayHit.intersects) {
 					maxConcavity = std::max(maxConcavity, chRayHit.distance + 2 * mEpsilon);
 				}

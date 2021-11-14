@@ -63,16 +63,15 @@ namespace se::physics {
 	}
 
 
-	void TerrainCollider::processIntersectingParts(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		float epsilon, const ConvexShapeCallback& callback
-	) const
+	void TerrainCollider::processIntersectingParts(const Ray& ray, float epsilon, const ConvexShapeCallback& callback) const
 	{
 		struct SearchSquare { std::size_t iMinX = 0, iMinZ = 0, iMaxX = 0, iMaxZ = 0; };
 
 		// Get the ray in local space
-		glm::vec3 localRayOrigin = mInverseTransformsMatrix * glm::vec4(rayOrigin, 1.0f);
-		glm::vec3 localRayDirection = glm::normalize(mInverseTransformsMatrix * glm::vec4(rayDirection, 0.0f));
+		Ray localRay(
+			mInverseTransformsMatrix * glm::vec4(ray.origin, 1.0f),
+			glm::normalize(mInverseTransformsMatrix * glm::vec4(ray.direction, 0.0f))
+		);
 
 		// Search the triangles of the terrain that intersects with ray in
 		// local space, spliting the terrain as if it was a Quadtree
@@ -96,7 +95,7 @@ namespace se::physics {
 					static_cast<float>(square.iMaxZ) / (mZSize - 1) - 0.5f
 				}
 			};
-			if (intersects(squareAABB, localRayOrigin, localRayDirection, epsilon)) {
+			if (intersects(squareAABB, localRay, epsilon)) {
 				std::size_t sizeX = square.iMaxX - square.iMinX + 1,
 							sizeZ = square.iMaxZ - square.iMinZ + 1;
 				if ((sizeX > 2) && (sizeZ > 2)) {
@@ -113,7 +112,7 @@ namespace se::physics {
 					processTriangles(
 						square.iMinX, square.iMinZ, square.iMaxX, square.iMaxZ,
 						[&](const TriangleCollider& triangle) {
-							if (intersects(triangle.getAABB(), rayOrigin, rayDirection, epsilon)) {
+							if (intersects(triangle.getAABB(), ray, epsilon)) {
 								callback(triangle);
 							}
 						}

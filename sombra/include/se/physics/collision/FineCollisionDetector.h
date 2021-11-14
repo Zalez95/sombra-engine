@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 #include "Manifold.h"
-#include "RayCast.h"
+#include "Ray.h"
 
 namespace se::physics {
 
@@ -79,15 +79,13 @@ namespace se::physics {
 
 		/** Checks if the given ray intersects with the given Collider
 		 *
-		 * @param	rayOrigin the origin of the ray
-		 * @param	rayDirection the direction of the ray
+		 * @param	ray the ray to test
 		 * @param	collider the Collider to check for an intersection
 		 * @return	a pair with a boolean that tells if the ray intersects,
 		 *			and a RayCast object where the result of the RayCast
 		 *			on the Collider will be stored if the ray intersects */
-		std::pair<bool, RayCast> intersects(
-			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-			const Collider& collider
+		std::pair<bool, RayHit> intersects(
+			const Ray& ray, const Collider& collider
 		);
 	private:
 		/** Calculates the contact data of the collision that happened between

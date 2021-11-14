@@ -1,7 +1,7 @@
 #ifndef GJK_RAY_CASTER_H
 #define GJK_RAY_CASTER_H
 
-#include "se/physics/collision/RayCast.h"
+#include "se/physics/collision/Ray.h"
 #include "Simplex.h"
 
 namespace se::physics {
@@ -38,14 +38,12 @@ namespace se::physics {
 
 		/** Checks if the given ray intersects the given collider
 		 *
-		 * @param	rayOrigin the origin point of the ray
-		 * @param	rayDirection the direction of the ray
+		 * @param	ray the ray to test
 		 * @param	collider the collider to test
 		 * @return	a pair with a boolean that tell if the ray intersects the
 		 *			collider and the ray cast data */
-		std::pair<bool, RayCast> calculateRayCast(
-			const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-			const ConvexCollider& collider
+		std::pair<bool, RayHit> calculateRayCast(
+			const Ray& ray, const ConvexCollider& collider
 		) const;
 	private:
 		/** Calculates the closest point to the origin of coordinates in CSO

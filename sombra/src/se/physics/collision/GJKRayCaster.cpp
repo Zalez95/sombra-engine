@@ -6,16 +6,13 @@
 
 namespace se::physics {
 
-	std::pair<bool, RayCast> GJKRayCaster::calculateRayCast(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		const ConvexCollider& collider
-	) const
+	std::pair<bool, RayHit> GJKRayCaster::calculateRayCast(const Ray& ray, const ConvexCollider& collider) const
 	{
 		glm::vec3 pointRandomW(0.0f), pointRandomL(0.0f);
 		collider.getFurthestPointInDirection(glm::sphericalRand(1.0f), pointRandomW, pointRandomL);
 
 		float lambda = 0.0f;
-		glm::vec3 x = rayOrigin;
+		glm::vec3 x = ray.origin;
 		glm::vec3 n(0.0f);
 		glm::vec3 v = SupportPoint(x, glm::vec3(0.0f), pointRandomW, pointRandomL).getCSOPosition();
 		Simplex simplex;
@@ -30,12 +27,12 @@ namespace se::physics {
 
 			glm::vec3 w = x - pointWorld;
 			if (glm::dot(v, w) > mEpsilon) {
-				if (glm::dot(v, rayDirection) >= -mEpsilon) {
-					return { false, RayCast{} };
+				if (glm::dot(v, ray.direction) >= -mEpsilon) {
+					return { false, RayHit() };
 				}
 				else {
-					lambda -= glm::dot(v, w) / glm::dot(v, rayDirection);
-					x = rayOrigin + lambda * rayDirection;
+					lambda -= glm::dot(v, w) / glm::dot(v, ray.direction);
+					x = ray.origin + lambda * ray.direction;
 					n = v;
 				}
 			}
@@ -74,16 +71,16 @@ namespace se::physics {
 		if (success) {
 			float nLength = glm::length(n);
 
-			RayCast rayCast;
-			rayCast.distance = lambda;
-			rayCast.contactPointLocal = closestPoint.getLocalPosition(1);
-			rayCast.contactPointWorld = closestPoint.getWorldPosition(1);
-			rayCast.contactNormal = (nLength > mEpsilon)? n / nLength : glm::vec3(0.0f);
+			RayHit rayHit;
+			rayHit.distance = lambda;
+			rayHit.contactPointLocal = closestPoint.getLocalPosition(1);
+			rayHit.contactPointWorld = closestPoint.getWorldPosition(1);
+			rayHit.contactNormal = (nLength > mEpsilon)? n / nLength : glm::vec3(0.0f);
 
-			return { true, rayCast };
+			return { true, rayHit };
 		}
 		else {
-			return { false, RayCast() };
+			return { false, RayHit() };
 		}
 	}
 

@@ -60,11 +60,12 @@ namespace se::physics {
 
 		// Broad collision phase
 		mCoarseCollisionDetector.update();
-		mCoarseCollisionDetector.calculateCollisions([this](const ColliderPair& pair) {
+		mCoarseCollisionDetector.calculateCollisions([this](Collider* collider1, Collider* collider2) {
 			// Skip non updated Colliders
-			if (pair.first->updated() || pair.second->updated()) {
+			if (collider1->updated() || collider2->updated()) {
 				// Find a Manifold between the given colliders
-				ColliderPair sortedPair = (pair.first <= pair.second)? pair : ColliderPair(pair.second, pair.first);
+				ColliderPair sortedPair = (collider1 <= collider2)? ColliderPair(collider1, collider2)
+										: ColliderPair(collider2, collider1);
 				auto itPairManifold = mCollidersManifoldMap.find(sortedPair);
 
 				// Narrow collision phase
@@ -128,35 +129,32 @@ namespace se::physics {
 	}
 
 
-	void CollisionDetector::rayCastAll(
-		const glm::vec3 origin, const glm::vec3& direction,
-		const RayCastCallback& callback
-	) {
-		mCoarseCollisionDetector.calculateIntersections(origin, direction, [&](Collider* collider) {
-			auto [intersects, rayCast] = mFineCollisionDetector.intersects(origin, direction, *collider);
+	void CollisionDetector::rayCastAll(const Ray& ray, const RayCastCallback& callback)
+	{
+		mCoarseCollisionDetector.calculateIntersections(ray, [&](Collider* collider) {
+			auto [intersects, rayHit] = mFineCollisionDetector.intersects(ray, *collider);
 			if (intersects) {
-				callback(collider, rayCast);
+				callback(collider, rayHit);
 			}
 		});
 	}
 
 
-	std::pair<Collider*, RayCast> CollisionDetector::rayCastFirst(
-		const glm::vec3 origin, const glm::vec3& direction
-	) {
+	std::pair<Collider*, RayHit> CollisionDetector::rayCastFirst(const Ray& ray)
+	{
 		Collider* collider = nullptr;
-		RayCast rayCast;
-		rayCast.distance = std::numeric_limits<float>::max();
+		RayHit rayHit;
+		rayHit.distance = std::numeric_limits<float>::max();
 
-		mCoarseCollisionDetector.calculateIntersections(origin, direction, [&](Collider* collider2) {
-			auto [intersects, rayCast2] = mFineCollisionDetector.intersects(origin, direction, *collider2);
-			if (intersects && (!collider || (rayCast2.distance < rayCast.distance))) {
+		mCoarseCollisionDetector.calculateIntersections(ray, [&](Collider* collider2) {
+			auto [intersects, rayHit2] = mFineCollisionDetector.intersects(ray, *collider2);
+			if (intersects && (!collider || (rayHit2.distance < rayHit.distance))) {
 				collider = collider2;
-				rayCast = rayCast2;
+				rayHit = rayHit2;
 			}
 		});
 
-		return { collider, rayCast };
+		return { collider, rayHit };
 	}
 
 }

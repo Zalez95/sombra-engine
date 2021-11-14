@@ -105,7 +105,9 @@ namespace se::physics {
 	RigidBody& RigidBody::setCollider(ColliderUPtr&& collider)
 	{
 		mCollider = std::move(collider);
-		mCollider->setParent(this);
+		if (mCollider) {
+			mCollider->setParent(this);
+		}
 		setStatus(RigidBodyState::Status::UpdatedByUser, true);
 		updateTransforms();
 		return *this;

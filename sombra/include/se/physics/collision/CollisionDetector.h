@@ -42,7 +42,7 @@ namespace se::physics {
 	class CollisionDetector
 	{
 	public:		// Nested types
-		using RayCastCallback = std::function<void(Collider*, const RayCast&)>;
+		using RayCastCallback = std::function<void(Collider*, const RayHit&)>;
 	private:
 		using ColliderPair = std::pair<const Collider*, const Collider*>;
 		using ManifoldUPtr = std::unique_ptr<Manifold>;
@@ -109,25 +109,18 @@ namespace se::physics {
 
 		/** Calculates all the intersections with the given ray
 		 *
-		 * @param	rayOrigin the origin of the ray
-		 * @param	rayDirection the direction of the ray
+		 * @param	ray the ray to test
 		 * @param	callback the function that must be called for
 		 *			of the Colliders intersecting with the ray */
-		void rayCastAll(
-			const glm::vec3 origin, const glm::vec3& direction,
-			const RayCastCallback& callback
-		);
+		void rayCastAll(const Ray& ray, const RayCastCallback& callback);
 
 		/** Calculates the first intersection with the given ray
 		 *
-		 * @param	rayOrigin the origin of the ray
-		 * @param	rayDirection the direction of the ray
+		 * @param	ray the ray to test
 		 * @return	a pair with a pointer to the intersected Collider, nullptr
 		 *			if it didn't intersect anything, and a RayCast object with
 		 *			the result of the RayCast */
-		std::pair<Collider*, RayCast> rayCastFirst(
-			const glm::vec3 origin, const glm::vec3& direction
-		);
+		std::pair<Collider*, RayHit> rayCastFirst(const Ray& ray);
 	};
 
 }

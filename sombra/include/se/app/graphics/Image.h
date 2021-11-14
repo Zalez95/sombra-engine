@@ -12,7 +12,7 @@ namespace se::app {
 	struct Image
 	{
 		/** The pixel data of the image */
-		std::unique_ptr<T> pixels;
+		std::unique_ptr<T[]> pixels;
 
 		/** The width of the image in pixels */
 		std::size_t width = 0;

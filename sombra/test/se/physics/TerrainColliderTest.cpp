@@ -222,8 +222,7 @@ TEST(TerrainCollider, getOverlapingParts2)
 
 TEST(TerrainCollider, processIntersectingParts)
 {
-	const glm::vec3 origin1(-11.041489601f, -2.530857086f, 6.313727378f);
-	const glm::vec3 direction1(0.955237627f, -0.086757071f, -0.282832711f);
+	const Ray ray1({ -11.041489601f, -2.530857086f, 6.313727378f }, { 0.955237627f, -0.086757071f, -0.282832711f });
 
 	const glm::vec3 scale(8.0f, 3.5f, 16.0f);
 	const glm::vec3 translation(-3.24586f, -1.559f, 4.78164f);
@@ -270,7 +269,7 @@ TEST(TerrainCollider, processIntersectingParts)
 	}
 
 	std::size_t numTris = 0;
-	tc1.processIntersectingParts(origin1, direction1, kTolerance, [&](const ConvexCollider& part) {
+	tc1.processIntersectingParts(ray1, kTolerance, [&](const ConvexCollider& part) {
 		auto tri1 = dynamic_cast<const TriangleCollider*>(&part);
 		ASSERT_TRUE(tri1);
 

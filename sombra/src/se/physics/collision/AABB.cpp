@@ -33,32 +33,28 @@ namespace se::physics {
 	}
 
 
-	bool intersects(
-		const AABB& aabb,
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		float epsilon
-	) {
-		float distXMin = (aabb.minimum.x - rayOrigin.x) / rayDirection.x;
-		float distXMax = (aabb.maximum.x - rayOrigin.x) / rayDirection.x;
-		if (distXMax < distXMin) { std::swap(distXMin, distXMax); }
+	bool intersects(const AABB& aabb, const Ray& ray, float epsilon)
+	{
+		// Branchless slab method, see https://tavianator.com/2011/ray_box.html
+		float tXMin = (aabb.minimum.x - ray.origin.x) * ray.invertedDirection.x;
+		float tXMax = (aabb.maximum.x - ray.origin.x) * ray.invertedDirection.x;
 
-		float distYMin = (aabb.minimum.y - rayOrigin.y) / rayDirection.y;
-		float distYMax = (aabb.maximum.y - rayOrigin.y) / rayDirection.y;
-		if (distYMax < distYMin) { std::swap(distYMin, distYMax); }
+		float tMin = std::min(tXMin, tXMax);
+		float tMax = std::max(tXMin, tXMax);
 
-		if ((distYMin > distXMax + epsilon) || (distXMin > distYMax + epsilon)) {
-			return false;
-		}
+		float tYMin = (aabb.minimum.y - ray.origin.y) * ray.invertedDirection.y;
+		float tYMax = (aabb.maximum.y - ray.origin.y) * ray.invertedDirection.y;
 
-		float distZMin = (aabb.minimum.z - rayOrigin.z) / rayDirection.z;
-		float distZMax = (aabb.maximum.z - rayOrigin.z) / rayDirection.z;
-		if (distZMax < distZMin) { std::swap(distZMin, distZMax); }
+		tMin = std::max(tMin, std::min(tYMin, tYMax));
+		tMax = std::min(tMax, std::max(tYMin, tYMax));
 
-		if ((distZMin > distXMax + epsilon) || (distXMin > distZMax + epsilon)) {
-			return false;
-		}
+		float tZMin = (aabb.minimum.z - ray.origin.z) * ray.invertedDirection.z;
+		float tZMax = (aabb.maximum.z - ray.origin.z) * ray.invertedDirection.z;
 
-		return true;
+		tMin = std::max(tMin, std::min(tZMin, tZMax));
+		tMax = std::min(tMax, std::max(tZMin, tZMax));
+
+		return tMax + epsilon > tMin;
 	}
 
 

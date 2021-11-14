@@ -8,21 +8,21 @@
 namespace se::physics {
 
 	/**
-	 * Struct RayHit, holds the ray intersection data
+	 * Struct HEMRayHit, holds the ray intersection data
 	 */
-	struct RayHit
+	struct HEMRayHit
 	{
 		/** If the Ray intersects the HEMesh or doesn't */
-		bool intersects;
+		bool intersects = false;
 
 		/** The index of the intersected HEFace in the HEMesh */
-		int iFace;
+		int iFace = -1;
 
 		/** The intersection point of the ray with the HEMesh */
-		glm::vec3 intersection;
+		glm::vec3 intersection = {};
 
 		/** The distance of the ray origin to the intersection point */
-		float distance;
+		float distance = 0.0f;
 	};
 
 
@@ -92,12 +92,9 @@ namespace se::physics {
 
 		/** Calculates the closest ray-mesh intersection iteratively
 		 *
-		 * @param	rayOrigin the coordinates of the origin of the ray
-		 * @param	rayDirection the direction of the ray
+		 * @param	ray the ray to test
 		 * @return	the intersection data */
-		RayHit closestHit(
-			const glm::vec3& rayOrigin, const glm::vec3& rayDirection
-		) const;
+		HEMRayHit closestHit(const Ray& ray) const;
 	private:
 		/** Calculates the AABB of the given HEFaces of the current HEMesh
 		 *

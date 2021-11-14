@@ -151,10 +151,12 @@ namespace game {
 
 		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
 			std::string names;
-			auto [collider, rayCast] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(transforms->position + 1.5f * forward, forward);
+			auto [collider, rayHit] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(
+				se::physics::Ray(transforms->position + 1.5f * forward, forward)
+			);
 			if (collider) {
 				// Blue tetrahedron = separation direction from collider 1 to collider 0
-				glm::vec3 new_z = rayCast.contactNormal;
+				glm::vec3 new_z = rayHit.contactNormal;
 				glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
 				glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
 
@@ -162,7 +164,7 @@ namespace game {
 				mLevel.getScene().entities.push_back(pointEntity);
 
 				se::app::TransformsComponent transforms2;
-				transforms2.position = rayCast.contactPointWorld;
+				transforms2.position = rayHit.contactPointWorld;
 				transforms2.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
 				mLevel.getGame().getEntityDatabase().addComponent(pointEntity, std::move(transforms2));
 

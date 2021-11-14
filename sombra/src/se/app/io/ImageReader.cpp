@@ -16,7 +16,7 @@ namespace se::app {
 		}
 
 		output = {
-			std::unique_ptr<unsigned char>(pixels),
+			std::unique_ptr<unsigned char[]>(pixels),
 			static_cast<std::size_t>(width), static_cast<std::size_t>(height),
 			channels
 		};
@@ -38,7 +38,7 @@ namespace se::app {
 		}
 
 		output = {
-			std::unique_ptr<float>(pixels),
+			std::unique_ptr<float[]>(pixels),
 			static_cast<std::size_t>(width), static_cast<std::size_t>(height),
 			channels
 		};

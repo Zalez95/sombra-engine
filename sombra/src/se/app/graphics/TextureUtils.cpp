@@ -383,9 +383,6 @@ namespace se::app {
 		std::size_t width, std::size_t height
 	) {
 		Image<T> ret;
-		ret.pixels = std::unique_ptr<T>(new T[width * height * ret.channels]);
-		ret.width = width;
-		ret.height = height;
 		switch (color) {
 			case graphics::ColorFormat::R:		ret.channels = 1;	break;
 			case graphics::ColorFormat::RG:		ret.channels = 2;	break;
@@ -393,6 +390,10 @@ namespace se::app {
 			case graphics::ColorFormat::RGBA:	ret.channels = 4;	break;
 			default:							ret.channels = 1;	break;
 		}
+
+		ret.width = width;
+		ret.height = height;
+		ret.pixels = std::unique_ptr<T[]>(new T[ret.width * ret.height * ret.channels]);
 
 		source.getImage(type, color, ret.pixels.get());
 

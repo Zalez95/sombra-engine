@@ -34,11 +34,11 @@ TEST(CoarseCollisionDetector, collide)
 		std::make_pair(&cp1, &cp2),
 		std::make_pair(&cp1, &bs2)
 	};
-	ccd.calculateCollisions([&](const std::pair<const Collider*, const Collider*>& pair1) {
+	ccd.calculateCollisions([&](const Collider* c1, const Collider* c2) {
 		bool flag = false;
-		for (auto& pair2 : expectedRes) {
-			if ((pair1.first == pair2.first && pair1.second == pair2.second)
-				|| (pair1.first == pair2.second && pair1.second == pair2.first)
+		for (auto& pair : expectedRes) {
+			if ((c1 == pair.first && c2 == pair.second)
+				|| (c1 == pair.second && c2 == pair.first)
 			) {
 				flag = true;
 				break;

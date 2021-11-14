@@ -179,7 +179,7 @@ namespace se::utils {
 
 	template <typename T, typename A>
 	template <typename U>
-	void PackedVector<T, A>::replicate(const PackedVector<U>& other)
+	void PackedVector<T, A>::replicate(const PackedVector<U>& other, const T& value)
 	{
 		clear();
 
@@ -187,7 +187,7 @@ namespace se::utils {
 		mUsedElements = other.mUsedElements;
 		mReleasedIndices = other.mReleasedIndices;
 		for (auto it = begin(); it != end(); ++it) {
-			new (&(*it)) T();
+			new (&(*it)) T(value);
 		}
 	}
 

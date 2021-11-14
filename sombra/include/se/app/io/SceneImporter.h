@@ -90,7 +90,7 @@ namespace se::app {
 		SceneImporter(ShaderBuilder& shaderBuilder) :
 			mShaderBuilder(shaderBuilder) {};
 
-		/** Creates a "defaultShader" and a "defaultShaderSkin" in the
+		/** Creates a "shaderDefault" and a "shaderDefaultSkin" in the
 		 * given Scene repository if it doesn't exist yet
 		 *
 		 * @param	scene the Scene where the Shaders are going to be added */

@@ -22,6 +22,7 @@
 #include <se/physics/collision/Capsule.h>
 #include <se/physics/collision/TriangleCollider.h>
 #include <se/physics/collision/TerrainCollider.h>
+#include <se/physics/collision/TriangleMeshCollider.h>
 #include <se/physics/collision/CompositeCollider.h>
 #include <se/animation/SkeletonAnimator.h>
 #include <se/utils/StringUtils.h>
@@ -595,94 +596,119 @@ namespace editor {
 				rigidBody->setState(rbState);
 			}
 
-			auto collider = rigidBody->getCollider();
-			auto bBox		= dynamic_cast<BoundingBox*>(collider);
-			auto bSphere	= dynamic_cast<BoundingSphere*>(collider);
-			auto capsule	= dynamic_cast<Capsule*>(collider);
-			auto triangle	= dynamic_cast<TriangleCollider*>(collider);
-			auto terrain	= dynamic_cast<TerrainCollider*>(collider);
-			auto cPoly		= dynamic_cast<ConvexPolyhedron*>(collider);
-			auto composite	= dynamic_cast<CompositeCollider*>(collider);
+			if (ImGui::TreeNode("Collider")) {
+				auto collider = rigidBody->getCollider();
+				auto bBox		= dynamic_cast<BoundingBox*>(collider);
+				auto bSphere	= dynamic_cast<BoundingSphere*>(collider);
+				auto capsule	= dynamic_cast<Capsule*>(collider);
+				auto triangle	= dynamic_cast<TriangleCollider*>(collider);
+				auto terrain	= dynamic_cast<TerrainCollider*>(collider);
+				auto triMesh	= dynamic_cast<TriangleMeshCollider*>(collider);
+				auto cPoly		= dynamic_cast<ConvexPolyhedron*>(collider);
+				auto composite	= dynamic_cast<CompositeCollider*>(collider);
 
-			static const char* colliderTypeTags[] = { "Bounding Box", "Bounding Sphere", "Capsule", "Triangle", "Terrain", "Convex Polyhedron", "Composite", "None" };
-			int colliderCurrentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3 : terrain? 4 : cPoly? 5 : composite? 6 : 7;
-			std::string name1 = "Collider Type" + getIdPrefix() + "RigidBodyComponentNode::ColliderType";
-			if (addDropdown(name1.c_str(), colliderTypeTags, IM_ARRAYSIZE(colliderTypeTags), colliderCurrentType)) {
-				switch (colliderCurrentType) {
-					case 0:
-						if (!bBox) {
-							rigidBody->setCollider(std::make_unique<BoundingBox>());
-						}
-						break;
-					case 1:
-						if (!bSphere) {
-							rigidBody->setCollider(std::make_unique<BoundingSphere>());
-						}
-						break;
-					case 2:
-						if (!capsule) {
-							rigidBody->setCollider(std::make_unique<Capsule>());
-						}
-						break;
-					case 3:
-						if (!triangle) {
-							rigidBody->setCollider(std::make_unique<TriangleCollider>());
-						}
-						break;
-					case 4:
-						if (!terrain) {
-							rigidBody->setCollider(std::make_unique<TerrainCollider>());
-						}
-						break;
-					case 5:
-						if (!cPoly || bBox) {
-							rigidBody->setCollider(std::make_unique<ConvexPolyhedron>());
-						}
-						break;
-					case 6:
-						if (!composite) {
-							rigidBody->setCollider(std::make_unique<CompositeCollider>());
-						}
-						break;
-					default:
-						if (collider) {
-							rigidBody->setCollider(nullptr);
-						}
-						break;
-				}
-				collider = rigidBody->getCollider();
-			}
-
-			drawCollider(*collider);
-
-			glm::mat4 colliderLocalTransforms = rigidBody->getColliderLocalTransforms();
-			std::string name2 = "Collider local transforms" + getIdPrefix() + "RigidBodyComponentNode::ColliderLocalTransforms";
-			if (drawMat4ImGui(name2.c_str(), colliderLocalTransforms)) {
-				rigidBody->setColliderLocalTrasforms(colliderLocalTransforms);
-			}
-
-			Repository::ResourceRef<Force> force;
-			std::string name3 = getIdPrefix() + "RigidBodyComponentNode::AddForce";
-			if (addRepoDropdownButton(name3.c_str(), "Add Force", getEditor().getScene()->repository, force)) {
-				rigidBody->addForce(force);
-			}
-			std::size_t i = 0;
-			rigidBody->processForces([&, rigidBody = rigidBody](const auto& force1) {
-				std::string name4 = "x" + getIdPrefix() + "RigidBodyComponentNode::RemoveForce" + std::to_string(i++);
-				if (ImGui::Button(name4.c_str())) {
-					rigidBody->removeForce(force1);
-				}
-				else {
-					ImGui::SameLine();
-
-					Repository::ResourceRef<Force> force2 = force1;
-					std::string name5 = getIdPrefix() + "RigidBodyComponentNode::ChangeForce" + std::to_string(i);
-					if (addRepoDropdownShowSelected(name5.c_str(), getEditor().getScene()->repository, force2)) {
-						rigidBody->removeForce(force1);
-						rigidBody->addForce(force2);
+				static const char* colliderTypeTags[] = {
+					"Bounding Box", "Bounding Sphere", "Capsule", "Triangle",
+					"Terrain", "Triangle Mesh", "Convex Polyhedron", "Composite", "None"
+				};
+				int colliderCurrentType = bBox? 0 : bSphere? 1 : capsule? 2 : triangle? 3
+										: terrain? 4 : triMesh? 5 : cPoly? 6 : composite? 7 : 8;
+				std::string name1 = "Collider Type" + getIdPrefix() + "RigidBodyComponentNode::ColliderType";
+				if (addDropdown(name1.c_str(), colliderTypeTags, IM_ARRAYSIZE(colliderTypeTags), colliderCurrentType)) {
+					switch (colliderCurrentType) {
+						case 0:
+							if (!bBox) {
+								rigidBody->setCollider(std::make_unique<BoundingBox>());
+							}
+							break;
+						case 1:
+							if (!bSphere) {
+								rigidBody->setCollider(std::make_unique<BoundingSphere>());
+							}
+							break;
+						case 2:
+							if (!capsule) {
+								rigidBody->setCollider(std::make_unique<Capsule>());
+							}
+							break;
+						case 3:
+							if (!triangle) {
+								rigidBody->setCollider(std::make_unique<TriangleCollider>());
+							}
+							break;
+						case 4:
+							if (!terrain) {
+								rigidBody->setCollider(std::make_unique<TerrainCollider>());
+							}
+							break;
+						case 5:
+							if (!triMesh) {
+								rigidBody->setCollider(std::make_unique<TriangleMeshCollider>());
+							}
+							break;
+						case 6:
+							if (!cPoly || bBox) {
+								rigidBody->setCollider(std::make_unique<ConvexPolyhedron>());
+							}
+							break;
+						case 7:
+							if (!composite) {
+								rigidBody->setCollider(std::make_unique<CompositeCollider>());
+							}
+							break;
+						default:
+							if (collider) {
+								rigidBody->setCollider(nullptr);
+							}
+							break;
 					}
+					collider = rigidBody->getCollider();
 				}
-			});
+
+				if (collider) {
+					drawCollider(*collider);
+
+					auto [min, max] = collider->getAABB();
+					ImGui::Text("AABB:");
+					ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
+					ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
+				}
+
+				glm::mat4 colliderLocalTransforms = rigidBody->getColliderLocalTransforms();
+				std::string name2 = "Collider local transforms" + getIdPrefix() + "RigidBodyComponentNode::ColliderLocalTransforms";
+				if (drawMat4ImGui(name2.c_str(), colliderLocalTransforms)) {
+					rigidBody->setColliderLocalTrasforms(colliderLocalTransforms);
+				}
+
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Forces")) {
+				Repository::ResourceRef<Force> force;
+				std::string name3 = getIdPrefix() + "RigidBodyComponentNode::AddForce";
+				if (addRepoDropdownButton(name3.c_str(), "Add Force", getEditor().getScene()->repository, force)) {
+					rigidBody->addForce(force);
+				}
+				std::size_t i = 0;
+				rigidBody->processForces([&, rigidBody = rigidBody](const auto& force1) {
+					std::string name4 = "x" + getIdPrefix() + "RigidBodyComponentNode::RemoveForce" + std::to_string(i++);
+					if (ImGui::Button(name4.c_str())) {
+						rigidBody->removeForce(force1);
+					}
+					else {
+						ImGui::SameLine();
+
+						Repository::ResourceRef<Force> force2 = force1;
+						std::string name5 = getIdPrefix() + "RigidBodyComponentNode::ChangeForce" + std::to_string(i);
+						if (addRepoDropdownShowSelected(name5.c_str(), getEditor().getScene()->repository, force2)) {
+							rigidBody->removeForce(force1);
+							rigidBody->addForce(force2);
+						}
+					}
+				});
+
+				ImGui::TreePop();
+			}
 		};
 	private:
 		void drawCollider(Collider& collider)
@@ -701,6 +727,9 @@ namespace editor {
 			}
 			else if (auto terrain = dynamic_cast<TerrainCollider*>(&collider)) {
 				drawTerrain(*terrain);
+			}
+			else if (auto triMesh = dynamic_cast<TriangleMeshCollider*>(&collider)) {
+				drawTriMesh(*triMesh);
 			}
 			else if (auto cPoly = dynamic_cast<ConvexPolyhedron*>(&collider)) {
 				drawCPoly(*cPoly);
@@ -770,6 +799,31 @@ namespace editor {
 				}
 				ImGui::TreePop();
 			}
+		}
+		void drawTriMesh(TriangleMeshCollider& triMesh)
+		{
+			ImGui::Text("Number of vertices: %lu", triMesh.getNumVertices());
+			ImGui::Text("Number of indices: %lu", triMesh.getNumIndices());
+
+			if (ImGui::TreeNode("Create from graphics mesh")) {
+				auto mesh = getEditor().getScene()->repository.findByName<Mesh>(mMeshName.c_str());
+				std::string name = "Mesh" + getIdPrefix() + "RigidBodyComponentNode::Mesh";
+				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
+					mMeshName = mesh.getResource().getName();
+				}
+
+				std::string name1 = "Build Triangle Mesh" + getIdPrefix() + "RigidBodyComponentNode::BuildTriangleMesh";
+				if (ImGui::Button(name1.c_str())) {
+					auto rawMesh = MeshLoader::createRawMesh(*mesh);
+					triMesh.setMesh(
+						rawMesh.positions.data(), rawMesh.positions.size(),
+						rawMesh.indices.data(), rawMesh.indices.size()
+					);
+				}
+				ImGui::TreePop();
+			}
+
+
 		}
 		void drawCPoly(ConvexPolyhedron& cPoly)
 		{

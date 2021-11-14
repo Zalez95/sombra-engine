@@ -1270,6 +1270,19 @@ namespace editor {
 			static const char* textureTargetTags[] = { "Texture1D", "Texture2D", "Texture3D", "Texture1DArray", "Texture2DArray", "CubeMap" };
 			ImGui::LabelText("Target", "%s", textureTargetTags[static_cast<int>(target)]);
 
+			ColorFormat colorFormat = texture->getColorFormat();
+			static const char* colorFormatTags[] = {
+				"R", "RG", "RGB", "RGBA",
+				"Depth", "Depth16", "Depth24", "Depth32",
+				"DepthStencil", "Depth24Stencil8", "Depth32Stencil8", "Stencil8",
+				"RInteger", "RGInteger", "RGBInteger", "RGBAInteger",
+				"R8", "R16ui", "R16f", "R32ui", "R32f",
+				"RG8", "RG16ui", "RG16f", "RG32ui", "RG32f",
+				"RGB8", "RGB16ui", "RGB16f", "RGB32ui", "RGB32f",
+				"RGBA8", "RGBA16ui", "RGBA16f", "RGBA32ui", "RGBA32f"
+			};
+			ImGui::LabelText("Color format", "%s", colorFormatTags[static_cast<int>(colorFormat)]);
+
 			ImGui::LabelText("Width", "%u", texture->getWidth());
 			if (target != TextureTarget::Texture1D) {
 				ImGui::LabelText("Height", "%u", texture->getHeight());

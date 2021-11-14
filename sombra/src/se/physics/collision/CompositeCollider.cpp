@@ -95,18 +95,15 @@ namespace se::physics {
 	}
 
 
-	void CompositeCollider::processIntersectingParts(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection,
-		float epsilon, const ConvexShapeCallback& callback
-	) const
+	void CompositeCollider::processIntersectingParts(const Ray& ray, float epsilon, const ConvexShapeCallback& callback) const
 	{
 		for (const ColliderUPtr& part : mParts) {
-			if (intersects(part->getAABB(), rayOrigin, rayDirection, epsilon)) {
+			if (intersects(part->getAABB(), ray, epsilon)) {
 				if (auto convexPart = dynamic_cast<const ConvexCollider*>(part.get())) {
 					callback(*convexPart);
 				}
 				else if (auto concavePart = dynamic_cast<const ConcaveCollider*>(part.get())) {
-					concavePart->processIntersectingParts(rayOrigin, rayDirection, epsilon, callback);
+					concavePart->processIntersectingParts(ray, epsilon, callback);
 				}
 			}
 		}

@@ -24,17 +24,10 @@ namespace se::physics {
 
 	AABB TriangleCollider::getAABB() const
 	{
-		AABB triangleAABB = {
-			glm::vec3( std::numeric_limits<float>::max()),
-			glm::vec3(-std::numeric_limits<float>::max())
+		return {
+			glm::min(glm::min(mWorldVertices[0], mWorldVertices[1]), mWorldVertices[2]),
+			glm::max(glm::max(mWorldVertices[0], mWorldVertices[1]), mWorldVertices[2])
 		};
-
-		for (const glm::vec3& vertex : mWorldVertices) {
-			triangleAABB.minimum = glm::min(triangleAABB.minimum, vertex);
-			triangleAABB.maximum = glm::max(triangleAABB.maximum, vertex);
-		}
-
-		return triangleAABB;
 	}
 
 

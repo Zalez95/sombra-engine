@@ -1001,7 +1001,7 @@ namespace se::app {
 		}
 		else {
 			// Use the default shader
-			const char* shaderKey = out.hasSkin? "defaultShaderSkin" : "defaultShader";
+			const char* shaderKey = out.hasSkin? "shaderDefaultSkin" : "shaderDefault";
 			out.shader = mGLTFData->scene.repository.findByName<RenderableShader>(shaderKey);
 		}
 

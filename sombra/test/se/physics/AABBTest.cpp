@@ -86,35 +86,42 @@ TEST(AABB, overlapsFalse)
 TEST(AABB, intersectsVertex)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
-	EXPECT_TRUE(intersects(aabb1, glm::vec3(0.78f, 3.5f, 0.75f), glm::vec3(-0.588479697f, -0.387157678f, 0.709789097f), kTolerance));
+	EXPECT_TRUE(intersects(aabb1, Ray({ 0.78f, 3.5f, 0.75f }, { -0.588479697f, -0.387157678f, 0.709789097f }), kTolerance));
 }
 
 
 TEST(AABB, intersectsEdge)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
-	EXPECT_TRUE(intersects(aabb1, glm::vec3(0.78f, -1.0f, 0.75f), glm::vec3(-0.798201382f, 0.506318867f, 0.326367408f), kTolerance));
+	EXPECT_TRUE(intersects(aabb1, Ray({ 0.78f, -1.0f, 0.75f }, { -0.798201382f, 0.506318867f, 0.326367408f }), kTolerance));
 }
 
 
 TEST(AABB, intersectsFace)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
-	EXPECT_TRUE(intersects(aabb1, glm::vec3(-10.0f, -2.0f, 0.75f), glm::vec3(0.870518684f, 0.406005114f, 0.278131544f), kTolerance));
+	EXPECT_TRUE(intersects(aabb1, Ray({ -10.0f, -2.0f, 0.75f }, { 0.870518684f, 0.406005114f, 0.278131544f }), kTolerance));
 }
 
 
 TEST(AABB, intersectsInside)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
-	EXPECT_TRUE(intersects(aabb1, glm::vec3(-3.011199712f, 1.487346529f, 3.000000238f), glm::vec3(0.0f, 0.0f, 1.0f), kTolerance));
+	EXPECT_TRUE(intersects(aabb1, Ray({ -3.011199712f, 1.487346529f, 3.000000238f }, { 0.0f, 0.0f, 1.0f }), kTolerance));
 }
 
 
-TEST(AABB, intersectsFalse)
+TEST(AABB, intersectsFalse1)
+{
+	const AABB aabb1{ glm::vec3(2.02099133f, -2.60571933f, -3.05214763f), glm::vec3(2.98154283f, -1.89315295f, -2.74457979f) };
+	EXPECT_FALSE(intersects(aabb1, Ray({ 5.60923100f, -0.387843430f, -1.34411967f }, { -0.772185385f, -0.550935864f, -0.316543043f }), kTolerance));
+}
+
+
+TEST(AABB, intersectsFalse2)
 {
 	const AABB aabb1{ glm::vec3(-3.5f, 1.0f, 2.5f), glm::vec3(-1.5f, 2.0f, 3.5f) };
-	EXPECT_FALSE(intersects(aabb1, glm::vec3(-10.0f, -2.0f, 0.75f), glm::vec3(0.725818753f, 0.647548079f, 0.232095971f), kTolerance));
+	EXPECT_FALSE(intersects(aabb1, Ray({ -10.0f, -2.0f, 0.75f }, { 0.725818753f, 0.647548079f, 0.232095971f }), kTolerance));
 }
 
 

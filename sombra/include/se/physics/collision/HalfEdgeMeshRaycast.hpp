@@ -61,13 +61,13 @@ namespace se::physics {
 		enum { Check, Children, End } state;
 
 		/** The return value of the current "recursion" */
-		RayHit* returnValue;
+		HEMRayHit* returnValue;
 
 		/** The index of the current node */
 		int iCurrentNode;
 
 		/** The left and right kd-tree child nodes return value */
-		RayHit leftRayHit, rightLightHit;
+		HEMRayHit leftRayHit, rightLightHit;
 	};
 
 
@@ -160,23 +160,21 @@ namespace se::physics {
 
 
 	template <unsigned int maxHeight>
-	RayHit HalfEdgeMeshRaycast<maxHeight>::closestHit(
-		const glm::vec3& rayOrigin, const glm::vec3& rayDirection
-	) const
+	HEMRayHit HalfEdgeMeshRaycast<maxHeight>::closestHit(const Ray& ray) const
 	{
-		RayHit ret = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
+		HEMRayHit ret = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
 
 		utils::FixedVector<KDHitStackContent, 2 * maxHeight> stack;
 
 		// Push the root node to the stack
-		stack.push_back({ KDHitStackContent::Check, &ret, mIRootNode, RayHit(), RayHit() });
+		stack.push_back({ KDHitStackContent::Check, &ret, mIRootNode, HEMRayHit(), HEMRayHit() });
 
 		while (!stack.empty()) {
 			auto& [state, returnValue, iCurrentNode, leftRayHit, rightRayHit] = stack.back();
 			switch (state) {
 				case KDHitStackContent::Check:
 					*returnValue = { false, -1, glm::vec3(0.0f), std::numeric_limits<float>::max() };
-					if (intersects(mKDTree[iCurrentNode].aabb, rayOrigin, rayDirection, mEpsilon)) {
+					if (intersects(mKDTree[iCurrentNode].aabb, ray, mEpsilon)) {
 						if ((mKDTree[iCurrentNode].iLeftChild < 0) || (mKDTree[iCurrentNode].iRightChild < 0)) {
 							// Search the closest intersection to the rayOrigin
 							// with the current HEFaces
@@ -184,9 +182,9 @@ namespace se::physics {
 								glm::vec3 facePoint = mMesh->vertices[ mMesh->edges[ mMesh->faces[iFace].edge ].vertex ].location;
 								glm::vec3 faceNormal = (*mFaceNormals)[iFace];
 
-								auto [intersects, intersection] = utils::rayPlaneIntersection(rayOrigin, rayDirection, facePoint, faceNormal, mEpsilon);
+								auto [intersects, intersection] = utils::rayPlaneIntersection(ray.origin, ray.direction, facePoint, faceNormal, mEpsilon);
 								if (intersects && isPointBetweenHEEdges(*mMesh, mMesh->faces[iFace].edge, faceNormal, intersection)) {
-									float distance = glm::length(intersection - rayOrigin);
+									float distance = glm::length(intersection - ray.origin);
 									if (distance < returnValue->distance) {
 										*returnValue = { true, iFace, intersection, distance };
 									}
@@ -197,8 +195,8 @@ namespace se::physics {
 						else {
 							// Check if there is an intersection with the
 							// child nodes
-							stack.push_back({ KDHitStackContent::Check, &rightRayHit, mKDTree[iCurrentNode].iRightChild, RayHit(), RayHit() });
-							stack.push_back({ KDHitStackContent::Check, &leftRayHit, mKDTree[iCurrentNode].iLeftChild, RayHit(), RayHit() });
+							stack.push_back({ KDHitStackContent::Check, &rightRayHit, mKDTree[iCurrentNode].iRightChild, HEMRayHit(), HEMRayHit() });
+							stack.push_back({ KDHitStackContent::Check, &leftRayHit, mKDTree[iCurrentNode].iLeftChild, HEMRayHit(), HEMRayHit() });
 							state = KDHitStackContent::Children;
 						}
 					}

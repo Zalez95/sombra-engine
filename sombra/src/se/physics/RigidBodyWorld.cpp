@@ -22,6 +22,8 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
+		rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, true);
+
 		mRigidBodies.push_back(rigidBody);
 		if (rigidBody->getCollider()) {
 			mCollisionDetector.addCollider(rigidBody->getCollider());
@@ -32,6 +34,8 @@ namespace se::physics {
 	void RigidBodyWorld::removeRigidBody(RigidBody* rigidBody)
 	{
 		if (!rigidBody) { return; }
+
+		rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, true);
 
 		mCollisionSolver.removeRigidBody(rigidBody);
 		mConstraintManager.removeRigidBody(rigidBody);
