@@ -22,8 +22,6 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, true);
-
 		mRigidBodies.push_back(rigidBody);
 		if (rigidBody->getCollider()) {
 			mCollisionDetector.addCollider(rigidBody->getCollider());
@@ -34,8 +32,6 @@ namespace se::physics {
 	void RigidBodyWorld::removeRigidBody(RigidBody* rigidBody)
 	{
 		if (!rigidBody) { return; }
-
-		rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, true);
 
 		mCollisionSolver.removeRigidBody(rigidBody);
 		mConstraintManager.removeRigidBody(rigidBody);
@@ -54,23 +50,32 @@ namespace se::physics {
 	{
 		float bias = std::pow(mProperties.motionBias, deltaTime);
 
+		// Update the RigidBodies status
+		for (RigidBody* rigidBody : mRigidBodies) {
+			bool isStatic = (rigidBody->getProperties().type == RigidBodyProperties::Type::Static);
+
+			if (rigidBody->getStatus(RigidBodyState::Status::UpdatedByUser)) {
+				rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, false);
+
+				// Wake up the Dynamic RigidBodies updated by the user
+				rigidBody->setStatus(RigidBodyState::Status::Sleeping, isStatic);
+
+				// Collision constraints must be recalculated
+				mCollisionSolver.removeRigidBody(rigidBody);
+			}
+
+			// TODO: remove and add collider if changed
+		}
+
 		// Simulate the RigidBody dynamics
 		for (RigidBody* rigidBody : mRigidBodies) {
 			if ((rigidBody->getProperties().type == RigidBodyProperties::Type::Dynamic)
-				&& glm::all(glm::greaterThan(rigidBody->getState().position, mProperties.minWorldAABB))
-				&& glm::all(glm::lessThan(rigidBody->getState().position, mProperties.maxWorldAABB))
+				&& isInside(mProperties.worldAABB, rigidBody->getState().position, mProperties.coarseCollisionEpsilon)
+				&& !rigidBody->getStatus(RigidBodyState::Status::Sleeping)
 			) {
-				// Wake up the RigidBodies updated by the user
-				if (rigidBody->getStatus(RigidBodyState::Status::UpdatedByUser)) {
-					rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, false);
-					rigidBody->setStatus(RigidBodyState::Status::Sleeping, false);
-				}
-
-				if (!rigidBody->getStatus(RigidBodyState::Status::Sleeping)) {
-					RigidBodyDynamics::processForces(*rigidBody);
-					RigidBodyDynamics::integrate(*rigidBody, deltaTime);
-					rigidBody->updateTransforms();
-				}
+				RigidBodyDynamics::processForces(*rigidBody);
+				RigidBodyDynamics::integrate(*rigidBody, deltaTime);
+				rigidBody->updateTransforms();
 			}
 		}
 
@@ -85,9 +90,10 @@ namespace se::physics {
 
 		// Put RigidBodies to sleep
 		for (RigidBody* rigidBody : mRigidBodies) {
-			if ((rigidBody->getProperties().type == RigidBodyProperties::Type::Dynamic)
-				&& !rigidBody->getStatus(RigidBodyState::Status::Sleeping)
-			) {
+			if (rigidBody->getProperties().type == RigidBodyProperties::Type::Static) {
+				rigidBody->setStatus(RigidBodyState::Status::Sleeping, true);
+			}
+			else if (!rigidBody->getStatus(RigidBodyState::Status::Sleeping)) {
 				rigidBody->updateMotion(bias, 10.0f * rigidBody->getProperties().sleepMotion);
 
 				if (rigidBody->getState().motion < rigidBody->getProperties().sleepMotion) {

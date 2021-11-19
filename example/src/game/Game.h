@@ -12,8 +12,7 @@ namespace game {
 	static constexpr unsigned int kWidths[]					= { 1280, 1920 };
 	static constexpr unsigned int kHeights[]				= { 720, 1080 };
 	static constexpr float kMotionBias						= 0.1f;
-	const glm::vec3 kMinPhysicsAABB							= glm::vec3(-1000.0f);
-	const glm::vec3 kMaxPhysicsAABB							= glm::vec3( 1000.0f);
+	const se::physics::AABB kPhysicsWorldAABB				= { glm::vec3(-1000.0f), glm::vec3( 1000.0f) };
 	static constexpr std::size_t kMaxCollidingRBs			= 128;
 	static constexpr float kCoarseCollisionEpsilon			= 0.0001f;
 	static constexpr std::size_t kMaxCollisionIterations	= 128;

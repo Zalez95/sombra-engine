@@ -16,11 +16,8 @@ namespace se::physics {
 		/** The bias value used for updating the RigidBodies' motion value */
 		float motionBias = 0.1f;
 
-		/** The minimum bounds of the World */
-		glm::vec3 minWorldAABB = glm::vec3(-1000.0f);
-
-		/** The maximum bounds of the World */
-		glm::vec3 maxWorldAABB = glm::vec3(1000.0f);
+		/** The bounds of the World */
+		AABB worldAABB = { glm::vec3(-1000.0f), glm::vec3(1000.0f) };
 
 		/** The maximum number of simultaneous colliding RigidBodies */
 		std::size_t maxCollidingRBs = 128;

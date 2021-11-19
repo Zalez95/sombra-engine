@@ -47,6 +47,14 @@ namespace se::physics {
 	bool intersects(const AABB& aabb, const Ray& ray, float epsilon);
 
 
+	/** Checks if the given point is inside the given AABB
+	 *
+	 * @param	aabb the AABB to test
+	 * @param	point the point to test
+	 * @return	true if the point is inside the AABB, false otherwise */
+	bool isInside(const AABB& aabb, const glm::vec3& point, float epsilon);
+
+
 	/** Creates a new AABB by computing the AABB of the transformed initial AABB
 	 *
 	 * @param	aabb the initial AABB

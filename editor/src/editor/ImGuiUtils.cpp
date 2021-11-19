@@ -164,7 +164,7 @@ namespace editor {
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 		if (ImGui::BeginPopupModal((mTitle + "##" + mTag + "::Title").c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-			ImGui::Text("%s", mMessage.c_str());
+			ImGui::TextWrapped("%s", mMessage.c_str());
 			ImGui::Separator();
 
 			if (ImGui::Button((mButton + "##" + mTag + "::Button").c_str())) {

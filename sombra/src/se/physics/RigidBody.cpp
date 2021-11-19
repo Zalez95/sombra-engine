@@ -34,9 +34,6 @@ namespace se::physics {
 			mCollider = other.mCollider->clone();
 			mCollider->setParent(this);
 		}
-
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
-		updateTransforms();
 	}
 
 
@@ -61,9 +58,6 @@ namespace se::physics {
 		}
 		mColliderLocalTransforms = other.mColliderLocalTransforms;
 		mForces = other.mForces;
-
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
-		updateTransforms();
 
 		return *this;
 	}
@@ -107,9 +101,9 @@ namespace se::physics {
 		mCollider = std::move(collider);
 		if (mCollider) {
 			mCollider->setParent(this);
+			mCollider->setTransforms(mState.transformsMatrix * mColliderLocalTransforms);
 		}
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
-		updateTransforms();
+		setStatus(RigidBodyState::Status::ColliderChanged, true);
 		return *this;
 	}
 
@@ -117,8 +111,10 @@ namespace se::physics {
 	RigidBody& RigidBody::setColliderLocalTrasforms(const glm::mat4& localTransforms)
 	{
 		mColliderLocalTransforms = localTransforms;
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
-		updateTransforms();
+		if (mCollider) {
+			mCollider->setTransforms(mState.transformsMatrix * mColliderLocalTransforms);
+		}
+		setStatus(RigidBodyState::Status::ColliderChanged, true);
 		return *this;
 	}
 

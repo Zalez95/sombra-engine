@@ -390,6 +390,13 @@ namespace editor {
 					if (ImGui::TreeNode(treeNodeName.c_str())) {
 						ImGui::BulletText("Has Skin: %s", mesh->hasSkinning(i)? "yes" : "no");
 
+						if (ImGui::TreeNode("Bounds:")) {
+							auto [min, max] = mesh->get(i).getBounds();
+							ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
+							ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
+							ImGui::TreePop();
+						}
+
 						ImGui::BulletText("Mesh:");
 						ImGui::SameLine();
 						ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.5f);

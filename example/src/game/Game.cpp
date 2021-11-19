@@ -16,7 +16,7 @@ namespace game {
 		Application(
 			se::window::WindowData{ kTitle, static_cast<int>(kWidths[0]), static_cast<int>(kHeights[0]) },
 			se::physics::WorldProperties{
-				kMotionBias, kMinPhysicsAABB, kMaxPhysicsAABB, kMaxCollidingRBs, kCoarseCollisionEpsilon, kMaxCollisionIterations,
+				kMotionBias, kPhysicsWorldAABB, kMaxCollidingRBs, kCoarseCollisionEpsilon, kMaxCollisionIterations,
 				kMinFDifference, kContactPrecision, kContactSeparation, kRaycastPrecision, kCollisionBeta,
 				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
 				kFrictionGravityAcceleration, kMaxConstraintIterations

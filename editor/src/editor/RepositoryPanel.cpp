@@ -1436,9 +1436,8 @@ namespace editor {
 	protected:
 		virtual void draw(Repository&, Repository::ResourceRef<Mesh> mesh) override
 		{
-			auto [min, max] = mesh->getBounds();
-
 			ImGui::Text("Bounds:");
+			auto [min, max] = mesh->getBounds();
 			ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
 			ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
 		};

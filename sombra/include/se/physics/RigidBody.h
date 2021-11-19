@@ -85,8 +85,9 @@ namespace se::physics {
 		/** The different statues in which a RigidBody can be */
 		enum class Status : int
 		{
-			Sleeping,			///< The RigidBody simulation is stopped
-			UpdatedByUser,		///< Changed due to the user
+			Sleeping,			///< The simulation is stopped
+			UpdatedByUser,		///< The state/properties/forces have changed
+			ColliderChanged,	///< The collider has changed
 			Count				///< The number of States
 		};
 

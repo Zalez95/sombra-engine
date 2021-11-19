@@ -14,7 +14,7 @@
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ImageReader.h>
 #include <se/app/io/FontReader.h>
-#include <se/app/io/SceneImporter.h>
+#include <se/app/io/SceneSerializer.h>
 #include <se/app/io/ShaderLoader.h>
 #include <se/app/CameraSystem.h>
 #include <se/app/AudioSystem.h>
@@ -61,46 +61,6 @@
 #include "PlayerController.h"
 
 namespace game {
-
-	class MyShaderBuilder : public se::app::SceneImporter::ShaderBuilder
-	{
-	private:	// Attributes
-		se::app::Scene& mScene;
-
-	public:		// Functions
-		MyShaderBuilder(se::app::Scene& scene) : mScene(scene) {};
-
-		virtual ShaderRef createShader(const char* name, const se::app::Material& material, bool hasSkin) override
-		{
-			const char* shadowStepKey = hasSkin? "stepShadowSkinning" : "stepShadow";
-			auto shadowStep = mScene.repository.findByName<se::app::RenderableShaderStep>(shadowStepKey);
-			if (!shadowStep) {
-				return ShaderRef();
-			}
-
-			auto gBufferRendererMesh = dynamic_cast<se::graphics::Renderer*>(mScene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
-			if (!gBufferRendererMesh) {
-				return ShaderRef();
-			}
-
-			const char* programKey = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
-			auto program = mScene.repository.findByName<se::graphics::Program>(programKey);
-			if (!program) {
-				return ShaderRef();
-			}
-
-			auto step = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), name);
-			se::app::ShaderLoader::addMaterialBindables(step, material, program);
-
-			auto shader = mScene.repository.emplace<se::app::RenderableShader>(mScene.application.getEventManager());
-			shader.getResource().setName(name);
-			shader->addStep(shadowStep)
-				.addStep(step);
-
-			return shader;
-		};
-	};
-
 
 	se::physics::HalfEdgeMesh createTestTube1()
 	{
@@ -228,103 +188,27 @@ namespace game {
 		se::physics::HACD hacd(0.002f, 0.0002f);
 
 		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
-		auto gBufferRendererParticles = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
 		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
-		auto shadowMeshProxyRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowMeshProxyRenderer"));
 
 		se::app::Image<unsigned char> heightMap1, splatMap1, logo1, reticle1;
 		se::app::Image<float> environment1;
 		se::app::Repository::ResourceRef<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr;
-		se::app::Repository::ResourceRef<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, splatmapTexture,
-			skyTexture, environmentTexture, prefilterTexture, heightMapTexture;
+		se::app::Repository::ResourceRef<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, skyTexture;
 		se::app::Repository::ResourceRef<se::graphics::Font> arial;
 		se::app::Repository::ResourceRef<se::graphics::Technique> technique2D;
-		se::app::Repository::ResourceRef<se::graphics::Program> programSky,
-			programShadow, programShadowSkinning, programShadowTerrain,
-			programGBufMaterial, programGBufMaterialSkinning, programGBufSplatmap, programGBufParticles;
-		se::app::Repository::ResourceRef<se::app::RenderableShaderStep> stepShadow, stepShadowSkinning;
-		se::app::Repository::ResourceRef<se::app::RenderableShader> shaderSky, shaderPlane, shaderParticles, shaderRandom;
-		se::app::Repository::ResourceRef<se::app::ParticleEmitter> emitter;
+		se::app::Repository::ResourceRef<se::graphics::Program> programSky, programShadow, programShadowSkinning, programGBufMaterial;
+		se::app::Repository::ResourceRef<se::app::RenderableShaderStep> stepShadow;
+		se::app::Repository::ResourceRef<se::app::RenderableShader> shaderSky, shaderPlane, shaderRandom;
 		se::app::Repository::ResourceRef<se::audio::Buffer> sound;
 		se::app::Repository::ResourceRef<se::app::LightSource> spotLight;
 		se::app::Repository::ResourceRef<se::physics::Force> gravity;
 
 		try {
-			// Meshes
-			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
-			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
-			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
-			cubeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(cubeRawMesh)), "cube");
-
-			se::app::RawMesh planeRawMesh("Plane");
-			planeRawMesh.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
-			planeRawMesh.texCoords = { {0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f} };
-			planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
-			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.indices);
-			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.indices);
-			planeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh)), "plane");
-
-			// Programs
-			std::shared_ptr<se::graphics::Program> programShadowSPtr;
-			se::app::Result result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, programShadowSPtr);
+			// Scene
+			auto result = se::app::SceneSerializer::deserialize("res/map.se", mScene);
 			if (!result) {
-				throw std::runtime_error("programShadow error: " + std::string(result.description()));
+				throw std::runtime_error(result.description());
 			}
-			programShadow = mScene.repository.insert(std::move(programShadowSPtr), "programShadow");
-
-			std::shared_ptr<se::graphics::Program> programShadowSkinningSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr, programShadowSkinningSPtr);
-			if (!result) {
-				throw std::runtime_error("programShadowSkinning error: " + std::string(result.description()));
-			}
-			programShadowSkinning = mScene.repository.insert(std::move(programShadowSkinningSPtr), "programShadowSkinning");
-
-			std::shared_ptr<se::graphics::Program> programShadowTerrainSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr, programShadowTerrainSPtr);
-			if (!result) {
-				throw std::runtime_error("programShadowTerrain error: " + std::string(result.description()));
-			}
-			programShadowTerrain = mScene.repository.insert(std::move(programShadowTerrainSPtr), "programShadowTerrain");
-
-			std::shared_ptr<se::graphics::Program> programSkySPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", programSkySPtr);
-			if (!result) {
-				throw std::runtime_error("programSky error: " + std::string(result.description()));
-			}
-			programSky = mScene.repository.insert(std::move(programSkySPtr), "programSky");
-
-			std::shared_ptr<se::graphics::Program> programGBufMaterialSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterialSPtr);
-			if (!result) {
-				throw std::runtime_error("programGBufMaterial error: " + std::string(result.description()));
-			}
-			programGBufMaterial = mScene.repository.insert(std::move(programGBufMaterialSPtr), "programGBufMaterial");
-
-			std::shared_ptr<se::graphics::Program> programGBufMaterialSkinningSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterialSkinningSPtr);
-			if (!result) {
-				throw std::runtime_error("programGBufMaterialSkinning error: " + std::string(result.description()));
-			}
-			programGBufMaterialSkinning = mScene.repository.insert(std::move(programGBufMaterialSkinningSPtr), "programGBufMaterialSkinning");
-
-			std::shared_ptr<se::graphics::Program> programGBufSplatmapSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl", programGBufSplatmapSPtr);
-			if (!result) {
-				throw std::runtime_error("programGBufSplatmap error: " + std::string(result.description()));
-			}
-			programGBufSplatmap = mScene.repository.insert(std::move(programGBufSplatmapSPtr), "programGBufSplatmap");
-
-			std::shared_ptr<se::graphics::Program> programGBufParticlesSPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertexParticlesFaceCamera.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufParticlesSPtr);
-			if (!result) {
-				throw std::runtime_error("programGBufParticles error: " + std::string(result.description()));
-			}
-			programGBufParticles = mScene.repository.insert(std::move(programGBufParticlesSPtr), "programGBufParticles");
-
-			// Readers
-			AudioFile<float> audioFile;
-			MyShaderBuilder shaderBuilder(mScene);
-			auto sceneImporter = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
 
 			// Fonts
 			arial = mGame.getRepository().findByName<se::graphics::Font>("arial");
@@ -334,16 +218,6 @@ namespace game {
 
 			// Images
 			result = se::app::ImageReader::read("res/images/logo.png", logo1);
-			if (!result) {
-				throw std::runtime_error(result.description());
-			}
-
-			result = se::app::ImageReader::read("res/images/terrain.png", heightMap1, 1);
-			if (!result) {
-				throw std::runtime_error(result.description());
-			}
-
-			result = se::app::ImageReader::read("res/images/splatmap.png", splatMap1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -373,19 +247,7 @@ namespace game {
 				reticle1.width, reticle1.height
 			);
 
-			float pixels[] = {
-				0.0f, 0.0f, 0.0f,	1.0f, 1.0f, 1.0f,
-				1.0f, 1.0f, 1.0f,	0.0f, 0.0f, 0.0f
-			};
-			chessTexture = mScene.repository.insert(std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D), "chess");
-			chessTexture->setImage(pixels, se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB, se::graphics::ColorFormat::RGB, 2, 2);
-
-			splatmapTexture = mScene.repository.insert(std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D), "splatmap");
-			splatmapTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
-				.setImage(
-					splatMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA,
-					se::graphics::ColorFormat::RGBA, splatMap1.width, splatMap1.height
-				);
+			chessTexture = mScene.repository.findByName<se::graphics::Texture>("chessTexture");
 
 			auto environmentEquiTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
 			environmentEquiTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
@@ -395,17 +257,32 @@ namespace game {
 					se::graphics::ColorFormat::RGB, environment1.width, environment1.height
 				);
 			skyTexture = mScene.repository.insert(se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512), "skyTexture");
-			environmentTexture = mScene.repository.insert(se::app::TextureUtils::convoluteCubeMap(skyTexture.get(), 32), "environmentTexture");
-			prefilterTexture = mScene.repository.insert(se::app::TextureUtils::prefilterCubeMap(skyTexture.get(), 128), "prefilterTexture");
 
-			heightMapTexture = mScene.repository.insert(std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D), "heightMapTexture");
-			heightMapTexture->setTextureUnit(se::app::SplatmapMaterial::TextureUnits::kHeightMap)
-				.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
-				.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
-				.setImage(
-					heightMap1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::R, se::graphics::ColorFormat::R,
-					heightMap1.width, heightMap1.height
-				);
+			// Meshes
+			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
+			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
+			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
+			cubeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(cubeRawMesh)), "cube");
+
+			se::app::RawMesh planeRawMesh("Plane");
+			planeRawMesh.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
+			planeRawMesh.texCoords = { {0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f} };
+			planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
+			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.indices);
+			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.indices);
+			planeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh)), "plane");
+
+			// Programs
+			programShadow = mScene.repository.findByName<se::graphics::Program>("programShadow");
+			programShadowSkinning = mScene.repository.findByName<se::graphics::Program>("programShadowSkinning");
+			programGBufMaterial = mScene.repository.findByName<se::graphics::Program>("programGBufMaterial");
+
+			std::shared_ptr<se::graphics::Program> programSkySPtr;
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", programSkySPtr);
+			if (!result) {
+				throw std::runtime_error("programSky error: " + std::string(result.description()));
+			}
+			programSky = mScene.repository.insert(std::move(programSkySPtr), "programSky");
 
 			// Techniques
 			technique2D = mGame.getRepository().findByName<se::graphics::Technique>("technique2D");
@@ -414,11 +291,7 @@ namespace game {
 			}
 
 			// Shaders
-			stepShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadow");
-			stepShadow->addResource(programShadow);
-
-			stepShadowSkinning = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadowSkinning");
-			stepShadowSkinning->addResource(programShadowSkinning);
+			stepShadow = mScene.repository.findByName<se::app::RenderableShaderStep>("stepShadow");
 
 			auto stepSky = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*forwardRendererMesh), "stepSky");
 			skyTexture->setTextureUnit(0);
@@ -445,22 +318,6 @@ namespace game {
 			shaderPlane->addStep(stepShadow)
 				.addStep(stepPlane);
 
-			auto stepParticles = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererParticles), "stepParticles");
-			se::app::ShaderLoader::addMaterialBindables(
-				stepParticles,
-				se::app::Material{
-					se::app::PBRMetallicRoughness{
-						glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
-						{}, 0.2f, 0.5f, {}
-					},
-					{}, 1.0f, {}, 1.0f, {}, glm::vec3(1.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-				},
-				programGBufParticles
-			);
-
-			shaderParticles = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderParticles");
-			shaderParticles->addStep(stepParticles);
-
 			auto stepRandom = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepRandom");
 			se::app::ShaderLoader::addMaterialBindables(
 				stepRandom,
@@ -475,19 +332,8 @@ namespace game {
 			shaderRandom->addStep(stepShadow)
 				.addStep(stepRandom);
 
-			// Emitter
-			emitter = mScene.repository.insert(std::make_shared<se::app::ParticleEmitter>(), "emitter");
-			emitter->maxParticles = 2000;
-			emitter->duration = 5.0f;
-			emitter->loop = true;
-			emitter->initialVelocity = 10.0f;
-			emitter->initialVelocityRandomFactor = 1.0f;
-			emitter->initialRotationRandomFactor = 1.0f;
-			emitter->initialScaleRandomFactor = 1.0f;
-			emitter->lifeLength = 2.0f;
-			emitter->gravity = -9.8f;
-
 			// Audio
+			AudioFile<float> audioFile;
 			if (!audioFile.load("res/audio/bounce.wav")) {
 				throw std::runtime_error("Error reading the audio file");
 			}
@@ -505,14 +351,8 @@ namespace game {
 			spotLight = mScene.repository.insert(std::make_shared<se::app::LightSource>(mGame.getEventManager(), se::app::LightSource::Type::Spot), "spotLight");
 
 			// Forces
-			gravity = mScene.repository.insert<se::physics::Force>(std::make_shared<se::physics::Gravity>(-9.8f), "gravity");
+			gravity = mScene.repository.findByName<se::physics::Force>("gravity");
 			gravity.setFakeUser();
-
-			// GLTF scenes
-			result = sceneImporter->load("res/meshes/test.gltf", mScene);
-			if (!result) {
-				throw std::runtime_error(result.description());
-			}
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
@@ -595,64 +435,6 @@ namespace game {
 			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(skyEntity);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderSky));
-
-			se::app::LightProbeComponent lightProbe = { environmentTexture, prefilterTexture };
-			mGame.getEntityDatabase().addComponent(skyEntity, std::move(lightProbe));
-		}
-
-		// Terrain
-		{
-			auto terrain = mGame.getEntityDatabase().addEntity();
-			mScene.entities.push_back(terrain);
-
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(terrain, "terrain");
-
-			float size = 500.0f, maxHeight = 10.0f;
-			glm::vec3 scaleVector(size, 2.0f * maxHeight, size);
-
-			se::app::TransformsComponent transforms;
-			transforms.scale = scaleVector;
-			mGame.getEntityDatabase().addComponent(terrain, std::move(transforms));
-
-			std::vector<float> lodDistances{ 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-
-			se::app::SplatmapMaterial terrainMaterial;
-			terrainMaterial.splatmapTexture = std::move(splatmapTexture);
-			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.5f, 0.25f, 0.1f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
-			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.75f, 0.25f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
-			terrainMaterial.materials.push_back({ se::app::PBRMetallicRoughness{ { 0.1f, 0.25f, 0.75f, 1.0f }, {}, 0.2f, 0.5f, {} }, {}, 1.0f });
-
-			auto shadowTerrainProxyRenderer = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowTerrainProxyRenderer"));
-			auto stepTerrainShadow = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*shadowTerrainProxyRenderer), "stepTerrainShadow");
-			se::app::ShaderLoader::addHeightMapBindables(stepTerrainShadow, heightMapTexture, size, maxHeight, programShadowTerrain);
-
-			auto gBufferRendererTerrain = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));
-			auto stepTerrain = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererTerrain), "stepTerrain");
-			se::app::ShaderLoader::addHeightMapBindables(stepTerrain, heightMapTexture, size, maxHeight, programGBufSplatmap);
-			se::app::ShaderLoader::addSplatmapMaterialBindables(stepTerrain, terrainMaterial, programGBufSplatmap);
-
-			auto terrainShader = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "terrainShader");
-			terrainShader->addStep(stepTerrainShadow)
-				.addStep(stepTerrain);
-
-			auto terrainComponent = mGame.getEntityDatabase().emplaceComponent<se::app::TerrainComponent>(
-				terrain, size, maxHeight, lodDistances
-			);
-			terrainComponent->addRenderableShader(terrainShader);
-
-			// Physics data
-			se::physics::RigidBodyProperties properties;
-			properties.frictionCoefficient = 1.0f;
-			properties.sleepMotion = 0.2f;
-
-			auto heights = se::app::MeshLoader::calculateHeights(heightMap1.pixels.get(), heightMap1.width, heightMap1.height);
-			auto collider = std::make_unique<se::physics::TerrainCollider>();
-			collider->setHeights(heights.data(), heightMap1.width, heightMap1.height);
-
-			se::app::RigidBodyComponent rbComponent(properties);
-			rbComponent.setCollider(std::move(collider));
-			rbComponent.setColliderLocalTrasforms(glm::scale(glm::mat4(1.0f), scaleVector));
-			mGame.getEntityDatabase().addComponent(terrain, std::move(rbComponent));
 		}
 
 		// Plane
@@ -714,11 +496,6 @@ namespace game {
 			}
 			if (i == 4) {
 				transforms.velocity += glm::vec3(-1, 0, 0);
-
-				auto particleSystem = mGame.getEntityDatabase().emplaceComponent<se::app::ParticleSystemComponent>(cube);
-				particleSystem->setMesh(planeMesh);
-				particleSystem->addRenderableShader(shaderParticles);
-				particleSystem->setEmitter(emitter);
 			}
 
 			auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
@@ -749,73 +526,6 @@ namespace game {
 		auto [rb1] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e1);
 		auto [rb2] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e2);
 		mGame.getExternalTools().rigidBodyWorld->getConstraintManager().addConstraint(new se::physics::DistanceConstraint({ &rb1->get(), &rb2->get() }));
-
-		auto stepRed = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepRed");
-		se::app::ShaderLoader::addMaterialBindables(
-			stepRed,
-			se::app::Material{
-				se::app::PBRMetallicRoughness{ { 1.0f, 0.0f, 0.0f, 1.0f }, {}, 0.2f, 0.5f, {} },
-				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-			},
-			programGBufMaterial
-		);
-
-		auto shaderRed = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderRed");
-		shaderRed->addStep(stepShadow)
-			.addStep(stepRed);
-
-		{
-			auto nonMovableCube = mGame.getEntityDatabase().addEntity();
-			mScene.entities.push_back(nonMovableCube);
-
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(nonMovableCube, "non-movable-cube");
-
-			se::app::TransformsComponent transforms;
-			transforms.position = glm::vec3(-50.0f, 0.0f, -40.0f);
-			transforms.scale = glm::vec3(10.0f, 1.0f, 10.0f);
-			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(transforms));
-
-			se::physics::RigidBodyProperties properties;
-			properties.frictionCoefficient = 0.75f;
-
-			auto collider = std::make_unique<se::physics::BoundingBox>(transforms.scale);
-
-			se::app::RigidBodyComponent rbComponent(properties);
-			rbComponent.setCollider(std::move(collider));
-			mGame.getEntityDatabase().addComponent(nonMovableCube, std::move(rbComponent));
-
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(nonMovableCube);
-			auto rIndex = mesh->add(false, cubeMesh);
-			mesh->addRenderableShader(rIndex, shaderRed);
-		}
-
-		{
-			auto gravityCube = mGame.getEntityDatabase().addEntity();
-			mScene.entities.push_back(gravityCube);
-
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(gravityCube, "gravity-cube");
-
-			se::app::TransformsComponent transforms;
-			transforms.position = glm::vec3(-50.0f, 2.0f, -40.0f);
-			mGame.getEntityDatabase().addComponent(gravityCube, std::move(transforms));
-
-			se::physics::RigidBodyProperties properties(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
-			properties.linearDrag = 0.05f;
-			properties.angularDrag = 0.05f;
-			properties.frictionCoefficient = 0.65f;
-
-			auto collider3 = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f));
-
-			se::app::RigidBodyComponent rbComponent(properties);
-			rbComponent.setCollider(std::move(collider3));
-			rbComponent.addForce(gravity);
-
-			mGame.getEntityDatabase().addComponent(gravityCube, std::move(rbComponent));
-
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(gravityCube);
-			auto rIndex = mesh->add(false, cubeMesh);
-			mesh->addRenderableShader(rIndex, shaderRed);
-		}
 
 		// HACD Tube
 		std::size_t iSlice = 0;

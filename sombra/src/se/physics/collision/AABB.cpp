@@ -58,6 +58,13 @@ namespace se::physics {
 	}
 
 
+	bool isInside(const AABB& aabb, const glm::vec3& point, float epsilon)
+	{
+		return glm::all(glm::greaterThanEqual(point + epsilon, aabb.minimum))
+			&& glm::all(glm::lessThanEqual(point + epsilon, aabb.maximum));
+	}
+
+
 	AABB transform(const AABB& aabb, const glm::mat4& transforms)
 	{
 		AABB ret{ glm::vec3(std::numeric_limits<float>::max()), glm::vec3(-std::numeric_limits<float>::max()) };
