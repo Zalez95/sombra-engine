@@ -2328,20 +2328,28 @@ namespace se::app {
 		});
 
 		nlohmann::json json;
-		json["type"] = static_cast<int>(rigidBody.getProperties().type);
-		json["invertedMass"] = rigidBody.getProperties().invertedMass;
-		json["invertedInertiaTensor"] = toJson(rigidBody.getProperties().invertedInertiaTensor);
-		json["linearDrag"] = rigidBody.getProperties().linearDrag;
-		json["angularDrag"] = rigidBody.getProperties().angularDrag;
-		json["frictionCoefficient"] = rigidBody.getProperties().frictionCoefficient;
-		json["sleepMotion"] = rigidBody.getProperties().sleepMotion;
-		json["forces"] = std::move(forces);
+		json["type"] = static_cast<int>(rigidBody.get().getProperties().type);
+		json["invertedMass"] = rigidBody.get().getProperties().invertedMass;
+		json["invertedInertiaTensor"] = toJson(rigidBody.get().getProperties().invertedInertiaTensor);
+		json["linearDrag"] = rigidBody.get().getProperties().linearDrag;
+		json["angularDrag"] = rigidBody.get().getProperties().angularDrag;
+		json["frictionCoefficient"] = rigidBody.get().getProperties().frictionCoefficient;
+		json["sleepMotion"] = rigidBody.get().getProperties().sleepMotion;
 
-		if (const Collider* collider = rigidBody.getCollider()) {
+		int bitmapStatus = rigidBody.get().getStatus(RigidBody::Status::Sleeping)? 1 : 0
+			+ rigidBody.get().getStatus(RigidBody::Status::PropertiesChanged)?	1 << 1 : 0
+			+ rigidBody.get().getStatus(RigidBody::Status::StateChanged)?		1 << 2 : 0
+			+ rigidBody.get().getStatus(RigidBody::Status::ColliderChanged)?	1 << 3 : 0
+			+ rigidBody.get().getStatus(RigidBody::Status::ForcesChanged)?		1 << 4 : 0;
+		json["status"] = bitmapStatus;
+
+		if (const Collider* collider = rigidBody.get().getCollider()) {
 			nlohmann::json jsonCollider = serializeCollider(*collider, data, dataStream);
-			jsonCollider["colliderLocalTransforms"] = toJson(rigidBody.getColliderLocalTransforms());
+			jsonCollider["colliderLocalTransforms"] = toJson(rigidBody.get().getColliderLocalTransforms());
 			json["collider"] = std::move(jsonCollider);
 		}
+
+		json["forces"] = std::move(forces);
 
 		return json;
 	}
@@ -2355,13 +2363,13 @@ namespace se::app {
 			itInvertedMass = json.find("invertedMass"), itInvertedInertiaTensor = json.find("invertedInertiaTensor"),
 			itLinearDrag = json.find("linearDrag"), itAngularDrag = json.find("angularDrag"),
 			itFrictionCoefficient = json.find("frictionCoefficient"), itSleepMotion = json.find("sleepMotion"),
-			itCollider = json.find("collider"), itForces = json.find("forces");
+			itStatus = json.find("status"), itCollider = json.find("collider"), itForces = json.find("forces");
 
 		if ((itType == json.end())
 			|| (itInvertedMass == json.end()) || (itInvertedInertiaTensor == json.end())
 			|| (itLinearDrag == json.end()) || (itAngularDrag == json.end())
 			|| (itFrictionCoefficient == json.end()) || (itSleepMotion == json.end())
-			|| (itForces == json.end())
+			|| (itStatus == json.end()) || (itForces == json.end())
 		) {
 			return { Result(false, "Missing properties"), std::nullopt };
 		}
@@ -2398,8 +2406,8 @@ namespace se::app {
 		}
 
 		RigidBodyComponent rigidBodyComponent(rbProperties);
-		rigidBodyComponent.setCollider(std::move(collider));
-		rigidBodyComponent.setColliderLocalTrasforms(colliderLocalTransforms);
+		rigidBodyComponent.get().setCollider(std::move(collider));
+		rigidBodyComponent.get().setColliderLocalTrasforms(colliderLocalTransforms);
 
 		for (std::size_t i = 0; i < itForces->size(); ++i) {
 			std::string forceJson = (*itForces)[i];
@@ -2411,6 +2419,13 @@ namespace se::app {
 				return { Result(false, "Failed to parse Force[" + std::to_string(i) + "]: Name " + forceJson + " not found"), std::nullopt };
 			}
 		}
+
+		int bitmapStatus = *itStatus;
+		rigidBodyComponent.get().setStatus(RigidBody::Status::Sleeping, (bitmapStatus & (1 << 0)) > 0);
+		rigidBodyComponent.get().setStatus(RigidBody::Status::PropertiesChanged, (bitmapStatus & (1 << 1)) > 0);
+		rigidBodyComponent.get().setStatus(RigidBody::Status::StateChanged, (bitmapStatus & (1 << 2)) > 0);
+		rigidBodyComponent.get().setStatus(RigidBody::Status::ColliderChanged, (bitmapStatus & (1 << 3)) > 0);
+		rigidBodyComponent.get().setStatus(RigidBody::Status::ForcesChanged, (bitmapStatus & (1 << 4)) > 0);
 
 		return { Result(), std::move(rigidBodyComponent) };
 	}

@@ -45,4 +45,25 @@ namespace se::physics {
 		};
 	}
 
+
+	void NormalConstraint::setConstraintVectors(const std::array<glm::vec3, 2>& constraintVectors)
+	{
+		mConstraintVectors = constraintVectors;
+		mUpdated = true;
+	}
+
+
+	void NormalConstraint::setNormal(const glm::vec3& normal)
+	{
+		mNormal = normal;
+		mUpdated = true;
+	}
+
+
+	void NormalConstraint::setDeltaTime(float deltaTime)
+	{
+		mDeltaTime = deltaTime;
+		mUpdated = true;
+	}
+
 }

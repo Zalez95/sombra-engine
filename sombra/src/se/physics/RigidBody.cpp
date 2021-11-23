@@ -21,7 +21,9 @@ namespace se::physics {
 	) : mProperties(properties), mState(state),
 		mCollider(std::move(collider)), mColliderLocalTransforms(colliderLocalTransforms)
 	{
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
+		setStatus(Status::PropertiesChanged, true);
+		setStatus(Status::StateChanged, true);
+		setStatus(Status::ColliderChanged, true);
 		updateTransforms();
 	}
 
@@ -82,7 +84,7 @@ namespace se::physics {
 	RigidBody& RigidBody::setProperties(const RigidBodyProperties& properties)
 	{
 		mProperties = properties;
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
+		setStatus(Status::PropertiesChanged, true);
 		return *this;
 	}
 
@@ -90,7 +92,7 @@ namespace se::physics {
 	RigidBody& RigidBody::setState(const RigidBodyState& state)
 	{
 		mState = state;
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
+		setStatus(Status::StateChanged, true);
 		updateTransforms();
 		return *this;
 	}
@@ -103,7 +105,7 @@ namespace se::physics {
 			mCollider->setParent(this);
 			mCollider->setTransforms(mState.transformsMatrix * mColliderLocalTransforms);
 		}
-		setStatus(RigidBodyState::Status::ColliderChanged, true);
+		setStatus(Status::ColliderChanged, true);
 		return *this;
 	}
 
@@ -114,42 +116,41 @@ namespace se::physics {
 		if (mCollider) {
 			mCollider->setTransforms(mState.transformsMatrix * mColliderLocalTransforms);
 		}
-		setStatus(RigidBodyState::Status::ColliderChanged, true);
 		return *this;
 	}
 
 
-	RigidBody& RigidBody::addForce(ForceSPtr force)
+	RigidBody& RigidBody::addForce(const ForceSPtr& force)
 	{
-		mForces.emplace_back(std::move(force));
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
+		mForces.push_back(force);
+		setStatus(Status::ForcesChanged, true);
 		return *this;
 	}
 
 
-	RigidBody& RigidBody::removeForce(ForceSPtr force)
+	RigidBody& RigidBody::removeForce(const ForceSPtr& force)
 	{
 		mForces.erase(std::remove(mForces.begin(), mForces.end(), force), mForces.end());
-		setStatus(RigidBodyState::Status::UpdatedByUser, true);
+		setStatus(Status::ForcesChanged, true);
 		return *this;
 	}
 
 
-	void RigidBody::setStatus(RigidBodyState::Status status, bool value)
+	void RigidBody::setStatus(Status status, bool value)
 	{
 		if (value) {
-			mState.status.set( static_cast<int>(status) );
+			mStatus.set( static_cast<int>(status) );
 
 			// Set the motion of the RigidBody to a larger value than
 			// mSleepEpsilon to prevent it from falling sleep instantly
-			if (status == RigidBodyState::Status::Sleeping) {
+			if (status == Status::Sleeping) {
 				mState.motion = 2.0f * mProperties.sleepMotion;
 			}
 		}
 		else {
-			mState.status.reset( static_cast<int>(status) );
+			mStatus.reset( static_cast<int>(status) );
 
-			if (status == RigidBodyState::Status::Sleeping) {
+			if (status == Status::Sleeping) {
 				mState.motion = 0.0f;
 			}
 		}

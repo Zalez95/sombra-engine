@@ -7,16 +7,16 @@ namespace se::physics {
 
 	CollisionDetector::CollisionDetector(RigidBodyWorld& parentWorld) :
 		mParentWorld(parentWorld),
-		mCoarseCollisionDetector(mParentWorld.mProperties.coarseCollisionEpsilon),
+		mCoarseCollisionDetector(mParentWorld.getProperties().coarseCollisionEpsilon),
 		mFineCollisionDetector(
-			mParentWorld.mProperties.coarseCollisionEpsilon,
-			mParentWorld.mProperties.minFDifference, mParentWorld.mProperties.maxIterations,
-			mParentWorld.mProperties.contactPrecision, mParentWorld.mProperties.contactSeparation,
-			mParentWorld.mProperties.raycastPrecision
+			mParentWorld.getProperties().coarseCollisionEpsilon,
+			mParentWorld.getProperties().minFDifference, mParentWorld.getProperties().maxIterations,
+			mParentWorld.getProperties().contactPrecision, mParentWorld.getProperties().contactSeparation,
+			mParentWorld.getProperties().raycastPrecision
 		)
 	{
-		mManifolds.reserve(mParentWorld.mProperties.maxCollidingRBs);
-		mCollidersManifoldMap.reserve(mParentWorld.mProperties.maxCollidingRBs);
+		mManifolds.reserve(mParentWorld.getProperties().maxCollidingRBs);
+		mCollidersManifoldMap.reserve(mParentWorld.getProperties().maxCollidingRBs);
 	}
 
 

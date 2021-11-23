@@ -158,12 +158,15 @@ namespace editor {
 	{
 		Result ret = Result::Nothing;
 
-		ImGui::OpenPopup((mTitle + "##" + mTag + "::Title").c_str());
+		std::string popupTag = mTitle + "##" + mTag + "::Title";
+		if (!ImGui::IsPopupOpen(popupTag.c_str())) {
+			ImGui::OpenPopup(popupTag.c_str());
+		}
 
 		ImVec2 center(0.5f * ImGui::GetIO().DisplaySize.x, 0.5f * ImGui::GetIO().DisplaySize.y);
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-		if (ImGui::BeginPopupModal((mTitle + "##" + mTag + "::Title").c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		if (ImGui::BeginPopupModal(popupTag.c_str())) {
 			ImGui::TextWrapped("%s", mMessage.c_str());
 			ImGui::Separator();
 
@@ -182,6 +185,10 @@ namespace editor {
 
 		return ret;
 	}
+
+
+	FileWindow::FileWindow(const char* tag, const char* currentPath) :
+		mTag(tag), mCurrentPath(currentPath? currentPath : std::filesystem::current_path()) {}
 
 
 	FileWindow::Result FileWindow::execute(std::string& outPath)
@@ -321,7 +328,7 @@ namespace editor {
 				mCurrentPath = selectedPath;
 			}
 			else {
-				outPath = selectedPath.string();
+				outPath = std::filesystem::proximate(selectedPath, std::filesystem::current_path()).string();
 				ret = Result::Open;
 			}
 		}

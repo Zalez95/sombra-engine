@@ -23,6 +23,9 @@ namespace se::physics {
 		 * constraint in local space */
 		std::array<glm::vec3, 2> mAnchorPoints;
 
+		/** If the DistanceConstraint has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new DistanceConstraint
 		 *
@@ -32,7 +35,8 @@ namespace se::physics {
 		 *			origins */
 		DistanceConstraint(const std::array<RigidBody*, 2>& rigidBodies) :
 			Constraint(rigidBodies),
-			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) } {};
+			mAnchorPoints{ glm::vec3(0.0f), glm::vec3(0.0f) },
+			mUpdated(true) {};
 
 		/** @copydoc Constraint::clone() */
 		virtual std::unique_ptr<Constraint> clone() const override
@@ -48,12 +52,17 @@ namespace se::physics {
 		/** @return	the Jacobian matrix of the constraint */
 		virtual std::array<float, 12> getJacobianMatrix() const override;
 
+		/** @copydoc Constraint::updated() */
+		bool updated() const override { return mUpdated; };
+
+		/** @copydoc Constraint::resetUpdatedState() */
+		void resetUpdatedState() override { mUpdated = false; };
+
 		/** Sets the anchor points of the DistanceConstraint
 		 *
 		 * @param	anchorPoints the positions of the RigidBodies that
 		 *			will be affected by the constraint in local space */
-		void setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints)
-		{ mAnchorPoints = anchorPoints; };
+		void setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints);
 
 		/** @return	the anchor points of the DistanceConstraint */
 		const std::array<glm::vec3, 2>& getAnchorPoints() const

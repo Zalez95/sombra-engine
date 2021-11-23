@@ -7,19 +7,19 @@ namespace se::physics {
 
 	CollisionSolver::CollisionSolver(RigidBodyWorld& parentWorld) : mParentWorld(parentWorld)
 	{
-		mManifoldConstraintIndicesMap.reserve(4 * mParentWorld.mProperties.maxCollidingRBs / Manifold::kMaxContacts);
-		mContactNormalConstraints.reserve(4 * mParentWorld.mProperties.maxCollidingRBs);
-		mContactFrictionConstraints.reserve(8 * mParentWorld.mProperties.maxCollidingRBs);
+		mManifoldConstraintIndicesMap.reserve(4 * mParentWorld.getProperties().maxCollidingRBs / Manifold::kMaxContacts);
+		mContactNormalConstraints.reserve(4 * mParentWorld.getProperties().maxCollidingRBs);
+		mContactFrictionConstraints.reserve(8 * mParentWorld.getProperties().maxCollidingRBs);
 	}
 
 
 	CollisionSolver::~CollisionSolver()
 	{
 		for (auto& normalConstraint : mContactNormalConstraints) {
-			mParentWorld.mConstraintManager.removeConstraint(&normalConstraint);
+			mParentWorld.getConstraintManager().removeConstraint(&normalConstraint);
 		}
 		for (auto& frictionConstraint : mContactFrictionConstraints) {
-			mParentWorld.mConstraintManager.removeConstraint(&frictionConstraint);
+			mParentWorld.getConstraintManager().removeConstraint(&frictionConstraint);
 		}
 	}
 
@@ -58,9 +58,9 @@ namespace se::physics {
 				|| (rigidBody == itPair->first->colliders[1]->getParent())
 			) {
 				for (auto& constraintIndices : itPair->second) {
-					mParentWorld.mConstraintManager.removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
-					mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
-					mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
+					mParentWorld.getConstraintManager().removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
+					mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
+					mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
 
 					mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
 					mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
@@ -93,7 +93,7 @@ namespace se::physics {
 
 		int contactsDiff = static_cast<int>(manifold.contacts.size()) - static_cast<int>(manifoldConstraintIndices.size());
 		if (contactsDiff > 0) {
-			if (mContactNormalConstraints.size() + contactsDiff <= 4 * mParentWorld.mProperties.maxCollidingRBs) {
+			if (mContactNormalConstraints.size() + contactsDiff <= 4 * mParentWorld.getProperties().maxCollidingRBs) {
 				float mu1 = rb1->getProperties().frictionCoefficient, mu2 = rb2->getProperties().frictionCoefficient;
 				float mu = std::sqrt(0.5f * (mu1 * mu1 + mu2 * mu2));
 				SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
@@ -102,21 +102,21 @@ namespace se::physics {
 				for (std::size_t i = manifoldConstraintIndices.size(); i < manifold.contacts.size(); ++i) {
 					auto itNormalConstraint = mContactNormalConstraints.emplace(
 						std::array{ rb1, rb2 },
-						mParentWorld.mProperties.collisionBeta,
-						mParentWorld.mProperties.collisionRestitutionFactor,
-						mParentWorld.mProperties.collisionSlopPenetration,
-						mParentWorld.mProperties.collisionSlopRestitution
+						mParentWorld.getProperties().collisionBeta,
+						mParentWorld.getProperties().collisionRestitutionFactor,
+						mParentWorld.getProperties().collisionSlopPenetration,
+						mParentWorld.getProperties().collisionSlopRestitution
 					);
 					auto itFrictionConstraint0 = mContactFrictionConstraints.emplace(
-						std::array{ rb1, rb2 }, mParentWorld.mProperties.frictionGravityAcceleration, mu
+						std::array{ rb1, rb2 }, mParentWorld.getProperties().frictionGravityAcceleration, mu
 					);
 					auto itFrictionConstraint1 = mContactFrictionConstraints.emplace(
-						std::array{ rb1, rb2 }, mParentWorld.mProperties.frictionGravityAcceleration, mu
+						std::array{ rb1, rb2 }, mParentWorld.getProperties().frictionGravityAcceleration, mu
 					);
 
-					mParentWorld.mConstraintManager.addConstraint(&(*itNormalConstraint));
-					mParentWorld.mConstraintManager.addConstraint(&(*itFrictionConstraint0));
-					mParentWorld.mConstraintManager.addConstraint(&(*itFrictionConstraint1));
+					mParentWorld.getConstraintManager().addConstraint(&(*itNormalConstraint));
+					mParentWorld.getConstraintManager().addConstraint(&(*itFrictionConstraint0));
+					mParentWorld.getConstraintManager().addConstraint(&(*itFrictionConstraint1));
 
 					manifoldConstraintIndices.emplace_back(ContactConstraintIndices{
 						itNormalConstraint.getIndex(), { itFrictionConstraint0.getIndex(), itFrictionConstraint1.getIndex() }
@@ -135,9 +135,9 @@ namespace se::physics {
 			// Decrease the number of constraints down to the number of contacts
 			for (std::size_t i = manifoldConstraintIndices.size(); i > manifold.contacts.size(); --i) {
 				ContactConstraintIndices& constraintIndices = manifoldConstraintIndices.back();
-				mParentWorld.mConstraintManager.removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
-				mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
-				mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
 
 				mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
 				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));
@@ -202,9 +202,9 @@ namespace se::physics {
 		auto itPair = mManifoldConstraintIndicesMap.find(&manifold);
 		if (itPair != mManifoldConstraintIndicesMap.end()) {
 			for (auto& constraintIndices : itPair->second) {
-				mParentWorld.mConstraintManager.removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
-				mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
-				mParentWorld.mConstraintManager.removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactNormalConstraints[constraintIndices.iNormalConstraint]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[0]]);
+				mParentWorld.getConstraintManager().removeConstraint(&mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]]);
 
 				mContactNormalConstraints.erase(mContactNormalConstraints.begin().setIndex(constraintIndices.iNormalConstraint));
 				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[0]));

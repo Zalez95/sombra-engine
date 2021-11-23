@@ -180,13 +180,15 @@ namespace editor {
 		/** Creates a new FileWindow
 		 *
 		 * @param	tag the prefix used for all the ImGui elements of the
-		 *			FileWindow */
-		FileWindow(const char* tag) :
-			mTag(tag), mCurrentPath(std::filesystem::current_path()) {};
+		 *			FileWindow
+		 * @param	the current path to start in, by default the working
+		 *			directory */
+		FileWindow(const char* tag, const char* currentPath = nullptr);
 
 		/** Draws the current window if @see show was called before
 		 *
-		 * @param	outPath the path of the file selected (return value)
+		 * @param	outPath the path of the file selected relative to the
+		 *			initial directory (return value)
 		 * @return	true if a file was selected, false otherwise */
 		Result execute(std::string& outPath);
 	};

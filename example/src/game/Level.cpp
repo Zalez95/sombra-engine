@@ -396,7 +396,7 @@ namespace game {
 			auto collider = std::make_unique<se::physics::BoundingSphere>(0.5f);
 
 			se::app::RigidBodyComponent rbComponent(properties);
-			rbComponent.setCollider(std::move(collider));
+			rbComponent.get().setCollider(std::move(collider));
 
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(rbComponent));
 
@@ -501,7 +501,7 @@ namespace game {
 			auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 
 			se::app::RigidBodyComponent rbComponent(properties, state);
-			rbComponent.setCollider(std::move(collider));
+			rbComponent.get().setCollider(std::move(collider));
 			mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
 
 			auto stepCube = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
@@ -597,7 +597,7 @@ namespace game {
 				auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 
 				se::app::RigidBodyComponent rbComponent(properties);
-				rbComponent.setCollider(std::move(collider));
+				rbComponent.get().setCollider(std::move(collider));
 				rbComponent.addForce(gravity);
 				mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
 

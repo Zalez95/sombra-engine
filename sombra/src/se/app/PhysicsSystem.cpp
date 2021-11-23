@@ -28,11 +28,11 @@ namespace se::app {
 		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
 			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
-					physics::RigidBodyState state = rigidBody->getState();
+					physics::RigidBodyState state = rigidBody->get().getState();
 					state.position			= transforms->position;
 					state.linearVelocity	= transforms->velocity;
 					state.orientation		= transforms->orientation;
-					rigidBody->setState(state);
+					rigidBody->get().setState(state);
 
 					transforms->updated.set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
@@ -46,10 +46,10 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
 		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
 			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
-				if (!rigidBody->get().getStatus(physics::RigidBodyState::Status::Sleeping)) {
-					transforms->position	= rigidBody->getState().position;
-					transforms->velocity	= rigidBody->getState().linearVelocity;
-					transforms->orientation	= rigidBody->getState().orientation;
+				if (!rigidBody->get().getStatus(physics::RigidBody::Status::Sleeping)) {
+					transforms->position	= rigidBody->get().getState().position;
+					transforms->velocity	= rigidBody->get().getState().linearVelocity;
+					transforms->orientation	= rigidBody->get().getState().orientation;
 
 					transforms->updated.reset().set(static_cast<int>(TransformsComponent::Update::RigidBody));
 				}
@@ -68,9 +68,10 @@ namespace se::app {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
 		}
 
-		auto properties = rigidBody->getProperties();
-		properties.userData = reinterpret_cast<void*>(entity);
-		rigidBody->setProperties(properties);
+		auto properties = rigidBody->get().getProperties();
+		uintptr_t userData = entity;
+		properties.userData = reinterpret_cast<void*>(userData);
+		rigidBody->get().setProperties(properties);
 
 		mApplication.getExternalTools().rigidBodyWorld->addRigidBody(&rigidBody->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBodyComponent " << rigidBody << " added successfully";

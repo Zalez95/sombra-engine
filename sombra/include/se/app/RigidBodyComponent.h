@@ -39,59 +39,6 @@ namespace se::app {
 		/** @return	the raw audio source of the RigidBodyComponent */
 		const physics::RigidBody& get() const { return mRigidBody; };
 
-		/** @return	the RigidBodyProperties of the RigidBodyComponent */
-		const physics::RigidBodyProperties& getProperties() const
-		{ return mRigidBody.getProperties(); };
-
-		/** Sets the RigidBodyProperties of the RigidBodyComponent
-		 *
-		 * @param	state the new RigidBodyProperties of the RigidBodyComponent
-		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& setProperties(
-			const physics::RigidBodyProperties& properties
-		) { mRigidBody.setProperties(properties); return *this; };
-
-		/** @return	the current RigidBodyState of the RigidBodyComponent */
-		const physics::RigidBodyState& getState() const
-		{ return mRigidBody.getState(); };
-
-		/** Sets the RigidBodyState of the RigidBodyComponent
-		 *
-		 * @param	state the new RigidBodyState of the RigidBodyComponent
-		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& setState(const physics::RigidBodyState& state)
-		{ mRigidBody.setState(state); return *this; };
-
-		/** @return	a pointer to the current Collider of the RigidBodyComponent,
-		 *			nullptr if it doesn't have one */
-		physics::Collider* getCollider() const
-		{ return mRigidBody.getCollider(); };
-
-		/** Sets the Collider of the RigidBodyComponent
-		 *
-		 * @param	collider a pointer to the new Collider of the
-		 *			RigidBodyComponent
-		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& setCollider(
-			std::unique_ptr<physics::Collider>&& collider
-		) { mRigidBody.setCollider(std::move(collider)); return *this; };
-
-		/** @return	the Collider local trasforms of the RigidBodyComponent */
-		const glm::mat4& getColliderLocalTransforms() const
-		{ return mRigidBody.getColliderLocalTransforms(); };
-
-		/** Sets the local trasforms matrix of the Collider
-		 *
-		 * @param	localTransforms the new local transforms matrix of
-		 *			the Collider
-		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& setColliderLocalTrasforms(
-			const glm::mat4& localTransforms
-		) {
-			mRigidBody.setColliderLocalTrasforms(localTransforms);
-			return *this;
-		};
-
 		/** Adds a Force to the RigidBody
 		 *
 		 * @param	force the new Force of the RigidBodyComponent

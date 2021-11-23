@@ -71,6 +71,13 @@ namespace se::physics {
 
 		/** @return	the Jacobian matrix of the constraint */
 		virtual std::array<float, 12> getJacobianMatrix() const = 0;
+
+		/** @return	true if the Constraint has been updated since the last call
+		 *			to the resetUpdatedState function, false otherwise */
+		virtual bool updated() const = 0;
+
+		/** Resets the updated state of the Constraint */
+		virtual void resetUpdatedState() = 0;
 	};
 
 }

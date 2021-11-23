@@ -185,10 +185,12 @@ TEST(RigidBodyWorld, rigidBodyStatus)
 
 	RigidBody rb2(properties, state2);
 
-	EXPECT_FALSE(rb1.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_TRUE(rb1.getStatus(RigidBodyState::Status::UpdatedByUser));
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_TRUE(rb2.getStatus(RigidBodyState::Status::UpdatedByUser));
+	EXPECT_FALSE(rb1.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_TRUE(rb1.getStatus(RigidBody::Status::PropertiesChanged));
+	EXPECT_TRUE(rb1.getStatus(RigidBody::Status::StateChanged));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_TRUE(rb2.getStatus(RigidBody::Status::PropertiesChanged));
+	EXPECT_TRUE(rb2.getStatus(RigidBody::Status::StateChanged));
 
 	DistanceConstraint distanceConstraint({ &rb1, &rb2 });
 	distanceConstraint.setAnchorPoints({ glm::vec3(0.5f, 1.0f, 0.0f ), glm::vec3(-1.0f, 1.0f, 0.0f) });
@@ -200,29 +202,29 @@ TEST(RigidBodyWorld, rigidBodyStatus)
 	rbw.addRigidBody(&rb2);
 	rbw.getConstraintManager().addConstraint(&distanceConstraint);
 
-	EXPECT_FALSE(rb1.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_TRUE(rb1.getStatus(RigidBodyState::Status::UpdatedByUser));
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_TRUE(rb2.getStatus(RigidBodyState::Status::UpdatedByUser));
+	EXPECT_FALSE(rb1.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_TRUE(rb1.getStatus(RigidBody::Status::StateChanged));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_TRUE(rb2.getStatus(RigidBody::Status::StateChanged));
 
 	rbw.update(0.016f);
 
-	EXPECT_TRUE(rb1.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_FALSE(rb1.getStatus(RigidBodyState::Status::UpdatedByUser));
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::UpdatedByUser));
+	EXPECT_TRUE(rb1.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_FALSE(rb1.getStatus(RigidBody::Status::StateChanged));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::StateChanged));
 
 	state2 = rb2.getState();
 	state2.linearVelocity = glm::vec3(0.0f);
 	rb2.setState(state2);
 
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_TRUE(rb2.getStatus(RigidBodyState::Status::UpdatedByUser));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_TRUE(rb2.getStatus(RigidBody::Status::StateChanged));
 
 	rbw.update(0.016f);
 
-	EXPECT_TRUE(rb1.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_FALSE(rb1.getStatus(RigidBodyState::Status::UpdatedByUser));
-	EXPECT_TRUE(rb2.getStatus(RigidBodyState::Status::Sleeping));
-	EXPECT_FALSE(rb2.getStatus(RigidBodyState::Status::UpdatedByUser));
+	EXPECT_TRUE(rb1.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_FALSE(rb1.getStatus(RigidBody::Status::StateChanged));
+	EXPECT_TRUE(rb2.getStatus(RigidBody::Status::Sleeping));
+	EXPECT_FALSE(rb2.getStatus(RigidBody::Status::StateChanged));
 }

@@ -82,18 +82,6 @@ namespace se::physics {
 	 */
 	struct RigidBodyState
 	{
-		/** The different statues in which a RigidBody can be */
-		enum class Status : int
-		{
-			Sleeping,			///< The simulation is stopped
-			UpdatedByUser,		///< The state/properties/forces have changed
-			ColliderChanged,	///< The collider has changed
-			Count				///< The number of States
-		};
-
-		/** The current status of the RigidBody */
-		std::bitset< static_cast<int>(Status::Count) > status;
-
 		/** The linear position of the origin (center of mass) of the RigidBody
 		 * in world space */
 		glm::vec3 position = glm::vec3(0.0f);
@@ -143,13 +131,27 @@ namespace se::physics {
 	 */
 	class RigidBody
 	{
-	private:	// Nested types
+	public:		// Nested types
+		friend class RigidBodyDynamics;
+		friend class ConstraintIsland;
 		using ForceSPtr = std::shared_ptr<Force>;
 		using ColliderUPtr = std::unique_ptr<Collider>;
-		friend class RigidBodyDynamics;
-		friend class ConstraintManager;
+
+		/** The different statuses in which a RigidBody can be */
+		enum class Status : int
+		{
+			Sleeping,			///< The simulation is stopped
+			PropertiesChanged,	///< The properties have changed
+			StateChanged,		///< The state has been changed by the user
+			ColliderChanged,	///< The collider has changed
+			ForcesChanged,		///< The forces have changed
+			Count				///< The number of States
+		};
 
 	private:	// Attributes
+		/** The current status of the RigidBody */
+		std::bitset< static_cast<int>(Status::Count) > mStatus;
+
 		/** The configuration properties of the RigidBody */
 		RigidBodyProperties mProperties;
 
@@ -217,7 +219,9 @@ namespace se::physics {
 		/** Sets the Collider of the RigidBody
 		 *
 		 * @param	collider the new Collider of the RigidBody
-		 * @return	a reference to the current RigidBody object */
+		 * @return	a reference to the current RigidBody object
+		 * @note	the parent object of the Collider will be updated to point
+		 *			to the current RigidBody object */
 		RigidBody& setCollider(ColliderUPtr&& collider);
 
 		/** @return	the Collider local trasforms of the RigidBody */
@@ -235,7 +239,7 @@ namespace se::physics {
 		 *
 		 * @param	force the new Force
 		 * @return	the current RigidBody object */
-		RigidBody& addForce(ForceSPtr force);
+		RigidBody& addForce(const ForceSPtr& force);
 
 		/** Iterates through all the Forces of the RigidBody calling the given
 		 * callback function
@@ -248,21 +252,21 @@ namespace se::physics {
 		 *
 		 * @param	force the Force to remove
 		 * @return	the current RigidBody object */
-		RigidBody& removeForce(ForceSPtr force);
+		RigidBody& removeForce(const ForceSPtr& force);
 
 		/** Checks if the RigidBody is in the given Status
 		 *
 		 * @param	status the Status to check
 		 * @return	true if the RigidBody is in the given state, false
 		 *			otherwise */
-		bool getStatus(RigidBodyState::Status status) const
-		{ return mState.status[static_cast<int>(status)]; };
+		bool getStatus(Status status) const
+		{ return mStatus[static_cast<int>(status)]; };
 
 		/** Sets the RigidBody's status to the given value
 		 *
 		 * @param	status the status to set
 		 * @param	value the new value of the status */
-		void setStatus(RigidBodyState::Status status, bool value);
+		void setStatus(Status status, bool value);
 
 		/** Updates the RigidBody's transform matrix and inertia tensor in
 		 * world coordinates with the changes made to the RigidBody's position

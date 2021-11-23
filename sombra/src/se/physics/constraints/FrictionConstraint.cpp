@@ -23,10 +23,25 @@ namespace se::physics {
 	}
 
 
+	void FrictionConstraint::setConstraintVectors(const std::array<glm::vec3, 2>& constraintVectors)
+	{
+		mConstraintVectors = constraintVectors;
+		mUpdated = true;
+	}
+
+
+	void FrictionConstraint::setTangent(const glm::vec3& tangent)
+	{
+		mTangent = tangent;
+		mUpdated = true;
+	}
+
+
 	void FrictionConstraint::calculateConstraintBounds(float contactMass)
 	{
 		mConstraintBounds.lambdaMax = mFrictionCoefficient * contactMass * mGravityAcceleration;
 		mConstraintBounds.lambdaMin = -mConstraintBounds.lambdaMax;
+		mUpdated = true;
 	}
 
 }

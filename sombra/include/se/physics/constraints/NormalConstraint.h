@@ -48,13 +48,16 @@ namespace se::physics {
 		/** The elapsed time since the last update */
 		float mDeltaTime;
 
+		/** If the NormalConstraint has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new NormalConstraint */
 		NormalConstraint() :
 			mBeta(0.0f), mRestitutionFactor(0.0f),
 			mSlopPenetration(0.0f), mSlopRestitution(0.0f),
 			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
-			mNormal(0.0f), mDeltaTime(0.0f) {};
+			mNormal(0.0f), mDeltaTime(0.0f), mUpdated(true) {};
 
 		/** Creates a new NormalConstraint
 		 *
@@ -93,6 +96,12 @@ namespace se::physics {
 		/** @return	the Jacobian matrix of the constraint */
 		virtual std::array<float, 12> getJacobianMatrix() const override;
 
+		/** @copydoc Constraint::updated() */
+		bool updated() const override { return mUpdated; };
+
+		/** @copydoc Constraint::resetUpdatedState() */
+		void resetUpdatedState() override { mUpdated = false; };
+
 		/** Sets the constraint vectors of the NormalConstraint
 		 *
 		 * @param	constraintVectors the vectors in world space that points
@@ -100,18 +109,18 @@ namespace se::physics {
 		 *			contact points */
 		void setConstraintVectors(
 			const std::array<glm::vec3, 2>& constraintVectors
-		) { mConstraintVectors = constraintVectors; };
+		);
 
 		/** Sets the normal vector of the NormalConstraint
 		 *
 		 * @param	normal the new normal vector */
-		void setNormal(const glm::vec3& normal) { mNormal = normal; };
+		void setNormal(const glm::vec3& normal);
 
 		/** Sets the elapsed time since the last update of the NormalConstraint
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
 		 *			seconds */
-		void setDeltaTime(float deltaTime) { mDeltaTime = deltaTime; };
+		void setDeltaTime(float deltaTime);
 	};
 
 }

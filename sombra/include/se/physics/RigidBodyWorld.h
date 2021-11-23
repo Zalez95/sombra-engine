@@ -73,10 +73,6 @@ namespace se::physics {
 	class RigidBodyWorld
 	{
 	private:	// Attributes
-		friend class CollisionDetector;
-		friend class ConstraintManager;
-		friend class CollisionSolver;
-
 		/** All the properties of the RigidBodyWorld */
 		const WorldProperties mProperties;
 
@@ -92,8 +88,11 @@ namespace se::physics {
 		 * RigidBody collision resolution to it */
 		CollisionSolver mCollisionSolver;
 
-		/** All the RigidBodies that must be updated */
+		/** All the RigidBodies that must be updated, sorted ascendently */
 		std::vector<RigidBody*> mRigidBodies;
+
+		/** The pointers to the Colliders of each RigidBody */
+		std::vector<Collider*> mRigidBodiesColliders;
 
 	public:		// Functions
 		/** Creates a new RigidBodyWorld

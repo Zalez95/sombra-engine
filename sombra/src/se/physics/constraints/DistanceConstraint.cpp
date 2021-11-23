@@ -20,4 +20,11 @@ namespace se::physics {
 		};
 	}
 
+
+	void DistanceConstraint::setAnchorPoints(const std::array<glm::vec3, 2>& anchorPoints)
+	{
+		mAnchorPoints = anchorPoints;
+		mUpdated = true;
+	}
+
 }

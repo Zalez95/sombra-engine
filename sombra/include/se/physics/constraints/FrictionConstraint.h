@@ -30,13 +30,16 @@ namespace se::physics {
 		/** One of the tangent vector to the contact normal */
 		glm::vec3 mTangent;
 
+		/** If the FrictionConstraint has been updated or not */
+		bool mUpdated;
+
 	public:		// Functions
 		/** Creates a new FrictionConstraint */
 		FrictionConstraint() :
 			mConstraintBounds{ 0.0f, 0.0f },
 			mGravityAcceleration(0.0f), mFrictionCoefficient(0.0f),
 			mConstraintVectors{ glm::vec3(0.0f), glm::vec3(0.0f) },
-			mTangent(0.0f) {};
+			mTangent(0.0f), mUpdated(true) {};
 
 		/** Creates a new FrictionConstraint
 		 *
@@ -71,6 +74,12 @@ namespace se::physics {
 		/** @return	the Jacobian matrix of the constraint */
 		virtual std::array<float, 12> getJacobianMatrix() const override;
 
+		/** @copydoc Constraint::updated() */
+		bool updated() const override { return mUpdated; };
+
+		/** @copydoc Constraint::resetUpdatedState() */
+		void resetUpdatedState() override { mUpdated = false; };
+
 		/** Sets the constraint vectors of the NormalConstraint
 		 *
 		 * @param	constraintVectors the vectors in world space that points
@@ -78,12 +87,12 @@ namespace se::physics {
 		 *			contact points */
 		void setConstraintVectors(
 			const std::array<glm::vec3, 2>& constraintVectors
-		) { mConstraintVectors = constraintVectors; };
+		);
 
 		/** Sets the tangent vector of the FrictionConstraint
 		 *
 		 * @param	tangent one of the tangent vectors to the contact normal */
-		void setTangent(const glm::vec3& tangent) { mTangent = tangent; };
+		void setTangent(const glm::vec3& tangent);
 
 		/** Updates the value of the constraint bounds with the given contact
 		 * mass

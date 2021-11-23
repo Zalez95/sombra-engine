@@ -22,27 +22,32 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
-		mRigidBodies.push_back(rigidBody);
-		if (rigidBody->getCollider()) {
-			mCollisionDetector.addCollider(rigidBody->getCollider());
+		auto it = std::lower_bound(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
+		std::size_t iRB = std::distance(mRigidBodies.begin(), it);
+		if ((it != mRigidBodies.end()) && ((*it) == rigidBody)) { return; }
+
+		mRigidBodies.insert(it, rigidBody);
+		mRigidBodiesColliders.insert(mRigidBodiesColliders.begin() + iRB, rigidBody->getCollider());
+		if (mRigidBodiesColliders[iRB]) {
+			mCollisionDetector.addCollider(mRigidBodiesColliders[iRB]);
 		}
 	}
 
 
 	void RigidBodyWorld::removeRigidBody(RigidBody* rigidBody)
 	{
-		if (!rigidBody) { return; }
+		auto it = std::lower_bound(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
+		std::size_t iRB = std::distance(mRigidBodies.begin(), it);
+		if ((it == mRigidBodies.end()) || ((*it) != rigidBody)) { return; }
 
 		mCollisionSolver.removeRigidBody(rigidBody);
 		mConstraintManager.removeRigidBody(rigidBody);
-		if (rigidBody->getCollider()) {
-			mCollisionDetector.removeCollider(rigidBody->getCollider());
+		if (mRigidBodiesColliders[iRB]) {
+			mCollisionDetector.removeCollider(mRigidBodiesColliders[iRB]);
 		}
 
-		mRigidBodies.erase(
-			std::remove(mRigidBodies.begin(), mRigidBodies.end(), rigidBody),
-			mRigidBodies.end()
-		);
+		mRigidBodiesColliders.erase(mRigidBodiesColliders.begin() + iRB);
+		mRigidBodies.erase(it);
 	}
 
 
@@ -51,27 +56,32 @@ namespace se::physics {
 		float bias = std::pow(mProperties.motionBias, deltaTime);
 
 		// Update the RigidBodies status
-		for (RigidBody* rigidBody : mRigidBodies) {
-			bool isStatic = (rigidBody->getProperties().type == RigidBodyProperties::Type::Static);
-
-			if (rigidBody->getStatus(RigidBodyState::Status::UpdatedByUser)) {
-				rigidBody->setStatus(RigidBodyState::Status::UpdatedByUser, false);
-
+		for (auto it = mRigidBodies.begin(); it != mRigidBodies.end(); ++it) {
+			if ((*it)->getStatus(RigidBody::Status::StateChanged)
+				|| (*it)->getStatus(RigidBody::Status::ForcesChanged)
+			) {
 				// Wake up the Dynamic RigidBodies updated by the user
-				rigidBody->setStatus(RigidBodyState::Status::Sleeping, isStatic);
-
-				// Collision constraints must be recalculated
-				mCollisionSolver.removeRigidBody(rigidBody);
+				bool isStatic = ((*it)->getProperties().type == RigidBodyProperties::Type::Static);
+				(*it)->setStatus(RigidBody::Status::Sleeping, isStatic);
 			}
 
-			// TODO: remove and add collider if changed
+			if ((*it)->getStatus(RigidBody::Status::ColliderChanged)) {
+				// Change the Collider in the CollisionDetector
+				std::size_t iRB = std::distance(mRigidBodies.begin(), it);
+
+				mCollisionDetector.removeCollider(mRigidBodiesColliders[iRB]);
+				mRigidBodiesColliders[iRB] = (*it)->getCollider();
+				if (mRigidBodiesColliders[iRB]) {
+					mCollisionDetector.addCollider(mRigidBodiesColliders[iRB]);
+				}
+			}
 		}
 
 		// Simulate the RigidBody dynamics
 		for (RigidBody* rigidBody : mRigidBodies) {
 			if ((rigidBody->getProperties().type == RigidBodyProperties::Type::Dynamic)
 				&& isInside(mProperties.worldAABB, rigidBody->getState().position, mProperties.coarseCollisionEpsilon)
-				&& !rigidBody->getStatus(RigidBodyState::Status::Sleeping)
+				&& !rigidBody->getStatus(RigidBody::Status::Sleeping)
 			) {
 				RigidBodyDynamics::processForces(*rigidBody);
 				RigidBodyDynamics::integrate(*rigidBody, deltaTime);
@@ -91,15 +101,20 @@ namespace se::physics {
 		// Put RigidBodies to sleep
 		for (RigidBody* rigidBody : mRigidBodies) {
 			if (rigidBody->getProperties().type == RigidBodyProperties::Type::Static) {
-				rigidBody->setStatus(RigidBodyState::Status::Sleeping, true);
+				rigidBody->setStatus(RigidBody::Status::Sleeping, true);
 			}
-			else if (!rigidBody->getStatus(RigidBodyState::Status::Sleeping)) {
+			else if (!rigidBody->getStatus(RigidBody::Status::Sleeping)) {
 				rigidBody->updateMotion(bias, 10.0f * rigidBody->getProperties().sleepMotion);
 
 				if (rigidBody->getState().motion < rigidBody->getProperties().sleepMotion) {
-					rigidBody->setStatus(RigidBodyState::Status::Sleeping, true);
+					rigidBody->setStatus(RigidBody::Status::Sleeping, true);
 				}
 			}
+
+			rigidBody->setStatus(RigidBody::Status::PropertiesChanged, false);
+			rigidBody->setStatus(RigidBody::Status::StateChanged, false);
+			rigidBody->setStatus(RigidBody::Status::ColliderChanged, false);
+			rigidBody->setStatus(RigidBody::Status::ForcesChanged, false);
 		}
 	}
 

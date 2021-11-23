@@ -16,7 +16,7 @@ namespace editor {
 
 	void MenuBar::render()
 	{
-		if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMainMenuBar()) {
 			if (ImGui::BeginMenu("File")) {
 				if (ImGui::MenuItem("New")) {
 					mCreate = true;
@@ -76,7 +76,7 @@ namespace editor {
 			ImGui::SameLine(ImGui::GetWindowWidth() - 150.0f);
 			ImGui::Text("%.1f FPS (%.3f ms)", io.Framerate, 1000.0f / io.Framerate);
 
-			ImGui::EndMenuBar();
+			ImGui::EndMainMenuBar();
 		}
 
 		doError();
@@ -156,9 +156,6 @@ namespace editor {
 
 		if (mCancel) {
 			mCancel = mOpen = mAppend = mLink = mImport = mSave = false;
-		}
-		else if (mOpen && !mClose && mEditor.getScene()) {
-			mClose = true;
 		}
 
 		std::string file;

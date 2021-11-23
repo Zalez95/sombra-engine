@@ -547,8 +547,8 @@ namespace editor {
 		virtual void draw(Entity entity) override
 		{
 			auto [rigidBody] = getEditor().getEntityDatabase().getComponents<RigidBodyComponent>(entity);
-			auto rbProperties = rigidBody->getProperties();
-			auto rbState = rigidBody->getState();
+			auto rbProperties = rigidBody->get().getProperties();
+			auto rbState = rigidBody->get().getState();
 			bool updatedProperties = false, updatedState = false;
 
 			static const char* rbTypeTags[] = { "Static", "Dynamic" };
@@ -594,17 +594,39 @@ namespace editor {
 			updatedProperties |= ImGui::DragFloat("Friction coefficient", &rbProperties.frictionCoefficient, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
 			updatedProperties |= ImGui::DragFloat("Sleep motion", &rbProperties.sleepMotion, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
 			if (updatedProperties) {
-				rigidBody->setProperties(rbProperties);
+				rigidBody->get().setProperties(rbProperties);
 			}
 
 			updatedState |= ImGui::DragFloat3("Linear Velocity", glm::value_ptr(rbState.linearVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			updatedState |= ImGui::DragFloat3("Angular Velocity", glm::value_ptr(rbState.angularVelocity), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
 			if (updatedState) {
-				rigidBody->setState(rbState);
+				rigidBody->get().setState(rbState);
+			}
+
+			ImGui::Text("Status:");
+			bool bSleeping = rigidBody->get().getStatus(RigidBody::Status::Sleeping);
+			if (ImGui::Checkbox("Sleeping", &bSleeping)) {
+				rigidBody->get().setStatus(RigidBody::Status::Sleeping, bSleeping);
+			}
+			bool bPropertiesChanged = rigidBody->get().getStatus(RigidBody::Status::PropertiesChanged);
+			if (ImGui::Checkbox("PropertiesChanged", &bPropertiesChanged)) {
+				rigidBody->get().setStatus(RigidBody::Status::PropertiesChanged, bPropertiesChanged);
+			}
+			bool bStateChanged = rigidBody->get().getStatus(RigidBody::Status::StateChanged);
+			if (ImGui::Checkbox("StateChanged", &bStateChanged)) {
+				rigidBody->get().setStatus(RigidBody::Status::StateChanged, bStateChanged);
+			}
+			bool bColliderChanged = rigidBody->get().getStatus(RigidBody::Status::ColliderChanged);
+			if (ImGui::Checkbox("ColliderChanged", &bColliderChanged)) {
+				rigidBody->get().setStatus(RigidBody::Status::ColliderChanged, bColliderChanged);
+			}
+			bool bForcesChanged = rigidBody->get().getStatus(RigidBody::Status::ForcesChanged);
+			if (ImGui::Checkbox("ForcesChanged", &bForcesChanged)) {
+				rigidBody->get().setStatus(RigidBody::Status::ForcesChanged, bForcesChanged);
 			}
 
 			if (ImGui::TreeNode("Collider")) {
-				auto collider = rigidBody->getCollider();
+				auto collider = rigidBody->get().getCollider();
 				auto bBox		= dynamic_cast<BoundingBox*>(collider);
 				auto bSphere	= dynamic_cast<BoundingSphere*>(collider);
 				auto capsule	= dynamic_cast<Capsule*>(collider);
@@ -625,51 +647,51 @@ namespace editor {
 					switch (colliderCurrentType) {
 						case 0:
 							if (!bBox) {
-								rigidBody->setCollider(std::make_unique<BoundingBox>());
+								rigidBody->get().setCollider(std::make_unique<BoundingBox>());
 							}
 							break;
 						case 1:
 							if (!bSphere) {
-								rigidBody->setCollider(std::make_unique<BoundingSphere>());
+								rigidBody->get().setCollider(std::make_unique<BoundingSphere>());
 							}
 							break;
 						case 2:
 							if (!capsule) {
-								rigidBody->setCollider(std::make_unique<Capsule>());
+								rigidBody->get().setCollider(std::make_unique<Capsule>());
 							}
 							break;
 						case 3:
 							if (!triangle) {
-								rigidBody->setCollider(std::make_unique<TriangleCollider>());
+								rigidBody->get().setCollider(std::make_unique<TriangleCollider>());
 							}
 							break;
 						case 4:
 							if (!terrain) {
-								rigidBody->setCollider(std::make_unique<TerrainCollider>());
+								rigidBody->get().setCollider(std::make_unique<TerrainCollider>());
 							}
 							break;
 						case 5:
 							if (!triMesh) {
-								rigidBody->setCollider(std::make_unique<TriangleMeshCollider>());
+								rigidBody->get().setCollider(std::make_unique<TriangleMeshCollider>());
 							}
 							break;
 						case 6:
 							if (!cPoly || bBox) {
-								rigidBody->setCollider(std::make_unique<ConvexPolyhedron>());
+								rigidBody->get().setCollider(std::make_unique<ConvexPolyhedron>());
 							}
 							break;
 						case 7:
 							if (!composite) {
-								rigidBody->setCollider(std::make_unique<CompositeCollider>());
+								rigidBody->get().setCollider(std::make_unique<CompositeCollider>());
 							}
 							break;
 						default:
 							if (collider) {
-								rigidBody->setCollider(nullptr);
+								rigidBody->get().setCollider(nullptr);
 							}
 							break;
 					}
-					collider = rigidBody->getCollider();
+					collider = rigidBody->get().getCollider();
 				}
 
 				if (collider) {
@@ -681,10 +703,10 @@ namespace editor {
 					ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
 				}
 
-				glm::mat4 colliderLocalTransforms = rigidBody->getColliderLocalTransforms();
+				glm::mat4 colliderLocalTransforms = rigidBody->get().getColliderLocalTransforms();
 				std::string name2 = "Collider local transforms" + getIdPrefix() + "RigidBodyComponentNode::ColliderLocalTransforms";
 				if (drawMat4ImGui(name2.c_str(), colliderLocalTransforms)) {
-					rigidBody->setColliderLocalTrasforms(colliderLocalTransforms);
+					rigidBody->get().setColliderLocalTrasforms(colliderLocalTransforms);
 				}
 
 				ImGui::TreePop();
