@@ -5,32 +5,32 @@
 namespace se::physics {
 
 	CompositeCollider::CompositeCollider(std::vector<ColliderUPtr> parts) :
-		mParts(std::move(parts)), mTransformsMatrix(1.0f), mUpdated(true)
+		mParts(std::move(parts)), mTransformsMatrix(1.0f)
 	{
 		calculateAABB();
 	}
 
 
-	CompositeCollider::CompositeCollider(const CompositeCollider& other)
+	CompositeCollider::CompositeCollider(const CompositeCollider& other) : ConcaveCollider(other)
 	{
 		for (const ColliderUPtr& part : other.mParts) {
 			mParts.emplace_back( part->clone() );
 		}
 		mTransformsMatrix = other.mTransformsMatrix;
 		mAABB = other.mAABB;
-		mUpdated = other.mUpdated;
 	}
 
 
 	CompositeCollider& CompositeCollider::operator=(const CompositeCollider& other)
 	{
+		ConcaveCollider::operator=(other);
+
 		mParts.clear();
 		for (const ColliderUPtr& part : other.mParts) {
 			mParts.emplace_back( part->clone() );
 		}
 		mTransformsMatrix = other.mTransformsMatrix;
 		mAABB = other.mAABB;
-		mUpdated = other.mUpdated;
 
 		return *this;
 	}
@@ -61,6 +61,15 @@ namespace se::physics {
 	}
 
 
+	void CompositeCollider::resetUpdatedState()
+	{
+		mUpdated = false;
+		for (ColliderUPtr& part : mParts) {
+			part->resetUpdatedState();
+		}
+	}
+
+
 	CompositeCollider& CompositeCollider::addPart(ColliderUPtr part)
 	{
 		mParts.emplace_back(std::move(part));
@@ -68,15 +77,6 @@ namespace se::physics {
 		mUpdated = true;
 
 		return *this;
-	}
-
-
-	void CompositeCollider::resetUpdatedState()
-	{
-		mUpdated = false;
-		for (ColliderUPtr& part : mParts) {
-			part->resetUpdatedState();
-		}
 	}
 
 

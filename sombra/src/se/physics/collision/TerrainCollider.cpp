@@ -7,8 +7,7 @@ namespace se::physics {
 
 	TerrainCollider::TerrainCollider() :
 		mXSize(0), mZSize(0),
-		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f),
-		mUpdated(true)
+		mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
 		calculateAABB();
 	}

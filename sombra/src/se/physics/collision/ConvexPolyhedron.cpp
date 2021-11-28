@@ -4,8 +4,7 @@
 
 namespace se::physics {
 
-	ConvexPolyhedron::ConvexPolyhedron(const HalfEdgeMesh& meshData) :
-		mTransformsMatrix(1.0f), mUpdated(true)
+	ConvexPolyhedron::ConvexPolyhedron(const HalfEdgeMesh& meshData) : mTransformsMatrix(1.0f)
 	{
 		setLocalMesh(meshData);
 	}

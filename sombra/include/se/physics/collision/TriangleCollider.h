@@ -22,9 +22,6 @@ namespace se::physics {
 		/** The transformation matrix of the TriangleCollider */
 		glm::mat4 mTransformsMatrix;
 
-		/** If the TriangleCollider has been updated or not */
-		bool mUpdated;
-
 	public:		// Functions
 		/** Creates a new TriangleCollider located at the origin of coordinates
 		 *
@@ -32,7 +29,7 @@ namespace se::physics {
 		 *			coordinates */
 		TriangleCollider(const std::array<glm::vec3, 3>& vertices = {}) :
 			mLocalVertices(vertices), mWorldVertices(vertices),
-			mTransformsMatrix(1.0f), mUpdated(true) {};
+			mTransformsMatrix(1.0f) {};
 
 		/** @return	the vertices of the TriangleCollider in local coordinates */
 		const std::array<glm::vec3, 3>& getLocalVertices() const
@@ -56,12 +53,6 @@ namespace se::physics {
 
 		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
-
-		/** @copydoc Collider::updated() */
-		bool updated() const override { return mUpdated; };
-
-		/** @copydoc Collider::resetUpdatedState() */
-		void resetUpdatedState() override { mUpdated = false; };
 
 		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(

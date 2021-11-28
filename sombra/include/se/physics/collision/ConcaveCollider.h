@@ -19,8 +19,17 @@ namespace se::physics {
 		using ConvexShapeCallback = std::function<void(const ConvexCollider&)>;
 
 	public:		// Functions
+		/** Creates a new ConcaveCollider */
+		ConcaveCollider() = default;
+		ConcaveCollider(const ConcaveCollider& other) = default;
+		ConcaveCollider(ConcaveCollider&& other) = default;
+
 		/** Class destructor */
 		virtual ~ConcaveCollider() = default;
+
+		/** Assignment operator */
+		ConcaveCollider& operator=(const ConcaveCollider& other) = default;
+		ConcaveCollider& operator=(ConcaveCollider&& other) = default;
 
 		/** Calls the given callback for each of the overlaping convex parts of
 		 * the ConcaveCollider with the given AABB

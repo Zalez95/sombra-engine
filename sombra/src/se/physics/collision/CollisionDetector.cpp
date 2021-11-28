@@ -61,8 +61,10 @@ namespace se::physics {
 		// Broad collision phase
 		mCoarseCollisionDetector.update();
 		mCoarseCollisionDetector.calculateCollisions([this](Collider* collider1, Collider* collider2) {
-			// Skip non updated Colliders
-			if (collider1->updated() || collider2->updated()) {
+			// Skip non updated Colliders and Colliders without any common layer
+			if ((collider1->updated() || collider2->updated())
+				&& ((collider1->getLayers() & collider2->getLayers()).any())
+			) {
 				// Find a Manifold between the given colliders
 				ColliderPair sortedPair = (collider1 <= collider2)? ColliderPair(collider1, collider2)
 										: ColliderPair(collider2, collider1);

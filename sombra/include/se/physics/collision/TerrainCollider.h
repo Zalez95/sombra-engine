@@ -43,9 +43,6 @@ namespace se::physics {
 		/** The AABB of the TerrainCollider */
 		AABB mAABB;
 
-		/** If the TerrainCollider has been updated or not */
-		bool mUpdated;
-
 	public:		// Functions
 		/** Creates a new TerrainCollider located at the origin of
 		 * coordinates */
@@ -84,12 +81,6 @@ namespace se::physics {
 
 		/** @copydoc Collider::getAABB() */
 		virtual AABB getAABB() const override { return mAABB; };
-
-		/** @copydoc Collider::updated() */
-		virtual bool updated() const override { return mUpdated; };
-
-		/** @copydoc Collider::resetUpdatedState() */
-		virtual void resetUpdatedState() override { mUpdated = false; };
 
 		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(

@@ -390,12 +390,12 @@ namespace editor {
 					if (ImGui::TreeNode(treeNodeName.c_str())) {
 						ImGui::BulletText("Has Skin: %s", mesh->hasSkinning(i)? "yes" : "no");
 
-						if (ImGui::TreeNode("Bounds:")) {
-							auto [min, max] = mesh->get(i).getBounds();
-							ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
-							ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
-							ImGui::TreePop();
-						}
+						ImGui::BulletText("Bounds:");
+						auto [min, max] = mesh->get(i).getBounds();
+						ImGui::Indent(16.0f);
+						ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
+						ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
+						ImGui::Unindent(16.0f);
 
 						ImGui::BulletText("Mesh:");
 						ImGui::SameLine();
@@ -695,12 +695,24 @@ namespace editor {
 				}
 
 				if (collider) {
-					drawCollider(*collider);
-
 					auto [min, max] = collider->getAABB();
 					ImGui::Text("AABB:");
 					ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
 					ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
+
+					ImGui::Text("Layers:");
+					auto layers = collider->getLayers();
+					for (std::size_t i = 0; i < Collider::kMaxLayers; ++i) {
+						bool value = layers[i];
+						if (ImGui::Checkbox((getIdPrefix() + "ColliderLayer" + std::to_string(i)).c_str(), &value)) {
+							collider->setLayer(i, value);
+						}
+						if ((i + 1) % (Collider::kMaxLayers >> 2) != 0) {
+							ImGui::SameLine();
+						}
+					}
+
+					drawCollider(*collider);
 				}
 
 				glm::mat4 colliderLocalTransforms = rigidBody->get().getColliderLocalTransforms();

@@ -4,7 +4,7 @@
 namespace se::physics {
 
 	BoundingSphere::BoundingSphere(float radius) :
-		mRadius(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+		mRadius(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
 		setRadius(radius);
 	}

@@ -9,16 +9,16 @@ namespace se::physics {
 		const unsigned short* indices, std::size_t numIndices
 	) : mVertices(vertices, vertices + numVertices),
 		mIndices(indices, indices + numIndices),
-		mTransformsMatrix(1.0f), mUpdated(true)
+		mTransformsMatrix(1.0f)
 	{
 		calculateAABBTree();
 	}
 
 
 	TriangleMeshCollider::TriangleMeshCollider(const TriangleMeshCollider& other) :
-		mVertices(other.mVertices), mIndices(other.mIndices),
+		ConcaveCollider(other), mVertices(other.mVertices), mIndices(other.mIndices),
 		mAABBTree( std::make_unique<AABBAVLTree<unsigned short>>(*other.mAABBTree) ),
-		mTransformsMatrix(other.mTransformsMatrix), mUpdated(other.mUpdated) {}
+		mTransformsMatrix(other.mTransformsMatrix) {}
 
 
 	TriangleMeshCollider::~TriangleMeshCollider() {}
@@ -26,11 +26,11 @@ namespace se::physics {
 
 	TriangleMeshCollider& TriangleMeshCollider::operator=(const TriangleMeshCollider& other)
 	{
+		ConcaveCollider::operator=(other);
 		mVertices = other.mVertices;
 		mIndices = other.mIndices;
 		mAABBTree = std::make_unique<AABBAVLTree<unsigned short>>(*other.mAABBTree);
 		mTransformsMatrix = other.mTransformsMatrix;
-		mUpdated = other.mUpdated;
 		return *this;
 	}
 

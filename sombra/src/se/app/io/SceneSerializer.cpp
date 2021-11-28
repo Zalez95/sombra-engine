@@ -1943,6 +1943,7 @@ namespace se::app {
 	{
 		nlohmann::json json;
 
+		json["layers"] = collider.getLayers().to_string();
 		if (auto bbox = dynamic_cast<const BoundingBox*>(&collider)) {
 			json["type"] = "BoundingBox";
 			json["lengths"] = toJson(bbox->getLengths());
@@ -2091,7 +2092,10 @@ namespace se::app {
 	{
 		std::unique_ptr<Collider> collider;
 
-		auto itType = json.find("type");
+		auto itLayers = json.find("layers"), itType = json.find("type");
+		if (itLayers == json.end()) {
+			return { Result(false, "Missing \"layers\" property"), std::nullopt };
+		}
 		if (itType == json.end()) {
 			return { Result(false, "Missing \"type\" property"), std::nullopt };
 		}
@@ -2315,6 +2319,9 @@ namespace se::app {
 		else {
 			return { Result(false, "Wrong type: " + itType->get<std::string>()), std::nullopt };
 		}
+
+		std::bitset<Collider::kMaxLayers> layerMask(itLayers->get<std::string>());
+		collider->setLayers(layerMask);
 
 		return { Result(), std::move(collider) };
 	}

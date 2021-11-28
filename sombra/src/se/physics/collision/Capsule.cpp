@@ -5,7 +5,7 @@
 namespace se::physics {
 
 	Capsule::Capsule(float radius, float height) :
-		mRadius(0.0f), mHeight(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f), mUpdated(true)
+		mRadius(0.0f), mHeight(0.0f), mTransformsMatrix(1.0f), mInverseTransformsMatrix(1.0f)
 	{
 		setRadius(radius);
 		setHeight(height);

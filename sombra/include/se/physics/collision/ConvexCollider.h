@@ -11,8 +11,17 @@ namespace se::physics {
 	class ConvexCollider : public Collider
 	{
 	public:		// Functions
+		/** Creates a new ConvexCollider */
+		ConvexCollider() = default;
+		ConvexCollider(const ConvexCollider& other) = default;
+		ConvexCollider(ConvexCollider&& other) = default;
+
 		/** Class destructor */
 		virtual ~ConvexCollider() = default;
+
+		/** Assignment operator */
+		ConvexCollider& operator=(const ConvexCollider& other) = default;
+		ConvexCollider& operator=(ConvexCollider&& other) = default;
 
 		/** Calculates the coordinates of the ConvexCollider's furthest point
 		 * in the given direction

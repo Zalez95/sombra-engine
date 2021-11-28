@@ -1,7 +1,6 @@
 #ifndef RIGID_BODY_H
 #define RIGID_BODY_H
 
-#include <bitset>
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>

@@ -24,9 +24,6 @@ namespace se::physics {
 		/** The inverse of transformation matrix of the Capsule */
 		glm::mat4 mInverseTransformsMatrix;
 
-		/** If the Capsule has been updated or not */
-		bool mUpdated;
-
 	public:		// Functions
 		/** Creates a new Capsule located at the origin of coordinates
 		 *
@@ -62,12 +59,6 @@ namespace se::physics {
 
 		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
-
-		/** @copydoc Collider::updated() */
-		bool updated() const override { return mUpdated; };
-
-		/** @copydoc Collider::resetUpdatedState() */
-		void resetUpdatedState() override { mUpdated = false; };
 
 		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(

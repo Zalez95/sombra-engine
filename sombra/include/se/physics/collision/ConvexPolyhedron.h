@@ -22,9 +22,6 @@ namespace se::physics {
 		/** The transformation matrix of the ConvexPolyhedron */
 		glm::mat4 mTransformsMatrix;
 
-		/** If the ConvexPolyhedron has been updated or not */
-		bool mUpdated;
-
 	public:		// Functions
 		/** Creates a new ConvexPolyhedron located at the origin of coordinates
 		 *
@@ -32,9 +29,15 @@ namespace se::physics {
 		 *			ConvexPolyhedron. Empty mesh by default
 		 * @note	the Mesh must be convex */
 		ConvexPolyhedron(const HalfEdgeMesh& meshData = HalfEdgeMesh());
+		ConvexPolyhedron(const ConvexPolyhedron& other) = default;
+		ConvexPolyhedron(ConvexPolyhedron&& other) = default;
 
 		/** Class destructor */
 		virtual ~ConvexPolyhedron() = default;
+
+		/** Assignment operator */
+		ConvexPolyhedron& operator=(const ConvexPolyhedron& other) = default;
+		ConvexPolyhedron& operator=(ConvexPolyhedron&& other) = default;
 
 		/** @return	the convex 3D HalfEdgeMesh of the ConvexPolyhedron in local
 		 *			space */
@@ -58,12 +61,6 @@ namespace se::physics {
 
 		/** @copydoc Collider::getAABB() */
 		AABB getAABB() const override;
-
-		/** @copydoc Collider::updated() */
-		bool updated() const override { return mUpdated; };
-
-		/** @copydoc Collider::resetUpdatedState() */
-		void resetUpdatedState() override { mUpdated = false; };
 
 		/** @copydoc ConvexCollider::getFurthestPointInDirection() */
 		void getFurthestPointInDirection(

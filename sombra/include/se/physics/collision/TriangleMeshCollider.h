@@ -33,9 +33,6 @@ namespace se::physics {
 		/** The transformation matrix of the TriangleMeshCollider */
 		glm::mat4 mTransformsMatrix;
 
-		/** If the TriangleMeshCollider has been updated or not */
-		bool mUpdated;
-
 	public:		// Functions
 		/** Creates a new TriangleMeshCollider located at the origin of
 		 * coordinates from the given vertices
@@ -95,12 +92,6 @@ namespace se::physics {
 
 		/** @copydoc Collider::getAABB() */
 		virtual AABB getAABB() const override;
-
-		/** @copydoc Collider::updated() */
-		virtual bool updated() const override { return mUpdated; };
-
-		/** @copydoc Collider::resetUpdatedState() */
-		virtual void resetUpdatedState() override { mUpdated = false; };
 
 		/** @copydoc ConcaveCollider::processOverlapingParts() */
 		virtual void processOverlapingParts(
