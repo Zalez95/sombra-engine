@@ -23,6 +23,7 @@ namespace se::app {
 		RShader,			///< Renderable shader update
 		Shader,				///< Shader change
 		LightSource,		///< LightSource change
+		Script,				///< Script change
 		Application,		///< Reserved for client code events
 		NumTopics			///< Total number of events
 	};

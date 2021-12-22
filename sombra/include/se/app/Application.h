@@ -50,11 +50,11 @@ namespace se::app {
 		 * Application */
 		struct ExternalTools
 		{
-			window::WindowManager* windowManager;
-			graphics::GraphicsEngine* graphicsEngine;
-			physics::RigidBodyWorld* rigidBodyWorld;
-			animation::AnimationEngine* animationEngine;
-			audio::AudioEngine* audioEngine;
+			window::WindowManager* windowManager = nullptr;
+			graphics::GraphicsEngine* graphicsEngine = nullptr;
+			physics::RigidBodyWorld* rigidBodyWorld = nullptr;
+			animation::AnimationEngine* animationEngine = nullptr;
+			audio::AudioEngine* audioEngine = nullptr;
 		};
 
 	protected:	// Attributes
@@ -127,6 +127,9 @@ namespace se::app {
 
 		/** Class destructor */
 		virtual ~Application();
+
+		/** @return	a reference to the TaskManager of the Application */
+		utils::TaskManager& getTaskManager() { return *mTaskManager; };
 
 		/** @return	a reference to the ExternalTools of the Application */
 		ExternalTools& getExternalTools() { return *mExternalTools; };

@@ -27,6 +27,7 @@ namespace editor {
 		class RigidBodyComponentNode;
 		class ParticleSystemComponentNode;
 		class AudioSourceComponentNode;
+		class ScriptComponentNode;
 
 	private:	// Attributes
 		/** The objects used for drawing the components */

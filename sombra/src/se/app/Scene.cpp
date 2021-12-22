@@ -8,6 +8,8 @@
 #include "se/app/graphics/RenderableShader.h"
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
+#include "se/app/ScriptComponent.h"
+#include "se/app/AnimationComponent.h"
 #include "se/app/ParticleSystemComponent.h"
 #include "se/app/Scene.h"
 
@@ -44,6 +46,9 @@ namespace se::app {
 		repository.init<animation::SkeletonAnimator>([](const animation::SkeletonAnimator& animator) {
 			return std::unique_ptr<animation::SkeletonAnimator>(dynamic_cast<animation::SkeletonAnimator*>(animator.clone().release()));
 		});
+		repository.init<Script>([](const Script& script) {
+			return script.clone();
+		});
 
 		entities.reserve(application.getEntityDatabase().getMaxEntities());
 	}
@@ -57,15 +62,15 @@ namespace se::app {
 	}
 
 
-	void removeEntityHierarchy(Scene& scene, Entity entity)
+	void removeEntityHierarchy(Scene& /*scene*/, Entity entity)
 	{
 		if (entity == kNullEntity) {
 			return;
 		}
 
-		auto [node] = scene.application.getEntityDatabase().getComponents<animation::AnimationNode*>(entity, true);
-		if (node) {
-			animation::AnimationNode& nodeRef = **node;
+		/*auto [animComponent] = scene.application.getEntityDatabase().getComponents<AnimationComponent>(entity, true);
+		if (animComponent) {
+			animation::AnimationNode& nodeRef = *animComponent->getRootNode();
 
 			// Remove the descendant entities
 			for (auto it = nodeRef.begin<utils::Traversal::DFSPostOrder>(); it != nodeRef.end<utils::Traversal::DFSPostOrder>(); ++it) {
@@ -87,7 +92,7 @@ namespace se::app {
 					parentNode->erase(itNode);
 				}
 			}
-		}
+		}*/
 	}
 
 }

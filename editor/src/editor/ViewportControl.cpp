@@ -6,31 +6,37 @@
 
 namespace editor {
 
-	void ViewportControl::onUpdate(float /*elapsedTime*/, const se::app::UserInput& userInput)
+	void ViewportControl::onUpdate(se::app::Entity entity, float /*elapsedTime*/, const se::app::ScriptSharedState& sharedState)
 	{
-		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity, true);
+		auto [transforms] = sharedState.entityDatabase->getComponents<se::app::TransformsComponent>(entity, true);
 		if (!transforms) { return; }
 
-		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
-			if (userInput.keys[SE_KEY_LEFT_CONTROL] && userInput.keys[SE_KEY_LEFT_ALT]) {
-				zoom(userInput, *transforms);
+		if (sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
+			if (sharedState.keys[SE_KEY_LEFT_CONTROL] && sharedState.keys[SE_KEY_LEFT_ALT]) {
+				zoom(sharedState, *transforms);
 			}
-			else if (userInput.keys[SE_KEY_LEFT_SHIFT] && userInput.keys[SE_KEY_LEFT_ALT]) {
-				move(userInput, *transforms);
+			else if (sharedState.keys[SE_KEY_LEFT_SHIFT] && sharedState.keys[SE_KEY_LEFT_ALT]) {
+				move(sharedState, *transforms);
 			}
-			else if (userInput.keys[SE_KEY_LEFT_ALT]) {
-				orbit(userInput, *transforms);
+			else if (sharedState.keys[SE_KEY_LEFT_ALT]) {
+				orbit(sharedState, *transforms);
 			}
 		}
 
-		mLastMouseX = userInput.mouseX;
-		mLastMouseY = userInput.mouseY;
+		mLastMouseX = sharedState.mouseX;
+		mLastMouseY = sharedState.mouseY;
+	}
+
+
+	std::unique_ptr<se::app::Script> ViewportControl::clone() const
+	{
+		return std::make_unique<ViewportControl>(*this);
 	}
 
 // Private functions
-	void ViewportControl::zoom(const se::app::UserInput& userInput, se::app::TransformsComponent& transforms)
+	void ViewportControl::zoom(const se::app::ScriptSharedState& sharedState, se::app::TransformsComponent& transforms)
 	{
-		float zoomDelta = kMoveSpeed * (userInput.mouseY - mLastMouseY) / userInput.windowHeight;
+		float zoomDelta = kMoveSpeed * (sharedState.mouseY - mLastMouseY) / sharedState.windowHeight;
 		float currentZoom = mZoom;
 		float nextZoom = glm::max(currentZoom + zoomDelta, 0.0f);
 		zoomDelta = nextZoom - currentZoom;
@@ -41,11 +47,11 @@ namespace editor {
 	}
 
 
-	void ViewportControl::move(const se::app::UserInput& userInput, se::app::TransformsComponent& transforms)
+	void ViewportControl::move(const se::app::ScriptSharedState& sharedState, se::app::TransformsComponent& transforms)
 	{
-		glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
+		glm::vec2 windowSize = { sharedState.windowWidth, sharedState.windowHeight };
 		glm::vec2 speed = { kMoveSpeed, kMoveSpeed };
-		glm::vec2 moveDelta = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+		glm::vec2 moveDelta = glm::vec2(sharedState.mouseX, sharedState.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
 		moveDelta = speed * moveDelta / windowSize;
 
 		glm::vec3 front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
@@ -57,10 +63,10 @@ namespace editor {
 	}
 
 
-	void ViewportControl::orbit(const se::app::UserInput& userInput, se::app::TransformsComponent& transforms)
+	void ViewportControl::orbit(const se::app::ScriptSharedState& sharedState, se::app::TransformsComponent& transforms)
 	{
-		glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
-		glm::vec2 mouseMove = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+		glm::vec2 windowSize = { sharedState.windowWidth, sharedState.windowHeight };
+		glm::vec2 mouseMove = glm::vec2(sharedState.mouseX, sharedState.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
 		mouseMove /= windowSize;
 		glm::vec3 front = glm::normalize(transforms.orientation * glm::vec3(0.0f, 0.0f, 1.0f));
 

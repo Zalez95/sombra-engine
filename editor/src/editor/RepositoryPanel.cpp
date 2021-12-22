@@ -17,6 +17,7 @@
 #include <se/app/SkinComponent.h>
 #include <se/app/LightComponent.h>
 #include <se/app/ParticleSystemComponent.h>
+#include <se/app/ScriptComponent.h>
 #include <se/app/Scene.h>
 #include <se/app/io/ImageReader.h>
 #include <se/app/io/SceneImporter.h>
@@ -1495,6 +1496,17 @@ namespace editor {
 	};
 
 
+	class RepositoryPanel::ScriptNode : public RepositoryPanel::TypeNode<Script>
+	{
+	private:	// Attributes
+		std::array<char, kMaxNameSize> mNameBuffer;
+
+	public:		// Functions
+		ScriptNode(RepositoryPanel& panel) : TypeNode(panel), mNameBuffer{} {};
+		virtual const char* getName() const override { return "Script"; };
+	};
+
+
 	RepositoryPanel::RepositoryPanel(Editor& editor) : IEditorPanel(editor)
 	{
 		mTypes.emplace_back(new SkinNode(*this));
@@ -1508,6 +1520,7 @@ namespace editor {
 		mTypes.emplace_back(new TextureNode(*this));
 		mTypes.emplace_back(new MeshNode(*this));
 		mTypes.emplace_back(new ParticleEmitterNode(*this));
+		mTypes.emplace_back(new ScriptNode(*this));
 	}
 
 

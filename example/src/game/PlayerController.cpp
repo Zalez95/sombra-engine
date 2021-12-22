@@ -72,29 +72,35 @@ namespace game {
 	}
 
 
-	void PlayerController::onCreate(const se::app::UserInput& userInput)
+	std::unique_ptr<se::app::Script> PlayerController::clone() const
 	{
-		mLastMouseX = 0.5f * userInput.windowWidth;
-		mLastMouseY = 0.5f * userInput.windowHeight;
+		return std::make_unique<PlayerController>(*this);
 	}
 
 
-	void PlayerController::onUpdate(float elapsedTime, const se::app::UserInput& userInput)
+	void PlayerController::onAdd(se::app::Entity, const se::app::ScriptSharedState& sharedState)
 	{
-		auto [transforms] = mEntityDatabase->getComponents<se::app::TransformsComponent>(mEntity, true);
+		mLastMouseX = sharedState.mouseX;
+		mLastMouseY = sharedState.mouseY;
+	}
+
+
+	void PlayerController::onUpdate(se::app::Entity entity, float elapsedTime, const se::app::ScriptSharedState& sharedState)
+	{
+		auto [transforms] = sharedState.entityDatabase->getComponents<se::app::TransformsComponent>(entity, true);
 		if (!transforms) { return; }
 
 		// Get the mouse movement
-		glm::vec2 windowSize = {userInput.windowWidth, userInput.windowHeight };
-		glm::vec2 mouseMove = glm::vec2(userInput.mouseX, userInput.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+		glm::vec2 windowSize = { sharedState.windowWidth, sharedState.windowHeight };
+		glm::vec2 mouseMove = glm::vec2(sharedState.mouseX, sharedState.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
 		mouseMove /= windowSize;
 
 		glm::vec3 forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
 
 		// Set the pitch and yaw
 		if (mouseMove != glm::vec2(0.0)) {
-			mLastMouseX = userInput.mouseX;
-			mLastMouseY = userInput.mouseY;
+			mLastMouseX = sharedState.mouseX;
+			mLastMouseY = sharedState.mouseY;
 
 			// Multiply the values by the mouse speed
 			float yaw = kMouseSpeed * -elapsedTime * static_cast<float>(mouseMove.x);
@@ -106,7 +112,7 @@ namespace game {
 			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
 			pitch = nextPitch - currentPitch;
 
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " orientation (" << pitch << ", " << yaw << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " orientation (" << pitch << ", " << yaw << ")";
 
 			// Apply the rotation
 			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -122,34 +128,34 @@ namespace game {
 
 		// Add WASD movement
 		glm::vec3 direction(0.0f);
-		if (userInput.keys[SE_KEY_W]) { direction += forward; }
-		if (userInput.keys[SE_KEY_S]) { direction -= forward; }
-		if (userInput.keys[SE_KEY_D]) { direction += right; }
-		if (userInput.keys[SE_KEY_A]) { direction -= right; }
+		if (sharedState.keys[SE_KEY_W]) { direction += forward; }
+		if (sharedState.keys[SE_KEY_S]) { direction -= forward; }
+		if (sharedState.keys[SE_KEY_D]) { direction += right; }
+		if (sharedState.keys[SE_KEY_A]) { direction -= right; }
 		float length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kRunSpeed * elapsedTime * direction / length;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.reset();
 		}
 
 		// Add the world Y velocity
 		direction = glm::vec3(0.0f);
-		if (userInput.keys[SE_KEY_SPACE]) { direction += up; }
-		if (userInput.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
+		if (sharedState.keys[SE_KEY_SPACE]) { direction += up; }
+		if (sharedState.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
 		length = glm::length(direction);
 		if (length > 0.0f) {
 			transforms->velocity += kJumpSpeed * elapsedTime * direction;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << mEntity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
+			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
 			transforms->updated.reset();
 		}
 
 		// Other
-		if (userInput.keys[SE_KEY_P]) {
+		if (sharedState.keys[SE_KEY_P]) {
 			PRINT = !PRINT;
 		}
 
-		if (userInput.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
+		if (sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
 			std::string names;
 			auto [collider, rayHit] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(
 				se::physics::Ray(transforms->position + 1.5f * forward, forward)

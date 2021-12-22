@@ -13,15 +13,19 @@ namespace se::app {
 		mApplication.getEventManager().subscribe(this, Topic::MouseScroll);
 		mApplication.getEventManager().subscribe(this, Topic::MouseButton);
 		mApplication.getEventManager().subscribe(this, Topic::WindowResize);
+		mApplication.getEventManager().subscribe(this, Topic::Script);
 
 		const auto& windowData = mApplication.getExternalTools().windowManager->getWindowData();
-		mUserInput.windowWidth = static_cast<float>(windowData.width);
-		mUserInput.windowHeight = static_cast<float>(windowData.height);
+		mScriptSharedState.windowWidth = static_cast<float>(windowData.width);
+		mScriptSharedState.windowHeight = static_cast<float>(windowData.height);
+		mScriptSharedState.entityDatabase = &mApplication.getEntityDatabase();
+		mScriptSharedState.eventManager = &mApplication.getEventManager();
 	}
 
 
 	ScriptSystem::~ScriptSystem()
 	{
+		mApplication.getEventManager().unsubscribe(this, Topic::Script);
 		mApplication.getEventManager().unsubscribe(this, Topic::WindowResize);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseButton);
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseScroll);
@@ -37,7 +41,8 @@ namespace se::app {
 			|| tryCall(&ScriptSystem::onMouseMoveEvent, event)
 			|| tryCall(&ScriptSystem::onMouseScrollEvent, event)
 			|| tryCall(&ScriptSystem::onMouseButtonEvent, event)
-			|| tryCall(&ScriptSystem::onWindowResizeEvent, event);
+			|| tryCall(&ScriptSystem::onWindowResizeEvent, event)
+			|| tryCall(&ScriptSystem::onScriptEvent, event);
 	}
 
 
@@ -47,7 +52,7 @@ namespace se::app {
 
 		mEntityDatabase.iterateComponents<ScriptComponent>(
 			[this](Entity, ScriptComponent* script) {
-				script->onUpdate(mDeltaTime, mUserInput);
+				script->onUpdate(mDeltaTime, mScriptSharedState);
 			},
 			true
 		);
@@ -58,15 +63,15 @@ namespace se::app {
 // Private functions
 	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script)
 	{
-		script->setup(mApplication.getEntityDatabase(), mApplication.getEventManager(), entity);
-		script->onCreate(mUserInput);
+		script->setup(&mApplication.getEventManager(), entity);
+		script->onAdd(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " added successfully";
 	}
 
 
 	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script)
 	{
-		script->onDestroy(mUserInput);
+		script->onRemove(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " removed successfully";
 	}
 
@@ -74,38 +79,56 @@ namespace se::app {
 	void ScriptSystem::onKeyEvent(const KeyEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
-		mUserInput.keys[event.getKeyCode()] = (event.getState() != KeyEvent::State::Released);
+		mScriptSharedState.keys[event.getKeyCode()] = (event.getState() != KeyEvent::State::Released);
 	}
 
 
 	void ScriptSystem::onMouseMoveEvent(const MouseMoveEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
-		mUserInput.mouseX = static_cast<float>(event.getX());
-		mUserInput.mouseY = static_cast<float>(event.getY());
+		mScriptSharedState.mouseX = static_cast<float>(event.getX());
+		mScriptSharedState.mouseY = static_cast<float>(event.getY());
 	}
 
 
 	void ScriptSystem::onMouseScrollEvent(const MouseScrollEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
-		mUserInput.scrollOffsetX = static_cast<float>(event.getXOffset());
-		mUserInput.scrollOffsetY = static_cast<float>(event.getYOffset());
+		mScriptSharedState.scrollOffsetX = static_cast<float>(event.getXOffset());
+		mScriptSharedState.scrollOffsetY = static_cast<float>(event.getYOffset());
 	}
 
 
 	void ScriptSystem::onMouseButtonEvent(const MouseButtonEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
-		mUserInput.mouseButtons[event.getButtonCode()] = (event.getState() == MouseButtonEvent::State::Pressed);
+		mScriptSharedState.mouseButtons[event.getButtonCode()] = (event.getState() == MouseButtonEvent::State::Pressed);
 	}
 
 
 	void ScriptSystem::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
-		mUserInput.windowWidth = static_cast<float>(event.getWidth());
-		mUserInput.windowHeight = static_cast<float>(event.getHeight());
+		mScriptSharedState.windowWidth = static_cast<float>(event.getWidth());
+		mScriptSharedState.windowHeight = static_cast<float>(event.getHeight());
+	}
+
+
+	void ScriptSystem::onScriptEvent(const ScriptEvent& event)
+	{
+		SOMBRA_INFO_LOG << event;
+
+		auto [script] = mEntityDatabase.getComponents<ScriptComponent>(event.getEntity(), true);
+		if (script) {
+			switch (event.getOperation()) {
+				case ScriptEvent::Operation::Add: {
+					script->onAdd(mScriptSharedState);
+				} break;
+				case ScriptEvent::Operation::Remove: {
+					script->onRemove(mScriptSharedState);
+				} break;
+			}
+		}
 	}
 
 }

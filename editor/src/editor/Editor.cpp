@@ -121,6 +121,7 @@ namespace editor {
 		auto& renderGraph = mExternalTools->graphicsEngine->getRenderGraph();
 		mImGuiRenderer->findInput("target")->connect( renderGraph.getNode("renderer2D")->findOutput("target") );
 		renderGraph.addNode( std::unique_ptr<ImGuiRenderer>(mImGuiRenderer) );
+		renderGraph.prepareGraph();
 
 		/**** Add the GUI components ****/
 		mMenuBar = new MenuBar(*this);
@@ -136,7 +137,10 @@ namespace editor {
 		vTransforms->position = { 10.0, 8.0f,-6.0f };
 		vTransforms->orientation = glm::quat(glm::vec3(glm::radians(-30.0f), glm::radians(110.0f), 0.0f));
 
-		mEntityDatabase->addComponent<se::app::ScriptComponent>(mViewportEntity, std::make_unique<ViewportControl>());
+		auto scriptComponent = mEntityDatabase->emplaceComponent<se::app::ScriptComponent>(mViewportEntity);
+		auto scriptSPtr = std::make_shared<ViewportControl>();
+		auto script = mRepository->insert<se::app::Script>(std::move(scriptSPtr), "viewportControl");
+		scriptComponent->setScript(script);
 
 		se::app::CameraComponent camera;
 		camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
@@ -194,8 +198,10 @@ namespace editor {
 		}
 		if (mMenuBar) { delete mMenuBar; }
 
-		mImGuiRenderer->disconnect();
-		mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
+		if (mImGuiRenderer) {
+			mImGuiRenderer->disconnect();
+			mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
+		}
 		if (mImGuiInput) { delete mImGuiInput; }
 		if (mImGuiContext) { ImGui::DestroyContext(mImGuiContext); }
 

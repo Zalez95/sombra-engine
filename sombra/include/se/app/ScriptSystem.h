@@ -4,6 +4,7 @@
 #include "events/KeyEvent.h"
 #include "events/MouseEvents.h"
 #include <se/app/events/ResizeEvent.h>
+#include <se/app/events/ScriptEvent.h>
 #include "ECS.h"
 #include "ScriptComponent.h"
 
@@ -22,8 +23,8 @@ namespace se::app {
 		/** The Application that holds the ScriptSystem */
 		Application& mApplication;
 
-		/** Holds all the user input */
-		UserInput mUserInput;
+		/** Holds all the user shared state between the scripts */
+		ScriptSharedState mScriptSharedState;
 
 	public:		// Functions
 		/** Creates a new ScriptSystem
@@ -91,6 +92,11 @@ namespace se::app {
 		 *
 		 * @param	event the WindowResizeEvent to handle */
 		void onWindowResizeEvent(const WindowResizeEvent& event);
+
+		/** Handles the given event
+		 *
+		 * @param	event the ScriptEvent to handle */
+		void onScriptEvent(const ScriptEvent& event);
 	};
 
 }

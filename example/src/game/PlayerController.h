@@ -13,10 +13,10 @@ namespace game {
 
 
 	/**
-	 * Class PlayerController, it's the ScriptComponent used for controlling
+	 * Class PlayerController, it's the Script used for controlling
 	 * for the player Entity as a FPS
 	 */
-	class PlayerController : public se::app::ScriptComponent
+	class PlayerController : public se::app::Script
 	{
 	private:	// Attributes
 		static constexpr float kRunSpeed	= 100.0f;
@@ -44,13 +44,20 @@ namespace game {
 		 * @param	pickText the text to write to */
 		PlayerController(Level& level, se::graphics::RenderableText& pickText);
 
-		/** @copydoc se::app::ScriptComponent::onCreate() */
-		virtual void onCreate(const se::app::UserInput& userInput) override;
+		/** @copydoc se::app::Script::clone() */
+		virtual std::unique_ptr<se::app::Script> clone() const override;
 
-		/** @copydoc se::app::ScriptComponent::onUpdate(
-		 * float, const se::app::UserInput&) */
+		/** @copydoc se::app::Script::onAdd(se::app::Entity) */
+		virtual void onAdd(
+			se::app::Entity entity,
+			const se::app::ScriptSharedState& sharedState
+		) override;
+
+		/** @copydoc se::app::Script::onUpdate(
+		 * se::app::Entity, float, const se::app::ScriptSharedState&) */
 		virtual void onUpdate(
-			float elapsedTime, const se::app::UserInput& userInput
+			se::app::Entity entity, float elapsedTime,
+			const se::app::ScriptSharedState& sharedState
 		) override;
 	};
 

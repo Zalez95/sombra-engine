@@ -140,9 +140,9 @@ namespace se::utils {
 		/** The number of Elements reserved in the PackedVector */
 		size_type mCapacity;
 
-		/** The number of Elements of the PackedVector that has been active
-		 * at some point */
-		size_type mUsedElements;
+		/** The index of the past-the-end Element of the PackedVector.
+		 * @note the previous element to the end could have been released */
+		size_type mEndIndex;
 
 		/** The indices to the released Elements of the PackedVector */
 		std::vector<size_type> mReleasedIndices;
@@ -152,11 +152,11 @@ namespace se::utils {
 
 	public:		// Functions
 		/** Creates a new PackedVector */
-		PackedVector() : mElements(nullptr), mCapacity(0), mUsedElements(0) {};
+		PackedVector() : mElements(nullptr), mCapacity(0), mEndIndex(0) {};
 		PackedVector(const PackedVector& other);
 		PackedVector(PackedVector&& other);
 		PackedVector(
-			const T* elements, std::size_t capacity, std::size_t size,
+			const T* elements, std::size_t capacity, std::size_t endIndex,
 			const std::size_t* releasedIndices, std::size_t numReleasedIndices
 		);
 
@@ -208,11 +208,11 @@ namespace se::utils {
 
 		/** @return	the past the end iterator of the PackedVector */
 		iterator end()
-		{ return iterator(this, mUsedElements); };
+		{ return iterator(this, mEndIndex); };
 
 		/** @return	the past the end iterator of the PackedVector */
 		const_iterator end() const
-		{ return const_iterator(this, mUsedElements); };
+		{ return const_iterator(this, mEndIndex); };
 
 		/** @return	the number of Elements that can be added to the
 		 *			PackedVector without reallocating it */
@@ -220,7 +220,7 @@ namespace se::utils {
 
 		/** @return	the number of Elements in the PackedVector */
 		size_type size() const
-		{ return mUsedElements - mReleasedIndices.size(); };
+		{ return mEndIndex - mReleasedIndices.size(); };
 
 		/** @return	true if the PackedVector has no Elements inside, false
 		 *			otherwise */

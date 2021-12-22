@@ -1,6 +1,7 @@
 #include <algorithm>
-#include "se/app/events/RMeshEvent.h"
 #include "se/app/MeshComponent.h"
+#include "se/app/events/EventManager.h"
+#include "se/app/events/RMeshEvent.h"
 #include "se/app/events/RenderableShaderEvent.h"
 
 namespace se::app {
@@ -38,6 +39,18 @@ namespace se::app {
 	bool MeshComponent::full() const
 	{
 		return std::all_of(mRMeshes.begin(), mRMeshes.end(), [](const RMesh& rMesh) { return rMesh.active; });
+	}
+
+
+	bool MeshComponent::empty() const
+	{
+		return std::none_of(mRMeshes.begin(), mRMeshes.end(), [](const RMesh& rMesh) { return rMesh.active; });
+	}
+
+
+	bool MeshComponent::any() const
+	{
+		return std::any_of(mRMeshes.begin(), mRMeshes.end(), [](const RMesh& rMesh) { return rMesh.active; });
 	}
 
 

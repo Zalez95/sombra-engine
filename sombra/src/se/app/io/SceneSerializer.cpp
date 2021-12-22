@@ -41,6 +41,7 @@
 #include "se/app/LightProbeComponent.h"
 #include "se/app/RigidBodyComponent.h"
 #include "se/app/AudioSourceComponent.h"
+#include "se/app/ScriptComponent.h"
 
 using namespace se::utils;
 using namespace se::graphics;
@@ -2662,6 +2663,38 @@ namespace se::app {
 		return { Result(), std::move(audioSource) };
 	}
 
+
+	template <>
+	nlohmann::json serializeComponent<ScriptComponent>(const ScriptComponent& scriptC, SerializeData&, std::ostream&)
+	{
+		nlohmann::json json;
+
+		if (auto script = scriptC.getScript()) {
+			json["scriptName"] = script.getResource().getName();
+		}
+
+		return json;
+	}
+
+	template <>
+	ResultOptional<ScriptComponent> deserializeComponent<ScriptComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
+	{
+		ScriptComponent scriptC;
+
+		auto itScriptName = json.find("scriptName");
+		if (itScriptName != json.end()) {
+			std::string scriptName = *itScriptName;
+			if (auto script = scene.repository.findByName<Script>(scriptName.c_str())) {
+				scriptC.setScript(script);
+			}
+			else {
+				return { Result(false, "Script \"" + scriptName + "\" not found"), std::nullopt };
+			}
+		}
+
+		return { Result(), std::move(scriptC) };
+	}
+
 // Other
 	void serializeAnimationNode(
 		const AnimationNode& node, const std::unordered_map<const AnimationNode*, std::size_t>& nodeIndexMap,
@@ -3034,6 +3067,7 @@ namespace se::app {
 		serializeCVector<AnimationComponent>("animationComponents", data, json, dataStream);
 		serializeCVector<ParticleSystemComponent>("particleSystemComponents", data, json, dataStream);
 		serializeCVector<AudioSourceComponent>("audioSourceComponents", data, json, dataStream);
+		serializeCVector<ScriptComponent>("scriptComponents", data, json, dataStream);
 	}
 
 	Result deserializeComponents(DeserializeData& data, Scene& scene)
@@ -3050,6 +3084,7 @@ namespace se::app {
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<ParticleSystemComponent>("particleSystemComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AudioSourceComponent>("audioSourceComponents", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<ScriptComponent>("scriptComponents", data, scene); !result) { return result; }
 		return Result();
 	}
 

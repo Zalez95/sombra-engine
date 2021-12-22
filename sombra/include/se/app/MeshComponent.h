@@ -4,10 +4,12 @@
 #include <array>
 #include "../graphics/3D/RenderableMesh.h"
 #include "graphics/RenderableShader.h"
-#include "events/EventManager.h"
 #include "Entity.h"
 
 namespace se::app {
+
+	class EventManager;
+
 
 	/**
 	 * Class MeshComponent, it's a Component that holds all the graphics
@@ -68,6 +70,14 @@ namespace se::app {
 		/** @return	true if no more RenderableMeshes can be added, false
 		 *			otherwise */
 		bool full() const;
+
+		/** @return	true if there aren't any RenderableMeshes added, false
+		 *			otherwise */
+		bool empty() const;
+
+		/** @return	true if there is at least one RenderableMesh added, false
+		 *			otherwise */
+		bool any() const;
 
 		/** Returns the selected RenderableMesh
 		 *

@@ -80,48 +80,23 @@ namespace se::app {
 			mRepository->init<graphics::Mesh>();
 			mRepository->init<RenderableShaderStep>();
 			mRepository->init<RenderableShader>();
+			mRepository->init<Script>();
 
 			// Entities
 			mEntityDatabase = new EntityDatabase(kMaxEntities);
-			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities, [](const TagComponent& tag) {
-				return TagComponent(tag);
-			});
-			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities, [](const TransformsComponent& transforms) {
-				return TransformsComponent(transforms);
-			});
-			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities, [](const SkinComponent& skin) {
-				return SkinComponent(skin);
-			});
-			mEntityDatabase->addComponentTable<AnimationComponent>(kMaxEntities, [](const AnimationComponent& animation) {
-				return AnimationComponent(animation);
-			});
-			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras, [](const CameraComponent& camera) {
-				return CameraComponent(camera);
-			});
-			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities, [](const LightComponent& light) {
-				return LightComponent(light);
-			});
-			mEntityDatabase->addComponentTable<LightProbeComponent>(kMaxLightProbes, [](const LightProbeComponent& lightProbe) {
-				return LightProbeComponent(lightProbe);
-			});
-			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities, [](const MeshComponent& mesh) {
-				return MeshComponent(mesh);
-			});
-			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains, [](const TerrainComponent& terrain) {
-				return TerrainComponent(terrain);
-			});
-			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities, [](const ParticleSystemComponent& particleSystem) {
-				return ParticleSystemComponent(particleSystem);
-			});
-			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities, [](const RigidBodyComponent& rigidBody) {
-				return RigidBodyComponent(rigidBody);
-			});
-			mEntityDatabase->addComponentTable<ScriptComponent, true>(kMaxEntities, [](const ScriptComponent& script) {
-				return std::make_unique<ScriptComponent>(script);
-			});
-			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities, [](const AudioSourceComponent& source) {
-				return AudioSourceComponent(source);
-			});
+			mEntityDatabase->addComponentTable<TagComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TransformsComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<SkinComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AnimationComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<CameraComponent, false>(kMaxCameras);
+			mEntityDatabase->addComponentTable<LightComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<LightProbeComponent, false>(kMaxLightProbes);
+			mEntityDatabase->addComponentTable<MeshComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TerrainComponent, false>(kMaxTerrains);
+			mEntityDatabase->addComponentTable<ParticleSystemComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<RigidBodyComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<ScriptComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AudioSourceComponent, false>(kMaxEntities);
 
 			// Systems
 			mInputSystem = new InputSystem(*this);
@@ -150,7 +125,7 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
-		mEntityDatabase->clearEntities();
+		if (mEntityDatabase) { mEntityDatabase->clearEntities(); }
 		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioSystem) { delete mAudioSystem; }
 		if (mAnimationSystem) { delete mAnimationSystem; }
@@ -164,16 +139,18 @@ namespace se::app {
 		if (mAppRenderer) { delete mAppRenderer; }
 		if (mScriptSystem) { delete mScriptSystem; }
 		if (mInputSystem) { delete mInputSystem; }
-		if (mEntityDatabase) { delete mTaskManager; }
+		if (mEntityDatabase) { delete mEntityDatabase; }
 		if (mRepository) { delete mRepository; }
 		if (mEventManager) { delete mEventManager; }
-		if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
-		if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
-		if (mExternalTools->rigidBodyWorld) { delete mExternalTools->rigidBodyWorld; }
-		if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
-		if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
-		if (mExternalTools) { delete mExternalTools; }
-		if (mTaskManager) { delete mEntityDatabase; }
+		if (mExternalTools) {
+			if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
+			if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
+			if (mExternalTools->rigidBodyWorld) { delete mExternalTools->rigidBodyWorld; }
+			if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
+			if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
+			delete mExternalTools;
+		}
+		if (mTaskManager) { delete mTaskManager; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 

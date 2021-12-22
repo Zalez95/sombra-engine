@@ -1,12 +1,8 @@
 #ifndef APP_RENDERER_H
 #define APP_RENDERER_H
 
-#include <glm/glm.hpp>
-#include "../graphics/core/Texture.h"
-#include "events/ContainerEvent.h"
 #include "events/ResizeEvent.h"
 #include "ECS.h"
-#include "LightComponent.h"
 
 namespace se::app {
 
@@ -29,11 +25,6 @@ namespace se::app {
 	 *			them */
 	class AppRenderer : public ISystem
 	{
-	private:	// Nested types
-		class StartShadowNode;
-		class EndShadowNode;
-		class CombineNode;
-
 	private:	// Attributes
 		/** The Application that holds the GraphicsEngine used for rendering
 		 * the Entities */

@@ -32,11 +32,12 @@ namespace se::app {
 		 *
 		 * @param	source a pointer to the LightSource affected
 		 * @param	entity the Entity affected by the update */
-		LightSourceEvent(LightSourceSPtr source, Entity entity = kNullEntity) :
-			mLightSource(source), mEntity(entity) {};
+		LightSourceEvent(
+			const LightSourceSPtr& source, Entity entity = kNullEntity
+		) : mLightSource(source), mEntity(entity) {};
 
 		/** @return	the LightSource of the Event */
-		LightSourceSPtr getLightSource() const { return mLightSource; };
+		const LightSourceSPtr& getLightSource() const { return mLightSource; };
 
 		/** @return	the Entity affected by the Event */
 		Entity getEntity() const { return mEntity; };

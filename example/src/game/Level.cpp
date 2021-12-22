@@ -202,6 +202,7 @@ namespace game {
 		se::app::Repository::ResourceRef<se::audio::Buffer> sound;
 		se::app::Repository::ResourceRef<se::app::LightSource> spotLight;
 		se::app::Repository::ResourceRef<se::physics::Force> gravity;
+		se::app::Repository::ResourceRef<se::app::Script> playerController;
 
 		try {
 			// Scene
@@ -353,24 +354,31 @@ namespace game {
 			// Forces
 			gravity = mScene.repository.findByName<se::physics::Force>("gravity");
 			gravity.setFakeUser();
+
+			// Renderable2Ds
+			mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), logoTexture.get());
+			mLogoTexture->addTechnique(technique2D.get());
+			mLogoTexture->setZIndex(255);
+
+			mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture.get());
+			mReticleTexture->addTechnique(technique2D.get());
+			mReticleTexture->setZIndex(255);
+
+			mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, { 16.0f, 16.0f }, arial.get(), { 0.0f, 1.0f, 0.0f, 1.0f });
+			mPickText->addTechnique(technique2D.get());
+			mPickText->setZIndex(255);
+
+			// Scripts
+			auto playerControllerSPtr = std::make_shared<PlayerController>(*this, *mPickText);
+			playerController = mScene.repository.insert<se::app::Script>(std::move(playerControllerSPtr), "playerController");
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
 			return;
 		}
 
-		// Renderable2Ds
-		mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), logoTexture.get());
-		mLogoTexture->addTechnique(technique2D.get());
-		mLogoTexture->setZIndex(255);
 		mGame.getExternalTools().graphicsEngine->addRenderable(mLogoTexture);
-		mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture.get());
-		mReticleTexture->addTechnique(technique2D.get());
-		mReticleTexture->setZIndex(255);
 		mGame.getExternalTools().graphicsEngine->addRenderable(mReticleTexture);
-		mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, { 16.0f, 16.0f }, arial.get(), { 0.0f, 1.0f, 0.0f, 1.0f });
-		mPickText->addTechnique(technique2D.get());
-		mPickText->setZIndex(255);
 		mGame.getExternalTools().graphicsEngine->addRenderable(mPickText);
 
 		/*********************************************************************
@@ -399,6 +407,9 @@ namespace game {
 			rbComponent.get().setCollider(std::move(collider));
 
 			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(rbComponent));
+
+			auto scriptComponent = mGame.getEntityDatabase().emplaceComponent<se::app::ScriptComponent>(mPlayerEntity);
+			scriptComponent->setScript(playerController);
 
 			se::app::CameraComponent camera;
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidths[0] / static_cast<float>(kHeights[0]), kZNear, kZFar);
@@ -639,15 +650,19 @@ namespace game {
 
 	void Level::setHandleInput(bool handle)
 	{
-		auto [control] = mGame.getEntityDatabase().getComponents<se::app::ScriptComponent>(mPlayerEntity);
+		bool hasControl = mGame.getEntityDatabase().hasComponentsEnabled<se::app::ScriptComponent>(mPlayerEntity);
 
-		if (handle && !control) {
-			mGame.getEntityDatabase().addComponent<se::app::ScriptComponent>(mPlayerEntity, std::make_unique<PlayerController>(*this, *mPickText));
+		if (handle) {
 			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
+			if (!hasControl) {
+				mGame.getEntityDatabase().enableComponent<se::app::ScriptComponent>(mPlayerEntity);
+			}
 		}
-		else if (!handle && control) {
-			mGame.getEntityDatabase().removeComponent<se::app::ScriptComponent>(mPlayerEntity);
+		else if (!handle) {
 			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
+			if (hasControl) {
+				mGame.getEntityDatabase().disableComponent<se::app::ScriptComponent>(mPlayerEntity);
+			}
 		}
 	}
 

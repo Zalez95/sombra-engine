@@ -8,7 +8,7 @@ namespace se::utils {
 	template <typename T, typename A>
 	PackedVector<T, A>::PackedVector(const PackedVector& other) :
 		mElements(nullptr), mCapacity(0),
-		mUsedElements(other.mUsedElements), mReleasedIndices(other.mReleasedIndices)
+		mEndIndex(other.mEndIndex), mReleasedIndices(other.mReleasedIndices)
 	{
 		reserve(other.mCapacity);
 		for (auto it = other.begin(); it != other.end(); ++it) {
@@ -20,11 +20,11 @@ namespace se::utils {
 	template <typename T, typename A>
 	PackedVector<T, A>::PackedVector(PackedVector&& other) :
 		mElements(other.mElements), mCapacity(other.mCapacity),
-		mUsedElements(other.mUsedElements), mReleasedIndices(std::move(other.mReleasedIndices))
+		mEndIndex(other.mEndIndex), mReleasedIndices(std::move(other.mReleasedIndices))
 	{
 		other.mElements = nullptr;
 		other.mCapacity = 0;
-		other.mUsedElements = 0;
+		other.mEndIndex = 0;
 	}
 
 
@@ -32,11 +32,11 @@ namespace se::utils {
 	PackedVector<T, A>::PackedVector(
 		const T* elements, std::size_t capacity, std::size_t size,
 		const std::size_t* releasedIndices, std::size_t numReleasedIndices
-	) : mElements(nullptr), mCapacity(0), mUsedElements(0)
+	) : mElements(nullptr), mCapacity(0), mEndIndex(0)
 	{
 		reserve(capacity);
-		mUsedElements = size + numReleasedIndices;
-		std::copy(elements, elements + mUsedElements, mElements);
+		mEndIndex = size + numReleasedIndices;
+		std::copy(elements, elements + mEndIndex, mElements);
 		std::copy(releasedIndices, releasedIndices + numReleasedIndices, std::back_inserter(mReleasedIndices));
 	}
 
@@ -54,7 +54,7 @@ namespace se::utils {
 	{
 		clear();
 
-		mUsedElements = other.mUsedElements;
+		mEndIndex = other.mEndIndex;
 		mReleasedIndices = other.mReleasedIndices;
 		reserve(other.mCapacity);
 		for (auto it = other.begin(); it != other.end(); ++it) {
@@ -72,12 +72,12 @@ namespace se::utils {
 
 		mElements = other.mElements;
 		mCapacity = other.mCapacity;
-		mUsedElements = other.mUsedElements;
+		mEndIndex = other.mEndIndex;
 		mReleasedIndices = std::move(other.mReleasedIndices);
 
 		other.mElements = nullptr;
 		other.mCapacity = 0;
-		other.mUsedElements = 0;
+		other.mEndIndex = 0;
 
 		return *this;
 	}
@@ -88,7 +88,7 @@ namespace se::utils {
 	{
 		return (cv1.mElements == cv2.mElements)
 			&& (cv1.mCapacity == cv2.mCapacity)
-			&& (cv1.mUsedElements == cv2.mUsedElements)
+			&& (cv1.mEndIndex == cv2.mEndIndex)
 			&& (cv1.mReleasedIndices == cv2.mReleasedIndices);
 	}
 
@@ -138,10 +138,10 @@ namespace se::utils {
 			if (mCapacity == 0) {
 				reserve(1);
 			}
-			else if (mUsedElements + 1 > mCapacity) {
+			else if (mEndIndex + 1 > mCapacity) {
 				reserve(2 * mCapacity);
 			}
-			index = mUsedElements++;
+			index = mEndIndex++;
 		}
 		else {
 			index = mReleasedIndices.back();
@@ -172,7 +172,7 @@ namespace se::utils {
 	template <typename T, typename A>
 	bool PackedVector<T, A>::isActive(size_type i) const
 	{
-		return (i < mUsedElements)
+		return (i < mEndIndex)
 			&& (std::find(mReleasedIndices.begin(), mReleasedIndices.end(), i) == mReleasedIndices.end());
 	}
 
@@ -184,7 +184,7 @@ namespace se::utils {
 		clear();
 
 		reserve(other.mCapacity);
-		mUsedElements = other.mUsedElements;
+		mEndIndex = other.mEndIndex;
 		mReleasedIndices = other.mReleasedIndices;
 		for (auto it = begin(); it != end(); ++it) {
 			new (&(*it)) T(value);
@@ -197,7 +197,7 @@ namespace se::utils {
 	PackedVector<T, A>::PVIterator<isConst>::PVIterator(VectorType* vector) :
 		mVector(vector), mIndex(0)
 	{
-		if (!mVector->isActive(mIndex) && (mVector->mUsedElements > 0)) {
+		if (!mVector->isActive(mIndex) && (mVector->mEndIndex > 0)) {
 			operator++();
 		}
 	}
@@ -239,7 +239,7 @@ namespace se::utils {
 		do {
 			++mIndex;
 		}
-		while (!mVector->isActive(mIndex) && (mIndex < mVector->mUsedElements));
+		while (!mVector->isActive(mIndex) && (mIndex < mVector->mEndIndex));
 
 		return *this;
 	}
@@ -264,7 +264,7 @@ namespace se::utils {
 		do {
 			--mIndex;
 		}
-		while (!mVector->isActive(mIndex) && (mIndex < mVector->mUsedElements));
+		while (!mVector->isActive(mIndex) && (mIndex < mVector->mEndIndex));
 
 		return *this;
 	}

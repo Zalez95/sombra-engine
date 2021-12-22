@@ -10,7 +10,7 @@ namespace editor {
 	 * Class ViewportControl, Implements Blender-like viewport controls for a
 	 * Entity Camera
 	 */
-	class ViewportControl : public se::app::ScriptComponent
+	class ViewportControl : public se::app::Script
 	{
 	private:	// Attributes
 		static constexpr float kMoveSpeed		= 25.0f;
@@ -25,21 +25,25 @@ namespace editor {
 
 	public:		// Functions
 		/** @copydoc se::app::ScriptComponent::onUpdate(
-		 * float, const se::app::UserInput&) */
+		 * se::app::Entity, float, const se::app::ScriptSharedState&) */
 		virtual void onUpdate(
-			float elapsedTime, const se::app::UserInput& userInput
+			se::app::Entity entity, float elapsedTime,
+			const se::app::ScriptSharedState& sharedState
 		) override;
+
+		/** @copydoc se::app::Script::clone() */
+		virtual std::unique_ptr<se::app::Script> clone() const override;
 	private:
 		void zoom(
-			const se::app::UserInput& userInput,
+			const se::app::ScriptSharedState& sharedState,
 			se::app::TransformsComponent& transforms
 		);
 		void move(
-			const se::app::UserInput& userInput,
+			const se::app::ScriptSharedState& sharedState,
 			se::app::TransformsComponent& transforms
 		);
 		void orbit(
-			const se::app::UserInput& userInput,
+			const se::app::ScriptSharedState& sharedState,
 			se::app::TransformsComponent& transforms
 		);
 	};

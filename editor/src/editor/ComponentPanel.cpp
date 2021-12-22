@@ -16,6 +16,7 @@
 #include <se/app/ParticleSystemComponent.h>
 #include <se/app/RigidBodyComponent.h>
 #include <se/app/AudioSourceComponent.h>
+#include <se/app/ScriptComponent.h>
 #include <se/app/graphics/TextureUtils.h>
 #include <se/physics/collision/BoundingBox.h>
 #include <se/physics/collision/BoundingSphere.h>
@@ -1040,6 +1041,29 @@ namespace editor {
 	};
 
 
+	class ComponentPanel::ScriptComponentNode : public ComponentPanel::ComponentNode<ScriptComponent>
+	{
+	public:		// Functions
+		ScriptComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
+		virtual const char* getName() const override
+		{ return "Script"; };
+		virtual void create(Entity entity) override
+		{
+			getEditor().getEntityDatabase().emplaceComponent<ScriptComponent>(entity);
+		};
+		virtual void draw(Entity entity) override
+		{
+			auto [scriptC] = getEditor().getEntityDatabase().getComponents<ScriptComponent>(entity);
+
+			auto script = scriptC->getScript();
+			std::string name = "Script" + getIdPrefix() + "ScriptComponentNode::Script";
+			if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, script)) {
+				scriptC->setScript(script);
+			}
+		};
+	};
+
+
 	ComponentPanel::ComponentPanel(Editor& editor) : IEditorPanel(editor)
 	{
 		mNodes.emplace_back(new TagComponentNode(*this));
@@ -1053,6 +1077,7 @@ namespace editor {
 		mNodes.emplace_back(new RigidBodyComponentNode(*this));
 		mNodes.emplace_back(new ParticleSystemComponentNode(*this));
 		mNodes.emplace_back(new AudioSourceComponentNode(*this));
+		mNodes.emplace_back(new ScriptComponentNode(*this));
 	}
 
 

@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 #include <unordered_set>
 #include "../utils/PackedVector.h"
 #include "Entity.h"
@@ -68,11 +67,6 @@ namespace se::app {
 			bool get() const;
 		};
 
-		template <typename T>
-		using CopyCallback = std::function<T(const T&)>;
-		template <typename T>
-		using CopyCallbackUPtr = std::function<std::unique_ptr<T>(const T&)>;
-
 	private:	// Attributes
 		/** The number of different Component types */
 		static std::size_t sComponentTypeCount;
@@ -113,16 +107,15 @@ namespace se::app {
 		 *
 		 * @param	maxComponents the maximum number of Components of that type
 		 *			that can be stored in the table
-		 * @param	copyCB the function used for copying the Components
 		 * @note	this function must be called for each Component type
 		 *			before using any other functions */
 		template <typename T, bool hasDerived = false>
 		std::enable_if_t<!hasDerived, void> addComponentTable(
-			std::size_t maxComponents, const CopyCallback<T>& copyCB = {}
+			std::size_t maxComponents
 		);
 		template <typename T, bool hasDerived = true>
 		std::enable_if_t<hasDerived, void> addComponentTable(
-			std::size_t maxComponents, const CopyCallbackUPtr<T>& copyCB = {}
+			std::size_t maxComponents
 		);
 
 		/** Adds the given System so it can be notified of new Entities and
@@ -337,8 +330,6 @@ namespace se::app {
 		template <typename T>
 		ITComponentTable<T>& getTable() const;
 	};
-
-
 
 
 	/**

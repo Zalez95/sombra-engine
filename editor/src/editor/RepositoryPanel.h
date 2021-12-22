@@ -27,6 +27,7 @@ namespace editor {
 		class TextureNode;
 		class MeshNode;
 		class ParticleEmitterNode;
+		class ScriptNode;
 
 	private:	// Attributes
 		/** The types that can be viewed */
