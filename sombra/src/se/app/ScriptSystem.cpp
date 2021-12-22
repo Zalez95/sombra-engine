@@ -1,3 +1,4 @@
+#include <sol/sol.hpp>>
 #include "se/utils/Log.h"
 #include "se/app/ScriptSystem.h"
 #include "se/app/Application.h"
@@ -20,6 +21,9 @@ namespace se::app {
 		mScriptSharedState.windowHeight = static_cast<float>(windowData.height);
 		mScriptSharedState.entityDatabase = &mApplication.getEntityDatabase();
 		mScriptSharedState.eventManager = &mApplication.getEventManager();
+
+		mLuaState = new sol::state();
+		mLuaState->open_libraries(sol::lib::base);
 	}
 
 
@@ -32,6 +36,8 @@ namespace se::app {
 		mApplication.getEventManager().unsubscribe(this, Topic::MouseMove);
 		mApplication.getEventManager().unsubscribe(this, Topic::Key);
 		mEntityDatabase.removeSystem(this);
+
+		delete mLuaState;
 	}
 
 
@@ -63,6 +69,7 @@ namespace se::app {
 // Private functions
 	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script)
 	{
+		addUser(script->getScript());
 		script->setup(&mApplication.getEventManager(), entity);
 		script->onAdd(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " added successfully";
@@ -72,6 +79,7 @@ namespace se::app {
 	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script)
 	{
 		script->onRemove(mScriptSharedState);
+		removeUser(script->getScript());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " removed successfully";
 	}
 
@@ -122,11 +130,43 @@ namespace se::app {
 		if (script) {
 			switch (event.getOperation()) {
 				case ScriptEvent::Operation::Add: {
+					addUser(script->getScript());
 					script->onAdd(mScriptSharedState);
 				} break;
 				case ScriptEvent::Operation::Remove: {
 					script->onRemove(mScriptSharedState);
+					removeUser(script->getScript());
 				} break;
+			}
+		}
+	}
+
+
+	void ScriptSystem::addUser(const ScriptRef& script)
+	{
+		if (!script) { return; }
+
+		auto it = std::find_if(mScriptsData.begin(), mScriptsData.end(), [&](const auto& tData) {
+			return tData.scriptRef == script;
+		});
+		if (it == mScriptsData.end()) {
+			it = mScriptsData.emplace(ScriptData{ script, 0 });
+		}
+
+		++it->userCount;
+	}
+
+
+	void ScriptSystem::removeUser(const ScriptRef& script)
+	{
+		if (!script) { return; }
+
+		auto it = std::find_if(mScriptsData.begin(), mScriptsData.end(), [&](const auto& tData) {
+			return tData.script == script;
+		});
+		if (it != mScriptsData.end()) {
+			if (--it->userCount == 0) {
+				mScriptsData.erase(it);
 			}
 		}
 	}

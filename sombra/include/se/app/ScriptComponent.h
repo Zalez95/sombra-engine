@@ -61,6 +61,14 @@ namespace se::app {
 	 */
 	class Script
 	{
+	public:		// Nested types
+		/** The different programming languages available for the Scripts */
+		enum class Language { CPP = 0, LUA };
+
+	protected:	// Attributes
+		/** The programming language of the Script */
+		Language language = Language::CPP;
+
 	public:		// Functions
 		/** Creates a new Script */
 		Script() = default;

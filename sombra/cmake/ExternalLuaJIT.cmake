@@ -1,0 +1,24 @@
+include(FetchContent)
+
+FetchContent_Declare(
+	LUAJIT
+	GIT_REPOSITORY https://github.com/Zalez95/LuaJIT.git
+	GIT_TAG v2.1_cmake
+	GIT_SHALLOW TRUE
+)
+FetchContent_GetProperties(LUAJIT)
+if(NOT luajit_POPULATED)
+	FetchContent_Populate(LUAJIT)
+
+	if(FORCE_STATIC_VCRT)
+		set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE INTERNAL "")
+	else()
+		set(USE_MSVC_RUNTIME_LIBRARY_DLL ON CACHE INTERNAL "")
+	endif()
+	set(CMAKE_INSTALL_PREFIX ${INSTALL_DIR} CACHE INTERNAL "")
+	set(CMAKE_BUILD_TYPE ${CONFIG} CACHE INTERNAL "")
+	set(CMAKE_DEBUG_POSTFIX ${MY_DEBUG_POSTFIX} CACHE INTERNAL "")
+	set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE INTERNAL "")
+
+	add_subdirectory(${luajit_SOURCE_DIR} ${luajit_BINARY_DIR})
+endif()

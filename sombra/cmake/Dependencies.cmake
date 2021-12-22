@@ -83,6 +83,12 @@ else()
 	include(ExternalFreeType)
 endif()
 
+message("Downloading and building LUAJIT from source")
+include(ExternalLuaJIT)
+
+message("Downloading and building SOL2 from source")
+include(ExternalSol2)
+
 if(SOMBRA_BUILD_TESTS)
 	option(INSTALLED_GTEST "Use installed GTest library" ON)
 

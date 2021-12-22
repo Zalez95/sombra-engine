@@ -8,6 +8,8 @@
 #include "ECS.h"
 #include "ScriptComponent.h"
 
+namespace sol { class state; }
+
 namespace se::app {
 
 	class Application;
@@ -19,12 +21,29 @@ namespace se::app {
 	 */
 	class ScriptSystem : public ISystem
 	{
-	public:		// Attributes
+	private:	// Nested types
+		using ScriptRef = Repository::ResourceRef<Script>;
+
+		/** Struct ScriptData, holds all the data needed for handling
+		 * different scripts languages */
+		struct ScriptData
+		{
+			ScriptRef script;
+			std::size_t userCount = 0;
+		};
+
+	private:	// Attributes
 		/** The Application that holds the ScriptSystem */
 		Application& mApplication;
 
 		/** Holds all the user shared state between the scripts */
 		ScriptSharedState mScriptSharedState;
+
+		/** Holds the data of each script */
+		utils::PackedVector<ScriptData> mScriptsData;
+
+		/** The lua state used by the LUA Scripts */
+		sol::state* mLuaState = nullptr;
 
 	public:		// Functions
 		/** Creates a new ScriptSystem
@@ -97,6 +116,16 @@ namespace se::app {
 		 *
 		 * @param	event the ScriptEvent to handle */
 		void onScriptEvent(const ScriptEvent& event);
+
+		/** Adds a user to the given script
+		 *
+		 * @param	script the script to add a user */
+		void addUser(const ScriptRef& script);
+
+		/** Removes a user from the given script
+		 *
+		 * @param	script the script to remove a user */
+		void removeUser(const ScriptRef& script);
 	};
 
 }
