@@ -3,8 +3,9 @@
 
 #include "events/KeyEvent.h"
 #include "events/MouseEvents.h"
-#include <se/app/events/ResizeEvent.h>
-#include <se/app/events/ScriptEvent.h>
+#include "events/ResizeEvent.h"
+#include "events/ScriptEvent.h"
+#include "events/EventManager.h"
 #include "ECS.h"
 #include "ScriptComponent.h"
 
@@ -17,7 +18,7 @@ namespace se::app {
 	 * Class ScriptSystem, it's a System used for updating the scripts of the
 	 * Entities
 	 */
-	class ScriptSystem : public ISystem
+	class ScriptSystem : public ISystem, IEventListener
 	{
 	public:		// Attributes
 		/** The Application that holds the ScriptSystem */
@@ -36,7 +37,7 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~ScriptSystem();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */

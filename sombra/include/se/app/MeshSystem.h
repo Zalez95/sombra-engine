@@ -5,11 +5,12 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include "../graphics/core/UniformVariable.h"
-#include "ECS.h"
-#include "MeshComponent.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
+#include "events/EventManager.h"
+#include "ECS.h"
+#include "MeshComponent.h"
 
 namespace se::app {
 
@@ -20,7 +21,7 @@ namespace se::app {
 	 * Class MeshSystem, it's a System used for updating the Entities'
 	 * RenderableMesh data
 	 */
-	class MeshSystem : public ISystem
+	class MeshSystem : public ISystem, IEventListener
 	{
 	private:	// Nested types
 		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
@@ -59,7 +60,7 @@ namespace se::app {
 		/** Class destructor */
 		~MeshSystem();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */

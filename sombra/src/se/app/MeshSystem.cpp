@@ -189,7 +189,7 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		mEntityDatabase.iterateComponents<MeshComponent>(
+		mEntityDatabase.iterateEntityComponents<MeshComponent>(
 			[&](Entity entity, MeshComponent* mesh) {
 				mesh->processRenderableIndices([&](std::size_t i) {
 					bool hasShader = false;

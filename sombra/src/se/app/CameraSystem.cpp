@@ -123,7 +123,7 @@ namespace se::app {
 	void CameraSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
-		mEntityDatabase.iterateComponents<TransformsComponent, CameraComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, CameraComponent>(
 			[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Camera)]) {
 					camera->setPosition(transforms->position);

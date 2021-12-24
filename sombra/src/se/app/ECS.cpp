@@ -24,7 +24,7 @@ namespace se::app {
 	}
 
 
-	void EntityDatabase::addSystem(ISystem* system, ComponentMask mask)
+	void EntityDatabase::addSystem(ISystem* system, const ComponentMask& mask)
 	{
 		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
 			return pair.first == system;
@@ -41,14 +41,12 @@ namespace se::app {
 	EntityDatabase::ComponentMask EntityDatabase::getSystemMask(ISystem* system) const
 	{
 		ComponentMask ret;
-
 		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
 			return pair.first == system;
 		});
 		if (itSystem != mSystems.end()) {
 			ret = itSystem->second;
 		}
-
 		return ret;
 	}
 
@@ -89,19 +87,11 @@ namespace se::app {
 
 		std::size_t numComponents = mComponentTables.size();
 		for (std::size_t i = 0; i < numComponents; ++i) {
-			std::size_t srcComponentsBaseIndex = 2 * (source * mComponentTables.size() + i);
-			std::size_t desComponentsBaseIndex = 2 * (ret * mComponentTables.size() + i);
-
-			mActiveComponents[desComponentsBaseIndex + 1] = mActiveComponents[srcComponentsBaseIndex + 1];
-			if (mActiveComponents[srcComponentsBaseIndex]) {
-				if (mComponentTables[i]->copyComponent(source, ret)) {
-					mActiveComponents[desComponentsBaseIndex] = true;
-
-					if (mActiveComponents[desComponentsBaseIndex + 1]) {
-						for (auto& pair : mSystems) {
-							if (pair.second[i]) {
-								pair.first->onNewComponent(ret, ComponentMask().set(i, true));
-							}
+			if (mComponentTables[i]->copyComponent(source, ret)) {
+				if (mComponentTables[i]->hasComponentEnabled(ret)) {
+					for (auto& pair : mSystems) {
+						if (pair.second[i]) {
+							pair.first->onNewComponent(ret, ComponentMask().set(i, true));
 						}
 					}
 				}
@@ -114,28 +104,22 @@ namespace se::app {
 
 	void EntityDatabase::removeEntity(Entity entity)
 	{
+		if (entity == kNullEntity) { return; }
+
 		std::size_t numComponents = mComponentTables.size();
 		for (std::size_t i = 0; i < numComponents; ++i) {
-			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + i);
-			if (mActiveComponents[activeComponentsBaseIndex]) {
-				if (mActiveComponents[activeComponentsBaseIndex + 1]) {
-					for (auto& pair : mSystems) {
-						if (pair.second[i]) {
-							pair.first->onRemoveComponent(entity, ComponentMask().set(i, true));
-						}
+			if (mComponentTables[i]->hasComponentEnabled(entity)) {
+				for (auto& pair : mSystems) {
+					if (pair.second[i]) {
+						pair.first->onRemoveComponent(entity, ComponentMask().set(i, true));
 					}
 				}
-
-				mComponentTables[i]->removeComponent(entity);
 			}
 
-			mActiveComponents[activeComponentsBaseIndex] = false;
-			mActiveComponents[activeComponentsBaseIndex + 1] = true;
+			mComponentTables[i]->removeComponent(entity);
 		}
 
-		if (entity != kNullEntity) {
-			mRemovedEntities.emplace(entity);
-		}
+		mRemovedEntities.emplace(entity);
 	}
 
 

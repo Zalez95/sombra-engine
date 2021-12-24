@@ -2,8 +2,9 @@
 #define INPUT_SYSTEM_H
 
 #include <deque>
-#include "ECS.h"
 #include "events/MouseEvents.h"
+#include "events/EventManager.h"
+#include "ECS.h"
 
 namespace se::app {
 
@@ -14,7 +15,7 @@ namespace se::app {
 	 * Class InputSystem, it's a System used for handling the user input at a
 	 * constant time interval
 	 */
-	class InputSystem : public ISystem
+	class InputSystem : public ISystem, IEventListener
 	{
 	private:	// Attributes
 		/** A reference to the Application that holds WindowManager and
@@ -38,7 +39,7 @@ namespace se::app {
 		/** Submits all the user input events */
 		virtual void update() override;
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override
 		{ return tryCall(&InputSystem::onSetMousePosEvent, event); };
 	private:

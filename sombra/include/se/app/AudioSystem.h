@@ -1,8 +1,9 @@
 #ifndef AUDIO_SYSTEM_H
 #define AUDIO_SYSTEM_H
 
-#include "ECS.h"
 #include "events/ContainerEvent.h"
+#include "events/EventManager.h"
+#include "ECS.h"
 
 namespace se::app {
 
@@ -14,7 +15,7 @@ namespace se::app {
 	 * Class AudioSystem, it's a System used for updating and playing the
 	 * Entities' audio Components
 	 */
-	class AudioSystem : public ISystem
+	class AudioSystem : public ISystem, IEventListener
 	{
 	private:	// Attributes
 		/** The Application that holds the AudioEngine used for playing the
@@ -34,7 +35,7 @@ namespace se::app {
 		/** Class destructor */
 		~AudioSystem();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override
 		{ return tryCall(&AudioSystem::onCameraEvent, event); };
 

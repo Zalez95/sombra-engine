@@ -477,7 +477,7 @@ namespace se::app {
 				}
 
 				mGLTFData->scene.application.getEntityDatabase().emplaceComponent<SkinComponent>(
-					node.entity,
+					node.entity, true,
 					node.animationNode, mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
 				);
 			}
@@ -1553,7 +1553,7 @@ namespace se::app {
 			if (itCamera != jsonNode.end()) {
 				std::size_t cameraIndex = *itCamera;
 				if (cameraIndex < mGLTFData->cameraComponents.size()) {
-					entityDB.emplaceComponent<CameraComponent>(node.entity, mGLTFData->cameraComponents[cameraIndex]);
+					entityDB.emplaceComponent<CameraComponent>(node.entity, true, mGLTFData->cameraComponents[cameraIndex]);
 				}
 				else {
 					return Result(false, "Camera index " + std::to_string(cameraIndex) + " out of range");
@@ -1641,7 +1641,7 @@ namespace se::app {
 						transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
 						transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
 					}
-					entityDB.emplaceComponent<AnimationComponent>(rootNode.entity, rootNode.animationNode);
+					entityDB.emplaceComponent<AnimationComponent>(rootNode.entity, true, rootNode.animationNode);
 				}
 
 				// Build the tree
@@ -1673,7 +1673,7 @@ namespace se::app {
 								transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
 								transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
 							}
-							entityDB.emplaceComponent<AnimationComponent>(child.entity, child.animationNode);
+							entityDB.emplaceComponent<AnimationComponent>(child.entity, true, child.animationNode);
 						}
 
 						nodesToProcess.push_back(childId);

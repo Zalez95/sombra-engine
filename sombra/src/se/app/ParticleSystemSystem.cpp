@@ -24,7 +24,7 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the ParticleSystems";
 
-		mEntityDatabase.iterateComponents<ParticleSystemComponent, TransformsComponent>(
+		mEntityDatabase.iterateEntityComponents<ParticleSystemComponent, TransformsComponent>(
 			[this](Entity, ParticleSystemComponent* particleSystem, TransformsComponent* transforms) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::ParticleSystem)]) {
 					particleSystem->setInitialPosition(transforms->position);
@@ -36,8 +36,8 @@ namespace se::app {
 		);
 
 		mEntityDatabase.iterateComponents<ParticleSystemComponent>(
-			[this](Entity, ParticleSystemComponent* particleSystem) {
-				particleSystem->update(mDeltaTime);
+			[this](ParticleSystemComponent& particleSystem) {
+				particleSystem.update(mDeltaTime);
 			},
 			true
 		);

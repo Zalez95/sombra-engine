@@ -6,6 +6,7 @@
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
+#include "events/EventManager.h"
 #include "ECS.h"
 
 namespace se::app {
@@ -27,7 +28,7 @@ namespace se::app {
 	 * @note	it will only update the cameras of the Steps that use the
 	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */
-	class CameraSystem : public ISystem
+	class CameraSystem : public ISystem, IEventListener
 	{
 	private:	// Nested Types
 		using FrustumFilterSPtr = std::shared_ptr<graphics::FrustumFilter>;
@@ -66,7 +67,7 @@ namespace se::app {
 		/** Class destructor */
 		~CameraSystem();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */

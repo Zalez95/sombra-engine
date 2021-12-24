@@ -556,7 +556,7 @@ namespace se::app {
 		else {
 			SOMBRA_TRACE_LOG << "Updating LightComponents with source " << event.getLightSource();
 
-			mEntityDatabase.iterateComponents<LightComponent>(
+			mEntityDatabase.iterateEntityComponents<LightComponent>(
 				[&](Entity entity, LightComponent* light) {
 					if (light->getSource().get() == event.getLightSource()) {
 						clearRMesh(entity, light);

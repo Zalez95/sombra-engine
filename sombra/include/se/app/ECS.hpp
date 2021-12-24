@@ -2,7 +2,6 @@
 #define ECS_HPP
 
 #include <cassert>
-#include <functional>
 #include <unordered_map>
 
 namespace se::app {
@@ -37,6 +36,23 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that owns the Component */
 		virtual void removeComponent(Entity entity) = 0;
+
+		/** Enables the Component of the given Entity
+		 *
+		 * @param	entity the Entity that owns the Component */
+		virtual void enableComponent(Entity entity) = 0;
+
+		/** Check if the given Entity has the Component enabled or not
+		 *
+		 * @param	entity the Entity that owns the Component
+		 * @return	true if the Entity has the Component enabled, false
+		 *			otherwise */
+		virtual bool hasComponentEnabled(Entity entity) const = 0;
+
+		/** Disables the Component of the given Entity
+		 *
+		 * @param	entity the Entity that owns the Component */
+		virtual void disableComponent(Entity entity) = 0;
 	};
 
 
@@ -57,17 +73,9 @@ namespace se::app {
 		 * @param	entity the Entity that will own the Component
 		 * @param	component the Component to add
 		 * @return	a pointer to tha Component if it was added successfully,
-		 *			nullptr otherwise */
+		 *			nullptr otherwise
+		 * @note	the Component will be enabled */
 		virtual T* addComponent(Entity entity, T&& component) = 0;
-
-		/** Adds a Component to the ITComponentTable and makes the given Entity
-		 * its owner
-		 *
-		 * @param	entity the Entity that will own the Component
-		 * @param	component a pointer to the Component to add
-		 * @return	a pointer to tha Component if it was added successfully,
-		 *			nullptr otherwise */
-		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) = 0;
 
 		/** Returns the Component of the given Entity
 		 *
@@ -85,8 +93,13 @@ namespace se::app {
 
 		/** Iterates over all the Components of the ITComponentTable
 		 *
-		 * @param	callback the function to call for each Component */
-		virtual void iterateComponents(std::function<void(T&)> callback) = 0;
+		 * @param	callback the function to call for each Component
+		 * @param	onlyEnabled true if we only want to iterate the Components
+		 *			enabled, false if we want to iterate all the Components
+		 *			wether they are enabled or not */
+		virtual void iterateComponents(
+			const std::function<void(T&)>& callback, bool onlyEnabled = false
+		) = 0;
 	};
 
 
@@ -99,13 +112,23 @@ namespace se::app {
 	{
 	private:	// Attributes
 		/** The Components added to the ComponentTable */
-		utils::PackedVector<T> mComponents;
+		T* mComponents;
+
+		/** The size of @see mComponents */
+		std::size_t mMaxComponents;
+
+		/** The current number of Components in use in @see mComponents */
+		std::size_t mNumComponents;
+
+		/** It holds the flags that tells if a Component in @see mComponents
+		 * is in use or enabled */
+		std::vector<bool> mComponentFlags;
 
 		/** Maps each Entity with the index of its respecive Component in
 		 * @see mComponents */
 		std::unordered_map<Entity, std::size_t> mEntityComponentMap;
 
-		/** Maps each Component index in @see mComponents with its respecive
+		/** Maps each Component in @see mComponents with its respecive
 		 * Entity */
 		std::unordered_map<const T*, Entity> mComponentEntityMap;
 
@@ -114,38 +137,43 @@ namespace se::app {
 		 *
 		 * @param	maxComponents the maximum number of Components that the
 		 *			ComponentTable can hold */
-		ComponentTable(std::size_t maxComponents)
+		ComponentTable(std::size_t maxComponents) :
+			mComponents(nullptr),
+			mMaxComponents(maxComponents), mNumComponents(0)
 		{
-			mComponents.reserve(maxComponents);
-			mEntityComponentMap.reserve(maxComponents);
-			mComponentEntityMap.reserve(maxComponents);
+			mComponents = std::allocator<T>().allocate(mMaxComponents);
+			mComponentFlags.resize(2 * mMaxComponents, false);
+			mEntityComponentMap.reserve(mMaxComponents);
+			mComponentEntityMap.reserve(mMaxComponents);
 		};
 
 		/** @copydoc IComponentTable::getMaxComponents() */
 		virtual std::size_t getMaxComponents() const override
-		{ return mComponents.capacity(); };
+		{ return mMaxComponents; };
 
 		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
 		virtual T* addComponent(Entity entity, T&& component) override
 		{
-			if (mComponents.size() < mComponents.capacity()) {
-				auto it = mComponents.emplace(std::forward<T>(component));
-				mEntityComponentMap.emplace(entity, it.getIndex());
-				mComponentEntityMap.emplace(&(*it), entity);
-				return &(*it);
+			std::size_t componentIndex = mMaxComponents;
+			for (std::size_t i = 0; i < mMaxComponents; ++i) {
+				if (!mComponentFlags[2 * i]) {
+					componentIndex = i;
+					break;
+				}
 			}
-			return nullptr;
-		};
 
-		/** @copydoc ITComponentTable<T>::addComponent(Entity, std::unique_ptr<T>) */
-		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) override
-		{
-			if (mComponents.size() < mComponents.capacity()) {
-				auto it = mComponents.emplace(std::move(*component));
-				mEntityComponentMap.emplace(entity, it.getIndex());
-				mComponentEntityMap.emplace(&(*it), entity);
-				return &(*it);
+			if (componentIndex < mMaxComponents) {
+				new (&mComponents[componentIndex]) T(std::move(component));
+				++mNumComponents;
+
+				mComponentFlags[2 * componentIndex] = true;
+				mComponentFlags[2 * componentIndex + 1] = true;
+				mEntityComponentMap.emplace(entity, componentIndex);
+				mComponentEntityMap.emplace(&mComponents[componentIndex], entity);
+
+				return &mComponents[componentIndex];
 			}
+
 			return nullptr;
 		};
 
@@ -154,7 +182,11 @@ namespace se::app {
 		{
 			auto component = getComponent(source);
 			if (component) {
-				return addComponent(destination, T(*component));
+				bool ret = addComponent(destination, T(*component));
+				if (!hasComponentEnabled(source)) {
+					disableComponent(destination);
+				}
+				return ret;
 			}
 			return false;
 		};
@@ -191,153 +223,68 @@ namespace se::app {
 			auto it1 = mEntityComponentMap.find(entity);
 			if (it1 != mEntityComponentMap.end()) {
 				auto it2 = mComponentEntityMap.find(&mComponents[it1->second]);
-				mComponents.erase( mComponents.begin().setIndex(it1->second) );
+
+				mComponents[it1->second].~T();
+				--mNumComponents;
+
+				mComponentFlags[2 * it1->second] = false;
+				mComponentFlags[2 * it1->second + 1] = false;
 				mEntityComponentMap.erase(it1);
 				mComponentEntityMap.erase(it2);
 			}
 		};
 
-		/** @copydoc ITComponentTable<T>::iterateComponents(std::function<void(T&)>) */
-		virtual void iterateComponents(std::function<void(T&)> callback) override
+		/** @copydoc ITComponentTable<T>::iterateComponents(
+		 * const std::function<void(T&)>&, bool) */
+		virtual void iterateComponents(
+			const std::function<void(T&)>& callback, bool onlyEnabled = false
+		) override
 		{
-			for (auto& component : mComponents) {
-				callback(component);
+			for (std::size_t i = 0, j = 0; i < mMaxComponents; ++i) {
+				if (mComponentFlags[2 * i]) {
+					if (!onlyEnabled || mComponentFlags[2 * i + 1]) {
+						callback(mComponents[i]);
+					}
+
+					if (++j >= mNumComponents) {
+						break;
+					}
+				}
 			}
 		};
-	};
 
-
-	/**
-	 * Class ComponentUPtrTable, it holds all the Components with type @tparam T
-	 * and their Derived classes and their relation with the EntityDatabase
-	 * Entities
-	 * @note	The Components wont be stored contiguously in memory
-	 */
-	template <typename T>
-	class EntityDatabase::ComponentTableUPtr : public ITComponentTable<T>
-	{
-	private:	// Attributes
-		/** The Component pointers added to the ComponentTableUPtr */
-		utils::PackedVector<std::unique_ptr<T>> mComponents;
-
-		/** Maps each Entity with the index of its respecive Component in
-		 * @see mComponents */
-		std::unordered_map<Entity, std::size_t> mEntityComponentMap;
-
-		/** Maps each Component index in @see mComponents with its respecive
-		 * Entity */
-		std::unordered_map<const T*, Entity> mComponentEntityMap;
-
-	public:		// Functions
-		/** Creates a new ComponentTableUPtr
-		 *
-		 * @param	maxComponents the maximum number of Components that the
-		 *			ComponentTableUPtr can hold */
-		ComponentTableUPtr(std::size_t maxComponents)
+		/** @copydoc IComponentTable::enableComponent(Entity) */
+		virtual void enableComponent(Entity entity) override
 		{
-			mComponents.reserve(maxComponents);
-			mEntityComponentMap.reserve(maxComponents);
-			mComponentEntityMap.reserve(maxComponents);
-		};
-
-		/** @copydoc IComponentTable::getMaxComponents() */
-		virtual std::size_t getMaxComponents() const override
-		{ return mComponents.capacity(); };
-
-		/** @copydoc ITComponentTable<T>::addComponent(Entity, T&&) */
-		virtual T* addComponent(Entity, T&&) override
-		{
-			assert(false && "This function can't be used with virtual classes");
-			return nullptr;
-		};
-
-		/** @copydoc ITComponentTable<T>::addComponent(Entity, std::unique_ptr<T>) */
-		virtual T* addComponent(Entity entity, std::unique_ptr<T> component) override
-		{
-			if (mComponents.size() < mComponents.capacity()) {
-				auto it = mComponents.emplace(std::move(component));
-				mEntityComponentMap.emplace(entity, it.getIndex());
-				mComponentEntityMap.emplace(it->get(), entity);
-				return it->get();
+			auto it = mEntityComponentMap.find(entity);
+			if (it != mEntityComponentMap.end()) {
+				mComponentFlags[2 * it->second + 1] = true;
 			}
-			return nullptr;
 		};
 
-		/** @copydoc IComponentTable::copyComponent(Entity, Entity) */
-		virtual bool copyComponent(Entity source, Entity destination) override
+		/** @copydoc IComponentTable::hasComponentEnabled(Entity) */
+		virtual bool hasComponentEnabled(Entity entity) const override
 		{
-			auto component = getComponent(source);
-			if (component) {
-				return addComponent(destination, std::make_unique<T>(*component));
+			auto it = mEntityComponentMap.find(entity);
+			if (it != mEntityComponentMap.end()) {
+				return mComponentFlags[2 * it->second + 1];
 			}
 			return false;
 		};
 
-		/** @copydoc IComponentTable::hasComponent(Entity) */
-		virtual bool hasComponent(Entity entity) const override
-		{
-			return mEntityComponentMap.find(entity) != mEntityComponentMap.end();
-		};
-
-		/** @copydoc ITComponentTable<T>::getComponent(Entity) */
-		virtual T* getComponent(Entity entity) override
+		/** @copydoc IComponentTable::disableComponent(Entity) */
+		virtual void disableComponent(Entity entity) override
 		{
 			auto it = mEntityComponentMap.find(entity);
 			if (it != mEntityComponentMap.end()) {
-				return mComponents[it->second].get();
-			}
-			return nullptr;
-		};
-
-		/** @copydoc ITComponentTable<T>::getEntity(const T*) */
-		virtual Entity getEntity(const T* component) override
-		{
-			auto it = mComponentEntityMap.find(component);
-			if (it != mComponentEntityMap.end()) {
-				return it->second;
-			}
-			return kNullEntity;
-		};
-
-		/** @copydoc IComponentTable::removeComponent(Entity) */
-		virtual void removeComponent(Entity entity) override
-		{
-			auto it1 = mEntityComponentMap.find(entity);
-			if (it1 != mEntityComponentMap.end()) {
-				auto it2 = mComponentEntityMap.find(mComponents[it1->second].get());
-				mComponents.erase( mComponents.begin().setIndex(it1->second) );
-				mEntityComponentMap.erase(it1);
-				mComponentEntityMap.erase(it2);
-			}
-		};
-
-		/** @copydoc ITComponentTable<T>::iterateComponents(std::function<void(T&)>) */
-		virtual void iterateComponents(std::function<void(T&)> callback) override
-		{
-			for (auto& component : mComponents) {
-				callback(*component);
+				mComponentFlags[2 * it->second + 1] = false;
 			}
 		};
 	};
 
 
 	template <typename T>
-	EntityDatabase::ComponentMask& EntityDatabase::ComponentMask::set(bool value)
-	{
-		mBitMask[getComponentTypeId<T>()] = value;
-		return *this;
-	}
-
-
-	template <typename T>
-	bool EntityDatabase::ComponentMask::get() const
-	{
-		return mBitMask[getComponentTypeId<T>()];
-	}
-
-
-	template <typename T, bool hasDerived>
-	std::enable_if_t<!hasDerived, void> EntityDatabase::addComponentTable(std::size_t maxComponents)
+	void EntityDatabase::addComponentTable(std::size_t maxComponents)
 	{
 		std::size_t id = getComponentTypeId<T>();
 		while (id >= mComponentTables.size()) {
@@ -345,30 +292,6 @@ namespace se::app {
 		}
 
 		mComponentTables[id] = std::make_unique<ComponentTable<T>>(maxComponents);
-
-		std::size_t activeComponentsSize = 2 * mMaxEntities * mComponentTables.size();
-		mActiveComponents.reserve(activeComponentsSize);
-		for (std::size_t i = 0; i < activeComponentsSize; ++i) {
-			mActiveComponents.push_back(i % 2 == 1);
-		}
-	}
-
-
-	template <typename T, bool hasDerived>
-	std::enable_if_t<hasDerived, void> EntityDatabase::addComponentTable(std::size_t maxComponents)
-	{
-		std::size_t id = getComponentTypeId<T>();
-		while (id >= mComponentTables.size()) {
-			mComponentTables.emplace_back(nullptr);
-		}
-
-		mComponentTables[id] = std::make_unique<ComponentTableUPtr<T>>(maxComponents);
-
-		std::size_t activeComponentsSize = 2 * mMaxEntities * mComponentTables.size();
-		mActiveComponents.reserve(activeComponentsSize);
-		for (std::size_t i = 0; i < activeComponentsSize; ++i) {
-			mActiveComponents.push_back(i % 2 == 1);
-		}
 	}
 
 
@@ -398,51 +321,32 @@ namespace se::app {
 
 
 	template <typename T, typename... Args>
-	T* EntityDatabase::emplaceComponent(Entity entity, Args&&... args)
+	T* EntityDatabase::emplaceComponent(Entity entity, bool enabled, Args&&... args)
 	{
 		T component(std::forward<Args>(args)...);
-		return addComponent(entity, std::move(component));
+		return addComponent(entity, std::move(component), enabled);
 	}
 
 
 	template <typename T>
-	T* EntityDatabase::addComponent(Entity entity, T&& component)
+	T* EntityDatabase::addComponent(Entity entity, T&& component, bool enabled)
 	{
-		T* ret = nullptr;
-		if (entity != kNullEntity) {
-			ret = getTable<T>().addComponent(entity, std::forward<T>(component));
+		if (entity == kNullEntity) { return nullptr; }
 
-			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
-			mActiveComponents[activeComponentsBaseIndex] = true;
-			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
-				for (auto& pair : mSystems) {
-					if (pair.second.get<T>()) {
-						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
-					}
+		auto& table = getTable<T>();
+		T* ret = table.addComponent(entity, std::forward<T>(component));
+		if (!enabled) {
+			table.disableComponent(entity);
+		}
+
+		if (table.hasComponentEnabled(entity)) {
+			for (auto& pair : mSystems) {
+				if (pair.second.get<T>()) {
+					pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
 				}
 			}
 		}
-		return ret;
-	}
 
-
-	template <typename T>
-	T* EntityDatabase::addComponent(Entity entity, std::unique_ptr<T> component)
-	{
-		T* ret = nullptr;
-		if (entity != kNullEntity) {
-			ret = getTable<T>().addComponent(entity, std::move(component));
-
-			std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
-			mActiveComponents[activeComponentsBaseIndex] = true;
-			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
-				for (auto& pair : mSystems) {
-					if (pair.second.get<T>()) {
-						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
-					}
-				}
-			}
-		}
 		return ret;
 	}
 
@@ -450,26 +354,17 @@ namespace se::app {
 	template <typename T>
 	T* EntityDatabase::copyComponent(Entity source, Entity destination)
 	{
-		std::size_t typeId = getComponentTypeId<T>();
-		std::size_t srcComponentsBaseIndex = 2 * (source * mComponentTables.size() + typeId);
-		std::size_t desComponentsBaseIndex = 2 * (destination * mComponentTables.size() + typeId);
-
-		if (mActiveComponents[srcComponentsBaseIndex]) {
-			const auto& table = getTable<T>();
-			if (table.copyComponent(source, destination)) {
-				mActiveComponents[desComponentsBaseIndex] = true;
-				mActiveComponents[desComponentsBaseIndex + 1] = mActiveComponents[srcComponentsBaseIndex + 1];
-
-				if (mActiveComponents[desComponentsBaseIndex + 1]) {
-					for (auto& pair : mSystems) {
-						if (pair.second[typeId]) {
-							pair.first->onNewComponent(destination, ComponentMask().set(typeId, true));
-						}
+		auto& table = getTable<T>();
+		if (table.copyComponent(source, destination)) {
+			if (table.hasComponentEnabled(destination)) {
+				for (auto& pair : mSystems) {
+					if (pair.second.get<T>()) {
+						pair.first->onNewComponent(destination, ComponentMask().set<T>(true));
 					}
 				}
-
-				return table.getComponent(destination);
 			}
+
+			return table.getComponent(destination);
 		}
 		return nullptr;
 	}
@@ -478,7 +373,7 @@ namespace se::app {
 	template <typename T1, typename T2, typename... Args>
 	bool EntityDatabase::hasComponents(Entity entity)
 	{
-		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T1>())]
+		return hasComponents<T1>(entity)
 			&& hasComponents<T2, Args...>(entity);
 	}
 
@@ -486,7 +381,7 @@ namespace se::app {
 	template <typename T>
 	bool EntityDatabase::hasComponents(Entity entity)
 	{
-		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T>())];
+		return getTable<T>().hasComponent(entity);
 	}
 
 
@@ -502,16 +397,25 @@ namespace se::app {
 	std::tuple<T*> EntityDatabase::getComponents(Entity entity, bool onlyEnabled)
 	{
 		T* component = nullptr;
-		if (hasComponents<T>(entity) && (!onlyEnabled || hasComponentsEnabled<T>(entity))) {
-			component = getTable<T>().getComponent(entity);
+
+		auto& table = getTable<T>();
+		if (table.hasComponent(entity) && (!onlyEnabled || table.hasComponentEnabled(entity))) {
+			component = table.getComponent(entity);
 		}
 
 		return std::make_tuple(component);
 	}
 
 
+	template <typename T>
+	void EntityDatabase::iterateComponents(const std::function<void(T&)>& callback, bool onlyEnabled)
+	{
+		getTable<T>().iterateComponents(callback, onlyEnabled);
+	}
+
+
 	template <typename... Args, typename F>
-	void EntityDatabase::iterateComponents(F&& callback, bool onlyEnabled)
+	void EntityDatabase::iterateEntityComponents(F&& callback, bool onlyEnabled)
 	{
 		iterateEntities([&](Entity entity) {
 			if (hasComponents<Args...>(entity)
@@ -528,9 +432,9 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::removeComponent(Entity entity)
 	{
-		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
-		if (mActiveComponents[activeComponentsBaseIndex]) {
-			if (mActiveComponents[activeComponentsBaseIndex + 1]) {
+		auto& table = getTable<T>();
+		if (table.hasComponent(entity)) {
+			if (table.hasComponentEnabled(entity)) {
 				for (auto& pair : mSystems) {
 					if (pair.second.get<T>()) {
 						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
@@ -538,8 +442,7 @@ namespace se::app {
 				}
 			}
 
-			mActiveComponents[activeComponentsBaseIndex] = false;
-			getTable<T>().removeComponent(entity);
+			table.removeComponent(entity);
 		}
 	}
 
@@ -547,11 +450,11 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::enableComponent(Entity entity)
 	{
-		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
-		if (!mActiveComponents[activeComponentsBaseIndex + 1]) {
-			mActiveComponents[activeComponentsBaseIndex + 1] = true;
+		auto& table = getTable<T>();
+		if (table.hasComponent(entity)) {
+			table.enableComponent(entity);
 
-			if (mActiveComponents[activeComponentsBaseIndex]) {
+			if (table.hasComponentEnabled(entity)) {
 				for (auto& pair : mSystems) {
 					if (pair.second.get<T>()) {
 						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
@@ -565,7 +468,7 @@ namespace se::app {
 	template <typename T1, typename T2, typename... Args>
 	bool EntityDatabase::hasComponentsEnabled(Entity entity)
 	{
-		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T1>()) + 1]
+		return hasComponentsEnabled<T1>(entity)
 			&& hasComponentsEnabled<T2, Args...>(entity);
 	}
 
@@ -573,16 +476,16 @@ namespace se::app {
 	template <typename T>
 	bool EntityDatabase::hasComponentsEnabled(Entity entity)
 	{
-		return mActiveComponents[2 * (entity * mComponentTables.size() + getComponentTypeId<T>()) + 1];
+		return getTable<T>().hasComponentEnabled(entity);
 	}
 
 
 	template <typename T>
 	void EntityDatabase::disableComponent(Entity entity)
 	{
-		std::size_t activeComponentsBaseIndex = 2 * (entity * mComponentTables.size() + getComponentTypeId<T>());
-		if (mActiveComponents[activeComponentsBaseIndex + 1]) {
-			if (mActiveComponents[activeComponentsBaseIndex]) {
+		auto& table = getTable<T>();
+		if (table.hasComponent(entity)) {
+			if (table.hasComponentEnabled(entity)) {
 				for (auto& pair : mSystems) {
 					if (pair.second.get<T>()) {
 						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
@@ -590,21 +493,7 @@ namespace se::app {
 				}
 			}
 
-			mActiveComponents[activeComponentsBaseIndex + 1] = false;
-		}
-	}
-
-
-	template <typename S, typename C>
-	void ISystem::tryCallC(
-		void(S::*componentHandler)(Entity, C*),
-		Entity entity, const EntityDatabase::ComponentMask& mask
-	) {
-		if (mask.get<C>()) {
-			S* thisS = static_cast<S*>(this);
-
-			auto [component] = mEntityDatabase.getComponents<C>(entity);
-			(thisS->*componentHandler)(entity, component);
+			table.disableComponent(entity);
 		}
 	}
 

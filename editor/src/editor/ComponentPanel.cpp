@@ -95,7 +95,7 @@ namespace editor {
 		virtual const char* getName() const override
 		{ return "Tag"; };
 		virtual void create(Entity entity) override
-		{ getEditor().getEntityDatabase().emplaceComponent<TagComponent>(entity, ""); };
+		{ getEditor().getEntityDatabase().emplaceComponent<TagComponent>(entity); };
 		virtual void draw(Entity entity) override
 		{
 			auto [tag] = getEditor().getEntityDatabase().getComponents<TagComponent>(entity);
@@ -451,7 +451,7 @@ namespace editor {
 		{
 			const float size = 500.0f, maxHeight = 10.0f;
 			const std::vector<float> lodDistances = { 2000.0f, 1000.0f, 500.0f, 250.0f, 125.0f, 75.0f, 40.0f, 20.0f, 10.0f, 0.0f };
-			getEditor().getEntityDatabase().emplaceComponent<TerrainComponent>(entity, size, maxHeight, lodDistances);
+			getEditor().getEntityDatabase().emplaceComponent<TerrainComponent>(entity, true, size, maxHeight, lodDistances);
 		};
 		virtual void draw(Entity entity) override
 		{

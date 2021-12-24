@@ -1,6 +1,7 @@
 #ifndef SCRIPT_COMPONENT_H
 #define SCRIPT_COMPONENT_H
 
+#include <array>
 #include <functional>
 #include "ECS.h"
 #include "Repository.h"

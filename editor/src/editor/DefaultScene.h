@@ -183,7 +183,7 @@ namespace editor {
 		// Default Scene entities
 		auto cubeEntity = scene.application.getEntityDatabase().addEntity();
 		scene.entities.push_back(cubeEntity);
-		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(cubeEntity, "cube");
+		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(cubeEntity, true, "cube");
 		auto cubeTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(cubeEntity);
 		cubeTransforms->position = { 0.0f, 0.5f, 0.0f };
 		auto cubeMeshComponent = scene.application.getEntityDatabase().emplaceComponent<MeshComponent>(cubeEntity);
@@ -192,7 +192,7 @@ namespace editor {
 
 		auto lightEntity = scene.application.getEntityDatabase().addEntity();
 		scene.entities.push_back(lightEntity);
-		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(lightEntity, "pointLight");
+		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(lightEntity, true, "pointLight");
 		auto lightComponent = scene.application.getEntityDatabase().emplaceComponent<LightComponent>(lightEntity);
 		lightComponent->setSource(pointLight);
 		auto lightTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(lightEntity);

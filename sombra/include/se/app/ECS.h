@@ -2,11 +2,11 @@
 #define ECS_H
 
 #include <memory>
+#include <functional>
 #include <vector>
 #include <unordered_set>
 #include "../utils/PackedVector.h"
 #include "Entity.h"
-#include "events/EventManager.h"
 
 namespace se::app {
 
@@ -25,47 +25,9 @@ namespace se::app {
 		class IComponentTable;
 		template <typename T> class ITComponentTable;
 		template <typename T> class ComponentTable;
-		template <typename T> class ComponentTableUPtr;
 		using IComponentTableUPtr = std::unique_ptr<IComponentTable>;
 	public:
-		/** Class ComponentMask, it holds the bit mask with a state for each
-		 * Component type */
-		class ComponentMask
-		{
-		private:	// Attributes
-			/** The bit state for each Component */
-			std::vector<bool> mBitMask;
-
-		public:		// Functions
-			/** Creates a new ComponentMask
-			 *
-			 * @param	value the initial value of all the bits */
-			ComponentMask(bool value = false);
-
-			/** Returns the value of the bitmask located at the given index
-			 *
-			 * @param	index the position to check
-			 * @return	the value at the given position */
-			bool operator[](std::size_t index) const
-			{ return mBitMask[index]; };
-
-			/** Sets the value of the bitmask located at the given index
-			 *
-			 * @param	index the position to set
-			 * @param	value the new bit value */
-			ComponentMask& set(std::size_t index, bool value = true)
-			{ mBitMask[index] = value; return *this; };
-
-			/** Sets the value for the given @tparam T Component
-			 *
-			 * @param	value the new bit value */
-			template <typename T>
-			ComponentMask& set(bool value = true);
-
-			/** @return	the value for the given @tparam T Component */
-			template <typename T>
-			bool get() const;
-		};
+		class ComponentMask;
 
 	private:	// Attributes
 		/** The number of different Component types */
@@ -80,9 +42,6 @@ namespace se::app {
 		/** The entities removed from the EntityDatabase. This entities are
 		 * stored here so they can be reused later */
 		std::unordered_set<Entity> mRemovedEntities;
-
-		/** The Components active for each Entity */
-		std::vector<bool> mActiveComponents;
 
 		/** All the ComponentTables added to the EntityDatabase indexed by their
 		 * Component type Id */
@@ -101,22 +60,14 @@ namespace se::app {
 		~EntityDatabase();
 
 		/** Adds a new ComponentTable to the EntityDatabase so the Components
-		 * with the type @tparam T can be added to the Entities. If
-		 * @tparam hasDerived is true, the derived types of @tparam T can also
-		 * be added to the same table
+		 * with the type @tparam T can be added to the Entities
 		 *
 		 * @param	maxComponents the maximum number of Components of that type
 		 *			that can be stored in the table
 		 * @note	this function must be called for each Component type
 		 *			before using any other functions */
-		template <typename T, bool hasDerived = false>
-		std::enable_if_t<!hasDerived, void> addComponentTable(
-			std::size_t maxComponents
-		);
-		template <typename T, bool hasDerived = true>
-		std::enable_if_t<hasDerived, void> addComponentTable(
-			std::size_t maxComponents
-		);
+		template <typename T>
+		void addComponentTable(std::size_t maxComponents);
 
 		/** Adds the given System so it can be notified of new Entities and
 		 * Components
@@ -125,7 +76,7 @@ namespace se::app {
 		 * @param	mask the changes in Components that must be notified to the
 		 *			ISystem
 		 * @note	if the system has been added it will just update the mask */
-		void addSystem(ISystem* system, ComponentMask mask);
+		void addSystem(ISystem* system, const ComponentMask& mask);
 
 		/** Returns the ComponentMask of the given ISystem
 		 *
@@ -142,9 +93,7 @@ namespace se::app {
 		/** Creates a new Entity
 		 *
 		 * @return	the new Entity, @see kNullEntity if it couldn't be
-		 *			created
-		 * @note	the Entity will have no Components, but all of them will be
-		 *			enabled by default */
+		 *			created */
 		Entity addEntity();
 
 		/** Creates a new Entity with the same Components than the given one
@@ -187,30 +136,23 @@ namespace se::app {
 		/** Adds a Component with type @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
+		 * @param	enabled if the Component is enabled or not when it's added
 		 * @param	args the arguments needed for calling the constructor of
 		 *			the new Element
 		 * @return	a pointer to the Component if it was added successfully,
 		 *			nullptr otherwise */
 		template <typename T, typename... Args>
-		T* emplaceComponent(Entity entity, Args&&... args);
+		T* emplaceComponent(Entity entity, bool enabled = true, Args&&... args);
 
 		/** Adds a Component with type @tparam T to the given Entity
 		 *
 		 * @param	entity the Entity that will own the Component
 		 * @param	component the Component to add
+		 * @param	enabled if the Component is enabled or not when it's added
 		 * @return	a pointer to the Component if it was added successfully,
 		 *			nullptr otherwise */
 		template <typename T>
-		T* addComponent(Entity entity, T&& component);
-
-		/** Adds a Component with type @tparam T to the given Entity
-		 *
-		 * @param	entity the Entity that will own the Component
-		 * @param	component a pointer to the Component to add
-		 * @return	a pointer to the Component if it was added successfully,
-		 *			nullptr otherwise */
-		template <typename T>
-		T* addComponent(Entity entity, std::unique_ptr<T> component);
+		T* addComponent(Entity entity, T&& component, bool enabled = true);
 
 		/** Copies a Component with type @tparam T from the source Entity to
 		 * the destination Entity
@@ -267,6 +209,18 @@ namespace se::app {
 		template <typename T>
 		std::tuple<T*> getComponents(Entity entity, bool onlyEnabled = false);
 
+		/** Iterates all the Components with type @tparam T calling the given
+		 * callback function
+		 *
+		 * @param	callback the callback function to call for each Component
+		 * @param	onlyEnabled true if we only want to iterate only the
+		 *			Components enabled, false if we want to iterate all the
+		 *			Components wether they are enabled or not */
+		template <typename T>
+		void iterateComponents(
+			const std::function<void(T&)>& callback, bool onlyEnabled = false
+		);
+
 		/** Iterates all the Entities that have all of the requested Components
 		 * calling the given callback function
 		 *
@@ -276,7 +230,7 @@ namespace se::app {
 		 *			iterate all the Entities with the given Components wether
 		 *			they are enabled or not */
 		template <typename... Args, typename F>
-		void iterateComponents(F&& callback, bool onlyEnabled = false);
+		void iterateEntityComponents(F&& callback, bool onlyEnabled = false);
 
 		/** Removes the Component with @tparam T from the given Entity
 		 *
@@ -287,10 +241,7 @@ namespace se::app {
 		/** Enables the Component with @tparam T for the given Entity so the
 		 * Systems can start using it
 		 *
-		 * @param	entity the Entity that owns/will own the Component
-		 * @note	if there is no Component currently added to the Entity, the
-		 *			next time a Component is added the Systems will be notified
-		 *			of it */
+		 * @param	entity the Entity that owns the Component */
 		template <typename T>
 		void enableComponent(Entity entity);
 
@@ -313,11 +264,7 @@ namespace se::app {
 		/** Disables the Component with @tparam T for the given Entity so the
 		 * Systems will no longer use it
 		 *
-		 * @param	entity the Entity that owns/will own the Component
-		 * @note	if there is no Component currently added to the Entity, the
-		 *			next time a Component is added to the Entity the Systems
-		 *			won't be notified of it until @see enableComponent is
-		 *			called */
+		 * @param	entity the Entity that owns the Component */
 		template <typename T>
 		void disableComponent(Entity entity);
 	private:
@@ -332,80 +279,50 @@ namespace se::app {
 	};
 
 
-	/**
-	 * Class System, it's the interface that each System must implement. A
-	 * System is used for updating the Entities Components at every clock tick.
-	 * Also, it can listen for Events
-	 */
-	class ISystem : public IEventListener
+	/** Class ComponentMask, it holds the bit mask with a state for each
+	 * Component type */
+	class EntityDatabase::ComponentMask
 	{
-	protected:	// Attributes
-		/** The EntityDatabase that holds all the Entities and their
-		 * Components */
-		EntityDatabase& mEntityDatabase;
-
-		/** The elapsed time since the last @see update call */
-		float mDeltaTime;
+	private:	// Attributes
+		/** The bit state for each Component */
+		std::vector<bool> mBitMask;
 
 	public:		// Functions
-		/** Creates a new ISystem
+		/** Creates a new ComponentMask
 		 *
-		 * @param	entityDatabase the EntityDatabase that holds all the
-		 *			Entities */
-		ISystem(EntityDatabase& entityDatabase) :
-			mEntityDatabase(entityDatabase), mDeltaTime(0.0f) {};
+		 * @param	value the initial value of all the bits */
+		ComponentMask(bool value = false);
 
-		/** Class destructor */
-		virtual ~ISystem() = default;
-
-		/** @copydoc IEventListener::notify(const IEvent&) */
-		virtual bool notify(const IEvent& /*event*/) override { return false; };
-
-		/** Function that the EntityDatabase will call when an Entity Component
-		 * is added
+		/** Returns the value of the bitmask located at the given index
 		 *
-		 * @param	entity the Entity that holds the Component
-		 * @param	mask the ComponentMask that is used for knowing which
-		 *			Component has been added */
-		virtual void onNewComponent(
-			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
-		) {};
+		 * @param	index the position to check
+		 * @return	the value at the given position */
+		bool operator[](std::size_t index) const
+		{ return mBitMask[index]; };
 
-		/** Function that the EntityDatabase will call when an Entity Component
-		 * is going to be removed
+		/** Sets the value of the bitmask located at the given index
 		 *
-		 * @param	entity the Entity that holds the Component
-		 * @param	mask the ComponentMask that is used for knowing which
-		 *			Component is going to be removed */
-		virtual void onRemoveComponent(
-			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
-		) {};
+		 * @param	index the position to set
+		 * @param	value the new bit value */
+		ComponentMask& set(std::size_t index, bool value = true)
+		{ mBitMask[index] = value; return *this; };
 
-		/** Sets the delta time of the ISystem
+		/** Sets the value for the given @tparam T Component
 		 *
-		 * @param	deltaTime the elapsed time since the last @see update
-		 *			call */
-		void setDeltaTime(float deltaTime) { mDeltaTime = deltaTime; };
+		 * @param	value the new bit value */
+		template <typename T>
+		ComponentMask& set(bool value = true)
+		{ mBitMask[getComponentTypeId<T>()] = value; return *this; }
 
-		/** Function called every clock tick */
-		virtual void update() {};
-	protected:
-		/** Tries to call the given component handler function with the correct
-		 * Component type
-		 *
-		 * @param	componentHandler a pointer to the function to call
-		 * @param	entity the Entity that holds the Component
-		 * @param	mask the ComponentMask that holds the type of the Component
-		 *			to check */
-		template <typename S, typename C>
-		void tryCallC(
-			void(S::*componentHandler)(Entity, C*),
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		);
+		/** @return	the value for the given @tparam T Component */
+		template <typename T>
+		bool get() const
+		{ return mBitMask[getComponentTypeId<T>()]; }
 	};
 
 }
 
+#include "ISystem.h"
 #include "ECS.hpp"
 
 #endif		// ECS_H

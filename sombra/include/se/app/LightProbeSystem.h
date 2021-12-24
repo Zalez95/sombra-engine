@@ -3,7 +3,6 @@
 
 #include <memory>
 #include "../graphics/core/Texture.h"
-#include "events/ContainerEvent.h"
 #include "ECS.h"
 #include "LightProbeComponent.h"
 

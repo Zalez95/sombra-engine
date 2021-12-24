@@ -64,10 +64,10 @@ namespace editor {
 		if (mRemove) {
 			mRemove = false;
 			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
-				[&](se::app::Entity, se::app::AnimationComponent* animation) {
-					se::animation::AnimationNode* node = animation->getRootNode();
+				[&](se::app::AnimationComponent& animation) {
+					se::animation::AnimationNode* node = animation.getRootNode();
 					if (node == &(*mSelectedNode)) {
-						animation->setRootNode(nullptr);
+						animation.setRootNode(nullptr);
 					}
 				}
 			);
@@ -76,10 +76,10 @@ namespace editor {
 		if (mRemoveHierarchy) {
 			mRemoveHierarchy = false;
 			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
-				[&](se::app::Entity, se::app::AnimationComponent* animation) {
-					se::animation::AnimationNode* node = animation->getRootNode();
+				[&](se::app::AnimationComponent& animation) {
+					se::animation::AnimationNode* node = animation.getRootNode();
 					if (node == &(*mSelectedNode) || (mSelectedNode->find(*node) != mSelectedNode->end())) {
-						animation->setRootNode(nullptr);
+						animation.setRootNode(nullptr);
 					}
 				}
 			);

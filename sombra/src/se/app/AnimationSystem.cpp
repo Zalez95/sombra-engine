@@ -26,7 +26,7 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		mEntityDatabase.iterateComponents<TransformsComponent, AnimationComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, AnimationComponent>(
 			[this](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
 				if (animation->getRootNode() && !transforms->updated[static_cast<int>(TransformsComponent::Update::Animation)]) {
 					animation::NodeData& nodeData = animation->getRootNode()->getData();
@@ -55,7 +55,7 @@ namespace se::app {
 		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
 
 		// Update the Entities with the changes made to the AnimationNodes
-		mEntityDatabase.iterateComponents<TransformsComponent, AnimationComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, AnimationComponent>(
 			[this](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
 				if (animation->getRootNode() && animation->getRootNode()->getData().animated) {
 					animation::NodeData& nodeData = animation->getRootNode()->getData();
@@ -67,7 +67,7 @@ namespace se::app {
 			},
 			true
 		);
-		mEntityDatabase.iterateComponents<TransformsComponent, SkinComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, SkinComponent>(
 			[this](Entity, TransformsComponent* transforms, SkinComponent* skin) {
 				skin->processNodes([&](const animation::AnimationNode& node) {
 					if (node.getData().animated) {

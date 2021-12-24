@@ -2847,7 +2847,7 @@ namespace se::app {
 		}
 	}
 
-	template <typename T, bool hasDerived = false>
+	template <typename T>
 	Result deserializeCVector(const std::string& tag, DeserializeData& data, Scene& scene)
 	{
 		auto it = data.json.find(tag);
@@ -2871,27 +2871,12 @@ namespace se::app {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: Missing \"enabled\" property");
 				}
 
-				if (itEnabled->get<bool>()) {
-					scene.application.getEntityDatabase().enableComponent<T>(itEntity2->second);
+				bool enabled = itEnabled->get<bool>();
+				auto [result, component] = deserializeComponent<T>(componentJson, data, scene);
+				if (!result) {
+					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 				}
-				else {
-					scene.application.getEntityDatabase().disableComponent<T>(itEntity2->second);
-				}
-
-				if constexpr (hasDerived) {
-					auto [result, component] = deserializeComponent<std::unique_ptr<T>>(componentJson, data, scene);
-					if (!result) {
-						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
-					}
-					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
-				}
-				else {
-					auto [result, component] = deserializeComponent<T>(componentJson, data, scene);
-					if (!result) {
-						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
-					}
-					scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component));
-				}
+				scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component), enabled);
 			}
 		}
 

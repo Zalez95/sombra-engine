@@ -13,6 +13,7 @@
 #include "events/LightSourceEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
+#include "events/EventManager.h"
 #include "LightComponent.h"
 #include "ECS.h"
 
@@ -28,7 +29,7 @@ namespace se::app {
 	 * Class LightSystem, it's the System used for updating the Entities'
 	 * LightComponents
 	 */
-	class LightSystem : public ISystem
+	class LightSystem : public ISystem, IEventListener
 	{
 	private:	// Nested types
 		template <typename T> using UniformVVSPtr =
@@ -85,7 +86,7 @@ namespace se::app {
 		/** Class destructor */
 		~LightSystem();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
 		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */

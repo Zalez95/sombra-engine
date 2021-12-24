@@ -158,7 +158,7 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		mEntityDatabase.iterateComponents<TerrainComponent>(
+		mEntityDatabase.iterateEntityComponents<TerrainComponent>(
 			[&](Entity entity, TerrainComponent* terrain) {
 				bool hasShader = false;
 				terrain->processRenderableShaders([&](const auto& shader) {

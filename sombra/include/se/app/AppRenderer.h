@@ -2,6 +2,7 @@
 #define APP_RENDERER_H
 
 #include "events/ResizeEvent.h"
+#include "events/EventManager.h"
 #include "ECS.h"
 
 namespace se::app {
@@ -23,7 +24,7 @@ namespace se::app {
 	 *			reserved for special cases that can't be rendered this way.
 	 *			For the Renderable2Ds, there is a "renderer2D" for submitting
 	 *			them */
-	class AppRenderer : public ISystem
+	class AppRenderer : public ISystem, IEventListener
 	{
 	private:	// Attributes
 		/** The Application that holds the GraphicsEngine used for rendering
@@ -46,7 +47,7 @@ namespace se::app {
 		/** Class destructor */
 		~AppRenderer();
 
-		/** @copydoc ISystem::notify(const IEvent&) */
+		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
 		/** Renders the graphics data of the Entities

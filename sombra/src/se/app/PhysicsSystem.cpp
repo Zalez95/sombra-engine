@@ -25,7 +25,7 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Start";
 
 		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
-		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(
 			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
 					physics::RigidBodyState state = rigidBody->get().getState();
@@ -44,7 +44,7 @@ namespace se::app {
 		mApplication.getExternalTools().rigidBodyWorld->update(mDeltaTime);
 
 		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		mEntityDatabase.iterateComponents<TransformsComponent, RigidBodyComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(
 			[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 				if (!rigidBody->get().getStatus(physics::RigidBody::Status::Sleeping)) {
 					transforms->position	= rigidBody->get().getState().position;

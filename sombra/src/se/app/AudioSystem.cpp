@@ -39,7 +39,7 @@ namespace se::app {
 		}
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
-		mEntityDatabase.iterateComponents<TransformsComponent, AudioSourceComponent>(
+		mEntityDatabase.iterateEntityComponents<TransformsComponent, AudioSourceComponent>(
 			[this](Entity, TransformsComponent* transforms, AudioSourceComponent* source) {
 				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::AudioSource)]) {
 					source->get().setPosition(transforms->position);

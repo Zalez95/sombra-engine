@@ -51,8 +51,8 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Scripts";
 
 		mEntityDatabase.iterateComponents<ScriptComponent>(
-			[this](Entity, ScriptComponent* script) {
-				script->onUpdate(mDeltaTime, mScriptSharedState);
+			[this](ScriptComponent& script) {
+				script.onUpdate(mDeltaTime, mScriptSharedState);
 			},
 			true
 		);

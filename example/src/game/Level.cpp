@@ -389,7 +389,7 @@ namespace game {
 			mPlayerEntity = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(mPlayerEntity);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(mPlayerEntity, "player");
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(mPlayerEntity, true, "player");
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(0.0f, 1.0f, 10.0f);
@@ -425,8 +425,8 @@ namespace game {
 			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
 		}
 
-		mGame.getEntityDatabase().iterateComponents<se::app::LightComponent>([](se::app::Entity, se::app::LightComponent* light) {
-			auto source = light->getSource();
+		mGame.getEntityDatabase().iterateComponents<se::app::LightComponent>([](se::app::LightComponent& light) {
+			auto source = light.getSource();
 			if (source->getType() == se::app::LightSource::Type::Directional) {
 				source->setShadows();
 			}
@@ -437,7 +437,7 @@ namespace game {
 			auto skyEntity = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(skyEntity);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(skyEntity, "sky");
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(skyEntity, true, "sky");
 
 			se::app::TransformsComponent transforms;
 			transforms.scale = glm::vec3(kZFar / 2.0f);
@@ -453,7 +453,7 @@ namespace game {
 			auto plane = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(plane);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(plane, "plane");
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(plane, true, "plane");
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(-15.0f, 1.0f, -5.0f);
@@ -478,7 +478,7 @@ namespace game {
 			auto cube = mGame.getEntityDatabase().addEntity();
 			mScene.entities.push_back(cube);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, "non-random-cube-" + std::to_string(i));
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, true, "non-random-cube-" + std::to_string(i));
 
 			se::app::TransformsComponent transforms;
 			transforms.position = cubePositions[i];
@@ -555,7 +555,7 @@ namespace game {
 			mScene.entities.push_back(tubeSlice);
 
 			std::string name = "tubeSlice" + std::to_string(iSlice);
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(tubeSlice, name.c_str());
+			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(tubeSlice, true, name.c_str());
 
 			se::app::TransformsComponent transforms;
 			transforms.orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -594,7 +594,7 @@ namespace game {
 				auto cube = mGame.getEntityDatabase().addEntity();
 				mScene.entities.push_back(cube);
 
-				mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, "random-cube-" + std::to_string(i));
+				mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, true, "random-cube-" + std::to_string(i));
 
 				se::app::TransformsComponent transforms;
 				transforms.position = glm::ballRand(50.0f) + glm::vec3(0.0f, 50.0f, 0.0f);

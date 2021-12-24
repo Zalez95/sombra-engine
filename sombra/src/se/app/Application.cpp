@@ -84,19 +84,19 @@ namespace se::app {
 
 			// Entities
 			mEntityDatabase = new EntityDatabase(kMaxEntities);
-			mEntityDatabase->addComponentTable<TagComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<TransformsComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<SkinComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<AnimationComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<CameraComponent, false>(kMaxCameras);
-			mEntityDatabase->addComponentTable<LightComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<LightProbeComponent, false>(kMaxLightProbes);
-			mEntityDatabase->addComponentTable<MeshComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<TerrainComponent, false>(kMaxTerrains);
-			mEntityDatabase->addComponentTable<ParticleSystemComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<RigidBodyComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<ScriptComponent, false>(kMaxEntities);
-			mEntityDatabase->addComponentTable<AudioSourceComponent, false>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TagComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TransformsComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<SkinComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AnimationComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<CameraComponent>(kMaxCameras);
+			mEntityDatabase->addComponentTable<LightComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<LightProbeComponent>(kMaxLightProbes);
+			mEntityDatabase->addComponentTable<MeshComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<TerrainComponent>(kMaxTerrains);
+			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<ScriptComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities);
 
 			// Systems
 			mInputSystem = new InputSystem(*this);
