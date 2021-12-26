@@ -100,45 +100,51 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
+	void CameraSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query)
 	{
-		tryCallC(&CameraSystem::onNewCamera, entity, mask);
-		tryCallC(&CameraSystem::onNewMesh, entity, mask);
-		tryCallC(&CameraSystem::onNewTerrain, entity, mask);
-		tryCallC(&CameraSystem::onNewParticleSys, entity, mask);
-		tryCallC(&CameraSystem::onNewLight, entity, mask);
+		tryCallC(&CameraSystem::onNewCamera, entity, mask, query);
+		tryCallC(&CameraSystem::onNewMesh, entity, mask, query);
+		tryCallC(&CameraSystem::onNewTerrain, entity, mask, query);
+		tryCallC(&CameraSystem::onNewParticleSys, entity, mask, query);
+		tryCallC(&CameraSystem::onNewLight, entity, mask, query);
 	}
 
 
-	void CameraSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
+	void CameraSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query)
 	{
-		tryCallC(&CameraSystem::onRemoveCamera, entity, mask);
-		tryCallC(&CameraSystem::onRemoveMesh, entity, mask);
-		tryCallC(&CameraSystem::onRemoveTerrain, entity, mask);
-		tryCallC(&CameraSystem::onRemoveParticleSys, entity, mask);
-		tryCallC(&CameraSystem::onRemoveLight, entity, mask);
+		tryCallC(&CameraSystem::onRemoveCamera, entity, mask, query);
+		tryCallC(&CameraSystem::onRemoveMesh, entity, mask, query);
+		tryCallC(&CameraSystem::onRemoveTerrain, entity, mask, query);
+		tryCallC(&CameraSystem::onRemoveParticleSys, entity, mask, query);
+		tryCallC(&CameraSystem::onRemoveLight, entity, mask, query);
 	}
 
 
 	void CameraSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Cameras";
-		mEntityDatabase.iterateEntityComponents<TransformsComponent, CameraComponent>(
-			[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
-				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Camera)]) {
-					camera->setPosition(transforms->position);
-					camera->setOrientation(transforms->orientation);
-					transforms->updated.set(static_cast<int>(TransformsComponent::Update::Camera));
-				}
-			},
-			true
-		);
+		mEntityDatabase.executeQuery([](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TransformsComponent, CameraComponent>(
+				[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
+					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Camera)]) {
+						camera->setPosition(transforms->position);
+						camera->setOrientation(transforms->orientation);
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::Camera));
+					}
+				},
+				true
+			);
+		});
 
-		auto [transforms, camera] = mEntityDatabase.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
-		glm::vec3 viewPosition = (transforms)? transforms->position : glm::vec3(0.0f);
-		glm::mat4 viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
-		glm::mat4 projectionMatrix = (camera)? camera->getProjectionMatrix() : glm::mat4(1.0f);
-		glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+		glm::vec3 viewPosition;
+		glm::mat4 viewMatrix, projectionMatrix, viewProjectionMatrix;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [transforms, camera] = query.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
+			viewPosition = (transforms)? transforms->position : glm::vec3(0.0f);
+			viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
+			projectionMatrix = (camera)? camera->getProjectionMatrix() : glm::mat4(1.0f);
+			viewProjectionMatrix = projectionMatrix * viewMatrix;
+		});
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
 		mCameraUniformsUpdater->update(viewMatrix, projectionMatrix);
@@ -153,9 +159,9 @@ namespace se::app {
 	}
 
 // Private functions
-	void CameraSystem::onNewCamera(Entity entity, CameraComponent* camera)
+	void CameraSystem::onNewCamera(Entity entity, CameraComponent* camera, EntityDatabase::Query& query)
 	{
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Camera));
 		}
@@ -164,7 +170,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onRemoveCamera(Entity entity, CameraComponent* camera)
+	void CameraSystem::onRemoveCamera(Entity entity, CameraComponent* camera, EntityDatabase::Query&)
 	{
 		if (mCameraEntity == entity) {
 			mCameraEntity = kNullEntity;
@@ -175,7 +181,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	void CameraSystem::onNewMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mesh->processRenderableShaders(i, [&](const auto& shader) {
@@ -186,7 +192,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	void CameraSystem::onRemoveMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mCameraUniformsUpdater->removeRenderable(mesh->get(i));
@@ -195,7 +201,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	void CameraSystem::onNewTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
 		terrain->processRenderableShaders([&](const auto& shader) {
 			mCameraUniformsUpdater->addRenderableTechnique(terrain->get(), shader->getTechnique());
@@ -204,14 +210,14 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	void CameraSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
 		mCameraUniformsUpdater->removeRenderable(terrain->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
 	}
 
 
-	void CameraSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	void CameraSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query&)
 	{
 		particleSystem->processRenderableShaders([&](const auto& shader) {
 			mCameraUniformsUpdater->addRenderableTechnique(particleSystem->get(), shader->getTechnique());
@@ -220,14 +226,14 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	void CameraSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query&)
 	{
 		mCameraUniformsUpdater->removeRenderable(particleSystem->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " removed successfully";
 	}
 
 
-	void CameraSystem::onNewLight(Entity entity, LightComponent* light)
+	void CameraSystem::onNewLight(Entity entity, LightComponent* light, EntityDatabase::Query&)
 	{
 		auto renderable = light->getRenderable().getRenderableMesh();
 		renderable.processTechniques([&](const auto& technique) {
@@ -237,7 +243,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::onRemoveLight(Entity entity, LightComponent* light)
+	void CameraSystem::onRemoveLight(Entity entity, LightComponent* light, EntityDatabase::Query&)
 	{
 		auto renderable = light->getRenderable().getRenderableMesh();
 		mCameraUniformsUpdater->removeRenderable(renderable);
@@ -258,19 +264,21 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
-		if (mesh) {
-			switch (event.getOperation()) {
-				case RMeshEvent::Operation::Add:
-					mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
-						mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
-					});
-					break;
-				case RMeshEvent::Operation::Remove:
-					mCameraUniformsUpdater->removeRenderable(mesh->get(event.getRIndex()));
-					break;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [mesh] = query.getComponents<MeshComponent>(event.getEntity(), true);
+			if (mesh) {
+				switch (event.getOperation()) {
+					case RMeshEvent::Operation::Add:
+						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+							mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
+						});
+						break;
+					case RMeshEvent::Operation::Remove:
+						mCameraUniformsUpdater->removeRenderable(mesh->get(event.getRIndex()));
+						break;
+				}
 			}
-		}
+		});
 	}
 
 
@@ -278,45 +286,47 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
-			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
-			if (mesh) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
-						break;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
+				auto [mesh] = query.getComponents<MeshComponent>(event.getEntity(), true);
+				if (mesh) {
+					switch (event.getOperation()) {
+						case RenderableShaderEvent::Operation::Add:
+							mCameraUniformsUpdater->addRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
+							break;
+						case RenderableShaderEvent::Operation::Remove:
+							mCameraUniformsUpdater->removeRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
+							break;
+					}
 				}
 			}
-		}
-		else {
-			graphics::Renderable* renderable = nullptr;
-			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
-				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity(), true);
-				renderable = &terrain->get();
-			}
-			else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::ParticleSystem) {
-				auto [particleSystem] = mEntityDatabase.getComponents<ParticleSystemComponent>(event.getEntity(), true);
-				renderable = &particleSystem->get();
-			}
-			else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Light) {
-				auto [light] = mEntityDatabase.getComponents<LightComponent>(event.getEntity(), true);
-				renderable = &light->getRenderable().getRenderableMesh();
-			}
+			else {
+				graphics::Renderable* renderable = nullptr;
+				if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
+					auto [terrain] = query.getComponents<TerrainComponent>(event.getEntity(), true);
+					renderable = &terrain->get();
+				}
+				else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::ParticleSystem) {
+					auto [particleSystem] = query.getComponents<ParticleSystemComponent>(event.getEntity(), true);
+					renderable = &particleSystem->get();
+				}
+				else if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Light) {
+					auto [light] = query.getComponents<LightComponent>(event.getEntity(), true);
+					renderable = &light->getRenderable().getRenderableMesh();
+				}
 
-			if (renderable) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						mCameraUniformsUpdater->addRenderableTechnique(*renderable, event.getShader()->getTechnique());
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderableTechnique(*renderable, event.getShader()->getTechnique());
-						break;
+				if (renderable) {
+					switch (event.getOperation()) {
+						case RenderableShaderEvent::Operation::Add:
+							mCameraUniformsUpdater->addRenderableTechnique(*renderable, event.getShader()->getTechnique());
+							break;
+						case RenderableShaderEvent::Operation::Remove:
+							mCameraUniformsUpdater->removeRenderableTechnique(*renderable, event.getShader()->getTechnique());
+							break;
+					}
 				}
 			}
-		}
+		});
 	}
 
 

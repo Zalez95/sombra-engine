@@ -34,12 +34,15 @@ namespace se::app {
 		 * @param	entity the Entity that holds the Component
 		 * @param	mask the ComponentMask that is used for knowing which
 		 *			Component has been added
-		 * @note	this function is called in the middle of a critical section,
-		 *			so the entity or the component notified can't be removed
-		 *			while we are working with it. This will also lock other
-		 *			operations in the EntityDatabase */
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its Components
+		 * @note	this function is called in the middle of an EntityDatabase
+		 *			critical section, so the entity or the component notified
+		 *			won't be removed while we are working with it. This will
+		 *			also lock other operations in the EntityDatabase */
 		virtual void onNewComponent(
-			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
+			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/,
+			EntityDatabase::Query& /*query*/
 		) {};
 
 		/** Function that the EntityDatabase will call when an Entity Component
@@ -48,12 +51,15 @@ namespace se::app {
 		 * @param	entity the Entity that holds the Component
 		 * @param	mask the ComponentMask that is used for knowing which
 		 *			Component is going to be removed
-		 * @note	this function is called in the middle of a critical section,
-		 *			so the entity or the component notified can't be removed
-		 *			while we are working with it. This will also lock other
-		 *			operations in the EntityDatabase */
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its Components
+		 * @note	this function is called in the middle of an EntityDatabase
+		 *			critical section, so the entity or the component notified
+		 *			won't be removed while we are working with it. This will
+		 *			also lock other operations in the EntityDatabase */
 		virtual void onRemoveComponent(
-			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/
+			Entity /*entity*/, const EntityDatabase::ComponentMask& /*mask*/,
+			EntityDatabase::Query& /*query*/
 		) {};
 
 		/** Sets the delta time of the ISystem
@@ -71,25 +77,29 @@ namespace se::app {
 		 * @param	componentHandler a pointer to the function to call
 		 * @param	entity the Entity that holds the Component
 		 * @param	mask the ComponentMask that holds the type of the Component
-		 *			to check */
+		 *			to check
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its Components */
 		template <typename S, typename C>
 		void tryCallC(
-			void(S::*componentHandler)(Entity, C*),
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			void(S::*componentHandler)(Entity, C*, EntityDatabase::Query&),
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		);
 	};
 
 
 	template <typename S, typename C>
 	void ISystem::tryCallC(
-		void(S::*componentHandler)(Entity, C*),
-		Entity entity, const EntityDatabase::ComponentMask& mask
+		void(S::*componentHandler)(Entity, C*, EntityDatabase::Query&),
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
 	) {
 		if (mask.get<C>()) {
 			S* thisS = static_cast<S*>(this);
 
-			auto [component] = mEntityDatabase.getComponents<C>(entity);
-			(thisS->*componentHandler)(entity, component);
+			auto [component] = query.getComponents<C>(entity);
+			(thisS->*componentHandler)(entity, component, query);
 		}
 	}
 

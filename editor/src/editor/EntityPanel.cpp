@@ -25,8 +25,15 @@ namespace editor {
 
 		if (scene) {
 			if (ImGui::SmallButton(("Add##EntityPanel" + std::to_string(mPanelId) + "::Add").c_str())) {
-				se::app::Entity newEntity = mEditor.getEntityDatabase().addEntity();
-				scene->entities.push_back(newEntity);
+				se::app::Entity newEntity = se::app::kNullEntity;
+
+				mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+					newEntity = query.addEntity();
+					if (newEntity != se::app::kNullEntity) {
+						scene->entities.push_back(newEntity);
+					}
+				});
+
 				mEditor.setActiveEntity(newEntity);
 			}
 			ImGui::SameLine();
@@ -36,7 +43,9 @@ namespace editor {
 				if (itEntity != scene->entities.end()) {
 					scene->entities.erase(itEntity);
 					mEditor.setActiveEntity(se::app::kNullEntity);
-					mEditor.getEntityDatabase().removeEntity(entity);
+					mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+						query.removeEntity(entity);
+					});
 				}
 			}
 			ImGui::SameLine();
@@ -44,20 +53,29 @@ namespace editor {
 				se::app::Entity entity = mEditor.getActiveEntity();
 				auto itEntity = std::find(scene->entities.begin(), scene->entities.end(), entity);
 				if (itEntity != scene->entities.end()) {
-					se::app::Entity newEntity = mEditor.getEntityDatabase().copyEntity(entity);
-					scene->entities.push_back(newEntity);
+					se::app::Entity newEntity = se::app::kNullEntity;
+
+					mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+						newEntity = query.copyEntity(entity);
+						if (newEntity != se::app::kNullEntity) {
+							scene->entities.push_back(newEntity);
+						}
+					});
+
 					mEditor.setActiveEntity(newEntity);
 				}
 			}
 
 			ImGui::BeginChild("Entities");
 			for (se::app::Entity entity : scene->entities) {
-				auto [tag] = mEditor.getEntityDatabase().getComponents<se::app::TagComponent>(entity);
-
 				std::string name = "#" + std::to_string(entity);
-				if (tag) {
-					name += " " + std::string(tag->getName(), tag->getLength());
-				}
+
+				mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+					auto [tag] = query.getComponents<se::app::TagComponent>(entity);
+					if (tag) {
+						name += " " + std::string(tag->getName(), tag->getLength());
+					}
+				});
 
 				if (ImGui::Selectable(name.c_str(), mEditor.getActiveEntity() == entity)) {
 					mEditor.setActiveEntity(entity);

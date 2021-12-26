@@ -5,10 +5,6 @@ namespace se::app {
 	std::size_t EntityDatabase::sComponentTypeCount = 0;
 
 
-	EntityDatabase::ComponentMask::ComponentMask(bool value) :
-		mBitMask(sComponentTypeCount, value) {}
-
-
 	EntityDatabase::EntityDatabase(std::size_t maxEntities) :
 		mMaxEntities(maxEntities), mLastEntity(kNullEntity)
 	{
@@ -18,14 +14,14 @@ namespace se::app {
 
 	EntityDatabase::~EntityDatabase()
 	{
-		iterateEntities([this](Entity entity) {
-			removeEntity(entity);
-		});
+		executeQuery([](Query& query) { query.clearEntities(); });
 	}
 
 
 	void EntityDatabase::addSystem(ISystem* system, const ComponentMask& mask)
 	{
+		std::scoped_lock lock(mEntityDBMutex);
+
 		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
 			return pair.first == system;
 		});
@@ -38,8 +34,10 @@ namespace se::app {
 	}
 
 
-	EntityDatabase::ComponentMask EntityDatabase::getSystemMask(ISystem* system) const
+	EntityDatabase::ComponentMask EntityDatabase::getSystemMask(ISystem* system)
 	{
+		std::scoped_lock lock(mEntityDBMutex);
+
 		ComponentMask ret;
 		auto itSystem = std::find_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
 			return pair.first == system;
@@ -53,6 +51,8 @@ namespace se::app {
 
 	void EntityDatabase::removeSystem(ISystem* system)
 	{
+		std::scoped_lock lock(mEntityDBMutex);
+
 		mSystems.erase(
 			std::remove_if(mSystems.begin(), mSystems.end(), [&](const auto& pair) {
 				return pair.first == system;
@@ -62,17 +62,17 @@ namespace se::app {
 	}
 
 
-	Entity EntityDatabase::addEntity()
+	Entity EntityDatabase::Query::addEntity()
 	{
-		if (mRemovedEntities.empty()) {
-			if (mLastEntity < static_cast<Entity>(mMaxEntities)) {
-				return ++mLastEntity;
+		if (mParent.mRemovedEntities.empty()) {
+			if (mParent.mLastEntity < static_cast<Entity>(mParent.mMaxEntities)) {
+				return ++mParent.mLastEntity;
 			}
 		}
 		else {
-			auto it = mRemovedEntities.begin();
+			auto it = mParent.mRemovedEntities.begin();
 			Entity ret = *it;
-			mRemovedEntities.erase(it);
+			mParent.mRemovedEntities.erase(it);
 
 			return ret;
 		}
@@ -81,17 +81,16 @@ namespace se::app {
 	}
 
 
-	Entity EntityDatabase::copyEntity(Entity source)
+	Entity EntityDatabase::Query::copyEntity(Entity source)
 	{
 		Entity ret = addEntity();
 
-		std::size_t numComponents = mComponentTables.size();
-		for (std::size_t i = 0; i < numComponents; ++i) {
-			if (mComponentTables[i]->copyComponent(source, ret)) {
-				if (mComponentTables[i]->hasComponentEnabled(ret)) {
-					for (auto& pair : mSystems) {
+		for (std::size_t i = 0; i < mParent.mComponentTables.size(); ++i) {
+			if (mParent.mComponentTables[i]->copyComponent(source, ret)) {
+				if (mParent.mComponentTables[i]->hasComponentEnabled(ret)) {
+					for (auto& pair : mParent.mSystems) {
 						if (pair.second[i]) {
-							pair.first->onNewComponent(ret, ComponentMask().set(i, true));
+							pair.first->onNewComponent(ret, ComponentMask().set(i, true), *this);
 						}
 					}
 				}
@@ -102,28 +101,27 @@ namespace se::app {
 	}
 
 
-	void EntityDatabase::removeEntity(Entity entity)
+	void EntityDatabase::Query::removeEntity(Entity entity)
 	{
 		if (entity == kNullEntity) { return; }
 
-		std::size_t numComponents = mComponentTables.size();
-		for (std::size_t i = 0; i < numComponents; ++i) {
-			if (mComponentTables[i]->hasComponentEnabled(entity)) {
-				for (auto& pair : mSystems) {
+		for (std::size_t i = 0; i < mParent.mComponentTables.size(); ++i) {
+			if (mParent.mComponentTables[i]->hasComponentEnabled(entity)) {
+				for (auto& pair : mParent.mSystems) {
 					if (pair.second[i]) {
-						pair.first->onRemoveComponent(entity, ComponentMask().set(i, true));
+						pair.first->onRemoveComponent(entity, ComponentMask().set(i, true), *this);
 					}
 				}
 			}
 
-			mComponentTables[i]->removeComponent(entity);
+			mParent.mComponentTables[i]->removeComponent(entity);
 		}
 
-		mRemovedEntities.emplace(entity);
+		mParent.mRemovedEntities.emplace(entity);
 	}
 
 
-	void EntityDatabase::clearEntities()
+	void EntityDatabase::Query::clearEntities()
 	{
 		iterateEntities([this](Entity entity) {
 			removeEntity(entity);

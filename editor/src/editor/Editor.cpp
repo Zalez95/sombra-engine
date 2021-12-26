@@ -132,51 +132,55 @@ namespace editor {
 		addPanel(new Gizmo(*this));
 
 		/**** Create the Entity used for controlling the viewport ****/
-		mViewportEntity = mEntityDatabase->addEntity();
-		auto vTransforms = mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
-		vTransforms->position = { 10.0, 8.0f,-6.0f };
-		vTransforms->orientation = glm::quat(glm::vec3(glm::radians(-30.0f), glm::radians(110.0f), 0.0f));
+		mEntityDatabase->executeQuery([this](se::app::EntityDatabase::Query& query) {
+			mViewportEntity = query.addEntity();
+			auto vTransforms = query.emplaceComponent<se::app::TransformsComponent>(mViewportEntity);
+			vTransforms->position = { 10.0, 8.0f,-6.0f };
+			vTransforms->orientation = glm::quat(glm::vec3(glm::radians(-30.0f), glm::radians(110.0f), 0.0f));
 
-		auto scriptComponent = mEntityDatabase->emplaceComponent<se::app::ScriptComponent>(mViewportEntity);
-		auto scriptSPtr = std::make_shared<ViewportControl>();
-		auto script = mRepository->insert<se::app::Script>(std::move(scriptSPtr), "viewportControl");
-		scriptComponent->setScript(script);
+			auto scriptComponent = query.emplaceComponent<se::app::ScriptComponent>(mViewportEntity);
+			auto scriptSPtr = std::make_shared<ViewportControl>();
+			auto script = mRepository->insert<se::app::Script>(std::move(scriptSPtr), "viewportControl");
+			scriptComponent->setScript(script);
 
-		se::app::CameraComponent camera;
-		camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
-		mEntityDatabase->addComponent(mViewportEntity, std::move(camera));
+			se::app::CameraComponent camera;
+			camera.setPerspectiveProjection(glm::radians(kFOV), kWidth / static_cast<float>(kHeight), kZNear, kZFar);
+			query.addComponent(mViewportEntity, std::move(camera));
+		});
 
 		mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
 
 		/**** Create the viewport grid ****/
-		mGridEntity = mEntityDatabase->addEntity();
+		mEntityDatabase->executeQuery([this](se::app::EntityDatabase::Query& query) {
+			mGridEntity = query.addEntity();
 
-		mEntityDatabase->emplaceComponent<se::app::TransformsComponent>(mGridEntity);
+			query.emplaceComponent<se::app::TransformsComponent>(mGridEntity);
 
-		auto mesh = mEntityDatabase->emplaceComponent<se::app::MeshComponent>(mGridEntity);
-		auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
-		auto gridMeshSPtr = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
-		auto gridMesh = mRepository->insert(std::move(gridMeshSPtr), "gridMesh");
-		std::size_t gridIndex = mesh->add(false, gridMesh, se::graphics::PrimitiveType::Line);
+			auto mesh = query.emplaceComponent<se::app::MeshComponent>(mGridEntity);
+			auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
+			auto gridMeshSPtr = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
+			auto gridMesh = mRepository->insert(std::move(gridMeshSPtr), "gridMesh");
+			std::size_t gridIndex = mesh->add(false, gridMesh, se::graphics::PrimitiveType::Line);
 
-		std::shared_ptr<se::graphics::Program> program3DSPtr;
-		auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", program3DSPtr);
-		if (!result) {
-			SOMBRA_ERROR_LOG << result.description();
-			return;
-		}
-		auto program3D = mRepository->insert(std::move(program3DSPtr), "program3D");
-		program3D.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
+			std::shared_ptr<se::graphics::Program> program3DSPtr;
+			auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", program3DSPtr);
+			if (!result) {
+				SOMBRA_ERROR_LOG << result.description();
+				return;
+			}
+			auto program3D = mRepository->insert(std::move(program3DSPtr), "program3D");
+			program3D.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
 
-		auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
-		auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");
-		stepGrid->addResource(program3D)
-			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
-			.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
-			.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)));
-		auto shaderGrid = mRepository->insert(std::make_shared<se::app::RenderableShader>(*mEventManager), "shaderGrid");
-		shaderGrid->addStep(stepGrid);
-		mesh->addRenderableShader(gridIndex, shaderGrid);
+			auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
+			auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");
+			stepGrid->addResource(program3D)
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
+				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
+				.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)));
+			auto shaderGrid = mRepository->insert(std::make_shared<se::app::RenderableShader>(*mEventManager), "shaderGrid");
+			shaderGrid->addStep(stepGrid);
+			mesh->addRenderableShader(gridIndex, shaderGrid);
+		});
 
 		SOMBRA_INFO_LOG << "Editor created";
 	}
@@ -190,8 +194,12 @@ namespace editor {
 			destroyScene();
 		}
 
-		if (mGridEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mGridEntity); }
-		if (mViewportEntity != se::app::kNullEntity) { mEntityDatabase->removeEntity(mViewportEntity); }
+		if (mGridEntity != se::app::kNullEntity) {
+			mEntityDatabase->executeQuery([this](se::app::EntityDatabase::Query& query) { query.removeEntity(mGridEntity); });
+		}
+		if (mViewportEntity != se::app::kNullEntity) {
+			mEntityDatabase->executeQuery([this](se::app::EntityDatabase::Query& query) { query.removeEntity(mViewportEntity); });
+		}
 
 		for (IEditorPanel* panel : mPanels) {
 			delete panel;

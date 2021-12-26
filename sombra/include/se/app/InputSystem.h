@@ -15,7 +15,7 @@ namespace se::app {
 	 * Class InputSystem, it's a System used for handling the user input at a
 	 * constant time interval
 	 */
-	class InputSystem : public ISystem, IEventListener
+	class InputSystem : public ISystem, public IEventListener
 	{
 	private:	// Attributes
 		/** A reference to the Application that holds WindowManager and

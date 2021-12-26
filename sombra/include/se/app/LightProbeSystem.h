@@ -40,17 +40,17 @@ namespace se::app {
 		/** Class destructor */
 		~LightProbeSystem();
 
-		/** @copydoc ISystem::onNewComponent() */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&LightProbeSystem::onNewLightProbe, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
-		/** @copydoc ISystem::onRemoveComponent() */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&LightProbeSystem::onRemoveLightProbe, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
 		/** Updates the light sources with the Entities
 		 *
@@ -61,16 +61,26 @@ namespace se::app {
 		/** Function called when a LightProbeComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the LightProbeComponent
-		 * @param	lightProbe a pointer to the new LightProbeComponent */
-		void onNewLightProbe(Entity entity, LightProbeComponent* lightProbe);
+		 * @param	lightProbe a pointer to the new LightProbeComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewLightProbe(
+			Entity entity, LightProbeComponent* lightProbe,
+			EntityDatabase::Query& query
+		);
 
 		/** Function called when a LightProbeComponent is going to be removed
 		 * from an Entity
 		 *
 		 * @param	entity the Entity that holds the LightProbeComponent
 		 * @param	lightProbe a pointer to the LightProbeComponent that is
-		 *			going to be removed */
-		void onRemoveLightProbe(Entity entity, LightProbeComponent* lightProbe);
+		 *			going to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveLightProbe(
+			Entity entity, LightProbeComponent* lightProbe,
+			EntityDatabase::Query& query
+		);
 	};
 
 }

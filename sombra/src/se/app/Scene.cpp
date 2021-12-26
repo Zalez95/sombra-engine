@@ -57,7 +57,9 @@ namespace se::app {
 	Scene::~Scene()
 	{
 		for (auto entity : entities) {
-			application.getEntityDatabase().removeEntity(entity);
+			application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+				query.removeEntity(entity);
+			});
 		}
 	}
 

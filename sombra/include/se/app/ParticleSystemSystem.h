@@ -30,17 +30,17 @@ namespace se::app {
 		/** Class destructor */
 		~ParticleSystemSystem();
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&ParticleSystemSystem::onNewParticleSys, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&ParticleSystemSystem::onRemoveParticleSys, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
 		/** Updates the RenderableTerrains with the Entities */
 		virtual void update() override;
@@ -49,9 +49,12 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that holds the ParticleSystemComponent
 		 * @param	particleSystem a pointer to the new
-		 *			ParticleSystemComponent */
+		 *			ParticleSystemComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onNewParticleSys(
-			Entity entity, ParticleSystemComponent* particleSystem
+			Entity entity, ParticleSystemComponent* particleSystem,
+			EntityDatabase::Query& query
 		);
 
 		/** Function called when a ParticleSystemComponent is going to be
@@ -59,9 +62,12 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that holds the ParticleSystemComponent
 		 * @param	particleSystem a pointer to the ParticleSystemComponent
-		 *			that is going to be removed */
+		 *			that is going to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onRemoveParticleSys(
-			Entity entity, ParticleSystemComponent* particleSystem
+			Entity entity, ParticleSystemComponent* particleSystem,
+			EntityDatabase::Query& query
 		);
 	};
 

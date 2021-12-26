@@ -125,7 +125,9 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
-		if (mEntityDatabase) { mEntityDatabase->clearEntities(); }
+		if (mEntityDatabase) {
+			mEntityDatabase->executeQuery([](EntityDatabase::Query& query) { query.clearEntities(); });
+		}
 		if (mGUIManager) { delete mGUIManager; }
 		if (mAudioSystem) { delete mAudioSystem; }
 		if (mAnimationSystem) { delete mAnimationSystem; }

@@ -87,108 +87,110 @@ namespace game {
 
 	void PlayerController::onUpdate(se::app::Entity entity, float elapsedTime, const se::app::ScriptSharedState& sharedState)
 	{
-		auto [transforms] = sharedState.entityDatabase->getComponents<se::app::TransformsComponent>(entity, true);
-		if (!transforms) { return; }
+		sharedState.entityDatabase->executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto [transforms] = query.getComponents<se::app::TransformsComponent>(entity, true);
+			if (!transforms) { return; }
 
-		// Get the mouse movement
-		glm::vec2 windowSize = { sharedState.windowWidth, sharedState.windowHeight };
-		glm::vec2 mouseMove = glm::vec2(sharedState.mouseX, sharedState.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
-		mouseMove /= windowSize;
+			// Get the mouse movement
+			glm::vec2 windowSize = { sharedState.windowWidth, sharedState.windowHeight };
+			glm::vec2 mouseMove = glm::vec2(sharedState.mouseX, sharedState.mouseY) - glm::vec2(mLastMouseX, mLastMouseY);
+			mouseMove /= windowSize;
 
-		glm::vec3 forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
+			glm::vec3 forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
 
-		// Set the pitch and yaw
-		if (mouseMove != glm::vec2(0.0)) {
-			mLastMouseX = sharedState.mouseX;
-			mLastMouseY = sharedState.mouseY;
+			// Set the pitch and yaw
+			if (mouseMove != glm::vec2(0.0)) {
+				mLastMouseX = sharedState.mouseX;
+				mLastMouseY = sharedState.mouseY;
 
-			// Multiply the values by the mouse speed
-			float yaw = kMouseSpeed * -elapsedTime * static_cast<float>(mouseMove.x);
-			float pitch = -kMouseSpeed * elapsedTime * static_cast<float>(mouseMove.y);
+				// Multiply the values by the mouse speed
+				float yaw = kMouseSpeed * -elapsedTime * static_cast<float>(mouseMove.x);
+				float pitch = -kMouseSpeed * elapsedTime * static_cast<float>(mouseMove.y);
 
-			// Clamp the pitch
-			float currentPitch = std::asin(forward.y);
-			float nextPitch = currentPitch + pitch;
-			nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
-			pitch = nextPitch - currentPitch;
+				// Clamp the pitch
+				float currentPitch = std::asin(forward.y);
+				float nextPitch = currentPitch + pitch;
+				nextPitch = std::clamp(nextPitch, -glm::half_pi<float>() + kPitchLimit, glm::half_pi<float>() - kPitchLimit);
+				pitch = nextPitch - currentPitch;
 
-			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " orientation (" << pitch << ", " << yaw << ")";
+				SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " orientation (" << pitch << ", " << yaw << ")";
 
-			// Apply the rotation
-			glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
-			glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
-			transforms->orientation = glm::normalize(qYaw * transforms->orientation * qPitch);
-			transforms->updated.reset();
+				// Apply the rotation
+				glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
+				transforms->orientation = glm::normalize(qYaw * transforms->orientation * qPitch);
+				transforms->updated.reset();
 
-			forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
-		}
-
-		glm::vec3 up = { 0.0f, 1.0f, 0.0f };
-		glm::vec3 right = glm::cross(forward, up);
-
-		// Add WASD movement
-		glm::vec3 direction(0.0f);
-		if (sharedState.keys[SE_KEY_W]) { direction += forward; }
-		if (sharedState.keys[SE_KEY_S]) { direction -= forward; }
-		if (sharedState.keys[SE_KEY_D]) { direction += right; }
-		if (sharedState.keys[SE_KEY_A]) { direction -= right; }
-		float length = glm::length(direction);
-		if (length > 0.0f) {
-			transforms->velocity += kRunSpeed * elapsedTime * direction / length;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
-			transforms->updated.reset();
-		}
-
-		// Add the world Y velocity
-		direction = glm::vec3(0.0f);
-		if (sharedState.keys[SE_KEY_SPACE]) { direction += up; }
-		if (sharedState.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
-		length = glm::length(direction);
-		if (length > 0.0f) {
-			transforms->velocity += kJumpSpeed * elapsedTime * direction;
-			SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
-			transforms->updated.reset();
-		}
-
-		// Other
-		if (sharedState.keys[SE_KEY_P]) {
-			PRINT = !PRINT;
-		}
-
-		if (sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
-			std::string names;
-			auto [collider, rayHit] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(
-				se::physics::Ray(transforms->position + 1.5f * forward, forward)
-			);
-			if (collider) {
-				// Blue tetrahedron = separation direction from collider 1 to collider 0
-				glm::vec3 new_z = rayHit.contactNormal;
-				glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
-				glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
-
-				auto pointEntity = mLevel.getGame().getEntityDatabase().addEntity();
-				mLevel.getScene().entities.push_back(pointEntity);
-
-				se::app::TransformsComponent transforms2;
-				transforms2.position = rayHit.contactPointWorld;
-				transforms2.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
-				mLevel.getGame().getEntityDatabase().addComponent(pointEntity, std::move(transforms2));
-
-				se::app::MeshComponent mesh;
-				std::size_t iTetraMesh = mesh.add(false, mTetrahedronMesh);
-				mesh.addRenderableShader(iTetraMesh, mShaderYellow);
-				mLevel.getGame().getEntityDatabase().addComponent(pointEntity, std::move(mesh));
-
-				auto light = mLevel.getGame().getEntityDatabase().emplaceComponent<se::app::LightComponent>(pointEntity);
-				light->setSource(mLightYellow);
-
-				se::app::Entity selectedEntity = static_cast<se::app::Entity>(reinterpret_cast<intptr_t>(collider->getParent()->getProperties().userData));
-				auto [tag] = mLevel.getGame().getEntityDatabase().getComponents<se::app::TagComponent>(selectedEntity, true);
-				names += std::string(tag? tag->getName() : "") + "; ";
+				forward = glm::normalize(transforms->orientation * glm::vec3(0.0f, 0.0f,-1.0f));
 			}
 
-			mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
-		}
+			glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+			glm::vec3 right = glm::cross(forward, up);
+
+			// Add WASD movement
+			glm::vec3 direction(0.0f);
+			if (sharedState.keys[SE_KEY_W]) { direction += forward; }
+			if (sharedState.keys[SE_KEY_S]) { direction -= forward; }
+			if (sharedState.keys[SE_KEY_D]) { direction += right; }
+			if (sharedState.keys[SE_KEY_A]) { direction -= right; }
+			float length = glm::length(direction);
+			if (length > 0.0f) {
+				transforms->velocity += kRunSpeed * elapsedTime * direction / length;
+				SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
+				transforms->updated.reset();
+			}
+
+			// Add the world Y velocity
+			direction = glm::vec3(0.0f);
+			if (sharedState.keys[SE_KEY_SPACE]) { direction += up; }
+			if (sharedState.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
+			length = glm::length(direction);
+			if (length > 0.0f) {
+				transforms->velocity += kJumpSpeed * elapsedTime * direction;
+				SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
+				transforms->updated.reset();
+			}
+
+			// Other
+			if (sharedState.keys[SE_KEY_P]) {
+				PRINT = !PRINT;
+			}
+
+			if (sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
+				std::string names;
+				auto [collider, rayHit] = mLevel.getGame().getExternalTools().rigidBodyWorld->getCollisionDetector().rayCastFirst(
+					se::physics::Ray(transforms->position + 1.5f * forward, forward)
+				);
+				if (collider) {
+					// Blue tetrahedron = separation direction from collider 1 to collider 0
+					glm::vec3 new_z = rayHit.contactNormal;
+					glm::vec3 new_x = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), new_z));
+					glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
+
+					auto pointEntity = query.addEntity();
+					mLevel.getScene().entities.push_back(pointEntity);
+
+					se::app::TransformsComponent transforms2;
+					transforms2.position = rayHit.contactPointWorld;
+					transforms2.orientation = glm::quat_cast(glm::mat4(glm::mat3(new_x, new_y, new_z)));
+					query.addComponent(pointEntity, std::move(transforms2));
+
+					se::app::MeshComponent mesh;
+					std::size_t iTetraMesh = mesh.add(false, mTetrahedronMesh);
+					mesh.addRenderableShader(iTetraMesh, mShaderYellow);
+					query.addComponent(pointEntity, std::move(mesh));
+
+					auto light = query.emplaceComponent<se::app::LightComponent>(pointEntity);
+					light->setSource(mLightYellow);
+
+					se::app::Entity selectedEntity = static_cast<se::app::Entity>(reinterpret_cast<intptr_t>(collider->getParent()->getProperties().userData));
+					auto [tag] = query.getComponents<se::app::TagComponent>(selectedEntity, true);
+					names += std::string(tag? tag->getName() : "") + "; ";
+				}
+
+				mPickText.setText(glm::to_string(transforms->position) + " " + glm::to_string(forward) + " Selected entities: " + names);
+			}
+		});
 	}
 
 }

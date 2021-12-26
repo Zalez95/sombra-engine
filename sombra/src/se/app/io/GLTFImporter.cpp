@@ -476,10 +476,12 @@ namespace se::app {
 					nodeJointMap.emplace_back(mGLTFData->nodes[nodeIndex].animationNode, jointIndex);
 				}
 
-				mGLTFData->scene.application.getEntityDatabase().emplaceComponent<SkinComponent>(
-					node.entity, true,
-					node.animationNode, mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
-				);
+				mGLTFData->scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+					query.emplaceComponent<SkinComponent>(
+						node.entity, true,
+						node.animationNode, mGLTFData->skins[node.skinIndex], std::move(nodeJointMap)
+					);
+				});
 			}
 		}
 
@@ -1544,16 +1546,21 @@ namespace se::app {
 		) {
 			EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
 			EventManager& eventManager = mGLTFData->scene.application.getEventManager();
-			node.entity = entityDB.addEntity();
-			mGLTFData->scene.entities.push_back(node.entity);
 
-			entityDB.emplaceComponent<TransformsComponent>(node.entity);
-			entityDB.emplaceComponent<TagComponent>(node.entity, node.nodeData.name.data());
+			entityDB.executeQuery([&](EntityDatabase::Query& query) {
+				node.entity = query.addEntity();
+				mGLTFData->scene.entities.push_back(node.entity);
+
+				query.emplaceComponent<TransformsComponent>(node.entity);
+				query.emplaceComponent<TagComponent>(node.entity, node.nodeData.name.data());
+			});
 
 			if (itCamera != jsonNode.end()) {
 				std::size_t cameraIndex = *itCamera;
 				if (cameraIndex < mGLTFData->cameraComponents.size()) {
-					entityDB.emplaceComponent<CameraComponent>(node.entity, true, mGLTFData->cameraComponents[cameraIndex]);
+					entityDB.executeQuery([&](EntityDatabase::Query& query) {
+						query.emplaceComponent<CameraComponent>(node.entity, true, mGLTFData->cameraComponents[cameraIndex]);
+					});
 				}
 				else {
 					return Result(false, "Camera index " + std::to_string(cameraIndex) + " out of range");
@@ -1563,11 +1570,13 @@ namespace se::app {
 			if (itMesh != jsonNode.end()) {
 				std::size_t meshIndex = *itMesh;
 				if (meshIndex < mGLTFData->primitives.size()) {
-					auto mesh = entityDB.emplaceComponent<MeshComponent>(node.entity);
-					for (auto& primitive : mGLTFData->primitives[meshIndex]) {
-						auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh, primitive.primitiveType);
-						mesh->addRenderableShader(rIndex, primitive.shader);
-					}
+					entityDB.executeQuery([&](EntityDatabase::Query& query) {
+						auto mesh = query.emplaceComponent<MeshComponent>(node.entity);
+						for (auto& primitive : mGLTFData->primitives[meshIndex]) {
+							auto rIndex = mesh->add(primitive.hasSkin, primitive.mesh, primitive.primitiveType);
+							mesh->addRenderableShader(rIndex, primitive.shader);
+						}
+					});
 				}
 				else {
 					return Result(false, "Mesh index " + std::to_string(meshIndex) + " out of range");
@@ -1592,9 +1601,11 @@ namespace se::app {
 					if (itLight != itLightsPunctual->end()) {
 						std::size_t lightIndex = *itLight;
 						if (lightIndex < mGLTFData->lightSources.size()) {
-							LightComponent lightComponent;
-							lightComponent.setSource(mGLTFData->lightSources[lightIndex]);
-							entityDB.addComponent(node.entity, std::move(lightComponent));
+							entityDB.executeQuery([&](EntityDatabase::Query& query) {
+								LightComponent lightComponent;
+								lightComponent.setSource(mGLTFData->lightSources[lightIndex]);
+								query.addComponent(node.entity, std::move(lightComponent));
+							});
 						}
 						else {
 							return Result(false, "Light index " + std::to_string(lightIndex) + " out of range");
@@ -1616,8 +1627,6 @@ namespace se::app {
 
 	Result GLTFImporter::parseScene(const nlohmann::json& jsonScene)
 	{
-		EntityDatabase& entityDB = mGLTFData->scene.application.getEntityDatabase();
-
 		auto itNodes = jsonScene.find("nodes");
 		if (itNodes != jsonScene.end()) {
 			for (std::size_t rootNodeId : itNodes->get< std::vector<std::size_t> >()) {
@@ -1635,13 +1644,15 @@ namespace se::app {
 				rootNode.animationNode = &(*itRootNode);
 				animation::updateWorldTransforms(*rootNode.animationNode);
 				if (rootNode.entity != kNullEntity) {
-					auto [transforms] = entityDB.getComponents<TransformsComponent>(rootNode.entity);
-					if (transforms) {
-						transforms->position = rootNode.animationNode->getData().worldTransforms.position;
-						transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
-						transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
-					}
-					entityDB.emplaceComponent<AnimationComponent>(rootNode.entity, true, rootNode.animationNode);
+					mGLTFData->scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+						auto [transforms] = query.getComponents<TransformsComponent>(rootNode.entity);
+						if (transforms) {
+							transforms->position = rootNode.animationNode->getData().worldTransforms.position;
+							transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
+							transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
+						}
+						query.emplaceComponent<AnimationComponent>(rootNode.entity, true, rootNode.animationNode);
+					});
 				}
 
 				// Build the tree
@@ -1667,13 +1678,15 @@ namespace se::app {
 						child.animationNode = &(*itChild);
 						animation::updateWorldTransforms(*child.animationNode);
 						if (child.entity != kNullEntity) {
-							auto [transforms] = entityDB.getComponents<TransformsComponent>(child.entity);
-							if (transforms) {
-								transforms->position = rootNode.animationNode->getData().worldTransforms.position;
-								transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
-								transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
-							}
-							entityDB.emplaceComponent<AnimationComponent>(child.entity, true, child.animationNode);
+							mGLTFData->scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+								auto [transforms] = query.getComponents<TransformsComponent>(child.entity);
+								if (transforms) {
+									transforms->position = rootNode.animationNode->getData().worldTransforms.position;
+									transforms->orientation = rootNode.animationNode->getData().worldTransforms.orientation;
+									transforms->scale = rootNode.animationNode->getData().worldTransforms.scale;
+								}
+								query.emplaceComponent<AnimationComponent>(child.entity, true, child.animationNode);
+							});
 						}
 
 						nodesToProcess.push_back(childId);

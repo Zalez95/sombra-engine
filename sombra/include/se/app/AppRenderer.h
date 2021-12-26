@@ -24,7 +24,7 @@ namespace se::app {
 	 *			reserved for special cases that can't be rendered this way.
 	 *			For the Renderable2Ds, there is a "renderer2D" for submitting
 	 *			them */
-	class AppRenderer : public ISystem, IEventListener
+	class AppRenderer : public ISystem, public IEventListener
 	{
 	private:	// Attributes
 		/** The Application that holds the GraphicsEngine used for rendering

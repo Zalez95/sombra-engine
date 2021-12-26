@@ -20,37 +20,53 @@ namespace se::app {
 	}
 
 
+	void ParticleSystemSystem::onNewComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query
+	) {
+		tryCallC(&ParticleSystemSystem::onNewParticleSys, entity, mask, query);
+	}
+
+
+	void ParticleSystemSystem::onRemoveComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query
+	) {
+		tryCallC(&ParticleSystemSystem::onRemoveParticleSys, entity, mask, query);
+	}
+
+
 	void ParticleSystemSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the ParticleSystems";
 
-		mEntityDatabase.iterateEntityComponents<ParticleSystemComponent, TransformsComponent>(
-			[this](Entity, ParticleSystemComponent* particleSystem, TransformsComponent* transforms) {
-				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::ParticleSystem)]) {
-					particleSystem->setInitialPosition(transforms->position);
-					particleSystem->setInitialOrientation(transforms->orientation);
-					transforms->updated.set(static_cast<int>(TransformsComponent::Update::ParticleSystem));
-				}
-			},
-			true
-		);
-
-		mEntityDatabase.iterateComponents<ParticleSystemComponent>(
-			[this](ParticleSystemComponent& particleSystem) {
-				particleSystem.update(mDeltaTime);
-			},
-			true
-		);
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<ParticleSystemComponent, TransformsComponent>(
+				[this](Entity, ParticleSystemComponent* particleSystem, TransformsComponent* transforms) {
+					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::ParticleSystem)]) {
+						particleSystem->setInitialPosition(transforms->position);
+						particleSystem->setInitialOrientation(transforms->orientation);
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::ParticleSystem));
+					}
+				},
+				true
+			);
+		}).executeQuery([this](EntityDatabase::Query& query) {
+			query.iterateComponents<ParticleSystemComponent>(
+				[this](ParticleSystemComponent& particleSystem) {
+					particleSystem.update(mDeltaTime);
+				},
+				true
+			);
+		});
 
 		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
-	void ParticleSystemSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	void ParticleSystemSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query& query)
 	{
 		particleSystem->setup(&mApplication.getEventManager(), entity);
 
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::ParticleSystem));
 		}
@@ -60,7 +76,7 @@ namespace se::app {
 	}
 
 
-	void ParticleSystemSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem)
+	void ParticleSystemSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query&)
 	{
 		mApplication.getExternalTools().graphicsEngine->removeRenderable(&particleSystem->get());
 

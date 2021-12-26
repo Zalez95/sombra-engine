@@ -33,28 +33,29 @@ namespace editor {
 		}
 		ImGui::End();
 
-		auto [camera] = mEditor.getEntityDatabase().getComponents<se::app::CameraComponent>(mEditor.getViewportEntity(), true);
-		if (!camera) {
-			return open;
-		}
-
-		glm::mat4 viewMatrix = camera->getViewMatrix();
-		glm::mat4 projectionMatrix = camera->getProjectionMatrix();
+		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f);
+		mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto [camera] = query.getComponents<se::app::CameraComponent>(mEditor.getViewportEntity(), true);
+			if (camera) {
+				viewMatrix = camera->getViewMatrix();
+				projectionMatrix = camera->getProjectionMatrix();
+			}
+		});
 
 		ImGuizmo::OPERATION operation = (mOperation == Operation::Translation)? ImGuizmo::OPERATION::TRANSLATE :
 			(mOperation == Operation::Rotation)? ImGuizmo::OPERATION::ROTATE : ImGuizmo::OPERATION::SCALE;
 		ImGuizmo::MODE mode = mWorld? ImGuizmo::MODE::WORLD : ImGuizmo::MODE::LOCAL;
 
-		auto [transforms] = mEditor.getEntityDatabase().getComponents<se::app::TransformsComponent>(mEditor.getActiveEntity(), true);
-		if (!transforms) {
-			return open;
-		}
-
-		glm::mat4 matrixTransform = se::app::getModelMatrix(*transforms);
-		if (ImGuizmo::Manipulate(glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix), operation, mode, glm::value_ptr(matrixTransform))) {
-			se::utils::decompose(matrixTransform, transforms->position, transforms->orientation, transforms->scale);
-			transforms->updated.reset();
-		}
+		mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto [transforms] = query.getComponents<se::app::TransformsComponent>(mEditor.getActiveEntity(), true);
+			if (transforms) {
+				glm::mat4 matrixTransform = se::app::getModelMatrix(*transforms);
+				if (ImGuizmo::Manipulate(glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix), operation, mode, glm::value_ptr(matrixTransform))) {
+					se::utils::decompose(matrixTransform, transforms->position, transforms->orientation, transforms->scale);
+					transforms->updated.reset();
+				}
+			}
+		});
 
 		return open;
 	}

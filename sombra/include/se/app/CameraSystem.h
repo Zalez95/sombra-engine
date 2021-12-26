@@ -28,7 +28,7 @@ namespace se::app {
 	 * @note	it will only update the cameras of the Steps that use the
 	 *			"forwardRenderer" or the "gBufferRenderer"
 	 */
-	class CameraSystem : public ISystem, IEventListener
+	class CameraSystem : public ISystem, public IEventListener
 	{
 	private:	// Nested Types
 		using FrustumFilterSPtr = std::shared_ptr<graphics::FrustumFilter>;
@@ -70,14 +70,16 @@ namespace se::app {
 		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override;
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override;
 
 		/** Updates the Cameras sources with the Entities */
@@ -86,51 +88,80 @@ namespace se::app {
 		/** Function called when a Camera is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the Camera
-		 * @param	camera a pointer to the new Camera */
-		void onNewCamera(Entity entity, CameraComponent* camera);
+		 * @param	camera a pointer to the new Camera
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewCamera(
+			Entity entity, CameraComponent* camera, EntityDatabase::Query& query
+		);
 
 		/** Function called when a Camera is going to be removed from an Entity
 		 *
 		 * @param	entity the Entity that holds the Camera
 		 * @param	camera a pointer to the Camera that is going to be
-		 *			removed */
-		void onRemoveCamera(Entity entity, CameraComponent* camera);
+		 *			removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveCamera(
+			Entity entity, CameraComponent* camera, EntityDatabase::Query& query
+		);
 
 		/** Function called when a MeshComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the MeshComponent
-		 * @param	mesh a pointer to the new MeshComponent */
-		void onNewMesh(Entity entity, MeshComponent* mesh);
+		 * @param	mesh a pointer to the new MeshComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewMesh(
+			Entity entity, MeshComponent* mesh, EntityDatabase::Query& query
+		);
 
 		/** Function called when a MeshComponent is going to be removed from an
 		 * Entity
 		 *
 		 * @param	entity the Entity that holds the MeshComponent
 		 * @param	mesh a pointer to the MeshComponent that is going to be
-		 *			removed */
-		void onRemoveMesh(Entity entity, MeshComponent* mesh);
+		 *			removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveMesh(
+			Entity entity, MeshComponent* mesh, EntityDatabase::Query& query
+		);
 
 		/** Function called when a TerrainComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the TerrainComponent
-		 * @param	terrain a pointer to the new TerrainComponent */
-		void onNewTerrain(Entity entity, TerrainComponent* terrain);
+		 * @param	terrain a pointer to the new TerrainComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTerrain(
+			Entity entity, TerrainComponent* terrain,
+			EntityDatabase::Query& query
+		);
 
 		/** Function called when a TerrainComponent is going to be removed
 		 * from an Entity
 		 *
 		 * @param	entity the Entity that holds the TerrainComponent
 		 * @param	terrain a pointer to the TerrainComponent that is going to
-		 *			be removed */
-		void onRemoveTerrain(Entity entity, TerrainComponent* terrain);
+		 *			be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveTerrain(
+			Entity entity, TerrainComponent* terrain,
+			EntityDatabase::Query& query
+		);
 
 		/** Function called when a ParticleSystemComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the ParticleSystemComponent
 		 * @param	particleSystem a pointer to the new
-		 *			ParticleSystemComponent */
+		 *			ParticleSystemComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onNewParticleSys(
-			Entity entity, ParticleSystemComponent* particleSystem
+			Entity entity, ParticleSystemComponent* particleSystem,
+			EntityDatabase::Query& query
 		);
 
 		/** Function called when a ParticleSystemComponent is going to be
@@ -138,25 +169,36 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that holds the ParticleSystemComponent
 		 * @param	particleSystem a pointer to the ParticleSystemComponent
-		 *			that is going to be removed */
+		 *			that is going to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onRemoveParticleSys(
-			Entity entity, ParticleSystemComponent* particleSystem
+			Entity entity, ParticleSystemComponent* particleSystem,
+			EntityDatabase::Query& query
 		);
 
 		/** Function called when a LightComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the LightComponent
 		 * @param	particleSystem a pointer to the new
-		 *			LightComponent */
-		void onNewLight(Entity entity, LightComponent* light);
+		 *			LightComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewLight(
+			Entity entity, LightComponent* light, EntityDatabase::Query& query
+		);
 
 		/** Function called when a LightComponent is going to be
 		 * removed from an Entity
 		 *
 		 * @param	entity the Entity that holds the LightComponent
 		 * @param	particleSystem a pointer to the LightComponent
-		 *			that is going to be removed */
-		void onRemoveLight(Entity entity, LightComponent* light);
+		 *			that is going to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveLight(
+			Entity entity, LightComponent* light, EntityDatabase::Query& query
+		);
 
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered

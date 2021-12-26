@@ -385,15 +385,15 @@ namespace game {
 		 * GAME DATA
 		 *********************************************************************/
 		// Player
-		{
-			mPlayerEntity = mGame.getEntityDatabase().addEntity();
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			mPlayerEntity = query.addEntity();
 			mScene.entities.push_back(mPlayerEntity);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(mPlayerEntity, true, "player");
+			query.emplaceComponent<se::app::TagComponent>(mPlayerEntity, true, "player");
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(0.0f, 1.0f, 10.0f);
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(transforms));
+			query.addComponent(mPlayerEntity, std::move(transforms));
 
 			se::physics::RigidBodyProperties properties(1.0f, glm::mat3(1.0f));
 			properties.invertedInertiaTensor = glm::mat3(0.0f);	// Prevent the player from rotating due to collisions
@@ -406,63 +406,65 @@ namespace game {
 			se::app::RigidBodyComponent rbComponent(properties);
 			rbComponent.get().setCollider(std::move(collider));
 
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(rbComponent));
+			query.addComponent(mPlayerEntity, std::move(rbComponent));
 
-			auto scriptComponent = mGame.getEntityDatabase().emplaceComponent<se::app::ScriptComponent>(mPlayerEntity);
+			auto scriptComponent = query.emplaceComponent<se::app::ScriptComponent>(mPlayerEntity);
 			scriptComponent->setScript(playerController);
 
 			se::app::CameraComponent camera;
 			camera.setPerspectiveProjection(glm::radians(kFOV), kWidths[0] / static_cast<float>(kHeights[0]), kZNear, kZFar);
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(camera));
+			query.addComponent(mPlayerEntity, std::move(camera));
 
 			spotLight->setIntensity(5.0f);
 			spotLight->setRange(20.0f);
 			spotLight->setSpotLightRange(glm::pi<float>() / 12.0f, glm::pi<float>() / 6.0f);
 			se::app::LightComponent lightComponent;
 			lightComponent.setSource(spotLight);
-			mGame.getEntityDatabase().addComponent(mPlayerEntity, std::move(lightComponent));
+			query.addComponent(mPlayerEntity, std::move(lightComponent));
 
 			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
-		}
+		});
 
-		mGame.getEntityDatabase().iterateComponents<se::app::LightComponent>([](se::app::LightComponent& light) {
-			auto source = light.getSource();
-			if (source->getType() == se::app::LightSource::Type::Directional) {
-				source->setShadows();
-			}
-		}, true);
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			query.iterateComponents<se::app::LightComponent>([](se::app::LightComponent& light) {
+				auto source = light.getSource();
+				if (source->getType() == se::app::LightSource::Type::Directional) {
+					source->setShadows();
+				}
+			}, true);
+		});
 
 		// Sky
-		{
-			auto skyEntity = mGame.getEntityDatabase().addEntity();
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto skyEntity = query.addEntity();
 			mScene.entities.push_back(skyEntity);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(skyEntity, true, "sky");
+			query.emplaceComponent<se::app::TagComponent>(skyEntity, true, "sky");
 
 			se::app::TransformsComponent transforms;
 			transforms.scale = glm::vec3(kZFar / 2.0f);
-			mGame.getEntityDatabase().addComponent(skyEntity, std::move(transforms));
+			query.addComponent(skyEntity, std::move(transforms));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(skyEntity);
+			auto mesh = query.emplaceComponent<se::app::MeshComponent>(skyEntity);
 			auto rIndex = mesh->add(false, cubeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderSky));
-		}
+		});
 
 		// Plane
-		{
-			auto plane = mGame.getEntityDatabase().addEntity();
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto plane = query.addEntity();
 			mScene.entities.push_back(plane);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(plane, true, "plane");
+			query.emplaceComponent<se::app::TagComponent>(plane, true, "plane");
 
 			se::app::TransformsComponent transforms;
 			transforms.position = glm::vec3(-15.0f, 1.0f, -5.0f);
-			mGame.getEntityDatabase().addComponent(plane, std::move(transforms));
+			query.addComponent(plane, std::move(transforms));
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(plane);
+			auto mesh = query.emplaceComponent<se::app::MeshComponent>(plane);
 			auto rIndex = mesh->add(false, planeMesh);
 			mesh->addRenderableShader(rIndex, std::move(shaderPlane));
-		}
+		});
 
 		// Fixed cubes
 		glm::vec3 cubePositions[5] = {
@@ -475,68 +477,72 @@ namespace game {
 		glm::vec4 colors[5] = { { 1.0f, 0.2f, 0.2f, 1.0f }, { 0.2f, 1.0f, 0.2f, 1.0f }, { 0.2f, 0.2f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.2f, 0.2f, 0.1f, 1.0f } };
 		se::app::Entity e1 = se::app::kNullEntity, e2 = se::app::kNullEntity;
 		for (std::size_t i = 0; i < 5; ++i) {
-			auto cube = mGame.getEntityDatabase().addEntity();
-			mScene.entities.push_back(cube);
+			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+				auto cube = query.addEntity();
+				mScene.entities.push_back(cube);
 
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, true, "non-random-cube-" + std::to_string(i));
+				query.emplaceComponent<se::app::TagComponent>(cube, true, "non-random-cube-" + std::to_string(i));
 
-			se::app::TransformsComponent transforms;
-			transforms.position = cubePositions[i];
-			mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
+				se::app::TransformsComponent transforms;
+				transforms.position = cubePositions[i];
+				query.addComponent(cube, std::move(transforms));
 
-			se::physics::RigidBodyProperties properties(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
-			properties.linearDrag = 0.05f;
-			properties.angularDrag = 0.05f;
-			properties.frictionCoefficient = 0.5f;
+				se::physics::RigidBodyProperties properties(20.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
+				properties.linearDrag = 0.05f;
+				properties.angularDrag = 0.05f;
+				properties.frictionCoefficient = 0.5f;
 
-			se::physics::RigidBodyState state;
+				se::physics::RigidBodyState state;
 
-			if (i == 1) {
-				e1 = cube;
-			}
-			if (i == 2) {
-				se::app::AudioSourceComponent source1;
-				//source1.setBuffer(sound);
-				source1.get().setLooping(true);
-				source1.get().play();
-				mGame.getEntityDatabase().addComponent(cube, std::move(source1));
-			}
-			if (i == 3) {
-				state.angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
-				e2 = cube;
-			}
-			if (i == 4) {
-				transforms.velocity += glm::vec3(-1, 0, 0);
-			}
+				if (i == 1) {
+					e1 = cube;
+				}
+				if (i == 2) {
+					se::app::AudioSourceComponent source1;
+					//source1.setBuffer(sound);
+					source1.get().setLooping(true);
+					source1.get().play();
+					query.addComponent(cube, std::move(source1));
+				}
+				if (i == 3) {
+					state.angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
+					e2 = cube;
+				}
+				if (i == 4) {
+					transforms.velocity += glm::vec3(-1, 0, 0);
+				}
 
-			auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
+				auto collider = std::make_unique<se::physics::BoundingBox>(glm::vec3(1.0f, 1.0f, 1.0f));
 
-			se::app::RigidBodyComponent rbComponent(properties, state);
-			rbComponent.get().setCollider(std::move(collider));
-			mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
+				se::app::RigidBodyComponent rbComponent(properties, state);
+				rbComponent.get().setCollider(std::move(collider));
+				query.addComponent(cube, std::move(rbComponent));
 
-			auto stepCube = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
-			se::app::ShaderLoader::addMaterialBindables(
-				stepCube,
-				se::app::Material{
-					se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
-					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-				},
-				programGBufMaterial
-			);
+				auto stepCube = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
+				se::app::ShaderLoader::addMaterialBindables(
+					stepCube,
+					se::app::Material{
+						se::app::PBRMetallicRoughness{ colors[i], {}, 0.9f, 0.1f, {} },
+						{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
+					},
+					programGBufMaterial
+				);
 
-			auto shaderCube = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shaderCube" + std::to_string(i)).c_str());
-			shaderCube->addStep(stepShadow)
-				.addStep(stepCube);
+				auto shaderCube = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shaderCube" + std::to_string(i)).c_str());
+				shaderCube->addStep(stepShadow)
+					.addStep(stepCube);
 
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube);
-			auto rIndex = mesh->add(false, cubeMesh);
-			mesh->addRenderableShader(rIndex, std::move(shaderCube));
+				auto mesh = query.emplaceComponent<se::app::MeshComponent>(cube);
+				auto rIndex = mesh->add(false, cubeMesh);
+				mesh->addRenderableShader(rIndex, std::move(shaderCube));
+			});
 		}
 
-		auto [rb1] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e1);
-		auto [rb2] = mGame.getEntityDatabase().getComponents<se::app::RigidBodyComponent>(e2);
-		mGame.getExternalTools().rigidBodyWorld->getConstraintManager().addConstraint(new se::physics::DistanceConstraint({ &rb1->get(), &rb2->get() }));
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto [rb1] = query.getComponents<se::app::RigidBodyComponent>(e1);
+			auto [rb2] = query.getComponents<se::app::RigidBodyComponent>(e2);
+			mGame.getExternalTools().rigidBodyWorld->getConstraintManager().addConstraint(new se::physics::DistanceConstraint({ &rb1->get(), &rb2->get() }));
+		});
 
 		// HACD Tube
 		std::size_t iSlice = 0;
@@ -551,54 +557,56 @@ namespace game {
 			}
 			displacement *= 0.1f;
 
-			auto tubeSlice = mGame.getEntityDatabase().addEntity();
-			mScene.entities.push_back(tubeSlice);
+			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+				auto tubeSlice = query.addEntity();
+				mScene.entities.push_back(tubeSlice);
 
-			std::string name = "tubeSlice" + std::to_string(iSlice);
-			mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(tubeSlice, true, name.c_str());
+				std::string name = "tubeSlice" + std::to_string(iSlice);
+				query.emplaceComponent<se::app::TagComponent>(tubeSlice, true, name.c_str());
 
-			se::app::TransformsComponent transforms;
-			transforms.orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
-			transforms.position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
-			mGame.getEntityDatabase().addComponent(tubeSlice, std::move(transforms));
+				se::app::TransformsComponent transforms;
+				transforms.orientation = glm::normalize(glm::quat(-1, glm::vec3(1.0f, 0.0f, 0.0f)));
+				transforms.position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
+				query.addComponent(tubeSlice, std::move(transforms));
 
-			auto stepSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("step" + name).c_str());
-			se::app::ShaderLoader::addMaterialBindables(
-				stepSlice,
-				se::app::Material{
-					se::app::PBRMetallicRoughness{
-						glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
-						{}, 0.2f, 0.5f, {}
+				auto stepSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("step" + name).c_str());
+				se::app::ShaderLoader::addMaterialBindables(
+					stepSlice,
+					se::app::Material{
+						se::app::PBRMetallicRoughness{
+							glm::vec4(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f), 1.0f),
+							{}, 0.2f, 0.5f, {}
+						},
+						{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
 					},
-					{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), se::graphics::AlphaMode::Opaque, 0.5f, false
-				},
-				programGBufMaterial
-			);
+					programGBufMaterial
+				);
 
-			auto shaderSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shader" + name).c_str());
-			shaderSlice->addStep(stepShadow)
-				.addStep(stepSlice);
+				auto shaderSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shader" + name).c_str());
+				shaderSlice->addStep(stepShadow)
+					.addStep(stepSlice);
 
-			auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
-			auto sliceMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh)), ("mesh" + name).c_str());
-			auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(tubeSlice);
-			auto rIndex = mesh->add(false, sliceMesh);
-			mesh->addRenderableShader(rIndex, std::move(shaderSlice));
+				auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
+				auto sliceMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh)), ("mesh" + name).c_str());
+				auto mesh = query.emplaceComponent<se::app::MeshComponent>(tubeSlice);
+				auto rIndex = mesh->add(false, sliceMesh);
+				mesh->addRenderableShader(rIndex, std::move(shaderSlice));
+			});
 
 			iSlice++;
 		}
 
 		// Random cubes
-		{
-			for (std::size_t i = 0; i < kNumCubes; ++i) {
-				auto cube = mGame.getEntityDatabase().addEntity();
+		for (std::size_t i = 0; i < kNumCubes; ++i) {
+			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+				auto cube = query.addEntity();
 				mScene.entities.push_back(cube);
 
-				mGame.getEntityDatabase().emplaceComponent<se::app::TagComponent>(cube, true, "random-cube-" + std::to_string(i));
+				query.emplaceComponent<se::app::TagComponent>(cube, true, "random-cube-" + std::to_string(i));
 
 				se::app::TransformsComponent transforms;
 				transforms.position = glm::ballRand(50.0f) + glm::vec3(0.0f, 50.0f, 0.0f);
-				mGame.getEntityDatabase().addComponent(cube, std::move(transforms));
+				query.addComponent(cube, std::move(transforms));
 
 				se::physics::RigidBodyProperties properties(10.0f, 2.0f / 5.0f * 10.0f * glm::pow(2.0f, 2.0f) * glm::mat3(1.0f));
 				properties.linearDrag = 0.1f;
@@ -610,12 +618,12 @@ namespace game {
 				se::app::RigidBodyComponent rbComponent(properties);
 				rbComponent.get().setCollider(std::move(collider));
 				rbComponent.addForce(gravity);
-				mGame.getEntityDatabase().addComponent(cube, std::move(rbComponent));
+				query.addComponent(cube, std::move(rbComponent));
 
-				auto mesh = mGame.getEntityDatabase().emplaceComponent<se::app::MeshComponent>(cube);
+				auto mesh = query.emplaceComponent<se::app::MeshComponent>(cube);
 				auto rIndex = mesh->add(false, cubeMesh);
 				mesh->addRenderableShader(rIndex, shaderRandom);
-			}
+			});
 		}
 
 		setHandleInput(true);
@@ -650,20 +658,22 @@ namespace game {
 
 	void Level::setHandleInput(bool handle)
 	{
-		bool hasControl = mGame.getEntityDatabase().hasComponentsEnabled<se::app::ScriptComponent>(mPlayerEntity);
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			bool hasControl = query.hasComponentsEnabled<se::app::ScriptComponent>(mPlayerEntity);
 
-		if (handle) {
-			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
-			if (!hasControl) {
-				mGame.getEntityDatabase().enableComponent<se::app::ScriptComponent>(mPlayerEntity);
+			if (handle) {
+				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
+				if (!hasControl) {
+					query.enableComponent<se::app::ScriptComponent>(mPlayerEntity);
+				}
 			}
-		}
-		else if (!handle) {
-			mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
-			if (hasControl) {
-				mGame.getEntityDatabase().disableComponent<se::app::ScriptComponent>(mPlayerEntity);
+			else if (!handle) {
+				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
+				if (hasControl) {
+					query.disableComponent<se::app::ScriptComponent>(mPlayerEntity);
+				}
 			}
-		}
+		});
 	}
 
 // Private functions

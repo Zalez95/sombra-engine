@@ -45,31 +45,41 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the Terrains";
 
 		glm::vec3 camPosition(0.0f);
-		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity, true);
-		if (camTransforms && (camTransforms->updated.any() || mCameraUpdated)) {
-			mCameraUpdated = true;
-			camPosition = camTransforms->position;
-		}
-
-		for (auto& [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity, true);
-			if (transforms && !transforms->updated[static_cast<int>(TransformsComponent::Update::Terrain)]) {
-				glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
-				glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
-				glm::mat4 modelMatrix	= translation * rotation;
-
-				terrain->get().setModelMatrix(modelMatrix);
-				for (auto& uniforms : entityUniforms) {
-					uniforms.modelMatrix->setValue(modelMatrix);
-				}
-
-				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Terrain));
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [camTransforms] = query.getComponents<TransformsComponent>(mCameraEntity, true);
+			if (camTransforms && (camTransforms->updated.any() || mCameraUpdated)) {
+				mCameraUpdated = true;
+				camPosition = camTransforms->position;
 			}
+		});
 
-			if (mCameraUpdated) {
-				terrain->get().setHighestLodLocation(camPosition);
-			}
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TransformsComponent, TerrainComponent>(
+				[&](Entity entity, TransformsComponent* transforms, TerrainComponent* terrain) {
+					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Terrain)]) {
+						glm::mat4 translation	= glm::translate(glm::mat4(1.0f), transforms->position);
+						glm::mat4 rotation		= glm::mat4_cast(transforms->orientation);
+						glm::mat4 modelMatrix	= translation * rotation;
+
+						terrain->get().setModelMatrix(modelMatrix);
+
+						auto itUniforms = mEntityUniforms.find(entity);
+						if (itUniforms != mEntityUniforms.end()) {
+							for (auto& uniforms : itUniforms->second) {
+								uniforms.modelMatrix->setValue(modelMatrix);
+							}
+						}
+
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::Terrain));
+					}
+
+					if (mCameraUpdated) {
+						terrain->get().setHighestLodLocation(camPosition);
+					}
+				},
+				true
+			);
+		});
 
 		mCameraUpdated = false;
 
@@ -77,16 +87,16 @@ namespace se::app {
 	}
 
 // Private functions
-	void TerrainSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	void TerrainSystem::onNewTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query& query)
 	{
 		terrain->setup(&mApplication.getEventManager(), entity);
 
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
 		}
 
-		auto [camTransforms] = mEntityDatabase.getComponents<TransformsComponent>(mCameraEntity, true);
+		auto [camTransforms] = query.getComponents<TransformsComponent>(mCameraEntity, true);
 		if (camTransforms) {
 			terrain->get().setHighestLodLocation(camTransforms->position);
 		}
@@ -94,7 +104,7 @@ namespace se::app {
 		mEntityUniforms.emplace(entity, EntityUniformsVector());
 		terrain->processRenderableShaders([&](const auto& shader) {
 			shader->processSteps([&](const auto& step) {
-				addStep(entity, step.get());
+				addStep(entity, query, step.get());
 			});
 		});
 
@@ -103,7 +113,7 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	void TerrainSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
 		mApplication.getExternalTools().graphicsEngine->removeRenderable(&terrain->get());
 
@@ -132,25 +142,27 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto itEntity = mEntityUniforms.find(event.getEntity());
-		if ((itEntity == mEntityUniforms.end())
-			|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Terrain)
-		) {
-			return;
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto itEntity = mEntityUniforms.find(event.getEntity());
+			if ((itEntity == mEntityUniforms.end())
+				|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Terrain)
+			) {
+				return;
+			}
 
-		switch (event.getOperation()) {
-			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->processSteps([&](const auto& step) {
-					addStep(event.getEntity(), step.get());
-				});
-			} break;
-			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->processSteps([&](const auto& step) {
-					removeStep(event.getEntity(), step.get());
-				});
-			} break;
-		}
+			switch (event.getOperation()) {
+				case RenderableShaderEvent::Operation::Add: {
+					event.getShader()->processSteps([&](const auto& step) {
+						addStep(event.getEntity(), query, step.get());
+					});
+				} break;
+				case RenderableShaderEvent::Operation::Remove: {
+					event.getShader()->processSteps([&](const auto& step) {
+						removeStep(event.getEntity(), query, step.get());
+					});
+				} break;
+			}
+		});
 	}
 
 
@@ -158,32 +170,34 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		mEntityDatabase.iterateEntityComponents<TerrainComponent>(
-			[&](Entity entity, TerrainComponent* terrain) {
-				bool hasShader = false;
-				terrain->processRenderableShaders([&](const auto& shader) {
-					hasShader |= (shader.get() == event.getShader());
-				});
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TerrainComponent>(
+				[&](Entity entity, TerrainComponent* terrain) {
+					bool hasShader = false;
+					terrain->processRenderableShaders([&](const auto& shader) {
+						hasShader |= (shader.get() == event.getShader());
+					});
 
-				if (hasShader) {
-					switch (event.getOperation()) {
-						case ShaderEvent::Operation::Add: {
-							addStep(entity, event.getStep());
-						} break;
-						case ShaderEvent::Operation::Remove: {
-							removeStep(entity, event.getStep());
-						} break;
+					if (hasShader) {
+						switch (event.getOperation()) {
+							case ShaderEvent::Operation::Add: {
+								addStep(entity, query, event.getStep());
+							} break;
+							case ShaderEvent::Operation::Remove: {
+								removeStep(entity, query, event.getStep());
+							} break;
+						}
 					}
-				}
-			},
-			true
-		);
+				},
+				true
+			);
+		});
 	}
 
 
-	void TerrainSystem::addStep(Entity entity, const RenderableShaderStepSPtr& step)
+	void TerrainSystem::addStep(Entity entity, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [transforms, terrain] = mEntityDatabase.getComponents<TransformsComponent, TerrainComponent>(entity, true);
+		auto [transforms, terrain] = query.getComponents<TransformsComponent, TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}
@@ -226,9 +240,9 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::removeStep(Entity entity, const RenderableShaderStepSPtr& step)
+	void TerrainSystem::removeStep(Entity entity, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(entity, true);
+		auto [terrain] = query.getComponents<TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}

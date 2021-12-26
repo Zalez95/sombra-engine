@@ -21,7 +21,7 @@ namespace se::app {
 	 * Class TerrainSystem, it's a System used for updating the Entities'
 	 * RenderableTerrain data
 	 */
-	class TerrainSystem : public ISystem, IEventListener
+	class TerrainSystem : public ISystem, public IEventListener
 	{
 	private:	// Nested types
 		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
@@ -64,17 +64,19 @@ namespace se::app {
 		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&TerrainSystem::onNewTerrain, entity, mask); };
+		{ tryCallC(&TerrainSystem::onNewTerrain, entity, mask, query); };
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&TerrainSystem::onRemoveTerrain, entity, mask); };
+		{ tryCallC(&TerrainSystem::onRemoveTerrain, entity, mask, query); };
 
 		/** Updates the RenderableTerrains with the Entities */
 		virtual void update() override;
@@ -82,16 +84,26 @@ namespace se::app {
 		/** Function called when a TerrainComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the TerrainComponent
-		 * @param	terrain a pointer to the new TerrainComponent */
-		void onNewTerrain(Entity entity, TerrainComponent* terrain);
+		 * @param	terrain a pointer to the new TerrainComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTerrain(
+			Entity entity, TerrainComponent* terrain,
+			EntityDatabase::Query& query
+		);
 
 		/** Function called when a TerrainComponent is going to be removed from
 		 * an Entity
 		 *
 		 * @param	entity the Entity that holds the TerrainComponent
 		 * @param	terrain a pointer to the TerrainComponent that is going to
-		 *			be removed */
-		void onRemoveTerrain(Entity entity, TerrainComponent* terrain);
+		 *			be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveTerrain(
+			Entity entity, TerrainComponent* terrain,
+			EntityDatabase::Query& query
+		);
 
 		/** Handles the given ContainerEvent by updating the Camera Entity with
 		 * which the Scene will be rendered
@@ -114,14 +126,24 @@ namespace se::app {
 		/** Adds the RenderableShaderStep uniforms to the Entity terrain
 		 *
 		 * @param	entity the Entity that owns the TerrainComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components
 		 * @param	step a pointer to the new RenderableShaderStep to add */
-		void addStep(Entity entity, const RenderableShaderStepSPtr& step);
+		void addStep(
+			Entity entity, EntityDatabase::Query& query,
+			const RenderableShaderStepSPtr& step
+		);
 
 		/** Removes the RenderableShaderStep uniforms from the Entity terrain
 		 *
 		 * @param	entity the Entity that owns the TerrainComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components
 		 * @param	step a pointer to the RenderableShaderStep to remove */
-		void removeStep(Entity entity, const RenderableShaderStepSPtr& step);
+		void removeStep(
+			Entity entity, EntityDatabase::Query& query,
+			const RenderableShaderStepSPtr& step
+		);
 	};
 
 }

@@ -1,11 +1,11 @@
 #ifndef ECS_H
 #define ECS_H
 
+#include <mutex>
 #include <memory>
 #include <functional>
 #include <vector>
 #include <unordered_set>
-#include "../utils/PackedVector.h"
 #include "Entity.h"
 
 namespace se::app {
@@ -17,7 +17,7 @@ namespace se::app {
 	 * Class EntityDatabase, it holds all the Entities and their respective
 	 * Components stored like a Database. It is used implementing an
 	 * Entity-Component System in which the Entities are nothing more than an
-	 * identifier and the Database is used for accessing to their Components
+	 * identifier and the Database is used for accessing to their Components.
 	 */
 	class EntityDatabase
 	{
@@ -28,6 +28,7 @@ namespace se::app {
 		using IComponentTableUPtr = std::unique_ptr<IComponentTable>;
 	public:
 		class ComponentMask;
+		class Query;
 
 	private:	// Attributes
 		/** The number of different Component types */
@@ -50,10 +51,14 @@ namespace se::app {
 		/** The ISystems to notify of new Entities or Components */
 		std::vector<std::pair<ISystem*, ComponentMask>> mSystems;
 
+		/** The mutex that protects the Entities, Components and Systems of the
+		 * EntityDatabase */
+		std::recursive_mutex mEntityDBMutex;
+
 	public:		// Functions
 		/** Creates a new EntityDatabase
 		 * @param	maxEntities the maximum number of Entities that the
-		 *			EntityDatabase can hold */
+		 *			EntityDatabase can hold at the same time */
 		EntityDatabase(std::size_t maxEntities);
 
 		/** Class destructor */
@@ -82,13 +87,105 @@ namespace se::app {
 		 *
 		 * @param	system a pointer to the ISystem to check
 		 * @return	the ComponentMask */
-		ComponentMask getSystemMask(ISystem* system) const;
+		ComponentMask getSystemMask(ISystem* system);
 
 		/** Removes the given System so it won't longer be notified of new
 		 * Entities and Components
 		 *
 		 * @param	system a pointer to the System to removed */
 		void removeSystem(ISystem* system);
+
+		/** @return	the maximum number of Entities that can be stored in the
+		 *			EntityDatabase */
+		std::size_t getMaxEntities() const { return mMaxEntities; };
+
+		/** @return	the maximum number of Components with @tparam T allowed */
+		template <typename T>
+		std::size_t getMaxComponents() const
+		{ return getTable<T>().getMaxComponents(); }
+
+		/** Function used for interacting with the Entities and their
+		 * Components stored in the EntityDatabase in thread-safe way.
+		 *
+		 * @param	callback the callback function that will be executed when
+		 *			the other threads release their locks, it must accept a
+		 *			Query object as parameter with which the function can
+		 *			interact with the Entities and Components
+		 * @return	a reference to the current EntityDatabase object */
+		template <typename F>
+		EntityDatabase& executeQuery(F&& callback);
+	private:
+		/** @return	the Component id of @tparam T */
+		template <typename T>
+		static std::size_t getComponentTypeId();
+
+		/** @return	a reference to the ComponentTable of the Component with
+		 *			type @tparam T */
+		template <typename T>
+		ITComponentTable<T>& getTable() const;
+	};
+
+
+	/** Class ComponentMask, it holds the bit mask with a state for each
+	 * Component type */
+	class EntityDatabase::ComponentMask
+	{
+	private:	// Attributes
+		/** The bit state for each Component */
+		std::vector<bool> mBitMask;
+
+	public:		// Functions
+		/** Creates a new ComponentMask
+		 *
+		 * @param	value the initial value of all the bits */
+		ComponentMask(bool value = false) :
+			mBitMask(sComponentTypeCount, value) {};
+
+		/** Returns the value of the bitmask located at the given index
+		 *
+		 * @param	index the position to check
+		 * @return	the value at the given position */
+		bool operator[](std::size_t index) const
+		{ return mBitMask[index]; };
+
+		/** Sets the value of the bitmask located at the given index
+		 *
+		 * @param	index the position to set
+		 * @param	value the new bit value */
+		ComponentMask& set(std::size_t index, bool value = true)
+		{ mBitMask[index] = value; return *this; };
+
+		/** Sets the value for the given @tparam T Component
+		 *
+		 * @param	value the new bit value */
+		template <typename T>
+		ComponentMask& set(bool value = true)
+		{ mBitMask[getComponentTypeId<T>()] = value; return *this; }
+
+		/** @return	the value for the given @tparam T Component */
+		template <typename T>
+		bool get() const
+		{ return mBitMask[getComponentTypeId<T>()]; }
+	};
+
+
+	/**
+	 * Class Query, It's the Object used for making operations with the
+	 * EntityDatabase
+	 */
+	class EntityDatabase::Query
+	{
+	private:	// Attributes
+		/** The parent EntityDatabase that holds the Entities and their
+		 * Components */
+		EntityDatabase& mParent;
+
+	public:		// Functions
+		/** Creates a new Query
+		 *
+		 * @param	parent the parent EntityDatabase that holds the Entities
+		 *			and their Components */
+		Query(EntityDatabase& parent) : mParent(parent) {};
 
 		/** Creates a new Entity
 		 *
@@ -111,10 +208,6 @@ namespace se::app {
 		template <typename T>
 		Entity getEntity(const T* component);
 
-		/** @return	the maximum number of Entities that can be stored in the
-		 *			EntityDatabase */
-		std::size_t getMaxEntities() const { return mMaxEntities; };
-
 		/** Iterates all the Entities added to the EntityDatabase
 		 *
 		 * @param	callback the callback function to call for each Entity */
@@ -128,10 +221,6 @@ namespace se::app {
 
 		/** Removes all the Entities stored in the EntityDatabase */
 		void clearEntities();
-
-		/** @return	the maximum number of Components with @tparam T allowed */
-		template <typename T>
-		std::size_t getMaxComponents() const;
 
 		/** Adds a Component with type @tparam T to the given Entity
 		 *
@@ -267,57 +356,6 @@ namespace se::app {
 		 * @param	entity the Entity that owns the Component */
 		template <typename T>
 		void disableComponent(Entity entity);
-	private:
-		/** @return	the Component id of @tparam T */
-		template <typename T>
-		static std::size_t getComponentTypeId();
-
-		/** @return	a reference to the ComponentTable of the Component with
-		 *			type @tparam T */
-		template <typename T>
-		ITComponentTable<T>& getTable() const;
-	};
-
-
-	/** Class ComponentMask, it holds the bit mask with a state for each
-	 * Component type */
-	class EntityDatabase::ComponentMask
-	{
-	private:	// Attributes
-		/** The bit state for each Component */
-		std::vector<bool> mBitMask;
-
-	public:		// Functions
-		/** Creates a new ComponentMask
-		 *
-		 * @param	value the initial value of all the bits */
-		ComponentMask(bool value = false);
-
-		/** Returns the value of the bitmask located at the given index
-		 *
-		 * @param	index the position to check
-		 * @return	the value at the given position */
-		bool operator[](std::size_t index) const
-		{ return mBitMask[index]; };
-
-		/** Sets the value of the bitmask located at the given index
-		 *
-		 * @param	index the position to set
-		 * @param	value the new bit value */
-		ComponentMask& set(std::size_t index, bool value = true)
-		{ mBitMask[index] = value; return *this; };
-
-		/** Sets the value for the given @tparam T Component
-		 *
-		 * @param	value the new bit value */
-		template <typename T>
-		ComponentMask& set(bool value = true)
-		{ mBitMask[getComponentTypeId<T>()] = value; return *this; }
-
-		/** @return	the value for the given @tparam T Component */
-		template <typename T>
-		bool get() const
-		{ return mBitMask[getComponentTypeId<T>()]; }
 	};
 
 }

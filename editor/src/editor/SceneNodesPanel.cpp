@@ -63,26 +63,30 @@ namespace editor {
 		// Operations
 		if (mRemove) {
 			mRemove = false;
-			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
-				[&](se::app::AnimationComponent& animation) {
-					se::animation::AnimationNode* node = animation.getRootNode();
-					if (node == &(*mSelectedNode)) {
-						animation.setRootNode(nullptr);
+			mEditor.getEntityDatabase().executeQuery([this](se::app::EntityDatabase::Query& query) {
+				query.iterateComponents<se::app::AnimationComponent>(
+					[&](se::app::AnimationComponent& animation) {
+						se::animation::AnimationNode* node = animation.getRootNode();
+						if (node == &(*mSelectedNode)) {
+							animation.setRootNode(nullptr);
+						}
 					}
-				}
-			);
+				);
+			});
 			root->erase(mSelectedNode);
 		}
 		if (mRemoveHierarchy) {
 			mRemoveHierarchy = false;
-			mEditor.getEntityDatabase().iterateComponents<se::app::AnimationComponent>(
-				[&](se::app::AnimationComponent& animation) {
-					se::animation::AnimationNode* node = animation.getRootNode();
-					if (node == &(*mSelectedNode) || (mSelectedNode->find(*node) != mSelectedNode->end())) {
-						animation.setRootNode(nullptr);
+			mEditor.getEntityDatabase().executeQuery([this](se::app::EntityDatabase::Query& query) {
+				query.iterateComponents<se::app::AnimationComponent>(
+					[&](se::app::AnimationComponent& animation) {
+						se::animation::AnimationNode* node = animation.getRootNode();
+						if (node == &(*mSelectedNode) || (mSelectedNode->find(*node) != mSelectedNode->end())) {
+							animation.setRootNode(nullptr);
+						}
 					}
-				}
-			);
+				);
+			});
 			root->erase(mSelectedNode, true);
 		}
 		if (mAdd) {

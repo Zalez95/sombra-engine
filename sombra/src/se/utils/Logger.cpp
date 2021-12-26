@@ -45,7 +45,7 @@ namespace se::utils {
 		}
 
 		// Write to the log file
-		std::lock_guard<std::mutex> locker(mMutex);
+		std::scoped_lock<std::mutex> locker(mMutex);
 
 		putTime(mLogFile);
 		mLogFile

@@ -286,6 +286,8 @@ namespace se::app {
 	template <typename T>
 	void EntityDatabase::addComponentTable(std::size_t maxComponents)
 	{
+		std::scoped_lock lock(mEntityDBMutex);
+
 		std::size_t id = getComponentTypeId<T>();
 		while (id >= mComponentTables.size()) {
 			mComponentTables.emplace_back(nullptr);
@@ -295,33 +297,37 @@ namespace se::app {
 	}
 
 
-	template <typename T>
-	Entity EntityDatabase::getEntity(const T* component)
+	template <typename F>
+	EntityDatabase& EntityDatabase::executeQuery(F&& callback)
 	{
-		return getTable<T>().getEntity(component);
+		std::scoped_lock lock(mEntityDBMutex);
+
+		Query query(*this);
+		callback(query);
+		return *this;
+	}
+
+
+	template <typename T>
+	Entity EntityDatabase::Query::getEntity(const T* component)
+	{
+		return mParent.getTable<T>().getEntity(component);
 	}
 
 
 	template <typename F>
-	void EntityDatabase::iterateEntities(F&& callback)
+	void EntityDatabase::Query::iterateEntities(F&& callback)
 	{
-		for (Entity entity = 1; entity <= mLastEntity; ++entity) {
-			if (mRemovedEntities.find(entity) == mRemovedEntities.end()) {
+		for (Entity entity = 1; entity <= mParent.mLastEntity; ++entity) {
+			if (mParent.mRemovedEntities.find(entity) == mParent.mRemovedEntities.end()) {
 				callback(entity);
 			}
 		}
 	}
 
 
-	template <typename T>
-	std::size_t EntityDatabase::getMaxComponents() const
-	{
-		return getTable<T>().getMaxComponents();
-	}
-
-
 	template <typename T, typename... Args>
-	T* EntityDatabase::emplaceComponent(Entity entity, bool enabled, Args&&... args)
+	T* EntityDatabase::Query::emplaceComponent(Entity entity, bool enabled, Args&&... args)
 	{
 		T component(std::forward<Args>(args)...);
 		return addComponent(entity, std::move(component), enabled);
@@ -329,20 +335,20 @@ namespace se::app {
 
 
 	template <typename T>
-	T* EntityDatabase::addComponent(Entity entity, T&& component, bool enabled)
+	T* EntityDatabase::Query::addComponent(Entity entity, T&& component, bool enabled)
 	{
 		if (entity == kNullEntity) { return nullptr; }
 
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		T* ret = table.addComponent(entity, std::forward<T>(component));
 		if (!enabled) {
 			table.disableComponent(entity);
 		}
 
 		if (table.hasComponentEnabled(entity)) {
-			for (auto& pair : mSystems) {
+			for (auto& pair : mParent.mSystems) {
 				if (pair.second.get<T>()) {
-					pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
+					pair.first->onNewComponent(entity, ComponentMask().set<T>(true), *this);
 				}
 			}
 		}
@@ -352,14 +358,14 @@ namespace se::app {
 
 
 	template <typename T>
-	T* EntityDatabase::copyComponent(Entity source, Entity destination)
+	T* EntityDatabase::Query::copyComponent(Entity source, Entity destination)
 	{
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		if (table.copyComponent(source, destination)) {
 			if (table.hasComponentEnabled(destination)) {
-				for (auto& pair : mSystems) {
+				for (auto& pair : mParent.mSystems) {
 					if (pair.second.get<T>()) {
-						pair.first->onNewComponent(destination, ComponentMask().set<T>(true));
+						pair.first->onNewComponent(destination, ComponentMask().set<T>(true), *this);
 					}
 				}
 			}
@@ -371,7 +377,7 @@ namespace se::app {
 
 
 	template <typename T1, typename T2, typename... Args>
-	bool EntityDatabase::hasComponents(Entity entity)
+	bool EntityDatabase::Query::hasComponents(Entity entity)
 	{
 		return hasComponents<T1>(entity)
 			&& hasComponents<T2, Args...>(entity);
@@ -379,14 +385,14 @@ namespace se::app {
 
 
 	template <typename T>
-	bool EntityDatabase::hasComponents(Entity entity)
+	bool EntityDatabase::Query::hasComponents(Entity entity)
 	{
-		return getTable<T>().hasComponent(entity);
+		return mParent.getTable<T>().hasComponent(entity);
 	}
 
 
 	template <typename T1, typename T2, typename... Args>
-	std::tuple<T1*, T2*, Args*...> EntityDatabase::getComponents(Entity entity, bool onlyEnabled)
+	std::tuple<T1*, T2*, Args*...> EntityDatabase::Query::getComponents(Entity entity, bool onlyEnabled)
 	{
 		auto [component] = getComponents<T1>(entity, onlyEnabled);
 		return std::tuple_cat(std::make_tuple(component), getComponents<T2, Args...>(entity, onlyEnabled));
@@ -394,11 +400,11 @@ namespace se::app {
 
 
 	template <typename T>
-	std::tuple<T*> EntityDatabase::getComponents(Entity entity, bool onlyEnabled)
+	std::tuple<T*> EntityDatabase::Query::getComponents(Entity entity, bool onlyEnabled)
 	{
 		T* component = nullptr;
 
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity) && (!onlyEnabled || table.hasComponentEnabled(entity))) {
 			component = table.getComponent(entity);
 		}
@@ -408,14 +414,14 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::iterateComponents(const std::function<void(T&)>& callback, bool onlyEnabled)
+	void EntityDatabase::Query::iterateComponents(const std::function<void(T&)>& callback, bool onlyEnabled)
 	{
-		getTable<T>().iterateComponents(callback, onlyEnabled);
+		mParent.getTable<T>().iterateComponents(callback, onlyEnabled);
 	}
 
 
 	template <typename... Args, typename F>
-	void EntityDatabase::iterateEntityComponents(F&& callback, bool onlyEnabled)
+	void EntityDatabase::Query::iterateEntityComponents(F&& callback, bool onlyEnabled)
 	{
 		iterateEntities([&](Entity entity) {
 			if (hasComponents<Args...>(entity)
@@ -430,14 +436,14 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::removeComponent(Entity entity)
+	void EntityDatabase::Query::removeComponent(Entity entity)
 	{
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity)) {
 			if (table.hasComponentEnabled(entity)) {
-				for (auto& pair : mSystems) {
+				for (auto& pair : mParent.mSystems) {
 					if (pair.second.get<T>()) {
-						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
+						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true), *this);
 					}
 				}
 			}
@@ -448,16 +454,16 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::enableComponent(Entity entity)
+	void EntityDatabase::Query::enableComponent(Entity entity)
 	{
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity)) {
 			table.enableComponent(entity);
 
 			if (table.hasComponentEnabled(entity)) {
-				for (auto& pair : mSystems) {
+				for (auto& pair : mParent.mSystems) {
 					if (pair.second.get<T>()) {
-						pair.first->onNewComponent(entity, ComponentMask().set<T>(true));
+						pair.first->onNewComponent(entity, ComponentMask().set<T>(true), *this);
 					}
 				}
 			}
@@ -466,7 +472,7 @@ namespace se::app {
 
 
 	template <typename T1, typename T2, typename... Args>
-	bool EntityDatabase::hasComponentsEnabled(Entity entity)
+	bool EntityDatabase::Query::hasComponentsEnabled(Entity entity)
 	{
 		return hasComponentsEnabled<T1>(entity)
 			&& hasComponentsEnabled<T2, Args...>(entity);
@@ -474,21 +480,21 @@ namespace se::app {
 
 
 	template <typename T>
-	bool EntityDatabase::hasComponentsEnabled(Entity entity)
+	bool EntityDatabase::Query::hasComponentsEnabled(Entity entity)
 	{
-		return getTable<T>().hasComponentEnabled(entity);
+		return mParent.getTable<T>().hasComponentEnabled(entity);
 	}
 
 
 	template <typename T>
-	void EntityDatabase::disableComponent(Entity entity)
+	void EntityDatabase::Query::disableComponent(Entity entity)
 	{
-		auto& table = getTable<T>();
+		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity)) {
 			if (table.hasComponentEnabled(entity)) {
-				for (auto& pair : mSystems) {
+				for (auto& pair : mParent.mSystems) {
 					if (pair.second.get<T>()) {
-						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true));
+						pair.first->onRemoveComponent(entity, ComponentMask().set<T>(true), *this);
 					}
 				}
 			}

@@ -46,46 +46,55 @@ namespace se::app {
 
 		utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 
-		for (auto& [entity, entityUniforms] : mEntityUniforms) {
-			auto [transforms, mesh, skin] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent, SkinComponent>(entity, true);
-			if (transforms
-				&& (!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
-					|| !transforms->updated[static_cast<int>(TransformsComponent::Update::Skin)])
-			) {
-				glm::mat4 modelMatrix = getModelMatrix(*transforms);
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TransformsComponent, MeshComponent>(
+				[&](Entity entity, TransformsComponent* transforms, MeshComponent* mesh) {
+					if ((!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
+						|| !transforms->updated[static_cast<int>(TransformsComponent::Update::Skin)])
+					) {
+						glm::mat4 modelMatrix = getModelMatrix(*transforms);
 
-				if (skin) {
-					jointMatrices = skin->calculateJointMatrices(modelMatrix);
-				}
-				else {
-					jointMatrices.clear();
-				}
+						mesh->processRenderableIndices([&](std::size_t i) {
+							mesh->get(i).setModelMatrix(modelMatrix);
+						});
 
-				mesh->processRenderableIndices([&, entityUniforms = entityUniforms, mesh = mesh](std::size_t i) {
-					mesh->get(i).setModelMatrix(modelMatrix);
+						auto itUniforms = mEntityUniforms.find(entity);
+						if (itUniforms != mEntityUniforms.end()) {
+							auto [skin] = query.getComponents<SkinComponent>(entity, true);
+							if (skin) {
+								jointMatrices = skin->calculateJointMatrices(modelMatrix);
+							}
+							else {
+								jointMatrices.clear();
+							}
 
-					for (auto& meshUniforms : entityUniforms[i]) {
-						meshUniforms.modelMatrix->setValue(modelMatrix);
-						if (meshUniforms.jointMatrices) {
-							meshUniforms.jointMatrices->setValue(jointMatrices.data(), jointMatrices.size());
+							mesh->processRenderableIndices([&](std::size_t i) {
+								for (auto& meshUniforms : itUniforms->second[i]) {
+									meshUniforms.modelMatrix->setValue(modelMatrix);
+									if (meshUniforms.jointMatrices) {
+										meshUniforms.jointMatrices->setValue(jointMatrices.data(), jointMatrices.size());
+									}
+								}
+							});
 						}
-					}
-				});
 
-				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Mesh));
-				transforms->updated.set(static_cast<int>(TransformsComponent::Update::Skin));
-			}
-		}
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::Mesh));
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::Skin));
+					}
+				},
+				true
+			);
+		});
 
 		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
-	void MeshSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	void MeshSystem::onNewMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query& query)
 	{
 		mesh->setup(&mApplication.getEventManager(), entity);
 
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
 		}
@@ -94,7 +103,7 @@ namespace se::app {
 			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				mesh->processRenderableShaders(i, [&](const auto& shader) {
 					shader->processSteps([&](const auto& step) {
-						addStep(entity, i, step.get());
+						addStep(entity, i, query, step.get());
 					});
 				});
 
@@ -109,7 +118,7 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	void MeshSystem::onRemoveMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([this, mesh = mesh](std::size_t i) {
 			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
@@ -130,32 +139,34 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto itEntity = mEntityUniforms.find(event.getEntity());
-		if (itEntity == mEntityUniforms.end()) {
-			return;
-		}
-
-		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(event.getEntity(), true);
-		if (mesh) {
-			switch (event.getOperation()) {
-				case RMeshEvent::Operation::Add: {
-					glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
-					mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
-
-					mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
-						shader->processSteps([&](const auto& step) {
-							addStep(event.getEntity(), event.getRIndex(), step.get());
-						});
-					});
-
-					mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(event.getRIndex()));
-				} break;
-				case RMeshEvent::Operation::Remove: {
-					mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
-					itEntity->second[event.getRIndex()].clear();
-				} break;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto itEntity = mEntityUniforms.find(event.getEntity());
+			if (itEntity == mEntityUniforms.end()) {
+				return;
 			}
-		}
+
+			auto [transforms, mesh] = query.getComponents<TransformsComponent, MeshComponent>(event.getEntity(), true);
+			if (mesh) {
+				switch (event.getOperation()) {
+					case RMeshEvent::Operation::Add: {
+						glm::mat4 modelMatrix = (transforms)? getModelMatrix(*transforms) : glm::mat4(1.0f);
+						mesh->get(event.getRIndex()).setModelMatrix(modelMatrix);
+
+						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+							shader->processSteps([&](const auto& step) {
+								addStep(event.getEntity(), event.getRIndex(), query, step.get());
+							});
+						});
+
+						mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(event.getRIndex()));
+					} break;
+					case RMeshEvent::Operation::Remove: {
+						mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
+						itEntity->second[event.getRIndex()].clear();
+					} break;
+				}
+			}
+		});
 	}
 
 
@@ -163,25 +174,27 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto itEntity = mEntityUniforms.find(event.getEntity());
-		if ((itEntity == mEntityUniforms.end())
-			|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh)
-		) {
-			return;
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto itEntity = mEntityUniforms.find(event.getEntity());
+			if ((itEntity == mEntityUniforms.end())
+				|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh)
+			) {
+				return;
+			}
 
-		switch (event.getOperation()) {
-			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->processSteps([&](const auto& step) {
-					addStep(event.getEntity(), event.getRIndex(), step.get());
-				});
-			} break;
-			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->processSteps([&](const auto& step) {
-					removeStep(event.getEntity(), event.getRIndex(), step.get());
-				});
-			} break;
-		}
+			switch (event.getOperation()) {
+				case RenderableShaderEvent::Operation::Add: {
+					event.getShader()->processSteps([&](const auto& step) {
+						addStep(event.getEntity(), event.getRIndex(), query, step.get());
+					});
+				} break;
+				case RenderableShaderEvent::Operation::Remove: {
+					event.getShader()->processSteps([&](const auto& step) {
+						removeStep(event.getEntity(), event.getRIndex(), query, step.get());
+					});
+				} break;
+			}
+		});
 	}
 
 
@@ -189,34 +202,36 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		mEntityDatabase.iterateEntityComponents<MeshComponent>(
-			[&](Entity entity, MeshComponent* mesh) {
-				mesh->processRenderableIndices([&](std::size_t i) {
-					bool hasShader = false;
-					mesh->processRenderableShaders(i, [&](const auto& shader) {
-						hasShader |= (shader.get() == event.getShader());
-					});
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<MeshComponent>(
+				[&](Entity entity, MeshComponent* mesh) {
+					mesh->processRenderableIndices([&](std::size_t i) {
+						bool hasShader = false;
+						mesh->processRenderableShaders(i, [&](const auto& shader) {
+							hasShader |= (shader.get() == event.getShader());
+						});
 
-					if (hasShader) {
-						switch (event.getOperation()) {
-							case ShaderEvent::Operation::Add: {
-								addStep(entity, i, event.getStep());
-							} break;
-							case ShaderEvent::Operation::Remove: {
-								removeStep(entity, i, event.getStep());
-							} break;
+						if (hasShader) {
+							switch (event.getOperation()) {
+								case ShaderEvent::Operation::Add: {
+									addStep(entity, i, query, event.getStep());
+								} break;
+								case ShaderEvent::Operation::Remove: {
+									removeStep(entity, i, query, event.getStep());
+								} break;
+							}
 						}
-					}
-				});
-			},
-			true
-		);
+					});
+				},
+				true
+			);
+		});
 	}
 
 
-	void MeshSystem::addStep(Entity entity, std::size_t rIndex, const RenderableShaderStepSPtr& step)
+	void MeshSystem::addStep(Entity entity, std::size_t rIndex, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [transforms, mesh] = mEntityDatabase.getComponents<TransformsComponent, MeshComponent>(entity, true);
+		auto [transforms, mesh] = query.getComponents<TransformsComponent, MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}
@@ -266,9 +281,9 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::removeStep(Entity entity, std::size_t rIndex, const RenderableShaderStepSPtr& step)
+	void MeshSystem::removeStep(Entity entity, std::size_t rIndex, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(entity, true);
+		auto [mesh] = query.getComponents<MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}

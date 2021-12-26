@@ -8,20 +8,20 @@ namespace editor {
 
 	void ViewportControl::onUpdate(se::app::Entity entity, float /*elapsedTime*/, const se::app::ScriptSharedState& sharedState)
 	{
-		auto [transforms] = sharedState.entityDatabase->getComponents<se::app::TransformsComponent>(entity, true);
-		if (!transforms) { return; }
-
-		if (sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
-			if (sharedState.keys[SE_KEY_LEFT_CONTROL] && sharedState.keys[SE_KEY_LEFT_ALT]) {
-				zoom(sharedState, *transforms);
+		sharedState.entityDatabase->executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto [transforms] = query.getComponents<se::app::TransformsComponent>(entity, true);
+			if (transforms && sharedState.mouseButtons[SE_MOUSE_BUTTON_LEFT]) {
+				if (sharedState.keys[SE_KEY_LEFT_CONTROL] && sharedState.keys[SE_KEY_LEFT_ALT]) {
+					zoom(sharedState, *transforms);
+				}
+				else if (sharedState.keys[SE_KEY_LEFT_SHIFT] && sharedState.keys[SE_KEY_LEFT_ALT]) {
+					move(sharedState, *transforms);
+				}
+				else if (sharedState.keys[SE_KEY_LEFT_ALT]) {
+					orbit(sharedState, *transforms);
+				}
 			}
-			else if (sharedState.keys[SE_KEY_LEFT_SHIFT] && sharedState.keys[SE_KEY_LEFT_ALT]) {
-				move(sharedState, *transforms);
-			}
-			else if (sharedState.keys[SE_KEY_LEFT_ALT]) {
-				orbit(sharedState, *transforms);
-			}
-		}
+		});
 
 		mLastMouseX = sharedState.mouseX;
 		mLastMouseY = sharedState.mouseY;

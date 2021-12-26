@@ -32,17 +32,17 @@ namespace se::app {
 		/** Class destructor */
 		~AnimationSystem();
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&AnimationSystem::onNewAComponent, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
-		) override
-		{ tryCallC(&AnimationSystem::onRemoveAComponent, entity, mask); };
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
+		) override;
 
 		/** Updates the Entities' animations */
 		virtual void update() override;
@@ -50,9 +50,13 @@ namespace se::app {
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added
 		 *
-		 * @param	entity the new Entity */
+		 * @param	entity the new Entity
+		 * @param	animationComponent a pointer to the new AnimationComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onNewAComponent(
-			Entity entity, AnimationComponent* animationComponent
+			Entity entity, AnimationComponent* animationComponent,
+			EntityDatabase::Query& query
 		);
 
 		/** Function called when an AnimationComponent is going to be removed
@@ -60,9 +64,12 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that holds the AnimationComponent
 		 * @param	animationComponent a pointer to the AnimationComponent that
-		 *			is going to be removed */
+		 *			is going to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
 		void onRemoveAComponent(
-			Entity entity, AnimationComponent* animationComponent
+			Entity entity, AnimationComponent* animationComponent,
+			EntityDatabase::Query& query
 		);
 	};
 

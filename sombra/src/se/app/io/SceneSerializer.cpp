@@ -2830,16 +2830,19 @@ namespace se::app {
 		auto componentsVJson = nlohmann::json::array();
 
 		for (Entity entity : data.scene.entities) {
-			std::size_t index = data.entityIndexMap.find(entity)->second;
-			auto [component] = data.scene.application.getEntityDatabase().getComponents<T>(entity);
-			bool componentEnabled = data.scene.application.getEntityDatabase().hasComponentsEnabled<T>(entity);
+			nlohmann::json componentJson;
+			bool componentEnabled = true;
+			data.scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+				componentEnabled = query.hasComponentsEnabled<T>(entity);
+				auto [component] = query.getComponents<T>(entity);
+				if (component) {
+					nlohmann::json componentJson = serializeComponent<T>(*component, data, dataStream);
+				}
+			});
 
-			if (component) {
-				nlohmann::json componentJson = serializeComponent<T>(*component, data, dataStream);
-				componentJson["entity"] = index;
-				componentJson["enabled"] = componentEnabled;
-				componentsVJson.emplace_back(std::move(componentJson));
-			}
+			componentJson["entity"] = data.entityIndexMap.find(entity)->second;
+			componentJson["enabled"] = componentEnabled;
+			componentsVJson.emplace_back(std::move(componentJson));
 		}
 
 		if (!componentsVJson.empty()) {
@@ -2876,7 +2879,9 @@ namespace se::app {
 				if (!result) {
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 				}
-				scene.application.getEntityDatabase().addComponent<T>(itEntity2->second, std::move(*component), enabled);
+				scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+					query.addComponent<T>(itEntity2->second, std::move(*component), enabled);
+				});
 			}
 		}
 
@@ -3024,7 +3029,11 @@ namespace se::app {
 		scene.entities.reserve(scene.entities.size() + numEntities);
 		data.indexEntityMap.reserve(numEntities);
 		for (std::size_t i = 0; i < numEntities; ++i) {
-			Entity entity = scene.application.getEntityDatabase().addEntity();
+			Entity entity = kNullEntity;
+			scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+				entity = query.addEntity();
+			});
+
 			if (entity != kNullEntity) {
 				scene.entities.push_back(entity);
 				data.indexEntityMap.emplace(i, entity);

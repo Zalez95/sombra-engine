@@ -181,22 +181,26 @@ namespace editor {
 		shaderDefaultParticles->addStep(stepDefaultParticles);
 
 		// Default Scene entities
-		auto cubeEntity = scene.application.getEntityDatabase().addEntity();
-		scene.entities.push_back(cubeEntity);
-		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(cubeEntity, true, "cube");
-		auto cubeTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(cubeEntity);
-		cubeTransforms->position = { 0.0f, 0.5f, 0.0f };
-		auto cubeMeshComponent = scene.application.getEntityDatabase().emplaceComponent<MeshComponent>(cubeEntity);
-		std::size_t iRMesh = cubeMeshComponent->add(false, cubeMesh);
-		cubeMeshComponent->addRenderableShader(iRMesh, shaderDefault);
+		scene.application.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto cubeEntity = query.addEntity();
+			scene.entities.push_back(cubeEntity);
+			query.emplaceComponent<TagComponent>(cubeEntity, true, "cube");
+			auto cubeTransforms = query.emplaceComponent<TransformsComponent>(cubeEntity);
+			cubeTransforms->position = { 0.0f, 0.5f, 0.0f };
+			auto cubeMeshComponent = query.emplaceComponent<MeshComponent>(cubeEntity);
+			std::size_t iRMesh = cubeMeshComponent->add(false, cubeMesh);
+			cubeMeshComponent->addRenderableShader(iRMesh, shaderDefault);
+		});
 
-		auto lightEntity = scene.application.getEntityDatabase().addEntity();
-		scene.entities.push_back(lightEntity);
-		scene.application.getEntityDatabase().emplaceComponent<TagComponent>(lightEntity, true, "pointLight");
-		auto lightComponent = scene.application.getEntityDatabase().emplaceComponent<LightComponent>(lightEntity);
-		lightComponent->setSource(pointLight);
-		auto lightTransforms = scene.application.getEntityDatabase().emplaceComponent<TransformsComponent>(lightEntity);
-		lightTransforms->position = { 3.0f, 7.5f, -1.0f };
+		scene.application.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			auto lightEntity = query.addEntity();
+			scene.entities.push_back(lightEntity);
+			query.emplaceComponent<TagComponent>(lightEntity, true, "pointLight");
+			auto lightComponent = query.emplaceComponent<LightComponent>(lightEntity);
+			lightComponent->setSource(pointLight);
+			auto lightTransforms = query.emplaceComponent<TransformsComponent>(lightEntity);
+			lightTransforms->position = { 3.0f, 7.5f, -1.0f };
+		});
 	}
 
 }

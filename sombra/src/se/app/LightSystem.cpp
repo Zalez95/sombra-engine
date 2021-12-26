@@ -262,19 +262,19 @@ namespace se::app {
 	}
 
 
-	void LightSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
+	void LightSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query)
 	{
-		tryCallC(&LightSystem::onNewLight, entity, mask);
-		tryCallC(&LightSystem::onNewMesh, entity, mask);
-		tryCallC(&LightSystem::onNewTerrain, entity, mask);
+		tryCallC(&LightSystem::onNewLight, entity, mask, query);
+		tryCallC(&LightSystem::onNewMesh, entity, mask, query);
+		tryCallC(&LightSystem::onNewTerrain, entity, mask, query);
 	}
 
 
-	void LightSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask)
+	void LightSystem::onRemoveComponent(Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query)
 	{
-		tryCallC(&LightSystem::onRemoveLight, entity, mask);
-		tryCallC(&LightSystem::onRemoveMesh, entity, mask);
-		tryCallC(&LightSystem::onRemoveTerrain, entity, mask);
+		tryCallC(&LightSystem::onRemoveLight, entity, mask, query);
+		tryCallC(&LightSystem::onRemoveMesh, entity, mask, query);
+		tryCallC(&LightSystem::onRemoveTerrain, entity, mask, query);
 	}
 
 
@@ -288,8 +288,8 @@ namespace se::app {
 		float size, zNear, zFar, camFOVY(0.0f), camAspectRatio(1.0f), camZNear(-1.0f), camZFar(1.0f);
 		std::size_t resolution, numCascades;
 
-		if (mCameraEntity != kNullEntity) {
-			auto [transforms, camera] = mEntityDatabase.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [transforms, camera] = query.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
 			if (transforms && camera) {
 				for (std::size_t i = 0; i < LightVolumeData::kNumDL; ++i) {
 					mLightVolumeData->cameraPosition[i]->setValue(transforms->position);
@@ -300,160 +300,164 @@ namespace se::app {
 					camViewMatrix = camera->getViewMatrix();
 				}
 			}
-		}
+		});
 
-		for (auto& [entity, entityUniforms] : mEntityUniforms) {
-			auto [light, transforms] = mApplication.getEntityDatabase().getComponents<LightComponent, TransformsComponent>(entity);
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TransformsComponent, LightComponent>(
+				[&](Entity entity, TransformsComponent* transforms, LightComponent* light) {
+					auto itUniforms = mEntityUniforms.find(entity);
+					if (itUniforms == mEntityUniforms.end()) { return; }
 
-			glm::mat4 translation(1.0f), rotation(1.0f), scale(1.0f);
-			if (transforms) {
-				translation = glm::translate(glm::mat4(1.0f), transforms->position);
-				rotation = glm::mat4_cast(transforms->orientation);
-			}
+					glm::mat4	translation = glm::translate(glm::mat4(1.0f), transforms->position),
+								rotation = glm::mat4_cast(transforms->orientation),
+								scale = glm::mat4(1.0f);
 
-			entityUniforms.type->setValue(static_cast<int>(light->getSource()->getType()));
-			entityUniforms.color->setValue(light->getSource()->getColor());
-			entityUniforms.intensity->setValue(light->getSource()->getIntensity());
-			entityUniforms.range->setValue(light->getSource()->getRange());
+					itUniforms->second.type->setValue(static_cast<int>(light->getSource()->getType()));
+					itUniforms->second.color->setValue(light->getSource()->getColor());
+					itUniforms->second.intensity->setValue(light->getSource()->getIntensity());
+					itUniforms->second.range->setValue(light->getSource()->getRange());
 
-			switch (light->getSource()->getType()) {
-				case LightSource::Type::Point: {
-					scale = glm::scale(glm::mat4(1.0f), glm::vec3(light->getSource()->getRange()));
+					switch (light->getSource()->getType()) {
+						case LightSource::Type::Point: {
+							scale = glm::scale(glm::mat4(1.0f), glm::vec3(light->getSource()->getRange()));
 
-					if (light->getRenderable().castsShadows()) {
-						light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
+							if (light->getRenderable().castsShadows()) {
+								light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
 
-						shadowsCamera.setPosition(transforms->position);
-						shadowsCamera.setPerspectiveProjection(glm::half_pi<float>(), 1.0f, zNear, zFar);
-						shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
+								shadowsCamera.setPosition(transforms->position);
+								shadowsCamera.setPerspectiveProjection(glm::half_pi<float>(), 1.0f, zNear, zFar);
+								shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
 
-						for (std::size_t i = 0; i < 6; ++i) {
-							shadowsCamera.setOrientation(kCubeMapOrientations[i]);
-							shadowViewMatrix = shadowsCamera.getViewMatrix();
+								for (std::size_t i = 0; i < 6; ++i) {
+									shadowsCamera.setOrientation(kCubeMapOrientations[i]);
+									shadowViewMatrix = shadowsCamera.getViewMatrix();
 
-							shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
-							light->getRenderable().setShadowViewMatrix(i, shadowViewMatrix);
-							light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
-						}
+									shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
+									light->getRenderable().setShadowViewMatrix(i, shadowViewMatrix);
+									light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
+								}
 
-						entityUniforms.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
-						shadowVPMatrices.clear();
-					}
-				} break;
-				case LightSource::Type::Spot: {
-					float innerConeAngle, outerConeAngle;
-					light->getSource()->getSpotLightRange(innerConeAngle, outerConeAngle);
-
-					float radius = std::tan(outerConeAngle) * light->getSource()->getRange();
-					float cosInner = std::cos(innerConeAngle);
-					float cosOuter = std::cos(outerConeAngle);
-					scale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f * radius, light->getSource()->getRange(), 2.0f * radius));
-
-					entityUniforms.lightAngleScale->setValue(1.0f / std::max(0.001f, cosInner - cosOuter));
-					entityUniforms.lightAngleOffset->setValue(-cosOuter * entityUniforms.lightAngleScale->getValue());
-
-					if (light->getRenderable().castsShadows()) {
-						light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
-
-						shadowsCamera.setPosition(transforms->position);
-						shadowsCamera.setOrientation(transforms->orientation);
-						shadowsCamera.setPerspectiveProjection(2.0f * outerConeAngle, 1.0f, zNear, zFar);
-
-						shadowViewMatrix = shadowsCamera.getViewMatrix();
-						shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
-
-						shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
-						light->getRenderable().setShadowViewMatrix(0, shadowViewMatrix);
-						light->getRenderable().setShadowProjectionMatrix(0, shadowProjectionMatrix);
-
-						entityUniforms.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
-						entityUniforms.cascadesZFar->setValue(&zFar, 1);
-						shadowVPMatrices.clear();
-					}
-				} break;
-				default: {
-					scale = glm::scale(glm::mat4(1.0f), glm::vec3(light->getSource()->getRange()));
-
-					if (light->getRenderable().castsShadows()) {
-						light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
-
-						// Get the zFar values of each cascade frustum
-						auto depths = calculateCascadesZFar(camZNear, camZFar, numCascades);
-						float previousDepth = camZNear;
-
-						for (std::size_t i = 0; i < light->getRenderable().getNumShadows(); ++i) {
-							// Calculate the cascade frustum corners in world space
-							shadowsCamera.setPerspectiveProjection(camFOVY, camAspectRatio, previousDepth, depths[i]);
-							glm::mat4 camInvViewProjMatrix = glm::inverse(shadowsCamera.getProjectionMatrix() * camViewMatrix);
-							previousDepth = depths[i];
-
-							glm::vec4 frustumCorners[] = {
-								{-1, 1, 1, 1}, { 1, 1, 1, 1}, {-1,-1, 1, 1}, { 1,-1, 1, 1},
-								{-1, 1,-1, 1}, { 1, 1,-1, 1}, {-1,-1,-1, 1}, { 1,-1,-1, 1}
-							};
-							glm::vec3 frustumCentroid(0.0f);
-
-							for (glm::vec4& corner : frustumCorners) {
-								corner = camInvViewProjMatrix * corner;
-								corner /= corner.w;
-								frustumCentroid += glm::vec3(corner);
+								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
+								shadowVPMatrices.clear();
 							}
+						} break;
+						case LightSource::Type::Spot: {
+							float innerConeAngle, outerConeAngle;
+							light->getSource()->getSpotLightRange(innerConeAngle, outerConeAngle);
 
-							frustumCentroid *= 1.0f / 8.0f;
-							float frustumRadius = 0.5f * glm::length(frustumCorners[0] - frustumCorners[7]);
+							float radius = std::tan(outerConeAngle) * light->getSource()->getRange();
+							float cosInner = std::cos(innerConeAngle);
+							float cosOuter = std::cos(outerConeAngle);
+							scale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f * radius, light->getSource()->getRange(), 2.0f * radius));
 
-							// Calculate a view matrix used for moving the frustum center in texel sized increments
-							// See https://alextardif.com/shadowmapping.html
-							float texelsPerUnit = resolution / (2.0f * frustumRadius);
-							glm::mat4 texelScaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(texelsPerUnit));
+							itUniforms->second.lightAngleScale->setValue(1.0f / std::max(0.001f, cosInner - cosOuter));
+							itUniforms->second.lightAngleOffset->setValue(-cosOuter * itUniforms->second.lightAngleScale->getValue());
 
-							shadowsCamera.setPosition(glm::vec3(0.0f));
-							shadowsCamera.setOrientation(transforms->orientation);
-							shadowViewMatrix = texelScaleMatrix * shadowsCamera.getViewMatrix();
-							glm::mat4 invShadowViewMatrix = glm::inverse(shadowViewMatrix);
+							if (light->getRenderable().castsShadows()) {
+								light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
 
-							// Move the frustum center using the previous matrix
-							frustumCentroid = shadowViewMatrix * glm::vec4(frustumCentroid, 1.0f);
-							frustumCentroid.x = floor(frustumCentroid.x);
-							frustumCentroid.y = floor(frustumCentroid.y);
-							frustumCentroid = invShadowViewMatrix * glm::vec4(frustumCentroid, 1.0f);
+								shadowsCamera.setPosition(transforms->position);
+								shadowsCamera.setOrientation(transforms->orientation);
+								shadowsCamera.setPerspectiveProjection(2.0f * outerConeAngle, 1.0f, zNear, zFar);
 
-							// Calculate the view matrix using the new frustum center moved back in the light
-							// direction by 2 * radius
-							glm::vec3 shadowViewPosition = frustumCentroid - 2.0f * frustumRadius * (transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
-							shadowsCamera.setPosition(shadowViewPosition);
-							shadowsCamera.setOrientation(transforms->orientation);
-							shadowViewMatrix = shadowsCamera.getViewMatrix();
+								shadowViewMatrix = shadowsCamera.getViewMatrix();
+								shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
 
-							// Calculate the ortho projection matrix with the frustum radius. Multiply by the
-							// zNear/zFar just for adding room for tall objects
-							shadowsCamera.setOrthographicProjection(-frustumRadius, frustumRadius, -frustumRadius, frustumRadius, zNear * frustumRadius, zFar * frustumRadius);
-							shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
+								shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
+								light->getRenderable().setShadowViewMatrix(0, shadowViewMatrix);
+								light->getRenderable().setShadowProjectionMatrix(0, shadowProjectionMatrix);
 
-							shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
-							light->getRenderable().setShadowViewMatrix(i, shadowViewMatrix);
-							light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
-						}
+								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
+								itUniforms->second.cascadesZFar->setValue(&zFar, 1);
+								shadowVPMatrices.clear();
+							}
+						} break;
+						default: {
+							scale = glm::scale(glm::mat4(1.0f), glm::vec3(light->getSource()->getRange()));
 
-						entityUniforms.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
-						entityUniforms.cascadesZFar->setValue(depths.data(), depths.size());
-						shadowVPMatrices.clear();
+							if (light->getRenderable().castsShadows()) {
+								light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
+
+								// Get the zFar values of each cascade frustum
+								auto depths = calculateCascadesZFar(camZNear, camZFar, numCascades);
+								float previousDepth = camZNear;
+
+								for (std::size_t i = 0; i < light->getRenderable().getNumShadows(); ++i) {
+									// Calculate the cascade frustum corners in world space
+									shadowsCamera.setPerspectiveProjection(camFOVY, camAspectRatio, previousDepth, depths[i]);
+									glm::mat4 camInvViewProjMatrix = glm::inverse(shadowsCamera.getProjectionMatrix() * camViewMatrix);
+									previousDepth = depths[i];
+
+									glm::vec4 frustumCorners[] = {
+										{-1, 1, 1, 1}, { 1, 1, 1, 1}, {-1,-1, 1, 1}, { 1,-1, 1, 1},
+										{-1, 1,-1, 1}, { 1, 1,-1, 1}, {-1,-1,-1, 1}, { 1,-1,-1, 1}
+									};
+									glm::vec3 frustumCentroid(0.0f);
+
+									for (glm::vec4& corner : frustumCorners) {
+										corner = camInvViewProjMatrix * corner;
+										corner /= corner.w;
+										frustumCentroid += glm::vec3(corner);
+									}
+
+									frustumCentroid *= 1.0f / 8.0f;
+									float frustumRadius = 0.5f * glm::length(frustumCorners[0] - frustumCorners[7]);
+
+									// Calculate a view matrix used for moving the frustum center in texel sized increments
+									// See https://alextardif.com/shadowmapping.html
+									float texelsPerUnit = resolution / (2.0f * frustumRadius);
+									glm::mat4 texelScaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(texelsPerUnit));
+
+									shadowsCamera.setPosition(glm::vec3(0.0f));
+									shadowsCamera.setOrientation(transforms->orientation);
+									shadowViewMatrix = texelScaleMatrix * shadowsCamera.getViewMatrix();
+									glm::mat4 invShadowViewMatrix = glm::inverse(shadowViewMatrix);
+
+									// Move the frustum center using the previous matrix
+									frustumCentroid = shadowViewMatrix * glm::vec4(frustumCentroid, 1.0f);
+									frustumCentroid.x = floor(frustumCentroid.x);
+									frustumCentroid.y = floor(frustumCentroid.y);
+									frustumCentroid = invShadowViewMatrix * glm::vec4(frustumCentroid, 1.0f);
+
+									// Calculate the view matrix using the new frustum center moved back in the light
+									// direction by 2 * radius
+									glm::vec3 shadowViewPosition = frustumCentroid - 2.0f * frustumRadius * (transforms->orientation * glm::vec3(0.0f, 0.0f, 1.0f));
+									shadowsCamera.setPosition(shadowViewPosition);
+									shadowsCamera.setOrientation(transforms->orientation);
+									shadowViewMatrix = shadowsCamera.getViewMatrix();
+
+									// Calculate the ortho projection matrix with the frustum radius. Multiply by the
+									// zNear/zFar just for adding room for tall objects
+									shadowsCamera.setOrthographicProjection(-frustumRadius, frustumRadius, -frustumRadius, frustumRadius, zNear * frustumRadius, zFar * frustumRadius);
+									shadowProjectionMatrix = shadowsCamera.getProjectionMatrix();
+
+									shadowVPMatrices.push_back(shadowProjectionMatrix * shadowViewMatrix);
+									light->getRenderable().setShadowViewMatrix(i, shadowViewMatrix);
+									light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
+								}
+
+								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
+								itUniforms->second.cascadesZFar->setValue(depths.data(), depths.size());
+								shadowVPMatrices.clear();
+							}
+						} break;
 					}
-				} break;
-			}
 
-			glm::mat4 modelMatrix = translation * rotation * scale;
-			light->getRenderable().getRenderableMesh().setModelMatrix(modelMatrix);
-			for (std::size_t i = 0; i < 2; ++i) {
-				entityUniforms.modelMatrices[i]->setValue(modelMatrix);
-			}
-		}
+					glm::mat4 modelMatrix = translation * rotation * scale;
+					light->getRenderable().getRenderableMesh().setModelMatrix(modelMatrix);
+					for (std::size_t i = 0; i < 2; ++i) {
+						itUniforms->second.modelMatrices[i]->setValue(modelMatrix);
+					}
+				}
+				, true
+			);
+		});
 
 		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
-	void LightSystem::onNewLight(Entity entity, LightComponent* light)
+	void LightSystem::onNewLight(Entity entity, LightComponent* light, EntityDatabase::Query&)
 	{
 		light->setup(&mApplication.getEventManager(), entity);
 
@@ -462,14 +466,14 @@ namespace se::app {
 	}
 
 
-	void LightSystem::onRemoveLight(Entity entity, LightComponent* light)
+	void LightSystem::onRemoveLight(Entity entity, LightComponent* light, EntityDatabase::Query&)
 	{
 		clearRMesh(entity, light);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
 	}
 
 
-	void LightSystem::onNewMesh(Entity entity, MeshComponent* mesh)
+	void LightSystem::onNewMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mesh->processRenderableShaders(i, [&](const auto& shader) {
@@ -480,7 +484,7 @@ namespace se::app {
 	}
 
 
-	void LightSystem::onRemoveMesh(Entity entity, MeshComponent* mesh)
+	void LightSystem::onRemoveMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 			mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(mesh->get(i));
@@ -489,7 +493,7 @@ namespace se::app {
 	}
 
 
-	void LightSystem::onNewTerrain(Entity entity, TerrainComponent* terrain)
+	void LightSystem::onNewTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
 		terrain->processRenderableShaders([&](const auto& shader) {
 			mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(terrain->get(), shader->getTechnique());
@@ -498,7 +502,7 @@ namespace se::app {
 	}
 
 
-	void LightSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain)
+	void LightSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
 		mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(terrain->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
@@ -509,14 +513,16 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto [camera] = mEntityDatabase.getComponents<CameraComponent>(event.getValue(), true);
-		if (camera) {
-			mCameraEntity = event.getValue();
-			SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
-		}
-		else {
-			SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [camera] = query.getComponents<CameraComponent>(event.getValue(), true);
+			if (camera) {
+				mCameraEntity = event.getValue();
+				SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
+			}
+			else {
+				SOMBRA_WARN_LOG << "Couldn't set Entity " << event.getValue() << " as Camera Entity";
+			}
+		});
 	}
 
 
@@ -524,19 +530,21 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
-		if (mesh) {
-			switch (event.getOperation()) {
-				case RMeshEvent::Operation::Add:
-					mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
-						mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
-					});
-					break;
-				case RMeshEvent::Operation::Remove:
-					mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(mesh->get(event.getRIndex()));
-					break;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [mesh] = query.getComponents<MeshComponent>(event.getEntity(), true);
+			if (mesh) {
+				switch (event.getOperation()) {
+					case RMeshEvent::Operation::Add:
+						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+							mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
+						});
+						break;
+					case RMeshEvent::Operation::Remove:
+						mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(mesh->get(event.getRIndex()));
+						break;
+				}
 			}
-		}
+		});
 	}
 
 
@@ -547,24 +555,28 @@ namespace se::app {
 		if (event.getEntity() != kNullEntity) {
 			SOMBRA_TRACE_LOG << "Updating Entity " << event.getEntity();
 
-			auto [light] = mEntityDatabase.getComponents<LightComponent>(event.getEntity());
-			if (light) {
-				clearRMesh(event.getEntity(), light);
-				setRMesh(event.getEntity(), light);
-			}
+			mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+				auto [light] = query.getComponents<LightComponent>(event.getEntity());
+				if (light) {
+					clearRMesh(event.getEntity(), light);
+					setRMesh(event.getEntity(), light);
+				}
+			});
 		}
 		else {
 			SOMBRA_TRACE_LOG << "Updating LightComponents with source " << event.getLightSource();
 
-			mEntityDatabase.iterateEntityComponents<LightComponent>(
-				[&](Entity entity, LightComponent* light) {
-					if (light->getSource().get() == event.getLightSource()) {
-						clearRMesh(entity, light);
-						setRMesh(entity, light);
-					}
-				},
-				true
-			);
+			mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+				query.iterateEntityComponents<LightComponent>(
+					[&](Entity entity, LightComponent* light) {
+						if (light->getSource().get() == event.getLightSource()) {
+							clearRMesh(entity, light);
+							setRMesh(entity, light);
+						}
+					},
+					true
+				);
+			});
 		}
 	}
 
@@ -574,35 +586,39 @@ namespace se::app {
 		SOMBRA_INFO_LOG << event;
 
 		if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Mesh) {
-			auto [mesh] = mEntityDatabase.getComponents<MeshComponent>(event.getEntity(), true);
-			if (mesh) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
-						break;
+			mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+				auto [mesh] = query.getComponents<MeshComponent>(event.getEntity(), true);
+				if (mesh) {
+					switch (event.getOperation()) {
+						case RenderableShaderEvent::Operation::Add:
+							mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
+							break;
+						case RenderableShaderEvent::Operation::Remove:
+							mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(mesh->get(event.getRIndex()), event.getShader()->getTechnique());
+							break;
+					}
 				}
-			}
+			});
 		}
 		else {
-			graphics::Renderable* renderable = nullptr;
-			if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
-				auto [terrain] = mEntityDatabase.getComponents<TerrainComponent>(event.getEntity(), true);
-				renderable = &terrain->get();
-			}
-
-			if (renderable) {
-				switch (event.getOperation()) {
-					case RenderableShaderEvent::Operation::Add:
-						mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(*renderable, event.getShader()->getTechnique());
-						break;
-					case RenderableShaderEvent::Operation::Remove:
-						mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(*renderable, event.getShader()->getTechnique());
-						break;
+			mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+				graphics::Renderable* renderable = nullptr;
+				if (event.getRComponentType() == RenderableShaderEvent::RComponentType::Terrain) {
+					auto [terrain] = query.getComponents<TerrainComponent>(event.getEntity(), true);
+					renderable = &terrain->get();
 				}
-			}
+
+				if (renderable) {
+					switch (event.getOperation()) {
+						case RenderableShaderEvent::Operation::Add:
+							mShadowRenderSubGraph->getShadowUniformsUpdater().addRenderableTechnique(*renderable, event.getShader()->getTechnique());
+							break;
+						case RenderableShaderEvent::Operation::Remove:
+							mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(*renderable, event.getShader()->getTechnique());
+							break;
+					}
+				}
+			});
 		}
 	}
 

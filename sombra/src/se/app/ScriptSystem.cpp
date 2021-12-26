@@ -50,18 +50,20 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Scripts";
 
-		mEntityDatabase.iterateComponents<ScriptComponent>(
-			[this](ScriptComponent& script) {
-				script.onUpdate(mDeltaTime, mScriptSharedState);
-			},
-			true
-		);
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			query.iterateComponents<ScriptComponent>(
+				[this](ScriptComponent& script) {
+					script.onUpdate(mDeltaTime, mScriptSharedState);
+				},
+				true
+			);
+		});
 
 		SOMBRA_DEBUG_LOG << "Update end";
 	}
 
 // Private functions
-	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script)
+	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script, EntityDatabase::Query&)
 	{
 		script->setup(&mApplication.getEventManager(), entity);
 		script->onAdd(mScriptSharedState);
@@ -69,7 +71,7 @@ namespace se::app {
 	}
 
 
-	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script)
+	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script, EntityDatabase::Query&)
 	{
 		script->onRemove(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " removed successfully";
@@ -118,17 +120,19 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto [script] = mEntityDatabase.getComponents<ScriptComponent>(event.getEntity(), true);
-		if (script) {
-			switch (event.getOperation()) {
-				case ScriptEvent::Operation::Add: {
-					script->onAdd(mScriptSharedState);
-				} break;
-				case ScriptEvent::Operation::Remove: {
-					script->onRemove(mScriptSharedState);
-				} break;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			auto [script] = query.getComponents<ScriptComponent>(event.getEntity(), true);
+			if (script) {
+				switch (event.getOperation()) {
+					case ScriptEvent::Operation::Add: {
+						script->onAdd(mScriptSharedState);
+					} break;
+					case ScriptEvent::Operation::Remove: {
+						script->onRemove(mScriptSharedState);
+					} break;
+				}
 			}
-		}
+		});
 	}
 
 }

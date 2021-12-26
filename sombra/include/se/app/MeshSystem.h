@@ -21,7 +21,7 @@ namespace se::app {
 	 * Class MeshSystem, it's a System used for updating the Entities'
 	 * RenderableMesh data
 	 */
-	class MeshSystem : public ISystem, IEventListener
+	class MeshSystem : public ISystem, public IEventListener
 	{
 	private:	// Nested types
 		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
@@ -63,17 +63,19 @@ namespace se::app {
 		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&MeshSystem::onNewMesh, entity, mask); };
+		{ tryCallC(&MeshSystem::onNewMesh, entity, mask, query); };
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&MeshSystem::onRemoveMesh, entity, mask); };
+		{ tryCallC(&MeshSystem::onRemoveMesh, entity, mask, query); };
 
 		/** Updates the RenderableMeshes with the Entities */
 		virtual void update() override;
@@ -81,16 +83,24 @@ namespace se::app {
 		/** Function called when a MeshComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the MeshComponent
-		 * @param	mesh a pointer to the new MeshComponent */
-		void onNewMesh(Entity entity, MeshComponent* mesh);
+		 * @param	mesh a pointer to the new MeshComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewMesh(
+			Entity entity, MeshComponent* mesh, EntityDatabase::Query& query
+		);
 
 		/** Function called when a MeshComponent is going to be removed from an
 		 * Entity
 		 *
 		 * @param	entity the Entity that holds the MeshComponent
 		 * @param	mesh a pointer to the MeshComponent that is going to be
-		 *			removed */
-		void onRemoveMesh(Entity entity, MeshComponent* mesh);
+		 *			removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveMesh(
+			Entity entity, MeshComponent* mesh, EntityDatabase::Query& query
+		);
 
 		/** Handles the given RMeshEvent by updating the RenderableMeshes
 		 * uniforms
@@ -114,9 +124,11 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that owns the RenderableMesh
 		 * @param	rIndex the index of the RenderableMesh updated
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components
 		 * @param	step a pointer to the new RenderableShaderStep to add */
 		void addStep(
-			Entity entity, std::size_t rIndex,
+			Entity entity, std::size_t rIndex, EntityDatabase::Query& query,
 			const RenderableShaderStepSPtr& step
 		);
 
@@ -124,9 +136,11 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that owns the RenderableMesh
 		 * @param	rIndex the index of the RenderableMesh updated
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components
 		 * @param	step a pointer to the RenderableShaderStep to remove */
 		void removeStep(
-			Entity entity, std::size_t rIndex,
+			Entity entity, std::size_t rIndex, EntityDatabase::Query& query,
 			const RenderableShaderStepSPtr& step
 		);
 	};

@@ -18,7 +18,7 @@ namespace se::app {
 	 * Class ScriptSystem, it's a System used for updating the scripts of the
 	 * Entities
 	 */
-	class ScriptSystem : public ISystem, IEventListener
+	class ScriptSystem : public ISystem, public IEventListener
 	{
 	public:		// Attributes
 		/** The Application that holds the ScriptSystem */
@@ -40,17 +40,19 @@ namespace se::app {
 		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override;
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&ScriptSystem::onNewScript, entity, mask); };
+		{ tryCallC(&ScriptSystem::onNewScript, entity, mask, query); };
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&ScriptSystem::onRemoveScript, entity, mask); };
+		{ tryCallC(&ScriptSystem::onRemoveScript, entity, mask, query); };
 
 		/** Updates the scripts of the Entities */
 		virtual void update() override;
@@ -58,16 +60,24 @@ namespace se::app {
 		/** Function called when a ScriptComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the ScriptComponent
-		 * @param	script a pointer to the new ScriptComponent */
-		void onNewScript(Entity entity, ScriptComponent* script);
+		 * @param	script a pointer to the new ScriptComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewScript(
+			Entity entity, ScriptComponent* script, EntityDatabase::Query& query
+		);
 
 		/** Function called when a ScriptComponent is going to be removed from
 		 * an Entity
 		 *
 		 * @param	entity the Entity that holds the ScriptComponent
 		 * @param	script a pointer to the ScriptComponent that is going to be
-		 *			removed */
-		void onRemoveScript(Entity entity, ScriptComponent* script);
+		 *			removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveScript(
+			Entity entity, ScriptComponent* script, EntityDatabase::Query& query
+		);
 
 		/** Handles the given event
 		 *

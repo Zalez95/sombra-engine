@@ -27,41 +27,45 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Updating the AudioSystem";
 
 		SOMBRA_DEBUG_LOG << "Updating the Listener";
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(mListenerEntity, true);
-		if (transforms) {
-			auto& audioEngine = *mApplication.getExternalTools().audioEngine;
-			audioEngine.setListenerPosition(transforms->position);
-			audioEngine.setListenerOrientation(
-				glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
-				glm::vec3(0.0f, 1.0f, 0.0)
-			);
-			audioEngine.setListenerVelocity(transforms->velocity);
-		}
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			auto [transforms] = query.getComponents<TransformsComponent>(mListenerEntity, true);
+			if (transforms) {
+				auto& audioEngine = *mApplication.getExternalTools().audioEngine;
+				audioEngine.setListenerPosition(transforms->position);
+				audioEngine.setListenerOrientation(
+					glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
+					glm::vec3(0.0f, 1.0f, 0.0)
+				);
+				audioEngine.setListenerVelocity(transforms->velocity);
+			}
+		});
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
-		mEntityDatabase.iterateEntityComponents<TransformsComponent, AudioSourceComponent>(
-			[this](Entity, TransformsComponent* transforms, AudioSourceComponent* source) {
-				if (!transforms->updated[static_cast<int>(TransformsComponent::Update::AudioSource)]) {
-					source->get().setPosition(transforms->position);
-					source->get().setOrientation(
-						glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
-						glm::vec3(0.0f, 1.0f, 0.0)
-					);
-					source->get().setVelocity(transforms->velocity);
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<TransformsComponent, AudioSourceComponent>(
+				[this](Entity, TransformsComponent* transforms, AudioSourceComponent* source) {
+					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::AudioSource)]) {
+						source->get().setPosition(transforms->position);
+						source->get().setOrientation(
+							glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
+							glm::vec3(0.0f, 1.0f, 0.0)
+						);
+						source->get().setVelocity(transforms->velocity);
 
-					transforms->updated.set(static_cast<int>(TransformsComponent::Update::AudioSource));
-				}
-			},
-			true
-		);
+						transforms->updated.set(static_cast<int>(TransformsComponent::Update::AudioSource));
+					}
+				},
+				true
+			);
+		});
 
 		SOMBRA_DEBUG_LOG << "AudioSystem updated";
 	}
 
 // Private functions
-	void AudioSystem::onNewSource(Entity entity, AudioSourceComponent* source)
+	void AudioSystem::onNewSource(Entity entity, AudioSourceComponent* source, EntityDatabase::Query& query)
 	{
-		auto [transforms] = mEntityDatabase.getComponents<TransformsComponent>(entity, true);
+		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::AudioSource));
 		}
@@ -70,7 +74,7 @@ namespace se::app {
 	}
 
 
-	void AudioSystem::onRemoveSource(Entity entity, AudioSourceComponent* source)
+	void AudioSystem::onRemoveSource(Entity entity, AudioSourceComponent* source, EntityDatabase::Query&)
 	{
 		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " removed successfully";
 	}

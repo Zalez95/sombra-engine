@@ -15,7 +15,7 @@ namespace se::app {
 	 * Class AudioSystem, it's a System used for updating and playing the
 	 * Entities' audio Components
 	 */
-	class AudioSystem : public ISystem, IEventListener
+	class AudioSystem : public ISystem, public IEventListener
 	{
 	private:	// Attributes
 		/** The Application that holds the AudioEngine used for playing the
@@ -39,17 +39,19 @@ namespace se::app {
 		virtual bool notify(const IEvent& event) override
 		{ return tryCall(&AudioSystem::onCameraEvent, event); };
 
-		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onNewComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onNewComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&AudioSystem::onNewSource, entity, mask); };
+		{ tryCallC(&AudioSystem::onNewSource, entity, mask, query); };
 
-		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&) */
+		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
-			Entity entity, const EntityDatabase::ComponentMask& mask
+			Entity entity, const EntityDatabase::ComponentMask& mask,
+			EntityDatabase::Query& query
 		) override
-		{ tryCallC(&AudioSystem::onRemoveSource, entity, mask); };
+		{ tryCallC(&AudioSystem::onRemoveSource, entity, mask, query); };
 
 		/** Updates the sources data with the Entities */
 		virtual void update() override;
@@ -57,16 +59,26 @@ namespace se::app {
 		/** Function called when a AudioSourceComponent is added to an Entity
 		 *
 		 * @param	entity the Entity that holds the AudioSourceComponent
-		 * @param	source a pointer to the new AudioSourceComponent */
-		void onNewSource(Entity entity, AudioSourceComponent* source);
+		 * @param	source a pointer to the new AudioSourceComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewSource(
+			Entity entity, AudioSourceComponent* source,
+			EntityDatabase::Query& query
+		);
 
 		/** Function called when a AudioSourceComponent is going to be removed
 		 * from an Entity
 		 *
 		 * @param	entity the Entity that holds the AudioSourceComponent
 		 * @param	source a pointer to the AudioSourceComponent that is going
-		 *			to be removed */
-		void onRemoveSource(Entity entity, AudioSourceComponent* source);
+		 *			to be removed
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onRemoveSource(
+			Entity entity, AudioSourceComponent* source,
+			EntityDatabase::Query& query
+		);
 
 		/** Handles the given ContainerEvent by updating the Listener Entity
 		 * from where the audio Sources will be listened
