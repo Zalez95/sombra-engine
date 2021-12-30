@@ -1,6 +1,8 @@
 #ifndef MENU_BAR_H
 #define MENU_BAR_H
 
+#include <future>
+#include "se/app/io/Result.h"
 #include "ImGuiUtils.h"
 
 namespace editor {
@@ -53,6 +55,9 @@ namespace editor {
 
 		/** If the About window should be shown or not */
 		bool mShowAboutWindow = false;
+
+		/** The future result of the operations */
+		std::future<se::app::Result> mFutureResult;
 
 	public:		// Functions
 		/** Creates a new MenuBar

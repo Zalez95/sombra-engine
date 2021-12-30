@@ -422,7 +422,7 @@ namespace game {
 			lightComponent.setSource(spotLight);
 			query.addComponent(mPlayerEntity, std::move(lightComponent));
 
-			mGame.getEventManager().publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mPlayerEntity));
+			mGame.getEventManager().publish(std::make_unique<se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>>(mPlayerEntity));
 		});
 
 		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {

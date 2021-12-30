@@ -121,7 +121,7 @@ namespace editor {
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		io.DisplaySize = ImVec2(static_cast<float>(event.getWidth()), static_cast<float>(event.getHeight()));
-		mEventManager.publish(new se::app::RendererResolutionEvent(event.getWidth(), event.getHeight()));
+		mEventManager.publish(std::make_unique<se::app::RendererResolutionEvent>(event.getWidth(), event.getHeight()));
 	}
 
 }

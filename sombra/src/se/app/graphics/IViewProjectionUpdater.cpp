@@ -59,7 +59,7 @@ namespace se::app {
 			});
 		}
 
-		// Map the renderable with th technique
+		// Map the renderable with the technique
 		itTechnique->userCount++;
 		itRenderable->second.push_back(itTechnique.getIndex());
 

@@ -14,69 +14,69 @@ namespace se::app {
 	{
 		auto& windowManager = *mApplication.getExternalTools().windowManager;
 
-		windowManager.onClose([&]() {
-			mEventQueue.push_back(new Event<Topic::Close>());
+		windowManager.onClose([this]() {
+			mEventQueue.push_back(std::make_unique<Event<Topic::Close>>());
 		});
 
-		windowManager.onKey([&](int keyCode, window::ButtonState state) {
+		windowManager.onKey([this](int keyCode, window::ButtonState state) {
 			KeyEvent::State keyState = (state == window::ButtonState::Pressed)? KeyEvent::State::Pressed :
 				(state == window::ButtonState::Repeated)? KeyEvent::State::Repeated :
 				KeyEvent::State::Released;
-			mEventQueue.push_back(new KeyEvent(keyCode, keyState));
+			mEventQueue.push_back(std::make_unique<KeyEvent>(keyCode, keyState));
 		});
 
-		windowManager.onTextInput([&](unsigned int codePoint) {
-			mEventQueue.push_back(new TextInputEvent(codePoint));
+		windowManager.onTextInput([this](unsigned int codePoint) {
+			mEventQueue.push_back(std::make_unique<TextInputEvent>(codePoint));
 		});
 
-		windowManager.onMouseButton([&](int buttonCode, window::ButtonState state) {
+		windowManager.onMouseButton([this](int buttonCode, window::ButtonState state) {
 			MouseButtonEvent::State mbState = (state == window::ButtonState::Pressed)? MouseButtonEvent::State::Pressed :
 				MouseButtonEvent::State::Released;
-			mEventQueue.push_back(new MouseButtonEvent(buttonCode, mbState));
+			mEventQueue.push_back(std::make_unique<MouseButtonEvent>(buttonCode, mbState));
 		});
 
-		windowManager.onMouseMove([&](double x, double y) {
+		windowManager.onMouseMove([this](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) { return (event->getTopic() == Topic::MouseMove); }
+				[](const auto& event) { return (event->getTopic() == Topic::MouseMove); }
 			);
 			if (itEvent != mEventQueue.end()) {
-				auto event = static_cast<MouseMoveEvent*>(*itEvent);
+				auto event = static_cast<MouseMoveEvent*>(itEvent->get());
 				event->setX(x);
 				event->setY(y);
 			}
 			else {
-				mEventQueue.push_back(new MouseMoveEvent(x, y));
+				mEventQueue.push_back(std::make_unique<MouseMoveEvent>(x, y));
 			}
 		});
 
-		windowManager.onScroll([&](double xOffset, double yOffset) {
+		windowManager.onScroll([this](double xOffset, double yOffset) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) { return (event->getTopic() == Topic::MouseScroll); }
+				[](const auto& event) { return (event->getTopic() == Topic::MouseScroll); }
 			);
 			if (itEvent != mEventQueue.end()) {
-				auto event = static_cast<MouseScrollEvent*>(*itEvent);
+				auto event = static_cast<MouseScrollEvent*>(itEvent->get());
 				event->setXOffset(xOffset);
 				event->setYOffset(yOffset);
 			}
 			else {
-				mEventQueue.push_back(new MouseScrollEvent(xOffset, yOffset));
+				mEventQueue.push_back(std::make_unique<MouseScrollEvent>(xOffset, yOffset));
 			}
 		});
 
-		windowManager.onResize([&](double x, double y) {
+		windowManager.onResize([this](double x, double y) {
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
-				[](const IEvent* event) { return event->getTopic() == Topic::WindowResize; }
+				[](const auto& event) { return event->getTopic() == Topic::WindowResize; }
 			);
 			if (itEvent != mEventQueue.end()) {
-				auto event = static_cast<WindowResizeEvent*>(*itEvent);
+				auto event = static_cast<WindowResizeEvent*>(itEvent->get());
 				event->setWidth(x);
 				event->setHeight(y);
 			}
 			else {
-				mEventQueue.push_back(new WindowResizeEvent(x, y));
+				mEventQueue.push_back(std::make_unique<WindowResizeEvent>(x, y));
 			}
 		});
 
@@ -96,10 +96,10 @@ namespace se::app {
 
 		auto& eventManager = mApplication.getEventManager();
 		while (!mEventQueue.empty()) {
-			IEvent* currentEvent = mEventQueue.front();
+			auto currentEvent = std::move(mEventQueue.front());
 			mEventQueue.pop_front();
 
-			eventManager.publish(currentEvent);
+			eventManager.publish(std::move(currentEvent));
 		}
 
 		SOMBRA_DEBUG_LOG << "InputSystem updated";
@@ -111,7 +111,7 @@ namespace se::app {
 		SOMBRA_INFO_LOG << event;
 
 		mApplication.getExternalTools().windowManager->setMousePosition(event.getX(), event.getY());
-		mEventQueue.push_back(new MouseMoveEvent(event.getX(), event.getY()));
+		mEventQueue.push_back(std::make_unique<MouseMoveEvent>(event.getX(), event.getY()));
 	}
 
 }

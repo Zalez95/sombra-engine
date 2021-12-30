@@ -1,7 +1,6 @@
-#include <chrono>
-#include <thread>
+#include <algorithm>
 #include "se/utils/Log.h"
-#include "se/utils/TaskSet.h"
+#include "se/utils/ThreadPool.h"
 #include "se/app/Repository.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
@@ -47,7 +46,7 @@ namespace se::app {
 		const physics::WorldProperties& physicsWorldProperties,
 		float updateTime
 	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
-		mTaskManager(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
+		mThreadPool(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
 		mRepository(nullptr), mEntityDatabase(nullptr),
 		mInputSystem(nullptr), mScriptSystem(nullptr),
 		mAppRenderer(nullptr), mLightSystem(nullptr), mLightProbeSystem(nullptr),
@@ -58,7 +57,9 @@ namespace se::app {
 		SOMBRA_INFO_LOG << "Creating the Application";
 
 		try {
-			mTaskManager = new utils::TaskManager(kMaxTasks);
+			// We need at least 1 extra thread for loading
+			std::size_t numThreads = std::min(std::thread::hardware_concurrency() - 1, 1u);
+			mThreadPool = new utils::ThreadPool(numThreads);
 
 			// External tools
 			mExternalTools = new ExternalTools();
@@ -152,7 +153,7 @@ namespace se::app {
 			if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
 			delete mExternalTools;
 		}
-		if (mTaskManager) { delete mTaskManager; }
+		if (mThreadPool) { delete mThreadPool; }
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 

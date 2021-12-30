@@ -96,14 +96,14 @@ namespace se::app {
 	{
 		mSteps.push_back(step);
 		mTechnique->addPass(step->getPass());
-		mEventManager.publish(new ShaderEvent(ShaderEvent::Operation::Add, shared_from_this(), step.get()));
+		mEventManager.publish(std::make_unique<ShaderEvent>(ShaderEvent::Operation::Add, shared_from_this(), step.get()));
 		return *this;
 	}
 
 
 	RenderableShader& RenderableShader::removeStep(const StepRef& step)
 	{
-		mEventManager.publish(new ShaderEvent(ShaderEvent::Operation::Remove, shared_from_this(), step.get()));
+		mEventManager.publish(std::make_unique<ShaderEvent>(ShaderEvent::Operation::Remove, shared_from_this(), step.get()));
 		mTechnique->removePass(step->getPass());
 		mSteps.erase(std::remove(mSteps.begin(), mSteps.end(), step), mSteps.end());
 		return *this;

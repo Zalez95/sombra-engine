@@ -3,6 +3,7 @@
 
 #include <array>
 #include <vector>
+#include <memory>
 #include <functional>
 #include "Event.h"
 
@@ -87,7 +88,7 @@ namespace se::app
 		 *
 		 * @param	event a pointer to the IEvent to notify
 		 * @return	a reference to the current EventManager object */
-		EventManager& publish(IEvent* event);
+		EventManager& publish(std::unique_ptr<IEvent> event);
 	};
 
 }

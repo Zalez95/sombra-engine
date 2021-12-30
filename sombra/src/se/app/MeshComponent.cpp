@@ -74,7 +74,7 @@ namespace se::app {
 			ret = std::distance(mRMeshes.begin(), it);
 
 			if (mEventManager) {
-				mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Add, mEntity, ret));
+				mEventManager->publish(std::make_unique<RMeshEvent>(RMeshEvent::Operation::Add, mEntity, ret));
 			}
 		}
 
@@ -85,7 +85,7 @@ namespace se::app {
 	void MeshComponent::remove(std::size_t rIndex)
 	{
 		if (mEventManager) {
-			mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Remove, mEntity, rIndex));
+			mEventManager->publish(std::make_unique<RMeshEvent>(RMeshEvent::Operation::Remove, mEntity, rIndex));
 		}
 		mRMeshes[rIndex] = {};
 	}
@@ -96,7 +96,7 @@ namespace se::app {
 		if (mEventManager) {
 			for (std::size_t i = 0; i < kMaxMeshes; ++i) {
 				if (mRMeshes[i].active) {
-					mEventManager->publish(new RMeshEvent(RMeshEvent::Operation::Remove, mEntity, i));
+					mEventManager->publish(std::make_unique<RMeshEvent>(RMeshEvent::Operation::Remove, mEntity, i));
 					mRMeshes[i] = {};
 				}
 			}
@@ -109,7 +109,7 @@ namespace se::app {
 		mRMeshes[rIndex].shaders.emplace_back(shader);
 		mRMeshes[rIndex].renderable.addTechnique(shader->getTechnique());
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader.get()));
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(RenderableShaderEvent::Operation::Add, mEntity, rIndex, shader.get()));
 		}
 	}
 
@@ -117,7 +117,7 @@ namespace se::app {
 	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
 	{
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));
 		}
 		mRMeshes[rIndex].renderable.removeTechnique(shader->getTechnique());
 		mRMeshes[rIndex].shaders.erase(

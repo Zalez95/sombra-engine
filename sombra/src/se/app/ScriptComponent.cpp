@@ -14,15 +14,11 @@ namespace se::app {
 	void ScriptComponent::setScript(const ScriptRef& script)
 	{
 		if (mScript) {
-			mEventManager->publish(new ScriptEvent(
-				ScriptEvent::Operation::Remove, mEntity
-			));
+			mEventManager->publish(std::make_unique<ScriptEvent>(ScriptEvent::Operation::Remove, mEntity));
 			mScript = ScriptRef();
 		}
 		if (script) {
-			mEventManager->publish(new ScriptEvent(
-				ScriptEvent::Operation::Add, mEntity
-			));
+			mEventManager->publish(std::make_unique<ScriptEvent>(ScriptEvent::Operation::Add, mEntity));
 			mScript = script;
 		}
 	}

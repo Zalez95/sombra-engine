@@ -148,7 +148,7 @@ namespace editor {
 			query.addComponent(mViewportEntity, std::move(camera));
 		});
 
-		mEventManager->publish(new se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>(mViewportEntity));
+		mEventManager->publish(std::make_unique<se::app::ContainerEvent<se::app::Topic::Camera, se::app::Entity>>(mViewportEntity));
 
 		/**** Create the viewport grid ****/
 		mEntityDatabase->executeQuery([this](se::app::EntityDatabase::Query& query) {

@@ -10,7 +10,7 @@
 namespace se::graphics { class GraphicsEngine; }
 namespace se::animation { class AnimationEngine; }
 namespace se::audio { class AudioEngine; }
-namespace se::utils { class TaskManager; }
+namespace se::utils { class ThreadPool; }
 
 namespace se::app {
 
@@ -74,8 +74,8 @@ namespace se::app {
 		/** The state of the Application */
 		AppState mState;
 
-		/** The TaskManager used for used for multithreading */
-		utils::TaskManager* mTaskManager;
+		/** The ThreadPool used for used for multithreading */
+		utils::ThreadPool* mThreadPool;
 
 		/** The external tools/engines */
 		ExternalTools* mExternalTools;
@@ -128,8 +128,8 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~Application();
 
-		/** @return	a reference to the TaskManager of the Application */
-		utils::TaskManager& getTaskManager() { return *mTaskManager; };
+		/** @return	a reference to the ThreadPool of the Application */
+		utils::ThreadPool& getThreadPool() { return *mThreadPool; };
 
 		/** @return	a reference to the ExternalTools of the Application */
 		ExternalTools& getExternalTools() { return *mExternalTools; };

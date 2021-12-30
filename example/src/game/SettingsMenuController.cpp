@@ -60,10 +60,10 @@ namespace game {
 	void SettingsMenuController::onResolution(ButtonOption option)
 	{
 		if (option == ButtonOption::Left) {
-			mGame.getEventManager().publish(new se::app::RendererResolutionEvent(kWidths[0], kHeights[0]));
+			mGame.getEventManager().publish(std::make_unique<se::app::RendererResolutionEvent>(kWidths[0], kHeights[0]));
 		}
 		else {
-			mGame.getEventManager().publish(new se::app::RendererResolutionEvent(kWidths[1], kHeights[1]));
+			mGame.getEventManager().publish(std::make_unique<se::app::RendererResolutionEvent>(kWidths[1], kHeights[1]));
 		}
 	}
 

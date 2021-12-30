@@ -24,7 +24,7 @@ namespace se::app {
 
 		/** A queue that holds all the events that must be submitted in the
 		 * next update call due to the user input from oldest to newest */
-		std::deque<IEvent*> mEventQueue;
+		std::deque<std::unique_ptr<IEvent>> mEventQueue;
 
 	public:		// Functions
 		/** Creates a new InputSystem

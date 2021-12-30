@@ -36,7 +36,7 @@ namespace se::app {
 		mShaders.emplace_back(shader);
 		mRenderableTerrain.addTechnique(shader->getTechnique());
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader.get()
 			));
 		}
@@ -46,7 +46,7 @@ namespace se::app {
 	void TerrainComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::Terrain, shader.get()
 			));
 		}

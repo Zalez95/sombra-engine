@@ -1615,7 +1615,7 @@ namespace se::app {
 
 				auto itActiveCamera = itExtensions->find("active_camera");
 				if ((itActiveCamera != itExtensions->end()) && (*itActiveCamera == true)) {
-					eventManager.publish(new ContainerEvent<Topic::Camera, Entity>(node.entity));
+					eventManager.publish(std::make_unique<ContainerEvent<Topic::Camera, Entity>>(node.entity));
 				}
 			}
 		}

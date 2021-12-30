@@ -92,7 +92,7 @@ namespace se::app {
 		mShaders.emplace_back(shader);
 		mParticleSystem.addTechnique(shader->getTechnique());
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
 			));
 		}
@@ -102,7 +102,7 @@ namespace se::app {
 	void ParticleSystemComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::ParticleSystem, shader.get()
 			));
 		}

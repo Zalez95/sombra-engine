@@ -7,7 +7,7 @@ namespace se::app {
 	void LightSource::setType(Type type)
 	{
 		mType = type;
-		mEventManager.publish(new LightSourceEvent(shared_from_this()));
+		mEventManager.publish(std::make_unique<LightSourceEvent>(shared_from_this()));
 	}
 
 
@@ -35,14 +35,14 @@ namespace se::app {
 		mShadowZFar = shadowZFar;
 		mShadowSize = shadowSize;
 		mNumCascades = numCascades;
-		mEventManager.publish(new LightSourceEvent(shared_from_this()));
+		mEventManager.publish(std::make_unique<LightSourceEvent>(shared_from_this()));
 	}
 
 
 	void LightSource::disableShadows()
 	{
 		mCastShadows = false;
-		mEventManager.publish(new LightSourceEvent(shared_from_this()));
+		mEventManager.publish(std::make_unique<LightSourceEvent>(shared_from_this()));
 	}
 
 
@@ -89,7 +89,7 @@ namespace se::app {
 	{
 		mSource = source;
 		if (mEventManager) {
-			mEventManager->publish(new LightSourceEvent(source.get(), mEntity));
+			mEventManager->publish(std::make_unique<LightSourceEvent>(source.get(), mEntity));
 		}
 	}
 
@@ -99,7 +99,7 @@ namespace se::app {
 		mShaders.emplace_back(shader);
 		mRenderable.getRenderableMesh().addTechnique(shader->getTechnique());
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Add, mEntity, RenderableShaderEvent::RComponentType::Light, shader.get()
 			));
 		}
@@ -109,7 +109,7 @@ namespace se::app {
 	void LightComponent::removeRenderableShader(const RenderableShaderRef& shader)
 	{
 		if (mEventManager) {
-			mEventManager->publish(new RenderableShaderEvent(
+			mEventManager->publish(std::make_unique<RenderableShaderEvent>(
 				RenderableShaderEvent::Operation::Remove, mEntity, RenderableShaderEvent::RComponentType::Light, shader.get()
 			));
 		}

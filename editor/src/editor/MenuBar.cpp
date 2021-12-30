@@ -1,4 +1,5 @@
 #include <se/utils/Log.h>
+#include <se/utils/ThreadPool.h>
 #include <se/app/io/SceneSerializer.h>
 #include "DefaultShaderBuilder.h"
 #include "DefaultScene.h"
@@ -161,42 +162,58 @@ namespace editor {
 		std::string file;
 		switch (mWindow.execute(file)) {
 			case FileWindow::Result::Open: {
-				se::app::Result result;
 				if (mOpen) {
 					SOMBRA_INFO_LOG << "Opening " << file << "...";
-					mEditor.createScene();
-					result = SceneSerializer::deserialize(file, *mEditor.getScene());
-					SOMBRA_INFO_LOG << "Open finished";
+					mFutureResult = mEditor.getThreadPool().async([this, file]() {
+						mEditor.createScene();
+						auto result = SceneSerializer::deserialize(file, *mEditor.getScene());
+						SOMBRA_INFO_LOG << "Open finished";
+						return result;
+					});
 				}
 				else if (mAppend) {
 					SOMBRA_INFO_LOG << "Appending " << file << "...";
-					result = SceneSerializer::deserialize(file, *mEditor.getScene());
-					SOMBRA_INFO_LOG << "Append finished";
+					mFutureResult = mEditor.getThreadPool().async([this, file]() {
+						auto result = SceneSerializer::deserialize(file, *mEditor.getScene());
+						SOMBRA_INFO_LOG << "Append finished";
+						return result;
+					});
 				}
 				else if (mLink) {
 					SOMBRA_INFO_LOG << "Linking " << file << "...";
-					result = Result(false, "TODO:");
-					SOMBRA_INFO_LOG << "Link finished";
+					mFutureResult = mEditor.getThreadPool().async([this, file]() {
+						SOMBRA_INFO_LOG << "Link finished";
+						return Result(false, "TODO:");
+					});
 				}
 				else if (mImport) {
 					SOMBRA_INFO_LOG << "Importing from " << file << "...";
-					DefaultShaderBuilder shaderBuilder(mEditor, mEditor.getScene()->repository);
-					auto myReader = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
-					result = myReader->load(file, *mEditor.getScene());
-					SOMBRA_INFO_LOG << "Import finished";
+					mFutureResult = mEditor.getThreadPool().async([this, file]() {
+						DefaultShaderBuilder shaderBuilder(mEditor, mEditor.getScene()->repository);
+						auto myReader = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
+						auto result = myReader->load(file, *mEditor.getScene());
+						SOMBRA_INFO_LOG << "Import finished";
+						return result;
+					});
 				}
 				else if (mSave) {
 					SOMBRA_INFO_LOG << "Saving to " << file << "...";
-					result = SceneSerializer::serialize(file, *mEditor.getScene());
-					SOMBRA_INFO_LOG << "Save finished";
+					mFutureResult = mEditor.getThreadPool().async([this, file]() {
+						auto result = SceneSerializer::serialize(file, *mEditor.getScene());
+						SOMBRA_INFO_LOG << "Save finished";
+						return result;
+					});
 				}
 
-				if (!result) {
-					mError = result.description();
-					SOMBRA_ERROR_LOG << result.description();
-				}
-				else {
-					mOpen = mAppend = mLink = mImport = mSave = false;
+				if (mFutureResult.valid() && se::utils::is_ready(mFutureResult)) {
+					auto result = mFutureResult.get();
+					if (!result) {
+						mError = result.description();
+						SOMBRA_ERROR_LOG << result.description();
+					}
+					else {
+						mOpen = mAppend = mLink = mImport = mSave = false;
+					}
 				}
 			} break;
 			case FileWindow::Result::Cancel:

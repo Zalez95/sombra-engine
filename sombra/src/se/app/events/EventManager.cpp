@@ -34,7 +34,7 @@ namespace se::app {
 	}
 
 
-	EventManager& EventManager::publish(IEvent* event)
+	EventManager& EventManager::publish(std::unique_ptr<IEvent> event)
 	{
 		if (event) {
 			Topic topic = event->getTopic();
@@ -44,7 +44,6 @@ namespace se::app {
 						<< " but doesn't handle it's events";
 				}
 			}
-			delete event;
 		}
 
 		return *this;
