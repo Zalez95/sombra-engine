@@ -2,6 +2,7 @@
 #define INPUT_SYSTEM_H
 
 #include <deque>
+#include <mutex>
 #include "events/MouseEvents.h"
 #include "events/EventManager.h"
 #include "ECS.h"
@@ -25,6 +26,9 @@ namespace se::app {
 		/** A queue that holds all the events that must be submitted in the
 		 * next update call due to the user input from oldest to newest */
 		std::deque<std::unique_ptr<IEvent>> mEventQueue;
+
+		/** The mutex used for protecting @see mEventQueue */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new InputSystem

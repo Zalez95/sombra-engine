@@ -21,16 +21,9 @@ namespace se::audio {
 	}
 
 
-	Buffer::Buffer(const void* data, std::size_t size, FormatId format, int sampleRate)
+	Buffer::Buffer()
 	{
 		AL_WRAP( alGenBuffers(1, &mBufferId) );
-		AL_WRAP( alBufferData(
-			mBufferId,
-			toALFormat(format),
-			data, static_cast<ALsizei>(size),
-			sampleRate
-		) );
-
 		SOMBRA_TRACE_LOG << "Created Buffer " << mBufferId;
 	}
 
@@ -60,6 +53,19 @@ namespace se::audio {
 
 		mBufferId = other.mBufferId;
 		other.mBufferId = 0;
+
+		return *this;
+	}
+
+
+	Buffer& Buffer::setData(const void* data, std::size_t size, FormatId format, int sampleRate)
+	{
+		AL_WRAP( alBufferData(
+			mBufferId,
+			toALFormat(format),
+			data, static_cast<ALsizei>(size),
+			sampleRate
+		) );
 
 		return *this;
 	}

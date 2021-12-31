@@ -1,6 +1,7 @@
 #ifndef LIGHT_PROBE_SYSTEM_H
 #define LIGHT_PROBE_SYSTEM_H
 
+#include <mutex>
 #include <memory>
 #include "../graphics/core/Texture.h"
 #include "ECS.h"
@@ -29,6 +30,10 @@ namespace se::app {
 
 		/** A pointer to the last prefilter Texture */
 		std::shared_ptr<graphics::Texture> mLastPrefilterTexture;
+
+		/** The mutex used for protecting @see mLightProbeEntity,
+		 * @see mLastIrradianceTexture and @see mLastIrradianceTexture */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new LightProbeSystem

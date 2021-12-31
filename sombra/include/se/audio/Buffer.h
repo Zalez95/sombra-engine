@@ -29,16 +29,8 @@ namespace se::audio {
 		unsigned int mBufferId;
 
 	public:		// Functions
-		/** Creates a new Buffer
-		 *
-		 * @param	data a pointer to the data of the buffer
-		 * @param	size the size of the data buffer
-		 * @param	format the FormatId of the data stored in the Buffer
-		 * @param	sampleRate the sampling rate of the given audio data */
-		Buffer(
-			const void* data, std::size_t size,
-			FormatId format, int sampleRate
-		);
+		/** Creates a new Buffer */
+		Buffer();
 
 		/** Creates a new Buffer */
 		Buffer(const Buffer& other) = delete;
@@ -53,6 +45,18 @@ namespace se::audio {
 
 		/** @return the id of the Buffer */
 		inline unsigned int getBufferId() const { return mBufferId; };
+
+		/** Sets the buffer data
+		 *
+		 * @param	data a pointer to the data of the buffer
+		 * @param	size the size of the data buffer
+		 * @param	format the FormatId of the data stored in the Buffer
+		 * @param	sampleRate the sampling rate of the given audio data
+		 * @return	a reference to the current Buffer object */
+		Buffer& setData(
+			const void* data, std::size_t size,
+			FormatId format, int sampleRate
+		);
 	};
 
 }

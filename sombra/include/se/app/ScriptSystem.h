@@ -1,6 +1,7 @@
 #ifndef SCRIPT_SYSTEM_H
 #define SCRIPT_SYSTEM_H
 
+#include <mutex>
 #include "events/KeyEvent.h"
 #include "events/MouseEvents.h"
 #include "events/ResizeEvent.h"
@@ -26,6 +27,9 @@ namespace se::app {
 
 		/** Holds all the user shared state between the scripts */
 		ScriptSharedState mScriptSharedState;
+
+		/** The mutex used for protecting @see mScriptSharedState */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new ScriptSystem

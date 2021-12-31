@@ -1,8 +1,9 @@
 #ifndef MESH_SYSTEM_H
 #define MESH_SYSTEM_H
 
-#include <memory>
+#include <deque>
 #include <unordered_map>
+#include <memory>
 #include <glm/glm.hpp>
 #include "../graphics/core/UniformVariable.h"
 #include "events/RMeshEvent.h"
@@ -37,6 +38,15 @@ namespace se::app {
 				jointMatrices;
 		};
 
+		struct StepOperation
+		{
+			enum class Operation { Add, Remove };
+			Operation operation;
+			Entity entity;
+			std::size_t rIndex;
+			RenderableShaderStepSPtr step;
+		};
+
 		using EntityUniformsVector = std::vector<EntityUniforms>;
 
 	private:	// Attributes
@@ -44,11 +54,19 @@ namespace se::app {
 		 * the RenderableMeshes */
 		Application& mApplication;
 
-		/** All the uniforms to update of each Entity */
+		/** Maps each Entity with its uniforms to update */
 		std::unordered_map<
 			Entity,
 			std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>
 		> mEntityUniforms;
+
+		/** Holds all the operations with the steps that must be performed by
+		 * thread 0 */
+		std::deque<StepOperation> mStepOperationsQueue;
+
+		/** The mutex that protects @see mEntityUniforms and
+		 * @see mStepOperationsQueue */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new MeshSystem

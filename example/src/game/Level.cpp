@@ -339,13 +339,12 @@ namespace game {
 				throw std::runtime_error("Error reading the audio file");
 			}
 
-			sound = mScene.repository.insert(
-				std::make_shared<se::audio::Buffer>(
-					audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
-					se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
-				),
-				"sound"
+			sound = mScene.repository.emplace<se::audio::Buffer>();
+			sound->setData(
+				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
+				se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
 			);
+			sound.getResource().setName("sound");
 			sound.setFakeUser();
 
 			// Lights

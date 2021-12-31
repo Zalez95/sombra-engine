@@ -50,6 +50,7 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Scripts";
 
+		std::scoped_lock lock(mMutex);
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
 			query.iterateComponents<ScriptComponent>(
 				[this](ScriptComponent& script) {
@@ -81,6 +82,7 @@ namespace se::app {
 	void ScriptSystem::onKeyEvent(const KeyEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
+		std::scoped_lock lock(mMutex);
 		mScriptSharedState.keys[event.getKeyCode()] = (event.getState() != KeyEvent::State::Released);
 	}
 
@@ -88,6 +90,7 @@ namespace se::app {
 	void ScriptSystem::onMouseMoveEvent(const MouseMoveEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
+		std::scoped_lock lock(mMutex);
 		mScriptSharedState.mouseX = static_cast<float>(event.getX());
 		mScriptSharedState.mouseY = static_cast<float>(event.getY());
 	}
@@ -96,6 +99,7 @@ namespace se::app {
 	void ScriptSystem::onMouseScrollEvent(const MouseScrollEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
+		std::scoped_lock lock(mMutex);
 		mScriptSharedState.scrollOffsetX = static_cast<float>(event.getXOffset());
 		mScriptSharedState.scrollOffsetY = static_cast<float>(event.getYOffset());
 	}
@@ -104,6 +108,7 @@ namespace se::app {
 	void ScriptSystem::onMouseButtonEvent(const MouseButtonEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
+		std::scoped_lock lock(mMutex);
 		mScriptSharedState.mouseButtons[event.getButtonCode()] = (event.getState() == MouseButtonEvent::State::Pressed);
 	}
 
@@ -111,6 +116,7 @@ namespace se::app {
 	void ScriptSystem::onWindowResizeEvent(const WindowResizeEvent& event)
 	{
 		SOMBRA_INFO_LOG << event;
+		std::scoped_lock lock(mMutex);
 		mScriptSharedState.windowWidth = static_cast<float>(event.getWidth());
 		mScriptSharedState.windowHeight = static_cast<float>(event.getHeight());
 	}
@@ -120,6 +126,7 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
+		std::scoped_lock lock(mMutex);
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			auto [script] = query.getComponents<ScriptComponent>(event.getEntity(), true);
 			if (script) {

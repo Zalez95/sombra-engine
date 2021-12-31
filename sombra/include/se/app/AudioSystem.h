@@ -1,6 +1,7 @@
 #ifndef AUDIO_SYSTEM_H
 #define AUDIO_SYSTEM_H
 
+#include <mutex>
 #include "events/ContainerEvent.h"
 #include "events/EventManager.h"
 #include "ECS.h"
@@ -24,6 +25,9 @@ namespace se::app {
 
 		/** The listener Entity*/
 		Entity mListenerEntity;
+
+		/** The mutex used for protecting @see mListenerEntity */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new AudioSystem

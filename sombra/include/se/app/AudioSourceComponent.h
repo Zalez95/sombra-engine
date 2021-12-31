@@ -48,6 +48,9 @@ namespace se::app {
 		const audio::Source& get() const { return mSource; };
 
 		/** @return	a pointer to the Buffer of the AudioSourceComponent */
+		BufferRef& getBuffer() { return mBuffer; };
+
+		/** @return	a pointer to the Buffer of the AudioSourceComponent */
 		const BufferRef& getBuffer() const { return mBuffer; };
 
 		/** Sets the Buffer of the audio Source

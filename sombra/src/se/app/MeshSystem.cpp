@@ -46,7 +46,29 @@ namespace se::app {
 
 		utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			std::unique_lock lock(mMutex);
+			SOMBRA_DEBUG_LOG << "Executing RenderableStep operations";
+
+			while (!mStepOperationsQueue.empty()) {
+				StepOperation operation = mStepOperationsQueue.front();
+				mStepOperationsQueue.pop_front();
+				lock.unlock();
+
+				if (operation.operation == StepOperation::Operation::Add) {
+					addStep(operation.entity, operation.rIndex, query, operation.step);
+				}
+				else {
+					removeStep(operation.entity, operation.rIndex, query, operation.step);
+				}
+
+				lock.lock();
+			}
+		});
+
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			SOMBRA_DEBUG_LOG << "Updating model and joint matrices";
+
 			query.iterateEntityComponents<TransformsComponent, MeshComponent>(
 				[&](Entity entity, TransformsComponent* transforms, MeshComponent* mesh) {
 					if ((!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
@@ -58,6 +80,7 @@ namespace se::app {
 							mesh->get(i).setModelMatrix(modelMatrix);
 						});
 
+						std::scoped_lock lock(mMutex);
 						auto itUniforms = mEntityUniforms.find(entity);
 						if (itUniforms != mEntityUniforms.end()) {
 							auto [skin] = query.getComponents<SkinComponent>(entity, true);
@@ -103,7 +126,8 @@ namespace se::app {
 			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
 				mesh->processRenderableShaders(i, [&](const auto& shader) {
 					shader->processSteps([&](const auto& step) {
-						addStep(entity, i, query, step.get());
+						std::scoped_lock lock(mMutex);
+						mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, i, step.get() });
 					});
 				});
 
@@ -124,6 +148,7 @@ namespace se::app {
 			mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(i));
 		});
 
+		std::scoped_lock lock(mMutex);
 		auto it = mEntityUniforms.find(entity);
 		if (it != mEntityUniforms.end()) {
 			mEntityUniforms.erase(it);
@@ -140,11 +165,6 @@ namespace se::app {
 		SOMBRA_INFO_LOG << event;
 
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
-			auto itEntity = mEntityUniforms.find(event.getEntity());
-			if (itEntity == mEntityUniforms.end()) {
-				return;
-			}
-
 			auto [transforms, mesh] = query.getComponents<TransformsComponent, MeshComponent>(event.getEntity(), true);
 			if (mesh) {
 				switch (event.getOperation()) {
@@ -154,7 +174,8 @@ namespace se::app {
 
 						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
 							shader->processSteps([&](const auto& step) {
-								addStep(event.getEntity(), event.getRIndex(), query, step.get());
+								std::scoped_lock lock(mMutex);
+								mStepOperationsQueue.push_back({ StepOperation::Operation::Add, event.getEntity(), event.getRIndex(), step.get() });
 							});
 						});
 
@@ -162,7 +183,12 @@ namespace se::app {
 					} break;
 					case RMeshEvent::Operation::Remove: {
 						mApplication.getExternalTools().graphicsEngine->removeRenderable(&mesh->get(event.getRIndex()));
-						itEntity->second[event.getRIndex()].clear();
+
+						std::scoped_lock lock(mMutex);
+						auto itEntity = mEntityUniforms.find(event.getEntity());
+						if (itEntity != mEntityUniforms.end()) {
+							itEntity->second[event.getRIndex()].clear();
+						}
 					} break;
 				}
 			}
@@ -174,27 +200,24 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
-			auto itEntity = mEntityUniforms.find(event.getEntity());
-			if ((itEntity == mEntityUniforms.end())
-				|| (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh)
-			) {
-				return;
-			}
+		if (event.getRComponentType() != RenderableShaderEvent::RComponentType::Mesh) {
+			return;
+		}
 
-			switch (event.getOperation()) {
-				case RenderableShaderEvent::Operation::Add: {
-					event.getShader()->processSteps([&](const auto& step) {
-						addStep(event.getEntity(), event.getRIndex(), query, step.get());
-					});
-				} break;
-				case RenderableShaderEvent::Operation::Remove: {
-					event.getShader()->processSteps([&](const auto& step) {
-						removeStep(event.getEntity(), event.getRIndex(), query, step.get());
-					});
-				} break;
-			}
-		});
+		switch (event.getOperation()) {
+			case RenderableShaderEvent::Operation::Add: {
+				event.getShader()->processSteps([&](const auto& step) {
+					std::scoped_lock lock(mMutex);
+					mStepOperationsQueue.push_back({ StepOperation::Operation::Add, event.getEntity(), event.getRIndex(), step.get() });
+				});
+			} break;
+			case RenderableShaderEvent::Operation::Remove: {
+				event.getShader()->processSteps([&](const auto& step) {
+					std::scoped_lock lock(mMutex);
+					mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, event.getEntity(), event.getRIndex(), step.get() });
+				});
+			} break;
+		}
 	}
 
 
@@ -214,10 +237,12 @@ namespace se::app {
 						if (hasShader) {
 							switch (event.getOperation()) {
 								case ShaderEvent::Operation::Add: {
-									addStep(entity, i, query, event.getStep());
+									std::scoped_lock lock(mMutex);
+									mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, i, event.getStep() });
 								} break;
 								case ShaderEvent::Operation::Remove: {
-									removeStep(entity, i, query, event.getStep());
+									std::scoped_lock lock(mMutex);
+									mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, entity, i, event.getStep() });
 								} break;
 							}
 						}
@@ -237,6 +262,7 @@ namespace se::app {
 		}
 
 		// Check if the MeshComponent has the Step already added
+		std::scoped_lock lock(mMutex);
 		auto& entityUniforms = mEntityUniforms[entity][rIndex];
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
 			return uniforms.step == step;
@@ -288,6 +314,7 @@ namespace se::app {
 			return;
 		}
 
+		std::scoped_lock lock(mMutex);
 		auto& entityUniforms = mEntityUniforms.find(entity)->second[rIndex];
 		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
 			return uniforms.step == step;

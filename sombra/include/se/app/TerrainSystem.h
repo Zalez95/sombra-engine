@@ -1,8 +1,9 @@
 #ifndef TERRAIN_SYSTEM_H
 #define TERRAIN_SYSTEM_H
 
-#include <memory>
+#include <deque>
 #include <unordered_map>
+#include <memory>
 #include <glm/glm.hpp>
 #include "../graphics/core/UniformVariable.h"
 #include "events/ContainerEvent.h"
@@ -35,6 +36,14 @@ namespace se::app {
 				modelMatrix;
 		};
 
+		struct StepOperation
+		{
+			enum class Operation { Add, Remove };
+			Operation operation;
+			Entity entity;
+			RenderableShaderStepSPtr step;
+		};
+
 		using EntityUniformsVector = std::vector<EntityUniforms>;
 
 	private:	// Attributes
@@ -45,11 +54,20 @@ namespace se::app {
 		/** All the uniforms to update of each Entity */
 		std::unordered_map<Entity, EntityUniformsVector> mEntityUniforms;
 
+		/** Holds all the operations with the steps that must be performed by
+		 * thread 0 */
+		std::deque<StepOperation> mStepOperationsQueue;
+
 		/** The camera Entity used for rendering */
 		Entity mCameraEntity;
 
 		/** If the camera was updated or not */
 		bool mCameraUpdated;
+
+		/** The mutex that protects @see mEntityUniforms,
+		 * @see mStepOperationsQueue, @see mCameraEntity and
+		 * @see mCameraUpdated */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new TerrainSystem

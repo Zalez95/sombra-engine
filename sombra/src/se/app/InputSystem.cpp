@@ -15,10 +15,12 @@ namespace se::app {
 		auto& windowManager = *mApplication.getExternalTools().windowManager;
 
 		windowManager.onClose([this]() {
+			std::scoped_lock lock(mMutex);
 			mEventQueue.push_back(std::make_unique<Event<Topic::Close>>());
 		});
 
 		windowManager.onKey([this](int keyCode, window::ButtonState state) {
+			std::scoped_lock lock(mMutex);
 			KeyEvent::State keyState = (state == window::ButtonState::Pressed)? KeyEvent::State::Pressed :
 				(state == window::ButtonState::Repeated)? KeyEvent::State::Repeated :
 				KeyEvent::State::Released;
@@ -26,16 +28,19 @@ namespace se::app {
 		});
 
 		windowManager.onTextInput([this](unsigned int codePoint) {
+			std::scoped_lock lock(mMutex);
 			mEventQueue.push_back(std::make_unique<TextInputEvent>(codePoint));
 		});
 
 		windowManager.onMouseButton([this](int buttonCode, window::ButtonState state) {
+			std::scoped_lock lock(mMutex);
 			MouseButtonEvent::State mbState = (state == window::ButtonState::Pressed)? MouseButtonEvent::State::Pressed :
 				MouseButtonEvent::State::Released;
 			mEventQueue.push_back(std::make_unique<MouseButtonEvent>(buttonCode, mbState));
 		});
 
 		windowManager.onMouseMove([this](double x, double y) {
+			std::scoped_lock lock(mMutex);
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const auto& event) { return (event->getTopic() == Topic::MouseMove); }
@@ -51,6 +56,7 @@ namespace se::app {
 		});
 
 		windowManager.onScroll([this](double xOffset, double yOffset) {
+			std::scoped_lock lock(mMutex);
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const auto& event) { return (event->getTopic() == Topic::MouseScroll); }
@@ -66,6 +72,7 @@ namespace se::app {
 		});
 
 		windowManager.onResize([this](double x, double y) {
+			std::scoped_lock lock(mMutex);
 			auto itEvent = std::find_if(
 				mEventQueue.begin(), mEventQueue.end(),
 				[](const auto& event) { return event->getTopic() == Topic::WindowResize; }
@@ -92,14 +99,20 @@ namespace se::app {
 
 	void InputSystem::update()
 	{
-		SOMBRA_DEBUG_LOG << "Updating the InputSystem. EventQueue size = " << mEventQueue.size();
+		SOMBRA_DEBUG_LOG << "Updating the InputSystem";
+
+		std::unique_lock lock(mMutex);
+		SOMBRA_DEBUG_LOG << "EventQueue size = " << mEventQueue.size();
 
 		auto& eventManager = mApplication.getEventManager();
 		while (!mEventQueue.empty()) {
 			auto currentEvent = std::move(mEventQueue.front());
 			mEventQueue.pop_front();
+			lock.unlock();
 
 			eventManager.publish(std::move(currentEvent));
+
+			lock.lock();
 		}
 
 		SOMBRA_DEBUG_LOG << "InputSystem updated";
@@ -110,6 +123,7 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
+		std::scoped_lock lock(mMutex);
 		mApplication.getExternalTools().windowManager->setMousePosition(event.getX(), event.getY());
 		mEventQueue.push_back(std::make_unique<MouseMoveEvent>(event.getX(), event.getY()));
 	}

@@ -1564,7 +1564,8 @@ namespace se::app {
 			return Result(false, "Failed to read the audio file");
 		}
 
-		buffer = scene.repository.emplace<Buffer>(
+		buffer = scene.repository.emplace<Buffer>();
+		buffer->setData(
 			audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 			FormatId::MonoFloat, audioFile.getSampleRate()
 		);

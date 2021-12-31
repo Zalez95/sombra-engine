@@ -422,7 +422,8 @@ namespace editor {
 				return Result(false, "Error reading the audio file " + std::string(path));
 			}
 
-			auto bufferSPtr = std::make_shared<Buffer>(
+			auto bufferSPtr = std::make_shared<Buffer>();
+			bufferSPtr->setData(
 				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 				FormatId::MonoFloat, audioFile.getSampleRate()
 			);

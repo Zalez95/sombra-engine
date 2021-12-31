@@ -28,6 +28,7 @@ namespace se::app {
 
 		SOMBRA_DEBUG_LOG << "Updating the Listener";
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			std::scoped_lock lock(mMutex);
 			auto [transforms] = query.getComponents<TransformsComponent>(mListenerEntity, true);
 			if (transforms) {
 				auto& audioEngine = *mApplication.getExternalTools().audioEngine;
@@ -83,6 +84,8 @@ namespace se::app {
 	void AudioSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
 		SOMBRA_INFO_LOG << event;
+
+		std::scoped_lock lock(mMutex);
 		mListenerEntity = event.getValue();
 	}
 

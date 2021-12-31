@@ -43,6 +43,8 @@ namespace se::app {
 
 		// Update light probe
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			std::scoped_lock lock(mMutex);
+
 			if (mLightProbeEntity != kNullEntity) {
 				auto [lightProbe] = query.getComponents<LightProbeComponent>(mLightProbeEntity, true);
 				if (lightProbe->irradianceMap && lightProbe->prefilterMap
@@ -68,6 +70,8 @@ namespace se::app {
 // Private functions
 	void LightProbeSystem::onNewLightProbe(Entity entity, LightProbeComponent* lightProbe, EntityDatabase::Query&)
 	{
+		std::scoped_lock lock(mMutex);
+
 		mLightProbeEntity = entity;
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " added successfully";
 	}
@@ -75,6 +79,8 @@ namespace se::app {
 
 	void LightProbeSystem::onRemoveLightProbe(Entity entity, LightProbeComponent* lightProbe, EntityDatabase::Query&)
 	{
+		std::scoped_lock lock(mMutex);
+
 		if (mLightProbeEntity == entity) {
 			mLightProbeEntity = kNullEntity;
 
