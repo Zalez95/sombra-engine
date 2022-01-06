@@ -3,11 +3,10 @@
 
 #include <memory>
 #include <vector>
-#include "core/Bindable.h"
+#include "Pass.h"
 
 namespace se::graphics {
 
-	class Pass;
 	class Renderable;
 
 

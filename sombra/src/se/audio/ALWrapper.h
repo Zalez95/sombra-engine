@@ -2,11 +2,14 @@
 #include <AL/al.h>
 #include "se/utils/Log.h"
 
-#define AL_WRAP(x)					\
-	se::audio::alClearError();		\
-	x;								\
-	se::audio::alLogError(#x, __FUNCTION__, __LINE__);
-
+#ifdef NDEBUG
+	#define AL_WRAP(x) x
+#else
+	#define AL_WRAP(x)					\
+		se::audio::alClearError();		\
+		x;								\
+		se::audio::alLogError(#x, __FUNCTION__, __LINE__)
+#endif
 
 namespace se::audio {
 

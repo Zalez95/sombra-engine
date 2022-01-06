@@ -2,11 +2,14 @@
 #include <AL/alc.h>
 #include "se/utils/Log.h"
 
-#define ALC_WRAP(x, device)				\
-	se::audio::alcClearError(device);	\
-	x;									\
-	se::audio::alcLogError(device, #x, __FUNCTION__, __LINE__);
-
+#ifdef NDEBUG
+	#define ALC_WRAP(x) x
+#else
+	#define ALC_WRAP(x, device)				\
+		se::audio::alcClearError(device);	\
+		x;									\
+		se::audio::alcLogError(device, #x, __FUNCTION__, __LINE__)
+#endif
 
 namespace se::audio {
 

@@ -2,11 +2,14 @@
 #include "se/utils/Log.h"
 #include "se/graphics/core/Constants.h"
 
-#define GL_WRAP(x)					\
-	se::graphics::glClearError();	\
-	x;								\
-	se::graphics::glLogError(#x, __FUNCTION__, __LINE__);
-
+#ifdef NDEBUG
+	#define GL_WRAP(x) x
+#else
+	#define GL_WRAP(x)					\
+		se::graphics::glClearError();	\
+		x;								\
+		se::graphics::glLogError(#x, __FUNCTION__, __LINE__)
+#endif
 
 namespace se::graphics {
 
