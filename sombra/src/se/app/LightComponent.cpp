@@ -54,8 +54,8 @@ namespace se::app {
 				mRenderable.clearBindables(pass.get());
 			});
 		});
-		processRenderableShaders([&](const RenderableShaderRef& shader) {
-			shader->processSteps([&](const RenderableShader::StepRef& step) {
+		processRenderableShaders([&](const RenderableShaderResource& shader) {
+			shader->processSteps([&](const RenderableShader::StepResource& step) {
 				mRenderable.getRenderableMesh().clearBindables(step->getPass().get());
 			});
 		});
@@ -75,8 +75,8 @@ namespace se::app {
 				mRenderable.clearBindables(pass.get());
 			});
 		});
-		processRenderableShaders([&](const RenderableShaderRef& shader) {
-			shader->processSteps([&](const RenderableShader::StepRef& step) {
+		processRenderableShaders([&](const RenderableShaderResource& shader) {
+			shader->processSteps([&](const RenderableShader::StepResource& step) {
 				mRenderable.getRenderableMesh().clearBindables(step->getPass().get());
 			});
 		});
@@ -85,7 +85,7 @@ namespace se::app {
 	}
 
 
-	void LightComponent::setSource(const Repository::ResourceRef<LightSource>& source)
+	void LightComponent::setSource(const LightSourceResource& source)
 	{
 		mSource = source;
 		if (mEventManager) {
@@ -94,7 +94,7 @@ namespace se::app {
 	}
 
 
-	void LightComponent::addRenderableShader(const RenderableShaderRef& shader)
+	void LightComponent::addRenderableShader(const RenderableShaderResource& shader)
 	{
 		mShaders.emplace_back(shader);
 		mRenderable.getRenderableMesh().addTechnique(shader->getTechnique());
@@ -106,7 +106,7 @@ namespace se::app {
 	}
 
 
-	void LightComponent::removeRenderableShader(const RenderableShaderRef& shader)
+	void LightComponent::removeRenderableShader(const RenderableShaderResource& shader)
 	{
 		if (mEventManager) {
 			mEventManager->publish(std::make_unique<RenderableShaderEvent>(

@@ -1,13 +1,12 @@
-#include "se/app/graphics/FXAANode.h"
 #include "se/app/io/ShaderLoader.h"
-#include "se/graphics/core/Texture.h"
-#include "se/graphics/core/UniformVariable.h"
+#include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/GraphicsOperations.h"
+#include "se/app/graphics/TypeRefs.h"
+#include "FXAANode.h"
 
 namespace se::app {
 
-	FXAANode::FXAANode(const std::string& name, Repository& repository) :
-		BindableRenderNode(name)
+	FXAANode::FXAANode(const std::string& name, graphics::Context& context) : BindableRenderNode(name)
 	{
 		auto iColorTexBindable = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, iColorTexBindable) );
@@ -16,38 +15,44 @@ namespace se::app {
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, targetFBBindableIndex) );
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, targetFBBindableIndex) );
 
-		mProgram = repository.findByName<graphics::Program>("programFXAA");
-		if (!mProgram) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentFXAA.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mProgram = repository.insert(std::move(program), "programFXAA");
-		}
+		mPlaneIndex = addBindable();
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Mesh>>("plane", this, mPlaneIndex) );
 
-		mPlane = repository.findByName<graphics::Mesh>("plane");
-		if (!mPlane) {
-			SOMBRA_ERROR_LOG << "plane not found";
+		ProgramRef program;
+		auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentFXAA.glsl", context, program);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
 			return;
 		}
 
-		addBindable(mProgram.get());
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uColor", mProgram.get(), kColorTextureUnit));
+		addBindable(program);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uColor", kColorTextureUnit)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
 	}
 
 
-	void FXAANode::execute()
+	void FXAANode::execute(graphics::Context::Query& q)
 	{
-		bind();
-		mPlane->bind();
+		auto plane = q.getTBindable( MeshRef::from(getBindable(mPlaneIndex)) );
+
+		bind(q);
 		graphics::GraphicsOperations::drawIndexedInstanced(
 			graphics::PrimitiveType::Triangle,
-			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
+			plane->getIBO()->getIndexCount(), plane->getIBO()->getIndexType()
 		);
 	}
 

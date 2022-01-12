@@ -24,9 +24,9 @@ namespace se::app {
 
 	public:		// Functions
 		CameraUniformsUpdater(
-			std::vector<graphics::Renderer*> renderers,
+			std::vector<graphics::Renderer*> renderers, graphics::Context& context,
 			const char* viewMatUniformName, const char* projectionMatUniformName
-		) : IViewProjectionUpdater(viewMatUniformName, projectionMatUniformName),
+		) : IViewProjectionUpdater(context, viewMatUniformName, projectionMatUniformName),
 			mRenderers(renderers) {};
 
 		virtual bool shouldAddUniforms(const PassSPtr& pass) const override
@@ -53,7 +53,8 @@ namespace se::app {
 			.set<LightComponent>()
 		);
 
-		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+		const auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		auto gBufferRendererMesh = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererMesh"));
 		auto gBufferRendererTerrain = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererTerrain"));
 		auto gBufferRendererParticles = dynamic_cast<graphics::Renderer3D*>(renderGraph.getNode("gBufferRendererParticles"));
@@ -66,7 +67,7 @@ namespace se::app {
 
 		mCameraUniformsUpdater = new CameraUniformsUpdater(
 			{ gBufferRendererMesh, gBufferRendererTerrain, gBufferRendererParticles, deferredLightStencilRenderer, deferredLightColorRenderer, forwardRendererMesh },
-			"uViewMatrix", "uProjectionMatrix"
+			context, "uViewMatrix", "uProjectionMatrix"
 		);
 
 		mFrustumFilter = std::make_shared<graphics::FrustumFilter>();
@@ -147,7 +148,7 @@ namespace se::app {
 		});
 
 		SOMBRA_DEBUG_LOG << "Updating the Uniforms";
-		mCameraUniformsUpdater->update(viewMatrix, projectionMatrix);
+		mCameraUniformsUpdater->updateUniformsDeferred(viewMatrix, projectionMatrix);
 
 		SOMBRA_DEBUG_LOG << "Updating the Renderers";
 		mDeferredAmbientRenderer->setViewPosition(viewPosition);
@@ -195,7 +196,9 @@ namespace se::app {
 	void CameraSystem::onRemoveMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-			mCameraUniformsUpdater->removeRenderable(mesh->get(i));
+			mesh->processRenderableShaders(i, [&](const auto& shader) {
+				mCameraUniformsUpdater->removeRenderableTechnique(mesh->get(i), shader->getTechnique());
+			});
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
 	}
@@ -212,7 +215,9 @@ namespace se::app {
 
 	void CameraSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
-		mCameraUniformsUpdater->removeRenderable(terrain->get());
+		terrain->processRenderableShaders([&](const auto& shader) {
+			mCameraUniformsUpdater->removeRenderableTechnique(terrain->get(), shader->getTechnique());
+		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
 	}
 
@@ -228,7 +233,9 @@ namespace se::app {
 
 	void CameraSystem::onRemoveParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query&)
 	{
-		mCameraUniformsUpdater->removeRenderable(particleSystem->get());
+		particleSystem->processRenderableShaders([&](const auto& shader) {
+			mCameraUniformsUpdater->removeRenderableTechnique(particleSystem->get(), shader->getTechnique());
+		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystemComponent " << particleSystem << " removed successfully";
 	}
 
@@ -246,7 +253,9 @@ namespace se::app {
 	void CameraSystem::onRemoveLight(Entity entity, LightComponent* light, EntityDatabase::Query&)
 	{
 		auto renderable = light->getRenderable().getRenderableMesh();
-		mCameraUniformsUpdater->removeRenderable(renderable);
+		renderable.processTechniques([&](const auto& technique) {
+			mCameraUniformsUpdater->removeRenderableTechnique(renderable, technique);
+		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightComponent " << light << " removed successfully";
 	}
 
@@ -274,7 +283,9 @@ namespace se::app {
 						});
 						break;
 					case RMeshEvent::Operation::Remove:
-						mCameraUniformsUpdater->removeRenderable(mesh->get(event.getRIndex()));
+						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+							mCameraUniformsUpdater->removeRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
+						});
 						break;
 				}
 			}

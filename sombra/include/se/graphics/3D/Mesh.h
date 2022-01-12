@@ -2,6 +2,7 @@
 #define MESH_H
 
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 #include "../core/VertexBuffer.h"
 #include "../core/IndexBuffer.h"
@@ -16,22 +17,22 @@ namespace se::graphics {
 	{
 	private:	// Attributes
 		/** The vertex buffers of the Mesh */
-		std::vector<VertexBuffer> mVBOs;
+		std::vector<std::unique_ptr<VertexBuffer>> mVBOs;
 
 		/** The IBO of the Mesh */
-		IndexBuffer mIBO;
+		std::unique_ptr<IndexBuffer> mIBO;
 
 		/** The VAO of the Mesh */
-		VertexArray mVAO;
+		std::unique_ptr<VertexArray> mVAO;
 
 		/** The minimum position of the Mesh at each direction */
-		glm::vec3 mMinimum;
+		glm::vec3 mMinimum = glm::vec3(0.0f);
 
 		/** The maximum position of the Mesh at each direction */
-		glm::vec3 mMaximum;
+		glm::vec3 mMaximum = glm::vec3(0.0f);
 
 	public:		// Functions
-		/** Creates a new Mesh from the given data
+		/** Sets the buffers of the Mesh
 		 *
 		 * @param	vbos the vertex buffers that cointain all the vertex data of
 		 *			the mesh
@@ -39,31 +40,34 @@ namespace se::graphics {
 		 *			faces of the mesh
 		 * @param	vao the VAO of the mesh
 		 * @note	the IBO and the VBOs must be already bound to the VAO with
-		 *			its respective attribute indices */
-		Mesh(
-			std::vector<VertexBuffer>&& vbos,
-			IndexBuffer&& ibo, VertexArray&& vao
+		 *			its respective attribute indices
+		 * @return	a reference to the current Mesh object */
+		Mesh& setBuffers(
+			std::vector<std::unique_ptr<VertexBuffer>>&& vbos,
+			std::unique_ptr<IndexBuffer>&& ibo,
+			std::unique_ptr<VertexArray>&& vao
 		);
 
 		/** Sets the bounds of the Mesh
 		 *
 		 * @param	minimum the minimum position of the mesh at each direction
 		 * @param	maximum the maximum position of the mesh at each
-		 *			direction */
-		void setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
+		 *			direction
+		 * @return	a reference to the current Mesh object */
+		Mesh& setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
 
 		/** @return	the minimum and maximum position of the Mesh in each
 		 *			direction */
 		std::pair<glm::vec3, glm::vec3> getBounds() const;
 
 		/** @return a reference to the VertexBuffers of the Mesh */
-		const std::vector<VertexBuffer>& getVBOs() const;
+		const std::vector<std::unique_ptr<VertexBuffer>>& getVBOs() const;
 
 		/** @return a reference to the IndexBuffer of the Mesh */
-		const IndexBuffer& getIBO() const;
+		const std::unique_ptr<IndexBuffer>& getIBO() const;
 
 		/** @return a reference to the VertexArray of the Mesh */
-		const VertexArray& getVAO() const;
+		const std::unique_ptr<VertexArray>& getVAO() const;
 
 		/** @copydoc Bindable::clone() */
 		virtual std::unique_ptr<Bindable> clone() const override;

@@ -73,12 +73,12 @@ namespace se::app {
 
 			// Repository
 			mRepository = new Repository();
-			mRepository->init<graphics::Program>();
+			mRepository->init<ProgramRef>();
+			mRepository->init<TextureRef>();
+			mRepository->init<MeshRef>();
 			mRepository->init<graphics::Pass>();
 			mRepository->init<graphics::Technique>();
-			mRepository->init<graphics::Texture>();
 			mRepository->init<graphics::Font>();
-			mRepository->init<graphics::Mesh>();
 			mRepository->init<RenderableShaderStep>();
 			mRepository->init<RenderableShader>();
 			mRepository->init<Script>();

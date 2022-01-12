@@ -25,7 +25,7 @@ namespace se::graphics {
 	}
 
 
-	void Renderable::submit()
+	void Renderable::submit(Context::Query&)
 	{
 		for (auto& technique : mTechniques) {
 			technique->submit(*this);

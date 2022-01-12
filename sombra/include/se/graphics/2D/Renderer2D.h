@@ -147,12 +147,15 @@ namespace se::graphics {
 
 		/** Submits the given vertices to the Renderer2D
 		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables
 		 * @param	vertices a pointer to the vertices to submit
 		 * @param	vertexCount the number of vertices to submit
 		 * @param	indices a pointer to the indices to submit
 		 * @param	indexCount the number of indices to submit
 		 * @param	texture a pointer to the texture to submit */
 		void submitVertices(
+			Context::Query& q,
 			BatchVertex* vertices, std::size_t vertexCount,
 			const unsigned short* indices, std::size_t indexCount,
 			Texture* texture = nullptr
@@ -161,15 +164,18 @@ namespace se::graphics {
 		/** @copydoc Renderer::sortQueue() */
 		virtual void sortQueue() override;
 
-		/** @copydoc Renderer::render() */
-		virtual void render() override;
+		/** @copydoc Renderer::render(Context::Query&) */
+		virtual void render(Context::Query& q) override;
 
 		/** @copydoc Renderer::clearQueue() */
 		virtual void clearQueue() override;
 
 		/** Draws the batch with the current Pass and clears the texture
-		 * array of Texture uniforms */
-		void drawBatch();
+		 * array of Texture uniforms
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		void drawBatch(Context::Query& q);
 	};
 
 }

@@ -17,9 +17,6 @@ namespace se::graphics {
 	 */
 	class FrameBuffer : public Bindable
 	{
-	private:	// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
-
 	private:	// Attributes
 		/** The id of the Frame Buffer Object */
 		unsigned int mBufferId;
@@ -65,6 +62,9 @@ namespace se::graphics {
 		 * @param	active if the color buffer should be enabled or not */
 		FrameBuffer& setColorBuffer(bool active);
 
+		/** @return	true if the color buffer is enabled, false otherwise */
+		bool getColorBuffer() const;
+
 		/** Attachs the given Texture to the current FrameBuffer so the result
 		 * of the write operations will be stored into that Texture
 		 *
@@ -78,9 +78,11 @@ namespace se::graphics {
 		 * @param	orientation which face of the CubeMap is going to be set
 		 *			(0 = positive X, 1 = negative X, 2 = positive Y,
 		 *			3 = negative Y, 4 = positive Z, 5 = negative Z)
-		 @return	a reference to the current FrameBuffer */
-		FrameBuffer& attach(
-			const TextureSPtr& texture, unsigned int attachment,
+		 * @return	true if the texture was successfully attached, false
+		 *			otherwise */
+		bool attach(
+			const Texture* texture,
+			unsigned int attachment,
 			int level = 0, int layer = 0, int orientation = 0
 		);
 
@@ -111,8 +113,7 @@ namespace se::graphics {
 
 		/** @copydoc Bindable::clone()
 		 * @note	no Textures will be attached to the new FrameBuffer */
-		virtual std::unique_ptr<Bindable> clone() const override
-		{ return std::make_unique<FrameBuffer>(mTarget); };
+		virtual std::unique_ptr<Bindable> clone() const override;
 
 		/** Binds the Frame Buffer Object */
 		virtual void bind() const override;

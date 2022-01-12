@@ -3,15 +3,22 @@
 
 namespace se::graphics {
 
-	Mesh::Mesh(std::vector<VertexBuffer>&& vbos, IndexBuffer&& ibo, VertexArray&& vao) :
-		mVBOs(std::move(vbos)), mIBO(std::move(ibo)), mVAO(std::move(vao)),
-		mMinimum(0.0f), mMaximum(0.0f) {}
+	Mesh& Mesh::setBuffers(
+		std::vector<std::unique_ptr<VertexBuffer>>&& vbos,
+		std::unique_ptr<IndexBuffer>&& ibo, std::unique_ptr<VertexArray>&& vao
+	) {
+		mVBOs = std::move(vbos);
+		mIBO = std::move(ibo);
+		mVAO = std::move(vao);
+		return *this;
+	}
 
 
-	void Mesh::setBounds(const glm::vec3& minimum, const glm::vec3& maximum)
+	Mesh& Mesh::setBounds(const glm::vec3& minimum, const glm::vec3& maximum)
 	{
 		mMinimum = minimum;
 		mMaximum = maximum;
+		return *this;
 	}
 
 
@@ -21,19 +28,19 @@ namespace se::graphics {
 	}
 
 
-	const std::vector<VertexBuffer>& Mesh::getVBOs() const
+	const std::vector<std::unique_ptr<VertexBuffer>>& Mesh::getVBOs() const
 	{
 		return mVBOs;
 	}
 
 
-	const IndexBuffer& Mesh::getIBO() const
+	const std::unique_ptr<IndexBuffer>& Mesh::getIBO() const
 	{
 		return mIBO;
 	}
 
 
-	const VertexArray& Mesh::getVAO() const
+	const std::unique_ptr<VertexArray>& Mesh::getVAO() const
 	{
 		return mVAO;
 	}
@@ -41,46 +48,57 @@ namespace se::graphics {
 
 	std::unique_ptr<Bindable> Mesh::clone() const
 	{
-		std::vector<VertexBuffer> vbos;
-		for (const VertexBuffer& vbo : mVBOs) {
-			vbos.emplace_back(std::move(*dynamic_cast<VertexBuffer*>(vbo.clone().get())));
-		}
-		IndexBuffer ibo(std::move(*dynamic_cast<IndexBuffer*>(mIBO.clone().get())));
-		VertexArray vao(std::move(*dynamic_cast<VertexArray*>(mVAO.clone().get())));
+		std::vector<std::unique_ptr<VertexBuffer>> vbos;
+		std::unique_ptr<IndexBuffer> ibo;
+		std::unique_ptr<VertexArray> vao;
 
-		unsigned int maxAttributes = VertexArray::getMaxAttributes();
-		for (unsigned int i = 0; i < maxAttributes; ++i) {
-			if (mVAO.isAttributeEnabled(i)) {
-				auto itVBO = std::find_if(mVBOs.begin(), mVBOs.end(), [&](const auto& vbo) {
-					return mVAO.checkVertexAttributeVBOBound(i, vbo);
-				});
-				if (itVBO != mVBOs.end()) {
-					vao.bind();
-					vbos[std::distance(mVBOs.begin(), itVBO)].bind();
-					vao.copyVertexAttribute(i, mVAO);
+		for (const auto& vbo : mVBOs) {
+			vbos.push_back( std::unique_ptr<VertexBuffer>( static_cast<VertexBuffer*>(vbo->clone().release())) );
+		}
+
+		if (mIBO) {
+			ibo = std::unique_ptr<IndexBuffer>( static_cast<IndexBuffer*>(mIBO->clone().release()) );
+		}
+
+		if (mVAO) {
+			vao = std::make_unique<VertexArray>();
+
+			unsigned int maxAttributes = VertexArray::getMaxAttributes();
+			for (unsigned int i = 0; i < maxAttributes; ++i) {
+				if (mVAO->isAttributeEnabled(i)) {
+					auto itVBO = std::find_if(mVBOs.begin(), mVBOs.end(), [&](const auto& vbo) {
+						return mVAO->checkVertexAttributeVBOBound(i, *vbo);
+					});
+					if (itVBO != mVBOs.end()) {
+						vao->bind();
+						vbos[std::distance(mVBOs.begin(), itVBO)]->bind();
+						vao->copyVertexAttribute(i, *mVAO);
+					}
 				}
+			}
+
+			if (ibo) {
+				vao->bind();
+				ibo->bind();
 			}
 		}
 
-		vao.bind();
-		ibo.bind();
-
-		auto ret = std::make_unique<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-		ret->mMinimum = mMinimum;
-		ret->mMaximum = mMaximum;
+		auto ret = std::make_unique<Mesh>();
+		ret->setBuffers(std::move(vbos), std::move(ibo), std::move(vao));
+		ret->setBounds(mMinimum, mMaximum);
 		return ret;
 	}
 
 
 	void Mesh::bind() const
 	{
-		mVAO.bind();
+		mVAO->bind();
 	}
 
 
 	void Mesh::unbind() const
 	{
-		mVAO.unbind();
+		mVAO->unbind();
 	}
 
 }

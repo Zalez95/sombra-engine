@@ -97,18 +97,19 @@ namespace se::physics {
 
 	void ConstraintManager::update(float deltaTime)
 	{
-		std::scoped_lock lck(mMutex);
-
-		// Get the Constraints of the RigidBodies whose properties have changed
 		std::vector<Constraint*> updatedConstraints;
-		for (ConstraintIsland& island : mIslands) {
-			island.processRigidBodies([&](RigidBody* rb) {
-				if (rb->getStatus(RigidBody::Status::PropertiesChanged)) {
-					island.processRigidBodyConstraints(rb, [&](Constraint* constraint) {
-						updatedConstraints.push_back(constraint);
-					});
-				}
-			});
+
+		{ // Get the Constraints of the RigidBodies whose properties have changed
+			std::scoped_lock lck(mMutex);
+			for (ConstraintIsland& island : mIslands) {
+				island.processRigidBodies([&](RigidBody* rb) {
+					if (rb->getStatus(RigidBody::Status::PropertiesChanged)) {
+						island.processRigidBodyConstraints(rb, [&](Constraint* constraint) {
+							updatedConstraints.push_back(constraint);
+						});
+					}
+				});
+			}
 		}
 
 		// Remove and add those Constraints so the RigidBodies whose properties
@@ -118,9 +119,11 @@ namespace se::physics {
 			addConstraint(constraint);
 		}
 
-		// Solve the islands constraints
-		for (ConstraintIsland& island : mIslands) {
-			island.update(deltaTime);
+		{ // Solve the islands constraints
+			std::scoped_lock lck(mMutex);
+			for (ConstraintIsland& island : mIslands) {
+				island.update(deltaTime);
+			}
 		}
 	}
 

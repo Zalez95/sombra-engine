@@ -3,17 +3,13 @@
 
 #include <memory>
 #include <unordered_map>
-#include "../graphics/core/Program.h"
-#include "../graphics/core/UniformVariable.h"
-#include "../graphics/3D/Mesh.h"
-#include "../graphics/Pass.h"
-#include "../graphics/Technique.h"
 #include "events/ContainerEvent.h"
 #include "events/RMeshEvent.h"
 #include "events/LightSourceEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
 #include "events/EventManager.h"
+#include "graphics/TypeRefs.h"
 #include "LightComponent.h"
 #include "ECS.h"
 
@@ -32,24 +28,19 @@ namespace se::app {
 	class LightSystem : public ISystem, public IEventListener
 	{
 	private:	// Nested types
-		template <typename T> using UniformVVSPtr =
-			std::shared_ptr<graphics::UniformVariableValue<T>>;
-		template <typename T> using UniformVVVSPtr =
-			std::shared_ptr<graphics::UniformVariableValueVector<T>>;
-
 		struct EntityUniforms
 		{
 			std::size_t iDL;
-			UniformVVSPtr<glm::mat4> modelMatrices[2];
-			UniformVVSPtr<unsigned int> type;
-			UniformVVSPtr<glm::vec3> color;
-			UniformVVSPtr<float> intensity;
-			UniformVVSPtr<float> range;
-			UniformVVSPtr<float> lightAngleScale;
-			UniformVVSPtr<float> lightAngleOffset;
-			UniformVVVSPtr<glm::mat4> shadowVPMatrices;
-			UniformVVSPtr<unsigned int> numCascades;
-			UniformVVVSPtr<float> cascadesZFar;
+			UniformVVRef<glm::mat4> modelMatrices[2];
+			UniformVVRef<unsigned int> type;
+			UniformVVRef<glm::vec3> color;
+			UniformVVRef<float> intensity;
+			UniformVVRef<float> range;
+			UniformVVRef<float> lightAngleScale;
+			UniformVVRef<float> lightAngleOffset;
+			UniformVVVRef<glm::mat4> shadowVPMatrices;
+			UniformVVRef<unsigned int> numCascades;
+			UniformVVVRef<float> cascadesZFar;
 		};
 
 		struct LightVolumeData;
@@ -73,6 +64,10 @@ namespace se::app {
 
 		/** The camera Entity used for rendering */
 		Entity mCameraEntity = kNullEntity;
+
+		/** The mutex that protects @see mEntityUniforms and
+		 * @see mCameraEntity */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new LightSystem

@@ -36,24 +36,26 @@ namespace editor {
 		) : mApplication(application), mRepository(repository) {};
 
 		/** @copydoc ShaderBuilder::createShader(const Material&, bool) */
-		virtual ShaderRef createShader(const char* name, const se::app::Material& material, bool hasSkin) override
+		virtual SceneImporter::ShaderResource createShader(
+			const char* name, const se::app::Material& material, bool hasSkin
+		) override
 		{
 			const char* shadowStepName = hasSkin? "stepShadowSkinning" : "stepShadow";
 			auto shadowStep = mRepository.findByName<se::app::RenderableShaderStep>(shadowStepName);
 			if (!shadowStep) {
-				return ShaderRef();
+				return SceneImporter::ShaderResource();
 			}
 
 			auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 			auto gBufferRendererMesh = dynamic_cast<se::graphics::Renderer*>(renderGraph.getNode("gBufferRendererMesh"));
 			if (!gBufferRendererMesh) {
-				return ShaderRef();
+				return SceneImporter::ShaderResource();
 			}
 
 			const char* programName = hasSkin? "programGBufMaterialSkinning" : "programGBufMaterial";
-			auto program = mRepository.findByName<se::graphics::Program>(programName);
+			auto program = mRepository.findByName<se::app::ProgramRef>(programName);
 			if (!program) {
-				return ShaderRef();
+				return SceneImporter::ShaderResource();
 			}
 
 			auto step = mRepository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), name);

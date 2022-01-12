@@ -25,18 +25,18 @@ namespace se::app {
 	{
 	private:	// Nested types
 		using Buffer = std::vector<std::byte>;
-		using TextureRef = Repository::ResourceRef<graphics::Texture>;
-		using ShaderRef = Repository::ResourceRef<RenderableShader>;
-		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
-		using LightSourceRef = Repository::ResourceRef<LightSource>;
-		using SkinRef = Repository::ResourceRef<Skin>;
+		using TextureResource = Repository::ResourceRef<TextureRef>;
+		using ShaderResource = Repository::ResourceRef<RenderableShader>;
+		using MeshResource = Repository::ResourceRef<MeshRef>;
+		using LightSourceResource = Repository::ResourceRef<LightSource>;
+		using SkinResource = Repository::ResourceRef<Skin>;
 		using SceneUPtr = std::unique_ptr<Scene>;
 		using Vec3Animation = animation::IAnimation<glm::vec3>;
 		using QuatAnimation = animation::IAnimation<glm::quat>;
 		using Vec3AnimationSPtr = std::shared_ptr<Vec3Animation>;
 		using QuatAnimationSPtr = std::shared_ptr<QuatAnimation>;
 		using IAnimatorUPtr = std::unique_ptr<animation::IAnimator>;
-		using SAnimatorRef =
+		using SAnimatorResource =
 			Repository::ResourceRef<animation::SkeletonAnimator>;
 		using IndexVector = std::vector<std::size_t>;
 		struct Accessor;
@@ -60,7 +60,10 @@ namespace se::app {
 		std::unique_ptr<GLTFData> mGLTFData;
 
 	public:		// Functions
-		/** @copydoc SceneImporter::SceneImporter(ShaderBuilder&) */
+		/** Creates a new GLTFImporter
+		 *
+		 * @param	shaderBuilder the ShaderBuilder used for creating the
+		 *			Shaders */
 		GLTFImporter(ShaderBuilder& shaderBuilder);
 
 		/** Class destructor */
@@ -259,11 +262,11 @@ namespace se::app {
 		 *
 		 * @param	primitiveMesh the PrimitiveMeshData that holds the indices
 		 *			of the attributes and indices of the Mesh
-		 * @param	out the pointer where the Mesh will be stored 
+		 * @param	out the pointer where the Mesh will be stored
 		 * @note	it will check if the Mesh was already created */
 		Result createMesh(
-			const PrimitiveMeshData& primitiveMesh, MeshRef& out
-		) const;
+			const PrimitiveMeshData& primitiveMesh, MeshResource& out
+		);
 	};
 
 }

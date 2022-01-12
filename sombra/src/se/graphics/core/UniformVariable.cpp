@@ -6,22 +6,17 @@
 
 namespace se::graphics {
 
-	IUniformVariable::IUniformVariable(const char* name, const std::shared_ptr<Program>& program) :
-		mName(name), mProgram(program), mUniformLocation(-1)
+	bool IUniformVariable::load(const Program& program)
 	{
-		GL_WRAP( mUniformLocation = glGetUniformLocation(mProgram->mProgramId, mName.c_str()) );
+		GL_WRAP( mUniformLocation = glGetUniformLocation(program.mProgramId, mName.c_str()) );
 
 		if (mUniformLocation == -1) {
-			SOMBRA_WARN_LOG << "Uniform variable \"" << mName << "\" wasn't found in Program " << program->mProgramId;
+			SOMBRA_WARN_LOG << "Uniform variable \"" << mName << "\" wasn't found in Program " << program.mProgramId;
+			return false;
 		}
+
+		return true;
 	}
-
-
-	bool IUniformVariable::found() const
-	{
-		return mUniformLocation >= 0;
-	}
-
 
 // Private functions
 	template <>

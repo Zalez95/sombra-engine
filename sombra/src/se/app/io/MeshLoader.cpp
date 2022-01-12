@@ -16,123 +16,153 @@ namespace se::app {
 	);
 
 
-	graphics::Mesh MeshLoader::createGraphicsMesh(const RawMesh& rawMesh)
+	MeshRef MeshLoader::createGraphicsMesh(graphics::Context& context, const RawMesh& rawMesh)
 	{
 		using namespace graphics;
 
-		VertexArray vao;
-		vao.bind();
+		auto bounds = calculateBounds(rawMesh);
 
-		std::vector<VertexBuffer> vbos;
-		if (!rawMesh.positions.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.positions.data(), rawMesh.positions.size());
+		return context.create<Mesh>()
+			.edit([=](Mesh& mesh) {
+				auto vao = std::make_unique<VertexArray>();
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::PositionAttribute);
-			vao.setVertexAttribute(MeshAttributes::PositionAttribute, TypeId::Float, false, 3, 0);
-		}
-		if (!rawMesh.normals.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.normals.data(), rawMesh.normals.size());
+				std::vector<std::unique_ptr<VertexBuffer>> vbos;
+				if (!rawMesh.positions.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.positions.data(), rawMesh.positions.size());
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::NormalAttribute);
-			vao.setVertexAttribute(MeshAttributes::NormalAttribute, TypeId::Float, false, 3, 0);
-		}
-		if (!rawMesh.tangents.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.tangents.data(), rawMesh.tangents.size());
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::PositionAttribute);
+					vao->setVertexAttribute(MeshAttributes::PositionAttribute, TypeId::Float, false, 3, 0);
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::TangentAttribute);
-			vao.setVertexAttribute(MeshAttributes::TangentAttribute, TypeId::Float, false, 3, 0);
-		}
-		if (!rawMesh.texCoords.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.texCoords.data(), rawMesh.texCoords.size());
+					vbos.push_back(std::move(vbo));
+				}
+				if (!rawMesh.normals.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.normals.data(), rawMesh.normals.size());
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::TexCoordAttribute0);
-			vao.setVertexAttribute(MeshAttributes::TexCoordAttribute0, TypeId::Float, false, 2, 0);
-		}
-		if (!rawMesh.jointIndices.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::NormalAttribute);
+					vao->setVertexAttribute(MeshAttributes::NormalAttribute, TypeId::Float, false, 3, 0);
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::JointIndexAttribute);
-			vao.setVertexIntegerAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, 4, 0);
-		}
-		if (!rawMesh.jointWeights.empty()) {
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
+					vbos.push_back(std::move(vbo));
+				}
+				if (!rawMesh.tangents.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.tangents.data(), rawMesh.tangents.size());
 
-			vbo.bind();
-			vao.enableAttribute(MeshAttributes::JointWeightAttribute);
-			vao.setVertexAttribute(MeshAttributes::JointWeightAttribute, TypeId::Float, false, 4, 0);
-		}
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::TangentAttribute);
+					vao->setVertexAttribute(MeshAttributes::TangentAttribute, TypeId::Float, false, 3, 0);
 
-		IndexBuffer ibo;
-		ibo.resizeAndCopy(rawMesh.indices.data(), TypeId::UnsignedShort, rawMesh.indices.size());
+					vbos.push_back(std::move(vbo));
+				}
+				if (!rawMesh.texCoords.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.texCoords.data(), rawMesh.texCoords.size());
 
-		ibo.bind();
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::TexCoordAttribute0);
+					vao->setVertexAttribute(MeshAttributes::TexCoordAttribute0, TypeId::Float, false, 2, 0);
 
-		auto [minimum, maximum] = calculateBounds(rawMesh);
+					vbos.push_back(std::move(vbo));
+				}
+				if (!rawMesh.jointIndices.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.jointIndices.data(), rawMesh.jointIndices.size());
 
-		Mesh ret(std::move(vbos), std::move(ibo), std::move(vao));
-		ret.setBounds(minimum, maximum);
-		return ret;
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::JointIndexAttribute);
+					vao->setVertexIntegerAttribute(MeshAttributes::JointIndexAttribute, TypeId::UnsignedShort, 4, 0);
+
+					vbos.push_back(std::move(vbo));
+				}
+				if (!rawMesh.jointWeights.empty()) {
+					auto vbo = std::make_unique<VertexBuffer>();
+					vbo->resizeAndCopy(rawMesh.jointWeights.data(), rawMesh.jointWeights.size());
+
+					vao->bind();
+					vbo->bind();
+					vao->enableAttribute(MeshAttributes::JointWeightAttribute);
+					vao->setVertexAttribute(MeshAttributes::JointWeightAttribute, TypeId::Float, false, 4, 0);
+
+					vbos.push_back(std::move(vbo));
+				}
+
+				auto ibo = std::make_unique<IndexBuffer>();
+				ibo->resizeAndCopy(rawMesh.indices.data(), TypeId::UnsignedShort, rawMesh.indices.size());
+
+				vao->bind();
+				ibo->bind();
+
+				mesh.setBuffers(std::move(vbos), std::move(ibo), std::move(vao))
+					.setBounds(bounds.first, bounds.second);
+			});
 	}
 
 
-	RawMesh MeshLoader::createRawMesh(const graphics::Mesh& gMesh)
+	RawMesh MeshLoader::createRawMesh(const MeshRef& gMesh)
 	{
 		RawMesh ret;
 
-		for (const auto& vbo : gMesh.getVBOs()) {
-			if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::PositionAttribute)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::PositionAttribute, vbo)
-			) {
-				ret.positions.resize(vbo.size() / sizeof(glm::vec3));
-				vbo.read(ret.positions.data(), ret.positions.size());
-			}
-			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::NormalAttribute)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::NormalAttribute, vbo)
-			) {
-				ret.normals.resize(vbo.size() / sizeof(glm::vec3));
-				vbo.read(ret.normals.data(), ret.normals.size());
-			}
-			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::TangentAttribute)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TangentAttribute, vbo)
-			) {
-				ret.tangents.resize(vbo.size() / sizeof(glm::vec3));
-				vbo.read(ret.tangents.data(), ret.tangents.size());
-			}
-			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::TexCoordAttribute0)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::TexCoordAttribute0, vbo)
-			) {
-				ret.texCoords.resize(vbo.size() / sizeof(glm::vec2));
-				vbo.read(ret.texCoords.data(), ret.texCoords.size());
-			}
-			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::JointIndexAttribute)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointIndexAttribute, vbo)
-			) {
-				ret.jointIndices.resize(vbo.size() / sizeof(glm::u16vec4));
-				vbo.read(ret.jointIndices.data(), ret.jointIndices.size());
-			}
-			else if (gMesh.getVAO().isAttributeEnabled(MeshAttributes::JointWeightAttribute)
-				&& gMesh.getVAO().checkVertexAttributeVBOBound(MeshAttributes::JointWeightAttribute, vbo)
-			) {
-				ret.jointWeights.resize(vbo.size() / sizeof(glm::vec4));
-				vbo.read(ret.jointWeights.data(), ret.jointWeights.size());
-			}
-		}
+		gMesh.edit([&ret](graphics::Mesh& mesh) {
+			const auto& vbos = mesh.getVBOs();
+			const auto& vao = mesh.getVAO();
+			const auto& ibo = mesh.getIBO();
 
-		if (gMesh.getIBO().getIndexType() == graphics::TypeId::UnsignedShort) {
-			ret.indices.resize(gMesh.getIBO().getIndexCount());
-			gMesh.getIBO().read(ret.indices.data(), ret.indices.size());
-		}
+			if (vao) {
+				for (const auto& vbo : vbos) {
+					if (vao->isAttributeEnabled(MeshAttributes::PositionAttribute)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::PositionAttribute, *vbo)
+					) {
+						ret.positions.resize(vbo->size() / sizeof(glm::vec3));
+						vbo->read(ret.positions.data(), ret.positions.size());
+					}
+					else if (vao->isAttributeEnabled(MeshAttributes::NormalAttribute)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::NormalAttribute, *vbo)
+					) {
+						ret.normals.resize(vbo->size() / sizeof(glm::vec3));
+						vbo->read(ret.normals.data(), ret.normals.size());
+					}
+					else if (vao->isAttributeEnabled(MeshAttributes::TangentAttribute)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::TangentAttribute, *vbo)
+					) {
+						ret.tangents.resize(vbo->size() / sizeof(glm::vec3));
+						vbo->read(ret.tangents.data(), ret.tangents.size());
+					}
+					else if (vao->isAttributeEnabled(MeshAttributes::TexCoordAttribute0)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::TexCoordAttribute0, *vbo)
+					) {
+						ret.texCoords.resize(vbo->size() / sizeof(glm::vec2));
+						vbo->read(ret.texCoords.data(), ret.texCoords.size());
+					}
+					else if (vao->isAttributeEnabled(MeshAttributes::JointIndexAttribute)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::JointIndexAttribute, *vbo)
+					) {
+						ret.jointIndices.resize(vbo->size() / sizeof(glm::u16vec4));
+						vbo->read(ret.jointIndices.data(), ret.jointIndices.size());
+					}
+					else if (vao->isAttributeEnabled(MeshAttributes::JointWeightAttribute)
+						&& vao->checkVertexAttributeVBOBound(MeshAttributes::JointWeightAttribute, *vbo)
+					) {
+						ret.jointWeights.resize(vbo->size() / sizeof(glm::vec4));
+						vbo->read(ret.jointWeights.data(), ret.jointWeights.size());
+					}
+				}
+			}
+
+			if (ibo && (ibo->getIndexType() == graphics::TypeId::UnsignedShort)) {
+				ret.indices.resize(ibo->getIndexCount());
+				ibo->read(ret.indices.data(), ret.indices.size());
+			}
+		});
+
+		gMesh.getParent()->wait();
 
 		return ret;
 	}

@@ -4,6 +4,7 @@
 #include <mutex>
 #include "Renderable.h"
 #include "RenderGraph.h"
+#include "Context.h"
 
 namespace se::graphics {
 
@@ -14,8 +15,9 @@ namespace se::graphics {
 	class GraphicsEngine
 	{
 	private:	// Attributes
-		/** The mutex used for blocking the access to the attributes */
-		std::mutex mMutex;
+		/** The graphics Context that holds the shared Bindables of the
+		 * GraphicsEngine */
+		Context mContext;
 
 		/** The Renderables that the GraphicsEngine will render */
 		std::vector<Renderable*> mRenderables;
@@ -23,21 +25,39 @@ namespace se::graphics {
 		/** The RenderGraph used for drawing the Renderables */
 		std::unique_ptr<RenderGraph> mRenderGraph;
 
+		/** The mutex used for blocking the access to @see mRenderables
+		 * and @see mRenderGraph */
+		std::mutex mMutex;
+
 	public:		// Functions
 		/** Creates a new Graphics System
 		 *
-		 * @throw	runtime_error if failed to initialize GLEW */
+		 * @throw	runtime_error if failed to initialize GLEW
+		 * @note	this function must be executed from the main graphics
+		 *			thread */
 		GraphicsEngine();
 
-		/** @return	the RenderGraph of the GraphicsEngine */
-		RenderGraph& getRenderGraph() { return *mRenderGraph; };
+		/** Class destructor */
+		~GraphicsEngine();
+
+		/** @return	the Context of the GraphicsEngine */
+		Context& getContext() { return mContext; };
 
 		/** Sets the RenderGraph used for drawing the Renderables
 		 *
 		 * @param	renderGraph a pointer to the new RenderGraph of the
 		 *			GraphicsEngine */
-		void setRenderGraph(std::unique_ptr<RenderGraph> renderGraph)
-		{ mRenderGraph = std::move(renderGraph); };
+		void setRenderGraph(std::unique_ptr<RenderGraph> renderGraph);
+
+		/** @return	a reference to the RenderGraph of the GraphicsEngine */
+		const RenderGraph& getRenderGraph() { return *mRenderGraph; };
+
+		/** Function used for accessing the RenderGraph in a thread safe way
+		 *
+		 * @param	callback the callback function that will be executed */
+		template <typename F>
+		void editRenderGraph(F&& callback)
+		{ std::scoped_lock lck(mMutex); callback(*mRenderGraph); }
 
 		/** Adds the given Renderable to the GraphicsEngine so it will be
 		 * rendered
@@ -51,7 +71,9 @@ namespace se::graphics {
 		 * @param	renderable a pointer to the Renderable to remove */
 		void removeRenderable(Renderable* renderable);
 
-		/** Draws all the Renderables */
+		/** Draws all the Renderables
+		 * @note	this function must be executed from the main graphics
+		 *			thread */
 		void render();
 	};
 

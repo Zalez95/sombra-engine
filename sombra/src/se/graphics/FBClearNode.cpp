@@ -14,9 +14,9 @@ namespace se::graphics {
 	}
 
 
-	void FBClearNode::execute()
+	void FBClearNode::execute(Context::Query& q)
 	{
-		bind();
+		bind(q);
 		GraphicsOperations::clear(mMask);
 	}
 

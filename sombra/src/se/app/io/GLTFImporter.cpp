@@ -4,6 +4,7 @@
 #include "GLMJSON.h"
 #include "GLTFImporter.h"
 #include "se/utils/MathUtils.h"
+#include "se/graphics/GraphicsEngine.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
 #include "se/app/AnimationComponent.h"
@@ -39,8 +40,8 @@ namespace se::app {
 
 	struct GLTFImporter::Sampler
 	{
-		graphics::TextureFilter filters[2];
-		graphics::TextureWrap wraps[2];
+		std::array<graphics::TextureFilter, 2> filters;
+		std::array<graphics::TextureWrap, 2> wraps;
 	};
 
 
@@ -48,8 +49,8 @@ namespace se::app {
 	{
 		std::string name;
 		Material material;
-		ShaderRef shader;
-		ShaderRef shaderSkin;
+		ShaderResource shader;
+		ShaderResource shaderSkin;
 	};
 
 
@@ -96,10 +97,10 @@ namespace se::app {
 
 	struct GLTFImporter::PrimitiveData
 	{
-		MeshRef mesh;
+		MeshResource mesh;
 		graphics::PrimitiveType primitiveType = graphics::PrimitiveType::Triangle;
 		bool hasSkin = false;
-		ShaderRef shader;
+		ShaderResource shader;
 	};
 
 
@@ -114,21 +115,21 @@ namespace se::app {
 		std::vector<BufferView> bufferViews;
 		std::vector<Sampler> samplers;
 		std::vector<Image<unsigned char>> images;
-		std::vector<TextureRef> textures;
+		std::vector<TextureResource> textures;
 		std::vector<MaterialShader> materials;
-		std::vector<MeshRef> meshes;
+		std::vector<MeshResource> meshes;
 		std::unordered_map<
 			PrimitiveMeshData, std::size_t,
 			PrimitiveMeshData::MyHash
 		> primitiveMeshes;
 		std::vector<std::vector<PrimitiveData>> primitives;
-		std::vector<LightSourceRef> lightSources;
-		std::vector<SkinRef> skins;
+		std::vector<LightSourceResource> lightSources;
+		std::vector<SkinResource> skins;
 		std::vector<IndexVector> jointIndices;
 		std::vector<CameraComponent> cameraComponents;
 		std::vector<Node> nodes;
 		std::vector<SceneUPtr> scenes;
-		std::vector<SAnimatorRef> skeletonAnimators;
+		std::vector<SAnimatorResource> skeletonAnimators;
 
 		GLTFData(Scene& scene) : scene(scene) {};
 	};
@@ -270,7 +271,8 @@ namespace se::app {
 	}
 
 
-	GLTFImporter::GLTFImporter(ShaderBuilder& shaderBuilder) : SceneImporter(shaderBuilder) {}
+	GLTFImporter::GLTFImporter(ShaderBuilder& shaderBuilder) :
+		SceneImporter(shaderBuilder) {}
 
 
 	GLTFImporter::~GLTFImporter() {}
@@ -718,7 +720,9 @@ namespace se::app {
 
 	Result GLTFImporter::parseTexture(const nlohmann::json& jsonTexture)
 	{
-		auto texture = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
+		auto& context = mGLTFData->scene.application.getExternalTools().graphicsEngine->getContext();
+
+		auto texture = context.create<graphics::Texture>(graphics::TextureTarget::Texture2D);
 		if (!texture) {
 			return Result(false, "Failed to create the texture");
 		}
@@ -736,7 +740,10 @@ namespace se::app {
 				return Result(false, "Source index " + std::to_string(sourceId) + " out of range");
 			}
 
-			const Image<unsigned char>& image = mGLTFData->images[sourceId];
+			Image<unsigned char> image = copy(mGLTFData->images[sourceId]);
+			std::shared_ptr<unsigned char[]> pixels = std::move(image.pixels);
+			std::size_t width = image.width;
+			std::size_t height = image.height;
 
 			graphics::ColorFormat format = graphics::ColorFormat::RGB;
 			switch (image.channels) {
@@ -746,7 +753,9 @@ namespace se::app {
 				case 4:	format = graphics::ColorFormat::RGBA;	break;
 			}
 
-			texture->setImage(image.pixels.get(), se::graphics::TypeId::UnsignedByte, format, format, image.width, image.height);
+			texture.edit([=] (graphics::Texture& tex) {
+				tex.setImage(pixels.get(), se::graphics::TypeId::UnsignedByte, format, format, width, height);
+			});
 		}
 
 		auto itSampler = jsonTexture.find("sampler");
@@ -756,7 +765,7 @@ namespace se::app {
 				return Result(false, "Sampler index " + std::to_string(samplerId) + " out of range");
 			}
 
-			const Sampler& sampler = mGLTFData->samplers[samplerId];
+			Sampler sampler = mGLTFData->samplers[samplerId];
 			if ((sampler.filters[0] == graphics::TextureFilter::NearestMipMapNearest)
 				|| (sampler.filters[1] == graphics::TextureFilter::NearestMipMapNearest)
 				|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapNearest)
@@ -766,14 +775,18 @@ namespace se::app {
 				|| (sampler.filters[0] == graphics::TextureFilter::LinearMipMapLinear)
 				|| (sampler.filters[1] == graphics::TextureFilter::LinearMipMapLinear)
 			) {
-				texture->generateMipMap();
+				texture.edit([](graphics::Texture& tex) {
+					tex.generateMipMap();
+				});
 			}
 
-			texture->setFiltering(sampler.filters[0], sampler.filters[1]);
-			texture->setWrapping(sampler.wraps[0], sampler.wraps[1]);
+			texture.edit([=](graphics::Texture& tex) {
+				tex.setFiltering(sampler.filters[0], sampler.filters[1]);
+				tex.setWrapping(sampler.wraps[0], sampler.wraps[1]);
+			});
 		}
 
-		auto textureRef = mGLTFData->scene.repository.insert(std::move(texture), name.c_str());
+		auto textureRef = mGLTFData->scene.repository.insert(std::make_shared<TextureRef>(texture), name.c_str());
 		if (!textureRef) {
 			return Result(false, "Can't add Texture with name " + name);
 		}
@@ -1699,8 +1712,22 @@ namespace se::app {
 	}
 
 
-	Result GLTFImporter::createMesh(const PrimitiveMeshData& primitiveMesh, MeshRef& out) const
+	Result GLTFImporter::createMesh(const PrimitiveMeshData& primitiveMesh, MeshResource& out)
 	{
+		struct VBOData
+		{
+			unsigned int attribute;
+			Accessor accessor;
+			BufferView bufferView;
+			Buffer buffer;
+		};
+		struct IBOData
+		{
+			Accessor accessor;
+			BufferView bufferView;
+			Buffer buffer;
+		};
+
 		// Check if the Mesh has already been created
 		auto itMesh = mGLTFData->primitiveMeshes.find(primitiveMesh);
 		if (itMesh != mGLTFData->primitiveMeshes.end()) {
@@ -1708,51 +1735,37 @@ namespace se::app {
 			return Result();
 		}
 
-		// Create the VAO
-		graphics::VertexArray vao;
-		vao.bind();
-
-		// Create the VBOs
-		std::vector<graphics::VertexBuffer> vbos;
+		// Copy the mesh vertex data
+		std::vector<VBOData> vbosData;
 		glm::vec3 minPosition(0.0f), maxPosition(0.0f);
-		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) { if (primitiveMesh.hasAttribute[i]) {
-			if (primitiveMesh.attributeAccessor[i] >= mGLTFData->accessors.size()) {
-				return Result(false, "Attribute index " + std::to_string(primitiveMesh.attributeAccessor[i]) + " out of range");
-			}
+		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) {
+			if (primitiveMesh.hasAttribute[i]) {
+				if (primitiveMesh.attributeAccessor[i] >= mGLTFData->accessors.size()) {
+					return Result(false, "Attribute index " + std::to_string(primitiveMesh.attributeAccessor[i]) + " out of range");
+				}
 
-			const Accessor& a = mGLTFData->accessors[primitiveMesh.attributeAccessor[i]];
-			const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
-			const Buffer& b = mGLTFData->buffers[bv.bufferId];
+				Accessor a = mGLTFData->accessors[primitiveMesh.attributeAccessor[i]];
+				BufferView bv = mGLTFData->bufferViews[a.bufferViewId];
+				Buffer b = mGLTFData->buffers[bv.bufferId];
+				vbosData.push_back({ i, a, bv, b });
 
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length);
-
-			// Add the VBO to the VAO
-			vbo.bind();
-			vao.enableAttribute(i);
-			if (i == MeshAttributes::JointIndexAttribute) {
-				vao.setVertexIntegerAttribute(i, a.componentTypeId, static_cast<int>(a.numComponents), bv.stride);
-			}
-			else {
-				vao.setVertexAttribute(i, a.componentTypeId, a.normalized, static_cast<int>(a.numComponents), bv.stride);
-			}
-
-			if (i == MeshAttributes::PositionAttribute) {
-				for (int j = 0; j < 3; ++j) {
-					minPosition[j] = a.minimum[j].f;
-					maxPosition[j] = a.maximum[j].f;
+				if (i == MeshAttributes::PositionAttribute) {
+					for (int j = 0; j < 3; ++j) {
+						minPosition[j] = a.minimum[j].f;
+						maxPosition[j] = a.maximum[j].f;
+					}
 				}
 			}
-		}}
+		}
 
-		// Create the IBO
 		if (primitiveMesh.indicesIndex >= mGLTFData->accessors.size()) {
 			return Result(false, "Accessor index " + std::to_string(primitiveMesh.indicesIndex) + " out of range");
 		}
 
-		const Accessor& a = mGLTFData->accessors[primitiveMesh.indicesIndex];
-		const BufferView& bv = mGLTFData->bufferViews[a.bufferViewId];
-		const Buffer& b = mGLTFData->buffers[bv.bufferId];
+		Accessor a = mGLTFData->accessors[primitiveMesh.indicesIndex];
+		BufferView bv = mGLTFData->bufferViews[a.bufferViewId];
+		Buffer b = mGLTFData->buffers[bv.bufferId];
+		IBOData iboData = { a, bv, b };
 
 		if ((a.componentTypeId != graphics::TypeId::UnsignedByte)
 			&& (a.componentTypeId != graphics::TypeId::UnsignedShort)
@@ -1769,22 +1782,62 @@ namespace se::app {
 			return Result(false, "BufferView " + std::to_string(a.bufferViewId) + " (optional) target must be ElementArray");
 		}
 
-		graphics::IndexBuffer ibo;
-		ibo.resizeAndCopy(b.data() + bv.offset + a.byteOffset, bv.length, a.componentTypeId, a.count);
-
-		ibo.bind();
-
 		// Create a new Mesh
-		auto mesh = std::make_shared<graphics::Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-		mesh->setBounds(minPosition, maxPosition);
-		mGLTFData->meshes.emplace_back(out);
-		mGLTFData->primitiveMeshes.emplace(primitiveMesh, mGLTFData->meshes.size() - 1);
+		auto& context = mGLTFData->scene.application.getExternalTools().graphicsEngine->getContext();
+		auto meshRef = context.create<graphics::Mesh>();
+		meshRef.edit([=](graphics::Mesh& mesh) {
+			// Create the VAO
+			auto vao = std::make_unique<graphics::VertexArray>();
+
+			// Create the VBOs
+			std::vector<std::unique_ptr<graphics::VertexBuffer>> vbos;
+			for (const VBOData& vboData : vbosData) {
+				auto vbo = std::make_unique<graphics::VertexBuffer>();
+				vbo->resizeAndCopy(vboData.buffer.data() + vboData.bufferView.offset + vboData.accessor.byteOffset, vboData.bufferView.length);
+
+				// Add the VBO to the VAO
+				vao->bind();
+				vbo->bind();
+
+				vao->enableAttribute(vboData.attribute);
+				if (vboData.attribute == MeshAttributes::JointIndexAttribute) {
+					vao->setVertexIntegerAttribute(
+						vboData.attribute,
+						vboData.accessor.componentTypeId, static_cast<int>(vboData.accessor.numComponents), vboData.bufferView.stride
+					);
+				}
+				else {
+					vao->setVertexAttribute(
+						vboData.attribute,
+						vboData.accessor.componentTypeId, vboData.accessor.normalized, static_cast<int>(vboData.accessor.numComponents), vboData.bufferView.stride
+					);
+				}
+
+				vbos.push_back(std::move(vbo));
+			}
+
+			// Create the IBO
+			auto ibo = std::make_unique<graphics::IndexBuffer>();
+			ibo->resizeAndCopy(
+				iboData.buffer.data() + iboData.bufferView.offset + iboData.accessor.byteOffset, iboData.bufferView.length,
+				iboData.accessor.componentTypeId, iboData.accessor.count
+			);
+
+			vao->bind();
+			ibo->bind();
+
+			mesh.setBuffers(std::move(vbos), std::move(ibo), std::move(vao))
+				.setBounds(minPosition, maxPosition);
+		});
 
 		std::string name = mGLTFData->fileName + "_mesh" + std::to_string(PrimitiveMeshData::MyHash()(primitiveMesh));
-		out = mGLTFData->scene.repository.insert(std::move(mesh), name.c_str());
+		out = mGLTFData->scene.repository.insert(std::make_shared<MeshRef>(meshRef), name.c_str());
 		if (!out) {
 			return Result(false, "Can't add Mesh with name " + name);
 		}
+
+		mGLTFData->meshes.emplace_back(out);
+		mGLTFData->primitiveMeshes.emplace(primitiveMesh, mGLTFData->meshes.size() - 1);
 
 		return Result();
 	}

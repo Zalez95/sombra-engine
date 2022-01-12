@@ -45,11 +45,11 @@ namespace se::graphics {
 	}
 
 
-	void FBCopyNode::execute()
+	void FBCopyNode::execute(Context::Query& q)
 	{
-		auto fb1 = std::dynamic_pointer_cast<FrameBuffer>( getBindable(mFrameBuffer1Index) );
-		auto fb2 = std::dynamic_pointer_cast<FrameBuffer>( getBindable(mFrameBuffer2Index) );
-		fb1->copy(*fb2, mMask, mX0, mY0, mW0, mH0, mX1, mY1, mW1, mH1, mFilter);
+		auto fb1 = Context::TBindableRef<FrameBuffer>::from( getBindable(mFrameBuffer1Index) );
+		auto fb2 = Context::TBindableRef<FrameBuffer>::from( getBindable(mFrameBuffer2Index) );
+		q.getTBindable(fb1)->copy(*q.getTBindable(fb2), mMask, mX0, mY0, mW0, mH0, mX1, mY1, mW1, mH1, mFilter);
 	}
 
 }

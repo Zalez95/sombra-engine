@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "Result.h"
-#include "../../graphics/GraphicsEngine.h"
 #include "../../graphics/2D/Font.h"
 
 namespace se::app {
@@ -21,6 +20,8 @@ namespace se::app {
 	public:		// Functions
 		/** Reads the font located at the given path
 		 *
+		 * @param	context the graphics Context used for creating the Font
+		 *			Bindables
 		 * @param	path the location of the Font
 		 * @param	characterSet the set of characters to load to the Font. If
 		 *			a character is not found in the Font it won't be loaded
@@ -32,6 +33,7 @@ namespace se::app {
 		 * @note	if the atlas texture isn't big enough to hold all the
 		 *			characters some of them won't be added to the Font */
 		static Result read(
+			graphics::Context& context,
 			const char* path,
 			const std::vector<char>& characterSet,
 			const glm::uvec2& characterSize,

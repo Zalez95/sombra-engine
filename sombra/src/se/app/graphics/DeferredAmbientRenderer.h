@@ -1,20 +1,18 @@
 #ifndef DEFERRED_AMBIENT_RENDERER_H
 #define DEFERRED_AMBIENT_RENDERER_H
 
+#include <glm/glm.hpp>
 #include "se/graphics/BindableRenderNode.h"
-#include "se/graphics/core/Program.h"
-#include "se/graphics/core/UniformVariable.h"
-#include "se/graphics/3D/Mesh.h"
-#include "se/app/Repository.h"
 
 namespace se::app {
 
 	/**
-	 * Class DeferredAmbientRenderer, It's the renderer used for calculating the
-	 * ambient lighting with the given g-buffer framebuffers.
+	 * Class DeferredAmbientRenderer, It's the renderer used for calculating
+	 * the ambient lighting with the given g-buffer framebuffers.
 	 * It has a Framebuffer "target" input and output, and "irradiance",
 	 * "prefilter", "brdf", "position", "normal", "albedo", "material" and
-	 * "emissive" Texture inputs
+	 * "emissive" Texture inputs. It also has a "plane" input where a plane
+	 * Mesh must be attached for rendering
 	 */
 	class DeferredAmbientRenderer : public graphics::BindableRenderNode
 	{
@@ -33,23 +31,21 @@ namespace se::app {
 		};
 
 	private:	// Attributes
-		/** The program used by the DeferredAmbientRenderer */
-		Repository::ResourceRef<graphics::Program> mProgram;
+		/** The index of the plane Mesh used for rendering */
+		std::size_t mPlaneIndex;
 
-		/** The plane used for rendering */
-		Repository::ResourceRef<graphics::Mesh> mPlane;
-
-		/** The uniform variable that the Camera location in world space */
-		std::shared_ptr<graphics::UniformVariableValue<glm::vec3>>
-			mViewPosition;
+		/** The index of the uniform variable that the Camera location in
+		 * world space */
+		std::size_t mViewPositionIndex;
 
 	public:
 		/** Creates a new DeferredAmbientRenderer
 		 *
 		 * @param	name the name of the RenderNode
-		 * @param	repository the Repository that holds the programs */
+		 * @param	context the Context used for creating the RenderNode
+		 *			Bindables */
 		DeferredAmbientRenderer(
-			const std::string& name, Repository& repository
+			const std::string& name, graphics::Context& context
 		);
 
 		/** Class destructor */
@@ -60,8 +56,8 @@ namespace se::app {
 		 * @param	position the new Camera location in world space */
 		void setViewPosition(const glm::vec3& position);
 
-		/** Executes the current RenderNode */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 	};
 
 }

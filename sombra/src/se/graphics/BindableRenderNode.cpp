@@ -2,20 +2,20 @@
 
 namespace se::graphics {
 
-	std::size_t BindableRenderNode::addBindable(BindableSPtr bindable, bool mustBind)
+	std::size_t BindableRenderNode::addBindable(const Context::BindableRef& bindable, bool mustBind)
 	{
 		mBindables.emplace(bindable, mustBind);
 		return mBindables.size() - 1;
 	}
 
 
-	BindableRenderNode::BindableSPtr BindableRenderNode::getBindable(std::size_t bindableIndex) const
+	const Context::BindableRef& BindableRenderNode::getBindable(std::size_t bindableIndex) const
 	{
 		return mBindables[bindableIndex].first;
 	}
 
 
-	void BindableRenderNode::setBindable(std::size_t bindableIndex, const BindableSPtr& bindable)
+	void BindableRenderNode::setBindable(std::size_t bindableIndex, const Context::BindableRef& bindable)
 	{
 		mBindables[bindableIndex].first = bindable;
 		iterateOutputs([&](RNodeOutput& output) {
@@ -34,21 +34,21 @@ namespace se::graphics {
 	}
 
 
-	void BindableRenderNode::bind() const
+	void BindableRenderNode::bind(Context::Query& q) const
 	{
 		for (auto& [bindable, mustBind] : mBindables) {
 			if (bindable && mustBind) {
-				bindable->bind();
+				q.getBindable(bindable)->bind();
 			}
 		}
 	}
 
 
-	void BindableRenderNode::unbind() const
+	void BindableRenderNode::unbind(Context::Query& q) const
 	{
 		for (auto& [bindable, mustBind] : mBindables) {
 			if (bindable && mustBind) {
-				bindable->unbind();
+				q.getBindable(bindable)->unbind();
 			}
 		}
 	}

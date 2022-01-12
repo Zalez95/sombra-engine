@@ -1,9 +1,11 @@
 #ifndef MESH_LOADER_H
 #define MESH_LOADER_H
 
+#include "../../graphics/Context.h"
 #include "../../graphics/3D/Mesh.h"
 #include "../../physics/collision/HalfEdgeMesh.h"
 #include "../graphics/RawMesh.h"
+#include "../graphics/TypeRefs.h"
 
 namespace se::app {
 
@@ -15,16 +17,20 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a Graphics Mesh with the given RawMesh
 		 *
+		 * @param	context the Context used for creating the graphics mesh
 		 * @param	rawMesh the data with which we will create the graphics
 		 *			mesh
 		 * @return	the new Graphics Mesh */
-		static graphics::Mesh createGraphicsMesh(const RawMesh& rawMesh);
+		static
+		MeshRef createGraphicsMesh(
+			graphics::Context& context, const RawMesh& rawMesh
+		);
 
 		/** Creates a RawMesh with the given Graphics Mesh data
 		 *
 		 * @param	gMesh the GraphicsMesh with which we will create the RawMesh
 		 * @return	the new RawMesh */
-		static RawMesh createRawMesh(const graphics::Mesh& gMesh);
+		static RawMesh createRawMesh(const MeshRef& gMesh);
 
 		/** Calculates the Bounds of the given RawMesh
 		 *

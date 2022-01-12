@@ -14,17 +14,17 @@ namespace se::graphics {
 	}
 
 
-	void RendererMesh::render()
+	void RendererMesh::render(Context::Query& q)
 	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
 				lastPass = pass;
-				pass->bind();
+				pass->bind(q);
 			}
 
-			renderable->bind(pass);
-			renderable->draw();
+			renderable->bind(q, pass);
+			renderable->draw(q);
 		}
 	}
 

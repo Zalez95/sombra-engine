@@ -114,7 +114,7 @@ namespace se::app {
 	class ScriptComponent
 	{
 	public:		// Nested types
-		using ScriptRef = Repository::ResourceRef<Script>;
+		using ScriptResource = Repository::ResourceRef<Script>;
 
 	private:	// Attributes
 		/** The EventManager used for notifying the ScriptComponent changes */
@@ -124,7 +124,7 @@ namespace se::app {
 		Entity mEntity = kNullEntity;
 
 		/** The Script to execute */
-		ScriptRef mScript;
+		ScriptResource mScript;
 
 	public:		// Functions
 		/** Sets the ScriptComponent attributes
@@ -134,12 +134,12 @@ namespace se::app {
 		void setup(EventManager* eventManager, Entity entity);
 
 		/** @return	the current Script of the ScriptComponent */
-		const ScriptRef& getScript() const { return mScript; };
+		const ScriptResource& getScript() const { return mScript; };
 
 		/** Changes the Script of the ScriptComponent
 		 *
 		 * @param	script the new Script of the ScriptComponent */
-		void setScript(const ScriptRef& script);
+		void setScript(const ScriptResource& script);
 
 		/** Function called when the ScriptComponent is added to an Entity
 		 *

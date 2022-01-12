@@ -4,6 +4,7 @@
 #include <memory>
 #include "Mesh.h"
 #include "Renderable3D.h"
+#include "../Context.h"
 
 namespace se::graphics {
 
@@ -12,12 +13,9 @@ namespace se::graphics {
 	 */
 	class RenderableMesh : public Renderable3D
 	{
-	private:	// Nested types
-		using MeshSPtr = std::shared_ptr<Mesh>;
-
 	private:	// Attributes
 		/** The Mesh of the RenderableMesh */
-		MeshSPtr mMesh;
+		Context::TBindableRef<Mesh> mMesh;
 
 		/** The type of primitive used for rendering @see mMesh */
 		PrimitiveType mPrimitiveType;
@@ -30,25 +28,39 @@ namespace se::graphics {
 		 * world space */
 		glm::vec3 mMaximum = {};
 
+		/** If @see mMinimum and @see mMaximum should be updated or not */
+		bool mUpdateBounds = true;
+
 		/** The matrix that transforms from local space to world space */
 		glm::mat4 mModelMatrix = glm::mat4(1.0f);
 
 	public:		// Functions
 		/** Creates a new RenderableMesh
 		 *
-		 * @param	mesh a pointer to the Mesh of the RenderableMesh
+		 * @param	mesh a reference to the Mesh of the RenderableMesh
 		 * @param	primitiveType the type of primitive used for rendering */
 		RenderableMesh(
-			MeshSPtr mesh = nullptr,
+			const Context::TBindableRef<Mesh>& mesh = {},
 			PrimitiveType primitiveType = PrimitiveType::Triangle
-		);
+		) : mMesh(mesh), mPrimitiveType(primitiveType) {};
 
 		/** @return	the Mesh pointed by the RenderableMesh */
-		MeshSPtr getMesh() const { return mMesh; };
+		const Context::TBindableRef<Mesh>& getMesh() const { return mMesh; };
+
+		/** Sets the Mesh pointed by the RenderableMesh
+		 *
+		 * @param	mesh a reference to the new Mesh pointed by the
+		 *			RenderableMesh
+		 * @return	a reference to the current RenderableMesh */
+		RenderableMesh& setMesh(const Context::TBindableRef<Mesh>& mesh);
 
 		/** @return	the primitive type used for rendering by the
 		 *			RenderableMesh */
 		PrimitiveType getPrimitiveType() const { return mPrimitiveType; };
+
+		/** @return	the local space to world space matrix */
+		const glm::mat4& getModelMatrix() const
+		{ return mModelMatrix; };
 
 		/** Sets the model matrix
 		 *
@@ -56,23 +68,18 @@ namespace se::graphics {
 		 * @return	a reference to the current RenderableMesh object */
 		RenderableMesh& setModelMatrix(const glm::mat4& modelMatrix);
 
-		/** @return	the local space to world space matrix */
-		const glm::mat4& getModelMatrix() const
-		{ return mModelMatrix; };
-
-		/** Sets the Mesh pointed by the RenderableMesh
-		 *
-		 * @param	mesh a pointer to the new Mesh pointed by the
-		 *			RenderableMesh
-		 * @return	a reference to the current RenderableMesh */
-		RenderableMesh& setMesh(MeshSPtr mesh);
-
 		/** @copydoc Renderable3D::getBounds() */
 		virtual std::pair<glm::vec3, glm::vec3> getBounds() const override
 		{ return { mMinimum, mMaximum }; };
 
-		/** Draws the current RenderableMesh (drawcall) */
-		void draw();
+		/** @copydoc Renderable::submit(Context::Query&) */
+		virtual void submit(Context::Query& q) override;
+
+		/** Draws the current RenderableMesh (drawcall)
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		void draw(Context::Query& q);
 	};
 
 }

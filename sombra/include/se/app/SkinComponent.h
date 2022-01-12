@@ -32,7 +32,7 @@ namespace se::app {
 	class SkinComponent
 	{
 	public:		// Nested types
-		using SkinRef = Repository::ResourceRef<Skin>;
+		using SkinResource = Repository::ResourceRef<Skin>;
 		using MapNodeJoint = utils::FixedVector<
 			std::pair<animation::AnimationNode*, std::size_t>,
 			Skin::kMaxJoints
@@ -44,7 +44,7 @@ namespace se::app {
 
 		/** A pointer to the Skin that is going to be used for the Skinning
 		 * animation */
-		SkinRef mSkin;
+		SkinResource mSkin;
 
 		/** Maps the AnimationNodes with their respective joint indices in
 		 * @see skin */
@@ -59,7 +59,7 @@ namespace se::app {
 		 * @param	jointIndices maps each AnimationNode with its respective
 		 *			joint index in the skin */
 		SkinComponent(
-			animation::AnimationNode* root, const SkinRef& skin,
+			animation::AnimationNode* root, const SkinResource& skin,
 			MapNodeJoint jointIndices = {}
 		) : mRoot(root), mSkin(skin), mJointIndices(jointIndices) {};
 
@@ -67,7 +67,7 @@ namespace se::app {
 		animation::AnimationNode* getRoot() const { return mRoot; };
 
 		/** @return	a pointer to the Skin used by the SkinComponent */
-		const SkinRef& getSkin() const { return mSkin; };
+		const SkinResource& getSkin() const { return mSkin; };
 
 		/** @return	a vector that maps each AnimationNode with its respective
 		 *			joint index in the skin */

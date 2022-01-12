@@ -1,13 +1,15 @@
 #ifndef I_VIEW_PROJECTION_UPDATER_H
 #define I_VIEW_PROJECTION_UPDATER_H
 
+#include <queue>
 #include <unordered_map>
+#include <future>
 #include <glm/glm.hpp>
 #include "se/graphics/Pass.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/Renderable.h"
-#include "se/graphics/core/UniformVariable.h"
 #include "se/utils/PackedVector.h"
+#include "se/app/graphics/TypeRefs.h"
 
 namespace se::app {
 
@@ -21,8 +23,6 @@ namespace se::app {
 		using PassSPtr = std::shared_ptr<graphics::Pass>;
 		using TechniqueSPtr = std::shared_ptr<graphics::Technique>;
 		using IndexVector = std::vector<std::size_t>;
-		using Mat4Uniform = graphics::UniformVariableValue<glm::mat4>;
-		using Mat4UniformSPtr = std::shared_ptr<Mat4Uniform>;
 
 		/** Struct PassData, holds the shared Pass uniform variables between the
 		 * Techniques */
@@ -30,8 +30,8 @@ namespace se::app {
 		{
 			std::size_t userCount = 0;
 			PassSPtr pass;
-			Mat4UniformSPtr viewMatrix;
-			Mat4UniformSPtr projectionMatrix;
+			UniformVVRef<glm::mat4> viewMatrix;
+			UniformVVRef<glm::mat4> projectionMatrix;
 		};
 
 		/** Struct TechniqueData, holds the shared Technique data between the
@@ -43,7 +43,20 @@ namespace se::app {
 			IndexVector passIndices;
 		};
 
+		/** Holds the data of the new uniforms to process */
+		struct NewUniform
+		{
+			/** First bit tells if its view (0) or projection (1) matrix,
+			 * second one if it's inside the pass (0) or a new one (1) */
+			unsigned char type;
+			PassSPtr pass;
+			std::future<UniformVVRef<glm::mat4>> uniformMat;
+		};
+
 	protected:	// Attributes
+		/** The graphics Context used for creating the uniforms */
+		graphics::Context& mContext;
+
 		/** The name of the View matrix uniform variable */
 		std::string mViewMatUniformName;
 
@@ -60,25 +73,30 @@ namespace se::app {
 		std::unordered_map<graphics::Renderable*, IndexVector>
 			mRenderableTechniques;
 
+		/** The new uniforms to add to passes, it's needed because
+		 * we can't use @see mMutex inside the Context functions */
+		std::queue<NewUniform> mNewUniforms;
+
+		/** The mutex used for protecting the attributes of the
+		 * IViewProjectionUpdater */
+		std::mutex mMutex;
+
 	public:		// Functions
 		/** Creates a new IViewProjectionUpdater
 		 *
+		 * @param	context the graphics Context used for creating the uniforms
 		 * @param	viewMatUniformName the name of the View matrix uniform
 		 *			variable
 		 * @param	projectionMatUniform Name te name of the Projection matrix
 		 *			uniform variable */
 		IViewProjectionUpdater(
+			graphics::Context& context,
 			const char* viewMatUniformName,
 			const char* projectionMatUniformName
 		);
 
 		/** Class destructor */
 		virtual ~IViewProjectionUpdater() = default;
-
-		/** Removes the given Renderable
-		 *
-		 * @param	renderable the Renderable to remove */
-		void removeRenderable(graphics::Renderable& renderable);
 
 		/** Adds the given Renderable with the given Technique to the
 		 * IViewProjectionUpdater so its passes be updated with the new view
@@ -116,17 +134,31 @@ namespace se::app {
 			const TechniqueSPtr& technique, const PassSPtr& pass
 		);
 
-		/** Updates the Passes uniform variables with the new view and
-		 * projection matrix
+		/** Creates and submits the operations used for updating the Passes
+		 * uniform variables with the new view and projection matrix
 		 *
 		 * @param	viewMatrix the new value of the view matrix
 		 * @param	projectionMatrix the new value of the projection matrix */
-		void update(
+		void updateUniformsDeferred(
+			const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
+		);
+
+		/** Updates the Passes uniform variables with the new view and
+		 * projection matrix
+		 *
+		 * @param	q the graphics Context Query object used for accesing the
+		 *			uniforms bindables
+		 * @param	viewMatrix the new value of the view matrix
+		 * @param	projectionMatrix the new value of the projection matrix
+		 * @note	this function must be called from the main graphics
+		 *			thread */
+		void updateUniforms(
+			graphics::Context::Query& q,
 			const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
 		);
 	protected:
 		/** Checks if the IViewProjectionUpdater must add the uniform variables
-		 * to the given Technique
+		 * to the given Pass
 		 *
 		 * @param	pass a pointer to the Pass to check
 		 * @return	true if the uniform variables must be added to the Pass,
@@ -151,6 +183,9 @@ namespace se::app {
 		 *
 		 * @param	iTechnique the index of the Technique */
 		void removeTechnique(std::size_t iTechnique);
+
+		/** Processes all the new uniform matrices added on @see addPass */
+		void processNewUniforms();
 	};
 
 }

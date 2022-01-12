@@ -18,15 +18,16 @@ namespace se::app {
 	class MeshComponent
 	{
 	private:	// Nested types
-		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
-		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
+		using MeshResource = Repository::ResourceRef<MeshRef>;
+		using RenderableShaderResource =
+			Repository::ResourceRef<RenderableShader>;
 
 		struct RMesh
 		{
 			bool active = false;
 			bool hasSkinning = false;
-			MeshRef mesh;
-			std::vector<RenderableShaderRef> shaders;
+			MeshResource mesh;
+			std::vector<RenderableShaderResource> shaders;
 			graphics::RenderableMesh renderable;
 		};
 
@@ -61,11 +62,7 @@ namespace se::app {
 		 *
 		 * @param	eventManager the new EventManager of the MeshComponent
 		 * @param	entity the new Entity of the MeshComponent */
-		void setup(EventManager* eventManager, Entity entity)
-		{
-			mEventManager = eventManager;
-			mEntity = entity;
-		};
+		void setup(EventManager* eventManager, Entity entity);
 
 		/** @return	true if no more RenderableMeshes can be added, false
 		 *			otherwise */
@@ -78,6 +75,20 @@ namespace se::app {
 		/** @return	true if there is at least one RenderableMesh added, false
 		 *			otherwise */
 		bool any() const;
+
+		/** Returns if the selected RenderableMesh is active or not
+		 *
+		 * @param	rIndex the index of the RenderableMesh
+		 * @return	true if it's active, false otherwise */
+		bool isActive(std::size_t rIndex) const
+		{ return mRMeshes[rIndex].active; };
+
+		/** Returns if the selected RenderableMesh has skinning or not
+		 *
+		 * @param	rIndex the index of the RenderableMesh
+		 * @return	true if the RenderableMesh has skinning, false otherwise */
+		bool hasSkinning(std::size_t rIndex) const
+		{ return mRMeshes[rIndex].hasSkinning; };
 
 		/** Returns the selected RenderableMesh
 		 *
@@ -93,25 +104,18 @@ namespace se::app {
 		const graphics::RenderableMesh& get(std::size_t rIndex) const
 		{ return mRMeshes[rIndex].renderable; };
 
-		/** Returns if the selected RenderableMesh has skinning or not
-		 *
-		 * @param	rIndex the index of the RenderableMesh
-		 * @return	true if the RenderableMesh has skinning, false otherwise */
-		bool hasSkinning(std::size_t rIndex) const
-		{ return mRMeshes[rIndex].hasSkinning; };
-
 		/** Returns the selected Mesh
 		 *
 		 * @param	rIndex the index of the Mesh
 		 * @return	the Mesh */
-		const MeshRef& getMesh(std::size_t rIndex) const
+		const MeshResource& getMesh(std::size_t rIndex) const
 		{ return mRMeshes[rIndex].mesh; };
 
 		/** Sets the Mesh of the given RenderableMesh
 		 *
 		 * @param	rIndex the index of the RenderableMesh
 		 * @param	mesh a pointer to the new Mesh of the RenderableMesh */
-		void setMesh(std::size_t rIndex, MeshRef mesh);
+		void setMesh(std::size_t rIndex, const MeshResource& mesh);
 
 		/** Adds a new RenderableMesh to the RenderableComponent
 		 *
@@ -121,7 +125,7 @@ namespace se::app {
 		 * @return	the index used for accesing the new RenderableMesh */
 		std::size_t add(
 			bool hasSkinning = false,
-			MeshRef mesh = MeshRef(),
+			const MeshResource& mesh = {},
 			graphics::PrimitiveType primitiveType =
 				graphics::PrimitiveType::Triangle
 		);
@@ -154,7 +158,7 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to update
 		 * @param	shader a pointer to the shader to add */
 		void addRenderableShader(
-			std::size_t rIndex, const RenderableShaderRef& shader
+			std::size_t rIndex, const RenderableShaderResource& shader
 		);
 
 		/** Iterates through all the RenderableShaders of the given
@@ -175,7 +179,7 @@ namespace se::app {
 		 * @param	rIndex the index of the RenderableMesh to update
 		 * @param	shader a pointer to the shader to remove */
 		void removeRenderableShader(
-			std::size_t rIndex, const RenderableShaderRef& shader
+			std::size_t rIndex, const RenderableShaderResource& shader
 		);
 	};
 

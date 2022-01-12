@@ -112,7 +112,7 @@ namespace se::app {
 	}
 
 
-	void Label::setFont(FontRef font)
+	void Label::setFont(const FontResource& font)
 	{
 		mFont = font;
 		updateRenderableTexts();

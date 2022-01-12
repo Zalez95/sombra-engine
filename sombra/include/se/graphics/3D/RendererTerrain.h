@@ -27,17 +27,17 @@ namespace se::graphics {
 			std::size_t mNumVertices;
 
 			/** The VBO that holds the patch vertices position */
-			VertexBuffer mVBOXZPositions;
+			Context::TBindableRef<VertexBuffer> mVBOXZPositions;
 
 			/** The VBO that holds the location of the patch instances in local
 			 * space */
-			VertexBuffer mVBOXZLocations;
+			Context::TBindableRef<VertexBuffer> mVBOXZLocations;
 
 			/** The VBO that holds the lods of the patch instances */
-			VertexBuffer mVBOLods;
+			Context::TBindableRef<VertexBuffer> mVBOLods;
 
 			/** The VAO of the patch */
-			VertexArray mVAO;
+			Context::TBindableRef<VertexArray> mVAO;
 
 			/** The number of instances to render */
 			std::size_t mInstanceCount;
@@ -51,9 +51,13 @@ namespace se::graphics {
 		public:		// Functions
 			/** Creates a new Patch
 			 *
+			 * @param	context the graphics Context used for creating the
+			 *			Bindables
 			 * @param	vertices a pointer to the vertices of the patch
 			 * @param	numVertices the number of vertices */
-			Patch(const float* vertices, std::size_t numVertices);
+			Patch(
+				Context& context, const float* vertices, std::size_t numVertices
+			);
 
 			/** Adds an instance to draw
 			 *
@@ -61,8 +65,11 @@ namespace se::graphics {
 			 * @param	lod the lod of the instance */
 			void submitInstance(const glm::vec2& nodeLocation, int lod);
 
-			/** Draws all the instances of the patch */
-			void drawInstances();
+			/** Draws all the instances of the patch
+			 *
+			 * @param	q the Context Query object used for accesing to the
+			 *			Bindables */
+			void drawInstances(Context::Query& q);
 		};
 
 	protected:	// Attributes
@@ -83,8 +90,10 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new RendererTerrain
 		 *
-		 * @param	name the name of the new RendererTerrain */
-		RendererTerrain(const std::string& name);
+		 * @param	name the name of the new RendererTerrain
+		 * @param	context the graphics Context used for creating the
+		 *			Bindables */
+		RendererTerrain(const std::string& name, Context& context);
 
 		/** Class destructor */
 		virtual ~RendererTerrain() = default;
@@ -92,8 +101,8 @@ namespace se::graphics {
 		/** @copydoc Renderer::sortQueue() */
 		virtual void sortQueue() override;
 
-		/** @copydoc Renderer::render() */
-		virtual void render() override;
+		/** @copydoc Renderer::render(Context::Query&) */
+		virtual void render(Context::Query& q) override;
 
 		/** @copydoc Renderer::clearQueue() */
 		virtual void clearQueue() override;

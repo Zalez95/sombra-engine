@@ -1,15 +1,17 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#include <string>
+#include "Bindable.h"
 #include "Constants.h"
 
 namespace se::graphics {
 
 	/**
-	 * Class Shader, it represents a GLSL shader. A shader is one of the
-	 * programable stages of the OpenGL pipeline
+	 * Class Shader, it's a Bindable that represents a GLSL shader. A shader is
+	 * one of the programable stages of the Graphics API pipeline.
 	 */
-	class Shader
+	class Shader : public Bindable
 	{
 	private:	// Attributes
 		friend class Program;
@@ -22,9 +24,8 @@ namespace se::graphics {
 		 *
 		 * @param	source the GLSL source code of the shader that we want to
 		 *			create
-		 * @param	shaderType the type of the shader that we want to create
-		 * @throw	runtime_error if the Shader couldn't be created */
-		Shader(const char* source, ShaderType shaderType);
+		 * @param	shaderType the type of the shader that we want to create */
+		Shader(const std::string& source, ShaderType shaderType);
 		Shader(const Shader& other) = delete;
 		Shader(Shader&& other);
 

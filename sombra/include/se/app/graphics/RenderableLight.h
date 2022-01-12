@@ -2,8 +2,8 @@
 #define RENDERABLE_LIGHT_H
 
 #include "../../utils/FixedVector.h"
-#include "../../graphics/core/Texture.h"
 #include "../../graphics/3D/RenderableMesh.h"
+#include "TypeRefs.h"
 
 namespace se::app {
 
@@ -33,7 +33,7 @@ namespace se::app {
 
 		/** The Shadow Map texture. If @see mIsPointLight is true it will be
 		 * a CubeMap, otherwise it will be a Texture 2D array */
-		std::shared_ptr<graphics::Texture> mShadowMap = nullptr;
+		TextureRef mShadowMap;
 
 		/** The view matrices used for rendering each shadow */
 		utils::FixedVector<glm::mat4, kMaxShadowMaps> mViewMatrices;
@@ -52,7 +52,7 @@ namespace se::app {
 
 		/** @return	true if the RenderableLight casts shadows, false
 		 *			otherwise */
-		bool castsShadows() const { return mShadowMap != nullptr; };
+		bool castsShadows() const { return mShadowMap; };
 
 		/** @return	the number of Shadow Maps of the RenderableLight */
 		std::size_t getNumShadows() const { return mViewMatrices.size(); };
@@ -67,6 +67,8 @@ namespace se::app {
 		/** Enables shadows if it hasnt' been enabled yet, or updates the
 		 * shadow configuration
 		 *
+		 * @param	context the graphics Context used for creating the
+		 *			ShadowMaps
 		 * @param	resolution the Resolution of the Shadow Maps
 		 * @param	isPointLight if the RenderableLight is a PointLight or
 		 *			not
@@ -74,7 +76,7 @@ namespace se::app {
 		 *			RenderableLight isn't a PointLight
 		 * @return	a reference to the current RenderableLight object */
 		RenderableLight& setShadows(
-			std::size_t resolution,
+			graphics::Context& context, std::size_t resolution,
 			bool isPointLight = false, std::size_t numShadows = 1
 		);
 
@@ -87,8 +89,7 @@ namespace se::app {
 		 *
 		 * @return	a pointer to the Shadow Map Texture, nullptr if it doesn't
 		 *			exists */
-		const std::shared_ptr<graphics::Texture>& getShadowMap() const
-		{ return mShadowMap; };
+		const TextureRef& getShadowMap() const { return mShadowMap; };
 
 		/** Returns the requested view matrix
 		 *

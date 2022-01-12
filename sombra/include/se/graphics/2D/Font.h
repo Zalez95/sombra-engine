@@ -2,9 +2,9 @@
 #define FONT_H
 
 #include <string>
-#include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
+#include "../Context.h"
 
 namespace se::graphics {
 
@@ -45,7 +45,7 @@ namespace se::graphics {
 		std::string name;
 
 		/** The atlas texture with the character glyphs */
-		std::shared_ptr<Texture> textureAtlas;
+		Context::TBindableRef<Texture> textureAtlas;
 
 		/** The size of the texture atlas */
 		glm::uvec2 atlasSize;

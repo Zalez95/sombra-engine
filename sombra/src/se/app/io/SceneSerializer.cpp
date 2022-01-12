@@ -1,3 +1,4 @@
+#include <future>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -19,7 +20,6 @@
 #include "se/animation/StepAnimations.h"
 #include "se/animation/LinearAnimations.h"
 #include "se/animation/CubicSplineAnimations.h"
-#include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Renderer.h"
@@ -51,6 +51,8 @@ using namespace se::audio;
 
 namespace se::app {
 
+	using MemBuffer = std::vector<std::byte>;
+
 	struct Accessor
 	{
 		std::size_t buffer;
@@ -60,11 +62,56 @@ namespace se::app {
 		std::size_t stride, offset;
 	};
 
+	struct MeshData
+	{
+		struct VBOData
+		{
+			MemBuffer buffer;
+			unsigned int attribute;
+			TypeId type;
+			bool normalized;
+			int componentSize;
+			std::size_t stride, offset;
+		};
+
+		std::vector<VBOData> vbosData;
+
+		struct {
+			MemBuffer buffer;
+			TypeId typeId;
+			std::size_t count;
+		} iboData;
+
+		std::pair<glm::vec3, glm::vec3> bounds;
+	};
+
+	struct TexData
+	{
+		TextureTarget target;
+		TypeId type;
+		ColorFormat color;
+		TextureFilter min, mag;
+		TextureWrap wrapS, wrapT, wrapR;
+		int textureUnit = -1;
+		bool hasBuffer = false;
+		std::string path;
+		std::size_t width = 0, height = 0, depth = 0;
+		MemBuffer bufferData;
+	};
+
 	struct SerializeData
 	{
 		const Scene& scene;
 		std::unordered_map<Entity, std::size_t> entityIndexMap;
 		std::unordered_map<const AnimationNode*, std::size_t> nodeIndexMap;
+		std::unordered_map<
+			Repository::ResourceRef<MeshRef>, std::future<MeshData>,
+			Repository::ResourceRef<MeshRef>::HashFunc
+		> futureMeshes;
+		std::unordered_map<
+			Repository::ResourceRef<TextureRef>, std::future<TexData>,
+			Repository::ResourceRef<TextureRef>::HashFunc
+		> futureTextures;
 		nlohmann::json buffersJson;
 		nlohmann::json accessorsJson;
 	};
@@ -93,7 +140,7 @@ namespace se::app {
 		json["size"] = size;
 	}
 
-	Result deserializeBuffer(const nlohmann::json& json, std::istream& dataStream, std::vector<std::byte>& buffer)
+	Result deserializeBuffer(const nlohmann::json& json, std::istream& dataStream, MemBuffer& buffer)
 	{
 		auto itSize = json.find("size");
 		if (itSize == json.end()) {
@@ -177,84 +224,68 @@ namespace se::app {
 
 
 	template <>
-	void serializeResource<Mesh>(const Repository::ResourceRef<Mesh>& mesh, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<MeshRef>(const Repository::ResourceRef<MeshRef>& mesh, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
+		auto itMesh = data.futureMeshes.find(mesh);
+		if (itMesh == data.futureMeshes.end()) { return; }
+
+		const MeshData& meshData = itMesh->second.get();
+
 		// VBOs
-		const auto& vao = mesh->getVAO();
+		auto jsonVBOs = nlohmann::json::array();
+		for (const auto& vboData : meshData.vbosData) {
+			nlohmann::json bufferJson;
+			serializeBuffer(vboData.buffer.data(), vboData.buffer.size(), bufferJson, dataStream);
+			data.buffersJson.emplace_back(std::move(bufferJson));
 
-		nlohmann::json jsonVBOs;
-		const auto& vbos = mesh->getVBOs();
-		for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) {
-			if (vao.isAttributeEnabled(i)) {
-				auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
-					return vao.checkVertexAttributeVBOBound(i, vbo);
-				});
-				if (itVBO != vbos.end()) {
-					std::size_t bufferSize = itVBO->size();
-					std::vector<std::byte> buffer(bufferSize);
-					itVBO->read(buffer.data(), bufferSize);
+			Accessor accessor = {
+				data.buffersJson.size() - 1,
+				vboData.type, vboData.normalized, vboData.componentSize,
+				vboData.stride, vboData.offset
+			};
 
-					nlohmann::json bufferJson;
-					serializeBuffer(buffer.data(), bufferSize, bufferJson, dataStream);
-					data.buffersJson.emplace_back(std::move(bufferJson));
+			nlohmann::json accessorJson;
+			serializeAccessor(accessor, accessorJson);
+			data.accessorsJson.emplace_back(std::move(accessorJson));
 
-					Accessor accessor;
-					accessor.buffer = data.buffersJson.size() - 1;
-					mesh->getVAO().getVertexAttribute(
-						i, accessor.type, accessor.normalized, accessor.componentSize,
-						accessor.stride, accessor.offset
-					);
-
-					nlohmann::json accessorJson;
-					serializeAccessor(accessor, accessorJson);
-					data.accessorsJson.emplace_back(std::move(accessorJson));
-
-					nlohmann::json jsonVBO;
-					jsonVBO["accessor"] = data.accessorsJson.size() - 1;
-					jsonVBO["attribute"] = i;
-					jsonVBOs.emplace_back(std::move(jsonVBO));
-				}
-			}
+			nlohmann::json jsonVBO;
+			jsonVBO["accessor"] = data.accessorsJson.size() - 1;
+			jsonVBO["attribute"] = vboData.attribute;
+			jsonVBOs.emplace_back(std::move(jsonVBO));
 		}
-		json["vbos"] = jsonVBOs;
+		json["vbos"] = std::move(jsonVBOs);
 
 		// IBO
-		const auto& ibo = mesh->getIBO();
-
-		std::size_t bufferSize = ibo.size();
-		std::vector<std::byte> buffer(bufferSize);
-		ibo.read(buffer.data(), bufferSize);
-
 		nlohmann::json bufferJson;
-		serializeBuffer(buffer.data(), bufferSize, bufferJson, dataStream);
+		serializeBuffer(meshData.iboData.buffer.data(), meshData.iboData.buffer.size(), bufferJson, dataStream);
 		data.buffersJson.emplace_back(std::move(bufferJson));
 
 		nlohmann::json jsonIBO;
 		jsonIBO["buffer"] = data.buffersJson.size() - 1;
-		jsonIBO["type"] = static_cast<int>(ibo.getIndexType());
-		jsonIBO["count"] = ibo.getIndexCount();
-		json["ibo"] = jsonIBO;
+		jsonIBO["type"] = static_cast<int>(meshData.iboData.typeId);
+		jsonIBO["count"] = meshData.iboData.count;
+		json["ibo"] = std::move(jsonIBO);
 
 		// Bounds
 		nlohmann::json jsonBounds;
-		auto [minimum, maximum] = mesh->getBounds();
-		jsonBounds["minimum"] = toJson(minimum);
-		jsonBounds["maximum"] = toJson(maximum);
-		json["bounds"] = jsonBounds;
+		jsonBounds["minimum"] = toJson(meshData.bounds.first);
+		jsonBounds["maximum"] = toJson(meshData.bounds.second);
+		json["bounds"] = std::move(jsonBounds);
 	}
 
 	template <>
-	Result deserializeResource<Mesh>(const nlohmann::json& json, Repository::ResourceRef<Mesh>& mesh, DeserializeData& data, Scene& scene)
+	Result deserializeResource<MeshRef>(const nlohmann::json& json, Repository::ResourceRef<MeshRef>& mesh, DeserializeData& data, Scene& scene)
 	{
+		auto& context = scene.application.getExternalTools().graphicsEngine->getContext();
+
 		// VBOs
-		VertexArray vao;
+		MeshData meshData;
 
 		auto itVBOs = json.find("vbos");
 		if (itVBOs == json.end()) {
 			return Result(false, "Missing \"vbos\" property");
 		}
 
-		std::vector<VertexBuffer> vbos;
 		for (std::size_t i = 0; i < itVBOs->size(); ++i) {
 			const auto& jsonVBO = (*itVBOs)[i];
 
@@ -282,7 +313,7 @@ namespace se::app {
 				return Result(false, "Buffer index " + std::to_string(accessor.buffer) + " out of bounds in Accessor " + std::to_string(iAccessor));
 			}
 
-			std::vector<std::byte> buffer;
+			MemBuffer buffer;
 			result = deserializeBuffer(data.buffersJson[accessor.buffer], data.dataStream, buffer);
 			if (!result) {
 				return Result(false, "Failed to parse buffer " + std::to_string(accessor.buffer) + ": " + result.description());
@@ -293,16 +324,10 @@ namespace se::app {
 				return Result(false, "Not valid attribute " + std::to_string(attribute) + " in VBO " + std::to_string(i));
 			}
 
-			auto& vbo = vbos.emplace_back();
-			vbo.resizeAndCopy(buffer.data(), buffer.size());
-			vbo.bind();
-			vao.enableAttribute(attribute);
-			if (attribute == MeshAttributes::JointIndexAttribute) {
-				vao.setVertexIntegerAttribute(attribute, accessor.type, accessor.componentSize, accessor.stride, accessor.offset);
-			}
-			else {
-				vao.setVertexAttribute(attribute, accessor.type, accessor.normalized, accessor.componentSize, accessor.stride, accessor.offset);
-			}
+			meshData.vbosData.emplace_back(MeshData::VBOData{
+				std::move(buffer), attribute,
+				accessor.type, accessor.normalized, accessor.componentSize, accessor.stride, accessor.offset
+			});
 		}
 
 		// IBO
@@ -329,16 +354,15 @@ namespace se::app {
 			return Result(false, "IBO \"buffer\" out of bounds");
 		}
 
-		std::vector<std::byte> buffer;
+		MemBuffer buffer;
 		auto result = deserializeBuffer(data.buffersJson[iBuffer], data.dataStream, buffer);
 		if (!result) {
 			return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
 		}
 
-		IndexBuffer ibo;
-		ibo.resizeAndCopy(static_cast<void*>(buffer.data()), buffer.size(), static_cast<TypeId>(itType->get<int>()), *itCount);
-		vao.bind();
-		ibo.bind();
+		TypeId typeId = static_cast<TypeId>(itType->get<int>());
+		std::size_t count = *itCount;
+		meshData.iboData = { std::move(buffer), typeId, count };
 
 		// Bounds
 		auto itBounds = json.find("bounds");
@@ -355,11 +379,44 @@ namespace se::app {
 			return Result(false, "Wrong \"bounds\" property");
 		}
 
-		// Create the mesh
-		auto meshSPtr = std::make_shared<Mesh>(std::move(vbos), std::move(ibo), std::move(vao));
-		meshSPtr->setBounds(minimum, maximum);
+		meshData.bounds = { minimum, maximum };
 
-		mesh = scene.repository.insert(std::move(meshSPtr));
+		// Create the mesh
+		auto meshRef = context.create<Mesh>();
+		meshRef.edit([=](Mesh& mesh) {
+			auto vao = std::make_unique<VertexArray>();
+
+			std::vector<std::unique_ptr<VertexBuffer>> vbos;
+
+			for (const auto& vboData : meshData.vbosData) {
+				auto vbo = std::make_unique<VertexBuffer>();
+				vbo->resizeAndCopy(vboData.buffer.data(), vboData.buffer.size());
+
+				vao->bind();
+				vbo->bind();
+
+				vao->enableAttribute(vboData.attribute);
+				if (vboData.attribute == MeshAttributes::JointIndexAttribute) {
+					vao->setVertexIntegerAttribute(vboData.attribute, vboData.type, vboData.componentSize, vboData.stride, vboData.offset);
+				}
+				else {
+					vao->setVertexAttribute(vboData.attribute, vboData.type, vboData.normalized, vboData.componentSize, vboData.stride, vboData.offset);
+				}
+
+				vbos.push_back(std::move(vbo));
+			}
+
+			auto ibo = std::make_unique<IndexBuffer>();
+			ibo->resizeAndCopy(meshData.iboData.buffer.data(), meshData.iboData.buffer.size(), meshData.iboData.typeId, meshData.iboData.count);
+
+			vao->bind();
+			ibo->bind();
+
+			mesh.setBuffers(std::move(vbos), std::move(ibo), std::move(vao))
+				.setBounds(minimum, maximum);
+		});
+
+		mesh = scene.repository.insert(std::make_shared<MeshRef>(meshRef));
 
 		return Result();
 	}
@@ -388,7 +445,7 @@ namespace se::app {
 
 		std::size_t iBuffer = *itInverseBindMatrices;
 
-		std::vector<std::byte> buffer;
+		MemBuffer buffer;
 		buffer.reserve(Skin::kMaxJoints * sizeof(glm::mat4));
 		auto result = deserializeBuffer(data.buffersJson[iBuffer], data.dataStream, buffer);
 		if (!result) {
@@ -509,7 +566,7 @@ namespace se::app {
 				return Result(false, "Failed to parse nodeAnimators[" + std::to_string(i) + "]: \"keyFrames\"=" + std::to_string(iKeyFrames) + " out of bounds");
 			}
 
-			std::vector<std::byte> keyFramesBuffer;
+			MemBuffer keyFramesBuffer;
 			deserializeBuffer(data.buffersJson[iKeyFrames], data.dataStream, keyFramesBuffer);
 
 			std::string animationType = *itAnimationType, keyFrameType = *itKeyFrameType;
@@ -702,69 +759,40 @@ namespace se::app {
 
 
 	template <>
-	void serializeResource<Texture>(const Repository::ResourceRef<Texture>& texture, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
+	void serializeResource<TextureRef>(const Repository::ResourceRef<TextureRef>& texture, SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
-		TextureTarget target = texture->getTarget();
-		json["target"] = static_cast<int>(target);
+		auto itTexture = data.futureTextures.find(texture);
+		if (itTexture == data.futureTextures.end()) { return; }
 
-		TypeId type = texture->getTypeId();
-		json["type"] = static_cast<int>(type);
+		const TexData& texData = itTexture->second.get();
 
-		ColorFormat color = texture->getColorFormat();
-		json["color"] = static_cast<int>(color);
+		json["target"] = static_cast<int>(texData.target);
+		json["type"] = static_cast<int>(texData.type);
+		json["color"] = static_cast<int>(texData.color);
+		json["min"] = static_cast<int>(texData.min);
+		json["mag"] = static_cast<int>(texData.mag);
+		json["wrapS"] = static_cast<int>(texData.wrapS);
+		json["wrapT"] = static_cast<int>(texData.wrapT);
+		json["wrapR"] = static_cast<int>(texData.wrapR);
+		json["textureUnit"] = texData.textureUnit;
 
-		TextureFilter min, mag;
-		texture->getFiltering(&min, &mag);
-
-		json["min"] = static_cast<int>(min);
-		json["mag"] = static_cast<int>(mag);
-
-		TextureWrap wrapS, wrapT, wrapR;
-		texture->getWrapping(&wrapS, &wrapT, &wrapR);
-
-		json["wrapS"] = static_cast<int>(wrapS);
-		json["wrapT"] = static_cast<int>(wrapT);
-		json["wrapR"] = static_cast<int>(wrapR);
-
-		json["textureUnit"] = texture->getTextureUnit();
-
-		std::string path = texture.getResource().getPath();
-		if (!path.empty()) {
-			// Use the path to the image file
-			json["path"] = path;
+		if (!texData.hasBuffer) {
+			json["path"] = texData.path;
 		}
 		else {
-			// Save the texture to a buffer in the dataStream
-			std::size_t width = texture->getWidth();
-			std::size_t height = (target != TextureTarget::Texture1D)? texture->getHeight() : 1;
-			std::size_t depth = ((target != TextureTarget::Texture1D) && (target != TextureTarget::Texture2D))? texture->getDepth() : 1;
-
-			std::vector<std::byte> bufferData;
-			if (target == TextureTarget::CubeMap) {
-				std::size_t sideSize = width * height * depth * toNumberOfComponents(color) * toTypeSize(type);
-				bufferData.resize(6 * sideSize);
-				for (int i = 0; i < 6; ++i) {
-					texture->getImage(type, toUnSizedColorFormat(color), &bufferData[i * sideSize], i);
-				}
-			}
-			else {
-				bufferData.resize(width * height * depth * toNumberOfComponents(color) * toTypeSize(type));
-				texture->getImage(type, toUnSizedColorFormat(color), bufferData.data());
-			}
-
 			nlohmann::json bufferJson;
-			serializeBuffer(bufferData.data(), bufferData.size(), bufferJson, dataStream);
+			serializeBuffer(texData.bufferData.data(), texData.bufferData.size(), bufferJson, dataStream);
 			data.buffersJson.emplace_back(std::move(bufferJson));
 
-			json["width"] = width;
-			json["height"] = height;
-			json["depth"] = depth;
+			json["width"] = texData.width;
+			json["height"] = texData.height;
+			json["depth"] = texData.depth;
 			json["buffer"] = data.buffersJson.size() - 1;
 		}
 	}
 
 	template <>
-	Result deserializeResource<Texture>(const nlohmann::json& json, Repository::ResourceRef<Texture>& texture, DeserializeData& data, Scene& scene)
+	Result deserializeResource<TextureRef>(const nlohmann::json& json, Repository::ResourceRef<TextureRef>& texture, DeserializeData& data, Scene& scene)
 	{
 		auto itTarget = json.find("target");
 		if (itTarget == json.end()) {
@@ -802,7 +830,8 @@ namespace se::app {
 		TextureWrap wrapT = (itWrapT != json.end())? static_cast<TextureWrap>(itWrapT->get<int>()) : TextureWrap::ClampToBorder;
 		TextureWrap wrapR = (itWrapR != json.end())? static_cast<TextureWrap>(itWrapR->get<int>()) : TextureWrap::ClampToBorder;
 
-		auto textureSPtr = std::make_shared<Texture>(target);
+		auto& context = scene.application.getExternalTools().graphicsEngine->getContext();
+		auto textureRef = context.create<Texture>(target);
 
 		auto itPath = json.find("path");
 		auto itBuffer = json.find("buffer");
@@ -817,7 +846,11 @@ namespace se::app {
 					return Result(false, "Failed to read the HDR Image: " + std::string(result.description()));
 				}
 
-				textureSPtr->setImage(image.pixels.get(), TypeId::Float, color, color, image.width, image.height);
+				std::shared_ptr<float[]> pixels = std::move(image.pixels);
+				std::size_t width = image.width, height = image.height;
+				textureRef.edit([=](Texture& tex) {
+					tex.setImage(pixels.get(), TypeId::Float, color, color, width, height);
+				});
 			}
 			else {
 				Image<unsigned char> image;
@@ -826,11 +859,15 @@ namespace se::app {
 					return Result(false, "Failed to read the Image: " + std::string(result.description()));
 				}
 
-				textureSPtr->setImage(image.pixels.get(), TypeId::UnsignedByte, color, color, image.width, image.height);
+				std::shared_ptr<unsigned char[]> pixels = std::move(image.pixels);
+				std::size_t width = image.width, height = image.height;
+				textureRef.edit([=](Texture& tex) {
+					tex.setImage(pixels.get(), TypeId::UnsignedByte, color, color, width, height);
+				});
 			}
 
-			texture = scene.repository.insert(textureSPtr);
-			texture.getResource().setPath(path.c_str());
+			texture = scene.repository.insert(std::make_shared<TextureRef>(textureRef));
+			texture.getResource().setPath(path);
 		}
 		else if (itBuffer != json.end()) {
 			auto itWidth = json.find("width");
@@ -853,7 +890,7 @@ namespace se::app {
 				return Result(false, "Buffer " + std::to_string(iBuffer) + " out of bounds");
 			}
 
-			std::vector<std::byte> buffer;
+			MemBuffer buffer;
 			auto result = deserializeBuffer(data.buffersJson[iBuffer], data.dataStream, buffer);
 			if (!result) {
 				return Result(false, "Failed to parse buffer " + std::to_string(iBuffer) + ": " + result.description());
@@ -862,38 +899,45 @@ namespace se::app {
 			if (target == TextureTarget::CubeMap) {
 				std::size_t sideSize = width * height * toNumberOfComponents(color) * toTypeSize(type);
 				for (int i = 0; i < 6; ++i) {
-					textureSPtr->setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(color), color, width, height, 0, i);
+					textureRef.edit([=](Texture& tex) {
+						tex.setImage(buffer.data() + i * sideSize, type, toUnSizedColorFormat(color), color, width, height, 0, i);
+					});
 				}
 			}
 			else {
-				textureSPtr->setImage(buffer.data(), type, toUnSizedColorFormat(color), color, width, height, depth);
+				textureRef.edit([=](Texture& tex) {
+					tex.setImage(buffer.data(), type, toUnSizedColorFormat(color), color, width, height, depth);
+				});
 			}
 
-			texture = scene.repository.insert(textureSPtr);
+			texture = scene.repository.insert(std::make_shared<TextureRef>(textureRef));
 		}
 		else {
 			return Result(false, "Missing \"path\" and \"buffer\" properties");
 		}
 
-		textureSPtr->setTextureUnit(textureUnit)
-			.setFiltering(min, mag)
-			.setWrapping(wrapS, wrapT, wrapR)
-			.generateMipMap();
+		textureRef.edit([=](Texture& tex) {
+			tex.setTextureUnit(textureUnit)
+				.setFiltering(min, mag)
+				.setWrapping(wrapS, wrapT, wrapR)
+				.generateMipMap();
+		});
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<Program>(const Repository::ResourceRef<Program>& program, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<ProgramRef>(const Repository::ResourceRef<ProgramRef>& program, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		if (auto path = program.getResource().getPath()) {
+		std::string path = program.getResource().getPath();
+		if (!path.empty()) {
 			json["path"] = path;
 		}
 	}
 
 	template <>
-	Result deserializeResource<Program>(const nlohmann::json& json, Repository::ResourceRef<Program>& program, DeserializeData&, Scene& scene)
+	Result deserializeResource<ProgramRef>(const nlohmann::json& json, Repository::ResourceRef<ProgramRef>& program, DeserializeData&, Scene& scene)
 	{
 		auto itPath = json.find("path");
 		if (itPath == json.end()) {
@@ -906,143 +950,153 @@ namespace se::app {
 		std::getline(ss, geometryPath, '|');
 		std::getline(ss, fragmentPath, '|');
 
-		std::shared_ptr<Program> programSPtr;
+		ProgramRef programRef;
 		auto result = ShaderLoader::createProgram(
 			vertexPath.empty()? nullptr : vertexPath.c_str(),
 			geometryPath.empty()? nullptr : geometryPath.c_str(),
 			fragmentPath.empty()? nullptr : fragmentPath.c_str(),
-			programSPtr
+			scene.application.getExternalTools().graphicsEngine->getContext(),
+			programRef
 		);
 		if (!result) {
 			return Result(false, "Couldn't create the program: " + std::string(result.description()));
 		}
 
-		program = scene.repository.insert(std::move(programSPtr));
-		program.getResource().setPath( itPath->get<std::string>().c_str() );
+		program = scene.repository.insert(std::make_shared<ProgramRef>(programRef));
+		program.getResource().setPath( itPath->get<std::string>() );
 
 		return Result();
 	}
 
 
 	template <>
-	void serializeResource<RenderableShaderStep>(const Repository::ResourceRef<RenderableShaderStep>& step, SerializeData& data, nlohmann::json& json, std::ostream&)
+	void serializeResource<RenderableShaderStep>(const Repository::ResourceRef<RenderableShaderStep>& step, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
 		nlohmann::json bindablesVJson;
-		step->processPrograms([&](const Repository::ResourceRef<Program>& program) {
+		step->processPrograms([&](const Repository::ResourceRef<ProgramRef>& program) {
 			nlohmann::json bindableJson = { { "type", "Program" }, { "name", program.getResource().getName() } };
 			bindablesVJson.emplace_back(std::move(bindableJson));
 		});
-		step->processTextures([&](const Repository::ResourceRef<Texture>& texture) {
+		step->processTextures([&](const Repository::ResourceRef<TextureRef>& texture) {
 			nlohmann::json bindableJson = { { "type", "Texture" }, { "name", texture.getResource().getName() } };
 			bindablesVJson.emplace_back(std::move(bindableJson));
 		});
-		step->processBindables([&](std::shared_ptr<Bindable> bindable) {
-			nlohmann::json bindableJson;
-			if (auto uniform = std::dynamic_pointer_cast<IUniformVariable>(bindable)) {
-				if (auto program = data.scene.repository.findResource(uniform->getProgram().get())) {
-					if (auto uniform1 = std::dynamic_pointer_cast<UniformVariableValue<int>>(bindable)) {
+
+		std::mutex mtx;
+		std::condition_variable cv;
+		std::size_t numBindablesLeft = 0;
+
+		step->processBindables([&](const Context::BindableRef& bindableRef) {
+			numBindablesLeft++;
+
+			bindableRef.getParent()->execute([&, bindableRef](Context::Query& q) {
+				nlohmann::json bindableJson;
+				auto bindable = q.getBindable(bindableRef);
+
+				if (auto uniform = dynamic_cast<IUniformVariable*>(bindable)) {
+					if (auto uniform1 = dynamic_cast<UniformVariableValue<int>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "int" }, { "value", uniform1->getValue() } };
 					}
-					else if (auto uniform2 = std::dynamic_pointer_cast<UniformVariableValue<unsigned int>>(bindable)) {
+					else if (auto uniform2 = dynamic_cast<UniformVariableValue<unsigned int>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "unsigned int" }, { "value", uniform2->getValue() } };
 					}
-					else if (auto uniform3 = std::dynamic_pointer_cast<UniformVariableValue<float>>(bindable)) {
+					else if (auto uniform3 = dynamic_cast<UniformVariableValue<float>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "float" }, { "value", uniform3->getValue() } };
 					}
-					else if (auto uniform4 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec2>>(bindable)) {
+					else if (auto uniform4 = dynamic_cast<UniformVariableValue<glm::vec2>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "vec2" }, { "value", toJson(uniform4->getValue()) } };
 					}
-					else if (auto uniform5 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec2>>(bindable)) {
+					else if (auto uniform5 = dynamic_cast<UniformVariableValue<glm::ivec2>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "ivec2" }, { "value", toJson(uniform5->getValue()) } };
 					}
-					else if (auto uniform6 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec3>>(bindable)) {
+					else if (auto uniform6 = dynamic_cast<UniformVariableValue<glm::vec3>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "vec3" }, { "value", toJson(uniform6->getValue()) } };
 					}
-					else if (auto uniform7 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec3>>(bindable)) {
+					else if (auto uniform7 = dynamic_cast<UniformVariableValue<glm::ivec3>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "ivec3" }, { "value", toJson(uniform7->getValue()) } };
 					}
-					else if (auto uniform8 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec4>>(bindable)) {
+					else if (auto uniform8 = dynamic_cast<UniformVariableValue<glm::vec4>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "vec4" }, { "value", toJson(uniform8->getValue()) } };
 					}
-					else if (auto uniform9 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec4>>(bindable)) {
+					else if (auto uniform9 = dynamic_cast<UniformVariableValue<glm::ivec4>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "ivec4" }, { "value", toJson(uniform9->getValue()) } };
 					}
-					else if (auto uniform10 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat3>>(bindable)) {
+					else if (auto uniform10 = dynamic_cast<UniformVariableValue<glm::mat3>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "mat3" }, { "value", toJson(uniform10->getValue()) } };
 					}
-					else if (auto uniform11 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat4>>(bindable)) {
+					else if (auto uniform11 = dynamic_cast<UniformVariableValue<glm::mat4>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "mat4" }, { "value", toJson(uniform11->getValue()) } };
 					}
-					else if (auto uniform12 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat3x4>>(bindable)) {
+					else if (auto uniform12 = dynamic_cast<UniformVariableValue<glm::mat3x4>*>(uniform)) {
 						bindableJson = { { "type", "UniformVariableValue" }, { "UniformType", "mat3x4" }, { "value", toJson(uniform12->getValue()) } };
 					}
-					else if (auto uniform13 = std::dynamic_pointer_cast<UniformVariableValueVector<int>>(bindable)) {
+					else if (auto uniform13 = dynamic_cast<UniformVariableValueVector<int>*>(uniform)) {
 						const int* ptr; std::size_t size; uniform13->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(ptr[i]); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "int" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform14 = std::dynamic_pointer_cast<UniformVariableValueVector<unsigned int>>(bindable)) {
+					else if (auto uniform14 = dynamic_cast<UniformVariableValueVector<unsigned int>*>(uniform)) {
 						const unsigned int* ptr; std::size_t size; uniform14->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(ptr[i]); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "int" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform15 = std::dynamic_pointer_cast<UniformVariableValueVector<float>>(bindable)) {
+					else if (auto uniform15 = dynamic_cast<UniformVariableValueVector<float>*>(uniform)) {
 						const float* ptr; std::size_t size; uniform15->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(ptr[i]); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "float" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform16 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec2>>(bindable)) {
+					else if (auto uniform16 = dynamic_cast<UniformVariableValueVector<glm::vec2>*>(uniform)) {
 						const glm::vec2* ptr; std::size_t size; uniform16->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "vec2" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform17 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec2>>(bindable)) {
+					else if (auto uniform17 = dynamic_cast<UniformVariableValueVector<glm::ivec2>*>(uniform)) {
 						const glm::ivec2* ptr; std::size_t size; uniform17->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "ivec2" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform18 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec3>>(bindable)) {
+					else if (auto uniform18 = dynamic_cast<UniformVariableValueVector<glm::vec3>*>(uniform)) {
 						const glm::vec3* ptr; std::size_t size; uniform18->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "vec3" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform19 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec3>>(bindable)) {
+					else if (auto uniform19 = dynamic_cast<UniformVariableValueVector<glm::ivec3>*>(uniform)) {
 						const glm::ivec3* ptr; std::size_t size; uniform19->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "ivec3" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform20 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec4>>(bindable)) {
+					else if (auto uniform20 = dynamic_cast<UniformVariableValueVector<glm::vec4>*>(uniform)) {
 						const glm::vec4* ptr; std::size_t size; uniform20->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "vec4" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform21 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec4>>(bindable)) {
+					else if (auto uniform21 = dynamic_cast<UniformVariableValueVector<glm::ivec4>*>(uniform)) {
 						const glm::ivec4* ptr; std::size_t size; uniform21->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "ivec4" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform22 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat3>>(bindable)) {
+					else if (auto uniform22 = dynamic_cast<UniformVariableValueVector<glm::mat3>*>(uniform)) {
 						const glm::mat3* ptr; std::size_t size; uniform22->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "mat3" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform23 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat4>>(bindable)) {
+					else if (auto uniform23 = dynamic_cast<UniformVariableValueVector<glm::mat4>*>(uniform)) {
 						const glm::mat4* ptr; std::size_t size; uniform23->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
 						bindableJson = { { "type", "UniformVariableValueVector" }, { "UniformType", "mat4" }, { "value", std::move(dataVJson) } };
 					}
-					else if (auto uniform24 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat3x4>>(bindable)) {
+					else if (auto uniform24 = dynamic_cast<UniformVariableValueVector<glm::mat3x4>*>(uniform)) {
 						const glm::mat3x4* ptr; std::size_t size; uniform24->getValue(ptr, size);
 						auto dataVJson = nlohmann::json::array();
 						for (std::size_t i = 0; i < size; ++i) { dataVJson.push_back(toJson(ptr[i])); }
@@ -1050,17 +1104,27 @@ namespace se::app {
 					}
 
 					bindableJson["name"] = uniform->getName();
-					bindableJson["program"] = program.getResource().getName();
 				}
-			}
-			else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
-				bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->getEnable() } };
-			}
+				else if (auto setOperation = dynamic_cast<SetOperation*>(bindable)) {
+					bindableJson = { { "type", "SetOperation" }, { "operation", static_cast<int>(setOperation->getOperation()) }, { "active", setOperation->getEnable() } };
+				}
 
-			if (!bindableJson.empty()) {
-				bindablesVJson.emplace_back(std::move(bindableJson));
-			}
+				{
+					std::scoped_lock lock(mtx);
+					numBindablesLeft--;
+					if (!bindableJson.empty()) {
+						bindablesVJson.emplace_back(std::move(bindableJson));
+					}
+				}
+				cv.notify_one();
+			});
 		});
+
+		std::unique_lock lck(mtx);
+		while (numBindablesLeft > 0) {
+			cv.wait(lck);
+		}
+
 		json["renderer"] = step->getPass()->getRenderer().getName();
 		json["bindables"] = std::move(bindablesVJson);
 	}
@@ -1068,12 +1132,15 @@ namespace se::app {
 	template <>
 	Result deserializeResource<RenderableShaderStep>(const nlohmann::json& json, Repository::ResourceRef<RenderableShaderStep>& step, DeserializeData&, Scene& scene)
 	{
+		auto& renderGraph = scene.application.getExternalTools().graphicsEngine->getRenderGraph();
+		auto& context = scene.application.getExternalTools().graphicsEngine->getContext();
+
 		auto itRenderer = json.find("renderer");
 		if (itRenderer == json.end()) {
 			return Result(false, "Missing \"renderer\" property");
 		}
 
-		auto renderNode = scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode(*itRenderer);
+		auto renderNode = renderGraph.getNode(*itRenderer);
 		auto renderer = dynamic_cast<Renderer*>(renderNode);
 		if (!renderer) {
 			return Result(false, "\"renderer\"=" + itRenderer->get<std::string>() + " not found");
@@ -1084,10 +1151,12 @@ namespace se::app {
 			return Result(false, "Missing \"bindables\" property");
 		}
 
+		ProgramRef programRef;
+
 		auto stepSPtr = std::make_shared<RenderableShaderStep>(*renderer);
 		for (std::size_t i = 0; i < itBindables->size(); ++i) {
 			const auto& jBindable = (*itBindables)[i];
-			std::shared_ptr<Bindable> bindable;
+			Context::BindableRef bindable;
 
 			auto itType = jBindable.find("type");
 			if (itType == jBindable.end()) {
@@ -1103,10 +1172,6 @@ namespace se::app {
 				if (itName == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"name\" property");
 				}
-				auto itProgram = jBindable.find("program");
-				if (itProgram == jBindable.end()) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"program\" property");
-				}
 				auto itValue = jBindable.find("value");
 				if (itValue == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"value\" property");
@@ -1114,72 +1179,67 @@ namespace se::app {
 
 				std::string name = *itName;
 
-				auto program = scene.repository.findByName<Program>(itProgram->get<std::string>().c_str());
-				if (!program) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: \"program\"= " + itProgram->get<std::string>() + " not found");
-				}
-
 				if (*itUniformType == "int") {
-					bindable = std::make_shared<UniformVariableValue<int>>(name.c_str(), program.get(), *itValue);
+					bindable = context.create<UniformVariableValue<int>>(name, *itValue);
 				}
 				else if (*itUniformType == "unsigned int") {
-					bindable = std::make_shared<UniformVariableValue<unsigned int>>(name.c_str(), program.get(), *itValue);
+					bindable = context.create<UniformVariableValue<unsigned int>>(name, *itValue);
 				}
 				else if (*itUniformType == "float") {
-					bindable = std::make_shared<UniformVariableValue<float>>(name.c_str(), program.get(), *itValue);
+					bindable = context.create<UniformVariableValue<float>>(name, *itValue);
 				}
 				else if (*itUniformType == "vec2") {
 					glm::vec2 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec2>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::vec2>>(name, value);
 					}
 				}
 				else if (*itUniformType == "ivec2") {
 					glm::ivec2 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec2>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::ivec2>>(name, value);
 					}
 				}
 				else if (*itUniformType == "vec3") {
 					glm::vec3 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec3>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::vec3>>(name, value);
 					}
 				}
 				else if (*itUniformType == "ivec3") {
 					glm::ivec3 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec3>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::ivec3>>(name, value);
 					}
 				}
 				else if (*itUniformType == "vec4") {
 					glm::vec4 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::vec4>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::vec4>>(name, value);
 					}
 				}
 				else if (*itUniformType == "ivec4") {
 					glm::ivec4 value;
 					if (toVec(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::ivec4>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::ivec4>>(name, value);
 					}
 				}
 				else if (*itUniformType == "mat3") {
 					glm::mat3 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat3>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::mat3>>(name, value);
 					}
 				}
 				else if (*itUniformType == "mat4") {
 					glm::mat4 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat4>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::mat4>>(name, value);
 					}
 				}
 				else if (*itUniformType == "mat3x4") {
 					glm::mat3x4 value;
 					if (toMat(*itValue, value)) {
-						bindable = std::make_shared<UniformVariableValue<glm::mat3x4>>(name.c_str(), program.get(), value);
+						bindable = context.create<UniformVariableValue<glm::mat3x4>>(name, value);
 					}
 				}
 			}
@@ -1192,10 +1252,6 @@ namespace se::app {
 				if (itName == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"name\" property");
 				}
-				auto itProgram = jBindable.find("program");
-				if (itProgram == jBindable.end()) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"program\" property");
-				}
 				auto itValue = jBindable.find("value");
 				if (itValue == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: UniformVariableValue missing \"value\" property");
@@ -1203,22 +1259,17 @@ namespace se::app {
 
 				std::string name = *itName;
 
-				auto program = scene.repository.findByName<Program>(itProgram->get<std::string>().c_str());
-				if (!program) {
-					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: \"program\"= " + itProgram->get<std::string>() + " not found");
-				}
-
 				if (*itUniformType == "int") {
 					std::vector<int> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<int>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<int>>(name, value);
 				}
 				else if (*itUniformType == "unsigned int") {
 					std::vector<unsigned int> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<unsigned int>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<unsigned int>>(name, value);
 				}
 				else if (*itUniformType == "float") {
 					std::vector<float> value = *itValue;
-					bindable = std::make_shared<UniformVariableValueVector<float>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<float>>(name, value);
 				}
 				else if (*itUniformType == "vec2") {
 					std::vector<glm::vec2> value;
@@ -1227,7 +1278,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec2>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::vec2>>(name, value);
 				}
 				else if (*itUniformType == "ivec2") {
 					std::vector<glm::ivec2> value;
@@ -1236,7 +1287,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec2>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::ivec2>>(name, value);
 				}
 				else if (*itUniformType == "vec3") {
 					std::vector<glm::vec3> value;
@@ -1245,7 +1296,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec3>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::vec3>>(name, value);
 				}
 				else if (*itUniformType == "ivec3") {
 					std::vector<glm::ivec3> value;
@@ -1254,7 +1305,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec3>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::ivec3>>(name, value);
 				}
 				else if (*itUniformType == "vec4") {
 					std::vector<glm::vec4> value;
@@ -1263,7 +1314,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::vec4>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::vec4>>(name, value);
 				}
 				else if (*itUniformType == "ivec4") {
 					std::vector<glm::ivec4> value;
@@ -1272,7 +1323,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::ivec4>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::ivec4>>(name, value);
 				}
 				else if (*itUniformType == "mat3") {
 					std::vector<glm::mat3> value;
@@ -1281,7 +1332,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat3>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::mat3>>(name, value);
 				}
 				else if (*itUniformType == "mat4") {
 					std::vector<glm::mat4> value;
@@ -1290,7 +1341,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat4>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::mat4>>(name, value);
 				}
 				else if (*itUniformType == "mat3x4") {
 					std::vector<glm::mat3x4> value;
@@ -1299,7 +1350,7 @@ namespace se::app {
 							value.push_back(v);
 						}
 					}
-					bindable = std::make_shared<UniformVariableValueVector<glm::mat3x4>>(name.c_str(), program.get(), value.data(), value.size());
+					bindable = context.create<UniformVariableValueVector<glm::mat3x4>>(name, value);
 				}
 			}
 			else if (*itType == "Texture") {
@@ -1307,11 +1358,11 @@ namespace se::app {
 				if (itName == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture missing \"name\" property");
 				}
-				auto resource = scene.repository.findByName<Texture>(itName->get<std::string>().c_str());
+				auto resource = scene.repository.findByName<TextureRef>(itName->get<std::string>().c_str());
 				if (!resource) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Texture with \"name\"=" + itName->get<std::string>() + " not found");
 				}
-				bindable = resource.get();
+				bindable = *resource;
 				stepSPtr->addResource(std::move(resource), false);
 			}
 			else if (*itType == "Program") {
@@ -1319,11 +1370,12 @@ namespace se::app {
 				if (itName == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program missing \"name\" property");
 				}
-				auto resource = scene.repository.findByName<Program>(itName->get<std::string>().c_str());
+				auto resource = scene.repository.findByName<ProgramRef>(itName->get<std::string>().c_str());
 				if (!resource) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Program with \"name\"=" + itName->get<std::string>() + " not found");
 				}
-				bindable = resource.get();
+				programRef = *resource;
+				bindable = programRef;
 				stepSPtr->addResource(std::move(resource), false);
 			}
 			else if (*itType == "SetOperation") {
@@ -1335,13 +1387,24 @@ namespace se::app {
 				if (itActive == jBindable.end()) {
 					return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: SetOperation missing \"active\" property");
 				}
-				bindable = std::make_shared<SetOperation>(static_cast<Operation>(itOperation->get<int>()), *itActive);
+				bindable = context.create<SetOperation>(static_cast<Operation>(itOperation->get<int>()), itActive->get<bool>());
 			}
 			else {
 				return Result(false, "Failed to parse bindables[" + std::to_string(i) + "]: Wrong \"type\" property = " + itType->get<std::string>());
 			}
 
 			stepSPtr->addBindable(std::move(bindable));
+		}
+
+		if (programRef) {
+			stepSPtr->processBindables([&](const Context::BindableRef& bindable) {
+				bindable.getParent()->execute([=](graphics::Context::Query& q) {
+					auto uniform = dynamic_cast<IUniformVariable*>( q.getBindable(bindable) );
+					if (uniform) {
+						uniform->load(*q.getTBindable(programRef));
+					}
+				});
+			});
 		}
 
 		step = scene.repository.insert(std::move(stepSPtr));
@@ -1569,7 +1632,7 @@ namespace se::app {
 			audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 			FormatId::MonoFloat, audioFile.getSampleRate()
 		);
-		buffer.getResource().setPath(path.c_str());
+		buffer.getResource().setPath(path);
 
 		return Result();
 	}
@@ -1776,7 +1839,7 @@ namespace se::app {
 			}
 
 			std::string key = *itMesh;
-			auto value = scene.repository.findByName<Mesh>(key.c_str());
+			auto value = scene.repository.findByName<MeshRef>(key.c_str());
 			if (!value) {
 				return { Result(false, "Failed to parse rMeshes[" + std::to_string(i) + "]: key=" + key + " not found"), std::nullopt };
 			}
@@ -1918,7 +1981,7 @@ namespace se::app {
 		auto itIrradianceMap = json.find("irradianceMap");
 		if (itIrradianceMap != json.end()) {
 			std::string keyIrradianceMap = *itIrradianceMap;
-			if (auto irradianceMap = scene.repository.findByName<Texture>(keyIrradianceMap.c_str())) {
+			if (auto irradianceMap = scene.repository.findByName<TextureRef>(keyIrradianceMap.c_str())) {
 				lightProbe.irradianceMap = irradianceMap;
 			}
 			else {
@@ -1929,7 +1992,7 @@ namespace se::app {
 		auto itPrefilterMap = json.find("prefilterMap");
 		if (itPrefilterMap != json.end()) {
 			std::string keyPrefilterMap = *itPrefilterMap;
-			if (auto prefilterMap = scene.repository.findByName<Texture>(keyPrefilterMap.c_str())) {
+			if (auto prefilterMap = scene.repository.findByName<TextureRef>(keyPrefilterMap.c_str())) {
 				lightProbe.prefilterMap = prefilterMap;
 			}
 			else {
@@ -2169,7 +2232,7 @@ namespace se::app {
 				return { Result(false, "Vertices properties out of bounds"), std::nullopt };
 			}
 
-			std::vector<std::byte> vElementsBuffer, vReleasedBuffer;
+			MemBuffer vElementsBuffer, vReleasedBuffer;
 			deserializeBuffer(data.buffersJson[verticesElements], data.dataStream, vElementsBuffer);
 			deserializeBuffer(data.buffersJson[verticesReleased], data.dataStream, vReleasedBuffer);
 
@@ -2187,7 +2250,7 @@ namespace se::app {
 				return { Result(false, "Edges properties out of bounds"), std::nullopt };
 			}
 
-			std::vector<std::byte> eElementsBuffer, eReleasedBuffer;
+			MemBuffer eElementsBuffer, eReleasedBuffer;
 			deserializeBuffer(data.buffersJson[edgesElements], data.dataStream, eElementsBuffer);
 			deserializeBuffer(data.buffersJson[edgesReleased], data.dataStream, eReleasedBuffer);
 
@@ -2205,7 +2268,7 @@ namespace se::app {
 				return { Result(false, "Faces properties out of bounds"), std::nullopt };
 			}
 
-			std::vector<std::byte> fElementsBuffer, fReleasedBuffer;
+			MemBuffer fElementsBuffer, fReleasedBuffer;
 			deserializeBuffer(data.buffersJson[facesElements], data.dataStream, fElementsBuffer);
 			deserializeBuffer(data.buffersJson[facesReleased], data.dataStream, fReleasedBuffer);
 
@@ -2216,7 +2279,7 @@ namespace se::app {
 
 			std::size_t vertexEdgeMap = *itVertexEdgeMap;
 
-			std::vector<std::byte> veMapBuffer;
+			MemBuffer veMapBuffer;
 			deserializeBuffer(data.buffersJson[vertexEdgeMap], data.dataStream, veMapBuffer);
 			auto intBuff = reinterpret_cast<const int*>(veMapBuffer.data());
 
@@ -2261,7 +2324,7 @@ namespace se::app {
 				return { Result(false, "Missing TerrainCollider \"zSize\" property"), std::nullopt };
 			}
 
-			std::vector<std::byte> buffer;
+			MemBuffer buffer;
 			deserializeBuffer(data.buffersJson[heights], data.dataStream, buffer);
 
 			auto terrain = std::make_unique<TerrainCollider>();
@@ -2279,7 +2342,7 @@ namespace se::app {
 				return { Result(false, "Vertices buffer " + std::to_string(vertices) + " out of bounds"), std::nullopt };
 			}
 
-			std::vector<std::byte> vertexBuffer;
+			MemBuffer vertexBuffer;
 			deserializeBuffer(data.buffersJson[vertices], data.dataStream, vertexBuffer);
 
 			auto itIndices = json.find("indices");
@@ -2292,7 +2355,7 @@ namespace se::app {
 				return { Result(false, "Indices buffer " + std::to_string(indices) + " out of bounds"), std::nullopt };
 			}
 
-			std::vector<std::byte> indexBuffer;
+			MemBuffer indexBuffer;
 			deserializeBuffer(data.buffersJson[indices], data.dataStream, indexBuffer);
 
 			auto triangleMesh = std::make_unique<TriangleMeshCollider>(
@@ -2600,7 +2663,7 @@ namespace se::app {
 			return { Result(false, "Missing \"mesh\" property"), std::nullopt };
 		}
 
-		if (auto mesh = scene.repository.findByName<Mesh>(itMesh->get<std::string>().c_str())) {
+		if (auto mesh = scene.repository.findByName<MeshRef>(itMesh->get<std::string>().c_str())) {
 			particleSystem.setMesh(mesh);
 		}
 
@@ -2830,21 +2893,16 @@ namespace se::app {
 	{
 		auto componentsVJson = nlohmann::json::array();
 
-		for (Entity entity : data.scene.entities) {
-			nlohmann::json componentJson;
-			bool componentEnabled = true;
-			data.scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
-				componentEnabled = query.hasComponentsEnabled<T>(entity);
-				auto [component] = query.getComponents<T>(entity);
-				if (component) {
-					nlohmann::json componentJson = serializeComponent<T>(*component, data, dataStream);
+		data.scene.application.getEntityDatabase().executeQuery([&](EntityDatabase::Query& query) {
+			query.iterateEntityComponents<T>([&](Entity entity, const T* component) {
+				if (std::find(data.scene.entities.begin(), data.scene.entities.end(), entity) != data.scene.entities.end()) {
+					auto componentJson = serializeComponent<T>(*component, data, dataStream);
+					componentJson["enabled"] = query.hasComponentsEnabled<T>(entity);
+					componentJson["entity"] = data.entityIndexMap.find(entity)->second;
+					componentsVJson.emplace_back(std::move(componentJson));
 				}
 			});
-
-			componentJson["entity"] = data.entityIndexMap.find(entity)->second;
-			componentJson["enabled"] = componentEnabled;
-			componentsVJson.emplace_back(std::move(componentJson));
-		}
+		});
 
 		if (!componentsVJson.empty()) {
 			json[tag] = std::move(componentsVJson);
@@ -2918,14 +2976,112 @@ namespace se::app {
 	}
 
 
+	void retrieveMeshData(SerializeData& data)
+	{
+		data.scene.repository.iterate<MeshRef>([&](const auto& meshResource) {
+			auto p = std::make_shared<std::promise<MeshData>>();
+			data.futureMeshes.emplace(meshResource, p->get_future());
+
+			meshResource->edit([=](graphics::Mesh& m) {
+				MeshData meshData;
+
+				const auto& vbos = m.getVBOs();
+				const auto& ibo = m.getIBO();
+				const auto& vao = m.getVAO();
+
+				for (const auto& vbo : vbos) {
+					for (unsigned int i = 0; i < MeshAttributes::NumAttributes; ++i) {
+						if (vao->isAttributeEnabled(i) && vao->checkVertexAttributeVBOBound(i, *vbo)) {
+							std::size_t bufferSize = vbo->size();
+							MemBuffer buffer(bufferSize);
+							vbo->read(buffer.data(), buffer.size());
+
+							MeshData::VBOData vboData;
+							vboData.buffer = std::move(buffer);
+							vboData.attribute = i;
+							vao->getVertexAttribute(
+								i, vboData.type, vboData.normalized, vboData.componentSize,
+								vboData.stride, vboData.offset
+							);
+
+							meshData.vbosData.emplace_back(std::move(vboData));
+						}
+					}
+				}
+
+				if (ibo) {
+					std::size_t bufferSize = ibo->size();
+					MemBuffer buffer(bufferSize);
+					ibo->read(buffer.data(), bufferSize);
+
+					meshData.iboData.buffer = std::move(buffer);
+					meshData.iboData.typeId = ibo->getIndexType();
+					meshData.iboData.count = ibo->getIndexCount();
+				}
+
+				meshData.bounds = m.getBounds();
+
+				p->set_value(std::move(meshData));
+			});
+		});
+	}
+
+
+	void retrieveTexData(SerializeData& data)
+	{
+		data.scene.repository.iterate<TextureRef>([&](const auto& texture) {
+			auto p = std::make_shared<std::promise<TexData>>();
+			std::string path = texture.getResource().getPath();
+
+			texture->edit([=](graphics::Texture& tex) {
+				TexData ret;
+
+				ret.target = tex.getTarget();
+				ret.type = tex.getTypeId();
+				ret.color = tex.getColorFormat();
+				tex.getFiltering(&ret.min, &ret.mag);
+				tex.getWrapping(&ret.wrapS, &ret.wrapT, &ret.wrapR);
+				ret.textureUnit = tex.getTextureUnit();
+				ret.hasBuffer = path.empty();
+				ret.path = path;
+
+				if (ret.hasBuffer) {
+					// Save the texture to a buffer in the dataStream
+					ret.width = tex.getWidth();
+					ret.height = (ret.target != TextureTarget::Texture1D)? tex.getHeight() : 1;
+					ret.depth = ((ret.target != TextureTarget::Texture1D) && (ret.target != TextureTarget::Texture2D))? tex.getDepth() : 1;
+
+					if (ret.target == TextureTarget::CubeMap) {
+						std::size_t sideSize = ret.width * ret.height * ret.depth * toNumberOfComponents(ret.color) * toTypeSize(ret.type);
+						ret.bufferData.resize(6 * sideSize);
+						for (int i = 0; i < 6; ++i) {
+							tex.getImage(ret.type, toUnSizedColorFormat(ret.color), &ret.bufferData[i * sideSize], i);
+						}
+					}
+					else {
+						ret.bufferData.resize(ret.width * ret.height * ret.depth * toNumberOfComponents(ret.color) * toTypeSize(ret.type));
+						tex.getImage(ret.type, toUnSizedColorFormat(ret.color), ret.bufferData.data());
+					}
+				}
+
+				p->set_value(std::move(ret));
+			});
+
+			data.futureTextures.emplace(texture, p->get_future());
+		});
+	}
+
+
 	void serializeRepository(SerializeData& data, nlohmann::json& json, std::ostream& dataStream)
 	{
-		serializeRVector<Mesh>("meshes", data, json, dataStream);
+		retrieveTexData(data);
+		retrieveMeshData(data);
+		serializeRVector<MeshRef>("meshes", data, json, dataStream);
 		serializeRVector<Skin>("skins", data, json, dataStream);
 		serializeRVector<SkeletonAnimator>("skeletonAnimators", data, json, dataStream);
 		serializeRVector<LightSource>("lightSources", data, json, dataStream);
-		serializeRVector<Texture>("textures", data, json, dataStream);
-		serializeRVector<Program>("programs", data, json, dataStream);
+		serializeRVector<TextureRef>("textures", data, json, dataStream);
+		serializeRVector<ProgramRef>("programs", data, json, dataStream);
 		serializeRVector<RenderableShaderStep>("steps", data, json, dataStream);
 		serializeRVector<RenderableShader>("shaders", data, json, dataStream);
 		serializeRVector<Force>("forces", data, json, dataStream);
@@ -2935,12 +3091,12 @@ namespace se::app {
 
 	Result deserializeRepository(DeserializeData& data, Scene& scene)
 	{
-		if (auto result = deserializeRVector<Mesh>("meshes", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<MeshRef>("meshes", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Skin>("skins", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<SkeletonAnimator>("skeletonAnimators", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<LightSource>("lightSources", data, scene); !result) { return result; }
-		if (auto result = deserializeRVector<Texture>("textures", data, scene); !result) { return result; }
-		if (auto result = deserializeRVector<Program>("programs", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<TextureRef>("textures", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<ProgramRef>("programs", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<RenderableShaderStep>("steps", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<RenderableShader>("shaders", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Force>("forces", data, scene); !result) { return result; }
@@ -3093,7 +3249,7 @@ namespace se::app {
 		}
 
 		nlohmann::json outputJson;
-		SerializeData data = { scene, {}, {}, {}, {} };
+		SerializeData data = { scene, {}, {}, {}, {}, nlohmann::json::array(), nlohmann::json::array() };
 		serializeLinkedFiles(data, outputJson);
 		serializeRepository(data, outputJson, outputDATAStream);
 		serializeNodes(data, outputJson);

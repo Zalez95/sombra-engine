@@ -52,26 +52,46 @@ namespace se::graphics {
 	};
 
 
-	RendererTerrain::Patch::Patch(const float* vertices, std::size_t numVertices) :
+	RendererTerrain::Patch::Patch(Context& context, const float* vertices, std::size_t numVertices) :
 		mNumVertices(numVertices), mInstanceCount(0)
 	{
-		mVAO.bind();
+		mVAO = context.create<VertexArray>();
 
-		mVBOXZPositions.resizeAndCopy(vertices, numVertices);
+		mVBOXZPositions = context.create<VertexBuffer>();
+		mVBOXZPositions.edit([=](VertexBuffer& vbo) {
+			vbo.resizeAndCopy(vertices, numVertices);
+		});
 
-		mVBOXZPositions.bind();
-		mVAO.enableAttribute(0);
-		mVAO.setVertexAttribute(0, TypeId::Float, false, 2, 0);
+		context.execute([vao = mVAO, vbo = mVBOXZPositions](graphics::Context::Query& q) {
+			q.getBindable(vao)->bind();
+			q.getBindable(vbo)->bind();
+		});
+		mVAO.edit([](VertexArray& vao) {
+			vao.enableAttribute(0);
+			vao.setVertexAttribute(0, TypeId::Float, false, 2, 0);
+		});
 
-		mVBOXZLocations.bind();
-		mVAO.enableAttribute(1);
-		mVAO.setVertexAttribute(1, TypeId::Float, false, 2, 0);
-		mVAO.setAttributeDivisor(1, 1);
+		mVBOXZLocations = context.create<VertexBuffer>();
+		context.execute([vao = mVAO, vbo = mVBOXZLocations](graphics::Context::Query& q) {
+			q.getBindable(vao)->bind();
+			q.getBindable(vbo)->bind();
+		});
+		mVAO.edit([](VertexArray& vao) {
+			vao.enableAttribute(1);
+			vao.setVertexAttribute(1, TypeId::Float, false, 2, 0);
+			vao.setAttributeDivisor(1, 1);
+		});
 
-		mVBOLods.bind();
-		mVAO.enableAttribute(2);
-		mVAO.setVertexIntegerAttribute(2, TypeId::Int, 1, 0);
-		mVAO.setAttributeDivisor(2, 1);
+		mVBOLods = context.create<VertexBuffer>();
+		context.execute([vao = mVAO, vbo = mVBOLods](graphics::Context::Query& q) {
+			q.getBindable(vao)->bind();
+			q.getBindable(vbo)->bind();
+		});
+		mVAO.edit([](VertexArray& vao) {
+			vao.enableAttribute(2);
+			vao.setVertexIntegerAttribute(2, TypeId::Int, 1, 0);
+			vao.setAttributeDivisor(2, 1);
+		});
 	}
 
 
@@ -83,12 +103,12 @@ namespace se::graphics {
 	}
 
 
-	void RendererTerrain::Patch::drawInstances()
+	void RendererTerrain::Patch::drawInstances(Context::Query& q)
 	{
 		// Set submitted instances data
-		mVAO.bind();
-		mVBOXZLocations.resizeAndCopy(mXZLocations.data(), mInstanceCount);
-		mVBOLods.resizeAndCopy(mLods.data(), mInstanceCount);
+		q.getBindable(mVAO)->bind();
+		q.getTBindable(mVBOXZLocations)->resizeAndCopy(mXZLocations.data(), mInstanceCount);
+		q.getTBindable(mVBOLods)->resizeAndCopy(mLods.data(), mInstanceCount);
 
 		// Render instanced
 		GraphicsOperations::drawArraysInstanced(PrimitiveType::TriangleFan, mNumVertices, mInstanceCount);
@@ -100,11 +120,11 @@ namespace se::graphics {
 	}
 
 
-	RendererTerrain::RendererTerrain(const std::string& name) :
+	RendererTerrain::RendererTerrain(const std::string& name, Context& context) :
 		Renderer3D(name),
-		mNormal(kNormal, 20),
-		mBottom(kBottom, 18), mTop(kTop, 18), mLeft(kLeft, 18), mRight(kRight, 18),
-		mBottomLeft(kBottomLeft, 16), mBottomRight(kBottomRight, 16), mTopLeft(kTopLeft, 16), mTopRight(kTopRight, 16)
+		mNormal(context, kNormal, 20),
+		mBottom(context, kBottom, 18), mTop(context, kTop, 18), mLeft(context, kLeft, 18), mRight(context, kRight, 18),
+		mBottomLeft(context, kBottomLeft, 16), mBottomRight(context, kBottomRight, 16), mTopLeft(context, kTopLeft, 16), mTopRight(context, kTopRight, 16)
 	{}
 
 // Private functions
@@ -118,28 +138,28 @@ namespace se::graphics {
 	}
 
 
-	void RendererTerrain::render()
+	void RendererTerrain::render(Context::Query& q)
 	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
 				lastPass = pass;
-				pass->bind();
+				pass->bind(q);
 			}
 
-			renderable->bind(pass);
+			renderable->bind(q, pass);
 
 			// Draw the patches
 			submitNode(renderable->getQuadTree().getRootNode(), glm::vec2(0.0f));
-			mNormal.drawInstances();
-			mBottom.drawInstances();
-			mTop.drawInstances();
-			mLeft.drawInstances();
-			mRight.drawInstances();
-			mBottomLeft.drawInstances();
-			mBottomRight.drawInstances();
-			mTopLeft.drawInstances();
-			mTopRight.drawInstances();
+			mNormal.drawInstances(q);
+			mBottom.drawInstances(q);
+			mTop.drawInstances(q);
+			mLeft.drawInstances(q);
+			mRight.drawInstances(q);
+			mBottomLeft.drawInstances(q);
+			mBottomRight.drawInstances(q);
+			mTopLeft.drawInstances(q);
+			mTopRight.drawInstances(q);
 		}
 	}
 

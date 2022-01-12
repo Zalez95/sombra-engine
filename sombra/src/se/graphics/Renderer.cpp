@@ -11,11 +11,11 @@ namespace se::graphics {
 	}
 
 
-	void Renderer::execute()
+	void Renderer::execute(Context::Query& q)
 	{
 		sortQueue();
-		bind();
-		render();
+		bind(q);
+		render(q);
 		clearQueue();
 	}
 

@@ -6,11 +6,11 @@ namespace se::graphics {
 
 	void Pass::submit(Renderable& renderable)
 	{
-		mRenderer.submit(renderable, *this);
+		mRenderer->submit(renderable, *this);
 	}
 
 
-	Pass& Pass::addBindable(const BindableSPtr& bindable)
+	Pass& Pass::addBindable(const Context::BindableRef& bindable)
 	{
 		if (bindable) {
 			mBindables.push_back(bindable);
@@ -20,7 +20,7 @@ namespace se::graphics {
 	}
 
 
-	Pass& Pass::removeBindable(const BindableSPtr& bindable)
+	Pass& Pass::removeBindable(const Context::BindableRef& bindable)
 	{
 		mBindables.erase(std::remove(mBindables.begin(), mBindables.end(), bindable), mBindables.end());
 
@@ -28,18 +28,18 @@ namespace se::graphics {
 	}
 
 
-	void Pass::bind() const
+	void Pass::bind(Context::Query& q) const
 	{
 		for (auto& bindable : mBindables) {
-			bindable->bind();
+			q.getBindable(bindable)->bind();
 		}
 	}
 
 
-	void Pass::unbind() const
+	void Pass::unbind(Context::Query& q) const
 	{
 		for (auto itBindable = mBindables.rbegin(); itBindable != mBindables.rend(); ++itBindable) {
-			(*itBindable)->unbind();
+			q.getBindable(*itBindable)->unbind();
 		}
 	}
 

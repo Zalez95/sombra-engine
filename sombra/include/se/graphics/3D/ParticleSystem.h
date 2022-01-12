@@ -3,7 +3,9 @@
 
 #include <memory>
 #include "Mesh.h"
+#include "Particles.h"
 #include "Renderable3D.h"
+#include "../Context.h"
 
 namespace se::graphics {
 
@@ -12,18 +14,18 @@ namespace se::graphics {
 	 */
 	class ParticleSystem : public Renderable3D
 	{
-	public:		// Nested types
-		using MeshSPtr = std::shared_ptr<Mesh>;
-
 	private:	// Attributes
 		/** The Mesh of the ParticleSystem */
-		MeshSPtr mMesh;
+		Context::TBindableRef<Mesh> mMesh;
 
-		/** The per instance vertex buffers of the ParticleSystem */
-		std::vector<VertexBuffer> mInstanceVBOs;
+		/** The Particles data of the ParticleSystem */
+		Context::TBindableRef<Particles> mParticles;
 
 		/** The VAO of the ParticleSystem */
-		VertexArray mVAO;
+		std::unique_ptr<VertexArray> mVAO;
+
+		/** If @see mVAO should be updated or not */
+		bool mUpdateVAO = true;
 
 		/** The type of primitive used for rendering each Particle */
 		PrimitiveType mPrimitiveType;
@@ -42,13 +44,16 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new ParticleSystem from the given data
 		 *
-		 * @param	mesh a pointer to the Mesh of the ParticleSystem
+		 * @param	mesh a reference to the Mesh of the ParticleSystem
+		 * @param	particles  a reference to the Particles of the
+		 *			ParticleSystem
 		 * @param	primitiveType the type of primitive used for rendering each
 		 *			Particle */
 		ParticleSystem(
-			MeshSPtr mesh = nullptr,
+			const Context::TBindableRef<Mesh>& mesh = {},
+			const Context::TBindableRef<Particles>& particles = {},
 			PrimitiveType primitiveType = PrimitiveType::Triangle
-		) : mPrimitiveType(primitiveType) { setMesh(mesh); };
+		);
 		ParticleSystem(const ParticleSystem& other);
 		ParticleSystem(ParticleSystem&& other) = default;
 
@@ -60,30 +65,27 @@ namespace se::graphics {
 		ParticleSystem& operator=(ParticleSystem&& other) = default;
 
 		/** @return	the Mesh pointed by the ParticleSystem */
-		MeshSPtr getMesh() const { return mMesh; };
+		const Context::TBindableRef<Mesh>& getMesh() const
+		{ return mMesh; };
 
 		/** Sets the Mesh pointed by the ParticleSystem
 		 *
-		 * @param	mesh a pointer to the new Mesh pointed by the
+		 * @param	mesh a reference to the new Mesh of the ParticleSystem
+		 * @return	a reference to the current ParticleSystem */
+		ParticleSystem& setMesh(const Context::TBindableRef<Mesh>& mesh);
+
+		/** @return	the Particles pointed by the ParticleSystem */
+		const Context::TBindableRef<Particles>& getParticles() const
+		{ return mParticles; };
+
+		/** Sets the Particles pointed by the ParticleSystem
+		 *
+		 * @param	particles a reference to the new Particles of the
 		 *			ParticleSystem
 		 * @return	a reference to the current ParticleSystem */
-		ParticleSystem& setMesh(MeshSPtr mesh);
-
-		/** @return	a reference to the per instance VertexBuffers of the
-		 *			ParticleSystem */
-		const std::vector<VertexBuffer>& getInstanceVBOs() const
-		{ return mInstanceVBOs; };
-
-		/** @return	a reference to the per instance VertexBuffers of the
-		 *			ParticleSystem */
-		std::vector<VertexBuffer>& getInstanceVBOs()
-		{ return mInstanceVBOs; };
-
-		/** @return a reference to the VertexArray of the Mesh */
-		const VertexArray& getVAO() const { return mVAO; };
-
-		/** @return a reference to the VertexArray of the Mesh */
-		VertexArray& getVAO() { return mVAO; };
+		ParticleSystem& setParticles(
+			const Context::TBindableRef<Particles>& particles
+		);
 
 		/** @return	the primitive type used for rendering by the
 		 *			ParticleSystem */
@@ -110,8 +112,14 @@ namespace se::graphics {
 		 *			at each direction */
 		void setBounds(const glm::vec3& minimum, const glm::vec3& maximum);
 
-		/** Draws all the particle instances */
-		virtual void drawInstances();
+		/** @copydoc Renderable::submit(Context::Query&) */
+		virtual void submit(Context::Query& q) override;
+
+		/** Draws all the particle instances
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		virtual void drawInstances(Context::Query& q);
 	};
 
 }

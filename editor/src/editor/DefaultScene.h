@@ -8,6 +8,7 @@
 #include <se/app/io/MeshLoader.h>
 #include <se/app/io/ShaderLoader.h>
 #include <se/app/graphics/RenderableShader.h>
+#include <se/app/graphics/TextureUtils.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/TagComponent.h>
 #include <se/app/MeshComponent.h>
@@ -20,165 +21,176 @@ namespace editor {
 	{
 		using namespace se::app;
 		using namespace se::graphics;
+		auto& context = scene.application.getExternalTools().graphicsEngine->getContext();
+		auto& renderGraph = scene.application.getExternalTools().graphicsEngine->getRenderGraph();
 
 		// Default Scene resources
 		auto cubeRawMesh = MeshLoader::createBoxMesh("cube", glm::vec3(1.0f));
 		cubeRawMesh.normals = MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
 		cubeRawMesh.tangents = MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
-		auto cubeMeshSPtr = std::make_shared<Mesh>(MeshLoader::createGraphicsMesh(cubeRawMesh));
-		auto cubeMesh = scene.repository.insert<Mesh>(std::move(cubeMeshSPtr), "cube");
-		cubeMesh.setFakeUser();
+		auto cubeMesh = MeshLoader::createGraphicsMesh(context, cubeRawMesh);
+		auto cubeMeshResource = scene.repository.insert(std::make_shared<MeshRef>(cubeMesh), "cube");
+		cubeMeshResource.setFakeUser();
 
 		auto pointLightSPtr = std::make_shared<LightSource>(scene.application.getEventManager(), LightSource::Type::Point);
 		pointLightSPtr->setIntensity(10.0f);
 		pointLightSPtr->setRange(20.0f);
-		auto pointLight = scene.repository.insert<LightSource>(std::move(pointLightSPtr), "pointLight");
-		pointLight.setFakeUser();
+		auto pointLightResource = scene.repository.insert<LightSource>(std::move(pointLightSPtr), "pointLight");
+		pointLightResource.setFakeUser();
 
-		float pixels[] = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
-		auto chessTextureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
-		chessTextureSPtr->setImage(pixels, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB, 2, 2)
-			.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest)
-			.setWrapping(TextureWrap::Repeat, TextureWrap::Repeat);
-		auto chessTexture = scene.repository.insert<Texture>(std::move(chessTextureSPtr), "chessTexture");
-		chessTexture.setFakeUser();
+		static constexpr float kChessPixels[] = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
+		auto chessTexture = context.create<Texture>(TextureTarget::Texture2D);
+		chessTexture.edit([](Texture& tex) {
+			tex.setImage(kChessPixels, TypeId::Float, ColorFormat::RGB, ColorFormat::RGB, 2, 2)
+				.setFiltering(TextureFilter::Nearest, TextureFilter::Nearest)
+				.setWrapping(TextureWrap::Repeat, TextureWrap::Repeat);
+		});
+		auto chessTextureResource = scene.repository.insert(std::make_shared<TextureRef>(chessTexture), "chessTexture");
+		chessTextureResource.setFakeUser();
 
-		std::shared_ptr<Program> programShadowSPtr;
-		auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, programShadowSPtr);
+		auto normalMapChessTexture = TextureUtils::heightmapToNormalMapLocal(*chessTextureResource, 2, 2);
+		auto normalMapChessTextureResource = scene.repository.insert(std::make_shared<TextureRef>(normalMapChessTexture), "normalMapChessTexture");
+		normalMapChessTextureResource.setFakeUser();
+
+		chessTextureResource->edit([](Texture& tex) { tex.setTextureUnit(SplatmapMaterial::TextureUnits::kHeightMap); });
+		normalMapChessTextureResource->edit([](Texture& tex) { tex.setTextureUnit(SplatmapMaterial::TextureUnits::kNormalMap); });
+
+		ProgramRef programShadow;
+		auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, context, programShadow);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programShadow: " + std::string(result.description()));
 		}
-		auto programShadow = scene.repository.insert<Program>(std::move(programShadowSPtr), "programShadow");
-		programShadow.setFakeUser();
-		programShadow.getResource().setPath("res/shaders/vertex3D.glsl||");
+		auto programShadowResource = scene.repository.insert(std::make_shared<ProgramRef>(programShadow), "programShadow");
+		programShadowResource.setFakeUser();
+		programShadowResource.getResource().setPath("res/shaders/vertex3D.glsl||");
 
-		std::shared_ptr<Program> programShadowSkinningSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr, programShadowSkinningSPtr);
+		ProgramRef programShadowSkinning;
+		result = ShaderLoader::createProgram("res/shaders/vertex3DSkinning.glsl", nullptr, nullptr, context, programShadowSkinning);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programShadowSkinning: " + std::string(result.description()));
 		}
-		auto programShadowSkinning = scene.repository.insert<Program>(std::move(programShadowSkinningSPtr), "programShadowSkinning");
-		programShadowSkinning.setFakeUser();
-		programShadowSkinning.getResource().setPath("res/shaders/vertex3DSkinning.glsl||");
+		auto programShadowSkinningResource = scene.repository.insert(std::make_shared<ProgramRef>(programShadowSkinning), "programShadowSkinning");
+		programShadowSkinningResource.setFakeUser();
+		programShadowSkinningResource.getResource().setPath("res/shaders/vertex3DSkinning.glsl||");
 
-		std::shared_ptr<Program> programShadowTerrainSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr, programShadowTerrainSPtr);
+		ProgramRef programShadowTerrain;
+		result = ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", nullptr, context, programShadowTerrain);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programShadowTerrain: " + std::string(result.description()));
 		}
-		auto programShadowTerrain = scene.repository.insert<Program>(std::move(programShadowTerrainSPtr), "programShadowTerrain");
-		programShadowTerrain.setFakeUser();
-		programShadowTerrain.getResource().setPath("res/shaders/vertexTerrain.glsl|res/shaders/geometryTerrain.glsl|");
+		auto programShadowTerrainResource = scene.repository.insert(std::make_shared<ProgramRef>(programShadowTerrain), "programShadowTerrain");
+		programShadowTerrainResource.setFakeUser();
+		programShadowTerrainResource.getResource().setPath("res/shaders/vertexTerrain.glsl|res/shaders/geometryTerrain.glsl|");
 
-		std::shared_ptr<Program> programSkySPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", programSkySPtr);
+		ProgramRef programSky;
+		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", context, programSky);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programSky: " + std::string(result.description()));
 		}
-		auto programSky = scene.repository.insert<Program>(std::move(programSkySPtr), "programSky");
-		programSky.setFakeUser();
-		programSky.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragmentSkyBox.glsl");
+		auto programSkyResource = scene.repository.insert(std::make_shared<ProgramRef>(programSky), "programSky");
+		programSkyResource.setFakeUser();
+		programSkyResource.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragmentSkyBox.glsl");
 
-		std::shared_ptr<Program> programGBufMaterialSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterialSPtr);
+		ProgramRef programGBufMaterial;
+		result = ShaderLoader::createProgram("res/shaders/vertexNormalMap.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", context, programGBufMaterial);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programGBufMaterial: " + std::string(result.description()));
 		}
-		auto programGBufMaterial = scene.repository.insert<Program>(std::move(programGBufMaterialSPtr), "programGBufMaterial");
-		programGBufMaterial.setFakeUser();
-		programGBufMaterial.getResource().setPath("res/shaders/vertexNormalMap.glsl||res/shaders/fragmentGBufMaterial.glsl");
+		auto programGBufMaterialResource = scene.repository.insert(std::make_shared<ProgramRef>(programGBufMaterial), "programGBufMaterial");
+		programGBufMaterialResource.setFakeUser();
+		programGBufMaterialResource.getResource().setPath("res/shaders/vertexNormalMap.glsl||res/shaders/fragmentGBufMaterial.glsl");
 
-		std::shared_ptr<Program> programGBufMaterialSkinningSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufMaterialSkinningSPtr);
+		ProgramRef programGBufMaterialSkinning;
+		result = ShaderLoader::createProgram("res/shaders/vertexNormalMapSkinning.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", context, programGBufMaterialSkinning);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programGBufMaterialSkinning: " + std::string(result.description()));
 		}
-		auto programGBufMaterialSkinning = scene.repository.insert<Program>(std::move(programGBufMaterialSkinningSPtr), "programGBufMaterialSkinning");
-		programGBufMaterialSkinning.setFakeUser();
-		programGBufMaterialSkinning.getResource().setPath("res/shaders/vertexNormalMapSkinning.glsl||res/shaders/fragmentGBufMaterial.glsl");
+		auto programGBufMaterialSkinningResource = scene.repository.insert(std::make_shared<ProgramRef>(programGBufMaterialSkinning), "programGBufMaterialSkinning");
+		programGBufMaterialSkinningResource.setFakeUser();
+		programGBufMaterialSkinningResource.getResource().setPath("res/shaders/vertexNormalMapSkinning.glsl||res/shaders/fragmentGBufMaterial.glsl");
 
-		std::shared_ptr<Program> programGBufSplatmapSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl", programGBufSplatmapSPtr);
+		ProgramRef programGBufSplatmap;
+		result = ShaderLoader::createProgram("res/shaders/vertexTerrain.glsl", "res/shaders/geometryTerrain.glsl", "res/shaders/fragmentGBufSplatmap.glsl", context, programGBufSplatmap);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programGBufSplatmap: " + std::string(result.description()));
 		}
-		auto programGBufSplatmap = scene.repository.insert<Program>(std::move(programGBufSplatmapSPtr), "programGBufSplatmap");
-		programGBufSplatmap.setFakeUser();
-		programGBufSplatmap.getResource().setPath("res/shaders/vertexTerrain.glsl|res/shaders/geometryTerrain.glsl|res/shaders/fragmentGBufSplatmap.glsl");
+		auto programGBufSplatmapResource = scene.repository.insert(std::make_shared<ProgramRef>(programGBufSplatmap), "programGBufSplatmap");
+		programGBufSplatmapResource.setFakeUser();
+		programGBufSplatmapResource.getResource().setPath("res/shaders/vertexTerrain.glsl|res/shaders/geometryTerrain.glsl|res/shaders/fragmentGBufSplatmap.glsl");
 
-		std::shared_ptr<Program> programGBufParticlesSPtr;
-		result = ShaderLoader::createProgram("res/shaders/vertexParticlesFaceCamera.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", programGBufParticlesSPtr);
+		ProgramRef programGBufParticles;
+		result = ShaderLoader::createProgram("res/shaders/vertexParticlesFaceCamera.glsl", nullptr, "res/shaders/fragmentGBufMaterial.glsl", context, programGBufParticles);
 		if (!result) {
 			throw std::runtime_error("Couldn't create programGBufParticles: " + std::string(result.description()));
 		}
-		auto programGBufParticles = scene.repository.insert<Program>(std::move(programGBufParticlesSPtr), "programGBufParticles");
-		programGBufParticles.setFakeUser();
-		programGBufParticles.getResource().setPath("res/shaders/vertexParticlesFaceCamera.glsl||res/shaders/fragmentGBufMaterial.glsl");
+		auto programGBufParticlesResource = scene.repository.insert(std::make_shared<ProgramRef>(programGBufParticles), "programGBufParticles");
+		programGBufParticlesResource.setFakeUser();
+		programGBufParticlesResource.getResource().setPath("res/shaders/vertexParticlesFaceCamera.glsl||res/shaders/fragmentGBufMaterial.glsl");
 
-		auto shadowMeshProxyRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowMeshProxyRenderer"));
-		auto shadowTerrainProxyRenderer = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("shadowTerrainProxyRenderer"));
-		auto gBufferRendererTerrain = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererTerrain"));
-		auto gBufferRendererMesh = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
-		auto gBufferRendererParticles = static_cast<Renderer*>(scene.application.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererParticles"));
+		auto shadowMeshProxyRenderer = static_cast<Renderer*>(renderGraph.getNode("shadowMeshProxyRenderer"));
+		auto shadowTerrainProxyRenderer = static_cast<Renderer*>(renderGraph.getNode("shadowTerrainProxyRenderer"));
+		auto gBufferRendererTerrain = static_cast<Renderer*>(renderGraph.getNode("gBufferRendererTerrain"));
+		auto gBufferRendererMesh = static_cast<Renderer*>(renderGraph.getNode("gBufferRendererMesh"));
+		auto gBufferRendererParticles = static_cast<Renderer*>(renderGraph.getNode("gBufferRendererParticles"));
 
-		auto stepShadow = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadow");
-		stepShadow.setFakeUser();
-		stepShadow->addResource(programShadow);
+		auto stepShadowResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadow");
+		stepShadowResource.setFakeUser();
+		stepShadowResource->addResource(programShadowResource);
 
-		auto stepShadowSkinning = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadowSkinning");
-		stepShadowSkinning.setFakeUser();
-		stepShadowSkinning->addResource(programShadowSkinning);
+		auto stepShadowSkinningResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowMeshProxyRenderer), "stepShadowSkinning");
+		stepShadowSkinningResource.setFakeUser();
+		stepShadowSkinningResource->addResource(programShadowSkinningResource);
 
-		auto stepShadowTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowTerrainProxyRenderer), "stepShadowTerrain");
-		stepShadowTerrain.setFakeUser();
-		ShaderLoader::addHeightMapBindables(stepShadowTerrain, chessTexture, 2.0f, 0.5f, programShadowTerrain);
+		auto stepShadowTerrainResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*shadowTerrainProxyRenderer), "stepShadowTerrain");
+		stepShadowTerrainResource.setFakeUser();
+		ShaderLoader::addHeightMapBindables(stepShadowTerrainResource, chessTextureResource, normalMapChessTextureResource, 2.0f, 0.5f, programShadowTerrainResource);
 
-		auto stepDefault = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererMesh), "stepDefault");
-		stepDefault.setFakeUser();
+		auto stepDefaultResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererMesh), "stepDefault");
+		stepDefaultResource.setFakeUser();
 		ShaderLoader::addMaterialBindables(
-			stepDefault,
+			stepDefaultResource,
 			Material{
-				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
+				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTextureResource, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), AlphaMode::Opaque, 0.5f, false
 			},
-			programGBufMaterial
+			programGBufMaterialResource
 		);
 
 		SplatmapMaterial sMaterial;
-		sMaterial.splatmapTexture = chessTexture;
+		sMaterial.splatmapTexture = chessTextureResource;
 		sMaterial.materials.push_back(BasicMaterial{
 			PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), {}, 0.2f, 0.5f, {} },
 			{}, 1.0f
 		});
-		auto stepDefaultTerrain = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererTerrain), "stepDefaultTerrain");
-		stepDefaultTerrain.setFakeUser();
-		ShaderLoader::addSplatmapMaterialBindables(stepDefaultTerrain, sMaterial, programGBufSplatmap);
-		ShaderLoader::addHeightMapBindables(stepDefaultTerrain, chessTexture, 2.0f, 0.5f, programGBufSplatmap);
+		auto stepDefaultTerrainResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererTerrain), "stepDefaultTerrain");
+		stepDefaultTerrainResource.setFakeUser();
+		ShaderLoader::addSplatmapMaterialBindables(stepDefaultTerrainResource, sMaterial, programGBufSplatmapResource);
+		ShaderLoader::addHeightMapBindables(stepDefaultTerrainResource, chessTextureResource, normalMapChessTextureResource, 2.0f, 0.5f, programGBufSplatmapResource);
 
-		auto stepDefaultParticles = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererParticles), "stepDefaultParticles");
-		stepDefaultParticles.setFakeUser();
+		auto stepDefaultParticlesResource = scene.repository.insert(std::make_shared<RenderableShaderStep>(*gBufferRendererParticles), "stepDefaultParticles");
+		stepDefaultParticlesResource.setFakeUser();
 		ShaderLoader::addMaterialBindables(
-			stepDefaultParticles,
+			stepDefaultParticlesResource,
 			Material{
-				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTexture, 0.2f, 0.5f, {} },
+				PBRMetallicRoughness{ glm::vec4(1.0f, 0.0f, 0.862f, 1.0f), chessTextureResource, 0.2f, 0.5f, {} },
 				{}, 1.0f, {}, 1.0f, {}, glm::vec3(0.0f), AlphaMode::Opaque, 0.5f, false
 			},
-			programGBufParticles
+			programGBufParticlesResource
 		);
 
-		auto shaderDefault = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefault");
-		shaderDefault.setFakeUser();
-		shaderDefault->addStep(stepShadow)
-			.addStep(stepDefault);
+		auto shaderDefaultResource = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefault");
+		shaderDefaultResource.setFakeUser();
+		shaderDefaultResource->addStep(stepShadowResource)
+			.addStep(stepDefaultResource);
 
-		auto shaderDefaultTerrain = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefaultTerrain");
-		shaderDefaultTerrain.setFakeUser();
-		shaderDefaultTerrain->addStep(stepShadowTerrain)
-			.addStep(stepDefaultTerrain);
+		auto shaderDefaultTerrainResource = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefaultTerrain");
+		shaderDefaultTerrainResource.setFakeUser();
+		shaderDefaultTerrainResource->addStep(stepShadowTerrainResource)
+			.addStep(stepDefaultTerrainResource);
 
-		auto shaderDefaultParticles = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefaultParticles");
-		shaderDefaultParticles.setFakeUser();
-		shaderDefaultParticles->addStep(stepDefaultParticles);
+		auto shaderDefaultParticlesResource = scene.repository.insert(std::make_shared<RenderableShader>(scene.application.getEventManager()), "shaderDefaultParticles");
+		shaderDefaultParticlesResource.setFakeUser();
+		shaderDefaultParticlesResource->addStep(stepDefaultParticlesResource);
 
 		// Default Scene entities
 		scene.application.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
@@ -188,8 +200,8 @@ namespace editor {
 			auto cubeTransforms = query.emplaceComponent<TransformsComponent>(cubeEntity);
 			cubeTransforms->position = { 0.0f, 0.5f, 0.0f };
 			auto cubeMeshComponent = query.emplaceComponent<MeshComponent>(cubeEntity);
-			std::size_t iRMesh = cubeMeshComponent->add(false, cubeMesh);
-			cubeMeshComponent->addRenderableShader(iRMesh, shaderDefault);
+			std::size_t iRMesh = cubeMeshComponent->add(false, cubeMeshResource);
+			cubeMeshComponent->addRenderableShader(iRMesh, shaderDefaultResource);
 		});
 
 		scene.application.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
@@ -197,7 +209,7 @@ namespace editor {
 			scene.entities.push_back(lightEntity);
 			query.emplaceComponent<TagComponent>(lightEntity, true, "pointLight");
 			auto lightComponent = query.emplaceComponent<LightComponent>(lightEntity);
-			lightComponent->setSource(pointLight);
+			lightComponent->setSource(pointLightResource);
 			auto lightTransforms = query.emplaceComponent<TransformsComponent>(lightEntity);
 			lightTransforms->position = { 3.0f, 7.5f, -1.0f };
 		});

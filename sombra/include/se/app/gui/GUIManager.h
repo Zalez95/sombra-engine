@@ -1,9 +1,8 @@
 #ifndef GUI_MANAGER_H
 #define GUI_MANAGER_H
 
-#include "../../graphics/core/UniformVariable.h"
-#include "../../graphics/core/Program.h"
 #include "../../graphics/Technique.h"
+#include "../graphics/TypeRefs.h"
 #include "../events/EventManager.h"
 #include "../events/ResizeEvent.h"
 #include "../events/MouseEvents.h"
@@ -31,11 +30,10 @@ namespace se::app {
 		ComposedComponent mRootComponent;
 
 		/** The projection matrix used for rendering the 2D IComponents */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-			mProjectionMatrix;
+		UniformVVRef<glm::mat4> mProjectionMatrix;
 
 		/** The Program used by the GUIManager */
-		Repository::ResourceRef<graphics::Program> mProgram;
+		Repository::ResourceRef<ProgramRef> mProgramResource;
 
 		/** The Technique used by the GUIManager */
 		Repository::ResourceRef<graphics::Technique> mTechnique;

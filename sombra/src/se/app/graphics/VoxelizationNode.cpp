@@ -1,39 +1,41 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "se/app/graphics/VoxelizationNode.h"
 #include "se/app/io/ShaderLoader.h"
-#include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
-#include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
+#include "se/app/graphics/TypeRefs.h"
 
 namespace se::app {
 
-	VoxelizationNode::VoxelizationNode(const std::string& name, Repository& repository, std::size_t maxVoxels) :
+	VoxelizationNode::VoxelizationNode(const std::string& name, graphics::Context& context, std::size_t maxVoxels) :
 		Renderer3D(name), mMaxVoxels(maxVoxels), mMinPosition(0.0f), mMaxPosition(0.0f)
 	{
-		mProgram = repository.findByName<graphics::Program>("programVoxelization");
-		if (!mProgram) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram(
-				"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
-				"res/shaders/fragmentVoxelization.glsl", program
-			);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mProgram = repository.insert(std::move(program), "programVoxelization");
+		ProgramRef program;
+		auto result = ShaderLoader::createProgram(
+			"res/shaders/vertexVoxelization.glsl", "res/shaders/geometryVoxelization.glsl",
+			"res/shaders/fragmentVoxelization.glsl", context, program
+		);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
-		addBindable(mProgram.get());
+		addBindable(program);
 
 		for (std::size_t i = 0; i < 3; ++i) {
 			mProjectionMatrices[i] = addBindable(
-				std::make_shared<graphics::UniformVariableValue<glm::mat4>>(("uProjectionMatrices[" + std::to_string(i) + "]").c_str(), mProgram.get())
+				context.create<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrices[" + std::to_string(i) + "]")
+					.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
 			);
 		}
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxVoxels", mProgram.get(), static_cast<int>(mMaxVoxels)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uVoxelImage", mProgram.get(), kVoxelImageUnit) );
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uMaxVoxels", static_cast<int>(mMaxVoxels))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uVoxelImage", kVoxelImageUnit)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
 
 		mVoxelImage = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, mVoxelImage) );
@@ -48,7 +50,7 @@ namespace se::app {
 	}
 
 
-	void VoxelizationNode::execute()
+	void VoxelizationNode::execute(graphics::Context::Query& q)
 	{
 		int originX, originY;
 		std::size_t dimensionsX, dimensionsY;
@@ -66,17 +68,14 @@ namespace se::app {
 		glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / sceneVector));
 		glm::mat4 RY = glm::rotate(glm::mat4(1.0f),-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 RX = glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
-		std::static_pointer_cast<graphics::UniformVariableValue<glm::mat4>>( getBindable(mProjectionMatrices[0]) )
-			->setValue(T * RY * S);	// X projection
-		std::static_pointer_cast<graphics::UniformVariableValue<glm::mat4>>( getBindable(mProjectionMatrices[1]) )
-			->setValue(T * RX * S);	// Y projection
-		std::static_pointer_cast<graphics::UniformVariableValue<glm::mat4>>( getBindable(mProjectionMatrices[2]) )
-			->setValue(T * S);		// Z projection
+		q.getTBindable( UniformVVRef<glm::mat4>::from(getBindable(mProjectionMatrices[2])) )->setValue(T * RY * S);	// X projection
+		q.getTBindable( UniformVVRef<glm::mat4>::from(getBindable(mProjectionMatrices[1])) )->setValue(T * RX * S);	// Y projection
+		q.getTBindable( UniformVVRef<glm::mat4>::from(getBindable(mProjectionMatrices[2])) )->setValue(T * S);		// Z projection
 
-		graphics::Renderer3D::execute();
+		graphics::Renderer3D::execute(q);
 
 		graphics::GraphicsOperations::imageMemoryBarrier();
-		std::static_pointer_cast<graphics::Texture>( getBindable(mVoxelImage) )->generateMipMap();
+		q.getTBindable( TextureRef::from(getBindable(mVoxelImage)) )->generateMipMap();
 
 		opCulling.unbind();
 		opDepthTest.unbind();

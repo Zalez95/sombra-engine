@@ -27,12 +27,10 @@ namespace se::app {
 
 	struct LightSystem::LightVolumeData
 	{
-		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
-		using ProgramRef = Repository::ResourceRef<graphics::Program>;
-		using PassRef = Repository::ResourceRef<graphics::Pass>;
-		using TechniqueRef = Repository::ResourceRef<graphics::Technique>;
-		using RenderableShaderStepRef = Repository::ResourceRef<RenderableShaderStep>;
-		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
+		using PassSPtr = std::shared_ptr<graphics::Pass>;
+		using TechniqueSPtr = std::shared_ptr<graphics::Technique>;
+		using RenderableShaderStepResource = Repository::ResourceRef<RenderableShaderStep>;
+		using RenderableShaderResource = Repository::ResourceRef<RenderableShader>;
 
 		static constexpr std::size_t kDL = 0;
 		static constexpr std::size_t kDLCSM = 1;
@@ -40,16 +38,16 @@ namespace se::app {
 		static constexpr std::size_t kNumDL = 3;
 
 		MeshRef pointLight, spotLight, directionalLight;
-		PassRef passLight;
-		TechniqueRef techniqueLight;
+		PassSPtr passLight;
+		TechniqueSPtr techniqueLight;
 
 		ProgramRef programDeferredStencil;
-		RenderableShaderStepRef stepDeferredStencil;
+		RenderableShaderStepResource stepDeferredStencil;
 
 		ProgramRef programDeferredLighting[kNumDL];
-		RenderableShaderStepRef stepDeferredLighting[kNumDL];
-		RenderableShaderRef shaderDeferredLighting[kNumDL];
-		UniformVVSPtr<glm::vec3> cameraPosition[kNumDL];
+		RenderableShaderStepResource stepDeferredLighting[kNumDL];
+		RenderableShaderResource shaderDeferredLighting[kNumDL];
+		UniformVVRef<glm::vec3> cameraPosition[kNumDL];
 	};
 
 
@@ -58,7 +56,6 @@ namespace se::app {
 	{
 		mApplication.getEventManager()
 			.subscribe(this, Topic::Camera)
-			.subscribe(this, Topic::RendererResolution)
 			.subscribe(this, Topic::RMesh)
 			.subscribe(this, Topic::LightSource)
 			.subscribe(this, Topic::RShader)
@@ -69,149 +66,163 @@ namespace se::app {
 			.set<TerrainComponent>()
 		);
 
+		Result result;
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		mLightVolumeData = std::make_unique<LightVolumeData>();
 
 		// Meshes
-		mLightVolumeData->pointLight = mApplication.getRepository().findByName<graphics::Mesh>("pointLight");
-		if (!mLightVolumeData->pointLight) {
+		{
 			RawMesh rawMesh = MeshLoader::createSphereMesh("pointLight", 16, 10, 0.5f);
 			rawMesh.texCoords.clear();
-			auto [min, max] = MeshLoader::calculateBounds(rawMesh);
-			graphics::Mesh gMesh = MeshLoader::createGraphicsMesh(rawMesh);
-			gMesh.setBounds(min, max);
-			mLightVolumeData->pointLight = mApplication.getRepository().insert(std::make_shared<graphics::Mesh>(std::move(gMesh)), "pointLight");
+			auto bounds = MeshLoader::calculateBounds(rawMesh);
+			mLightVolumeData->pointLight = MeshLoader::createGraphicsMesh(context, rawMesh);
+			mLightVolumeData->pointLight.edit([=](graphics::Mesh& m) { m.setBounds(bounds.first, bounds.second); });
 		}
 
-		mLightVolumeData->spotLight = mApplication.getRepository().findByName<graphics::Mesh>("spotLight");
-		if (!mLightVolumeData->spotLight) {
+		{
 			RawMesh rawMesh = MeshLoader::createConeMesh("spotLight", 16, 0.5f, 1.0f);
 			rawMesh.texCoords.clear();
-			auto [min, max] = MeshLoader::calculateBounds(rawMesh);
-			graphics::Mesh gMesh = MeshLoader::createGraphicsMesh(rawMesh);
-			gMesh.setBounds(min, max);
-			mLightVolumeData->spotLight = mApplication.getRepository().insert(std::make_shared<graphics::Mesh>(std::move(gMesh)), "spotLight");
+			auto bounds = MeshLoader::calculateBounds(rawMesh);
+			mLightVolumeData->spotLight = MeshLoader::createGraphicsMesh(context, rawMesh);
+			mLightVolumeData->spotLight.edit([=](graphics::Mesh& m) { m.setBounds(bounds.first, bounds.second); });
 		}
 
-		mLightVolumeData->directionalLight = mApplication.getRepository().findByName<graphics::Mesh>("directionalLight");
-		if (!mLightVolumeData->directionalLight) {
+		{
 			RawMesh rawMesh = MeshLoader::createBoxMesh("directionalLight", glm::vec3(1.0f));
 			rawMesh.texCoords.clear();
-			auto [min, max] = MeshLoader::calculateBounds(rawMesh);
-			graphics::Mesh gMesh = MeshLoader::createGraphicsMesh(rawMesh);
-			gMesh.setBounds(min, max);
-			mLightVolumeData->directionalLight = mApplication.getRepository().insert(std::make_shared<graphics::Mesh>(std::move(gMesh)), "directionalLight");
+			auto bounds = MeshLoader::calculateBounds(rawMesh);
+			mLightVolumeData->directionalLight = MeshLoader::createGraphicsMesh(context, rawMesh);
+			mLightVolumeData->directionalLight.edit([=](graphics::Mesh& m) { m.setBounds(bounds.first, bounds.second); });
 		}
 
 		// Programs
-		mLightVolumeData->programDeferredStencil = mApplication.getRepository().findByName<graphics::Program>("programDeferredStencil");
-		if (!mLightVolumeData->programDeferredStencil) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mLightVolumeData->programDeferredStencil = mApplication.getRepository().insert(std::move(program), "programDeferredStencil");
+		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, nullptr, context, mLightVolumeData->programDeferredStencil);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
 
-		mLightVolumeData->programDeferredLighting[LightVolumeData::kDL] = mApplication.getRepository().findByName<graphics::Program>("programDeferredLighting");
-		if (!mLightVolumeData->programDeferredLighting[LightVolumeData::kDL]) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mLightVolumeData->programDeferredLighting[LightVolumeData::kDL] = mApplication.getRepository().insert(std::move(program), "fragmentDeferredLighting");
+		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLighting.glsl", context, mLightVolumeData->programDeferredLighting[LightVolumeData::kDL]);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
 
-		mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM] = mApplication.getRepository().findByName<graphics::Program>("programDeferredLightingCSM");
-		if (!mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM]) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLightingCSM.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM] = mApplication.getRepository().insert(std::move(program), "fragmentDeferredLightingCSM");
+		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLightingCSM.glsl", context, mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM]);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
 
-		mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows] = mApplication.getRepository().findByName<graphics::Program>("programDeferredLightingPLShadows");
-		if (!mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows]) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLightingPLShadows.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows] = mApplication.getRepository().insert(std::move(program), "fragmentDeferredLightingPLShadows");
+		result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredLightingPLShadows.glsl", context, mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows]);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
 
 		// Passes
-		auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 		auto deferredLightSubGraph = dynamic_cast<DeferredLightSubGraph*>( renderGraph.getNode("deferredLightSubGraph") );
 		mShadowRenderSubGraph = deferredLightSubGraph->getShadowRenderSubGraph();
-
-		mLightVolumeData->passLight = mApplication.getRepository().findByName<graphics::Pass>("passLight");
-		if (!mLightVolumeData->passLight) {
-			mLightVolumeData->passLight = mApplication.getRepository().insert(std::make_shared<graphics::Pass>(*deferredLightSubGraph), "passLight");
-		}
+		mLightVolumeData->passLight = std::make_shared<graphics::Pass>(*deferredLightSubGraph);
 
 		// Techniques
-		mLightVolumeData->techniqueLight = mApplication.getRepository().findByName<graphics::Technique>("techniqueLight");
-		if (!mLightVolumeData->techniqueLight) {
-			mLightVolumeData->techniqueLight = mApplication.getRepository().insert(std::make_shared<graphics::Technique>(), "techniqueLight");
-			mLightVolumeData->techniqueLight->addPass(mLightVolumeData->passLight.get());
-		}
+		mLightVolumeData->techniqueLight = std::make_shared<graphics::Technique>();
+		mLightVolumeData->techniqueLight->addPass(mLightVolumeData->passLight);
 
 		// RenderableShaderSteps
 		mLightVolumeData->stepDeferredStencil = mApplication.getRepository().findByName<RenderableShaderStep>("stepDeferredStencil");
 		if (!mLightVolumeData->stepDeferredStencil) {
 			mLightVolumeData->stepDeferredStencil = mApplication.getRepository().insert(std::make_shared<RenderableShaderStep>(*deferredLightSubGraph->getStencilRenderer()), "stepDeferredStencil");
-			mLightVolumeData->stepDeferredStencil->addBindable(mLightVolumeData->programDeferredStencil.get());
+			mLightVolumeData->stepDeferredStencil->addBindable(mLightVolumeData->programDeferredStencil);
 		}
 
 		mLightVolumeData->stepDeferredLighting[LightVolumeData::kDL] = mApplication.getRepository().findByName<RenderableShaderStep>("stepDeferredLighting");
 		if (!mLightVolumeData->stepDeferredLighting[LightVolumeData::kDL]) {
-			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDL].get();
-			mLightVolumeData->cameraPosition[LightVolumeData::kDL] = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", program);
+			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDL];
+			mLightVolumeData->cameraPosition[LightVolumeData::kDL] = context.create<graphics::UniformVariableValue<glm::vec3>>("uViewPosition")
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); });
 
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDL] = mApplication.getRepository().insert(std::make_shared<RenderableShaderStep>(*deferredLightSubGraph->getColorRenderer()), "stepDeferredLighting");
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDL]->addBindable(program)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", program, DeferredLightSubGraph::TexUnits::kPosition))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", program, DeferredLightSubGraph::TexUnits::kNormal))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", program, DeferredLightSubGraph::TexUnits::kAlbedo))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", program, DeferredLightSubGraph::TexUnits::kMaterial))
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uPosition", DeferredLightSubGraph::TexUnits::kPosition)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uNormal", DeferredLightSubGraph::TexUnits::kNormal)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uAlbedo", DeferredLightSubGraph::TexUnits::kAlbedo)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uMaterial", DeferredLightSubGraph::TexUnits::kMaterial)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
 				.addBindable(mLightVolumeData->cameraPosition[LightVolumeData::kDL]);
 		}
 
 		mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLCSM] = mApplication.getRepository().findByName<RenderableShaderStep>("stepDeferredLightingCSM");
 		if (!mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLCSM]) {
-			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM].get();
-			mLightVolumeData->cameraPosition[LightVolumeData::kDLCSM] = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", program);
+			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDLCSM];
+			mLightVolumeData->cameraPosition[LightVolumeData::kDLCSM] = context.create<graphics::UniformVariableValue<glm::vec3>>("uViewPosition")
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); });
 
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLCSM] = mApplication.getRepository().insert(std::make_shared<RenderableShaderStep>(*deferredLightSubGraph->getColorRenderer()), "stepDeferredLightingCSM");
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLCSM]->addBindable(program)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", program, DeferredLightSubGraph::TexUnits::kPosition))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", program, DeferredLightSubGraph::TexUnits::kNormal))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", program, DeferredLightSubGraph::TexUnits::kAlbedo))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", program, DeferredLightSubGraph::TexUnits::kMaterial))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uShadow", program, DeferredLightSubGraph::TexUnits::kShadow))
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uPosition", DeferredLightSubGraph::TexUnits::kPosition)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uNormal", DeferredLightSubGraph::TexUnits::kNormal)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uAlbedo", DeferredLightSubGraph::TexUnits::kAlbedo)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uMaterial", DeferredLightSubGraph::TexUnits::kMaterial)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uShadow", DeferredLightSubGraph::TexUnits::kShadow)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
 				.addBindable(mLightVolumeData->cameraPosition[LightVolumeData::kDLCSM]);
 		}
 
 		mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLPLShadows] = mApplication.getRepository().findByName<RenderableShaderStep>("stepDeferredLightingPLShadows");
 		if (!mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLPLShadows]) {
-			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows].get();
-			mLightVolumeData->cameraPosition[LightVolumeData::kDLPLShadows] = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", program);
+			auto program = mLightVolumeData->programDeferredLighting[LightVolumeData::kDLPLShadows];
+			mLightVolumeData->cameraPosition[LightVolumeData::kDLPLShadows] = context.create<graphics::UniformVariableValue<glm::vec3>>("uViewPosition")
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); });
 
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLPLShadows] = mApplication.getRepository().insert(std::make_shared<RenderableShaderStep>(*deferredLightSubGraph->getColorRenderer()), "stepDeferredLightingPLShadows");
 			mLightVolumeData->stepDeferredLighting[LightVolumeData::kDLPLShadows]->addBindable(program)
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", program, DeferredLightSubGraph::TexUnits::kPosition))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", program, DeferredLightSubGraph::TexUnits::kNormal))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", program, DeferredLightSubGraph::TexUnits::kAlbedo))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", program, DeferredLightSubGraph::TexUnits::kMaterial))
-				.addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uShadow", program, DeferredLightSubGraph::TexUnits::kShadow))
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uPosition", DeferredLightSubGraph::TexUnits::kPosition)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uNormal", DeferredLightSubGraph::TexUnits::kNormal)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uAlbedo", DeferredLightSubGraph::TexUnits::kAlbedo)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uMaterial", DeferredLightSubGraph::TexUnits::kMaterial)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
+				.addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uShadow", DeferredLightSubGraph::TexUnits::kShadow)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+				)
 				.addBindable(mLightVolumeData->cameraPosition[LightVolumeData::kDLPLShadows]);
 		}
 
@@ -289,10 +300,13 @@ namespace se::app {
 		std::size_t resolution, numCascades;
 
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			std::scoped_lock lock(mMutex);
+			SOMBRA_DEBUG_LOG << "Checking if the camera was updated";
+
 			auto [transforms, camera] = query.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
 			if (transforms && camera) {
 				for (std::size_t i = 0; i < LightVolumeData::kNumDL; ++i) {
-					mLightVolumeData->cameraPosition[i]->setValue(transforms->position);
+					mLightVolumeData->cameraPosition[i].edit([p = transforms->position](auto& uniform) { uniform.setValue(p); });
 				}
 
 				if (!camera->hasOrthographicProjection()) {
@@ -305,6 +319,7 @@ namespace se::app {
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			query.iterateEntityComponents<TransformsComponent, LightComponent>(
 				[&](Entity entity, TransformsComponent* transforms, LightComponent* light) {
+					std::scoped_lock lock(mMutex);
 					auto itUniforms = mEntityUniforms.find(entity);
 					if (itUniforms == mEntityUniforms.end()) { return; }
 
@@ -312,10 +327,10 @@ namespace se::app {
 								rotation = glm::mat4_cast(transforms->orientation),
 								scale = glm::mat4(1.0f);
 
-					itUniforms->second.type->setValue(static_cast<int>(light->getSource()->getType()));
-					itUniforms->second.color->setValue(light->getSource()->getColor());
-					itUniforms->second.intensity->setValue(light->getSource()->getIntensity());
-					itUniforms->second.range->setValue(light->getSource()->getRange());
+					itUniforms->second.type.edit([t = light->getSource()->getType()](auto& uniform) { uniform.setValue(static_cast<int>(t)); });
+					itUniforms->second.color.edit([c = light->getSource()->getColor()](auto& uniform) { uniform.setValue(c); });
+					itUniforms->second.intensity.edit([i = light->getSource()->getIntensity()](auto& uniform) { uniform.setValue(i); });
+					itUniforms->second.range.edit([r = light->getSource()->getRange()](auto& uniform) { uniform.setValue(r); });
 
 					switch (light->getSource()->getType()) {
 						case LightSource::Type::Point: {
@@ -337,7 +352,7 @@ namespace se::app {
 									light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
 								}
 
-								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
+								itUniforms->second.shadowVPMatrices.edit([=](auto& uniform) { uniform.setValue(shadowVPMatrices.data(), shadowVPMatrices.size()); });
 								shadowVPMatrices.clear();
 							}
 						} break;
@@ -350,8 +365,10 @@ namespace se::app {
 							float cosOuter = std::cos(outerConeAngle);
 							scale = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f * radius, light->getSource()->getRange(), 2.0f * radius));
 
-							itUniforms->second.lightAngleScale->setValue(1.0f / std::max(0.001f, cosInner - cosOuter));
-							itUniforms->second.lightAngleOffset->setValue(-cosOuter * itUniforms->second.lightAngleScale->getValue());
+							float lightAngleScale = 1.0f / std::max(0.001f, cosInner - cosOuter);
+							float lightAngleOffset = -cosOuter * lightAngleScale;
+							itUniforms->second.lightAngleScale.edit([=](auto& uniform) { uniform.setValue(lightAngleScale); });
+							itUniforms->second.lightAngleOffset.edit([=](auto& uniform) { uniform.setValue(lightAngleOffset); });
 
 							if (light->getRenderable().castsShadows()) {
 								light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
@@ -367,8 +384,8 @@ namespace se::app {
 								light->getRenderable().setShadowViewMatrix(0, shadowViewMatrix);
 								light->getRenderable().setShadowProjectionMatrix(0, shadowProjectionMatrix);
 
-								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
-								itUniforms->second.cascadesZFar->setValue(&zFar, 1);
+								itUniforms->second.shadowVPMatrices.edit([=](auto& uniform) { uniform.setValue(shadowVPMatrices.data(), shadowVPMatrices.size()); });
+								itUniforms->second.cascadesZFar.edit([=](auto& uniform) { uniform.setValue(&zFar, 1); });
 								shadowVPMatrices.clear();
 							}
 						} break;
@@ -436,8 +453,8 @@ namespace se::app {
 									light->getRenderable().setShadowProjectionMatrix(i, shadowProjectionMatrix);
 								}
 
-								itUniforms->second.shadowVPMatrices->setValue(shadowVPMatrices.data(), shadowVPMatrices.size());
-								itUniforms->second.cascadesZFar->setValue(depths.data(), depths.size());
+								itUniforms->second.shadowVPMatrices.edit([=](auto& uniform) { uniform.setValue(shadowVPMatrices.data(), shadowVPMatrices.size()); });
+								itUniforms->second.cascadesZFar.edit([=](auto& uniform) { uniform.setValue(depths.data(), depths.size()); });
 								shadowVPMatrices.clear();
 							}
 						} break;
@@ -446,7 +463,7 @@ namespace se::app {
 					glm::mat4 modelMatrix = translation * rotation * scale;
 					light->getRenderable().getRenderableMesh().setModelMatrix(modelMatrix);
 					for (std::size_t i = 0; i < 2; ++i) {
-						itUniforms->second.modelMatrices[i]->setValue(modelMatrix);
+						itUniforms->second.modelMatrices[i].edit([=](auto& uniform) { uniform.setValue(modelMatrix); });
 					}
 				}
 				, true
@@ -487,7 +504,9 @@ namespace se::app {
 	void LightSystem::onRemoveMesh(Entity entity, MeshComponent* mesh, EntityDatabase::Query&)
 	{
 		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-			mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(mesh->get(i));
+			mesh->processRenderableShaders(i, [&](const auto& shader) {
+				mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(mesh->get(i), shader->getTechnique());
+			});
 		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
 	}
@@ -504,7 +523,9 @@ namespace se::app {
 
 	void LightSystem::onRemoveTerrain(Entity entity, TerrainComponent* terrain, EntityDatabase::Query&)
 	{
-		mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(terrain->get());
+		terrain->processRenderableShaders([&](const auto& shader) {
+			mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(terrain->get(), shader->getTechnique());
+		});
 		SOMBRA_INFO_LOG << "Entity " << entity << " with TerrainComponent " << terrain << " removed successfully";
 	}
 
@@ -516,6 +537,7 @@ namespace se::app {
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			auto [camera] = query.getComponents<CameraComponent>(event.getValue(), true);
 			if (camera) {
+				std::scoped_lock lock(mMutex);
 				mCameraEntity = event.getValue();
 				SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 			}
@@ -540,7 +562,9 @@ namespace se::app {
 						});
 						break;
 					case RMeshEvent::Operation::Remove:
-						mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderable(mesh->get(event.getRIndex()));
+						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
+							mShadowRenderSubGraph->getShadowUniformsUpdater().removeRenderableTechnique(mesh->get(event.getRIndex()), shader->getTechnique());
+						});
 						break;
 				}
 			}
@@ -640,6 +664,8 @@ namespace se::app {
 
 	void LightSystem::clearRMesh(Entity entity, LightComponent* light)
 	{
+		std::scoped_lock lock(mMutex);
+
 		auto itEntityUniforms = mEntityUniforms.find(entity);
 		if (itEntityUniforms == mEntityUniforms.end()) { return; }
 
@@ -647,7 +673,7 @@ namespace se::app {
 
 		light->getRenderable()
 			.disableShadows()
-			.removeTechnique(mLightVolumeData->techniqueLight.get());
+			.removeTechnique(mLightVolumeData->techniqueLight);
 		light->removeRenderableShader(mLightVolumeData->shaderDeferredLighting[itEntityUniforms->second.iDL]);
 		light->getRenderable().getRenderableMesh()
 			.setMesh(nullptr)
@@ -662,11 +688,14 @@ namespace se::app {
 	{
 		if (!light->getSource()) { return; }
 
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+
+		std::scoped_lock lock(mMutex);
 		auto itEntityUniforms = mEntityUniforms.emplace(entity, EntityUniforms()).first;
 
-		auto mesh =	(light->getSource()->getType() == LightSource::Type::Point)? mLightVolumeData->pointLight.get() :
-					(light->getSource()->getType() == LightSource::Type::Spot)? mLightVolumeData->spotLight.get() :
-					mLightVolumeData->directionalLight.get();
+		auto mesh =	(light->getSource()->getType() == LightSource::Type::Point)? mLightVolumeData->pointLight :
+					(light->getSource()->getType() == LightSource::Type::Spot)? mLightVolumeData->spotLight :
+					mLightVolumeData->directionalLight;
 		std::size_t iDL =	!light->getSource()->castsShadows()? LightVolumeData::kDL :
 							(light->getSource()->getType() == LightSource::Type::Point)? LightVolumeData::kDLPLShadows :
 							LightVolumeData::kDLCSM;
@@ -675,14 +704,22 @@ namespace se::app {
 		light->addRenderableShader(mLightVolumeData->shaderDeferredLighting[iDL]);
 
 		itEntityUniforms->second.iDL = iDL;
-		itEntityUniforms->second.modelMatrices[0] = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mLightVolumeData->programDeferredStencil.get());
-		itEntityUniforms->second.modelMatrices[1] = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.type = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uBaseLight.type", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.color = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uBaseLight.color", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.intensity = std::make_shared<graphics::UniformVariableValue<float>>("uBaseLight.intensity", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.range = std::make_shared<graphics::UniformVariableValue<float>>("uBaseLight.range", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.lightAngleScale = std::make_shared<graphics::UniformVariableValue<float>>("uBaseLight.lightAngleScale", mLightVolumeData->programDeferredLighting[iDL].get());
-		itEntityUniforms->second.lightAngleOffset = std::make_shared<graphics::UniformVariableValue<float>>("uBaseLight.lightAngleOffset", mLightVolumeData->programDeferredLighting[iDL].get());
+		itEntityUniforms->second.modelMatrices[0] = context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix")
+			.qedit([p = mLightVolumeData->programDeferredStencil](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.modelMatrices[1] = context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.type = context.create<graphics::UniformVariableValue<unsigned int>>("uBaseLight.type")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.color = context.create<graphics::UniformVariableValue<glm::vec3>>("uBaseLight.color")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.intensity = context.create<graphics::UniformVariableValue<float>>("uBaseLight.intensity")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.range = context.create<graphics::UniformVariableValue<float>>("uBaseLight.range")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.lightAngleScale = context.create<graphics::UniformVariableValue<float>>("uBaseLight.lightAngleScale")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+		itEntityUniforms->second.lightAngleOffset = context.create<graphics::UniformVariableValue<float>>("uBaseLight.lightAngleOffset")
+			.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
 
 		light->getRenderable().getRenderableMesh()
 			.addPassBindable(mLightVolumeData->stepDeferredStencil->getPass().get(), itEntityUniforms->second.modelMatrices[0])
@@ -695,13 +732,16 @@ namespace se::app {
 			.addPassBindable(mLightVolumeData->stepDeferredLighting[iDL]->getPass().get(), itEntityUniforms->second.lightAngleOffset);
 
 		if (iDL != LightVolumeData::kDL) {
-			itEntityUniforms->second.shadowVPMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat4>>("uShadowVPMatrices", mLightVolumeData->programDeferredLighting[iDL].get());
+			itEntityUniforms->second.shadowVPMatrices = context.create<graphics::UniformVariableValueVector<glm::mat4>>("uShadowVPMatrices")
+				.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
 			light->getRenderable().getRenderableMesh()
 				.addPassBindable(mLightVolumeData->stepDeferredLighting[iDL]->getPass().get(), itEntityUniforms->second.shadowVPMatrices);
 
 			if (iDL == LightVolumeData::kDLCSM) {
-				itEntityUniforms->second.numCascades = std::make_shared<graphics::UniformVariableValue<unsigned int>>("uNumCascades", mLightVolumeData->programDeferredLighting[iDL].get());
-				itEntityUniforms->second.cascadesZFar = std::make_shared<graphics::UniformVariableValueVector<float>>("uCascadesZFar", mLightVolumeData->programDeferredLighting[iDL].get());
+				itEntityUniforms->second.numCascades = context.create<graphics::UniformVariableValue<unsigned int>>("uNumCascades")
+					.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
+				itEntityUniforms->second.cascadesZFar = context.create<graphics::UniformVariableValueVector<float>>("uCascadesZFar")
+					.qedit([p = mLightVolumeData->programDeferredLighting[iDL]](auto& q, auto& uniform) { uniform.load(*q.getTBindable(p)); });
 
 				light->getRenderable().getRenderableMesh()
 					.addPassBindable(mLightVolumeData->stepDeferredLighting[iDL]->getPass().get(), itEntityUniforms->second.numCascades)
@@ -709,18 +749,18 @@ namespace se::app {
 			}
 		}
 
-		light->getRenderable().addTechnique(mLightVolumeData->techniqueLight.get());
+		light->getRenderable().addTechnique(mLightVolumeData->techniqueLight);
 		if (light->getSource()->castsShadows()) {
 			float size, zNear, zFar;
 			std::size_t resolution, numCascades;
 			light->getSource()->getShadows(resolution, zNear, zFar, size, numCascades);
 
 			if (iDL == LightVolumeData::kDLPLShadows) {
-				light->getRenderable().setShadows(resolution, true);
+				light->getRenderable().setShadows(context, resolution, true);
 			}
 			else {
-				light->getRenderable().setShadows(resolution, false, numCascades);
-				itEntityUniforms->second.numCascades->setValue(static_cast<unsigned int>(numCascades));
+				light->getRenderable().setShadows(context, resolution, false, numCascades);
+				itEntityUniforms->second.numCascades.edit([=](auto& uniform) { uniform.setValue(static_cast<unsigned int>(numCascades)); });
 			}
 		}
 

@@ -23,6 +23,7 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new ShadowUniformsUpdater
 		 *
+		 * @param	context the graphics Context used for creating the uniforms
 		 * @param	viewMatUniformName the name of the View matrix uniform
 		 *			variable
 		* @param	projectionMatUniform Name te name of the Projection
@@ -30,11 +31,12 @@ namespace se::app {
 		* @param	renderNode the RenderNode of the Passes tha can be
 		*			updated */
 		ShadowUniformsUpdater(
+			graphics::Context& context,
 			const char* viewMatUniformName,
 			const char* projectionMatUniformName,
 			const graphics::RenderNode* renderNode
 		) : IViewProjectionUpdater(
-				viewMatUniformName, projectionMatUniformName
+				context, viewMatUniformName, projectionMatUniformName
 			), mRenderNode(renderNode) {};
 
 		/** @copydoc IViewProjectionUpdater::shouldAddUniforms() */
@@ -114,8 +116,12 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new ShadowRenderSubGraph
 		 *
-		 * @param	name the name of the new ShadowRenderSubGraph */
-		ShadowRenderSubGraph(const std::string& name);
+		 * @param	name the name of the new ShadowRenderSubGraph
+		 * @param	context the graphics Context used for creating the
+		 *			uniforms */
+		ShadowRenderSubGraph(
+			const std::string& name, graphics::Context& context
+		);
 
 		/** Sets the resolution of the viewport after the Shadows have been
 		 * drawn
@@ -138,8 +144,8 @@ namespace se::app {
 		 *			ShadowRenderSubGraph won't do anything on @see execute */
 		void startRender(const RenderableLight& renderableLight);
 
-		/** @copydoc graphics::RenderNode::execute() */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 
 		/** Clears the ShadowRenderSubGraph after a render */
 		void endRender();
@@ -199,14 +205,14 @@ namespace se::app {
 		const ShadowRenderSubGraph& getShadowRenderSubGraph()
 		{ return mShadowRenderSubGraph; };
 
-		/** @copydoc graphics::RenderNode::execute() */
-		virtual void execute() override {};
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query&) override {};
 	protected:
 		/** @copydoc graphics::Renderer::sortQueue() */
 		virtual void sortQueue() override {};
 
-		/** @copydoc graphics::Renderer::render() */
-		virtual void render() override {};
+		/** @copydoc graphics::Renderer::render(graphics::Context::Query&) */
+		virtual void render(graphics::Context::Query&) override {};
 
 		/** @copydoc graphics::Renderer::clearQueue() */
 		virtual void clearQueue() override {};

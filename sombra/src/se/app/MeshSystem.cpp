@@ -1,4 +1,5 @@
 #include "se/utils/Log.h"
+#include "se/utils/ThreadPool.h"
 #include "se/graphics/Technique.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
@@ -44,31 +45,63 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 
-		utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
-
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
-			std::unique_lock lock(mMutex);
-			SOMBRA_DEBUG_LOG << "Executing RenderableStep operations";
+			std::unique_lock lock(mUniformsMutex);
+			SOMBRA_DEBUG_LOG << "Adding new uniforms";
 
-			while (!mStepOperationsQueue.empty()) {
-				StepOperation operation = mStepOperationsQueue.front();
-				mStepOperationsQueue.pop_front();
+			std::queue<NewUniform> nextNewUniforms;
+			while (!mNewUniforms.empty()) {
+				NewUniform newUniform = std::move(mNewUniforms.front());
+				mNewUniforms.pop();
 				lock.unlock();
 
-				if (operation.operation == StepOperation::Operation::Add) {
-					addStep(operation.entity, operation.rIndex, query, operation.step);
+				if (utils::is_ready(newUniform.uniformFound)) {
+					auto [transforms, mesh] = query.getComponents<TransformsComponent, MeshComponent>(newUniform.entity, true);
+					bool found = newUniform.uniformFound.get();
+					auto modelMatrix = UniformVVRef<glm::mat4>::from(newUniform.uniform);
+					auto jointMatrices = UniformVVVRef<glm::mat3x4>::from(newUniform.uniform);
+
+					if (mesh && mesh->isActive(newUniform.rIndex) && found) {
+						std::scoped_lock lock2(mMutex);
+						auto itEntity = mEntityUniforms.find(newUniform.entity);
+						if (itEntity != mEntityUniforms.end()) {
+							auto& entityUniforms = itEntity->second[newUniform.rIndex];
+							auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
+								return uniforms.step == newUniform.step;
+							});
+							if (itUniforms != entityUniforms.end()) {
+								if (modelMatrix) {
+									itUniforms->modelMatrix = modelMatrix;
+									mesh->get(newUniform.rIndex).addPassBindable(itUniforms->step->getPass().get(), modelMatrix);
+								}
+
+								if (jointMatrices) {
+									itUniforms->jointMatrices = jointMatrices;
+									mesh->get(newUniform.rIndex).addPassBindable(itUniforms->step->getPass().get(), jointMatrices);
+								}
+
+								if (transforms) {
+									transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
+								}
+							}
+						}
+					}
 				}
 				else {
-					removeStep(operation.entity, operation.rIndex, query, operation.step);
+					nextNewUniforms.push(std::move(newUniform));
 				}
 
 				lock.lock();
 			}
+
+			std::swap(mNewUniforms, nextNewUniforms);
 		});
 
-		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
 			SOMBRA_DEBUG_LOG << "Updating model and joint matrices";
 
+			utils::FixedVector<glm::mat3x4, Skin::kMaxJoints> jointMatrices;
 			query.iterateEntityComponents<TransformsComponent, MeshComponent>(
 				[&](Entity entity, TransformsComponent* transforms, MeshComponent* mesh) {
 					if ((!transforms->updated[static_cast<int>(TransformsComponent::Update::Mesh)]
@@ -93,9 +126,11 @@ namespace se::app {
 
 							mesh->processRenderableIndices([&](std::size_t i) {
 								for (auto& meshUniforms : itUniforms->second[i]) {
-									meshUniforms.modelMatrix->setValue(modelMatrix);
+									if (meshUniforms.modelMatrix) {
+										meshUniforms.modelMatrix.edit([=](auto& uniform) { uniform.setValue(modelMatrix); });
+									}
 									if (meshUniforms.jointMatrices) {
-										meshUniforms.jointMatrices->setValue(jointMatrices.data(), jointMatrices.size());
+										meshUniforms.jointMatrices.edit([=](auto& uniform) { uniform.setValue(jointMatrices.data(), jointMatrices.size()); });
 									}
 								}
 							});
@@ -122,23 +157,22 @@ namespace se::app {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
 		}
 
-		if (mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>()).second) {
-			mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
-				mesh->processRenderableShaders(i, [&](const auto& shader) {
-					shader->processSteps([&](const auto& step) {
-						std::scoped_lock lock(mMutex);
-						mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, i, step.get() });
-					});
-				});
+		{
+			std::scoped_lock lock(mMutex);
+			mEntityUniforms.emplace(entity, std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>());
+		}
 
-				mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
+		mesh->processRenderableIndices([&, mesh = mesh](std::size_t i) {
+			mesh->processRenderableShaders(i, [&](const auto& shader) {
+				shader->processSteps([&](const auto& step) {
+					addStep(entity, i, query, step.get());
+				});
 			});
 
-			SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
-		}
-		else {
-			SOMBRA_ERROR_LOG << "Failed to add Entity " << entity << " with MeshComponent " << mesh << " to the map";
-		}
+			mApplication.getExternalTools().graphicsEngine->addRenderable(&mesh->get(i));
+		});
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " added successfully";
 	}
 
 
@@ -174,8 +208,7 @@ namespace se::app {
 
 						mesh->processRenderableShaders(event.getRIndex(), [&](const auto& shader) {
 							shader->processSteps([&](const auto& step) {
-								std::scoped_lock lock(mMutex);
-								mStepOperationsQueue.push_back({ StepOperation::Operation::Add, event.getEntity(), event.getRIndex(), step.get() });
+								addStep(event.getEntity(), event.getRIndex(), query, step.get());
 							});
 						});
 
@@ -204,20 +237,20 @@ namespace se::app {
 			return;
 		}
 
-		switch (event.getOperation()) {
-			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->processSteps([&](const auto& step) {
-					std::scoped_lock lock(mMutex);
-					mStepOperationsQueue.push_back({ StepOperation::Operation::Add, event.getEntity(), event.getRIndex(), step.get() });
-				});
-			} break;
-			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->processSteps([&](const auto& step) {
-					std::scoped_lock lock(mMutex);
-					mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, event.getEntity(), event.getRIndex(), step.get() });
-				});
-			} break;
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			switch (event.getOperation()) {
+				case RenderableShaderEvent::Operation::Add: {
+					event.getShader()->processSteps([&](const auto& step) {
+						addStep(event.getEntity(), event.getRIndex(), query, step.get());
+					});
+				} break;
+				case RenderableShaderEvent::Operation::Remove: {
+					event.getShader()->processSteps([&](const auto& step) {
+						removeStep(event.getEntity(), event.getRIndex(), query, step.get());
+					});
+				} break;
+			}
+		});
 	}
 
 
@@ -237,12 +270,10 @@ namespace se::app {
 						if (hasShader) {
 							switch (event.getOperation()) {
 								case ShaderEvent::Operation::Add: {
-									std::scoped_lock lock(mMutex);
-									mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, i, event.getStep() });
+									addStep(entity, i, query, event.getStep());
 								} break;
 								case ShaderEvent::Operation::Remove: {
-									std::scoped_lock lock(mMutex);
-									mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, entity, i, event.getStep() });
+									removeStep(entity, i, query, event.getStep());
 								} break;
 							}
 						}
@@ -256,28 +287,30 @@ namespace se::app {
 
 	void MeshSystem::addStep(Entity entity, std::size_t rIndex, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [transforms, mesh] = query.getComponents<TransformsComponent, MeshComponent>(entity, true);
+		auto [mesh] = query.getComponents<MeshComponent>(entity, true);
 		if (!mesh) {
 			return;
 		}
 
-		// Check if the MeshComponent has the Step already added
-		std::scoped_lock lock(mMutex);
-		auto& entityUniforms = mEntityUniforms[entity][rIndex];
-		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.step == step;
-		});
-		if (itUniforms != entityUniforms.end()) {
-			itUniforms->shaderCount++;
-			return;
+		{	// Check if the mesh has the Step already added
+			std::scoped_lock lock(mMutex);
+			auto& entityUniforms = mEntityUniforms.find(entity)->second[rIndex];
+			auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
+				return uniforms.step == step;
+			});
+			if (itUniforms != entityUniforms.end()) {
+				itUniforms->shaderCount++;
+				return;
+			}
+			else {
+				entityUniforms.push_back({ 1, step, UniformVVRef<glm::mat4>(), UniformVVVRef<glm::mat3x4>() });
+			}
 		}
 
 		// Find the program bindable of the Step
-		std::shared_ptr<graphics::Program> program;
-		step->processBindables([&](const auto& bindable) {
-			if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
-				program = tmp;
-			}
+		ProgramRef program;
+		step->processPrograms([&](const auto& program2) {
+			program = *program2;
 		});
 
 		if (!program) {
@@ -285,24 +318,33 @@ namespace se::app {
 			return;
 		}
 
-		// Create and add the uniforms to the mesh
-		auto& uniforms = entityUniforms.emplace_back();
-		uniforms.shaderCount = 1;
-		uniforms.step = step;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
-		if (uniforms.modelMatrix->found()) {
-			mesh->get(rIndex).addPassBindable(step->getPass().get(), uniforms.modelMatrix);
-		}
-		if (mesh->hasSkinning(rIndex)) {
-			uniforms.jointMatrices = std::make_shared<graphics::UniformVariableValueVector<glm::mat3x4>>("uJointMatrices", program);
-			if (uniforms.jointMatrices->found()) {
-				uniforms.jointMatrices->reserve(Skin::kMaxJoints);
-				mesh->get(rIndex).addPassBindable(step->getPass().get(), uniforms.jointMatrices);
-			}
+		// Create the uniforms
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+
+		{
+			auto p = std::make_shared<std::promise<bool>>();
+			auto modelMatrixFound = p->get_future();
+
+			auto modelMatrix = context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix")
+				.qedit([=](auto& q, auto& uniform) {
+					p->set_value( uniform.load(*q.getTBindable(program)) );
+				});
+
+			std::scoped_lock lock(mUniformsMutex);
+			mNewUniforms.push({ entity, rIndex, step, std::move(modelMatrix), std::move(modelMatrixFound) });
 		}
 
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
+		if (mesh->hasSkinning(rIndex)) {
+			auto p = std::make_shared<std::promise<bool>>();
+			auto jointMatricesFound = p->get_future();
+
+			auto jointMatrices = context.create<graphics::UniformVariableValueVector<glm::mat3x4>>("uJointMatrices")
+				.qedit([=](auto& q, auto& uniform) {
+					p->set_value( uniform.load(*q.getTBindable(program)) );
+				});
+
+			std::scoped_lock lock(mUniformsMutex);
+			mNewUniforms.push({ entity, rIndex, step, std::move(jointMatrices), std::move(jointMatricesFound) });
 		}
 	}
 

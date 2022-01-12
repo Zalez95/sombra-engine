@@ -117,7 +117,7 @@ namespace game {
 			auto arialSPtr = std::make_shared<se::graphics::Font>();
 			std::vector<char> characterSet(128);
 			std::iota(characterSet.begin(), characterSet.end(), '\0');
-			if (!se::app::FontReader::read("res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arialSPtr)) {
+			if (!se::app::FontReader::read(mExternalTools->graphicsEngine->getContext(), "res/fonts/arial.ttf", characterSet, { 48, 48 }, { 1280, 720 }, *arialSPtr)) {
 				throw std::runtime_error("Error reading the font file");
 			}
 			auto arial = mRepository->insert(std::move(arialSPtr), "arial");

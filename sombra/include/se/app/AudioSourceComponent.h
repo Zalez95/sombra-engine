@@ -13,14 +13,14 @@ namespace se::app {
 	class AudioSourceComponent
 	{
 	private:	// Nested types
-		using BufferRef = Repository::ResourceRef<audio::Buffer>;
+		using BufferResource = Repository::ResourceRef<audio::Buffer>;
 
 	private:	// Attributes
 		/** The audio source */
 		audio::Source mSource;
 
 		/** A pointer to the buffer that holds the audio data of the Source */
-		BufferRef mBuffer;
+		BufferResource mBuffer;
 
 	public:		// Functions
 		/** Creates a new Source */
@@ -48,16 +48,16 @@ namespace se::app {
 		const audio::Source& get() const { return mSource; };
 
 		/** @return	a pointer to the Buffer of the AudioSourceComponent */
-		BufferRef& getBuffer() { return mBuffer; };
+		BufferResource& getBuffer() { return mBuffer; };
 
 		/** @return	a pointer to the Buffer of the AudioSourceComponent */
-		const BufferRef& getBuffer() const { return mBuffer; };
+		const BufferResource& getBuffer() const { return mBuffer; };
 
 		/** Sets the Buffer of the audio Source
 		 *
 		 * @param	buffer the new buffer of the AudioSourceComponent
 		 * @return	a reference to the current AudioSourceComponent object */
-		AudioSourceComponent& setBuffer(const BufferRef& buffer)
+		AudioSourceComponent& setBuffer(const BufferResource& buffer)
 		{
 			mBuffer = buffer;
 			mSource.bind(*mBuffer);

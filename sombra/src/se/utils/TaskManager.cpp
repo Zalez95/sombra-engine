@@ -110,7 +110,7 @@ namespace se::utils {
 
 			// Push the taskId to mWorkingQueue and notify so it can be executed
 			{
-				std::unique_lock lck(mMutex);
+				std::scoped_lock lck(mMutex);
 				mWorkingQueue.push_back(taskId);
 			}
 			mCV.notify_one();

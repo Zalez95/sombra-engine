@@ -1,4 +1,5 @@
 #include "se/utils/Log.h"
+#include "se/utils/ThreadPool.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/core/Program.h"
 #include "se/app/TerrainSystem.h"
@@ -47,26 +48,6 @@ namespace se::app {
 		glm::vec3 camPosition(0.0f);
 		bool cameraUpdated = false;
 
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
-			std::unique_lock lock(mMutex);
-			SOMBRA_DEBUG_LOG << "Executing RenderableStep operations";
-
-			while (!mStepOperationsQueue.empty()) {
-				StepOperation operation = mStepOperationsQueue.front();
-				mStepOperationsQueue.pop_front();
-				lock.unlock();
-
-				if (operation.operation == StepOperation::Operation::Add) {
-					addStep(operation.entity, query, operation.step);
-				}
-				else {
-					removeStep(operation.entity, query, operation.step);
-				}
-
-				lock.lock();
-			}
-		});
-
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			std::scoped_lock lock(mMutex);
 			SOMBRA_DEBUG_LOG << "Checking if the camera was updated " << mCameraUpdated;
@@ -78,6 +59,48 @@ namespace se::app {
 			}
 
 			mCameraUpdated = false;
+		});
+
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			std::unique_lock lock(mUniformsMutex);
+			SOMBRA_DEBUG_LOG << "Adding new uniforms";
+
+			std::queue<NewUniform> nextNewUniforms;
+			while (!mNewUniforms.empty()) {
+				NewUniform newUniform = std::move(mNewUniforms.front());
+				mNewUniforms.pop();
+				lock.unlock();
+
+				if (utils::is_ready(newUniform.modelMatrixFound)) {
+					auto [transforms, terrain] = query.getComponents<TransformsComponent, TerrainComponent>(newUniform.entity, true);
+					bool found = newUniform.modelMatrixFound.get();
+
+					if (terrain && found) {
+						std::scoped_lock lock2(mMutex);
+						auto itEntity = mEntityUniforms.find(newUniform.entity);
+						if (itEntity != mEntityUniforms.end()) {
+							auto itUniforms = std::find_if(itEntity->second.begin(), itEntity->second.end(), [&](const auto& uniforms) {
+								return uniforms.step == newUniform.step;
+							});
+							if (itUniforms != itEntity->second.end()) {
+								itUniforms->modelMatrix = std::move(newUniform.modelMatrix);
+								terrain->get().addPassBindable(itUniforms->step->getPass().get(), itUniforms->modelMatrix);
+
+								if (transforms) {
+									transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
+								}
+							}
+						}
+					}
+				}
+				else {
+					nextNewUniforms.push(std::move(newUniform));
+				}
+
+				lock.lock();
+			}
+
+			std::swap(mNewUniforms, nextNewUniforms);
 		});
 
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
@@ -96,7 +119,9 @@ namespace se::app {
 						auto itUniforms = mEntityUniforms.find(entity);
 						if (itUniforms != mEntityUniforms.end()) {
 							for (auto& uniforms : itUniforms->second) {
-								uniforms.modelMatrix->setValue(modelMatrix);
+								if (uniforms.modelMatrix) {
+									uniforms.modelMatrix.edit([=](auto& uniform) { uniform.setValue(modelMatrix); });
+								}
 							}
 						}
 
@@ -124,16 +149,19 @@ namespace se::app {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
 		}
 
-		std::scoped_lock lock(mMutex);
-		auto [camTransforms] = query.getComponents<TransformsComponent>(mCameraEntity, true);
-		if (camTransforms) {
-			terrain->get().setHighestLodLocation(camTransforms->position);
+		{
+			std::scoped_lock lock(mMutex);
+			auto [camTransforms] = query.getComponents<TransformsComponent>(mCameraEntity, true);
+			if (camTransforms) {
+				terrain->get().setHighestLodLocation(camTransforms->position);
+			}
+
+			mEntityUniforms.emplace(entity, EntityUniformsVector());
 		}
 
-		mEntityUniforms.emplace(entity, EntityUniformsVector());
 		terrain->processRenderableShaders([&](const auto& shader) {
 			shader->processSteps([&](const auto& step) {
-				mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, step.get() });
+				addStep(entity, query, step.get());
 			});
 		});
 
@@ -177,20 +205,20 @@ namespace se::app {
 			return;
 		}
 
-		switch (event.getOperation()) {
-			case RenderableShaderEvent::Operation::Add: {
-				event.getShader()->processSteps([&](const auto& step) {
-					std::scoped_lock lock(mMutex);
-					mStepOperationsQueue.push_back({ StepOperation::Operation::Add, event.getEntity(), step.get() });
-				});
-			} break;
-			case RenderableShaderEvent::Operation::Remove: {
-				event.getShader()->processSteps([&](const auto& step) {
-					std::scoped_lock lock(mMutex);
-					mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, event.getEntity(), step.get() });
-				});
-			} break;
-		}
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			switch (event.getOperation()) {
+				case RenderableShaderEvent::Operation::Add: {
+					event.getShader()->processSteps([&](const auto& step) {
+						addStep(event.getEntity(), query, step.get());
+					});
+				} break;
+				case RenderableShaderEvent::Operation::Remove: {
+					event.getShader()->processSteps([&](const auto& step) {
+						removeStep(event.getEntity(), query, step.get());
+					});
+				} break;
+			}
+		});
 	}
 
 
@@ -209,12 +237,10 @@ namespace se::app {
 					if (hasShader) {
 						switch (event.getOperation()) {
 							case ShaderEvent::Operation::Add: {
-								std::scoped_lock lock(mMutex);
-								mStepOperationsQueue.push_back({ StepOperation::Operation::Add, entity, event.getStep() });
+								addStep(entity, query, event.getStep());
 							} break;
 							case ShaderEvent::Operation::Remove: {
-								std::scoped_lock lock(mMutex);
-								mStepOperationsQueue.push_back({ StepOperation::Operation::Remove, entity, event.getStep() });
+								removeStep(entity, query, event.getStep());
 							} break;
 						}
 					}
@@ -227,28 +253,30 @@ namespace se::app {
 
 	void TerrainSystem::addStep(Entity entity, EntityDatabase::Query& query, const RenderableShaderStepSPtr& step)
 	{
-		auto [transforms, terrain] = query.getComponents<TransformsComponent, TerrainComponent>(entity, true);
+		auto [terrain] = query.getComponents<TerrainComponent>(entity, true);
 		if (!terrain) {
 			return;
 		}
 
-		// Check if the terrain has the Step already added
-		std::scoped_lock lock(mMutex);
-		auto& entityUniforms = mEntityUniforms.find(entity)->second;
-		auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
-			return uniforms.step == step;
-		});
-		if (itUniforms != entityUniforms.end()) {
-			itUniforms->shaderCount++;
-			return;
+		{	// Check if the terrain has the Step already added
+			std::scoped_lock lock(mMutex);
+			auto& entityUniforms = mEntityUniforms.find(entity)->second;
+			auto itUniforms = std::find_if(entityUniforms.begin(), entityUniforms.end(), [&](const auto& uniforms) {
+				return uniforms.step == step;
+			});
+			if (itUniforms != entityUniforms.end()) {
+				itUniforms->shaderCount++;
+				return;
+			}
+			else {
+				entityUniforms.push_back({ 1, step, UniformVVRef<glm::mat4>() });
+			}
 		}
 
 		// Find the program bindable of the Step
-		std::shared_ptr<graphics::Program> program;
-		step->processBindables([&](const auto& bindable) {
-			if (auto tmp = std::dynamic_pointer_cast<graphics::Program>(bindable)) {
-				program = tmp;
-			}
+		ProgramRef program;
+		step->processPrograms([&](const auto& program2) {
+			program = *program2;
 		});
 
 		if (!program) {
@@ -256,18 +284,18 @@ namespace se::app {
 			return;
 		}
 
-		// Create and add the uniforms to the terrain
-		auto& uniforms = entityUniforms.emplace_back();
-		uniforms.shaderCount = 1;
-		uniforms.step = step;
-		uniforms.modelMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", program);
-		if (uniforms.modelMatrix->found()) {
-			terrain->get().addPassBindable(step->getPass().get(), uniforms.modelMatrix);
-		}
+		// Create the uniforms
+		auto p = std::make_shared<std::promise<bool>>();
+		auto modelMatrixFound = p->get_future();
 
-		if (transforms) {
-			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
-		}
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+		auto modelMatrix = context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix")
+			.qedit([=](auto& q, auto& uniform) {
+				p->set_value( uniform.load(*q.getTBindable(program)) );
+			});
+
+		std::scoped_lock lock(mUniformsMutex);
+		mNewUniforms.push({ entity, step, std::move(modelMatrix), std::move(modelMatrixFound) });
 	}
 
 

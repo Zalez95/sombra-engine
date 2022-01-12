@@ -73,8 +73,12 @@ namespace se::app {
 	public:		// Functions
 		/** Creates a new DeferredLightSubGraph
 		 *
-		 * @param	name the name of the RenderNode */
-		DeferredLightSubGraph(const std::string& name);
+		 * @param	name the name of the RenderNode
+		 * @param	context the graphics Context used for creating the
+		 *			uniforms */
+		DeferredLightSubGraph(
+			const std::string& name, graphics::Context& context
+		);
 
 		/** Class destructor */
 		virtual ~DeferredLightSubGraph() = default;
@@ -96,14 +100,15 @@ namespace se::app {
 
 		/** @copydoc graphics::BindableRenderNode::setBindable() */
 		virtual void setBindable(
-			std::size_t bindableIndex, const BindableSPtr& bindable
+			std::size_t bindableIndex,
+			const graphics::Context::BindableRef& bindable
 		) override;
 	protected:
 		/** @copydoc Renderer::sortQueue() */
 		virtual void sortQueue() override;
 
-		/** @copydoc Renderer::render() */
-		virtual void render() override;
+		/** @copydoc Renderer::render(graphics::Context::Query&) */
+		virtual void render(graphics::Context::Query& q) override;
 
 		/** @copydoc Renderer::clearQueue() */
 		virtual void clearQueue() override;

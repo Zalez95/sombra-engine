@@ -1,7 +1,7 @@
 #ifndef LIGHT_PROBE_COMPONENT_H
 #define LIGHT_PROBE_COMPONENT_H
 
-#include "../graphics/core/Texture.h"
+#include "graphics/TypeRefs.h"
 #include "Repository.h"
 
 namespace se::app {
@@ -13,10 +13,10 @@ namespace se::app {
 	struct LightProbeComponent
 	{
 		/** The irradiance texture */
-		Repository::ResourceRef<graphics::Texture> irradianceMap;
+		Repository::ResourceRef<TextureRef> irradianceMap;
 
 		/** The prefiltered environment map texture */
-		Repository::ResourceRef<graphics::Texture> prefilterMap;
+		Repository::ResourceRef<TextureRef> prefilterMap;
 	};
 
 }

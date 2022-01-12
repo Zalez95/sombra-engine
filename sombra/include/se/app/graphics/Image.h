@@ -24,6 +24,29 @@ namespace se::app {
 		int channels = 0;
 	};
 
+
+	template <typename T>
+	Image<T> copy(const Image<T>& source)
+	{
+		Image<T> ret;
+
+		std::size_t length = static_cast<std::size_t>(source.channels);
+		length *= source.width * source.height;
+
+		ret.pixels = std::unique_ptr<T[]>(new T[length]);
+		ret.width = source.width;
+		ret.height = source.height;
+		ret.channels = source.channels;
+
+		std::copy(
+			source.pixels.get(), source.pixels.get() + length,
+			ret.pixels.get()
+		);
+
+		return ret;
+	}
+
+
 }
 
 #endif		// IMAGE_H

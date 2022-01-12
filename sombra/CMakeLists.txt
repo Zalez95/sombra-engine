@@ -31,7 +31,7 @@ set_target_properties(Sombra PROPERTIES
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(Sombra PRIVATE "-Wall" "-Wextra" "-Wpedantic")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options(Sombra PRIVATE "/W4" "-D_CRT_SECURE_NO_WARNINGS")
+	target_compile_options(Sombra PRIVATE "/W4" "/bigobj" "-D_CRT_SECURE_NO_WARNINGS")
 endif()
 
 # Add the compiler definitions

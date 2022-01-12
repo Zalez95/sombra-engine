@@ -1,6 +1,7 @@
 #ifndef RENDER_GRAPH_H
 #define RENDER_GRAPH_H
 
+#include "Context.h"
 #include "RenderNode.h"
 
 namespace se::graphics {
@@ -31,8 +32,10 @@ namespace se::graphics {
 		std::vector<RenderNodeUPtr> mRenderNodes;
 
 	public:		// Functions
-		/** Creates a new RenderGraph */
-		RenderGraph();
+		/** Creates a new RenderGraph
+		 *
+		 * @param	context the Context that holds the RenderGraph Bindables */
+		RenderGraph(Context& context);
 
 		/** Class destructor */
 		virtual ~RenderGraph() { clearNodes(); };
@@ -75,8 +78,11 @@ namespace se::graphics {
 		 * RenderGraph */
 		void prepareGraph();
 
-		/** Executes the RenderNodes added to the RenderGraph */
-		void execute();
+		/** Executes the RenderNodes added to the RenderGraph
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		void execute(Context::Query& q);
 	private:
 		/** Moves the given node and its parents to the given vector in order
 		 *

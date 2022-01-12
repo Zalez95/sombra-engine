@@ -3,8 +3,6 @@
 
 #include <glm/glm.hpp>
 #include "se/graphics/3D/Renderer3D.h"
-#include "se/graphics/core/Program.h"
-#include "se/app/Repository.h"
 
 namespace se::app {
 
@@ -33,17 +31,15 @@ namespace se::app {
 		/** The index of the 3D texture used for voxelizing the scene */
 		std::size_t mVoxelImage;
 
-		/** The program used by the VoxelizationNode */
-		Repository::ResourceRef<graphics::Program> mProgram;
-
 	public:		// Functions
 		/** Creates a new VoxelizationNode
 		 *
 		 * @param	name the name of the new VoxelizationNode
-		 * @param	repository the Repository that holds all the Programs
+		 * @param	context the Context used for creating the RenderNode
+		 *			Bindables
 		 * @param	maxVoxels the maximum number of voxels in each dimension */
 		VoxelizationNode(
-			const std::string& name, Repository& repository,
+			const std::string& name, graphics::Context& context,
 			std::size_t maxVoxels
 		);
 
@@ -55,8 +51,8 @@ namespace se::app {
 			const glm::vec3& minPosition, const glm::vec3& maxPosition
 		);
 
-		/** @copydoc graphics::Renderer::execute() */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 	};
 
 }

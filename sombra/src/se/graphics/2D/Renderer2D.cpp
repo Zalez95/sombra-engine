@@ -98,13 +98,14 @@ namespace se::graphics {
 
 
 	void Renderer2D::submitVertices(
+		Context::Query& q,
 		BatchVertex* vertices, std::size_t vertexCount,
 		const unsigned short* indices, std::size_t indexCount,
 		Texture* texture
 	) {
 		// Draw if the Batch is full
 		if ((mBatch.getVerticesLeft() < vertexCount) || (mBatch.getIndicesLeft() < indexCount)) {
-			drawBatch();
+			drawBatch(q);
 		}
 
 		// Set the texture indices of the vertices
@@ -118,7 +119,7 @@ namespace se::graphics {
 			else {
 				// Draw if the Batch we can't add more textures
 				if (mTextures.size() == kMaxTextures) {
-					drawBatch();
+					drawBatch(q);
 				}
 
 				mTextures.push_back(texture);
@@ -148,7 +149,7 @@ namespace se::graphics {
 	}
 
 
-	void Renderer2D::render()
+	void Renderer2D::render(Context::Query& q)
 	{
 		if (mRenderQueue.empty()) { return; }
 
@@ -156,13 +157,13 @@ namespace se::graphics {
 		mPass = mRenderQueue.front().second;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != mPass) {
-				drawBatch();
+				drawBatch(q);
 				mPass = pass;
 			}
 
-			renderable->submitVertices(*this);
+			renderable->submitVertices(q, *this);
 		}
-		drawBatch();
+		drawBatch(q);
 	}
 
 
@@ -172,9 +173,9 @@ namespace se::graphics {
 	}
 
 
-	void Renderer2D::drawBatch()
+	void Renderer2D::drawBatch(Context::Query& q)
 	{
-		mPass->bind();
+		mPass->bind(q);
 
 		unsigned int numTextures = std::min(kMaxTextures, static_cast<unsigned int>(mTextures.size()));
 		for (unsigned int i = 0; i < numTextures; ++i) {

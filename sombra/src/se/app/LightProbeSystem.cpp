@@ -48,18 +48,18 @@ namespace se::app {
 			if (mLightProbeEntity != kNullEntity) {
 				auto [lightProbe] = query.getComponents<LightProbeComponent>(mLightProbeEntity, true);
 				if (lightProbe->irradianceMap && lightProbe->prefilterMap
-					&& ((mLastIrradianceTexture != lightProbe->irradianceMap.get())
-						|| (mLastPrefilterTexture != lightProbe->prefilterMap.get()))
+					&& ((mLastIrradianceTexture != *lightProbe->irradianceMap)
+						|| (mLastPrefilterTexture != *lightProbe->prefilterMap))
 				) {
 					auto graphicsEngine = mApplication.getExternalTools().graphicsEngine;
 					auto resources = dynamic_cast<graphics::BindableRenderNode*>(graphicsEngine->getRenderGraph().getNode("resources"));
 
 					auto irradianceTexture = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(resources->findOutput("irradianceTexture"));
 					auto prefilterTexture = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(resources->findOutput("prefilterTexture"));
-					resources->setBindable(irradianceTexture->getBindableIndex(), lightProbe->irradianceMap.get());
-					resources->setBindable(prefilterTexture->getBindableIndex(), lightProbe->prefilterMap.get());
-					mLastIrradianceTexture = lightProbe->irradianceMap.get();
-					mLastPrefilterTexture = lightProbe->prefilterMap.get();
+					resources->setBindable(irradianceTexture->getBindableIndex(), *lightProbe->irradianceMap);
+					resources->setBindable(prefilterTexture->getBindableIndex(), *lightProbe->prefilterMap);
+					mLastIrradianceTexture = *lightProbe->irradianceMap;
+					mLastPrefilterTexture = *lightProbe->prefilterMap;
 				}
 			}
 		});
@@ -89,10 +89,10 @@ namespace se::app {
 
 			auto irradianceTexture = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(resources->findOutput("irradianceTexture"));
 			auto prefilterTexture = dynamic_cast<graphics::BindableRNodeOutput<graphics::Texture>*>(resources->findOutput("prefilterTexture"));
-			resources->setBindable(irradianceTexture->getBindableIndex(), nullptr);
-			resources->setBindable(prefilterTexture->getBindableIndex(), nullptr);
-			mLastIrradianceTexture = nullptr;
-			mLastPrefilterTexture = nullptr;
+			resources->setBindable(irradianceTexture->getBindableIndex(), {});
+			resources->setBindable(prefilterTexture->getBindableIndex(), {});
+			mLastIrradianceTexture = {};
+			mLastPrefilterTexture = {};
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with LightProbe " << lightProbe << " removed successfully";

@@ -1,7 +1,6 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <cstddef>
 #include "Bindable.h"
 
 namespace se::graphics {
@@ -23,12 +22,8 @@ namespace se::graphics {
 		unsigned int mProgramId;
 
 	public:		// Functions
-		/** Creates and links a OpenGL Program from the specified shaders
-		 *
-		 * @param	shaders the shaders that creates the GLSL Program
-		 * @param	shaderCount the number of shaders
-		 * @throw	runtime_error if the Program couldn't be created */
-		Program(const Shader* const* shaders, std::size_t shaderCount);
+		/** Creates a new Program */
+		Program();
 		Program(const Program& other) = delete;
 		Program(Program&& other);
 
@@ -38,6 +33,14 @@ namespace se::graphics {
 		/** Assignment operator */
 		Program& operator=(const Program& other) = delete;
 		Program& operator=(Program&& other);
+
+		/** Builds the program from the specified shaders
+		 *
+		 * @param	shaders the shaders that creates the GLSL Program
+		 * @param	shaderCount the number of shaders
+		 * @return	true if the program was successfully built, false
+		 *			otherwise */
+		bool load(const Shader* const* shaders, std::size_t shaderCount);
 
 		/** Returns the index of the requested attribute
 		 *

@@ -8,6 +8,7 @@
 namespace se::app {
 
 	Result FontReader::read(
+		graphics::Context& context,
 		const char* path,
 		const std::vector<char>& characterSet, const glm::uvec2& characterSize,
 		const glm::uvec2& atlasSize, graphics::Font& output
@@ -29,10 +30,7 @@ namespace se::app {
 		}
 
 		// Create the atlas texture
-		output.textureAtlas = std::make_shared<graphics::Texture>(graphics::TextureTarget::Texture2D);
-		if (!output.textureAtlas) {
-			return Result(false, "Failed to create the Font atlas texture");
-		}
+		output.textureAtlas = context.create<graphics::Texture>(graphics::TextureTarget::Texture2D);
 
 		// Read the name
 		if (face->family_name) {
@@ -82,16 +80,18 @@ namespace se::app {
 		}
 
 		output.maxCharacterSize = characterSize;
-		output.textureAtlas->setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
-			.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
-			.setImage(
-				pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA,
-				graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y
-			);
+		output.textureAtlas.edit([=](graphics::Texture& tex) {
+			tex.setFiltering(graphics::TextureFilter::Linear, graphics::TextureFilter::Linear)
+				.setWrapping(graphics::TextureWrap::ClampToEdge, graphics::TextureWrap::ClampToEdge)
+				.setImage(
+					pixels, graphics::TypeId::UnsignedByte, graphics::ColorFormat::RGBA,
+					graphics::ColorFormat::RGBA, atlasSize.x, atlasSize.y
+				);
+			delete[] pixels;
+		});
 		output.atlasSize = atlasSize;
 
 		// Clear
-		delete[] pixels;
 		FT_Done_Face(face);
 		FT_Done_FreeType(library);
 

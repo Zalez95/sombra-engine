@@ -69,12 +69,12 @@ namespace se::app {
 		void unLink() { mLinkedFile = -1; };
 
 		/** @return	the path where the Resource is located */
-		const char* getPath() const { return mPath.c_str(); };
+		const std::string& getPath() const { return mPath; };
 
 		/** Sets the path where the Resource is located
 		 *
 		 * @param	path the new path */
-		void setPath(const char* path) { mPath = path; };
+		void setPath(const std::string& path) { mPath = path; };
 	};
 
 
@@ -91,6 +91,18 @@ namespace se::app {
 		template <typename T>
 		class ResourceRef
 		{
+		public:		// Nested types
+			/** Struct HashFunc, used for calculating the hash value of
+			 * ResourceRefs */
+			struct HashFunc
+			{
+				/** Calculates the hash value of the given ResourceRef
+				 *
+				 * @param	ref the ResourceRef to calculate its hash value
+				 * @return	the hash value */
+				std::size_t operator()(const ResourceRef& ref) const;
+			};
+
 		private:	// Attributes
 			/** The Repository that holds the resource referenced */
 			Repository* mParent;

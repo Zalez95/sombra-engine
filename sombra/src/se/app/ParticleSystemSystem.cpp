@@ -64,7 +64,8 @@ namespace se::app {
 // Private functions
 	void ParticleSystemSystem::onNewParticleSys(Entity entity, ParticleSystemComponent* particleSystem, EntityDatabase::Query& query)
 	{
-		particleSystem->setup(&mApplication.getEventManager(), entity);
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+		particleSystem->setup(&mApplication.getEventManager(), &context, entity);
 
 		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
@@ -80,7 +81,8 @@ namespace se::app {
 	{
 		mApplication.getExternalTools().graphicsEngine->removeRenderable(&particleSystem->get());
 
-		particleSystem->setup(nullptr, kNullEntity);
+		auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+		particleSystem->setup(nullptr, &context, kNullEntity);
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " removed successfully";
 	}

@@ -3,27 +3,22 @@
 
 namespace se::graphics {
 
-	ParticleSystem::ParticleSystem(const ParticleSystem& other) :
-		Renderable3D(other),
-		mMesh(nullptr), mPrimitiveType(other.mPrimitiveType), mNumInstances(other.mNumInstances)
+	ParticleSystem::ParticleSystem(
+		const Context::TBindableRef<Mesh>& mesh,
+		const Context::TBindableRef<Particles>& particles,
+		PrimitiveType primitiveType
+	) : mMesh(mesh), mParticles(particles), mPrimitiveType(primitiveType)
 	{
-		unsigned int maxAttributes = VertexArray::getMaxAttributes();
-		for (const VertexBuffer& vbo : other.mInstanceVBOs) {
-			auto bindable = vbo.clone();
-			VertexBuffer vbo2 = std::move(*dynamic_cast<VertexBuffer*>(bindable.get()));
+		mUpdateVAO = true;
+	}
 
-			for (unsigned int i = 0; i < maxAttributes; ++i) {
-				if (other.mVAO.checkVertexAttributeVBOBound(i, vbo)) {
-					mVAO.bind();
-					vbo2.bind();
-					mVAO.copyVertexAttribute(i, other.mVAO);
-				}
-			}
 
-			mInstanceVBOs.emplace_back(std::move(vbo2));
-		}
-
-		setMesh(other.mMesh);
+	ParticleSystem::ParticleSystem(const ParticleSystem& other) :
+		Renderable3D(other), mMesh(other.mMesh), mParticles(other.mParticles),
+		mPrimitiveType(other.mPrimitiveType), mNumInstances(other.mNumInstances),
+		mMinimum(other.mMinimum), mMaximum(other.mMaximum)
+	{
+		mUpdateVAO = true;
 	}
 
 
@@ -31,93 +26,30 @@ namespace se::graphics {
 	{
 		Renderable3D::operator=(other);
 
-		setMesh(nullptr);
-		unsigned int maxAttributes = VertexArray::getMaxAttributes();
-
-		// Disable and unbind the VAO instance attributes and VBOs
-		mVAO.bind();
-		for (unsigned int i = 0; i < maxAttributes; ++i) {
-			auto itVBO = std::find_if(mInstanceVBOs.begin(), mInstanceVBOs.end(), [&](const auto& vbo) {
-				return mVAO.checkVertexAttributeVBOBound(i, vbo);
-			});
-			if (itVBO != mInstanceVBOs.end()) {
-				mVAO.disableAttribute(i);
-				itVBO->unbind();
-			}
-		}
-		mInstanceVBOs.clear();
-
-		// Add the new VAO instance attributes and VBOs
-		for (const VertexBuffer& vbo : other.mInstanceVBOs) {
-			auto bindable = vbo.clone();
-			VertexBuffer vbo2 = std::move(*dynamic_cast<VertexBuffer*>(bindable.get()));
-
-			for (unsigned int i = 0; i < maxAttributes; ++i) {
-				if (other.mVAO.checkVertexAttributeVBOBound(i, vbo)) {
-					mVAO.bind();
-					vbo2.bind();
-					mVAO.copyVertexAttribute(i, other.mVAO);
-				}
-			}
-
-			mInstanceVBOs.emplace_back(std::move(vbo2));
-		}
-
+		mMesh = other.mMesh;
+		mParticles = other.mParticles;
 		mPrimitiveType = other.mPrimitiveType;
 		mNumInstances = other.mNumInstances;
-		setMesh(other.mMesh);
+		mMinimum = other.mMinimum;
+		mMaximum = other.mMaximum;
+		mUpdateVAO = true;
 
 		return *this;
 	}
 
 
-	ParticleSystem& ParticleSystem::setMesh(MeshSPtr mesh)
+	ParticleSystem& ParticleSystem::setMesh(const Context::TBindableRef<Mesh>& mesh)
 	{
-		unsigned int maxAttributes = VertexArray::getMaxAttributes();
-
-		if (mMesh) {
-			// Disable the Mesh vertex attributes
-			const auto& vao = mMesh->getVAO();
-			const auto& vbos = mMesh->getVBOs();
-			for (unsigned int i = 0; i < maxAttributes; ++i) {
-				if (vao.isAttributeEnabled(i)) {
-					mVAO.disableAttribute(i);
-				}
-
-				auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
-					return vao.checkVertexAttributeVBOBound(i, vbo);
-				});
-				if (itVBO != vbos.end()) {
-					mVAO.bind();
-					itVBO->unbind();
-				}
-			}
-
-			mVAO.bind();
-			mMesh->getIBO().unbind();
-		}
-
 		mMesh = mesh;
+		mUpdateVAO = true;
+		return *this;
+	}
 
-		if (mMesh) {
-			// Enable the Mesh vertex attributes
-			const auto& vao = mMesh->getVAO();
-			const auto& vbos = mMesh->getVBOs();
-			for (unsigned int i = 0; i < maxAttributes; ++i) {
-				auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
-					return vao.checkVertexAttributeVBOBound(i, vbo);
-				});
-				if (itVBO != vbos.end()) {
-					mVAO.bind();
-					itVBO->bind();
-					mVAO.copyVertexAttribute(i, vao);
-				}
-			}
 
-			mVAO.bind();
-			mMesh->getIBO().bind();
-		}
-
+	ParticleSystem& ParticleSystem::setParticles(const Context::TBindableRef<Particles>& particles)
+	{
+		mParticles = particles;
+		mUpdateVAO = true;
 		return *this;
 	}
 
@@ -129,12 +61,61 @@ namespace se::graphics {
 	}
 
 
-	void ParticleSystem::drawInstances()
+	void ParticleSystem::submit(Context::Query& q)
 	{
-		mVAO.bind();
+		if (mUpdateVAO) {
+			mUpdateVAO = false;
+
+			unsigned int maxAttributes = VertexArray::getMaxAttributes();
+			mVAO = std::make_unique<VertexArray>();
+
+			if (mMesh) {
+				// Enable the Mesh vertex attributes
+				const auto& vao = q.getTBindable(mMesh)->getVAO();
+				const auto& vbos = q.getTBindable(mMesh)->getVBOs();
+				for (unsigned int i = 0; i < maxAttributes; ++i) {
+					auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
+						return vao->checkVertexAttributeVBOBound(i, *vbo);
+					});
+					if (itVBO != vbos.end()) {
+						mVAO->bind();
+						(*itVBO)->bind();
+						mVAO->copyVertexAttribute(i, *vao);
+					}
+				}
+
+				mVAO->bind();
+				q.getTBindable(mMesh)->getIBO()->bind();
+			}
+
+			if (mParticles) {
+				// Enable the Particles vertex attributes
+				const auto& vao = q.getTBindable(mParticles)->getVAO();
+				const auto& vbos = q.getTBindable(mParticles)->getVBOs();
+				for (unsigned int i = 0; i < maxAttributes; ++i) {
+					auto itVBO = std::find_if(vbos.begin(), vbos.end(), [&](const auto& vbo) {
+						return vao->checkVertexAttributeVBOBound(i, *vbo);
+					});
+					if (itVBO != vbos.end()) {
+						mVAO->bind();
+						(*itVBO)->bind();
+						mVAO->copyVertexAttribute(i, *vao);
+					}
+				}
+			}
+		}
+
+		Renderable::submit(q);
+	}
+
+
+	void ParticleSystem::drawInstances(Context::Query& q)
+	{
+		mVAO->bind();
 		GraphicsOperations::drawIndexedInstanced(
 			mPrimitiveType,
-			mMesh->getIBO().getIndexCount(), mMesh->getIBO().getIndexType(),
+			q.getTBindable(mMesh)->getIBO()->getIndexCount(),
+			q.getTBindable(mMesh)->getIBO()->getIndexType(),
 			0, mNumInstances
 		);
 	}

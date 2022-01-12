@@ -6,8 +6,8 @@ namespace se::app {
 	TerrainComponent::TerrainComponent(const TerrainComponent& other) :
 		mRenderableTerrain(other.mRenderableTerrain), mShaders(other.mShaders)
 	{
-		processRenderableShaders([&](const RenderableShaderRef& shader) {
-			shader->processSteps([&](const RenderableShader::StepRef& step) {
+		processRenderableShaders([&](const RenderableShaderResource& shader) {
+			shader->processSteps([&](const RenderableShader::StepResource& step) {
 				mRenderableTerrain.clearBindables(step->getPass().get());
 			});
 		});
@@ -21,8 +21,8 @@ namespace se::app {
 		mRenderableTerrain = other.mRenderableTerrain;
 		mShaders = other.mShaders;
 
-		processRenderableShaders([&](const RenderableShaderRef& shader) {
-			shader->processSteps([&](const RenderableShader::StepRef& step) {
+		processRenderableShaders([&](const RenderableShaderResource& shader) {
+			shader->processSteps([&](const RenderableShader::StepResource& step) {
 				mRenderableTerrain.clearBindables(step->getPass().get());
 			});
 		});
@@ -31,7 +31,7 @@ namespace se::app {
 	}
 
 
-	void TerrainComponent::addRenderableShader(const RenderableShaderRef& shader)
+	void TerrainComponent::addRenderableShader(const RenderableShaderResource& shader)
 	{
 		mShaders.emplace_back(shader);
 		mRenderableTerrain.addTechnique(shader->getTechnique());
@@ -43,7 +43,7 @@ namespace se::app {
 	}
 
 
-	void TerrainComponent::removeRenderableShader(const RenderableShaderRef& shader)
+	void TerrainComponent::removeRenderableShader(const RenderableShaderResource& shader)
 	{
 		if (mEventManager) {
 			mEventManager->publish(std::make_unique<RenderableShaderEvent>(

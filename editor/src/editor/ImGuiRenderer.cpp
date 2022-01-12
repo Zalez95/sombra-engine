@@ -2,42 +2,45 @@
 #include <glm/glm.hpp>
 #include <se/utils/Log.h>
 #include <se/graphics/core/Shader.h>
-#include <se/graphics/core/Program.h>
-#include <se/graphics/core/Texture.h>
 #include <se/graphics/core/FrameBuffer.h>
 #include <se/graphics/core/VertexArray.h>
 #include <se/graphics/core/IndexBuffer.h>
 #include <se/graphics/core/VertexBuffer.h>
 #include <se/graphics/core/UniformVariable.h>
 #include <se/graphics/core/GraphicsOperations.h>
+#include <se/app/graphics/TypeRefs.h>
 #include "ImGuiRenderer.h"
+
+using namespace se::app;
+using namespace se::graphics;
+using namespace std::string_literals;
 
 namespace editor {
 
 	struct ImGuiRenderer::Impl
 	{
-		std::shared_ptr<se::graphics::Texture> fontTexture;
-		std::shared_ptr<se::graphics::Program> program;
-		std::shared_ptr<se::graphics::UniformVariableValue<int>> uTextureUniform;
-		std::shared_ptr<se::graphics::UniformVariableValue<glm::mat4>> uProjectionMatrix;
-		std::shared_ptr<se::graphics::VertexBuffer> vbo;
-		std::shared_ptr<se::graphics::IndexBuffer> ibo;
+		TextureRef fontTexture;
+		ProgramRef program;
+		UniformVVRef<int> uTextureUniform;
+		UniformVVRef<glm::mat4> uProjectionMatrix;
+		Context::TBindableRef<VertexBuffer> vbo;
+		Context::TBindableRef<IndexBuffer> ibo;
 
 		static constexpr int kDrawTextureUnit = 0;
 	};
 
 
-	ImGuiRenderer::ImGuiRenderer(const std::string& name) : se::graphics::BindableRenderNode(name), mImpl(nullptr)
+	ImGuiRenderer::ImGuiRenderer(const std::string& name, Context& context) : BindableRenderNode(name), mImpl(nullptr)
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		io.BackendRendererName = getName().c_str();
 
 		auto iTargetBindable = addBindable();
-		addInput( std::make_unique<se::graphics::BindableRNodeInput<se::graphics::FrameBuffer>>("target", this, iTargetBindable) );
-		addOutput( std::make_unique<se::graphics::BindableRNodeOutput<se::graphics::FrameBuffer>>("target", this, iTargetBindable) );
+		addInput( std::make_unique<BindableRNodeInput<FrameBuffer>>("target", this, iTargetBindable) );
+		addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("target", this, iTargetBindable) );
 
 		if (!mImpl) {
-			createDeviceObjects();
+			createDeviceObjects(context);
 		}
 	}
 
@@ -50,15 +53,15 @@ namespace editor {
 	}
 
 
-	void ImGuiRenderer::execute()
+	void ImGuiRenderer::execute(Context::Query& q)
 	{
 		ImGui::Render();
-		bind();
+		bind(q);
 
 		// Store the current GL state
 		int lastX, lastY;
 		std::size_t lastWidth, lastHeight;
-		se::graphics::GraphicsOperations::getViewport(lastX, lastY, lastWidth, lastHeight);
+		GraphicsOperations::getViewport(lastX, lastY, lastWidth, lastHeight);
 
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		ImDrawData* drawData = ImGui::GetDrawData();
@@ -71,13 +74,13 @@ namespace editor {
 		// Setup desired GL state
 		// Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
 		// The renderer would actually work without any VAO bound, but then our VertexAttrib calls would overwrite the default one currently bound.
-		se::graphics::SetOperation opBlending(se::graphics::Operation::Blending, true);			opBlending.bind();
-		se::graphics::SetOperation opCulling(se::graphics::Operation::Culling, false);			opCulling.bind();
-		se::graphics::SetOperation opDepthTest(se::graphics::Operation::DepthTest, false);		opDepthTest.bind();
-		se::graphics::SetOperation opScissorTest(se::graphics::Operation::ScissorTest, true);	opScissorTest.bind();
+		SetOperation opBlending(Operation::Blending, true);			opBlending.bind();
+		SetOperation opCulling(Operation::Culling, false);			opCulling.bind();
+		SetOperation opDepthTest(Operation::DepthTest, false);		opDepthTest.bind();
+		SetOperation opScissorTest(Operation::ScissorTest, true);	opScissorTest.bind();
 
-		se::graphics::VertexArray vao;
-		setupRenderState(drawData, fbWidth, fbHeight, &vao);
+		VertexArray vao;
+		setupRenderState(drawData, fbWidth, fbHeight, q, &vao);
 
 		// Will project scissor/clipping rectangles into framebuffer space
 		ImVec2 clipOff = drawData->DisplayPos;         // (0,0) unless using multi-viewports
@@ -88,8 +91,8 @@ namespace editor {
 			const ImDrawList* cmdList = drawData->CmdLists[n];
 
 			// Upload vertex/index buffers
-			mImpl->vbo->resizeAndCopy(cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size);
-			mImpl->ibo->resizeAndCopy(cmdList->IdxBuffer.Data, (sizeof(ImDrawIdx) == 2)? se::graphics::TypeId::UnsignedShort : se::graphics::TypeId::UnsignedInt, cmdList->IdxBuffer.Size);
+			q.getTBindable(mImpl->vbo)->resizeAndCopy(cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size);
+			q.getTBindable(mImpl->ibo)->resizeAndCopy(cmdList->IdxBuffer.Data, (sizeof(ImDrawIdx) == 2)? TypeId::UnsignedShort : TypeId::UnsignedInt, cmdList->IdxBuffer.Size);
 
 			for (int iCmd = 0; iCmd < cmdList->CmdBuffer.Size; ++iCmd) {
 				const ImDrawCmd* pcmd = &cmdList->CmdBuffer[iCmd];
@@ -97,7 +100,7 @@ namespace editor {
 					// User callback, registered via ImDrawList::AddCallback()
 					// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
 					if (pcmd->UserCallback == ImDrawCallback_ResetRenderState) {
-						setupRenderState(drawData, fbWidth, fbHeight, &vao);
+						setupRenderState(drawData, fbWidth, fbHeight, q, &vao);
 					}
 					else {
 						pcmd->UserCallback(cmdList, pcmd);
@@ -113,23 +116,22 @@ namespace editor {
 
 					if (clipRect.x < fbWidth && clipRect.y < fbHeight && clipRect.z >= 0.0f && clipRect.w >= 0.0f) {
 						// Apply scissor/clipping rectangle
-						se::graphics::GraphicsOperations::setScissorBox(
+						GraphicsOperations::setScissorBox(
 							static_cast<int>(clipRect.x), static_cast<int>(fbHeight - clipRect.w),
 							static_cast<std::size_t>(clipRect.z - clipRect.x), static_cast<std::size_t>(clipRect.w - clipRect.y)
 						);
 
-						// Bind texture, Draw
-						se::graphics::Texture* texture = static_cast<se::graphics::Texture*>(pcmd->TextureId);
-						int oldTexUnit = texture->getTextureUnit();
-						texture->setTextureUnit(Impl::kDrawTextureUnit);
+						// Bind atlas texture
+						if (pcmd->TextureId) {
+							Texture* texture = static_cast<Texture*>(pcmd->TextureId);
+							texture->bind();
+						}
 
-						texture->bind();
-						se::graphics::GraphicsOperations::drawIndexed(se::graphics::PrimitiveType::Triangle, pcmd->ElemCount,
-							(sizeof(ImDrawIdx) == 2)? se::graphics::TypeId::UnsignedShort : se::graphics::TypeId::UnsignedInt,
+						// Draw
+						GraphicsOperations::drawIndexed(PrimitiveType::Triangle, pcmd->ElemCount,
+							(sizeof(ImDrawIdx) == 2)? TypeId::UnsignedShort : TypeId::UnsignedInt,
 							pcmd->IdxOffset * sizeof(ImDrawIdx)
 						);
-
-						texture->setTextureUnit(oldTexUnit);
 					}
 				}
 			}
@@ -140,11 +142,11 @@ namespace editor {
 		opDepthTest.unbind();
 		opCulling.unbind();
 		opBlending.unbind();
-		se::graphics::GraphicsOperations::setViewport(lastX, lastY, lastWidth, lastHeight);
+		GraphicsOperations::setViewport(lastX, lastY, lastWidth, lastHeight);
 	}
 
 // Private functions
-	bool ImGuiRenderer::createDeviceObjects()
+	bool ImGuiRenderer::createDeviceObjects(Context& context)
 	{
 		bool ret = true;
 
@@ -178,21 +180,29 @@ namespace editor {
 
 		try {
 			// Create shaders
-			se::graphics::Shader vertexShader(vertexShaderStr, se::graphics::ShaderType::Vertex);
-			se::graphics::Shader fragmentShader(fragmentShaderStr, se::graphics::ShaderType::Fragment);
-			se::graphics::Shader* shaders[] = { &vertexShader, &fragmentShader };
-			mImpl->program = std::make_shared<se::graphics::Program>(shaders, 2);
+			mImpl->program = context.create<Program>()
+				.edit([=](Program& program) {
+					Shader vertexShader(vertexShaderStr, ShaderType::Vertex);
+					Shader fragmentShader(fragmentShaderStr, ShaderType::Fragment);
+					Shader* shaderPtrs[] = { &vertexShader, &fragmentShader };
+					program.load(shaderPtrs, 2);
+				});
 
-			mImpl->uTextureUniform = std::make_shared<se::graphics::UniformVariableValue<int>>("Texture", mImpl->program);
-			mImpl->uProjectionMatrix = std::make_shared<se::graphics::UniformVariableValue<glm::mat4>>("ProjMtx", mImpl->program);
-
-			mImpl->uTextureUniform->setValue(Impl::kDrawTextureUnit);
+			mImpl->uTextureUniform = context.create<UniformVariableValue<int>>("Texture"s)
+				.qedit([pRef = mImpl->program](auto& q, auto& uniform) {
+					uniform.load(*q.getTBindable(pRef));
+					uniform.setValue(Impl::kDrawTextureUnit);
+				});
+			mImpl->uProjectionMatrix = context.create<UniformVariableValue<glm::mat4>>("ProjMtx"s)
+				.qedit([pRef = mImpl->program](auto& q, auto& uniform) {
+					uniform.load(*q.getTBindable(pRef));
+				});
 
 			// Create buffers
-			mImpl->vbo = std::make_shared<se::graphics::VertexBuffer>();
-			mImpl->ibo = std::make_shared<se::graphics::IndexBuffer>();
+			mImpl->vbo = context.create<VertexBuffer>();
+			mImpl->ibo = context.create<IndexBuffer>();
 
-			ret = createFontsTexture();
+			ret = createFontsTexture(context);
 		}
 		catch (std::exception& e) {
 			SOMBRA_FATAL_LOG << "Error while creating the ImGui Programs: " << e.what();
@@ -212,7 +222,7 @@ namespace editor {
 	}
 
 
-	bool ImGuiRenderer::createFontsTexture()
+	bool ImGuiRenderer::createFontsTexture(Context& context)
 	{
 		// Build texture atlas
 		ImGuiIO& io = ImGui::GetIO();
@@ -221,12 +231,15 @@ namespace editor {
 		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
 		// Upload texture to graphics system
-		mImpl->fontTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
-		mImpl->fontTexture->setImage(pixels, se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA, width, height);
-		mImpl->fontTexture->setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear);
-		mImpl->fontTexture->setTextureUnit(0);
+		mImpl->fontTexture = context.create<Texture>(TextureTarget::Texture2D);
+		mImpl->fontTexture.edit([=](Texture& tex) {
+			tex.setImage(pixels, TypeId::UnsignedByte, ColorFormat::RGBA, ColorFormat::RGBA, width, height)
+				.setFiltering(TextureFilter::Linear, TextureFilter::Linear)
+				.setTextureUnit(Impl::kDrawTextureUnit);
 
-		io.Fonts->TexID = static_cast<ImTextureID>(mImpl->fontTexture.get());
+			ImGuiIO& io = ImGui::GetIO();
+			io.Fonts->TexID = static_cast<ImTextureID>(&tex);
+		});
 
 		return true;
 	}
@@ -237,19 +250,19 @@ namespace editor {
 		if (mImpl->fontTexture) {
 			ImGuiIO& io = ImGui::GetIO();
 			io.Fonts->TexID = 0;
-			mImpl->fontTexture = nullptr;
+			mImpl->fontTexture = {};
 		}
 	}
 
 
-	void ImGuiRenderer::setupRenderState(ImDrawData* drawData, int fbWidth, int fbHeight, se::graphics::VertexArray* vao)
+	void ImGuiRenderer::setupRenderState(ImDrawData* drawData, int fbWidth, int fbHeight, Context::Query& q, VertexArray* vao)
 	{
 		// Support for GL 4.5 rarely used glClipControl(GL_UPPER_LEFT)
 		bool clip_origin_lower_left = true;
 
 		// Setup viewport, orthographic projection matrix
 		// Our visible imgui space lies from drawData->DisplayPos (top left) to drawData->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
-		se::graphics::GraphicsOperations::setViewport(0, 0, fbWidth, fbHeight);
+		GraphicsOperations::setViewport(0, 0, fbWidth, fbHeight);
 		float L = drawData->DisplayPos.x;
 		float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
 		float T = drawData->DisplayPos.y;
@@ -261,21 +274,21 @@ namespace editor {
 			{ 0.0f,         0.0f,        -1.0f,   0.0f },
 			{ (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
 		};
-		mImpl->program->bind();
-		mImpl->uProjectionMatrix->setValue(ortho_projection);
-		mImpl->uProjectionMatrix->bind();
+		q.getBindable(mImpl->program)->bind();
+		q.getTBindable(mImpl->uProjectionMatrix)->setValue(ortho_projection);
+		q.getTBindable(mImpl->uProjectionMatrix)->bind();
 
 		// Bind vertex/index buffers and setup attributes for ImDrawVert
 		vao->bind();
-		mImpl->vbo->bind();
-		mImpl->ibo->bind();
+		q.getTBindable(mImpl->vbo)->bind();
+		q.getTBindable(mImpl->ibo)->bind();
 
 		vao->enableAttribute(0);
-		vao->setVertexAttribute(0, se::graphics::TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos));
+		vao->setVertexAttribute(0, TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos));
 		vao->enableAttribute(1);
-		vao->setVertexAttribute(1, se::graphics::TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv));
+		vao->setVertexAttribute(1, TypeId::Float, false, 2, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv));
 		vao->enableAttribute(2);
-		vao->setVertexAttribute(2, se::graphics::TypeId::UnsignedByte, true, 4, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col));
+		vao->setVertexAttribute(2, TypeId::UnsignedByte, true, 4, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col));
 	}
 
 }

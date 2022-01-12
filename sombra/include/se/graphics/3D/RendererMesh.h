@@ -30,8 +30,8 @@ namespace se::graphics {
 		/** @copydoc Renderer::sortQueue() */
 		virtual void sortQueue() override;
 
-		/** @copydoc Renderer::render() */
-		virtual void render() override;
+		/** @copydoc Renderer::render(Context::Query&) */
+		virtual void render(Context::Query& q) override;
 
 		/** @copydoc Renderer::clearQueue() */
 		virtual void clearQueue() override;

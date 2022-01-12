@@ -11,11 +11,11 @@ namespace se::app {
 	}
 
 
-	void ScriptComponent::setScript(const ScriptRef& script)
+	void ScriptComponent::setScript(const ScriptResource& script)
 	{
 		if (mScript) {
 			mEventManager->publish(std::make_unique<ScriptEvent>(ScriptEvent::Operation::Remove, mEntity));
-			mScript = ScriptRef();
+			mScript = ScriptResource();
 		}
 		if (script) {
 			mEventManager->publish(std::make_unique<ScriptEvent>(ScriptEvent::Operation::Add, mEntity));

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include "Context.h"
 
 namespace se::graphics {
 
@@ -54,8 +55,13 @@ namespace se::graphics {
 		 * @return	a reference to the current Renderable object */
 		Renderable& removeTechnique(const TechniqueSPtr& technique);
 
-		/** Submits the Renderable to its Techniques */
-		void submit();
+		/** Submits the Renderable to its Techniques and performs all the
+		 * Renderable graphics operations. This functions must be called only
+		 * by the GraphicsEngine
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		virtual void submit(Context::Query& q);
 	};
 
 

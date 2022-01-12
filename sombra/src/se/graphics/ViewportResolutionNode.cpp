@@ -29,7 +29,7 @@ namespace se::graphics {
 	}
 
 
-	void ViewportResolutionNode::execute()
+	void ViewportResolutionNode::execute(Context::Query&)
 	{
 		graphics::GraphicsOperations::setViewport(mX, mY, mWidth, mHeight);
 	}

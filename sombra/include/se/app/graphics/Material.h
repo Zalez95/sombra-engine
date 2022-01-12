@@ -3,8 +3,8 @@
 
 #include <glm/glm.hpp>
 #include "../../utils/FixedVector.h"
-#include "../../graphics/core/Texture.h"
 #include "../Repository.h"
+#include "TypeRefs.h"
 
 namespace se::app {
 
@@ -18,7 +18,7 @@ namespace se::app {
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
 		/** The base color texture */
-		Repository::ResourceRef<graphics::Texture> baseColorTexture;
+		Repository::ResourceRef<TextureRef> baseColorTexture;
 
 		/** The metalness of the material */
 		float metallicFactor = 1.0f;
@@ -27,7 +27,7 @@ namespace se::app {
 		float roughnessFactor = 1.0f;
 
 		/** The metallic-roughness texture */
-		Repository::ResourceRef<graphics::Texture> metallicRoughnessTexture;
+		Repository::ResourceRef<TextureRef> metallicRoughnessTexture;
 	};
 
 
@@ -51,19 +51,19 @@ namespace se::app {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		Repository::ResourceRef<graphics::Texture> normalTexture;
+		Repository::ResourceRef<TextureRef> normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale = 1.0f;
 
 		/** The occlusion map texture */
-		Repository::ResourceRef<graphics::Texture> occlusionTexture;
+		Repository::ResourceRef<TextureRef> occlusionTexture;
 
 		/** The amount of occlusion applied */
 		float occlusionStrength = 1.0f;
 
 		/** The emissive map texture */
-		Repository::ResourceRef<graphics::Texture> emissiveTexture;
+		Repository::ResourceRef<TextureRef> emissiveTexture;
 
 		/** The RGB components of the emissive color of the material */
 		glm::vec3 emissiveFactor = glm::vec3(0.0f);
@@ -95,7 +95,7 @@ namespace se::app {
 		PBRMetallicRoughness pbrMetallicRoughness;
 
 		/** The normal map texture */
-		Repository::ResourceRef<graphics::Texture> normalTexture;
+		Repository::ResourceRef<TextureRef> normalTexture;
 
 		/** The scale applied to the normal map texture */
 		float normalScale;
@@ -124,7 +124,7 @@ namespace se::app {
 		/** The splatmap texture, its a RGBA textures that codifies in each of
 		 * its channels which material should be used at each position and in
 		 * what percentage */
-		Repository::ResourceRef<graphics::Texture> splatmapTexture;
+		Repository::ResourceRef<TextureRef> splatmapTexture;
 	};
 
 }

@@ -22,8 +22,8 @@ namespace se::app {
 		/** The vertical alignment of the text lines inside the Label */
 		enum class VerticalAlignment { Top, Center, Bottom };
 	private:
-		using TechniqueRef = Repository::ResourceRef<graphics::Technique>;
-		using FontRef = Repository::ResourceRef<graphics::Font>;
+		using TechniqueResource = Repository::ResourceRef<graphics::Technique>;
+		using FontResource = Repository::ResourceRef<graphics::Font>;
 		using RenderableTextUPtr = std::unique_ptr<graphics::RenderableText>;
 
 	private:	// Attributes
@@ -34,10 +34,10 @@ namespace se::app {
 		std::vector<RenderableTextUPtr> mRenderableTexts;
 
 		/** The technique of the Text */
-		TechniqueRef mTechnique;
+		TechniqueResource mTechnique;
 
 		/** The font of the Text */
-		FontRef mFont;
+		FontResource mFont;
 
 		/** The maximum character size to use with the Text */
 		glm::vec2 mCharacterSize;
@@ -95,7 +95,7 @@ namespace se::app {
 		/** Sets the font of the Label
 		 *
 		 * @param	font the Font of the Label */
-		void setFont(FontRef font);
+		void setFont(const FontResource& font);
 
 		/** Sets the size of each character in the Label text
 		 *

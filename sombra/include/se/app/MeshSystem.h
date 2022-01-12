@@ -1,11 +1,11 @@
 #ifndef MESH_SYSTEM_H
 #define MESH_SYSTEM_H
 
-#include <deque>
+#include <queue>
 #include <unordered_map>
 #include <memory>
+#include <future>
 #include <glm/glm.hpp>
-#include "../graphics/core/UniformVariable.h"
 #include "events/RMeshEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
@@ -28,23 +28,23 @@ namespace se::app {
 		using RenderableShaderStepSPtr = std::shared_ptr<RenderableShaderStep>;
 		using RenderableShaderSPtr = std::shared_ptr<RenderableShader>;
 
+		/** Holds the uniforms added to an step */
 		struct EntityUniforms
 		{
 			std::size_t shaderCount = 0;
 			RenderableShaderStepSPtr step;
-			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-				modelMatrix;
-			std::shared_ptr<graphics::UniformVariableValueVector<glm::mat3x4>>
-				jointMatrices;
+			UniformVVRef<glm::mat4> modelMatrix;
+			UniformVVVRef<glm::mat3x4> jointMatrices;
 		};
 
-		struct StepOperation
+		/** Holds the data of the new uniforms to process */
+		struct NewUniform
 		{
-			enum class Operation { Add, Remove };
-			Operation operation;
 			Entity entity;
 			std::size_t rIndex;
 			RenderableShaderStepSPtr step;
+			graphics::Context::BindableRef uniform;
+			std::future<bool> uniformFound;
 		};
 
 		using EntityUniformsVector = std::vector<EntityUniforms>;
@@ -60,13 +60,15 @@ namespace se::app {
 			std::array<EntityUniformsVector, MeshComponent::kMaxMeshes>
 		> mEntityUniforms;
 
-		/** Holds all the operations with the steps that must be performed by
-		 * thread 0 */
-		std::deque<StepOperation> mStepOperationsQueue;
-
-		/** The mutex that protects @see mEntityUniforms and
-		 * @see mStepOperationsQueue */
+		/** The mutex that protects @see mEntityUniforms */
 		std::mutex mMutex;
+
+		/** The new uniforms to add to the mesh entities, it's needed because
+		 * we can't use the EntityDatabase inside the Context functions */
+		std::queue<NewUniform> mNewUniforms;
+
+		/** The mutex that protects @see mNewUniforms */
+		std::mutex mUniformsMutex;
 
 	public:		// Functions
 		/** Creates a new MeshSystem

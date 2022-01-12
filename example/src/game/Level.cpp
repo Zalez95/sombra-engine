@@ -32,6 +32,7 @@
 #include <se/app/Scene.h>
 
 #include <se/graphics/Renderer.h>
+#include <se/graphics/GraphicsEngine.h>
 #include <se/graphics/3D/RenderableMesh.h>
 #include <se/graphics/core/UniformVariable.h>
 #include <se/graphics/core/GraphicsOperations.h>
@@ -187,16 +188,15 @@ namespace game {
 		se::physics::QuickHull qh(0.0001f);
 		se::physics::HACD hacd(0.002f, 0.0002f);
 
-		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
-		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(mGame.getExternalTools().graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
+		auto graphicsEngine = mGame.getExternalTools().graphicsEngine;
+		auto gBufferRendererMesh = static_cast<se::graphics::Renderer*>(graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+		auto forwardRendererMesh = static_cast<se::graphics::Renderer*>(graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 
-		se::app::Image<unsigned char> heightMap1, splatMap1, logo1, reticle1;
-		se::app::Image<float> environment1;
-		se::app::Repository::ResourceRef<se::graphics::Mesh> cubeMesh = nullptr, planeMesh = nullptr;
-		se::app::Repository::ResourceRef<se::graphics::Texture> logoTexture, reticleTexture, chessTexture, skyTexture;
 		se::app::Repository::ResourceRef<se::graphics::Font> arial;
 		se::app::Repository::ResourceRef<se::graphics::Technique> technique2D;
-		se::app::Repository::ResourceRef<se::graphics::Program> programSky, programShadow, programShadowSkinning, programGBufMaterial;
+		se::app::Repository::ResourceRef<se::app::MeshRef> cubeMesh = nullptr, planeMesh = nullptr;
+		se::app::Repository::ResourceRef<se::app::TextureRef> logoTexture, reticleTexture, chessTexture, skyTexture;
+		se::app::Repository::ResourceRef<se::app::ProgramRef> programSky, programShadow, programShadowSkinning, programGBufMaterial;
 		se::app::Repository::ResourceRef<se::app::RenderableShaderStep> stepShadow;
 		se::app::Repository::ResourceRef<se::app::RenderableShader> shaderSky, shaderPlane, shaderRandom;
 		se::app::Repository::ResourceRef<se::audio::Buffer> sound;
@@ -218,52 +218,64 @@ namespace game {
 			}
 
 			// Images
-			result = se::app::ImageReader::read("res/images/logo.png", logo1);
+			auto logo1 = std::make_shared<se::app::Image<unsigned char>>();
+			result = se::app::ImageReader::read("res/images/logo.png", *logo1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
 
-			result = se::app::ImageReader::read("res/images/reticle.png", reticle1);
+			auto reticle1 = std::make_shared<se::app::Image<unsigned char>>();
+			result = se::app::ImageReader::read("res/images/reticle.png", *reticle1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
 
-			result = se::app::ImageReader::readHDR("res/images/satara_night_2k.hdr", environment1);
+			auto environment1 = std::make_shared<se::app::Image<float>>();
+			result = se::app::ImageReader::readHDR("res/images/satara_night_2k.hdr", *environment1);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
 
 			// Textures
-			logoTexture = mGame.getRepository().insert(std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D), "logo");
+			auto texRef = graphicsEngine->getContext().create<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D)
+				.edit([=](auto& texture) {
+					texture.setImage(
+						logo1->pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
+						logo1->width, logo1->height
+					);
+				});
+			logoTexture = mGame.getRepository().insert(std::make_shared<se::app::TextureRef>(texRef), "logo");
 			logoTexture.setFakeUser();
-			logoTexture->setImage(
-				logo1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
-				logo1.width, logo1.height
-			);
 
-			reticleTexture = mGame.getRepository().insert(std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D), "reticle");
+			texRef = graphicsEngine->getContext().create<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D)
+				.edit([=](auto& texture) {
+					texture.setImage(
+						reticle1->pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
+						reticle1->width, reticle1->height
+					);
+				});
+			reticleTexture = mGame.getRepository().insert(std::make_shared<se::app::TextureRef>(texRef), "reticle");
 			reticleTexture.setFakeUser();
-			reticleTexture->setImage(
-				reticle1.pixels.get(), se::graphics::TypeId::UnsignedByte, se::graphics::ColorFormat::RGBA, se::graphics::ColorFormat::RGBA,
-				reticle1.width, reticle1.height
-			);
 
-			chessTexture = mScene.repository.findByName<se::graphics::Texture>("chessTexture");
+			chessTexture = mScene.repository.findByName<se::app::TextureRef>("chessTexture");
 
-			auto environmentEquiTexture = std::make_shared<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D);
-			environmentEquiTexture->setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
-				.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
-				.setImage(
-					environment1.pixels.get(), se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB,
-					se::graphics::ColorFormat::RGB, environment1.width, environment1.height
-				);
-			skyTexture = mScene.repository.insert(se::app::TextureUtils::equirectangularToCubeMap(environmentEquiTexture, 512), "skyTexture");
+			texRef = graphicsEngine->getContext().create<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D)
+				.edit([=](auto& texture) {
+					texture.setWrapping(se::graphics::TextureWrap::ClampToEdge, se::graphics::TextureWrap::ClampToEdge)
+						.setFiltering(se::graphics::TextureFilter::Linear, se::graphics::TextureFilter::Linear)
+						.setImage(
+							environment1->pixels.get(), se::graphics::TypeId::Float, se::graphics::ColorFormat::RGB,
+							se::graphics::ColorFormat::RGB, environment1->width, environment1->height
+						);
+				});
+			texRef = se::app::TextureUtils::equirectangularToCubeMap(texRef, 512);
+			skyTexture = mScene.repository.insert(std::make_shared<se::app::TextureRef>(texRef), "skyTexture");
 
 			// Meshes
 			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
 			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
 			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
-			cubeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(cubeRawMesh)), "cube");
+			cubeMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), cubeRawMesh)), "cube");
 
 			se::app::RawMesh planeRawMesh("Plane");
 			planeRawMesh.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
@@ -271,19 +283,19 @@ namespace game {
 			planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.indices);
 			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.indices);
-			planeMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(planeRawMesh)), "plane");
+			planeMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), planeRawMesh)), "plane");
 
 			// Programs
-			programShadow = mScene.repository.findByName<se::graphics::Program>("programShadow");
-			programShadowSkinning = mScene.repository.findByName<se::graphics::Program>("programShadowSkinning");
-			programGBufMaterial = mScene.repository.findByName<se::graphics::Program>("programGBufMaterial");
+			programShadow = mScene.repository.findByName<se::app::ProgramRef>("programShadow");
+			programShadowSkinning = mScene.repository.findByName<se::app::ProgramRef>("programShadowSkinning");
+			programGBufMaterial = mScene.repository.findByName<se::app::ProgramRef>("programGBufMaterial");
 
-			std::shared_ptr<se::graphics::Program> programSkySPtr;
-			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", programSkySPtr);
+			se::app::ProgramRef programSkyRef;
+			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", graphicsEngine->getContext(), programSkyRef);
 			if (!result) {
 				throw std::runtime_error("programSky error: " + std::string(result.description()));
 			}
-			programSky = mScene.repository.insert(std::move(programSkySPtr), "programSky");
+			programSky = mScene.repository.insert(std::make_shared<se::app::ProgramRef>(programSkyRef), "programSky");
 
 			// Techniques
 			technique2D = mGame.getRepository().findByName<se::graphics::Technique>("technique2D");
@@ -294,13 +306,16 @@ namespace game {
 			// Shaders
 			stepShadow = mScene.repository.findByName<se::app::RenderableShaderStep>("stepShadow");
 
+			skyTexture->edit([](auto& texture) { texture.setTextureUnit(0); });
 			auto stepSky = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*forwardRendererMesh), "stepSky");
-			skyTexture->setTextureUnit(0);
 			stepSky->addResource(programSky)
 				.addResource(skyTexture)
-				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
-				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
-				.addBindable(std::make_shared<se::graphics::UniformVariableValue<int>>("uCubeMap", programSky.get(), 0));
+				.addBindable(graphicsEngine->getContext().create<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
+				.addBindable(graphicsEngine->getContext().create<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
+				.addBindable(
+					graphicsEngine->getContext().create<se::graphics::UniformVariableValue<int>>("uCubeMap", 0)
+						.qedit([pRef = *programSky](auto& q, auto& uniform) { uniform.load(*q.getTBindable(pRef)); })
+				);
 
 			shaderSky = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderSky");
 			shaderSky->addStep(stepSky);
@@ -355,11 +370,11 @@ namespace game {
 			gravity.setFakeUser();
 
 			// Renderable2Ds
-			mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), logoTexture.get());
+			mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), *logoTexture);
 			mLogoTexture->addTechnique(technique2D.get());
 			mLogoTexture->setZIndex(255);
 
-			mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), reticleTexture.get());
+			mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), *reticleTexture);
 			mReticleTexture->addTechnique(technique2D.get());
 			mReticleTexture->setZIndex(255);
 
@@ -586,7 +601,7 @@ namespace game {
 					.addStep(stepSlice);
 
 				auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
-				auto sliceMesh = mScene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(tmpRawMesh)), ("mesh" + name).c_str());
+				auto sliceMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), tmpRawMesh)), ("mesh" + name).c_str());
 				auto mesh = query.emplaceComponent<se::app::MeshComponent>(tubeSlice);
 				auto rIndex = mesh->add(false, sliceMesh);
 				mesh->addRenderableShader(rIndex, std::move(shaderSlice));
@@ -642,8 +657,8 @@ namespace game {
 
 		mScene.repository.findByName<se::physics::Force>("gravity").setFakeUser(false);
 		mScene.repository.findByName<se::audio::Buffer>("sound").setFakeUser(false);
-		mGame.getRepository().findByName<se::graphics::Texture>("reticle").setFakeUser(false);
-		mGame.getRepository().findByName<se::graphics::Texture>("logo").setFakeUser(false);
+		mGame.getRepository().findByName<se::app::TextureRef>("reticle").setFakeUser(false);
+		mGame.getRepository().findByName<se::app::TextureRef>("logo").setFakeUser(false);
 
 		mGame.getEventManager().unsubscribe(this, se::app::Topic::Key);
 	}

@@ -15,7 +15,8 @@ namespace se::app {
 	class TerrainComponent
 	{
 	private:	// Nested types
-		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
+		using RenderableShaderResource =
+			Repository::ResourceRef<RenderableShader>;
 
 	private:	// Attributes
 		/** The EventManager used for notifying the TerrainComponent changes */
@@ -28,7 +29,7 @@ namespace se::app {
 		graphics::RenderableTerrain mRenderableTerrain;
 
 		/** The shaders added to the TerrainComponent */
-		std::vector<RenderableShaderRef> mShaders;
+		std::vector<RenderableShaderResource> mShaders;
 
 	public:		// Functions
 		/** Creates a new TerrainComponent
@@ -72,7 +73,7 @@ namespace se::app {
 		/** Adds the given RenderableShader to the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
-		void addRenderableShader(const RenderableShaderRef& shader);
+		void addRenderableShader(const RenderableShaderResource& shader);
 
 		/** Iterates through all the RenderableShaders of the TerrainComponents
 		 * calling the given callback function
@@ -84,7 +85,7 @@ namespace se::app {
 		/** Removes the given RenderableShader from the TerrainComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
-		void removeRenderableShader(const RenderableShaderRef& shader);
+		void removeRenderableShader(const RenderableShaderResource& shader);
 	};
 
 

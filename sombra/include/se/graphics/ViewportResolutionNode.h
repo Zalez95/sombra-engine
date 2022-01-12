@@ -52,8 +52,8 @@ namespace se::graphics {
 			int x, int y, std::size_t width, std::size_t height
 		);
 
-		/** @copydoc RenderNode::execute() */
-		virtual void execute() override;
+		/** @copydoc RenderNode::execute(Context::Query&) */
+		virtual void execute(Context::Query& q) override;
 	};
 
 }

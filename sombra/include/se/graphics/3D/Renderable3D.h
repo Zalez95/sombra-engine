@@ -8,7 +8,6 @@
 namespace se::graphics {
 
 	class Pass;
-	class Bindable;
 
 
 	/**
@@ -18,11 +17,11 @@ namespace se::graphics {
 	class Renderable3D : public Renderable
 	{
 	protected:	// Nested types
-		using BindableSPtr = std::shared_ptr<Bindable>;
+		using BindableRefVector = std::vector<Context::BindableRef>;
 
 	protected:	// Attributes
 		/** Maps each Pass with the Bindables to bind before drawing */
-		std::unordered_map<Pass*, std::vector<BindableSPtr>> mPassBindables;
+		std::unordered_map<Pass*, BindableRefVector> mPassBindables;
 
 	public:		// Functions
 		/** Creates a new Renderable3D */
@@ -47,7 +46,9 @@ namespace se::graphics {
 		 * @param	pass a pointer to the Pass used for binding the Bindable
 		 * @param	bindable a pointer to the Bindable to add
 		 * @return	a reference to the current Renderable3D object */
-		Renderable3D& addPassBindable(Pass* pass, const BindableSPtr& bindable);
+		Renderable3D& addPassBindable(
+			Pass* pass, const Context::BindableRef& bindable
+		);
 
 		/** Iterates through all the Bindables mapped with the given Pass of
 		 * the Renderable3D calling the given callback function
@@ -68,20 +69,24 @@ namespace se::graphics {
 		 * @param	bindable a pointer to the Bindable to remove
 		 * @return	a reference to the current Renderable3D object */
 		Renderable3D& removePassBindable(
-			Pass* pass, const BindableSPtr& bindable
+			Pass* pass, const Context::BindableRef& bindable
 		);
 
 		/** Binds all the Bindables added to the current Renderable3D related
 		 * to the given Pass
 		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables
 		 * @param	pass a pointer to the Pass used for binding the Bindables */
-		void bind(Pass* pass) const;
+		void bind(Context::Query& q, Pass* pass) const;
 
 		/** Unbinds all the Bindables added to the current Renderable3D related
 		 * to the given Pass
 		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables
 		 * @param	pass a pointer to the Pass used for binding the Bindables */
-		void unbind(Pass* pass) const;
+		void unbind(Context::Query& q, Pass* pass) const;
 	};
 
 

@@ -26,7 +26,9 @@ namespace game {
 		mLevel(level), mPickText(pickText)
 	{
 		auto& scene = mLevel.getScene();
-		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(mLevel.getGame().getExternalTools().graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
+
+		auto graphicsEngine = mLevel.getGame().getExternalTools().graphicsEngine;
+		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
 
 		se::app::RawMesh rawMesh2("tetrahedron");
 		rawMesh2.positions = {
@@ -49,9 +51,10 @@ namespace game {
 		};
 		rawMesh2.normals = se::app::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.indices);
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.indices);
-		mTetrahedronMesh = scene.repository.insert(std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(rawMesh2)), "tetrahedronMesh");
 
-		auto programGBufMaterial = scene.repository.findByName<se::graphics::Program>("programGBufMaterial");
+		mTetrahedronMesh = scene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), rawMesh2)), "tetrahedronMesh");
+
+		auto programGBufMaterial = scene.repository.findByName<se::app::ProgramRef>("programGBufMaterial");
 		auto stepYellow = scene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRenderer), "stepYellow");
 
 		se::app::ShaderLoader::addMaterialBindables(

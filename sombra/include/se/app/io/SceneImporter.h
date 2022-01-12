@@ -17,6 +17,7 @@ namespace se::app {
 	{
 	public:		// Nested types
 		using SceneImporterUPtr = std::unique_ptr<SceneImporter>;
+		using ShaderResource = Repository::ResourceRef<RenderableShader>;
 
 		/** The scenes files than are supported by the SceneImporter */
 		enum class FileType
@@ -28,9 +29,6 @@ namespace se::app {
 		 * Shaders from Materials */
 		class ShaderBuilder
 		{
-		public:		// Nested types
-			using ShaderRef = Repository::ResourceRef<RenderableShader>;
-
 		public:		// Functions
 			/** Class destructor */
 			virtual ~ShaderBuilder() = default;
@@ -43,7 +41,7 @@ namespace se::app {
 			 * @param	hasSkin if the Shader must support skeletal animation
 			 *			or not
 			 * @return	the new Shader */
-			virtual ShaderRef createShader(
+			virtual ShaderResource createShader(
 				const char* name, const Material& material, bool hasSkin
 			) = 0;
 		};
@@ -53,10 +51,10 @@ namespace se::app {
 		ShaderBuilder& mShaderBuilder;
 
 		/** The default shader of the ShaderBuilder */
-		Repository::ResourceRef<RenderableShader> mDefaultShader;
+		ShaderResource mDefaultShader;
 
 		/** The default shader with skinning of the ShaderBuilder */
-		Repository::ResourceRef<RenderableShader> mDefaultShaderSkin;
+		ShaderResource mDefaultShaderSkin;
 
 	public:		// Functions
 		/** Class destructor */

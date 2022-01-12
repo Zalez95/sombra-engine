@@ -24,8 +24,8 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~Renderer() = default;
 
-		/** @copydoc RenderNode::execute() */
-		virtual void execute() override;
+		/** @copydoc RenderNode::execute(Context::Query&) */
+		virtual void execute(Context::Query& q) override;
 
 		/** Submits the given Renderable for rendering
 		 *
@@ -36,8 +36,11 @@ namespace se::graphics {
 		/** Sorts the queue with all the submitted Renderables */
 		virtual void sortQueue() = 0;
 
-		/** Renders all the Renderables submitted to the Renderer Queue */
-		virtual void render() = 0;
+		/** Renders all the Renderables submitted to the Renderer Queue
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		virtual void render(Context::Query& q) = 0;
 
 		/** Clears the queue with all the submitted Renderables */
 		virtual void clearQueue() = 0;

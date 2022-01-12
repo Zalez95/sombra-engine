@@ -1,40 +1,43 @@
 #include "se/app/graphics/Tex3DClearNode.h"
 #include "se/app/io/ShaderLoader.h"
-#include "se/graphics/core/Texture.h"
-#include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
+#include "se/app/graphics/TypeRefs.h"
 
 namespace se::app {
 
-	Tex3DClearNode::Tex3DClearNode(
-		const std::string& name, Repository& repository, std::size_t maxSize
-	) : BindableRenderNode(name), mMaxSize(maxSize)
+	Tex3DClearNode::Tex3DClearNode(const std::string& name, graphics::Context& context, std::size_t maxSize) :
+		BindableRenderNode(name), mMaxSize(maxSize)
 	{
-		mProgram = repository.findByName<graphics::Program>("programTex3DClear");
-		if (!mProgram) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mProgram = repository.insert(std::move(program), "programTex3DClear");
+		ProgramRef program;
+		auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DClear.glsl", nullptr, "res/shaders/fragmentTex3DClear.glsl", context, program);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
-		addBindable(mProgram.get());
 
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uMaxSize", mProgram.get(), static_cast<int>(mMaxSize)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uImage3D", mProgram.get(), kImageUnit) );
+		addBindable(program);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uMaxSize", static_cast<int>(mMaxSize))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uImage3D", kImageUnit)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("input", this, tex3DIndex) );
 		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("output", this, tex3DIndex) );
 
-		mPlane = repository.findByName<graphics::Mesh>("plane");
+		mPlaneIndex = addBindable();
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Mesh>>("plane", this, mPlaneIndex) );
 	}
 
 
-	void Tex3DClearNode::execute()
+	void Tex3DClearNode::execute(graphics::Context::Query& q)
 	{
+		auto plane = q.getTBindable( MeshRef::from(getBindable(mPlaneIndex)) );
+
 		int originX, originY;
 		std::size_t dimensionsX, dimensionsY;
 		graphics::GraphicsOperations::getViewport(originX, originY, dimensionsX, dimensionsY);
@@ -44,11 +47,10 @@ namespace se::app {
 		graphics::SetOperation opDepthTest(graphics::Operation::DepthTest, false);	opDepthTest.bind();
 		graphics::SetOperation opBlending(graphics::Operation::Blending, false);	opBlending.bind();
 
-		bind();
-		mPlane->bind();
+		bind(q);
 		graphics::GraphicsOperations::drawIndexedInstanced(
 			graphics::PrimitiveType::Triangle,
-			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType(), 0,
+			plane->getIBO()->getIndexCount(), plane->getIBO()->getIndexType(), 0,
 			mMaxSize
 		);
 		graphics::GraphicsOperations::imageMemoryBarrier();

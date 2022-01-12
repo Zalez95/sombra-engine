@@ -1,12 +1,11 @@
 #ifndef RENDERABLE_SHADER_H
 #define RENDERABLE_SHADER_H
 
-#include "../../graphics/core/Program.h"
-#include "../../graphics/core/Texture.h"
 #include "../../graphics/Pass.h"
 #include "../../graphics/Technique.h"
-#include "../Repository.h"
 #include "../events/EventManager.h"
+#include "../Repository.h"
+#include "TypeRefs.h"
 
 namespace se::app {
 
@@ -16,21 +15,15 @@ namespace se::app {
 	 */
 	class RenderableShaderStep
 	{
-	public:		// Nested types
-		using PassSPtr = std::shared_ptr<graphics::Pass>;
-		using BindableSPtr = std::shared_ptr<graphics::Bindable>;
-		using ProgramRef = Repository::ResourceRef<graphics::Program>;
-		using TextureRef = Repository::ResourceRef<graphics::Texture>;
-
 	private:	// Attributes
 		/** The Pass of the RenderableShaderStep */
-		PassSPtr mPass;
+		std::shared_ptr<graphics::Pass> mPass;
 
 		/** The Program Resources added to the RenderableShaderStep */
-		std::vector<ProgramRef> mPrograms;
+		std::vector<Repository::ResourceRef<ProgramRef>> mProgramResources;
 
 		/** The Texture Resources added to the RenderableShaderStep */
-		std::vector<TextureRef> mTextures;
+		std::vector<Repository::ResourceRef<TextureRef>> mTextureResources;
 
 	public:		// Functions
 		/** Creates a new RenderableShaderStep
@@ -40,7 +33,8 @@ namespace se::app {
 			mPass(std::make_shared<graphics::Pass>(renderer)) {};
 
 		/** @return	the Pass wrapped by the RenderableShader */
-		PassSPtr getPass() const { return mPass; };
+		const std::shared_ptr<graphics::Pass>& getPass() const
+		{ return mPass; };
 
 		/** @return	a pointer to a copy of the current RenderableShaderStep */
 		std::unique_ptr<RenderableShaderStep> clone() const;
@@ -84,9 +78,11 @@ namespace se::app {
 
 		/** Adds the given Bindable to the Step
 		 *
-		 * @param	bindable a pointer to the Bindable to add
+		 * @param	bindable the Bindable to add
 		 * @return	a reference to the current Step object */
-		RenderableShaderStep& addBindable(const BindableSPtr& bindable);
+		RenderableShaderStep& addBindable(
+			const graphics::Context::BindableRef& bindable
+		);
 
 		/** Iterates through all the Bindables of the Step calling the given
 		 * callback function
@@ -97,9 +93,11 @@ namespace se::app {
 
 		/** Removes a Bindable from the current Step
 		 *
-		 * @param	bindable a pointer to the Bindable to remove
+		 * @param	bindable the Bindable to remove
 		 * @return	a reference to the current Step object */
-		RenderableShaderStep& removeBindable(const BindableSPtr& bindable);
+		RenderableShaderStep& removeBindable(
+			const graphics::Context::BindableRef& bindable
+		);
 	};
 
 
@@ -111,7 +109,7 @@ namespace se::app {
 		public std::enable_shared_from_this<RenderableShader>
 	{
 	public:		// Nested types
-		using StepRef = Repository::ResourceRef<RenderableShaderStep>;
+		using StepResource = Repository::ResourceRef<RenderableShaderStep>;
 		using TechniqueSPtr = std::shared_ptr<graphics::Technique>;
 
 	private:	// Attributes
@@ -119,7 +117,7 @@ namespace se::app {
 		std::shared_ptr<graphics::Technique> mTechnique;
 
 		/** The RenderableShaderSteps added to the RenderableShader */
-		std::vector<StepRef> mSteps;
+		std::vector<StepResource> mSteps;
 
 		/** The EventManager used for notifying of RenderableShader updates */
 		EventManager& mEventManager;
@@ -144,7 +142,7 @@ namespace se::app {
 		 *
 		 * @param	step a pointer to the RenderableShaderStep to add
 		 * @return	a reference to the current RenderableShader object */
-		RenderableShader& addStep(const StepRef& step);
+		RenderableShader& addStep(const StepResource& step);
 
 		/** Iterates through all the RenderableShaderSteps of the
 		 * RenderableShader calling the given callback function
@@ -159,7 +157,7 @@ namespace se::app {
 		 *
 		 * @param	step a pointer to the RenderableShaderStep to remove
 		 * @return	a reference to the current RenderableShader object */
-		RenderableShader& removeStep(const StepRef& step);
+		RenderableShader& removeStep(const StepResource& step);
 	};
 
 
@@ -173,7 +171,7 @@ namespace se::app {
 	template <typename F>
 	void RenderableShaderStep::processPrograms(F&& callback) const
 	{
-		for (const ProgramRef& prog : mPrograms) {
+		for (const auto& prog : mProgramResources) {
 			callback(prog);
 		}
 	}
@@ -182,7 +180,7 @@ namespace se::app {
 	template <typename F>
 	void RenderableShaderStep::processTextures(F&& callback) const
 	{
-		for (const TextureRef& tex : mTextures) {
+		for (const auto& tex : mTextureResources) {
 			callback(tex);
 		}
 	}
@@ -191,8 +189,8 @@ namespace se::app {
 	template <typename F>
 	void RenderableShader::processSteps(F&& callback) const
 	{
-		for (auto& bindable : mSteps) {
-			callback(bindable);
+		for (const auto& step : mSteps) {
+			callback(step);
 		}
 	}
 

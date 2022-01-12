@@ -20,33 +20,39 @@ namespace se::app {
 
 		mTechnique = mApplication.getRepository().findByName<graphics::Technique>("technique2D");
 		if (!mTechnique) {
-			auto renderer = dynamic_cast<graphics::Renderer*>(mApplication.getExternalTools().graphicsEngine->getRenderGraph().getNode("renderer2D"));
+			auto& context = mApplication.getExternalTools().graphicsEngine->getContext();
+			auto& renderGraph = mApplication.getExternalTools().graphicsEngine->getRenderGraph();
 
-			mProgram = mApplication.getRepository().findByName<graphics::Program>("program2D");
-			if (!mProgram) {
-				std::shared_ptr<graphics::Program> program;
-				auto result = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl", program);
+			ProgramRef programRef;
+			mProgramResource = mApplication.getRepository().findByName<ProgramRef>("program2D");
+			if (mProgramResource) {
+				programRef = *mProgramResource;
+			}
+			else {
+				auto result = ShaderLoader::createProgram("res/shaders/vertex2D.glsl", nullptr, "res/shaders/fragment2D.glsl", context, programRef);
 				if (!result) {
 					SOMBRA_ERROR_LOG << result.description();
 					return;
 				}
-				mProgram = mApplication.getRepository().insert(std::move(program), "program2D");
+				mProgramResource = mApplication.getRepository().insert(std::make_shared<ProgramRef>(programRef), "program2D");
 			}
 
-			mProjectionMatrix = std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(),
-				glm::ortho(0.0f, initialWindowSize.x, initialWindowSize.y, 0.0f, -1.0f, 1.0f)
-			);
+			glm::mat4 projectionMatrix = glm::ortho(0.0f, initialWindowSize.x, initialWindowSize.y, 0.0f, -1.0f, 1.0f);
+			mProjectionMatrix = context.create<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", projectionMatrix)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(programRef)); });
 
+			auto renderer = dynamic_cast<graphics::Renderer*>(renderGraph.getNode("renderer2D"));
 			auto pass = std::make_shared<graphics::Pass>(*renderer);
-			pass->addBindable(mProgram.get())
-				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, true))
-				.addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, false))
+			pass->addBindable(*mProgramResource)
+				.addBindable(context.create<graphics::SetOperation>(graphics::Operation::Blending, true))
+				.addBindable(context.create<graphics::SetOperation>(graphics::Operation::DepthTest, false))
 				.addBindable(mProjectionMatrix);
 
 			for (int i = 0; i < static_cast<int>(graphics::Renderer2D::kMaxTextures); ++i) {
-				utils::ArrayStreambuf<char, 64> aStreambuf;
-				std::ostream(&aStreambuf) << "uTextures[" << i << "]";
-				pass->addBindable(std::make_shared<graphics::UniformVariableValue<int>>(aStreambuf.data(), mProgram.get(), i));
+				pass->addBindable(
+					context.create<graphics::UniformVariableValue<int>>("uTextures[" + std::to_string(i) + "]", i)
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(programRef)); })
+				);
 			}
 
 			auto technique2D = std::make_shared<graphics::Technique>();
@@ -92,7 +98,7 @@ namespace se::app {
 			height = static_cast<float>(event.getHeight());
 
 		if (mProjectionMatrix) {
-			mProjectionMatrix->setValue(glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f));
+			mProjectionMatrix.edit([=](auto& uniform) { uniform.setValue(glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f)); });
 		}
 
 		mRootComponent.setSize({ width, height });

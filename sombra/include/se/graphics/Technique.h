@@ -1,8 +1,6 @@
 #ifndef TECHNIQUE_H
 #define TECHNIQUE_H
 
-#include <memory>
-#include <vector>
 #include "Pass.h"
 
 namespace se::graphics {

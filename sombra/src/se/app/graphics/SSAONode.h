@@ -2,12 +2,6 @@
 #define SSAO_NODE_H
 
 #include "se/graphics/BindableRenderNode.h"
-#include "se/graphics/core/Program.h"
-#include "se/graphics/core/Texture.h"
-#include "se/graphics/core/FrameBuffer.h"
-#include "se/graphics/core/UniformVariable.h"
-#include "se/graphics/3D/Mesh.h"
-#include "se/app/Repository.h"
 
 namespace se::app {
 
@@ -16,7 +10,8 @@ namespace se::app {
 	 * Ambient Occlusion based on the gBuffer contents.
 	 * It has a "target" input and output FrameBuffer where the SSAO
 	 * texture will be written to. It also has a "position" and "normal"
-	 * texture inputs.
+	 * texture inputs and a "plane" input where a plane Mesh must be attached
+	 * for rendering
 	 */
 	class SSAONode : public graphics::BindableRenderNode
 	{
@@ -29,29 +24,24 @@ namespace se::app {
 		};
 
 	private:	// Attributes
-		/** The program used by the SSAONode */
-		Repository::ResourceRef<graphics::Program> mProgram;
+		/** The index of the plane Mesh used for rendering */
+		std::size_t mPlaneIndex;
 
-		/** The plane used for rendering */
-		Repository::ResourceRef<graphics::Mesh> mPlane;
+		/** The index of the uniform variable that holds the Camera view
+		 * matrix */
+		std::size_t mViewMatrixIndex;
 
-		/** The rotation kernel texture used for creating noise */
-		Repository::ResourceRef<graphics::Texture> mRotationNoiseTexture;
-
-		/** The uniform variable that holds the Camera view matrix */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-			mViewMatrix;
-
-		/** The uniform variable that holds the Camera projection matrix */
-		std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-			mProjectionMatrix;
+		/** The index of the uniform variable that holds the Camera projection
+		 * matrix */
+		std::size_t mProjectionMatrixIndex;
 
 	public:		// Functions
 		/** Creates a new SSAONode
 		 *
 		 * @param	name the name of the RenderNode
-		 * @param	repository the Repository that holds the programs */
-		SSAONode(const std::string& name, Repository& repository);
+		 * @param	context the Context used for creating the RenderNode
+		 *			Bindables */
+		SSAONode(const std::string& name, graphics::Context& context);
 
 		/** Class destructor */
 		virtual ~SSAONode() = default;
@@ -66,8 +56,8 @@ namespace se::app {
 		 * @param	projectionMatrix the new projection matrix of the Camera */
 		void setProjectionMatrix(const glm::mat4& projectionMatrix);
 
-		/** Executes the current RenderNode */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 	private:
 		/** Calculates random samples inside an hemisphere
 		 *

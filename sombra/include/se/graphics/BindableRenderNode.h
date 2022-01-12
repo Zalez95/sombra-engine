@@ -2,7 +2,6 @@
 #define BINDABLE_RENDER_NODE_H
 
 #include "../utils/PackedVector.h"
-#include "core/Bindable.h"
 #include "RenderNode.h"
 
 namespace se::graphics {
@@ -17,9 +16,6 @@ namespace se::graphics {
 	 */
 	class BindableRNodeConnector
 	{
-	public:		// Nested types
-		using BindableSPtr = std::shared_ptr<Bindable>;
-
 	protected:	// Attributes
 		/** The index of the Bindable resource inside @see mParentNode */
 		std::size_t mBindableIndex;
@@ -39,7 +35,7 @@ namespace se::graphics {
 		std::size_t getBindableIndex() const { return mBindableIndex; };
 
 		/** @return	a pointer to the Bindable resource */
-		virtual BindableSPtr getBindable() const = 0;
+		virtual Context::BindableRef getBindable() const = 0;
 
 		/** Notifies the BindableRNodeConnector of a change in the Bindable
 		 * value */
@@ -71,11 +67,11 @@ namespace se::graphics {
 			BindableRNodeConnector(bindableIndex) {};
 
 		/** @copydoc BindableRNodeConnector::getBindable() */
-		virtual BindableSPtr getBindable() const override;
+		virtual Context::BindableRef getBindable() const override;
 
 		/** @return	a pointer to the typed Bindable resource */
-		std::shared_ptr<T> getTBindable() const
-		{ return std::dynamic_pointer_cast<T>(getBindable()); };
+		Context::TBindableRef<T> getTBindable() const
+		{ return Context::TBindableRef<T>::from(getBindable()); };
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;
@@ -116,11 +112,11 @@ namespace se::graphics {
 		virtual void disconnect() override;
 
 		/** @copydoc BindableRNodeConnector::getBindable() */
-		virtual BindableSPtr getBindable() const override;
+		virtual Context::BindableRef getBindable() const override;
 
 		/** @return	a pointer to the typed Bindable resource */
-		std::shared_ptr<T> getTBindable() const
-		{ return std::dynamic_pointer_cast<T>(getBindable()); };
+		Context::TBindableRef<T> getTBindable() const
+		{ return Context::TBindableRef<T>::from(getBindable()); };
 
 		/** @copydoc BindableRNodeConnector::onBindableUpdate() */
 		virtual void onBindableUpdate() override;
@@ -131,11 +127,10 @@ namespace se::graphics {
 	 * Class BindableRenderNode, it's a RenderNode that holds Bindable resources
 	 * that can be accessed with its Input and Output Connectors.
 	 */
-	class BindableRenderNode : public RenderNode, protected Bindable
+	class BindableRenderNode : public RenderNode
 	{
 	protected:	// Nested types
-		using BindableSPtr = std::shared_ptr<Bindable>;
-		using BindableData = std::pair<BindableSPtr, bool>;
+		using BindableData = std::pair<Context::BindableRef, bool>;
 
 	private:	// Attributes
 		/** All the Bindables added to the BindableRenderNode */
@@ -159,7 +154,8 @@ namespace se::graphics {
 		 * @return	the index of the new Bindable inside the
 		 *			BindableRenderNode */
 		virtual std::size_t addBindable(
-			BindableSPtr bindable = nullptr, bool mustBind = true
+			const Context::BindableRef& bindable = {},
+			bool mustBind = true
 		);
 
 		/** Returns the requested Bindable
@@ -167,14 +163,17 @@ namespace se::graphics {
 		 * @param	bindableIndex the index of the Bindable to return inside the
 		 *			BindableRenderNode
 		 * @return	a pointer to the Bindable */
-		virtual BindableSPtr getBindable(std::size_t bindableIndex) const;
+		virtual const Context::BindableRef& getBindable(
+			std::size_t bindableIndex
+		) const;
 
 		/** Replaces the requested Bindable inside the BindableRenderNode
 		 *
 		 * @param	bindableIndex the index of the Bindable to replace
 		 * @param	bindable the new Bindable */
 		virtual void setBindable(
-			std::size_t bindableIndex, const BindableSPtr& bindable
+			std::size_t bindableIndex,
+			const Context::BindableRef& bindable
 		);
 
 		/** Removes the requested Bindable from the BindableRenderNode
@@ -182,12 +181,18 @@ namespace se::graphics {
 		 * @param	bindableIndex the index of the Bindable to remove */
 		virtual void removeBindable(std::size_t bindableIndex);
 	protected:
-		/** Binds the current object for using it in the following operations */
-		virtual void bind() const override;
+		/** Binds the current object for using it in the following operations
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		void bind(Context::Query& q) const;
 
 		/** Unbinds the current object so it can't be used in the following
-		 * operations */
-		virtual void unbind() const override;
+		 * operations
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		void unbind(Context::Query& q) const;
 	};
 
 }

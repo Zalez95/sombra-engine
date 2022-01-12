@@ -1,8 +1,8 @@
 #ifndef VERTEX_ARRAY_H
 #define VERTEX_ARRAY_H
 
-#include "Bindable.h"
 #include "Constants.h"
+#include "Bindable.h"
 
 namespace se::graphics {
 

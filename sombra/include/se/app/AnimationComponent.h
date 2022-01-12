@@ -13,7 +13,7 @@ namespace se::app {
 	class AnimationComponent
 	{
 	private:	// Nested types
-		using SkeletonAnimatorRef =
+		using SkeletonAnimatorResource =
 			Repository::ResourceRef<animation::SkeletonAnimator>;
 
 	private:	// Attributes
@@ -21,7 +21,7 @@ namespace se::app {
 		animation::AnimationNode* mNode;
 
 		/** All the SkeletonAnimators added to the AnimationComponent */
-		std::vector<SkeletonAnimatorRef> mSAnimators;
+		std::vector<SkeletonAnimatorResource> mSAnimators;
 
 	public:		// Functions
 		/** Creates a new AnimationComponent
@@ -76,7 +76,7 @@ namespace se::app {
 		 *
 		 * @param	sAnimator a pointer to the SkeletonAnimator to add
 		 * @return	a reference to the current AnimationComponent object */
-		AnimationComponent& addAnimator(SkeletonAnimatorRef sAnimator)
+		AnimationComponent& addAnimator(SkeletonAnimatorResource sAnimator)
 		{
 			mSAnimators.push_back(sAnimator);
 			if (mNode) {
@@ -101,7 +101,7 @@ namespace se::app {
 		 *
 		 * @param	sAnimator a pointer to the SkeletonAnimator to remove
 		 * @return	a reference to the current AnimationComponent object */
-		AnimationComponent& removeAnimator(SkeletonAnimatorRef sAnimator)
+		AnimationComponent& removeAnimator(SkeletonAnimatorResource sAnimator)
 		{
 			if (mNode) {
 				sAnimator->removeNodeHierarchy(*mNode);

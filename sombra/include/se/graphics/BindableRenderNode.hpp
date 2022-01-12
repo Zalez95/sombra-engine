@@ -6,7 +6,7 @@
 namespace se::graphics {
 
 	template <typename T>
-	typename BindableRNodeOutput<T>::BindableSPtr BindableRNodeOutput<T>::getBindable() const
+	typename Context::BindableRef BindableRNodeOutput<T>::getBindable() const
 	{
 		return static_cast<const BindableRenderNode*>(mParentNode)->getBindable(mBindableIndex);
 	}
@@ -59,7 +59,7 @@ namespace se::graphics {
 
 
 	template <typename T>
-	typename BindableRNodeInput<T>::BindableSPtr BindableRNodeInput<T>::getBindable() const
+	typename Context::BindableRef BindableRNodeInput<T>::getBindable() const
 	{
 		return static_cast<const BindableRenderNode*>(mParentNode)->getBindable(mBindableIndex);
 	}

@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -8,40 +7,9 @@
 
 namespace se::graphics {
 
-	Program::Program(const Shader* const* shaders, std::size_t shaderCount)
+	Program::Program()
 	{
-		// 1. Create the program
 		GL_WRAP( mProgramId = glCreateProgram() );
-
-		// 2. Attach the shaders to the program
-		for (std::size_t i = 0; i < shaderCount; ++i) {
-			GL_WRAP( glAttachShader(mProgramId, shaders[i]->mShaderId) );
-		}
-
-		GL_WRAP( glLinkProgram(mProgramId) );
-
-		// 3. Check program related errors
-		GLint status;
-		GL_WRAP( glGetProgramiv(mProgramId, GL_LINK_STATUS, &status) );
-		if (status == GL_FALSE) {
-			GLint infoLogLength;
-			GL_WRAP( glGetProgramiv(mProgramId, GL_INFO_LOG_LENGTH, &infoLogLength) );
-
-			char* infoLog = new char[infoLogLength + 1];
-			GL_WRAP( glGetProgramInfoLog(mProgramId, infoLogLength, NULL, infoLog) );
-
-			std::string strInfoLog = "Failed to link the program\n" + std::string(infoLog);
-			delete[] infoLog;
-
-			throw std::runtime_error(strInfoLog);
-		}
-
-		// 4. Remove the shaders from the program
-		for (std::size_t i = 0; i < shaderCount; ++i) {
-			GL_WRAP( glDetachShader(mProgramId, shaders[i]->mShaderId) );
-		}
-
-		SOMBRA_TRACE_LOG << "Created Program " << mProgramId;
 	}
 
 
@@ -73,6 +41,45 @@ namespace se::graphics {
 		other.mProgramId = 0;
 
 		return *this;
+	}
+
+
+	bool Program::load(const Shader* const* shaders, std::size_t shaderCount)
+	{
+		bool ret = true;
+
+		// 1. Attach the shaders to the program
+		for (std::size_t i = 0; i < shaderCount; ++i) {
+			GL_WRAP( glAttachShader(mProgramId, shaders[i]->mShaderId) );
+		}
+
+		GL_WRAP( glLinkProgram(mProgramId) );
+
+		// 2. Check program related errors
+		GLint status;
+		GL_WRAP( glGetProgramiv(mProgramId, GL_LINK_STATUS, &status) );
+		if (status == GL_FALSE) {
+			GLint infoLogLength;
+			GL_WRAP( glGetProgramiv(mProgramId, GL_INFO_LOG_LENGTH, &infoLogLength) );
+
+			char* infoLog = new char[infoLogLength + 1];
+			GL_WRAP( glGetProgramInfoLog(mProgramId, infoLogLength, NULL, infoLog) );
+
+			SOMBRA_ERROR_LOG << "Failed to link the program " << mProgramId << ":" << infoLog;
+
+			delete[] infoLog;
+			ret = false;
+		}
+		else {
+			SOMBRA_TRACE_LOG << "Created Program " << mProgramId;
+		}
+
+		// 3. Remove the shaders from the program
+		for (std::size_t i = 0; i < shaderCount; ++i) {
+			GL_WRAP( glDetachShader(mProgramId, shaders[i]->mShaderId) );
+		}
+
+		return ret;
 	}
 
 

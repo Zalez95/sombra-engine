@@ -138,13 +138,27 @@ namespace editor {
 				mCancel = mCreate = false;
 			}
 			else if (!mClose) {
-				if (mEditor.getScene()) {
-					mClose = true;
+				if (mFutureResult.valid() && se::utils::is_ready(mFutureResult)) {
+					auto result = mFutureResult.get();
+					if (!result) {
+						mError = result.description();
+						SOMBRA_ERROR_LOG << result.description();
+					}
+					else {
+						mCreate = false;
+					}
 				}
 				else {
-					mEditor.createScene();
-					buildDefaultScene(*mEditor.getScene());
-					mCreate = false;
+					if (mEditor.getScene()) {
+						mClose = true;
+					}
+					else {
+						mFutureResult = mEditor.getThreadPool().async([this]() {
+							mEditor.createScene();
+							buildDefaultScene(*mEditor.getScene());
+							return Result();
+						});
+					}
 				}
 			}
 		}
@@ -161,13 +175,13 @@ namespace editor {
 
 		std::string file;
 		switch (mWindow.execute(file)) {
-			case FileWindow::Result::Open: {
+			case FileWindow::Result::Open:
 				if (mOpen) {
 					SOMBRA_INFO_LOG << "Opening " << file << "...";
 					mFutureResult = mEditor.getThreadPool().async([this, file]() {
 						mEditor.createScene();
 						auto result = SceneSerializer::deserialize(file, *mEditor.getScene());
-						SOMBRA_INFO_LOG << "Open finished";
+						SOMBRA_INFO_LOG << "Open finished (" << static_cast<bool>(result) << ")";
 						return result;
 					});
 				}
@@ -175,14 +189,14 @@ namespace editor {
 					SOMBRA_INFO_LOG << "Appending " << file << "...";
 					mFutureResult = mEditor.getThreadPool().async([this, file]() {
 						auto result = SceneSerializer::deserialize(file, *mEditor.getScene());
-						SOMBRA_INFO_LOG << "Append finished";
+						SOMBRA_INFO_LOG << "Append finished (" << static_cast<bool>(result) << ")";
 						return result;
 					});
 				}
 				else if (mLink) {
 					SOMBRA_INFO_LOG << "Linking " << file << "...";
 					mFutureResult = mEditor.getThreadPool().async([this, file]() {
-						SOMBRA_INFO_LOG << "Link finished";
+						SOMBRA_INFO_LOG << "Link finished (" << static_cast<bool>(false) << ")";
 						return Result(false, "TODO:");
 					});
 				}
@@ -192,7 +206,7 @@ namespace editor {
 						DefaultShaderBuilder shaderBuilder(mEditor, mEditor.getScene()->repository);
 						auto myReader = se::app::SceneImporter::createSceneImporter(se::app::SceneImporter::FileType::GLTF, shaderBuilder);
 						auto result = myReader->load(file, *mEditor.getScene());
-						SOMBRA_INFO_LOG << "Import finished";
+						SOMBRA_INFO_LOG << "Import finished (" << static_cast<bool>(result) << ")";
 						return result;
 					});
 				}
@@ -200,11 +214,15 @@ namespace editor {
 					SOMBRA_INFO_LOG << "Saving to " << file << "...";
 					mFutureResult = mEditor.getThreadPool().async([this, file]() {
 						auto result = SceneSerializer::serialize(file, *mEditor.getScene());
-						SOMBRA_INFO_LOG << "Save finished";
+						SOMBRA_INFO_LOG << "Save finished  (" << static_cast<bool>(result) << ")";
 						return result;
 					});
 				}
-
+				break;
+			case FileWindow::Result::Cancel:
+				mCancel = true;
+				break;
+			default:
 				if (mFutureResult.valid() && se::utils::is_ready(mFutureResult)) {
 					auto result = mFutureResult.get();
 					if (!result) {
@@ -215,11 +233,6 @@ namespace editor {
 						mOpen = mAppend = mLink = mImport = mSave = false;
 					}
 				}
-			} break;
-			case FileWindow::Result::Cancel:
-				mCancel = true;
-				break;
-			default:
 				break;
 		}
 	}

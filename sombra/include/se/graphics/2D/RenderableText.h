@@ -76,12 +76,10 @@ namespace se::graphics {
 		 * @param	text the new text to render */
 		void setText(const std::string& text) { mText = text; };
 
-		/** Submits the vertices of the current RenderableText to the given
-		 * Renderer2D
-		 *
-		 * @param	renderer the renderer where the RenderableText vertices will
-		 *			be submitted */
-		virtual void submitVertices(Renderer2D& renderer) const override;
+		/** @copydoc Renderable2D::submitVertices(Context::Query&, Renderer2D&) */
+		virtual void submitVertices(
+			Context::Query& q, Renderer2D& renderer
+		) const override;
 	};
 
 }

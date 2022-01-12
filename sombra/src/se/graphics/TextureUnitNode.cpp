@@ -12,11 +12,11 @@ namespace se::graphics {
 	}
 
 
-	void TextureUnitNode::execute()
+	void TextureUnitNode::execute(Context::Query& q)
 	{
-		BindableSPtr bindable = getBindable(mBindableIndex);
-		if (bindable) {
-			std::dynamic_pointer_cast<Texture>(bindable)->setTextureUnit(mUnit);
+		auto bindableRef = getBindable(mBindableIndex);
+		if (bindableRef) {
+			static_cast<Texture*>(q.getBindable(bindableRef))->setTextureUnit(mUnit);
 		}
 	}
 

@@ -132,7 +132,7 @@ namespace editor {
 					}
 
 					std::array<char, 4 * kMaxNameSize> pathBuffer = {};
-					std::strcpy(pathBuffer.data(), selected.getResource().getPath());
+					std::strcpy(pathBuffer.data(), selected.getResource().getPath().data());
 					std::string path = "Path" + getIdPrefix() + "TypeNode::path";
 					if (ImGui::InputText(path.c_str(), pathBuffer.data(), pathBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
 						selected.getResource().setPath(pathBuffer.data());
@@ -559,7 +559,7 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<Program>
+	class RepositoryPanel::ProgramNode : public RepositoryPanel::TypeNode<ProgramRef>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
@@ -626,17 +626,19 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validName)) {
-				std::shared_ptr<Program> programSPtr;
+				auto& context = getEditor().getExternalTools().graphicsEngine->getContext();
+
+				ProgramRef program;
 				auto result = ShaderLoader::createProgram(
 					mPathVertex.empty()? nullptr : mPathVertex.c_str(),
 					mPathGeometry.empty()? nullptr : mPathGeometry.c_str(),
 					mPathFragment.empty()? nullptr : mPathFragment.c_str(),
-					programSPtr
+					context, program
 				);
 				if (result) {
-					auto program = repository.insert<Program>(std::move(programSPtr), mNameBuffer.data());
-					program.setFakeUser();
-					program.getResource().setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
+					auto programResource = repository.insert(std::make_shared<ProgramRef>(program), mNameBuffer.data());
+					programResource.setFakeUser();
+					programResource.getResource().setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
 					mNameBuffer.fill(0);
 					ret = true;
 				}
@@ -725,7 +727,7 @@ namespace editor {
 		};
 	private:
 		void addBindable(Repository& repository, RenderableShaderStep& step)
-		{
+		{/*TODO:
 			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation" };
 			const char* uniformTypeTags[] = { "int", "unsigned int", "float", "vec2", "ivec2", "vec3", "ivec3", "vec4", "ivec4", "mat3", "mat4", "mat3x4" };
 			const char* operationTypeTags[] = { "Culling", "DepthTest", "StencilTest", "ScissorTest", "Blending" };
@@ -827,10 +829,10 @@ namespace editor {
 					} break;
 				}
 			}
-		};
+		*/};
 
 		void showBindables(Repository& repository, RenderableShaderStep& step)
-		{
+		{/*TODO:
 			std::size_t numBindables = 0;
 
 			Repository::ResourceRef<Program> programToRemove;
@@ -1188,7 +1190,7 @@ namespace editor {
 			if (bindableToRemove) {
 				step.removeBindable(bindableToRemove);
 			}
-		};
+		*/};
 	};
 
 
@@ -1252,27 +1254,44 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<Texture>
+	class RepositoryPanel::TextureNode : public RepositoryPanel::ImportTypeNode<TextureRef>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
-		ColorFormat mColorType = ColorFormat::RGB;
+
+		TextureTarget mTarget = TextureTarget::Texture2D;
+		ColorFormat mColorFormat = ColorFormat::RGB;
+		std::size_t mWidth = 0, mHeight = 0, mDepth = 0;
+		int mTextureUnit = -1;
+		TextureFilter mMin = TextureFilter::Linear, mMag = TextureFilter::Linear;
+		TextureWrap mWrapS = TextureWrap::Repeat, mWrapT = TextureWrap::Repeat, mWrapR = TextureWrap::Repeat;
+
 		bool mIsHDR = false;
+		ColorFormat mColorFormatOpt = ColorFormat::RGB;
 		int mCubeMapSize = 512, mNormalMapHeight = 512, mNormalMapWidth = 512;
 
 	public:		// Functions
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Texture"; };
 	protected:
-		virtual void draw(Repository&, Repository::ResourceRef<Texture> texture) override
+		virtual void draw(Repository&, Repository::ResourceRef<TextureRef> texture) override
 		{
-			ImGui::Image(static_cast<void*>(texture.get().get()), ImVec2{ 200.0f, 200.0f });
+			//TODO: ImGui::Image(static_cast<void*>(texture.get().get()), ImVec2{ 200.0f, 200.0f });
 
-			TextureTarget target = texture->getTarget();
+			texture->edit([this](Texture& tex) {
+				mTarget = tex.getTarget();
+				mColorFormat = tex.getColorFormat();
+				mWidth = tex.getWidth();
+				mHeight = tex.getHeight();
+				mDepth = tex.getDepth();
+				mTextureUnit = tex.getTextureUnit();
+				tex.getFiltering(&mMin, &mMag);
+				tex.getWrapping(&mWrapS, &mWrapT, &mWrapR);
+			});
+
 			static const char* textureTargetTags[] = { "Texture1D", "Texture2D", "Texture3D", "Texture1DArray", "Texture2DArray", "CubeMap" };
-			ImGui::LabelText("Target", "%s", textureTargetTags[static_cast<int>(target)]);
+			ImGui::LabelText("Target", "%s", textureTargetTags[static_cast<int>(mTarget)]);
 
-			ColorFormat colorFormat = texture->getColorFormat();
 			static const char* colorFormatTags[] = {
 				"R", "RG", "RGB", "RGBA",
 				"Depth", "Depth16", "Depth24", "Depth32",
@@ -1283,79 +1302,74 @@ namespace editor {
 				"RGB8", "RGB16ui", "RGB16f", "RGB32ui", "RGB32f",
 				"RGBA8", "RGBA16ui", "RGBA16f", "RGBA32ui", "RGBA32f"
 			};
-			ImGui::LabelText("Color format", "%s", colorFormatTags[static_cast<int>(colorFormat)]);
+			ImGui::LabelText("Color format", "%s", colorFormatTags[static_cast<int>(mColorFormat)]);
 
-			ImGui::LabelText("Width", "%u", texture->getWidth());
-			if (target != TextureTarget::Texture1D) {
-				ImGui::LabelText("Height", "%u", texture->getHeight());
-				if (target != TextureTarget::Texture2D) {
-					ImGui::LabelText("Depth", "%u", texture->getDepth());
+			ImGui::LabelText("Width", "%u", mWidth);
+			if (mTarget != TextureTarget::Texture1D) {
+				ImGui::LabelText("Height", "%u", mHeight);
+				if (mTarget != TextureTarget::Texture2D) {
+					ImGui::LabelText("Depth", "%u", mDepth);
 				}
 			}
 
-			int textureUnit = texture->getTextureUnit();
-			if (ImGui::DragInt("Texture Unit", &textureUnit, 1, 0, 16)) {
-				texture->setTextureUnit(textureUnit);
+			if (ImGui::DragInt("Texture Unit", &mTextureUnit, 1, 0, 16)) {
+				texture->edit([textureUnit = mTextureUnit](Texture& tex) { tex.setTextureUnit(textureUnit); });
 			}
 
-			TextureFilter min, mag;
-			texture->getFiltering(&min, &mag);
-			int iMin = static_cast<int>(min);
-			int iMag = static_cast<int>(mag);
-
 			static const char* filterTypeTags[] = { "Nearest", "Linear", "Nearest MipMap Nearest", "Linear MipMap Nearest", "Nearest MipMap Linear", "Linear MipMap Linear" };
+			int iMin = static_cast<int>(mMin);
+			int iMag = static_cast<int>(mMag);
+
 			std::string name = getIdPrefix() + "TextureNode::MinFilter";
 			if (addDropdown(name.c_str(), filterTypeTags, IM_ARRAYSIZE(filterTypeTags), iMin)) {
-				min = static_cast<TextureFilter>(iMin);
-				texture->setFiltering(min, mag);
+				mMin = static_cast<TextureFilter>(iMin);
+				texture->edit([min = mMin, mag = mMag](Texture& tex) { tex.setFiltering(min, mag); });
 			}
 			std::string name1 = getIdPrefix() + "TextureNode::MagFilter";
 			if (addDropdown(name1.c_str(), filterTypeTags, IM_ARRAYSIZE(filterTypeTags), iMag)) {
-				mag = static_cast<TextureFilter>(iMag);
-				texture->setFiltering(min, mag);
+				mMag = static_cast<TextureFilter>(iMag);
+				texture->edit([min = mMin, mag = mMag](Texture& tex) { tex.setFiltering(min, mag); });
 			}
 
-			TextureWrap wrapS, wrapT, wrapR;
-			texture->getWrapping(&wrapS, &wrapT, &wrapR);
-			int iWrapS = static_cast<int>(wrapS);
-			int iWrapT = static_cast<int>(wrapT);
-			int iWrapR = static_cast<int>(wrapR);
-
 			static const char* wrapTypeTags[] = { "Repeat", "Mirrored Repeat", "Clamp to Edge", "Clamp to Border" };
+			int iWrapS = static_cast<int>(mWrapS);
+			int iWrapT = static_cast<int>(mWrapT);
+			int iWrapR = static_cast<int>(mWrapR);
+
 			bool set = false;
 			std::string name2 = getIdPrefix() + "TextureNode::WrapS";
 			if (addDropdown(name2.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapS)) {
-				wrapS = static_cast<TextureWrap>(iWrapS);
+				mWrapS = static_cast<TextureWrap>(iWrapS);
 				set = true;
 			}
-			if (target != TextureTarget::Texture1D) {
+			if (mTarget != TextureTarget::Texture1D) {
 				std::string name3 = getIdPrefix() + "TextureNode::WrapT";
 				if (addDropdown(name3.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapT)) {
-					wrapT = static_cast<TextureWrap>(iWrapT);
+					mWrapT = static_cast<TextureWrap>(iWrapT);
 					set = true;
 				}
 
-				if (target != TextureTarget::Texture2D) {
+				if (mTarget != TextureTarget::Texture2D) {
 					std::string name4 = getIdPrefix() + "TextureNode::WrapR";
 					if (addDropdown(name4.c_str(), wrapTypeTags, IM_ARRAYSIZE(wrapTypeTags), iWrapR)) {
-						wrapR = static_cast<TextureWrap>(iWrapR);
+						mWrapR = static_cast<TextureWrap>(iWrapR);
 						set = true;
 					}
 				}
 			}
 
 			if (set) {
-				texture->setWrapping(wrapS, wrapT, wrapR);
+				texture->edit([wrapS = mWrapS, wrapT = mWrapT, wrapR = mWrapR](Texture& tex) { tex.setWrapping(wrapS, wrapT, wrapR); });
 			}
 
 			if (ImGui::TreeNode("Generate CubeMap")) {
 				ImGui::DragInt("Resolution", &mCubeMapSize, 0.01f, 0, INT_MAX);
 
 				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
-					auto cubeMapSPtr = TextureUtils::equirectangularToCubeMap(texture.get(), mCubeMapSize);
-					auto cubeMap = getEditor().getScene()->repository.insert(cubeMapSPtr);
+					auto cubeMapRef = TextureUtils::equirectangularToCubeMap(*texture, mCubeMapSize);
+					auto cubeMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(cubeMapRef));
 					cubeMap.setFakeUser(true);
-					setRepoName<Texture>(cubeMap.getResource(), (std::string(texture.getResource().getName()) + "CubeMap").c_str(), getEditor().getScene()->repository);
+					setRepoName<TextureRef>(cubeMap.getResource(), (std::string(texture.getResource().getName()) + "CubeMap").c_str(), getEditor().getScene()->repository);
 				}
 				ImGui::TreePop();
 			}
@@ -1364,10 +1378,10 @@ namespace editor {
 				ImGui::DragInt("Height", &mNormalMapHeight, 0.01f, 0, INT_MAX);
 
 				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
-					auto normalMapSPtr = TextureUtils::heightmapToNormalMapLocal(texture.get(), mNormalMapWidth, mNormalMapHeight);
-					auto normalMap = getEditor().getScene()->repository.insert(normalMapSPtr);
+					auto normalMapRef = TextureUtils::heightmapToNormalMapLocal(*texture, mNormalMapWidth, mNormalMapHeight);
+					auto normalMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(normalMapRef));
 					normalMap.setFakeUser(true);
-					setRepoName<Texture>(normalMap.getResource(), (std::string(texture.getResource().getName()) + "NormalMap").c_str(), getEditor().getScene()->repository);
+					setRepoName<TextureRef>(normalMap.getResource(), (std::string(texture.getResource().getName()) + "NormalMap").c_str(), getEditor().getScene()->repository);
 				}
 				ImGui::TreePop();
 			}
@@ -1382,10 +1396,10 @@ namespace editor {
 			ImGui::Checkbox(("Is HDR" + getIdPrefix() + "TextureNode::isHDR").c_str(), &mIsHDR);
 
 			static const char* colorTypeTags[] = { "Red", "RG", "RGB", "RGBA" };
-			int currentType = static_cast<int>(mColorType);
+			int currentType = static_cast<int>(mColorFormatOpt);
 			std::string name1 = "Type" + getIdPrefix() + "TextureNode::type";
 			if (addDropdown(name1.c_str(), colorTypeTags, IM_ARRAYSIZE(colorTypeTags), currentType)) {
-				mColorType = static_cast<ColorFormat>(currentType);
+				mColorFormatOpt = static_cast<ColorFormat>(currentType);
 			}
 
 			return validName;
@@ -1393,35 +1407,40 @@ namespace editor {
 
 		virtual Result load(Repository& repository, const char* path) override
 		{
-			auto textureSPtr = std::make_shared<Texture>(TextureTarget::Texture2D);
-			textureSPtr->setTextureUnit(0);
+			auto& context = getEditor().getExternalTools().graphicsEngine->getContext();
+			auto textureRef = context.create<Texture>(TextureTarget::Texture2D)
+				.edit([](Texture& tex) { tex.setTextureUnit(0); });
 
 			if (mIsHDR) {
-				Image<float> image;
-				auto result = ImageReader::readHDR(path, image);
+				auto image = std::make_shared<Image<float>>();
+				auto result = ImageReader::readHDR(path, *image);
 				if (!result) {
 					return result;
 				}
 
-				textureSPtr->setImage(
-					image.pixels.get(), TypeId::Float, mColorType, mColorType,
-					image.width, image.height
-				);
+				textureRef.edit([=](Texture& tex) {
+					tex.setImage(
+						image->pixels.get(), TypeId::Float, mColorFormatOpt, mColorFormatOpt,
+						image->width, image->height
+					);
+				});
 			}
 			else {
-				Image<unsigned char> image;
-				auto result = ImageReader::read(path, image);
+				auto image = std::make_shared<Image<unsigned char>>();
+				auto result = ImageReader::read(path, *image);
 				if (!result) {
 					return result;
 				}
 
-				textureSPtr->setImage(
-					image.pixels.get(), TypeId::UnsignedByte, mColorType, mColorType,
-					image.width, image.height
-				);
+				textureRef.edit([=](Texture& tex) {
+					tex.setImage(
+						image->pixels.get(), TypeId::UnsignedByte, mColorFormatOpt, mColorFormatOpt,
+						image->width, image->height
+					);
+				});
 			}
 
-			auto texture = repository.insert(textureSPtr, mNameBuffer.data());
+			auto texture = repository.insert(std::make_shared<TextureRef>(textureRef), mNameBuffer.data());
 			texture.getResource().setPath(path);
 			texture.setFakeUser();
 
@@ -1430,18 +1449,21 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::MeshNode : public RepositoryPanel::SceneImporterTypeNode<Mesh>
+	class RepositoryPanel::MeshNode : public RepositoryPanel::SceneImporterTypeNode<MeshRef>
 	{
+	private:	// Attributes
+		glm::vec3 mMin = glm::vec3(0.0f), mMax = glm::vec3(0.0f);
 	public:		// Functions
 		MeshNode(RepositoryPanel& panel) : SceneImporterTypeNode(panel) {};
 		virtual const char* getName() const override { return "Mesh"; };
 	protected:
-		virtual void draw(Repository&, Repository::ResourceRef<Mesh> mesh) override
+		virtual void draw(Repository&, Repository::ResourceRef<MeshRef> mesh) override
 		{
+			mesh->edit([this](Mesh& m) { std::tie(mMin, mMax) = m.getBounds(); });
+
 			ImGui::Text("Bounds:");
-			auto [min, max] = mesh->getBounds();
-			ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", min.x, min.y, min.z);
-			ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", max.x, max.y, max.z);
+			ImGui::BulletText("Minimum [%.3f, %.3f, %.3f]", mMin.x, mMin.y, mMin.z);
+			ImGui::BulletText("Maximum [%.3f, %.3f, %.3f]", mMax.x, mMax.y, mMax.z);
 		};
 	};
 

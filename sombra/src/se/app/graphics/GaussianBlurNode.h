@@ -1,11 +1,7 @@
 #ifndef GAUSSIAN_BLUR_NODE_H
 #define GAUSSIAN_BLUR_NODE_H
 
-#include "../../graphics/BindableRenderNode.h"
-#include "../../graphics/core/FrameBuffer.h"
-#include "../../graphics/core/Program.h"
-#include "../../graphics/3D/Mesh.h"
-#include "../Repository.h"
+#include "se/graphics/BindableRenderNode.h"
 
 namespace se::app {
 
@@ -13,7 +9,8 @@ namespace se::app {
 	 * Class GaussianBlurNode, its a BindableRenderNode used for applying
 	 * Gaussian blur in one direction to a Texture. It has an "input" input
 	 * where the Texture to blur can be attached and an "target" input and
-	 * output FrameBuffer for the blurred Texture
+	 * output FrameBuffer for the blurred Texture. It also has a "plane" input
+	 * where a plane Mesh must be attached for rendering
 	 */
 	class GaussianBlurNode : public graphics::BindableRenderNode
 	{
@@ -21,26 +18,23 @@ namespace se::app {
 		/** The texture unit where the color texture must be attached */
 		static constexpr int kColorTextureUnit = 0;
 	private:
-		/** The program used by the GaussianBlurNode */
-		Repository::ResourceRef<graphics::Program> mProgram;
-
-		/** The Mesh used for rendering to the FrameBuffers */
-		Repository::ResourceRef<graphics::Mesh> mPlane;
+		/** The index of the plane Mesh used for rendering */
+		std::size_t mPlaneIndex;
 
 	public:		// Functions
 		/** Creates a new GaussianBlurNode
 		 *
 		 * @param	name the name of the new GaussianBlurNode
-		 * @param	repository the Repository that holds all the Programs and
-		 *			a "plane" Mesh
+		 * @param	context the Context used for creating the RenderNode
+		 *			Bindables
 		 * @param	horizontal if the blur is going to be applied in the
 		 *			horizontal direction or the vertical one */
 		GaussianBlurNode(
-			const std::string& name, Repository& repository, bool horizontal
+			const std::string& name, graphics::Context& context, bool horizontal
 		);
 
-		/** Blurs the Texture */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 	};
 
 }

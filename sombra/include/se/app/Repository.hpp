@@ -1,6 +1,8 @@
 #ifndef REPOSITORY_HPP
 #define REPOSITORY_HPP
 
+#include "../utils/MathUtils.h"
+
 namespace se::app {
 
 	/**
@@ -26,6 +28,16 @@ namespace se::app {
 		/** The function used for clonying a Resource */
 		CloneCallback<T> cloneCallback;
 	};
+
+
+	template <typename T>
+	std::size_t Repository::ResourceRef<T>::HashFunc::operator()(const ResourceRef& ref) const
+	{
+		std::size_t ret = 0;
+		utils::hash_combine(ret, ref.mParent);
+		utils::hash_combine(ret, ref.mIndex);
+		return ret;
+	}
 
 
 	template <typename T>

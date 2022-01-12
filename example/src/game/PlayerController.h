@@ -30,7 +30,7 @@ namespace game {
 		/** The last mouse location */
 		float mLastMouseX = 0.0f, mLastMouseY = 0.0f;
 
-		se::app::Repository::ResourceRef<se::graphics::Mesh>
+		se::app::Repository::ResourceRef<se::app::MeshRef>
 			mTetrahedronMesh;
 		se::app::Repository::ResourceRef<se::app::RenderableShader>
 			mShaderYellow;

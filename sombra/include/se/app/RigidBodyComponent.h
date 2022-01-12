@@ -14,14 +14,14 @@ namespace se::app {
 	class RigidBodyComponent
 	{
 	private:	// Nested types
-		using ForceRef = Repository::ResourceRef<physics::Force>;
+		using ForceResource = Repository::ResourceRef<physics::Force>;
 
 	private:	// Attributes
 		/** The physics RigidBody */
 		physics::RigidBody mRigidBody;
 
 		/** The pointers to the Forces added to the RigidBody */
-		std::vector<ForceRef> mForces;
+		std::vector<ForceResource> mForces;
 
 	public:		// Functions
 		/** Creates a new RigidBodyComponent
@@ -43,7 +43,7 @@ namespace se::app {
 		 *
 		 * @param	force the new Force of the RigidBodyComponent
 		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& addForce(const ForceRef& force)
+		RigidBodyComponent& addForce(const ForceResource& force)
 		{
 			mForces.push_back(force);
 			mRigidBody.addForce(force.get());
@@ -66,7 +66,7 @@ namespace se::app {
 		 *
 		 * @param	force the Force to remove
 		 * @return	a reference to the current RigidBodyComponent object */
-		RigidBodyComponent& removeForce(const ForceRef& force)
+		RigidBodyComponent& removeForce(const ForceResource& force)
 		{
 			mRigidBody.removeForce(force.get());
 			mForces.erase(

@@ -9,8 +9,8 @@ namespace se::app {
 	MeshComponent::MeshComponent(const MeshComponent& other) : mRMeshes(other.mRMeshes)
 	{
 		processRenderableIndices([&](std::size_t i) {
-			processRenderableShaders(i, [&](const RenderableShaderRef& shader) {
-				shader->processSteps([&](const RenderableShader::StepRef& step) {
+			processRenderableShaders(i, [&](const RenderableShaderResource& shader) {
+				shader->processSteps([&](const RenderableShader::StepResource& step) {
 					mRMeshes[i].renderable.clearBindables(step->getPass().get());
 				});
 			});
@@ -25,14 +25,21 @@ namespace se::app {
 		mRMeshes = other.mRMeshes;
 
 		processRenderableIndices([&](std::size_t i) {
-			processRenderableShaders(i, [&](const RenderableShaderRef& shader) {
-				shader->processSteps([&](const RenderableShader::StepRef& step) {
+			processRenderableShaders(i, [&](const RenderableShaderResource& shader) {
+				shader->processSteps([&](const RenderableShader::StepResource& step) {
 					mRMeshes[i].renderable.clearBindables(step->getPass().get());
 				});
 			});
 		});
 
 		return *this;
+	}
+
+
+	void MeshComponent::setup(EventManager* eventManager, Entity entity)
+	{
+		mEventManager = eventManager;
+		mEntity = entity;
 	}
 
 
@@ -54,14 +61,14 @@ namespace se::app {
 	}
 
 
-	void MeshComponent::setMesh(std::size_t rIndex, MeshRef mesh)
+	void MeshComponent::setMesh(std::size_t rIndex, const MeshResource& mesh)
 	{
 		mRMeshes[rIndex].mesh = mesh;
-		mRMeshes[rIndex].renderable.setMesh(mesh.get());
+		mRMeshes[rIndex].renderable.setMesh(*mesh);
 	}
 
 
-	std::size_t MeshComponent::add(bool hasSkinning, MeshRef mesh, graphics::PrimitiveType primitiveType)
+	std::size_t MeshComponent::add(bool hasSkinning, const MeshResource& mesh, graphics::PrimitiveType primitiveType)
 	{
 		std::size_t ret = kMaxMeshes;
 
@@ -70,7 +77,7 @@ namespace se::app {
 			it->active = true;
 			it->hasSkinning = hasSkinning;
 			it->mesh = mesh;
-			it->renderable = graphics::RenderableMesh(mesh.get(), primitiveType);
+			it->renderable = graphics::RenderableMesh(*mesh, primitiveType);
 			ret = std::distance(mRMeshes.begin(), it);
 
 			if (mEventManager) {
@@ -104,7 +111,7 @@ namespace se::app {
 	}
 
 
-	void MeshComponent::addRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
+	void MeshComponent::addRenderableShader(std::size_t rIndex, const RenderableShaderResource& shader)
 	{
 		mRMeshes[rIndex].shaders.emplace_back(shader);
 		mRMeshes[rIndex].renderable.addTechnique(shader->getTechnique());
@@ -114,7 +121,7 @@ namespace se::app {
 	}
 
 
-	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderRef& shader)
+	void MeshComponent::removeRenderableShader(std::size_t rIndex, const RenderableShaderResource& shader)
 	{
 		if (mEventManager) {
 			mEventManager->publish(std::make_unique<RenderableShaderEvent>(RenderableShaderEvent::Operation::Remove, mEntity, rIndex, shader.get()));

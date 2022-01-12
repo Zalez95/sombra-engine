@@ -1,23 +1,15 @@
 #include <array>
+#include "se/graphics/3D/Mesh.h"
 #include "se/graphics/3D/RenderableMesh.h"
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/utils/MathUtils.h"
 
 namespace se::graphics {
 
-	RenderableMesh::RenderableMesh(MeshSPtr mesh, PrimitiveType primitiveType) :
-		mMesh(mesh), mPrimitiveType(primitiveType)
-	{
-		if (mMesh) {
-			std::tie(mMinimum, mMaximum) = mMesh->getBounds();
-		}
-	}
-
-
-	RenderableMesh& RenderableMesh::setMesh(MeshSPtr mesh)
+	RenderableMesh& RenderableMesh::setMesh(const Context::TBindableRef<Mesh>& mesh)
 	{
 		mMesh = mesh;
-		setModelMatrix(getModelMatrix());	// force to recalculate the AABB
+		mUpdateBounds = true;
 		return *this;
 	}
 
@@ -25,22 +17,36 @@ namespace se::graphics {
 	RenderableMesh& RenderableMesh::setModelMatrix(const glm::mat4& modelMatrix)
 	{
 		mModelMatrix = modelMatrix;
-
-		if (mMesh) {
-			auto [localMin, localMax] = mMesh->getBounds();
-			std::tie(mMinimum, mMaximum) = utils::getBoundsWorld(localMin, localMax, mModelMatrix);
-		}
-
+		mUpdateBounds = true;
 		return *this;
 	}
 
 
-	void RenderableMesh::draw()
+	void RenderableMesh::submit(Context::Query& q)
 	{
-		mMesh->bind();
+		if (mUpdateBounds) {
+			mUpdateBounds = false;
+
+			if (mMesh) {
+				auto [localMin, localMax] = q.getTBindable(mMesh)->getBounds();
+				std::tie(mMinimum, mMaximum) = utils::getBoundsWorld(localMin, localMax, mModelMatrix);
+			}
+			else {
+				mMinimum = mMaximum = {};
+			}
+		}
+
+		Renderable::submit(q);
+	}
+
+
+	void RenderableMesh::draw(Context::Query& q)
+	{
+		q.getBindable(mMesh)->bind();
 		GraphicsOperations::drawIndexed(
 			mPrimitiveType,
-			mMesh->getIBO().getIndexCount(), mMesh->getIBO().getIndexType()
+			q.getTBindable(mMesh)->getIBO()->getIndexCount(),
+			q.getTBindable(mMesh)->getIBO()->getIndexType()
 		);
 	}
 

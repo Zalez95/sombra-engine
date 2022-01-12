@@ -1,51 +1,81 @@
-#include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/app/graphics/DeferredAmbientRenderer.h"
 #include "se/app/io/ShaderLoader.h"
+#include "se/app/graphics/TypeRefs.h"
 
 namespace se::app {
 
-	DeferredAmbientRenderer::DeferredAmbientRenderer(const std::string& name, Repository& repository) :
+	DeferredAmbientRenderer::DeferredAmbientRenderer(const std::string& name, graphics::Context& context) :
 		BindableRenderNode(name)
 	{
-		mProgram = repository.findByName<graphics::Program>("programDeferredAmbient");
-		if (!mProgram) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredAmbient.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mProgram = repository.insert(std::move(program), "programDeferredAmbient");
-		}
-
-		mPlane = repository.findByName<graphics::Mesh>("plane");
-		if (!mPlane) {
-			SOMBRA_ERROR_LOG << "plane not found";
+		ProgramRef program;
+		auto result = ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentDeferredAmbient.glsl", context, program);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
 			return;
 		}
+		addBindable(program);
 
-		mViewPosition = std::make_shared<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", mProgram.get(), glm::vec3(0.0f));
+		mViewPositionIndex = addBindable(
+			context.create<graphics::UniformVariableValue<glm::vec3>>("uViewPosition", glm::vec3(0.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uIrradianceMap", TexUnits::kIrradianceMap)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uPrefilterMap", TexUnits::kPrefilterMap)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uBRDFMap", TexUnits::kBRDFMap)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uPosition", TexUnits::kPosition)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uNormal", TexUnits::kNormal)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uAlbedo", TexUnits::kAlbedo)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uMaterial", TexUnits::kMaterial)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uEmissive", TexUnits::kEmissive)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uSSAO", TexUnits::kSSAO)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
 
-		addBindable(mProgram.get());
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uViewMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uProjectionMatrix", mProgram.get(), glm::mat4(1.0f)));
-		addBindable(mViewPosition);
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uIrradianceMap", mProgram.get(), TexUnits::kIrradianceMap));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPrefilterMap", mProgram.get(), TexUnits::kPrefilterMap));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uBRDFMap", mProgram.get(), TexUnits::kBRDFMap));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uPosition", mProgram.get(), TexUnits::kPosition));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uNormal", mProgram.get(), TexUnits::kNormal));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uAlbedo", mProgram.get(), TexUnits::kAlbedo));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uMaterial", mProgram.get(), TexUnits::kMaterial));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uEmissive", mProgram.get(), TexUnits::kEmissive));
-		addBindable(std::make_shared<graphics::UniformVariableValue<int>>("uSSAO", mProgram.get(), TexUnits::kSSAO));
+		auto targetIndex = addBindable();
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, targetIndex) );
+		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, targetIndex) );
 
-		auto iTargetBindable = addBindable();
-		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
-		addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("target", this, iTargetBindable) );
+		mPlaneIndex = addBindable();
+		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Mesh>>("plane", this, mPlaneIndex) );
 
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("irradiance", this, addBindable()) );
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("prefilter", this, addBindable()) );
@@ -61,17 +91,20 @@ namespace se::app {
 
 	void DeferredAmbientRenderer::setViewPosition(const glm::vec3& position)
 	{
-		mViewPosition->setValue(position);
+		UniformVVRef<glm::vec3>::from( getBindable(mViewPositionIndex) ).edit([=](auto& uniform) {
+			uniform.setValue(position);
+		});
 	}
 
 
-	void DeferredAmbientRenderer::execute()
+	void DeferredAmbientRenderer::execute(graphics::Context::Query& q)
 	{
-		bind();
-		mPlane->bind();
+		auto plane = q.getTBindable( MeshRef::from(getBindable(mPlaneIndex)) );
+
+		bind(q);
 		graphics::GraphicsOperations::drawIndexed(
 			graphics::PrimitiveType::Triangle,
-			mPlane->getIBO().getIndexCount(), mPlane->getIBO().getIndexType()
+			plane->getIBO()->getIndexCount(), plane->getIBO()->getIndexType()
 		);
 	}
 

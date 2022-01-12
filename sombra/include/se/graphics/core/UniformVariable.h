@@ -1,7 +1,6 @@
 #ifndef UNIFORM_VARIABLE_H
 #define UNIFORM_VARIABLE_H
 
-#include <memory>
 #include <vector>
 #include <string>
 #include <functional>
@@ -22,21 +21,15 @@ namespace se::graphics {
 		/** The name of the IUniformVariable */
 		std::string mName;
 
-		/** The program of the IUniformVariable */
-		std::shared_ptr<Program> mProgram;
-
 		/** The location of the variable in the Shader source code */
 		int mUniformLocation;
 
 	public:		// Functions
 		/** Creates a new IUniformVariable
 		 *
-		 * @param	name the name of the IUniformVariable
-		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the IUniformVariable */
-		IUniformVariable(
-			const char* name, const std::shared_ptr<Program>& program
-		);
+		 * @param	name the name of the IUniformVariable */
+		IUniformVariable(const std::string& name) :
+			mName(name), mUniformLocation(-1) {};
 
 		/** Class destructor */
 		virtual ~IUniformVariable() = default;
@@ -44,12 +37,13 @@ namespace se::graphics {
 		/** @return	the name of the IUniformVariable */
 		const std::string& getName() const { return mName; };
 
-		/** @return	the Program of the IUniformVariable */
-		const std::shared_ptr<Program>& getProgram() const { return mProgram; };
-
-		/** @return	true if the IUniformVariable was found inside the Program,
+		/** Loads the IUniformVariable
+		 *
+		 * @param	program a reference to the Program used for retrieving the
+		 *			Uniform Location of the UniformVariable
+		 * @return	true if the IUniformVariable was found inside the Program,
 		 *			false otherwise */
-		bool found() const;
+		bool load(const Program& program);
 	};
 
 
@@ -63,12 +57,8 @@ namespace se::graphics {
 	public:		// Functions
 		/** Creates a new UniformVariable
 		 *
-		 * @param	name the name of the UniformVariable
-		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the UniformVariable */
-		UniformVariable(
-			const char* name, const std::shared_ptr<Program>& program
-		) : IUniformVariable(name, program) {};
+		 * @param	name the name of the UniformVariable */
+		UniformVariable(const std::string& name) : IUniformVariable(name) {};
 
 		/** Class destructor */
 		virtual ~UniformVariable() = default;
@@ -101,13 +91,9 @@ namespace se::graphics {
 		/** Creates a new UniformVariableValue
 		 *
 		 * @param	name the name of the UniformVariableValue
-		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the UniformVariableValue
 		 * @param	value the value of the UniformVariableValue to bind */
-		UniformVariableValue(
-			const char* name, const std::shared_ptr<Program>& program,
-			const T& value = T()
-		) : UniformVariable<T>(name, program), mValue(value) {};
+		UniformVariableValue(const std::string& name, const T& value = T()) :
+			UniformVariable<T>(name), mValue(value) {};
 
 		/** Sets the value of the UniformVariableValue
 		 *
@@ -129,10 +115,6 @@ namespace se::graphics {
 		/** Binds the current UniformVariableValue for using it in the following
 		 * operations */
 		virtual void bind() const override { this->setUniform(mValue); };
-
-		/** Unbinds the current UniformVariableValue so it can't be used in the
-		 * following operations */
-		virtual void unbind() const override {};
 	};
 
 
@@ -151,15 +133,10 @@ namespace se::graphics {
 		/** Creates a new UniformVariableValueVector
 		 *
 		 * @param	name the name of the UniformVariableValueVector
-		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the UniformVariableValueVector
-		 * @param	valuePtr a pointer to the first element of the vector of
-		 *			values
-		 * @param	count the number of elements in valuePtr */
+		 * @param	valuePtr the value of the UniformVariableValueVector */
 		UniformVariableValueVector(
-			const char* name, const std::shared_ptr<Program>& program,
-			const T* valuePtr = nullptr, std::size_t count = 0
-		) : UniformVariable<T>(name, program) { setValue(valuePtr, count); };
+			const std::string& name, const std::vector<T>& value = {}
+		) : UniformVariable<T>(name), mValue(value) {};
 
 		/** Sets the value of the UniformVariableValueVector
 		 *
@@ -206,10 +183,6 @@ namespace se::graphics {
 		 * following operations */
 		virtual void bind() const override
 		{ this->setUniformV(mValue.data(), mValue.size()); };
-
-		/** Unbinds the current UniformVariableValueVector so it can't be used
-		 * in the following operations */
-		virtual void unbind() const override {};
 	};
 
 
@@ -235,14 +208,11 @@ namespace se::graphics {
 		/** Creates a new UniformVariableCallback
 		 *
 		 * @param	name the name of the UniformVariableCallback
-		 * @param	program the Program used for retrieving the Uniform
-		 *			Location of the UniformVariableCallback
 		 * @param	callback the callback function used for retrieving the
 		 *			value of the UniformVariableCallback to bind */
 		UniformVariableCallback(
-			const char* name, const std::shared_ptr<Program>& program,
-			const Callback& callback
-		) : UniformVariable<T>(name, program), mCallback(callback) {};
+			const std::string& name, const Callback& callback
+		) : UniformVariable<T>(name), mCallback(callback) {};
 
 		/** @copydoc Bindable::clone() */
 		virtual std::unique_ptr<Bindable> clone() const override
@@ -260,10 +230,6 @@ namespace se::graphics {
 				this->setUniform(mCallback());
 			}
 		};
-
-		/** Unbinds the current IUniformUniformVariableCallbackVariable so it
-		 * can't be used in the following operations */
-		virtual void unbind() const override {};
 	};
 
 }

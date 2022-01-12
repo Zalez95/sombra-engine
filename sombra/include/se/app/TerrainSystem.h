@@ -1,11 +1,11 @@
 #ifndef TERRAIN_SYSTEM_H
 #define TERRAIN_SYSTEM_H
 
-#include <deque>
+#include <queue>
 #include <unordered_map>
 #include <memory>
+#include <future>
 #include <glm/glm.hpp>
-#include "../graphics/core/UniformVariable.h"
 #include "events/ContainerEvent.h"
 #include "events/ShaderEvent.h"
 #include "events/RenderableShaderEvent.h"
@@ -32,19 +32,18 @@ namespace se::app {
 		{
 			std::size_t shaderCount = 0;
 			RenderableShaderStepSPtr step;
-			std::shared_ptr<graphics::UniformVariableValue<glm::mat4>>
-				modelMatrix;
-		};
-
-		struct StepOperation
-		{
-			enum class Operation { Add, Remove };
-			Operation operation;
-			Entity entity;
-			RenderableShaderStepSPtr step;
+			UniformVVRef<glm::mat4> modelMatrix;
 		};
 
 		using EntityUniformsVector = std::vector<EntityUniforms>;
+
+		struct NewUniform
+		{
+			Entity entity;
+			RenderableShaderStepSPtr step;
+			UniformVVRef<glm::mat4> modelMatrix;
+			std::future<bool> modelMatrixFound;
+		};
 
 	private:	// Attributes
 		/** The Application that holds the GraphicsEngine used for rendering
@@ -54,20 +53,22 @@ namespace se::app {
 		/** All the uniforms to update of each Entity */
 		std::unordered_map<Entity, EntityUniformsVector> mEntityUniforms;
 
-		/** Holds all the operations with the steps that must be performed by
-		 * thread 0 */
-		std::deque<StepOperation> mStepOperationsQueue;
-
 		/** The camera Entity used for rendering */
 		Entity mCameraEntity;
 
 		/** If the camera was updated or not */
 		bool mCameraUpdated;
 
-		/** The mutex that protects @see mEntityUniforms,
-		 * @see mStepOperationsQueue, @see mCameraEntity and
+		/** The mutex that protects @see mEntityUniforms, @see mCameraEntity and
 		 * @see mCameraUpdated */
 		std::mutex mMutex;
+
+		/** The new uniforms to add to the terrain entities, it's needed because
+		 * we can't use the EntityDatabase inside the Context functions */
+		std::queue<NewUniform> mNewUniforms;
+
+		/** The mutex that protects @see mNewUniforms */
+		std::mutex mUniformsMutex;
 
 	public:		// Functions
 		/** Creates a new TerrainSystem

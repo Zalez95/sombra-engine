@@ -21,11 +21,11 @@ namespace se::graphics {
 		virtual std::unique_ptr<Bindable> clone() const { return nullptr; };
 
 		/** Binds the current object for using it in the following operations */
-		virtual void bind() const = 0;
+		virtual void bind() const {};
 
 		/** Unbinds the current object so it can't be used in the following
 		 * operations */
-		virtual void unbind() const = 0;
+		virtual void unbind() const {};
 	};
 
 }

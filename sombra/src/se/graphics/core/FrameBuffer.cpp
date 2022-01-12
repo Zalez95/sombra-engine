@@ -1,5 +1,4 @@
 #include <string>
-#include <stdexcept>
 #include "se/utils/FixedVector.h"
 #include "se/graphics/core/FrameBuffer.h"
 #include "se/graphics/core/Texture.h"
@@ -70,15 +69,25 @@ namespace se::graphics {
 	}
 
 
-	FrameBuffer& FrameBuffer::attach(
-		const TextureSPtr& texture, unsigned int attachment,
+	bool FrameBuffer::getColorBuffer() const
+	{
+		GLint buf = GL_NONE;
+
+		bind();
+		GL_WRAP( glGetIntegerv(GL_DRAW_BUFFER, &buf) );
+
+		return buf == GL_FRONT;
+	}
+
+
+	bool FrameBuffer::attach(
+		const Texture* texture, unsigned int attachment,
 		int level, int layer, int orientation
 	) {
-		GLenum glAttachment = toGLFrameBufferAttachment(attachment);
-
 		bind();
 
 		if (texture) {
+			GLenum glAttachment = toGLFrameBufferAttachment(attachment);
 			GLenum glTarget = toGLTextureTarget(texture->getTarget());
 
 			switch (texture->getTarget()) {
@@ -103,13 +112,16 @@ namespace se::graphics {
 
 		GL_WRAP( GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) );
 		if (status != GL_FRAMEBUFFER_COMPLETE) {
-			throw std::runtime_error("FrameBuffer error: status 0x" + std::to_string(status));
+			SOMBRA_ERROR_LOG << "FrameBuffer error: status 0x" << status;
+
+			unbind();
+			return false;
 		}
 
 		// Set the color attachments to render to
 		if (attachment >= FrameBufferAttachment::kColor0) {
 			unsigned int colorIndex = attachment - FrameBufferAttachment::kColor0;
-			mColorAttachments[colorIndex] = (texture != nullptr);
+			mColorAttachments[colorIndex] = texture;
 
 			utils::FixedVector<GLenum, FrameBufferAttachment::kMaxColorAttachments> glAttachments;
 			for (unsigned int i = 0; i < FrameBufferAttachment::kMaxColorAttachments; ++i) {
@@ -121,8 +133,7 @@ namespace se::graphics {
 		}
 
 		unbind();
-
-		return *this;
+		return true;
 	}
 
 
@@ -152,6 +163,14 @@ namespace se::graphics {
 		other.mTarget = oldTarget2;
 
 		return *this;
+	}
+
+
+	std::unique_ptr<Bindable> FrameBuffer::clone() const
+	{
+		auto ret = std::make_unique<FrameBuffer>(mTarget);
+		ret->setColorBuffer( getColorBuffer() );
+		return ret;
 	}
 
 

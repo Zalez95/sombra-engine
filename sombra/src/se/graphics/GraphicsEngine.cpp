@@ -12,13 +12,27 @@ namespace se::graphics {
 		}
 
 		// Create the Renderers
-		mRenderGraph = std::make_unique<RenderGraph>();
+		mRenderGraph = std::make_unique<RenderGraph>(mContext);
+	}
+
+
+	GraphicsEngine::~GraphicsEngine()
+	{
+		setRenderGraph(nullptr);
+	}
+
+
+	void GraphicsEngine::setRenderGraph(std::unique_ptr<RenderGraph> renderGraph)
+	{
+		std::scoped_lock lck(mMutex);
+
+		mRenderGraph = std::move(renderGraph);
 	}
 
 
 	void GraphicsEngine::addRenderable(Renderable* renderable)
 	{
-		std::unique_lock lck(mMutex);
+		std::scoped_lock lck(mMutex);
 
 		if (renderable) {
 			mRenderables.push_back(renderable);
@@ -28,7 +42,7 @@ namespace se::graphics {
 
 	void GraphicsEngine::removeRenderable(Renderable* renderable)
 	{
-		std::unique_lock lck(mMutex);
+		std::scoped_lock lck(mMutex);
 
 		auto itRenderable = std::find(mRenderables.begin(), mRenderables.end(), renderable);
 		if (itRenderable != mRenderables.end()) {
@@ -42,13 +56,15 @@ namespace se::graphics {
 
 	void GraphicsEngine::render()
 	{
-		std::unique_lock lck(mMutex);
+		mContext.execute([this](Context::Query& q) {
+			std::scoped_lock lck(mMutex);
+			for (Renderable* renderable : mRenderables) {
+				renderable->submit(q);
+			}
+			mRenderGraph->execute(q);
+		});
 
-		for (Renderable* renderable : mRenderables) {
-			renderable->submit();
-		}
-
-		mRenderGraph->execute();
+		mContext.update();
 	}
 
 }

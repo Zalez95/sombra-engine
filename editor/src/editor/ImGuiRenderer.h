@@ -24,22 +24,24 @@ namespace editor {
 	public:		// Functions
 		/** Creates a new ImGuiRenderer
 		 *
-		 * @param	name the name of the new ImGuiRenderer */
-		ImGuiRenderer(const std::string& name);
+		 * @param	name the name of the new ImGuiRenderer
+		 * @param	context the graphics Context used for creating the
+		 *			Bindables */
+		ImGuiRenderer(const std::string& name, se::graphics::Context& context);
 
 		/** Class destructor */
 		~ImGuiRenderer();
 
-		/** Renders the ImGui GUI */
-		virtual void execute() override;
+		/** @copydoc se::graphics::RenderNode::execute(se::graphics::Context::Query&) */
+		virtual void execute(se::graphics::Context::Query& q) override;
 	private:
-		bool createDeviceObjects();
+		bool createDeviceObjects(se::graphics::Context& context);
 		void destroyDeviceObjects();
-		bool createFontsTexture();
+		bool createFontsTexture(se::graphics::Context& context);
 		void destroyFontsTexture();
 		void setupRenderState(
 			ImDrawData* drawData, int fbWidth, int fbHeight,
-			se::graphics::VertexArray* vao
+			se::graphics::Context::Query& q, se::graphics::VertexArray* vao
 		);
 	};
 

@@ -1,15 +1,15 @@
-#include <string>
-#include <stdexcept>
 #include "se/graphics/core/Shader.h"
 #include "GLWrapper.h"
 
 namespace se::graphics {
 
-	Shader::Shader(const char* source, ShaderType shaderType)
+	Shader::Shader(const std::string& source, ShaderType shaderType)
 	{
+		const char* sourcePtr = source.c_str();
+
 		// 1. Create the Shader
 		GL_WRAP( mShaderId = glCreateShader( toGLShader(shaderType) ) );
-		GL_WRAP( glShaderSource(mShaderId, 1, &source, NULL) );
+		GL_WRAP( glShaderSource(mShaderId, 1, &sourcePtr, NULL) );
 
 		// 2. Compile the shader
 		GL_WRAP( glCompileShader(mShaderId) );
@@ -24,13 +24,14 @@ namespace se::graphics {
 			char* infoLog = new char[infoLogLength + 1];
 			GL_WRAP( glGetShaderInfoLog(mShaderId, infoLogLength, NULL, infoLog) );
 
-			std::string strInfoLog = "Failed to create the shader \"" + std::to_string(toGLShader(shaderType)) + "\"\n" + std::string(infoLog);
+			SOMBRA_ERROR_LOG << "Failed to create the shader " << mShaderId
+				<< " \"" << toGLShader(shaderType) << "\":" << infoLog;
+
 			delete[] infoLog;
-
-			throw std::runtime_error(strInfoLog);
 		}
-
-		SOMBRA_TRACE_LOG << "Created Shader " << mShaderId;
+		else {
+			SOMBRA_TRACE_LOG << "Created Shader " << mShaderId;
+		}
 	}
 
 

@@ -27,8 +27,8 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~StartDLRenderNode() = default;
 
-		/** @copydoc graphics::RenderNode::execute() */
-		virtual void execute() override
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query&) override
 		{
 			graphics::GraphicsOperations::setBlendEquation(graphics::BlendEquation::Add);
 			graphics::GraphicsOperations::setBlendFunction(graphics::BlendFunction::One, graphics::BlendFunction::One);
@@ -58,8 +58,8 @@ namespace se::app {
 		/** Class destructor */
 		virtual ~EndDLRenderNode() = default;
 
-		/** @copydoc graphics::RenderNode::execute() */
-		virtual void execute() override
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query&) override
 		{
 			graphics::GraphicsOperations::setOperation(graphics::Operation::StencilTest, false);
 			graphics::GraphicsOperations::setStencilMask(false);
@@ -70,7 +70,8 @@ namespace se::app {
 	};
 
 
-	DeferredLightSubGraph::DeferredLightSubGraph(const std::string& name) : graphics::Renderer3D(name)
+	DeferredLightSubGraph::DeferredLightSubGraph(const std::string& name, graphics::Context& context) :
+		graphics::Renderer3D(name), mGraph(context)
 	{
 		// Nodes
 		auto resources = dynamic_cast<BindableRenderNode*>(mGraph.getNode("resources"));
@@ -82,7 +83,7 @@ namespace se::app {
 		resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("material", resources, resources->addBindable()) );
 		resources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::Texture>>("shadow", resources, mShadowBindableIndex) );
 
-		auto shadowRenderSubGraph = std::make_unique<ShadowRenderSubGraph>("shadowRenderSubGraph");
+		auto shadowRenderSubGraph = std::make_unique<ShadowRenderSubGraph>("shadowRenderSubGraph", context);
 		mShadowRenderSubGraph = shadowRenderSubGraph.get();
 
 		auto texUnitNodeShadow = std::make_unique<graphics::TextureUnitNode>("texUnitNodeShadow", TexUnits::kShadow);
@@ -94,10 +95,10 @@ namespace se::app {
 		stencilFBClear->addInput( std::make_unique<graphics::RNodeInput>("attach", stencilFBClear.get()) );
 
 		auto stencilRenderer = std::make_unique<graphics::RendererMesh>("stencilRenderer");
-		stencilRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, true));
-		stencilRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, false));
-		stencilRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, false));
-		stencilRenderer->addBindable(std::make_shared<graphics::BindableOperation>([]() {
+		stencilRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::DepthTest, true));
+		stencilRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Culling, false));
+		stencilRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Blending, false));
+		stencilRenderer->addBindable(context.create<graphics::BindableOperation>([]() {
 			graphics::GraphicsOperations::setColorMask(false, false, false, false);
 			graphics::GraphicsOperations::setStencilFunction(graphics::StencilFunction::Always, 0, 0);
 			graphics::GraphicsOperations::setStencilAction(
@@ -112,10 +113,10 @@ namespace se::app {
 		mStencilRenderer = stencilRenderer.get();
 
 		auto colorRenderer = std::make_unique<graphics::RendererMesh>("colorRenderer");
-		colorRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, false));
-		colorRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
-		colorRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Blending, true));
-		colorRenderer->addBindable(std::make_shared<graphics::BindableOperation>([]() {
+		colorRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::DepthTest, false));
+		colorRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Culling, true));
+		colorRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Blending, true));
+		colorRenderer->addBindable(context.create<graphics::BindableOperation>([]() {
 			graphics::GraphicsOperations::setColorMask(true, true, true, true);
 			graphics::GraphicsOperations::setStencilFunction(graphics::StencilFunction::NotEqual, 0, 0xFF);
 		}));
@@ -165,7 +166,7 @@ namespace se::app {
 	}
 
 
-	void DeferredLightSubGraph::setBindable(std::size_t bindableIndex, const BindableSPtr& bindable)
+	void DeferredLightSubGraph::setBindable(std::size_t bindableIndex, const graphics::Context::BindableRef& bindable)
 	{
 		if (bindableIndex == mTargetBindableIndex) {
 			auto resources = dynamic_cast<graphics::BindableRenderNode*>(mGraph.getNode("resources"));
@@ -204,13 +205,13 @@ namespace se::app {
 	}
 
 
-	void DeferredLightSubGraph::render()
+	void DeferredLightSubGraph::render(graphics::Context::Query& q)
 	{
 		for (RenderableLight* renderable : mLightsRenderQueue) {
-			renderable->getRenderableMesh().submit();
+			renderable->getRenderableMesh().submit(q);
 
 			mShadowRenderSubGraph->startRender(*renderable);
-			mGraph.execute();
+			mGraph.execute(q);
 			mShadowRenderSubGraph->endRender();
 		}
 	}

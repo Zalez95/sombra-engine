@@ -353,7 +353,7 @@ namespace editor {
 				addRepoDropdownShowSelected(name2.c_str(), getEditor().getScene()->repository, lightProbe->prefilterMap);
 
 				if (ImGui::TreeNode("Create from texture")) {
-					auto environmentTexture = getEditor().getScene()->repository.findByName<Texture>(mEnvironmentTextureName.c_str());
+					auto environmentTexture = getEditor().getScene()->repository.findByName<TextureRef>(mEnvironmentTextureName.c_str());
 
 					std::string name3 = "Environment Map" + getIdPrefix() + "LightProbeComponentNode::ChangeEnvironment";
 					if (addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture)) {
@@ -368,18 +368,16 @@ namespace editor {
 						ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 					}
 					if (ImGui::Button(("Build probe" + getIdPrefix() + "LightProbeComponentNode::BuildProbe").c_str())) {
-						auto cubeMapSPtr = environmentTexture.get();
-
-						auto irradianceMapSPtr = TextureUtils::convoluteCubeMap(cubeMapSPtr, mIrradianceMapSize);
-						lightProbe->irradianceMap = getEditor().getScene()->repository.insert(std::move(irradianceMapSPtr));
-						setRepoName<Texture>(
+						auto irradianceMapRef = TextureUtils::convoluteCubeMap(*environmentTexture, mIrradianceMapSize);
+						lightProbe->irradianceMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(irradianceMapRef));
+						setRepoName<TextureRef>(
 							lightProbe->irradianceMap.getResource(),
 							(mEnvironmentTextureName + "IrradianceMap").c_str(), getEditor().getScene()->repository
 						);
 
-						auto prefilterMapSPtr = TextureUtils::prefilterCubeMap(cubeMapSPtr, mPrefilterMapSize);
-						lightProbe->prefilterMap = getEditor().getScene()->repository.insert(std::move(prefilterMapSPtr));
-						setRepoName<Texture>(
+						auto prefilterMapRef = TextureUtils::prefilterCubeMap(*environmentTexture, mPrefilterMapSize);
+						lightProbe->prefilterMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(prefilterMapRef));
+						setRepoName<TextureRef>(
 							lightProbe->prefilterMap.getResource(),
 							(mEnvironmentTextureName + "PrefilterMap").c_str(), getEditor().getScene()->repository
 						);
@@ -420,7 +418,7 @@ namespace editor {
 					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 				}
-				Repository::ResourceRef<Mesh> gMesh;
+				Repository::ResourceRef<MeshRef> gMesh;
 				std::string name = getIdPrefix() + "MeshComponentNode::AddMesh";
 				if (addRepoDropdownButton(name.c_str(), "Add RenderableMesh", getEditor().getScene()->repository, gMesh)) {
 					mesh->add(mHasSkinning, gMesh);
@@ -885,7 +883,7 @@ namespace editor {
 		void drawTerrain(TerrainCollider& terrain)
 		{
 			if (ImGui::TreeNode("Create from texture")) {
-				auto heightTexture = getEditor().getScene()->repository.findByName<Texture>(mHeightTextureName.c_str());
+				auto heightTexture = getEditor().getScene()->repository.findByName<TextureRef>(mHeightTextureName.c_str());
 				std::string name = "Height Map" + getIdPrefix() + "RigidBodyComponentNode::HeightMap";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, heightTexture)) {
 					mHeightTextureName = heightTexture.getResource().getName();
@@ -911,7 +909,7 @@ namespace editor {
 			ImGui::Text("Number of indices: %lu", triMesh.getNumIndices());
 
 			if (ImGui::TreeNode("Create from graphics mesh")) {
-				auto mesh = getEditor().getScene()->repository.findByName<Mesh>(mMeshName.c_str());
+				auto mesh = getEditor().getScene()->repository.findByName<MeshRef>(mMeshName.c_str());
 				std::string name = "Mesh" + getIdPrefix() + "RigidBodyComponentNode::Mesh";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
 					mMeshName = mesh.getResource().getName();
@@ -937,7 +935,7 @@ namespace editor {
 			ImGui::Text("Number of faces: %lu", cPoly.getLocalMesh().faces.size());
 
 			if (ImGui::TreeNode("Create from mesh")) {
-				auto mesh = getEditor().getScene()->repository.findByName<Mesh>(mMeshName.c_str());
+				auto mesh = getEditor().getScene()->repository.findByName<MeshRef>(mMeshName.c_str());
 				std::string name = "Mesh" + getIdPrefix() + "RigidBodyComponentNode::Mesh";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
 					mMeshName = mesh.getResource().getName();

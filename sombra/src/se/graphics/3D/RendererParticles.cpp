@@ -14,17 +14,17 @@ namespace se::graphics {
 	}
 
 
-	void RendererParticles::render()
+	void RendererParticles::render(Context::Query& q)
 	{
 		const Pass* lastPass = nullptr;
 		for (auto& [renderable, pass] : mRenderQueue) {
 			if (pass != lastPass) {
 				lastPass = pass;
-				pass->bind();
+				pass->bind(q);
 			}
 
-			renderable->bind(pass);
-			renderable->drawInstances();
+			renderable->bind(q, pass);
+			renderable->drawInstances(q);
 		}
 	}
 

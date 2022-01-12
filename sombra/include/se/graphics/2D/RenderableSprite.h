@@ -4,6 +4,7 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include "Renderable2D.h"
+#include "../Context.h"
 
 namespace se::graphics {
 
@@ -17,9 +18,6 @@ namespace se::graphics {
 	 */
 	class RenderableSprite : public Renderable2D
 	{
-	private:	// Nested types
-		using TextureSPtr = std::shared_ptr<Texture>;
-
 	private:	// Attributes
 		/** The position in pixels of the RenderableSprite */
 		glm::vec2 mPosition;
@@ -31,7 +29,7 @@ namespace se::graphics {
 		glm::vec4 mColor;
 
 		/** The texture of the RenderableSprite */
-		TextureSPtr mTexture;
+		Context::TBindableRef<Texture> mTexture;
 
 	public:		// Functions
 		/** Creates a new RenderableSprite
@@ -39,11 +37,12 @@ namespace se::graphics {
 		 * @param	position the 2D position in pixels of the RenderableSprite
 		 * @param	size the 2D size in pixels of the RenderableSprite
 		 * @param	color the RGBA color of the RenderableSprite
-		 * @param	texture a pointer to the texture of the RenderableSprite */
+		 * @param	texture a reference to the texture of the
+		 *			RenderableSprite */
 		RenderableSprite(
 			const glm::vec2& position, const glm::vec2& size,
 			const glm::vec4& color = glm::vec4(1.0f),
-			const TextureSPtr texture = nullptr
+			const Context::TBindableRef<Texture>& texture = {}
 		) :	mPosition(position), mSize(size),
 			mColor(color), mTexture(texture) {};
 
@@ -66,14 +65,13 @@ namespace se::graphics {
 		/** Sets the texture of the RenderableSprite
 		 *
 		 * @param	texture the new texture of the RenderableSprite */
-		void setTexture(TextureSPtr texture) { mTexture = texture; };
+		void setTexture(const Context::TBindableRef<Texture>& texture)
+		{ mTexture = texture; };
 
-		/** Submits the vertices of the current RenderableSprite to the given
-		 * Renderer2D
-		 *
-		 * @param	renderer the renderer where the RenderableSprite vertices
-		 *			will be submitted */
-		virtual void submitVertices(Renderer2D& renderer) const override;
+		/** @copydoc Renderable2D::submitVertices(Context::Query&, Renderer2D&) */
+		virtual void submitVertices(
+			Context::Query& q, Renderer2D& renderer
+		) const override;
 	};
 
 }

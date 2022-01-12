@@ -173,7 +173,9 @@ namespace se::app {
 	class LightComponent
 	{
 	private:	// Nested types
-		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
+		using RenderableShaderResource =
+			Repository::ResourceRef<RenderableShader>;
+		using LightSourceResource = Repository::ResourceRef<LightSource>;
 
 	private:	// Attributes
 		/** The EventManager used for notifying the MeshComponent changes */
@@ -186,10 +188,10 @@ namespace se::app {
 		RenderableLight mRenderable;
 
 		/** A pointer to the LightSource that is going to be used */
-		Repository::ResourceRef<LightSource> mSource;
+		LightSourceResource mSource;
 
 		/** The shaders added to the LightComponent */
-		std::vector<RenderableShaderRef> mShaders;
+		std::vector<RenderableShaderResource> mShaders;
 
 	public:		// Functions
 		/** Creates a new LightComponent */
@@ -221,7 +223,7 @@ namespace se::app {
 		const RenderableLight& getRenderable() const { return mRenderable; };
 
 		/** @return	a reference to the LightSource of the LightComponent */
-		const Repository::ResourceRef<LightSource>& getSource() const
+		const LightSourceResource& getSource() const
 		{ return mSource; };
 
 		/** Sets the LightSource of the LightComponent
@@ -229,13 +231,13 @@ namespace se::app {
 		 * @param	source the new LightSource of the Component
 		 * @note	Changing the Source of the Component will remove the
 		 *			LightComponent Shadows */
-		void setSource(const Repository::ResourceRef<LightSource>& source);
+		void setSource(const LightSourceResource& source);
 
 		/** Adds the given RenderableShader to the RenderableMesh of the
 		 * RenderableLight of the LightComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
-		void addRenderableShader(const RenderableShaderRef& shader);
+		void addRenderableShader(const RenderableShaderResource& shader);
 
 		/** Iterates through all the RenderableShaders of the RenderableMesh
 		 * of the RenderableLight of the LightComponent calling the given
@@ -249,7 +251,7 @@ namespace se::app {
 		 * RenderableLight of the LightComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
-		void removeRenderableShader(const RenderableShaderRef& shader);
+		void removeRenderableShader(const RenderableShaderResource& shader);
 	};
 
 

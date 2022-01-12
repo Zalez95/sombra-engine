@@ -1,9 +1,8 @@
 #ifndef RENDER_NODE_H
 #define RENDER_NODE_H
 
-#include <memory>
 #include <string>
-#include <vector>
+#include "Context.h"
 
 namespace se::graphics {
 
@@ -165,8 +164,11 @@ namespace se::graphics {
 		/** @return	the name of the current RenderNode */
 		const std::string& getName() const { return mName; };
 
-		/** Executes the current RenderNode */
-		virtual void execute() = 0;
+		/** Executes the current RenderNode
+		 *
+		 * @param	q the Context Query object used for accesing to the
+		 *			Bindables */
+		virtual void execute(Context::Query& q) = 0;
 
 		/** Adds the given RNodeInput to the RenderNode
 		 *

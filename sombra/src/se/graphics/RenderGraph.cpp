@@ -19,16 +19,16 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~ResourceNode() = default;
 
-		/** Executes the current RenderNode */
-		virtual void execute() override {};
+		/** @copydoc RenderNode::execute(Context::Query&) */
+		virtual void execute(Context::Query&) override {};
 	};
 
 
-	RenderGraph::RenderGraph()
+	RenderGraph::RenderGraph(Context& context)
 	{
 		auto resourcesNode = std::make_unique<ResourceNode>("resources");
 
-		auto defaultFBIndex = resourcesNode->addBindable( std::shared_ptr<FrameBuffer>(&FrameBuffer::getDefaultFrameBuffer(), [](FrameBuffer*) {}) );
+		auto defaultFBIndex = resourcesNode->addBindable( context.insert<FrameBuffer>(&FrameBuffer::getDefaultFrameBuffer()) );
 		resourcesNode->addOutput( std::make_unique<BindableRNodeOutput<FrameBuffer>>("defaultFB", resourcesNode.get(), defaultFBIndex) );
 
 		addNode( std::move(resourcesNode) );
@@ -125,10 +125,10 @@ namespace se::graphics {
 	}
 
 
-	void RenderGraph::execute()
+	void RenderGraph::execute(Context::Query& q)
 	{
 		for (auto& node : mRenderNodes) {
-			node->execute();
+			node->execute(q);
 		}
 	}
 

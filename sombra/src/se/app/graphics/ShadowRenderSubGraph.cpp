@@ -12,13 +12,14 @@ namespace se::app {
 	}
 
 
-	ShadowRenderSubGraph::ShadowRenderSubGraph(const std::string& name) :
-		graphics::BindableRenderNode(name), mShadowUniformsUpdater("uViewMatrix", "uProjectionMatrix", this)
+	ShadowRenderSubGraph::ShadowRenderSubGraph(const std::string& name, graphics::Context& context) :
+		graphics::BindableRenderNode(name),
+		mGraph(context), mShadowUniformsUpdater(context, "uViewMatrix", "uProjectionMatrix", this)
 	{
 		mResources = dynamic_cast<BindableRenderNode*>(mGraph.getNode("resources"));
 
-		auto shadowTarget = std::make_unique<graphics::FrameBuffer>();
-		shadowTarget->setColorBuffer(false);
+		auto shadowTarget = context.create<graphics::FrameBuffer>();
+		shadowTarget.edit([](graphics::FrameBuffer& fb) { fb.setColorBuffer(false); });
 		mShadowTargetBindableIndex = mResources->addBindable( std::move(shadowTarget) );
 		mResources->addOutput( std::make_unique<graphics::BindableRNodeOutput<graphics::FrameBuffer>>("shadowTarget", mResources, mShadowTargetBindableIndex) );
 
@@ -27,15 +28,15 @@ namespace se::app {
 		auto frustum = std::make_shared<graphics::FrustumFilter>();
 		mRenderersFrustum = frustum.get();
 
-		auto shadowTerrainRenderer = std::make_unique<graphics::RendererTerrain>("shadowTerrainRenderer");
-		shadowTerrainRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, true));
-		shadowTerrainRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
+		auto shadowTerrainRenderer = std::make_unique<graphics::RendererTerrain>("shadowTerrainRenderer", context);
+		shadowTerrainRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::DepthTest, true));
+		shadowTerrainRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Culling, true));
 		shadowTerrainRenderer->addFilter(frustum);
 		mShadowTerrainRenderer = shadowTerrainRenderer.get();
 
 		auto shadowMeshRenderer = std::make_unique<graphics::RendererMesh>("shadowMeshRenderer");
-		shadowMeshRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::DepthTest, true));
-		shadowMeshRenderer->addBindable(std::make_shared<graphics::SetOperation>(graphics::Operation::Culling, true));
+		shadowMeshRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::DepthTest, true));
+		shadowMeshRenderer->addBindable(context.create<graphics::SetOperation>(graphics::Operation::Culling, true));
 		shadowMeshRenderer->addFilter(frustum);
 		mShadowMeshRenderer = shadowMeshRenderer.get();
 
@@ -63,7 +64,7 @@ namespace se::app {
 	}
 
 
-	void ShadowRenderSubGraph::execute()
+	void ShadowRenderSubGraph::execute(graphics::Context::Query& q)
 	{
 		if (!mRenderableLight) { return; }
 
@@ -72,7 +73,7 @@ namespace se::app {
 		graphics::GraphicsOperations::setCullingMode(graphics::FaceMode::Front);	// Render the back faces
 
 		// Render to the ShadowMap textures from the RenderableLight perspectives
-		auto shadowTarget = std::dynamic_pointer_cast<graphics::FrameBuffer>( mResources->getBindable(mShadowTargetBindableIndex) );
+		auto shadowTarget = graphics::Context::TBindableRef<graphics::FrameBuffer>::from( mResources->getBindable(mShadowTargetBindableIndex) );
 		glm::mat4 viewMatrix(1.0f), projectionMatrix(1.0f), viewProjectionMatrix(1.0f);
 
 		for (std::size_t i = 0; i < mRenderableLight->getNumShadows(); ++i) {
@@ -81,13 +82,19 @@ namespace se::app {
 			viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 			if (mRenderableLight->isPointLight()) {
-				shadowTarget->attach(mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, 0, static_cast<int>(i));
+				q.getTBindable(shadowTarget)->attach(
+					q.getTBindable( mRenderableLight->getShadowMap() ),
+					graphics::FrameBufferAttachment::kDepth, 0, 0, static_cast<int>(i)
+				);
 			}
 			else {
-				shadowTarget->attach(mRenderableLight->getShadowMap(), graphics::FrameBufferAttachment::kDepth, 0, static_cast<int>(i));
+				q.getTBindable(shadowTarget)->attach(
+					q.getTBindable( mRenderableLight->getShadowMap() ),
+					graphics::FrameBufferAttachment::kDepth, 0, static_cast<int>(i)
+				);
 			}
 
-			mShadowUniformsUpdater.update(viewMatrix, projectionMatrix);
+			mShadowUniformsUpdater.updateUniforms(q, viewMatrix, projectionMatrix);
 
 			mRenderersFrustum->updateFrustum(viewProjectionMatrix);
 			for (const RenderQueueData& data : mTerrainRenderQueue) {
@@ -97,7 +104,7 @@ namespace se::app {
 				mShadowMeshRenderer->submit(*data.renderable, *data.pass);
 			}
 
-			mGraph.execute();
+			mGraph.execute(q);
 		}
 
 		// Reset the viewport size to the previous one

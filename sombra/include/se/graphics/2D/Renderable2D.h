@@ -46,7 +46,8 @@ namespace se::graphics {
 		 *
 		 * @param	renderer the renderer where the Renderable2D vertices will
 		 *			be submitted */
-		virtual void submitVertices(Renderer2D& renderer) const = 0;
+		virtual
+		void submitVertices(Context::Query& q, Renderer2D& renderer) const = 0;
 	};
 
 }

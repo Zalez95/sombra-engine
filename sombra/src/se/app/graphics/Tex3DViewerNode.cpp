@@ -1,31 +1,35 @@
 #include "se/app/graphics/Tex3DViewerNode.h"
 #include "se/app/io/ShaderLoader.h"
 #include "se/app/io/MeshLoader.h"
-#include "se/graphics/core/Texture.h"
 #include "se/graphics/core/FrameBuffer.h"
-#include "se/graphics/core/UniformVariable.h"
 #include "se/graphics/core/GraphicsOperations.h"
+#include "se/app/graphics/TypeRefs.h"
 
 namespace se::app {
 
-	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, Repository& repository, std::size_t maxSize) :
+	Tex3DViewerNode::Tex3DViewerNode(const std::string& name, graphics::Context& context, std::size_t maxSize) :
 		BindableRenderNode(name), mMaxSize(maxSize), mMinPosition(0.0f), mMaxPosition(0.0f), mNumInstances(0)
 	{
-		mProgram = repository.findByName<graphics::Program>("programTex3DViewer");
-		if (!mProgram) {
-			std::shared_ptr<graphics::Program> program;
-			auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl", program);
-			if (!result) {
-				SOMBRA_ERROR_LOG << result.description();
-				return;
-			}
-			mProgram = repository.insert(std::move(program), "programTex3DViewer");
+		ProgramRef program;
+		auto result = ShaderLoader::createProgram("res/shaders/vertexTex3DViewer.glsl", nullptr, "res/shaders/fragmentTex3DViewer.glsl", context, program);
+		if (!result) {
+			SOMBRA_ERROR_LOG << result.description();
+			return;
 		}
-		addBindable(mProgram.get());
+		addBindable(program);
 
-		mModelMatrix = addBindable( std::make_shared<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", mProgram.get(), glm::mat4(0.0f)) );
-		addBindable( std::make_shared<graphics::UniformVariableValue<int>>("uTexture3D", mProgram.get(), kTextureUnit) );
-		mMipMapLevel = addBindable( std::make_shared<graphics::UniformVariableValue<float>>("uMipMapLevel", mProgram.get()) );
+		addBindable(
+			context.create<graphics::UniformVariableValue<int>>("uTexture3D", kTextureUnit)
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		mModelMatrixIndex = addBindable(
+			context.create<graphics::UniformVariableValue<glm::mat4>>("uModelMatrix", glm::mat4(1.0f))
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
+		mMipMapLevelIndex = addBindable(
+			context.create<graphics::UniformVariableValue<float>>("uMipMapLevel")
+				.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program)); })
+		);
 
 		auto tex3DIndex = addBindable();
 		addInput( std::make_unique<graphics::BindableRNodeInput<graphics::Texture>>("texture3D", this, tex3DIndex) );
@@ -57,7 +61,7 @@ namespace se::app {
 			3, 2, 6,	6, 7, 3
 		};
 
-		mCube = std::make_unique<graphics::Mesh>(MeshLoader::createGraphicsMesh(rawMesh));
+		mCubeIndex = addBindable( MeshLoader::createGraphicsMesh(context, rawMesh) );
 	}
 
 
@@ -71,30 +75,36 @@ namespace se::app {
 
 		glm::mat4 T = glm::translate(glm::mat4(1.0f), sceneCenter - 0.5f * sceneVector);
 		glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(sceneVector));
-		std::static_pointer_cast<graphics::UniformVariableValue<glm::mat4>>( getBindable(mModelMatrix) )->setValue(T * S);
+		UniformVVRef<glm::mat4>::from( getBindable(mModelMatrixIndex) ).edit([=](auto& uniform) {
+			uniform.setValue(T * S);
+		});
 	}
 
 
 	void Tex3DViewerNode::setMipMapLevel(float mipmapLevel)
 	{
-		std::static_pointer_cast<graphics::UniformVariableValue<float>>( getBindable(mMipMapLevel) )->setValue(mipmapLevel);
+		UniformVVRef<float>::from( getBindable(mMipMapLevelIndex) ).edit([=](auto& uniform) {
+			uniform.setValue(mipmapLevel);
+		});
 
 		std::size_t currentSize = static_cast<std::size_t>(std::pow(2.0f, mipmapLevel));
 		mNumInstances = currentSize * currentSize * currentSize;
 	}
 
 
-	void Tex3DViewerNode::execute()
+	void Tex3DViewerNode::execute(graphics::Context::Query& q)
 	{
+		auto cube = q.getTBindable( MeshRef::from(getBindable(mCubeIndex)) );
+
 		graphics::SetOperation opCulling(graphics::Operation::Culling);		opCulling.bind();
 		graphics::SetOperation opDepthTest(graphics::Operation::DepthTest);	opDepthTest.bind();
 
-		bind();
-		mCube->bind();
+		bind(q);
 		graphics::GraphicsOperations::drawIndexedInstanced(
 			graphics::PrimitiveType::Triangle,
-			mCube->getIBO().getIndexCount(), mCube->getIBO().getIndexType(), 0,
-			mNumInstances
+			cube->getIBO()->getIndexCount(),
+			cube->getIBO()->getIndexType(),
+			0, mNumInstances
 		);
 
 		opDepthTest.unbind();

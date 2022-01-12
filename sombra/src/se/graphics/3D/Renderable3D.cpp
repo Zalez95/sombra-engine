@@ -1,10 +1,9 @@
 #include <algorithm>
-#include "se/graphics/core/Bindable.h"
 #include "se/graphics/3D/Renderable3D.h"
 
 namespace se::graphics {
 
-	Renderable3D& Renderable3D::addPassBindable(Pass* pass, const BindableSPtr& bindable)
+	Renderable3D& Renderable3D::addPassBindable(Pass* pass, const Context::BindableRef& bindable)
 	{
 		if (pass && bindable) {
 			mPassBindables[pass].push_back(bindable);
@@ -25,7 +24,7 @@ namespace se::graphics {
 	}
 
 
-	Renderable3D& Renderable3D::removePassBindable(Pass* pass, const BindableSPtr& bindable)
+	Renderable3D& Renderable3D::removePassBindable(Pass* pass, const Context::BindableRef& bindable)
 	{
 		auto it = mPassBindables.find(pass);
 		if (it != mPassBindables.end()) {
@@ -39,18 +38,18 @@ namespace se::graphics {
 	}
 
 
-	void Renderable3D::bind(Pass* pass) const
+	void Renderable3D::bind(Context::Query& q, Pass* pass) const
 	{
-		processPassBindables(pass, [](const BindableSPtr& bindable) {
-			bindable->bind();
+		processPassBindables(pass, [&](const Context::BindableRef& bindable) {
+			q.getBindable(bindable)->bind();
 		});
 	}
 
 
-	void Renderable3D::unbind(Pass* pass) const
+	void Renderable3D::unbind(Context::Query& q, Pass* pass) const
 	{
-		processPassBindables(pass, [](const BindableSPtr& bindable) {
-			bindable->unbind();
+		processPassBindables(pass, [&](const Context::BindableRef& bindable) {
+			q.getBindable(bindable)->unbind();
 		});
 	}
 

@@ -14,16 +14,21 @@ namespace se::app {
 		mApplication.getEventManager().subscribe(this, Topic::RendererResolution);
 
 		SOMBRA_INFO_LOG << graphics::GraphicsOperations::getGraphicsInfo();
-		auto graph = std::make_unique<AppRenderGraph>(application.getRepository(), width, height);
+		auto graph = std::make_unique<AppRenderGraph>(mApplication.getExternalTools().graphicsEngine->getContext(), width, height);
 		mApplication.getExternalTools().graphicsEngine->setRenderGraph(std::move(graph));
 
-		graphics::GraphicsOperations::setViewport(0, 0, width, height);
+		mApplication.getExternalTools().graphicsEngine->getContext().execute([=](graphics::Context::Query&) {
+			graphics::GraphicsOperations::setViewport(0, 0, width, height);
+		});
 	}
 
 
 	AppRenderer::~AppRenderer()
 	{
-		mApplication.getExternalTools().graphicsEngine->getRenderGraph().clearNodes();
+		mApplication.getExternalTools().graphicsEngine->editRenderGraph([](graphics::RenderGraph& graph) {
+			graph.clearNodes();
+		});
+
 		mApplication.getEventManager().unsubscribe(this, Topic::RendererResolution);
 		mApplication.getEventManager().unsubscribe(this, Topic::WindowResize);
 	}
@@ -50,7 +55,9 @@ namespace se::app {
 
 		auto width = static_cast<std::size_t>(event.getWidth());
 		auto height = static_cast<std::size_t>(event.getHeight());
-		graphics::GraphicsOperations::setViewport(0, 0, width, height);
+		mApplication.getExternalTools().graphicsEngine->getContext().execute([=](graphics::Context::Query&) {
+			graphics::GraphicsOperations::setViewport(0, 0, width, height);
+		});
 	}
 
 
@@ -58,12 +65,14 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		auto graphicsEngine = mApplication.getExternalTools().graphicsEngine;
-		if (auto graph = dynamic_cast<AppRenderGraph*>(&graphicsEngine->getRenderGraph())) {
-			auto width = static_cast<std::size_t>(event.getWidth());
-			auto height = static_cast<std::size_t>(event.getHeight());
-			graph->setResolution(width, height);
-		}
+		mApplication.getExternalTools().graphicsEngine->editRenderGraph([&](graphics::RenderGraph& graph) {
+			auto appGraph = dynamic_cast<AppRenderGraph*>(&graph);
+			if (appGraph) {
+				auto width = static_cast<std::size_t>(event.getWidth());
+				auto height = static_cast<std::size_t>(event.getHeight());
+				appGraph->setResolution(width, height);
+			}
+		});
 	}
 
 }

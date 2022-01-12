@@ -29,8 +29,8 @@ namespace se::graphics {
 		/** Class destructor */
 		virtual ~FBClearNode() = default;
 
-		/** Executes the current RenderNode */
-		virtual void execute() override;
+		/** @copydoc RenderNode::execute(Context::Query&) */
+		virtual void execute(Context::Query& q) override;
 	};
 
 }

@@ -3,16 +3,15 @@
 
 #include <glm/glm.hpp>
 #include "se/graphics/BindableRenderNode.h"
-#include "se/graphics/core/Program.h"
-#include "se/graphics/3D/Mesh.h"
-#include "se/app/Repository.h"
 
 namespace se::app {
 
 	/**
 	 * Class Tex3DClearNode, it's a RenderNode used for clearing the
 	 * contents of a Cubic 3D Texture.
-	 * The node has a "input" and an "output" for attaching the 3D Texture
+	 * The node has a "input" and an "output" for attaching the 3D Texture, it
+	 * also has a "plane" input where a plane Mesh must be attached for
+	 * rendering
 	 */
 	class Tex3DClearNode : public graphics::BindableRenderNode
 	{
@@ -23,25 +22,23 @@ namespace se::app {
 		/** The resolution of the 3D texture in each axis */
 		std::size_t mMaxSize;
 
-		/** The plane Mesh used for clearing the Texture */
-		Repository::ResourceRef<graphics::Mesh> mPlane;
-
-		/** The program used by the Tex3DClearNode */
-		Repository::ResourceRef<graphics::Program> mProgram;
+		/** The index of the plane Mesh used for clearing the Texture */
+		std::size_t mPlaneIndex;
 
 	public:		// Functions
 		/** Creates a new Tex3DClearNode
 		 *
 		 * @param	name the name of the new Tex3DClearNode
-		 * @param	repository the Repository that holds all the Programs
+		 * @param	context the Context used for creating the RenderNode
+		 *			Bindables
 		 * @param	maxSize the resolution of the 3D texture in each axis */
 		Tex3DClearNode(
-			const std::string& name, Repository& repository,
+			const std::string& name, graphics::Context& context,
 			std::size_t maxSize
 		);
 
-		/** Clears the Texture 3D */
-		virtual void execute() override;
+		/** @copydoc graphics::RenderNode::execute(graphics::Context::Query&) */
+		virtual void execute(graphics::Context::Query& q) override;
 	};
 
 }

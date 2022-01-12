@@ -1,15 +1,15 @@
 #ifndef PARTICLE_SYSTEM_COMPONENT_H
 #define PARTICLE_SYSTEM_COMPONENT_H
 
-#include <memory>
-#include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "../graphics/3D/ParticleSystem.h"
-#include "events/EventManager.h"
 #include "graphics/RenderableShader.h"
 #include "Entity.h"
 
 namespace se::app {
+
+	class EventManager;
+
 
 	/**
 	 * Struct ParticleEmitter, it holds the properties used for updating the
@@ -63,19 +63,14 @@ namespace se::app {
 	class ParticleSystemComponent
 	{
 	public:		// Nested types
-		/** Holds all the properties of a single particle to be drawn */
-		struct Particle
-		{
-			glm::vec3 position = glm::vec3(0.0f);
-			glm::vec3 velocity = glm::vec3(0.0f);
-			float rotation = 0.0f;
-			float scale = 0.0f;
-			float remainingTime = 0.0f;
-		};
-
-		using MeshRef = Repository::ResourceRef<graphics::Mesh>;
-		using ParticleEmitterRef = Repository::ResourceRef<ParticleEmitter>;
-		using RenderableShaderRef = Repository::ResourceRef<RenderableShader>;
+		using MeshResource = Repository::ResourceRef<MeshRef>;
+		using ParticleEmitterResource =
+			Repository::ResourceRef<ParticleEmitter>;
+		using RenderableShaderResource =
+			Repository::ResourceRef<RenderableShader>;
+	private:
+		struct Particle;
+		struct ParticlesState;
 
 	public:		// Attributes
 		static constexpr int kPositionIndex			= 4;
@@ -86,34 +81,28 @@ namespace se::app {
 	private:
 		/** The EventManager used for notifying the ParticleSystemComponent
 		 * changes */
-		EventManager* mEventManager;
+		EventManager* mEventManager = nullptr;
 
 		/** The Entity that owns the ParticleSystemComponent */
-		Entity mEntity;
-
-		/** All the Particles that are currently alive */
-		std::vector<Particle> mParticles;
+		Entity mEntity = kNullEntity;
 
 		/** The Renderable3D used for rendering all the Particles */
 		graphics::ParticleSystem mParticleSystem;
 
-		/** The shaders added to the ParticleSystemComponent */
-		std::vector<RenderableShaderRef> mShaders;
-
-		/** The initial location of the new Particles */
-		glm::vec3 mInitialPosition;
-
-		/** The initial orientation of the new Particles */
-		glm::quat mInitialOrientation;
-
-		/** The accumulated time since the start of the particle simulation */
-		float mAccumulatedTime;
-
 		/** The Mesh used for drawing the particles */
-		MeshRef mMesh;
+		MeshResource mMesh = {};
 
 		/** The emitter that holds the particles properties */
-		ParticleEmitterRef mEmitter;
+		ParticleEmitterResource mEmitter = {};
+
+		/** The shaders added to the ParticleSystemComponent */
+		std::vector<RenderableShaderResource> mShaders;
+
+		/** The current state of the Particles */
+		std::shared_ptr<ParticlesState> mParticlesState;
+
+		/** The graphics object that holds the particles buffers */
+		graphics::Context::TBindableRef<graphics::Particles> mGraphicsParticles;
 
 	public:		// Functions
 		/** Creates a new ParticleSystemComponent
@@ -122,7 +111,7 @@ namespace se::app {
 		ParticleSystemComponent(
 			graphics::PrimitiveType primitiveType =
 				graphics::PrimitiveType::Triangle
-		);
+		) : mParticleSystem({}, {}, primitiveType) {};
 		ParticleSystemComponent(const ParticleSystemComponent& other);
 		ParticleSystemComponent(ParticleSystemComponent&& other) = default;
 
@@ -141,16 +130,13 @@ namespace se::app {
 		 *
 		 * @param	eventManager the new EventManager of the
 		 *			ParticleSystemComponent
+		 * @param	context the graphics context used for initializing the
+		 *			ParticleSystem buffers
 		 * @param	entity the new Entity of the ParticleSystemComponent */
-		void setup(EventManager* eventManager, Entity entity)
-		{
-			mEventManager = eventManager;
-			mEntity = entity;
-		};
-
-		/** @return	the Particles of the ParticleSystemComponent */
-		const std::vector<Particle>& getParticles() const
-		{ return mParticles; };
+		void setup(
+			EventManager* eventManager, graphics::Context* context,
+			Entity entity
+		);
 
 		/** @return	the ParticleSystem of the ParticleSystemComponent */
 		graphics::ParticleSystem& get() { return mParticleSystem; };
@@ -159,40 +145,38 @@ namespace se::app {
 		const graphics::ParticleSystem& get() const { return mParticleSystem; };
 
 		/** @return	the initial Position of the Particles */
-		glm::vec3 getInitialPosition() const { return mInitialPosition; };
+		glm::vec3 getInitialPosition() const;
 
 		/** @return	the initial Position of the Particles */
-		void setInitialPosition(const glm::vec3& initialPosition)
-		{ mInitialPosition = initialPosition; };
+		void setInitialPosition(const glm::vec3& initialPosition);
 
 		/** @return	the initial Rotation of the Particles */
-		glm::quat getInitialOrientation() const { return mInitialOrientation; };
+		glm::quat getInitialOrientation() const;
 
 		/** @return	the initial Rotation of the Particles */
-		void setInitialOrientation(const glm::quat& initialOrientation)
-		{ mInitialOrientation = initialOrientation; };
+		void setInitialOrientation(const glm::quat& initialOrientation);
 
 		/** @return	the Mesh of the ParticleSystem */
-		const MeshRef& getMesh() const { return mMesh; };
+		const MeshResource& getMesh() const { return mMesh; };
 
 		/** Sets the Mesh of the ParticleSystem
 		 *
 		 * @param	mesh the new Mesh of the ParticleSystem */
-		void setMesh(const MeshRef& mesh);
+		void setMesh(const MeshResource& mesh);
 
 		/** @return	a pointer to the ParticleEmitter of the
 		 *			ParticleSystemComponent */
-		const ParticleEmitterRef& getEmitter() const { return mEmitter; };
+		const ParticleEmitterResource& getEmitter() const { return mEmitter; };
 
 		/** Sets the ParticleEmitter of the ParticleSystemComponent
 		 *
 		 * @param	emitter a pointer to the new ParticleEmitter */
-		void setEmitter(const ParticleEmitterRef& emitter);
+		void setEmitter(const ParticleEmitterResource& emitter);
 
 		/** Adds the given RenderableShader to the ParticleSystemComponent
 		 *
 		 * @param	shader a pointer to the shader to add */
-		void addRenderableShader(const RenderableShaderRef& shader);
+		void addRenderableShader(const RenderableShaderResource& shader);
 
 		/** Iterates through all the RenderableShaders of the ParticleSystemComponents
 		 * calling the given callback function
@@ -209,13 +193,13 @@ namespace se::app {
 		/** Removes the given RenderableShader from the ParticleSystemComponent
 		 *
 		 * @param	shader a pointer to the shader to remove */
-		void removeRenderableShader(const RenderableShaderRef& shader);
+		void removeRenderableShader(const RenderableShaderResource& shader);
 
 		/** Resets the particle simulation */
 		void resetAnimation();
 
 		/** Updates the properties of the Particles based on the given time,
-		 * removing those that have aren't alive anymore
+		 * removing those that aren't alive anymore
 		 *
 		 * @param	elapsedTime the elapsed time in seconds since the last
 		 *			update */
@@ -225,7 +209,8 @@ namespace se::app {
 		 *			time */
 		std::size_t getMaxSimultaneousParticles() const;
 
-		/** Adds a new Particle to the ParticleSystemComponent */
+		/** Adds a new Particle to the ParticleSystemComponent
+		 * @note	the mParticlesState mutex should be already locked */
 		Particle& addParticle();
 
 		/** Updates a single Particle with the given time

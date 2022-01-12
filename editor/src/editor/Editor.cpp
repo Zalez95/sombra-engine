@@ -117,11 +117,16 @@ namespace editor {
 
 		mImGuiInput = new ImGuiInput(*mEventManager);
 
-		mImGuiRenderer = new ImGuiRenderer("ImGuiRenderer");
+		auto& context = mExternalTools->graphicsEngine->getContext();
 		auto& renderGraph = mExternalTools->graphicsEngine->getRenderGraph();
+
+		mImGuiRenderer = new ImGuiRenderer("ImGuiRenderer", context);
 		mImGuiRenderer->findInput("target")->connect( renderGraph.getNode("renderer2D")->findOutput("target") );
-		renderGraph.addNode( std::unique_ptr<ImGuiRenderer>(mImGuiRenderer) );
-		renderGraph.prepareGraph();
+
+		mExternalTools->graphicsEngine->editRenderGraph([ir = mImGuiRenderer](se::graphics::RenderGraph& renderGraph) {
+			renderGraph.addNode( std::unique_ptr<ImGuiRenderer>(ir) );
+			renderGraph.prepareGraph();
+		});
 
 		/**** Add the GUI components ****/
 		mMenuBar = new MenuBar(*this);
@@ -156,27 +161,31 @@ namespace editor {
 
 			query.emplaceComponent<se::app::TransformsComponent>(mGridEntity);
 
+			auto& context = mExternalTools->graphicsEngine->getContext();
 			auto mesh = query.emplaceComponent<se::app::MeshComponent>(mGridEntity);
 			auto gridRawMesh = se::app::MeshLoader::createGridMesh("grid", 50, 100.0f);
-			auto gridMeshSPtr = std::make_shared<se::graphics::Mesh>(se::app::MeshLoader::createGraphicsMesh(gridRawMesh));
-			auto gridMesh = mRepository->insert(std::move(gridMeshSPtr), "gridMesh");
+			auto gridMeshRef = std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(context, gridRawMesh));
+			auto gridMesh = mRepository->insert(std::move(gridMeshRef), "gridMesh");
 			std::size_t gridIndex = mesh->add(false, gridMesh, se::graphics::PrimitiveType::Line);
 
-			std::shared_ptr<se::graphics::Program> program3DSPtr;
-			auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", program3DSPtr);
+			se::app::ProgramRef program3DRef;
+			auto result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragment3D.glsl", context, program3DRef);
 			if (!result) {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			auto program3D = mRepository->insert(std::move(program3DSPtr), "program3D");
-			program3D.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
+			auto program3DResource = mRepository->insert(std::make_shared<se::app::ProgramRef>(program3DRef), "program3D");
+			program3DResource.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
 
 			auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 			auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");
-			stepGrid->addResource(program3D)
-				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
-				.addBindable(std::make_shared<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
-				.addBindable(std::make_shared<se::graphics::UniformVariableValue<glm::vec4>>("uColor", program3D.get(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)));
+			stepGrid->addResource(program3DResource)
+				.addBindable(context.create<se::graphics::SetOperation>(se::graphics::Operation::Culling, false))
+				.addBindable(context.create<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
+				.addBindable(
+					context.create<se::graphics::UniformVariableValue<glm::vec4>>("uColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f))
+						.qedit([=](auto& q, auto& uniform) { uniform.load(*q.getTBindable(program3DRef)); })
+				);
 			auto shaderGrid = mRepository->insert(std::make_shared<se::app::RenderableShader>(*mEventManager), "shaderGrid");
 			shaderGrid->addStep(stepGrid);
 			mesh->addRenderableShader(gridIndex, shaderGrid);
@@ -208,7 +217,10 @@ namespace editor {
 
 		if (mImGuiRenderer) {
 			mImGuiRenderer->disconnect();
-			mExternalTools->graphicsEngine->getRenderGraph().removeNode(mImGuiRenderer);
+			mExternalTools->graphicsEngine->editRenderGraph([this](se::graphics::RenderGraph& renderGraph) {
+				renderGraph.removeNode(mImGuiRenderer);
+				renderGraph.prepareGraph();
+			});
 		}
 		if (mImGuiInput) { delete mImGuiInput; }
 		if (mImGuiContext) { ImGui::DestroyContext(mImGuiContext); }

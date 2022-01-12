@@ -13,19 +13,26 @@
 #include "se/app/ParticleSystemComponent.h"
 #include "se/app/Scene.h"
 
+using namespace se::graphics;
+using namespace se::physics;
+using namespace se::audio;
+using namespace se::animation;
+
 namespace se::app {
 
 	Scene::Scene(const std::string& name, Application& application) : application(application), name(name)
 	{
-		repository.init<graphics::Program>();
-		repository.init<graphics::Texture>([](const graphics::Texture& texture) {
-			return std::unique_ptr<graphics::Texture>(dynamic_cast<graphics::Texture*>(texture.clone().release()));
+		repository.init<ProgramRef>();
+		repository.init<TextureRef>([](const TextureRef& texture) {
+			auto tBindable = TextureRef::from(texture.clone());
+			return std::make_unique<TextureRef>(tBindable);
 		});
-		repository.init<graphics::Mesh>([](const graphics::Mesh& mesh) {
-			return std::unique_ptr<graphics::Mesh>(dynamic_cast<graphics::Mesh*>(mesh.clone().release()));
+		repository.init<MeshRef>([](const MeshRef& mesh) {
+			auto tBindable = MeshRef::from(mesh.clone());
+			return std::make_unique<MeshRef>(tBindable);
 		});
-		repository.init<audio::Buffer>();
-		repository.init<physics::Force>([](const physics::Force& force) {
+		repository.init<Buffer>();
+		repository.init<Force>([](const Force& force) {
 			return force.clone();
 		});
 		repository.init<Skin>([](const Skin& skin) {
@@ -43,8 +50,8 @@ namespace se::app {
 		repository.init<RenderableShader>([](const RenderableShader& shader) {
 			return shader.clone();
 		});
-		repository.init<animation::SkeletonAnimator>([](const animation::SkeletonAnimator& animator) {
-			return std::unique_ptr<animation::SkeletonAnimator>(dynamic_cast<animation::SkeletonAnimator*>(animator.clone().release()));
+		repository.init<SkeletonAnimator>([](const SkeletonAnimator& animator) {
+			return std::unique_ptr<SkeletonAnimator>(dynamic_cast<SkeletonAnimator*>(animator.clone().release()));
 		});
 		repository.init<Script>([](const Script& script) {
 			return script.clone();
