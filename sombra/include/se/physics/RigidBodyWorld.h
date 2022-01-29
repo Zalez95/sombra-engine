@@ -1,6 +1,7 @@
 #ifndef RIGID_BODY_WORLD_H
 #define RIGID_BODY_WORLD_H
 
+#include <mutex>
 #include "collision/CollisionDetector.h"
 #include "constraints/ConstraintManager.h"
 #include "CollisionSolver.h"
@@ -93,6 +94,10 @@ namespace se::physics {
 
 		/** The pointers to the Colliders of each RigidBody */
 		std::vector<Collider*> mRigidBodiesColliders;
+
+		/** The mutex used for protecting @see mRigidBodies and
+		 * @see mRigidBodiesColliders */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new RigidBodyWorld

@@ -2,6 +2,7 @@
 #define COLLISION_DETECTOR_H
 
 #include <map>
+#include <mutex>
 #include "CoarseCollisionDetector.h"
 #include "FineCollisionDetector.h"
 #include "../../utils/MathUtils.h"
@@ -71,6 +72,10 @@ namespace se::physics {
 
 		/** The listeners added to the CollisionDetector */
 		std::vector<ICollisionListener*> mListeners;
+
+		/** The mutex used for protecting @see mCoarseCollisionDetector,
+		 * @see mManifolds, @see mCollidersManifoldMap and @see mListeners */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Creates a new CollisionDetector

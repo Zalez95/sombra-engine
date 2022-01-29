@@ -7,6 +7,7 @@ namespace se::animation {
 	{
 		if (!animator) { return; }
 
+		std::scoped_lock lck(mMutex);
 		mAnimators.push_back(animator);
 	}
 
@@ -17,6 +18,7 @@ namespace se::animation {
 
 		animator->resetNodesAnimatedState();
 
+		std::scoped_lock lck(mMutex);
 		mAnimators.erase(
 			std::remove(mAnimators.begin(), mAnimators.end(), animator),
 			mAnimators.end()
@@ -26,6 +28,8 @@ namespace se::animation {
 
 	void AnimationEngine::update(float deltaTime)
 	{
+		std::scoped_lock lck(mMutex);
+
 		// Reset the animate state of all the nodes
 		for (IAnimator* animator : mAnimators) {
 			animator->resetNodesAnimatedState();

@@ -1,6 +1,7 @@
 #ifndef ANIMATION_ENGINE_H
 #define ANIMATION_ENGINE_H
 
+#include <mutex>
 #include <vector>
 #include "IAnimator.h"
 
@@ -14,6 +15,9 @@ namespace se::animation {
 	private:	// Attributes
 		/** The Animators to update */
 		std::vector<IAnimator*> mAnimators;
+
+		/** The mutex used for protecting @see mAnimators */
+		std::mutex mMutex;
 
 	public:		// Functions
 		/** Adds the given IAnimator to the AnimationEngine so it will be

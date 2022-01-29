@@ -22,6 +22,8 @@ namespace se::physics {
 	{
 		if (!rigidBody) { return; }
 
+		std::scoped_lock lck(mMutex);
+
 		auto it = std::lower_bound(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
 		std::size_t iRB = std::distance(mRigidBodies.begin(), it);
 		if ((it != mRigidBodies.end()) && ((*it) == rigidBody)) { return; }
@@ -36,6 +38,8 @@ namespace se::physics {
 
 	void RigidBodyWorld::removeRigidBody(RigidBody* rigidBody)
 	{
+		std::scoped_lock lck(mMutex);
+
 		auto it = std::lower_bound(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
 		std::size_t iRB = std::distance(mRigidBodies.begin(), it);
 		if ((it == mRigidBodies.end()) || ((*it) != rigidBody)) { return; }
@@ -53,6 +57,7 @@ namespace se::physics {
 
 	void RigidBodyWorld::update(float deltaTime)
 	{
+		std::scoped_lock lck(mMutex);
 		float bias = std::pow(mProperties.motionBias, deltaTime);
 
 		// Update the RigidBodies status

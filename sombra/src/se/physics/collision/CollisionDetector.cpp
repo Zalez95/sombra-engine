@@ -22,12 +22,14 @@ namespace se::physics {
 
 	void CollisionDetector::addCollider(Collider* collider)
 	{
+		std::scoped_lock lck(mMutex);
 		mCoarseCollisionDetector.add(collider);
 	}
 
 
 	void CollisionDetector::removeCollider(Collider* collider)
 	{
+		std::scoped_lock lck(mMutex);
 		mCoarseCollisionDetector.remove(collider);
 
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end();) {
@@ -44,6 +46,8 @@ namespace se::physics {
 
 	void CollisionDetector::update()
 	{
+		std::scoped_lock lck(mMutex);
+
 		// Clean old non intersecting Manifolds
 		for (auto it = mCollidersManifoldMap.begin(); it != mCollidersManifoldMap.end();) {
 			if (!mManifolds[it->second].state[Manifold::State::Intersecting]) {
@@ -117,6 +121,7 @@ namespace se::physics {
 	void CollisionDetector::addListener(ICollisionListener* listener)
 	{
 		if (listener) {
+			std::scoped_lock lck(mMutex);
 			mListeners.push_back(listener);
 		}
 	}
@@ -124,6 +129,7 @@ namespace se::physics {
 
 	void CollisionDetector::removeListener(ICollisionListener* listener)
 	{
+		std::scoped_lock lck(mMutex);
 		mListeners.erase(
 			std::remove(mListeners.begin(), mListeners.end(), listener),
 			mListeners.end()
@@ -133,6 +139,7 @@ namespace se::physics {
 
 	void CollisionDetector::rayCastAll(const Ray& ray, const RayCastCallback& callback)
 	{
+		std::scoped_lock lck(mMutex);
 		mCoarseCollisionDetector.calculateIntersections(ray, [&](Collider* collider) {
 			auto [intersects, rayHit] = mFineCollisionDetector.intersects(ray, *collider);
 			if (intersects) {
@@ -148,6 +155,7 @@ namespace se::physics {
 		RayHit rayHit;
 		rayHit.distance = std::numeric_limits<float>::max();
 
+		std::scoped_lock lck(mMutex);
 		mCoarseCollisionDetector.calculateIntersections(ray, [&](Collider* collider2) {
 			auto [intersects, rayHit2] = mFineCollisionDetector.intersects(ray, *collider2);
 			if (intersects && (!collider || (rayHit2.distance < rayHit.distance))) {

@@ -1,6 +1,7 @@
 #ifndef CONSTRAINT_MANAGER_H
 #define CONSTRAINT_MANAGER_H
 
+#include <mutex>
 #include "ConstraintIsland.h"
 
 namespace se::physics {
@@ -20,6 +21,9 @@ namespace se::physics {
 		/** The Constraint islands used for solving the Constraints */
 		std::vector<ConstraintIsland> mIslands;
 
+		/** The mutex used for protecting @see mIslands */
+		mutable std::mutex mMutex;
+
 	public:		// Constraints
 		/** Creates a new ConstraintManager
 		 *
@@ -37,7 +41,7 @@ namespace se::physics {
 
 		/** @return	true if the ConstraintManager has any constraints inside,
 		 *			false otherwise */
-		bool hasConstraints() const { return !mIslands.empty(); };
+		bool hasConstraints() const;
 
 		/** Iterates through all the ConstraintManager Constraints calling the
 		 * given callback function
@@ -90,6 +94,7 @@ namespace se::physics {
 	template <typename F>
 	void ConstraintManager::processConstraints(F&& callback) const
 	{
+		std::scoped_lock lck(mMutex);
 		for (const ConstraintIsland& island : mIslands) {
 			island.processConstraints(callback);
 		}
@@ -99,6 +104,7 @@ namespace se::physics {
 	template <typename F>
 	void ConstraintManager::processRigidBodies(F&& callback) const
 	{
+		std::scoped_lock lck(mMutex);
 		std::vector<RigidBody*> rigidBodies;
 		for (const ConstraintIsland& island : mIslands) {
 			island.processRigidBodies([&](RigidBody* rb) {
@@ -120,6 +126,7 @@ namespace se::physics {
 		RigidBody* rigidBody, F&& callback
 	) const
 	{
+		std::scoped_lock lck(mMutex);
 		for (const ConstraintIsland& island : mIslands) {
 			island.processRigidBodyConstraints(rigidBody, callback);
 		}

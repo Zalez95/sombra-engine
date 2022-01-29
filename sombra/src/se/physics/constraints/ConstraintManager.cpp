@@ -6,6 +6,8 @@ namespace se::physics {
 
 	void ConstraintManager::addConstraint(Constraint* constraint)
 	{
+		std::scoped_lock lck(mMutex);
+
 		bool rbHasIsland[2] = { false, false };
 		std::size_t iRBIsland[2] = { 0, 0 };
 
@@ -57,8 +59,16 @@ namespace se::physics {
 	}
 
 
+	bool ConstraintManager::hasConstraints() const
+	{
+		std::scoped_lock lck(mMutex);
+		return !mIslands.empty();
+	}
+
+
 	void ConstraintManager::removeConstraint(Constraint* constraint)
 	{
+		std::scoped_lock lck(mMutex);
 		for (ConstraintIsland& island : mIslands) {
 			if (island.removeConstraint(constraint)) {
 				if (!island.hasConstraints()) {
@@ -73,6 +83,7 @@ namespace se::physics {
 
 	void ConstraintManager::removeRigidBody(RigidBody* rigidBody)
 	{
+		std::scoped_lock lck(mMutex);
 		for (auto it = mIslands.begin(); it != mIslands.end();) {
 			if (it->removeRigidBody(rigidBody) && !it->hasConstraints()) {
 				it = mIslands.erase(it);
@@ -86,6 +97,8 @@ namespace se::physics {
 
 	void ConstraintManager::update(float deltaTime)
 	{
+		std::scoped_lock lck(mMutex);
+
 		// Get the Constraints of the RigidBodies whose properties have changed
 		std::vector<Constraint*> updatedConstraints;
 		for (ConstraintIsland& island : mIslands) {
