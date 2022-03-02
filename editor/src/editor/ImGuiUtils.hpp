@@ -11,7 +11,7 @@ namespace editor {
 		if (ImGui::BeginCombo(tag, buttonName)) {
 			repository.iterate<T>([&](const se::app::Repository::ResourceRef<T>& ref) {
 				bool isSelected = (ref == value);
-				if (ImGui::Selectable(ref.getResource().getName(), isSelected)) {
+				if (ImGui::Selectable(ref.getName().c_str(), isSelected)) {
 					value = ref;
 					ret = true;
 				}
@@ -29,18 +29,19 @@ namespace editor {
 	template <typename T>
 	bool addRepoDropdownShowSelected(const char* tag, se::app::Repository& repository, se::app::Repository::ResourceRef<T>& value)
 	{
-		const char* buttonName = (value)? value.getResource().getName() : "";
-		return addRepoDropdownButton<T>(tag, buttonName, repository, value);
+		std::string buttonName = (value)? value.getName() : "";
+		return addRepoDropdownButton<T>(tag, buttonName.c_str(), repository, value);
 	}
 
 
 	template <typename T>
-	void setRepoName(se::app::Resource<T>& resource, const char* name, se::app::Repository& repository)
+	void setRepoName(se::app::Repository::ResourceRef<T> resource, const char* name)
 	{
 		std::size_t i = 1;
 		std::string nameStr = name;
+		se::app::Repository* repository = resource.getParent();
 		while (true) {
-			if (!repository.findByName<T>(nameStr.c_str())) {
+			if (!repository->findByName<T>(nameStr.c_str())) {
 				resource.setName(nameStr.c_str());
 				return;
 			}

@@ -37,6 +37,10 @@ namespace se::graphics {
 		/** @return	the name of the IUniformVariable */
 		const std::string& getName() const { return mName; };
 
+		/** @return	true if the uniform variable was successfully loaded,
+		 *			false otherwise */
+		bool found() const { return (mUniformLocation >= 0); };
+
 		/** Loads the IUniformVariable
 		 *
 		 * @param	program a reference to the Program used for retrieving the

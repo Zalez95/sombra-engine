@@ -69,8 +69,8 @@ namespace game {
 		mShaderYellow = scene.repository.insert(std::make_shared<se::app::RenderableShader>(mLevel.getGame().getEventManager()), "shaderYellow");
 		mShaderYellow->addStep(stepYellow);
 
-		mLightYellow = scene.repository.emplace<se::app::LightSource>(mLevel.getGame().getEventManager(), se::app::LightSource::Type::Point);
-		mLightYellow.getResource().setName("yellow");
+		mLightYellow = scene.repository.emplace<se::app::LightSource>(mLevel.getGame().getEventManager(), se::app::LightSource::Type::Point)
+			.setName("yellow");
 		mLightYellow->setColor({ 1.0f, 1.0f, 0.0f });
 	}
 

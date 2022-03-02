@@ -84,7 +84,7 @@ namespace se::utils {
 		}
 		mCV.notify_one();
 
-		return std::move(future);
+		return future;
 	}
 
 }

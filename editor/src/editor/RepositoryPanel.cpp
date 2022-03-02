@@ -90,8 +90,8 @@ namespace editor {
 						if (cloned) {
 							cloned.setFakeUser();
 
-							setRepoName<T>(cloned.getResource(), mSelectedName.c_str(), repository);
-							mSelectedName = cloned.getResource().getName();
+							setRepoName<T>(cloned, mSelectedName.c_str());
+							mSelectedName = cloned.getName();
 						}
 					}
 				}
@@ -102,9 +102,9 @@ namespace editor {
 						ImGui::TableNextRow();
 
 						ImGui::TableSetColumnIndex(0);
-						bool isSelected = (value.getResource().getName() == mSelectedName);
-						if (ImGui::Selectable(value.getResource().getName(), isSelected)) {
-							mSelectedName = value.getResource().getName();
+						bool isSelected = (value.getName() == mSelectedName);
+						if (ImGui::Selectable(value.getName().c_str(), isSelected)) {
+							mSelectedName = value.getName();
 						}
 
 						ImGui::TableSetColumnIndex(1);
@@ -124,26 +124,26 @@ namespace editor {
 				auto selected = repository.findByName<T>(mSelectedName.c_str());
 				if (selected) {
 					std::array<char, kMaxNameSize> nameBuffer = {};
-					std::strcpy(nameBuffer.data(), selected.getResource().getName());
+					std::strcpy(nameBuffer.data(), selected.getName().c_str());
 					std::string name = "Name" + getIdPrefix() + "TypeNode::name";
 					if (ImGui::InputText(name.c_str(), nameBuffer.data(), nameBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
-						setRepoName<T>(selected.getResource(), nameBuffer.data(), repository);
-						mSelectedName = selected.getResource().getName();
+						setRepoName<T>(selected, nameBuffer.data());
+						mSelectedName = selected.getName();
 					}
 
 					std::array<char, 4 * kMaxNameSize> pathBuffer = {};
-					std::strcpy(pathBuffer.data(), selected.getResource().getPath().data());
+					std::strcpy(pathBuffer.data(), selected.getPath().data());
 					std::string path = "Path" + getIdPrefix() + "TypeNode::path";
 					if (ImGui::InputText(path.c_str(), pathBuffer.data(), pathBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
-						selected.getResource().setPath(pathBuffer.data());
+						selected.setPath(pathBuffer.data());
 					}
 
-					if (selected.getResource().isLinked()) {
+					if (selected.isLinked()) {
 						ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 						ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 					}
 					draw(repository, selected);
-					if (selected.getResource().isLinked()) {
+					if (selected.isLinked()) {
 						ImGui::PopItemFlag();
 						ImGui::PopStyleVar();
 					}
@@ -428,9 +428,9 @@ namespace editor {
 				FormatId::MonoFloat, audioFile.getSampleRate()
 			);
 
-			auto buffer = repository.insert(std::move(bufferSPtr), mNameBuffer.data());
-			buffer.getResource().setPath(path);
-			buffer.setFakeUser();
+			auto buffer = repository.insert(std::move(bufferSPtr), mNameBuffer.data())
+				.setPath(path)
+				.setFakeUser();
 
 			return Result();
 		};
@@ -462,12 +462,12 @@ namespace editor {
 					force.setFakeUser(false);
 
 					gravity = std::make_shared<Gravity>();
-					auto force2 = repository.insert<Force>(gravity);
-					force2.setFakeUser(true);
-					force2.getResource().setName(force.getResource().getName());
-					force2.getResource().setPath(force.getResource().getPath());
-					if (force.getResource().isLinked()) {
-						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					auto force2 = repository.insert<Force>(gravity)
+						.setFakeUser(true)
+						.setName(force.getName())
+						.setPath(force.getPath());
+					if (force.isLinked()) {
+						force2.setLinkedFile(force.getLinkedFile());
 					}
 				}
 				drawGravity(*gravity);
@@ -477,12 +477,12 @@ namespace editor {
 					force.setFakeUser(false);
 
 					punctual = std::make_shared<PunctualForce>();
-					auto force2 = repository.insert<Force>(punctual);
-					force2.setFakeUser(true);
-					force2.getResource().setName(force.getResource().getName());
-					force2.getResource().setPath(force.getResource().getPath());
-					if (force.getResource().isLinked()) {
-						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					auto force2 = repository.insert<Force>(punctual)
+						.setFakeUser(true)
+						.setName(force.getName())
+						.setPath(force.getPath());
+					if (force.isLinked()) {
+						force2.setLinkedFile(force.getLinkedFile());
 					}
 				}
 				drawPunctualForce(*punctual);
@@ -492,12 +492,12 @@ namespace editor {
 					force.setFakeUser(false);
 
 					directional = std::make_shared<DirectionalForce>();
-					auto force2 = repository.insert<Force>(directional);
-					force2.setFakeUser(true);
-					force2.getResource().setName(force.getResource().getName());
-					force2.getResource().setPath(force.getResource().getPath());
-					if (force.getResource().isLinked()) {
-						force2.getResource().setLinkedFile(force.getResource().getLinkedFile());
+					auto force2 = repository.insert<Force>(directional)
+						.setFakeUser(true)
+						.setName(force.getName())
+						.setPath(force.getPath());
+					if (force.isLinked()) {
+						force2.setLinkedFile(force.getLinkedFile());
 					}
 				}
 				drawDirectionalForce(*directional);
@@ -636,9 +636,9 @@ namespace editor {
 					context, program
 				);
 				if (result) {
-					auto programResource = repository.insert(std::make_shared<ProgramRef>(program), mNameBuffer.data());
-					programResource.setFakeUser();
-					programResource.getResource().setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
+					auto programResource = repository.insert(std::make_shared<ProgramRef>(program), mNameBuffer.data())
+						.setFakeUser()
+						.setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
 					mNameBuffer.fill(0);
 					ret = true;
 				}
@@ -665,6 +665,26 @@ namespace editor {
 
 	class RepositoryPanel::RenderableShaderStepNode : public RepositoryPanel::TypeNode<RenderableShaderStep>
 	{
+	private:	// Nested types
+		using BindableData = std::array<char, sizeof(glm::mat4)>;
+
+		struct BindableMetadata
+		{
+			enum class Type
+			{
+				VInt, VUInt, VFloat, VVec2, VIVec2, VVec3, VIVec3, VVec4, VIVec4, VMat3, VMat4, VMat3x4,
+				VVInt, VVUInt, VVFloat, VVVec2, VVIVec2, VVVec3, VVIVec3, VVVec4, VVIVec4, VVMat3, VVMat4, VVMat3x4,
+				SetOperation
+			};
+
+			Context::BindableRef bindable;
+			Type type;
+			std::size_t iStart;
+			std::size_t iEnd;
+			std::string name;
+			bool found;
+		};
+
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer = {};
 		int mRendererSelected = -1;
@@ -672,6 +692,9 @@ namespace editor {
 		int mSubTypeSelected = -1;
 		std::array<char, kMaxNameSize> mUniformName = {};
 		std::string mNameSelected;
+		std::vector<BindableData> mBindablesData;
+		std::vector<BindableMetadata> mBindablesMetadata;
+		std::mutex mBindablesMutex;
 
 	public:		// Functions
 		RenderableShaderStepNode(RepositoryPanel& panel) : TypeNode(panel) {};
@@ -727,7 +750,7 @@ namespace editor {
 		};
 	private:
 		void addBindable(Repository& repository, RenderableShaderStep& step)
-		{/*TODO:
+		{
 			const char* bindableTypeTags[] = { "UniformVariableValue", "UniformVariableValueVector", "Texture", "Program", "SetOperation" };
 			const char* uniformTypeTags[] = { "int", "unsigned int", "float", "vec2", "ivec2", "vec3", "ivec3", "vec4", "ivec4", "mat3", "mat4", "mat3x4" };
 			const char* operationTypeTags[] = { "Culling", "DepthTest", "StencilTest", "ScissorTest", "Blending" };
@@ -751,14 +774,14 @@ namespace editor {
 					std::string name1 = "Texture" + getIdPrefix() + "RenderableShaderStepNode::Texture";
 					auto texture = repository.findByName<Texture>(mNameSelected.c_str());
 					if (addRepoDropdownShowSelected(name1.c_str(), repository, texture)) {
-						mNameSelected = texture.getResource().getName();
+						mNameSelected = texture.getName();
 					}
 				} break;
 				case 3: {
 					std::string name1 = "Program" + getIdPrefix() + "RenderableShaderStepNode::Program";
 					auto program = repository.findByName<Program>(mNameSelected.c_str());
 					if (addRepoDropdownShowSelected(name1.c_str(), repository, program)) {
-						mNameSelected = program.getResource().getName();
+						mNameSelected = program.getName();
 					}
 				} break;
 				case 4: {
@@ -770,72 +793,83 @@ namespace editor {
 			}
 
 			std::string name1 = "Add" + getIdPrefix() + "RenderableShaderStepNode::Add";
+			auto& context = getEditor().getExternalTools().graphicsEngine->getContext();
 			if (ImGui::Button(name1.c_str())) {
 				switch (mBindableTypeSelected) {
 					case 0: {
-						std::shared_ptr<Program> program;
-						step.processPrograms([&](const auto& tmp) { program = tmp.get(); });
+						Context::BindableRef bRef;
 						switch (mSubTypeSelected) {
-							case 0:		step.addBindable( std::make_shared<UniformVariableValue<int>>(mUniformName.data(), program) );				break;
-							case 1:		step.addBindable( std::make_shared<UniformVariableValue<unsigned int>>(mUniformName.data(), program) );		break;
-							case 2:		step.addBindable( std::make_shared<UniformVariableValue<float>>(mUniformName.data(), program) );			break;
-							case 3:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec2>>(mUniformName.data(), program) );		break;
-							case 4:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec2>>(mUniformName.data(), program) );		break;
-							case 5:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec3>>(mUniformName.data(), program) );		break;
-							case 6:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec3>>(mUniformName.data(), program) );		break;
-							case 7:		step.addBindable( std::make_shared<UniformVariableValue<glm::vec4>>(mUniformName.data(), program) );		break;
-							case 8:		step.addBindable( std::make_shared<UniformVariableValue<glm::ivec4>>(mUniformName.data(), program) );		break;
-							case 9:		step.addBindable( std::make_shared<UniformVariableValue<glm::mat3>>(mUniformName.data(), program) );		break;
-							case 10:	step.addBindable( std::make_shared<UniformVariableValue<glm::mat4>>(mUniformName.data(), program) );		break;
-							default:	step.addBindable( std::make_shared<UniformVariableValue<glm::mat3x4>>(mUniformName.data(), program) );		break;
+							case 0:		bRef = context.create<UniformVariableValue<int>>(mUniformName.data());			break;
+							case 1:		bRef = context.create<UniformVariableValue<unsigned int>>(mUniformName.data());	break;
+							case 2:		bRef = context.create<UniformVariableValue<float>>(mUniformName.data());		break;
+							case 3:		bRef = context.create<UniformVariableValue<glm::vec2>>(mUniformName.data());	break;
+							case 4:		bRef = context.create<UniformVariableValue<glm::ivec2>>(mUniformName.data());	break;
+							case 5:		bRef = context.create<UniformVariableValue<glm::vec3>>(mUniformName.data());	break;
+							case 6:		bRef = context.create<UniformVariableValue<glm::ivec3>>(mUniformName.data());	break;
+							case 7:		bRef = context.create<UniformVariableValue<glm::vec4>>(mUniformName.data());	break;
+							case 8:		bRef = context.create<UniformVariableValue<glm::ivec4>>(mUniformName.data());	break;
+							case 9:		bRef = context.create<UniformVariableValue<glm::mat3>>(mUniformName.data());	break;
+							case 10:	bRef = context.create<UniformVariableValue<glm::mat4>>(mUniformName.data());	break;
+							default:	bRef = context.create<UniformVariableValue<glm::mat3x4>>(mUniformName.data());	break;
 						}
+
+						ProgramRef program;
+						step.processPrograms([&](const auto& tmp) { program = *tmp; });
+						context.execute([=](auto& q) { dynamic_cast<IUniformVariable*>(q.getBindable(bRef))->load(*q.getTBindable(program)); });
+
+						step.addBindable(bRef);
 					} break;
 					case 1: {
-						std::shared_ptr<Program> program;
-						step.processPrograms([&](const auto& tmp) { program = tmp.get(); });
+						Context::BindableRef bRef;
 						switch (mSubTypeSelected) {
-							case 0:		step.addBindable( std::make_shared<UniformVariableValueVector<int>>(mUniformName.data(), program) );			break;
-							case 1:		step.addBindable( std::make_shared<UniformVariableValueVector<unsigned int>>(mUniformName.data(), program) );	break;
-							case 2:		step.addBindable( std::make_shared<UniformVariableValueVector<float>>(mUniformName.data(), program) );			break;
-							case 3:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec2>>(mUniformName.data(), program) );		break;
-							case 4:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec2>>(mUniformName.data(), program) );		break;
-							case 5:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec3>>(mUniformName.data(), program) );		break;
-							case 6:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec3>>(mUniformName.data(), program) );		break;
-							case 7:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::vec4>>(mUniformName.data(), program) );		break;
-							case 8:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::ivec4>>(mUniformName.data(), program) );		break;
-							case 9:		step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3>>(mUniformName.data(), program) );		break;
-							case 10:	step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat4>>(mUniformName.data(), program) );		break;
-							default:	step.addBindable( std::make_shared<UniformVariableValueVector<glm::mat3x4>>(mUniformName.data(), program) );	break;
+							case 0:		bRef = context.create<UniformVariableValueVector<int>>(mUniformName.data());			break;
+							case 1:		bRef = context.create<UniformVariableValueVector<unsigned int>>(mUniformName.data());	break;
+							case 2:		bRef = context.create<UniformVariableValueVector<float>>(mUniformName.data());			break;
+							case 3:		bRef = context.create<UniformVariableValueVector<glm::vec2>>(mUniformName.data());		break;
+							case 4:		bRef = context.create<UniformVariableValueVector<glm::ivec2>>(mUniformName.data());		break;
+							case 5:		bRef = context.create<UniformVariableValueVector<glm::vec3>>(mUniformName.data());		break;
+							case 6:		bRef = context.create<UniformVariableValueVector<glm::ivec3>>(mUniformName.data());		break;
+							case 7:		bRef = context.create<UniformVariableValueVector<glm::vec4>>(mUniformName.data());		break;
+							case 8:		bRef = context.create<UniformVariableValueVector<glm::ivec4>>(mUniformName.data());		break;
+							case 9:		bRef = context.create<UniformVariableValueVector<glm::mat3>>(mUniformName.data());		break;
+							case 10:	bRef = context.create<UniformVariableValueVector<glm::mat4>>(mUniformName.data());		break;
+							default:	bRef = context.create<UniformVariableValueVector<glm::mat3x4>>(mUniformName.data());	break;
 						}
+
+						ProgramRef program;
+						step.processPrograms([&](const auto& tmp) { program = *tmp; });
+						context.execute([=](auto& q) { dynamic_cast<IUniformVariable*>(q.getBindable(bRef))->load(*q.getTBindable(program)); });
+
+						step.addBindable(bRef);
 					} break;
 					case 2: {
-						if (auto texture = repository.findByName<Texture>(mNameSelected.c_str())) {
+						if (auto texture = repository.findByName<TextureRef>(mNameSelected.c_str())) {
 							step.addResource(texture);
 						}
 					} break;
 					case 3: {
-						if (auto program = repository.findByName<Program>(mNameSelected.c_str())) {
+						if (auto program = repository.findByName<ProgramRef>(mNameSelected.c_str())) {
 							step.addResource(program);
 						}
 					} break;
 					default: {
 						switch (mSubTypeSelected) {
-							case 0:		step.addBindable(std::make_shared<SetOperation>(Operation::Culling));		break;
-							case 1:		step.addBindable(std::make_shared<SetOperation>(Operation::DepthTest));		break;
-							case 2:		step.addBindable(std::make_shared<SetOperation>(Operation::StencilTest));	break;
-							case 3:		step.addBindable(std::make_shared<SetOperation>(Operation::ScissorTest));	break;
-							default:	step.addBindable(std::make_shared<SetOperation>(Operation::Blending));		break;
+							case 0:		step.addBindable(context.create<SetOperation>(Operation::Culling));		break;
+							case 1:		step.addBindable(context.create<SetOperation>(Operation::DepthTest));	break;
+							case 2:		step.addBindable(context.create<SetOperation>(Operation::StencilTest));	break;
+							case 3:		step.addBindable(context.create<SetOperation>(Operation::ScissorTest));	break;
+							default:	step.addBindable(context.create<SetOperation>(Operation::Blending));	break;
 						}
 					} break;
 				}
 			}
-		*/};
+		};
 
 		void showBindables(Repository& repository, RenderableShaderStep& step)
-		{/*TODO:
+		{
 			std::size_t numBindables = 0;
 
-			Repository::ResourceRef<Program> programToRemove;
+			Repository::ResourceRef<ProgramRef> programToRemove;
 			step.processPrograms([&](const auto& program) {
 				std::size_t bindableIndex = numBindables++;
 
@@ -845,7 +879,7 @@ namespace editor {
 				}
 				ImGui::SameLine();
 
-				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
+				std::string treeId = getIdPrefix() + "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
 				if (!ImGui::TreeNode(treeId.c_str(), "Program")) { return; }
 				auto program2 = program;
 				std::string name1 = getIdPrefix() + "RenderableShaderStepNode::ChangeProgram" + std::to_string(bindableIndex);
@@ -859,7 +893,7 @@ namespace editor {
 				step.removeResource(programToRemove);
 			}
 
-			Repository::ResourceRef<Texture> textureToRemove;
+			Repository::ResourceRef<TextureRef> textureToRemove;
 			step.processTextures([&](const auto& texture) {
 				std::size_t bindableIndex = numBindables++;
 
@@ -869,8 +903,8 @@ namespace editor {
 				}
 				ImGui::SameLine();
 
-				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
-				if (!ImGui::TreeNode(treeId.c_str(), "Texture (Unit %d)", texture->getTextureUnit())) { return; }
+				std::string treeId = getIdPrefix() + "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
+				if (!ImGui::TreeNode(treeId.c_str(), "Texture")) { return; }
 				auto texture2 = texture;
 				std::string name1 = getIdPrefix() + "RenderableShaderStepNode::ChangeTexture" + std::to_string(bindableIndex);
 				if (addRepoDropdownShowSelected(name1.c_str(), repository, texture2)) {
@@ -883,314 +917,671 @@ namespace editor {
 				step.removeResource(textureToRemove);
 			}
 
-			std::shared_ptr<Bindable> bindableToRemove;
 			step.processBindables([&](const auto& bindable) {
-				if (std::dynamic_pointer_cast<Program>(bindable) || std::dynamic_pointer_cast<Texture>(bindable)) {
-					return;
-				}
+				if (ProgramRef::from(bindable) || TextureRef::from(bindable)) { return; }
 
+				if (auto uniform1 = Context::TBindableRef<UniformVariableValue<int>>::from(bindable)) {
+					uniform1.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(int));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VInt, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform2 = Context::TBindableRef<UniformVariableValue<unsigned int>>::from(bindable)) {
+					uniform2.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(unsigned int));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VUInt, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform3 = Context::TBindableRef<UniformVariableValue<float>>::from(bindable)) {
+					uniform3.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(float));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VFloat, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform4 = Context::TBindableRef<UniformVariableValue<glm::vec2>>::from(bindable)) {
+					uniform4.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::vec2));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVec2, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform5 = Context::TBindableRef<UniformVariableValue<glm::ivec2>>::from(bindable)) {
+					uniform5.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::ivec2));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VIVec2, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform6 = Context::TBindableRef<UniformVariableValue<glm::vec3>>::from(bindable)) {
+					uniform6.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::vec3));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVec3, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform7 = Context::TBindableRef<UniformVariableValue<glm::ivec3>>::from(bindable)) {
+					uniform7.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::ivec3));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VIVec3, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform8 = Context::TBindableRef<UniformVariableValue<glm::vec4>>::from(bindable)) {
+					uniform8.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::vec4));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVec4, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform9 = Context::TBindableRef<UniformVariableValue<glm::ivec4>>::from(bindable)) {
+					uniform9.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::ivec4));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VIVec4, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform10 = Context::TBindableRef<UniformVariableValue<glm::mat3>>::from(bindable)) {
+					uniform10.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::mat3));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VMat3, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform11 = Context::TBindableRef<UniformVariableValue<glm::mat4>>::from(bindable)) {
+					uniform11.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::mat4));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VMat4, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform12 = Context::TBindableRef<UniformVariableValue<glm::mat3x4>>::from(bindable)) {
+					uniform12.edit([=](auto& uniform) {
+						BindableData bd;
+						std::memcpy(&bd, &uniform.getValue(), sizeof(glm::mat3x4));
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VMat3x4, mBindablesData.size() - 1, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform13 = Context::TBindableRef<UniformVariableValueVector<int>>::from(bindable)) {
+					uniform13.edit([=](auto& uniform) {
+						const int* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(int));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVInt, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform14 = Context::TBindableRef<UniformVariableValueVector<unsigned int>>::from(bindable)) {
+					uniform14.edit([=](auto& uniform) {
+						const unsigned int* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(unsigned int));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVUInt, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform15 = Context::TBindableRef<UniformVariableValueVector<float>>::from(bindable)) {
+					uniform15.edit([=](auto& uniform) {
+						const float* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(float));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVFloat, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform16 = Context::TBindableRef<UniformVariableValueVector<glm::vec2>>::from(bindable)) {
+					uniform16.edit([=](auto& uniform) {
+						const glm::vec2* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::vec2));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVVec2, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform17 = Context::TBindableRef<UniformVariableValueVector<glm::ivec2>>::from(bindable)) {
+					uniform17.edit([=](auto& uniform) {
+						const glm::ivec2* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::ivec2));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVIVec2, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform18 = Context::TBindableRef<UniformVariableValueVector<glm::vec3>>::from(bindable)) {
+					uniform18.edit([=](auto& uniform) {
+						const glm::vec3* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::vec3));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVVec3, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform19 = Context::TBindableRef<UniformVariableValueVector<glm::ivec3>>::from(bindable)) {
+					uniform19.edit([=](auto& uniform) {
+						const glm::ivec3* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::ivec3));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVIVec3, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform20 = Context::TBindableRef<UniformVariableValueVector<glm::vec4>>::from(bindable)) {
+					uniform20.edit([=](auto& uniform) {
+						const glm::vec4* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::vec4));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVVec4, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform21 = Context::TBindableRef<UniformVariableValueVector<glm::ivec4>>::from(bindable)) {
+					uniform21.edit([=](auto& uniform) {
+						const glm::ivec4* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::ivec4));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVIVec4, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform22 = Context::TBindableRef<UniformVariableValueVector<glm::mat3>>::from(bindable)) {
+					uniform22.edit([=](auto& uniform) {
+						const glm::mat3* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::mat3));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVMat3, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform23 = Context::TBindableRef<UniformVariableValueVector<glm::mat4>>::from(bindable)) {
+					uniform23.edit([=](auto& uniform) {
+						const glm::mat4* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::mat4));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVMat4, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto uniform24 = Context::TBindableRef<UniformVariableValueVector<glm::mat3x4>>::from(bindable)) {
+					uniform24.edit([=](auto& uniform) {
+						const glm::mat3x4* valuePtr;	std::size_t valueSize;
+						uniform.getValue(valuePtr, valueSize);
+						std::scoped_lock lock(mBindablesMutex);
+						for (std::size_t i = 0; i < valueSize; ++i) {
+							BindableData bd;
+							std::memcpy(&bd, &valuePtr[i], sizeof(glm::mat3x4));
+							mBindablesData.push_back(bd);
+						}
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::VVMat3x4, mBindablesData.size() - valueSize, mBindablesData.size(), uniform.getName(), uniform.found() });
+					});
+				}
+				else if (auto setOperation = Context::TBindableRef<SetOperation>::from(bindable)) {
+					setOperation.edit([=](auto& setOperation2) {
+						BindableData bd;
+						bool enable = setOperation2.getEnable();
+						std::memcpy(&bd, &enable, sizeof(bool));
+						const char* operation = (setOperation2.getOperation() == Operation::Culling)? "Culling" :
+												(setOperation2.getOperation() == Operation::DepthTest)? "DepthTest" :
+												(setOperation2.getOperation() == Operation::ScissorTest)? "ScissorTest" :
+												"Blending";
+						std::scoped_lock lock(mBindablesMutex);
+						mBindablesData.push_back(bd);
+						mBindablesMetadata.push_back({ bindable, BindableMetadata::Type::SetOperation, mBindablesData.size() - 1, mBindablesData.size(), operation, true });
+					});
+				}
+			});
+
+			Context::BindableRef bindableToRemove;
+			std::vector<BindableData> bindablesData;
+			std::vector<BindableMetadata> bindablesMetadata;
+			{
+				std::scoped_lock lock(mBindablesMutex);
+				std::swap(bindablesData, mBindablesData);
+				std::swap(bindablesMetadata, mBindablesMetadata);
+			}
+			for (const auto& bmd : bindablesMetadata) {
 				std::size_t bindableIndex = numBindables++;
 
 				std::string name = "x" + getIdPrefix() + "RenderableShaderStepNode::remove" + std::to_string(bindableIndex);
 				if (ImGui::Button(name.c_str())) {
-					bindableToRemove = bindable;
+					bindableToRemove = bmd.bindable;
 				}
 				ImGui::SameLine();
 
-				std::string treeId = "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
-				if (auto uniform1 = std::dynamic_pointer_cast<UniformVariableValue<int>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<int>, %d)", uniform1->getName().c_str(), uniform1->found())) { return; }
-					if (int value = uniform1->getValue(); ImGui::DragInt("Value", &value, 1, -INT_MAX, INT_MAX)) {
-						uniform1->setValue(value);
+				std::string treeId = getIdPrefix() + "RenderableShaderStepNode::bindable" + std::to_string(bindableIndex);
+				if (bmd.type == BindableMetadata::Type::VInt) {
+					int value = *reinterpret_cast<int*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<int>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragInt("Value", &value, 1, -INT_MAX, INT_MAX)) {
+							Context::TBindableRef<UniformVariableValue<int>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform2 = std::dynamic_pointer_cast<UniformVariableValue<unsigned int>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<unsigned int>, %d)", uniform2->getName().c_str(), uniform2->found())) { return; }
-					if (unsigned int value = uniform2->getValue(); ImGui::DragInt("Value", reinterpret_cast<int*>(&value), 1, 0, INT_MAX)) {
-						uniform2->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VUInt) {
+					unsigned int value = *reinterpret_cast<unsigned int*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<unsigned int>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragInt("Value", reinterpret_cast<int*>(&value), 1, 0, INT_MAX)) {
+							Context::TBindableRef<UniformVariableValue<unsigned int>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform3 = std::dynamic_pointer_cast<UniformVariableValue<float>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<float>, %d)", uniform3->getName().c_str(), uniform3->found())) { return; }
-					if (float value = uniform3->getValue(); ImGui::DragFloat("Value", &value, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
-						uniform3->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VFloat) {
+					float value = *reinterpret_cast<float*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<float>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragFloat("Value", &value, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+							Context::TBindableRef<UniformVariableValue<float>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform4 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec2>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec2>, %d)", uniform4->getName().c_str(), uniform4->found())) { return; }
-					if (glm::vec2 value = uniform4->getValue(); ImGui::DragFloat2("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
-						uniform4->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VVec2) {
+					glm::vec2 value = *reinterpret_cast<glm::vec2*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec2>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragFloat2("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+							Context::TBindableRef<UniformVariableValue<glm::vec2>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform5 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec2>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec2>, %d)", uniform5->getName().c_str(), uniform5->found())) { return; }
-					if (glm::ivec2 value = uniform5->getValue(); ImGui::DragInt2("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
-						uniform5->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VIVec2) {
+					glm::ivec2 value = *reinterpret_cast<glm::ivec2*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec2>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragInt2("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
+							Context::TBindableRef<UniformVariableValue<glm::ivec2>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform6 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec3>, %d)", uniform6->getName().c_str(), uniform6->found())) { return; }
-					if (glm::vec3 value = uniform6->getValue(); ImGui::DragFloat3("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
-						uniform6->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VVec3) {
+					glm::vec3 value = *reinterpret_cast<glm::vec3*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec3>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragFloat3("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+							Context::TBindableRef<UniformVariableValue<glm::vec3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform7 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec3>, %d)", uniform7->getName().c_str(), uniform7->found())) { return; }
-					if (glm::ivec3 value = uniform7->getValue(); ImGui::DragInt3("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
-						uniform7->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VIVec3) {
+					glm::ivec3 value = *reinterpret_cast<glm::ivec3*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec3>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragInt3("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
+							Context::TBindableRef<UniformVariableValue<glm::ivec3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform8 = std::dynamic_pointer_cast<UniformVariableValue<glm::vec4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec4>, %d)", uniform8->getName().c_str(), uniform8->found())) { return; }
-					if (glm::vec4 value = uniform8->getValue(); ImGui::DragFloat4("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
-						uniform8->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VVec4) {
+					glm::vec4 value = *reinterpret_cast<glm::vec4*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<vec4>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragFloat4("Value", glm::value_ptr(value), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+							Context::TBindableRef<UniformVariableValue<glm::vec4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform9 = std::dynamic_pointer_cast<UniformVariableValue<glm::ivec4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec4>, %d)", uniform9->getName().c_str(), uniform9->found())) { return; }
-					if (glm::ivec4 value = uniform9->getValue(); ImGui::DragInt4("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
-						uniform9->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VIVec4) {
+					glm::ivec4 value = *reinterpret_cast<glm::ivec4*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<ivec4>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (ImGui::DragInt4("Value", glm::value_ptr(value), 0.005f, -INT_MAX, INT_MAX)) {
+							Context::TBindableRef<UniformVariableValue<glm::ivec4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform10 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat3>, %d)", uniform10->getName().c_str(), uniform10->found())) { return; }
-					glm::mat3 value = uniform10->getValue();
-					if (drawMat3ImGui("value", value)) {
-						uniform10->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VMat3) {
+					glm::mat3 value = *reinterpret_cast<glm::mat3*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat3>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (drawMat3ImGui("value", value)) {
+							Context::TBindableRef<UniformVariableValue<glm::mat3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform11 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat4>, %d)", uniform11->getName().c_str(), uniform11->found())) { return; }
-					glm::mat4 value = uniform11->getValue();
-					if (drawMat4ImGui("value", value)) {
-						uniform11->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VMat4) {
+					glm::mat4 value = *reinterpret_cast<glm::mat4*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat4>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (drawMat4ImGui("value", value)) {
+							Context::TBindableRef<UniformVariableValue<glm::mat4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform12 = std::dynamic_pointer_cast<UniformVariableValue<glm::mat3x4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat3x4>, %d)", uniform12->getName().c_str(), uniform12->found())) { return; }
-					glm::mat3x4 value = uniform12->getValue();
-					if (drawMat3x4ImGui("value", value)) {
-						uniform12->setValue(value);
+				else if (bmd.type == BindableMetadata::Type::VMat3x4) {
+					glm::mat3x4 value = *reinterpret_cast<glm::mat3x4*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "%s (Uniform<mat3x4>, %d)", bmd.name.c_str(), bmd.found)) {
+						if (drawMat3x4ImGui("value", value)) {
+							Context::TBindableRef<UniformVariableValue<glm::mat3x4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform13 = std::dynamic_pointer_cast<UniformVariableValueVector<int>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<int>, %d)", uniform13->getName().c_str(), uniform13->found())) { return; }
-					const int* valuePtr;	std::size_t valueSize;
-					uniform13->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<int> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragInt("Value", &v, 1, -INT_MAX, INT_MAX);
+				else if (bmd.type == BindableMetadata::Type::VVInt) {
+					std::vector<int> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<int*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform13->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<int>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (int& v : value) {
+							update |= ImGui::DragInt("Value", &v, 1, -INT_MAX, INT_MAX);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<int>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform14 = std::dynamic_pointer_cast<UniformVariableValueVector<unsigned int>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<unsigned int>, %d)", uniform14->getName().c_str(), uniform14->found())) { return; }
-					const unsigned int* valuePtr;	std::size_t valueSize;
-					uniform14->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<unsigned int> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragInt("Value", reinterpret_cast<int*>(&v), 1, 0, INT_MAX);
+				else if (bmd.type == BindableMetadata::Type::VVUInt) {
+					std::vector<unsigned int> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<unsigned int*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform14->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<unsigned int>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (unsigned int& v : value) {
+							update |= ImGui::DragInt("Value", reinterpret_cast<int*>(&v), 1, 0, INT_MAX);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<unsigned int>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform15 = std::dynamic_pointer_cast<UniformVariableValueVector<float>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<float>, %d)", uniform15->getName().c_str(), uniform15->found())) { return; }
-					const float* valuePtr;	std::size_t valueSize;
-					uniform15->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<float> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragFloat("Value", &v, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				else if (bmd.type == BindableMetadata::Type::VVFloat) {
+					std::vector<float> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<float*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform15->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<float>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (float& v : value) {
+							update |= ImGui::DragFloat("Value", &v, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<float>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform16 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec2>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec2>, %d)", uniform16->getName().c_str(), uniform16->found())) { return; }
-					const glm::vec2* valuePtr;
-					std::size_t valueSize;
-					uniform16->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::vec2> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragFloat2("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				else if (bmd.type == BindableMetadata::Type::VVVec2) {
+					std::vector<glm::vec2> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::vec2*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform16->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec2>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::vec2& v : value) {
+							update |= ImGui::DragFloat2("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::vec2>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform17 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec2>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec2>, %d)", uniform17->getName().c_str(), uniform17->found())) { return; }
-					const glm::ivec2* valuePtr;
-					std::size_t valueSize;
-					uniform17->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::ivec2> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragInt2("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+				else if (bmd.type == BindableMetadata::Type::VVIVec2) {
+					std::vector<glm::ivec2> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::ivec2*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform17->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec2>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::ivec2& v : value) {
+							update |= ImGui::DragInt2("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::ivec2>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform18 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec3>, %d)", uniform18->getName().c_str(), uniform18->found())) { return; }
-					const glm::vec3* valuePtr;
-					std::size_t valueSize;
-					uniform18->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::vec3> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragFloat3("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				else if (bmd.type == BindableMetadata::Type::VVVec3) {
+					std::vector<glm::vec3> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::vec3*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform18->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec3>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::vec3& v : value) {
+							update |= ImGui::DragFloat3("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::vec3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform19 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec3>, %d)", uniform19->getName().c_str(), uniform19->found())) { return; }
-					const glm::ivec3* valuePtr;
-					std::size_t valueSize;
-					uniform19->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::ivec3> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragInt3("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+				else if (bmd.type == BindableMetadata::Type::VVIVec3) {
+					std::vector<glm::ivec3> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::ivec3*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform19->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec3>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::ivec3& v : value) {
+							update |= ImGui::DragInt3("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::ivec3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform20 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::vec4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec4>, %d)", uniform20->getName().c_str(), uniform20->found())) { return; }
-					const glm::vec4* valuePtr;
-					std::size_t valueSize;
-					uniform20->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::vec4> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragFloat4("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+				else if (bmd.type == BindableMetadata::Type::VVVec4) {
+					std::vector<glm::vec4> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::vec4*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform20->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<vec4>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::vec4& v : value) {
+							update |= ImGui::DragFloat4("Value", glm::value_ptr(v), 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::vec4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform21 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::ivec4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec4>, %d)", uniform21->getName().c_str(), uniform21->found())) { return; }
-					const glm::ivec4* valuePtr;
-					std::size_t valueSize;
-					uniform21->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::ivec4> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= ImGui::DragInt4("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+				else if (bmd.type == BindableMetadata::Type::VVIVec4) {
+					std::vector<glm::ivec4> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::ivec4*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform21->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<ivec4>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::ivec4& v : value) {
+							update |= ImGui::DragInt4("Value", glm::value_ptr(v), 0.005f, -INT_MAX, INT_MAX);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::ivec4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform22 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat3>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat3>, %d)", uniform22->getName().c_str(), uniform22->found())) { return; }
-					const glm::mat3* valuePtr;
-					std::size_t valueSize;
-					uniform22->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::mat3> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= drawMat3ImGui("value", v);
+				else if (bmd.type == BindableMetadata::Type::VVMat3) {
+					std::vector<glm::mat3> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::mat3*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform22->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat3>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::mat3& v : value) {
+							update |= drawMat3ImGui("value", v);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::mat3>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform23 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat4>, %d)", uniform23->getName().c_str(), uniform23->found())) { return; }
-					const glm::mat4* valuePtr;
-					std::size_t valueSize;
-					uniform23->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::mat4> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= drawMat4ImGui("value", v);
+				else if (bmd.type == BindableMetadata::Type::VVMat4) {
+					std::vector<glm::mat4> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::mat4*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform23->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat4>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::mat4& v : value) {
+							update |= drawMat4ImGui("value", v);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::mat4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto uniform24 = std::dynamic_pointer_cast<UniformVariableValueVector<glm::mat3x4>>(bindable)) {
-					if (!ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat3x4>, %d)", uniform24->getName().c_str(), uniform24->found())) { return; }
-					const glm::mat3x4* valuePtr;
-					std::size_t valueSize;
-					uniform24->getValue(valuePtr, valueSize);
-
-					bool update = false;
-					std::vector<glm::mat3x4> value(valuePtr, valuePtr + valueSize);
-					for (auto& v : value) {
-						update |= drawMat3x4ImGui("value", v);
+				else if (bmd.type == BindableMetadata::Type::VVMat3x4) {
+					std::vector<glm::mat3x4> value;
+					for (std::size_t i = bmd.iStart; i < bmd.iEnd; ++i) {
+						value.push_back( *reinterpret_cast<glm::mat3x4*>(&bindablesData[bmd.iStart]) );
 					}
-					if (update) {
-						uniform24->setValue(value.data(), value.size());
+					if (ImGui::TreeNode(treeId.c_str(), "%s (UniformV<mat3x4>, %d)", bmd.name.c_str(), bmd.found)) {
+						bool update = false;
+						for (glm::mat3x4& v : value) {
+							update |= drawMat3x4ImGui("value", v);
+						}
+						if (update) {
+							Context::TBindableRef<UniformVariableValueVector<glm::mat3x4>>::from(bmd.bindable).edit([=](auto& uniform) {
+								uniform.setValue(value.data(), value.size());
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-				else if (auto setOperation = std::dynamic_pointer_cast<SetOperation>(bindable)) {
-					const char* operation = (setOperation->getOperation() == Operation::Culling)? "Culling" :
-											(setOperation->getOperation() == Operation::DepthTest)? "DepthTest" :
-											(setOperation->getOperation() == Operation::ScissorTest)? "ScissorTest" :
-											"Blending";
-					if (!ImGui::TreeNode(treeId.c_str(), "SetOperation %s", operation)) { return; }
-					bool enable = setOperation->getEnable();
-					if (ImGui::Checkbox("Enable", &enable)) {
-						setOperation->setEnable(enable);
+				else if (bmd.type == BindableMetadata::Type::SetOperation) {
+					bool value = *reinterpret_cast<bool*>(&bindablesData[bmd.iStart]);
+					if (ImGui::TreeNode(treeId.c_str(), "SetOperation %s", bmd.name.c_str())) {
+						if (ImGui::Checkbox("Enable", &value)) {
+							Context::TBindableRef<SetOperation>::from(bmd.bindable).edit([=](auto& setOperation2) {
+								setOperation2.setEnable(value);
+							});
+						}
+						ImGui::TreePop();
 					}
-					ImGui::TreePop();
 				}
-			});
+			}
 			if (bindableToRemove) {
 				step.removeBindable(bindableToRemove);
 			}
-		*/};
+		};
 	};
 
 
@@ -1369,7 +1760,7 @@ namespace editor {
 					auto cubeMapRef = TextureUtils::equirectangularToCubeMap(*texture, mCubeMapSize);
 					auto cubeMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(cubeMapRef));
 					cubeMap.setFakeUser(true);
-					setRepoName<TextureRef>(cubeMap.getResource(), (std::string(texture.getResource().getName()) + "CubeMap").c_str(), getEditor().getScene()->repository);
+					setRepoName<TextureRef>(cubeMap, (std::string(texture.getName()) + "CubeMap").c_str());
 				}
 				ImGui::TreePop();
 			}
@@ -1381,7 +1772,7 @@ namespace editor {
 					auto normalMapRef = TextureUtils::heightmapToNormalMapLocal(*texture, mNormalMapWidth, mNormalMapHeight);
 					auto normalMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(normalMapRef));
 					normalMap.setFakeUser(true);
-					setRepoName<TextureRef>(normalMap.getResource(), (std::string(texture.getResource().getName()) + "NormalMap").c_str(), getEditor().getScene()->repository);
+					setRepoName<TextureRef>(normalMap, (std::string(texture.getName()) + "NormalMap").c_str());
 				}
 				ImGui::TreePop();
 			}
@@ -1440,9 +1831,9 @@ namespace editor {
 				});
 			}
 
-			auto texture = repository.insert(std::make_shared<TextureRef>(textureRef), mNameBuffer.data());
-			texture.getResource().setPath(path);
-			texture.setFakeUser();
+			auto texture = repository.insert(std::make_shared<TextureRef>(textureRef), mNameBuffer.data())
+				.setPath(path)
+				.setFakeUser();
 
 			return Result();
 		};

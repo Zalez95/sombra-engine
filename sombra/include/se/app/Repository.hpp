@@ -1,9 +1,39 @@
 #ifndef REPOSITORY_HPP
 #define REPOSITORY_HPP
 
+#include <mutex>
 #include "../utils/MathUtils.h"
 
 namespace se::app {
+
+	/**
+	 * Class Resource, it holds a resource of type @tparam T and its metadata
+	 */
+	template <typename T>
+	struct Repository::Resource
+	{
+		/** A pointer to the Resource */
+		std::shared_ptr<T> resource;
+
+		/** The name of the Resource */
+		std::string name;
+
+		/** The index of the linked Scene file where the Resource is stored,
+		 * If it's negative then the Resource is located in the same
+		 * Scene file where the MetaResource is located */
+		int linkedFile = -1;
+
+		/** The path where the resource is located. If there are multiple
+		 * paths they will be separated by pipes (|), if it isn't located in any
+		 * file it will be empty. */
+		std::string path;
+
+		/** The number of Users of the current Resource. The last bit is used
+		 * as a "Fake" user, for preventing the Resource from being Removed
+		 * even if has no real users. */
+		std::size_t userCount = 0;
+	};
+
 
 	/**
 	 * Class IRepoTable, it's the Interface that every RepoTable must
@@ -27,6 +57,9 @@ namespace se::app {
 
 		/** The function used for clonying a Resource */
 		CloneCallback<T> cloneCallback;
+
+		/** The mutex used for protecting the Repository */
+		mutable std::recursive_mutex mutex;
 	};
 
 
@@ -110,41 +143,6 @@ namespace se::app {
 
 
 	template <typename T>
-	std::size_t Repository::ResourceRef<T>::getUserCount() const
-	{
-		if (mParent) {
-			return (mParent->at<T>(mIndex).mUserCount << 1) >> 1;
-		}
-		else {
-			return 0;
-		}
-	}
-
-
-	template <typename T>
-	bool Repository::ResourceRef<T>::hasFakeUser() const
-	{
-		if (mParent) {
-			std::size_t fakeBit = 1;
-			fakeBit <<= 8 * sizeof(size_t) - 1;
-			return (mParent->at<T>(mIndex).mUserCount & fakeBit) > 0;
-		}
-		else {
-			return false;
-		}
-	}
-
-
-	template <typename T>
-	void Repository::ResourceRef<T>::setFakeUser(bool fakeUser)
-	{
-		if (mParent) {
-			mParent->setFakeUser<T>(mIndex, fakeUser);
-		}
-	}
-
-
-	template <typename T>
 	void Repository::init(const CloneCallback<T>& cloneCB)
 	{
 		std::size_t id = getRepoTableTypeId<T>();
@@ -169,7 +167,7 @@ namespace se::app {
 	Repository::ResourceRef<T> Repository::emplace(Args&&... args)
 	{
 		auto it = getRepoTable<T>().data.emplace();
-		it->mResource = std::make_shared<T>(std::forward<Args>(args)...);
+		it->resource = std::make_shared<T>(std::forward<Args>(args)...);
 
 		return ResourceRef<T>(this, it.getIndex());
 	}
@@ -179,8 +177,8 @@ namespace se::app {
 	Repository::ResourceRef<T> Repository::insert(const std::shared_ptr<T>& value, const char* name)
 	{
 		auto it = getRepoTable<T>().data.emplace();
-		it->mResource = value;
-		it->mName = name;
+		it->resource = value;
+		it->name = name;
 
 		return ResourceRef<T>(this, it.getIndex());
 	}
@@ -196,10 +194,10 @@ namespace se::app {
 			auto value = table.cloneCallback(*resource);
 			if (value) {
 				ret = insert<T>(std::move(value));
-				ret.getResource().setName( resource.getResource().getName() );
-				ret.getResource().setPath( resource.getResource().getPath() );
-				if (resource.getResource().isLinked()) {
-					ret.getResource().setLinkedFile( resource.getResource().getLinkedFile() );
+				ret.setName( resource.getName() );
+				ret.setPath( resource.getPath() );
+				if (resource.isLinked()) {
+					ret.setLinkedFile( resource.getLinkedFile() );
 				}
 			}
 		}
@@ -212,6 +210,8 @@ namespace se::app {
 	Repository::ResourceRef<T> Repository::find(F&& compare) const
 	{
 		const auto& table = getRepoTable<T>();
+
+		std::scoped_lock lock(table.mutex);
 		for (auto it = table.data.begin(); it != table.data.end(); ++it) {
 			ResourceRef<T> ref(const_cast<Repository*>(this), it.getIndex());
 			if (compare(ref)) {
@@ -226,17 +226,16 @@ namespace se::app {
 	template <typename T>
 	Repository::ResourceRef<T> Repository::findByName(const char* name) const
 	{
-		return find<T>([name](const ResourceRef<T>& ref) {
-			return ref.getResource().mName == name;
+		return find<T>([&](const ResourceRef<T>& ref) {
+			return ref.getName() == name;
 		});
 	}
-
 
 
 	template <typename T>
 	Repository::ResourceRef<T> Repository::findResource(const T* resource) const
 	{
-		return find<T>([resource](const ResourceRef<T>& ref) {
+		return find<T>([&](const ResourceRef<T>& ref) {
 			return ref.get().get() == resource;
 		});
 	}
@@ -246,6 +245,8 @@ namespace se::app {
 	void Repository::iterate(F&& callback) const
 	{
 		const auto& table = getRepoTable<T>();
+
+		std::scoped_lock lock(table.mutex);
 		for (auto it = table.data.begin(); it != table.data.end(); ++it) {
 			callback(ResourceRef<T>(const_cast<Repository*>(this), it.getIndex()));
 		}
@@ -253,23 +254,92 @@ namespace se::app {
 
 // Private functions
 	template <typename T>
-	Resource<T>& Repository::at(std::size_t index)
+	std::shared_ptr<T> Repository::get(std::size_t index) const
 	{
-		return getRepoTable<T>().data[index];
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return table.data[index].resource;
 	}
 
 
 	template <typename T>
-	const Resource<T>& Repository::at(std::size_t index) const
+	std::string Repository::getName(std::size_t index) const
 	{
-		return getRepoTable<T>().data[index];
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return table.data[index].name;
+	}
+
+
+	template <typename T>
+	void Repository::setName(std::size_t index, const std::string& name)
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		table.data[index].name = name;
+	}
+
+
+	template <typename T>
+	int Repository::getLinkedFile(std::size_t index) const
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return table.data[index].linkedFile;
+	}
+
+
+	template <typename T>
+	void Repository::setLinkedFile(std::size_t index, int linkedFile)
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		table.data[index].linkedFile = linkedFile;
+	}
+
+
+	template <typename T>
+	std::string Repository::getPath(std::size_t index) const
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return table.data[index].path;
+	}
+
+
+	template <typename T>
+	void Repository::setPath(std::size_t index, const std::string& path)
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		table.data[index].path = path;
+	}
+
+
+	template <typename T>
+	std::size_t Repository::getUserCount(std::size_t index)
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return table.data[index].userCount;
 	}
 
 
 	template <typename T>
 	void Repository::addUser(std::size_t index)
 	{
-		getRepoTable<T>().data[index].mUserCount++;
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		table.data[index].userCount++;
+	}
+
+
+	template <typename T>
+	bool Repository::hasFakeUser(std::size_t index)
+	{
+		auto& table = getRepoTable<T>();
+		std::scoped_lock lock(table.mutex);
+		return static_cast<bool>(table.data[index].userCount >> (8 * sizeof(size_t) - 1));
 	}
 
 
@@ -277,15 +347,15 @@ namespace se::app {
 	void Repository::setFakeUser(std::size_t index, bool fakeUser)
 	{
 		auto& table = getRepoTable<T>();
-
+		std::scoped_lock lock(table.mutex);
 		if (fakeUser) {
 			std::size_t fakeBit = 1;
 			fakeBit <<= 8 * sizeof(size_t) - 1;
-			table.data[index].mUserCount |= fakeBit;
+			table.data[index].userCount |= fakeBit;
 		}
 		else {
-			table.data[index].mUserCount = (table.data[index].mUserCount << 1) >> 1;
-			if (table.data[index].mUserCount == 0) {
+			table.data[index].userCount = (table.data[index].userCount << 1) >> 1;
+			if (table.data[index].userCount == 0) {
 				table.data.erase( table.data.begin().setIndex(index) );
 			}
 		}
@@ -296,7 +366,8 @@ namespace se::app {
 	void Repository::removeUser(std::size_t index)
 	{
 		auto& table = getRepoTable<T>();
-		if (--table.data[index].mUserCount == 0) {
+		std::scoped_lock lock(table.mutex);
+		if (--table.data[index].userCount == 0) {
 			table.data.erase( table.data.begin().setIndex(index) );
 		}
 	}

@@ -10,75 +10,6 @@
 namespace se::app {
 
 	/**
-	 * Class Resource, it holds a resource of type @tparam T and
-	 * its metadata
-	 */
-	template <typename T>
-	class Resource
-	{
-	private:	// Attribute
-		friend class Repository;
-
-		/** A pointer to the Resource */
-		std::shared_ptr<T> mResource;
-
-		/** The name of the Resource */
-		std::string mName;
-
-		/** The index of the linked Scene file where the Resource is stored,
-		 * If it's negative then the Resource is located in the same
-		 * Scene file where the MetaResource is located */
-		int mLinkedFile = -1;
-
-		/** The path where the resource is located. If there are multiple
-		 * paths they will be separated by pipes (|), if it isn't located in any
-		 * file it will be empty. */
-		std::string mPath;
-
-		/** The number of Users of the current Resource. The last bit is used
-		 * as a "Fake" user, for preventing the Resource from being Removed
-		 * even if has no real users. */
-		std::size_t mUserCount = 0;
-
-	public:		// Functions
-		/** @return	a pointer to the Resource */
-		const std::shared_ptr<T>& getResource() const { return mResource; };
-
-		/** @return	the name of the Resource */
-		const char* getName() const { return mName.c_str(); };
-
-		/** Sets the name of the Resource
-		 *
-		 * @param	name the new Name of the Resource */
-		void setName(const char* name) { mName = name; };
-
-		/** @return	true if the Resource is stored in a linked Scene file,
-		 *			false otherwise */
-		bool isLinked() const { return mLinkedFile >= 0; };
-
-		/** @return	the index of the linked Scene file of the Resource */
-		std::size_t getLinkedFile() const { return mLinkedFile; };
-
-		/** Sets the index of the linked Scene file of the Resource
-		 *
-		 * @param	linkedFile the new index */
-		void setLinkedFile(std::size_t linkedFile)
-		{ mLinkedFile = static_cast<int>(linkedFile); };
-
-		/** Removes the linked file from the Resource */
-		void unLink() { mLinkedFile = -1; };
-
-		/** @return	the path where the Resource is located */
-		const std::string& getPath() const { return mPath; };
-
-		/** Sets the path where the Resource is located
-		 *
-		 * @param	path the new path */
-		void setPath(const std::string& path) { mPath = path; };
-	};
-
-
-	/**
 	 * Class Repository, it provides a single point for storing and accessing
 	 * to all the Elements of the given types. Resources are automatically
 	 * removed from the Repository if there are no references pointing to them.
@@ -86,112 +17,11 @@ namespace se::app {
 	class Repository
 	{
 	public:		// Nested types
-		/** Class ResourceRef, it's a reference to a Resource of the
-		 * Repository */
-		template <typename T>
-		class ResourceRef
-		{
-		public:		// Nested types
-			/** Struct HashFunc, used for calculating the hash value of
-			 * ResourceRefs */
-			struct HashFunc
-			{
-				/** Calculates the hash value of the given ResourceRef
-				 *
-				 * @param	ref the ResourceRef to calculate its hash value
-				 * @return	the hash value */
-				std::size_t operator()(const ResourceRef& ref) const;
-			};
-
-		private:	// Attributes
-			/** The Repository that holds the resource referenced */
-			Repository* mParent;
-
-			/** The index to the resource referenced in the Repository */
-			std::size_t mIndex;
-
-		public:
-			/** Creates a new ResourceRef
-			 *
-			 * @param	parent the Repository that holds the resource
-			 *			referenced
-			 * @param	index the index to the resource referenced in the
-			 *			Repository */
-			ResourceRef(Repository* parent = nullptr, std::size_t index = 0);
-			ResourceRef(const ResourceRef& other);
-			ResourceRef(ResourceRef&& other);
-
-			/** Class destructor */
-			~ResourceRef();
-
-			/** Assignment operator */
-			ResourceRef& operator=(const ResourceRef& other);
-			ResourceRef& operator=(ResourceRef&& other);
-
-			/** @return	true if the ResourceRef reference to any element,
-			 *			false otherwise */
-			operator bool() const { return mParent; };
-
-			/** Compares the given ResourceRefs
-			 *
-			 * @param	ref1 the first ResourceRef to compare
-			 * @param	ref2 the second ResourceRef to compare
-			 * @return	true if both ResourceRefs are equal, false otherwise */
-			friend bool operator==(
-				const ResourceRef& ref1, const ResourceRef& ref2
-			) { return (ref1.mParent == ref2.mParent)
-					&& (ref1.mIndex == ref2.mIndex); };
-
-			/** Compares the given ResourceRefs
-			 *
-			 * @param	ref1 the first ResourceRef to compare
-			 * @param	ref2 the second ResourceRef to compare
-			 * @return	true if both ResourceRefs are different, false
-			 *			otherwise */
-			friend bool operator!=(
-				const ResourceRef& ref1, const ResourceRef& ref2
-			) { return !(ref1 == ref2); };
-
-			/** @return	a reference to the Resource content */
-			const T& operator*() const { return *get(); };
-			T& operator*() { return *get(); };
-
-			/** @return	a raw pointer to the Resource content */
-			const T* operator->() const { return get().get(); };
-			T* operator->() { return get().get(); };
-
-			/** @return	a shared_ptr to the Resource content */
-			std::shared_ptr<T> get() const
-			{ return getResource().getResource(); };
-
-			/** @return	the Repository where the Resource is located */
-			Repository* getParent() const
-			{ return mParent; };
-
-			/** @return	a reference to the Resource structure stored */
-			Resource<T>& getResource()
-			{ return mParent->at<T>(mIndex); };
-			const Resource<T>& getResource() const
-			{ return mParent->at<T>(mIndex); };
-
-			/** @return	the number of users of the Resource */
-			std::size_t getUserCount() const;
-
-			/** @return	true if the Resource is preserved even if it has no
-			 *			users, false otherwise */
-			bool hasFakeUser() const;
-
-			/** Adds a Fake user to the Resource so it will be preserved even if
-			 * it has no real users
-			 *
-			 *@param	fakeUser true if we want to add a fake user, false if we
-			*			want to remove it */
-			void setFakeUser(bool fakeUser = true);
-		};
-
-		template <typename T>
-		using CloneCallback = std::function<std::unique_ptr<T>(const T&)>;
+		template <typename T> class ResourceRef;
+		template <typename T> using CloneCallback =
+			std::function<std::unique_ptr<T>(const T&)>;
 	private:
+		template <typename T> struct Resource;
 		struct IRepoTable;
 		template <typename T> struct RepoTable;
 		using IRepoTableUPtr = std::unique_ptr<IRepoTable>;
@@ -292,19 +122,59 @@ namespace se::app {
 		template <typename T, typename F>
 		void iterate(F&& callback) const;
 	private:
-		/** Returns the element with @tparam T type located at the given index
-		 *
-		 * @param	index the index of the element to retrieve
-		 * @return	the Resource element */
+		/** @return	a shared_ptr to the Resource content */
 		template <typename T>
-		Resource<T>& at(std::size_t index);
+		std::shared_ptr<T> get(std::size_t index) const;
 
-		/** Returns the element with @tparam T type located at the given index
+		/** Returns the name of the Resource
 		 *
-		 * @param	index the index of the element to retrieve
-		 * @return	the Resource element */
+		 * @param	index the index of the element to get its name
+		 * @return	the name of the Resource */
 		template <typename T>
-		const Resource<T>& at(std::size_t index) const;
+		std::string getName(std::size_t index) const;
+
+		/** Sets the name of the Resource
+		 *
+		 * @param	index the index of the element to set its name
+		 * @param	name the new name of the Resource */
+		template <typename T>
+		void setName(std::size_t index, const std::string& name);
+
+		/** Returns the linked file of the Resource
+		 *
+		 * @param	index the index of the element to get its linked file
+		 * @return	the index of the linked Scene file of the Resource */
+		template <typename T>
+		int getLinkedFile(std::size_t index) const;
+
+		/** Sets the index of the linked Scene file of the Resource
+		 *
+		 * @param	index the index of the element to set its linked file
+		 * @param	linkedFile the new index */
+		template <typename T>
+		void setLinkedFile(std::size_t index, int linkedFile);
+
+		/** Returns the path of the Resource
+		 *
+		 * @param	index the index of the element to get its path
+		 * @return	the path of the Resource */
+		template <typename T>
+		std::string getPath(std::size_t index) const;
+
+		/** Sets the path of the Resource
+		 *
+		 * @param	index the index of the element to set its path
+		 * @param	path the new path of the Resource */
+		template <typename T>
+		void setPath(std::size_t index, const std::string& path);
+
+		/** Returns the number of users of the Resource with @tparam T located
+		 * at the given index
+		 *
+		 * @param	index the index of the element to get its user count
+		 * @return	the number of users */
+		template <typename T>
+		std::size_t getUserCount(std::size_t index);
 
 		/** Adds a user to the element with @tparam T type located at the given
 		 * index
@@ -312,6 +182,14 @@ namespace se::app {
 		 * @param	index the index of the element to add a user */
 		template <typename T>
 		void addUser(std::size_t index);
+
+		/** Returns the Fake user of the Resource with @tparam T located
+		 * at the given index
+		 *
+		 * @param	index the index of the element to get its fake user
+		 * @return	true if the Resource has a fake user, false otherwise */
+		template <typename T>
+		bool hasFakeUser(std::size_t index);
 
 		/** Sets the Fake user to the Resource with @tparam T located
 		 * at the given index
@@ -339,6 +217,174 @@ namespace se::app {
 		 *			@tparam T type */
 		template <typename T>
 		RepoTable<T>& getRepoTable() const;
+	};
+
+
+	/** Class ResourceRef, it's a reference to a Resource of the Repository */
+	template <typename T>
+	class Repository::ResourceRef
+	{
+	public:		// Nested types
+		/** Struct HashFunc, used for calculating the hash value of
+		 * ResourceRefs */
+		struct HashFunc
+		{
+			/** Calculates the hash value of the given ResourceRef
+			 *
+			 * @param	ref the ResourceRef to calculate its hash value
+			 * @return	the hash value */
+			std::size_t operator()(const ResourceRef& ref) const;
+		};
+
+	private:	// Attributes
+		/** The Repository that holds the resource referenced */
+		Repository* mParent;
+
+		/** The index to the resource referenced in the Repository */
+		std::size_t mIndex;
+
+	public:
+		/** Creates a new ResourceRef
+		 *
+		 * @param	parent the Repository that holds the resource
+		 *			referenced
+		 * @param	index the index to the resource referenced in the
+		 *			Repository */
+		ResourceRef(Repository* parent = nullptr, std::size_t index = 0);
+		ResourceRef(const ResourceRef& other);
+		ResourceRef(ResourceRef&& other);
+
+		/** Class destructor */
+		~ResourceRef();
+
+		/** Assignment operator */
+		ResourceRef& operator=(const ResourceRef& other);
+		ResourceRef& operator=(ResourceRef&& other);
+
+		/** @return	true if the ResourceRef reference to any element,
+		 *			false otherwise */
+		operator bool() const { return mParent; };
+
+		/** Compares the given ResourceRefs
+		 *
+		 * @param	ref1 the first ResourceRef to compare
+		 * @param	ref2 the second ResourceRef to compare
+		 * @return	true if both ResourceRefs are equal, false otherwise */
+		friend bool operator==(
+			const ResourceRef& ref1, const ResourceRef& ref2
+		) { return (ref1.mParent == ref2.mParent)
+				&& (ref1.mIndex == ref2.mIndex); };
+
+		/** Compares the given ResourceRefs
+		 *
+		 * @param	ref1 the first ResourceRef to compare
+		 * @param	ref2 the second ResourceRef to compare
+		 * @return	true if both ResourceRefs are different, false otherwise */
+		friend bool operator!=(
+			const ResourceRef& ref1, const ResourceRef& ref2
+		) { return !(ref1 == ref2); };
+
+		/** @return	a reference to the Resource content */
+		const T& operator*() const { return *get(); };
+		T& operator*() { return *get(); };
+
+		/** @return	a raw pointer to the Resource content */
+		const T* operator->() const { return get().get(); };
+		T* operator->() { return get().get(); };
+
+		/** @return	a shared_ptr to the Resource content */
+		std::shared_ptr<T> get() const
+		{ return mParent? mParent->get<T>(mIndex) : nullptr; };
+
+		/** @return	the Repository that holds the resource referenced */
+		Repository* getParent() const { return mParent; };
+
+		/** @return	the name of the Resource */
+		std::string getName() const
+		{ return mParent? mParent->getName<T>(mIndex) : ""; };
+
+		/** Sets the name of the Resource
+		 *
+		 * @param	name the new Name of the Resource
+		 * @return	a reference to the current ResourceRef */
+		ResourceRef& setName(const std::string& name)
+		{
+			if (mParent) {
+				mParent->setName<T>(mIndex, name);
+			}
+			return *this;
+		};
+
+		/** @return	true if the Resource is stored in a linked Scene file,
+		 *			false otherwise */
+		bool isLinked() const
+		{ return mParent? mParent->getLinkedFile<T>(mIndex) >= 0 : false; };
+
+		/** @return	the index of the linked Scene file of the Resource */
+		int getLinkedFile() const
+		{ return mParent? mParent->getLinkedFile<T>(mIndex) : -1; };
+
+		/** Sets the index of the linked Scene file of the Resource
+		 *
+		 * @param	linkedFile the new index
+		 * @return	a reference to the current ResourceRef */
+		ResourceRef& setLinkedFile(int linkedFile)
+		{
+			if (mParent) {
+				mParent->setLinkedFile<T>(mIndex, linkedFile);
+			}
+			return *this;
+		};
+
+		/** Removes the linked file from the Resource
+		 *
+		 * @return	a reference to the current ResourceRef */
+		ResourceRef& unLink()
+		{
+			if (mParent) {
+				mParent->setLinkedFile<T>(mIndex, -1);
+			}
+			return *this;
+		};
+
+		/** @return	the path where the Resource is located */
+		std::string getPath() const
+		{ return mParent? mParent->getPath<T>(mIndex) : ""; };
+
+		/** Sets the path where the Resource is located
+		 *
+		 * @param	path the new path
+		 * @return	a reference to the current ResourceRef */
+		ResourceRef& setPath(const std::string& path)
+		{
+			if (mParent) {
+				mParent->setPath<T>(mIndex, path);
+			}
+			return *this;
+		};
+
+		/** @return	the number of users of the Resource */
+		std::size_t getUserCount() const
+		{ return mParent? mParent->getUserCount<T>(mIndex) : 0; };
+
+		/** @return	true if the Resource is preserved even if it has no users,
+		 *			false otherwise */
+		bool hasFakeUser() const
+		{ return mParent? mParent->hasFakeUser<T>(mIndex) : false; };
+
+		/** Adds a Fake user to the Resource so it will be preserved even if
+		 * it has no real users
+		 *
+		 *@param	fakeUser true if we want to add a fake user, false if we
+		 *			want to remove it
+		 * @return	a reference to the current ResourceRef */
+		ResourceRef& setFakeUser(bool fakeUser = true)
+		{
+			if (mParent) {
+				mParent->setFakeUser<T>(mIndex, fakeUser);
+			}
+			return *this;
+		};
 	};
 
 }

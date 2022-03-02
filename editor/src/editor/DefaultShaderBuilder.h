@@ -61,8 +61,8 @@ namespace editor {
 			auto step = mRepository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), name);
 			se::app::ShaderLoader::addMaterialBindables(step, material, program);
 
-			auto shader = mRepository.emplace<se::app::RenderableShader>(mApplication.getEventManager());
-			shader.getResource().setName(name);
+			auto shader = mRepository.emplace<se::app::RenderableShader>(mApplication.getEventManager())
+				.setName(name);
 			shader->addStep(shadowStep)
 				.addStep(step);
 

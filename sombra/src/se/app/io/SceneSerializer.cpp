@@ -867,7 +867,7 @@ namespace se::app {
 			}
 
 			texture = scene.repository.insert(std::make_shared<TextureRef>(textureRef));
-			texture.getResource().setPath(path);
+			texture.setPath(path);
 		}
 		else if (itBuffer != json.end()) {
 			auto itWidth = json.find("width");
@@ -930,7 +930,7 @@ namespace se::app {
 	template <>
 	void serializeResource<ProgramRef>(const Repository::ResourceRef<ProgramRef>& program, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		std::string path = program.getResource().getPath();
+		std::string path = program.getPath();
 		if (!path.empty()) {
 			json["path"] = path;
 		}
@@ -963,7 +963,7 @@ namespace se::app {
 		}
 
 		program = scene.repository.insert(std::make_shared<ProgramRef>(programRef));
-		program.getResource().setPath( itPath->get<std::string>() );
+		program.setPath( itPath->get<std::string>() );
 
 		return Result();
 	}
@@ -974,11 +974,11 @@ namespace se::app {
 	{
 		nlohmann::json bindablesVJson;
 		step->processPrograms([&](const Repository::ResourceRef<ProgramRef>& program) {
-			nlohmann::json bindableJson = { { "type", "Program" }, { "name", program.getResource().getName() } };
+			nlohmann::json bindableJson = { { "type", "Program" }, { "name", program.getName() } };
 			bindablesVJson.emplace_back(std::move(bindableJson));
 		});
 		step->processTextures([&](const Repository::ResourceRef<TextureRef>& texture) {
-			nlohmann::json bindableJson = { { "type", "Texture" }, { "name", texture.getResource().getName() } };
+			nlohmann::json bindableJson = { { "type", "Texture" }, { "name", texture.getName() } };
 			bindablesVJson.emplace_back(std::move(bindableJson));
 		});
 
@@ -1417,7 +1417,7 @@ namespace se::app {
 	{
 		auto stepsVJson = nlohmann::json::array();
 		shader->processSteps([&](const auto& step) {
-			stepsVJson.push_back(step.getResource().getName());
+			stepsVJson.push_back(step.getName());
 		});
 		json["steps"] = std::move(stepsVJson);
 	}
@@ -1607,7 +1607,7 @@ namespace se::app {
 	template <>
 	void serializeResource<Buffer>(const Repository::ResourceRef<Buffer>& buffer, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		std::string path = buffer.getResource().getPath();
+		std::string path = buffer.getPath();
 		if (!path.empty()) {
 			json["path"] = path;
 		}
@@ -1632,7 +1632,7 @@ namespace se::app {
 			audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
 			FormatId::MonoFloat, audioFile.getSampleRate()
 		);
-		buffer.getResource().setPath(path);
+		buffer.setPath(path);
 
 		return Result();
 	}
@@ -1794,12 +1794,12 @@ namespace se::app {
 		mesh.processRenderableIndices([&](std::size_t iMesh) {
 			auto shadersVJson = nlohmann::json::array();
 			mesh.processRenderableShaders(iMesh, [&](const auto& shader) {
-				shadersVJson.push_back(shader.getResource().getName());
+				shadersVJson.push_back(shader.getName());
 			});
 
 			nlohmann::json meshJson;
 			meshJson["hasSkinning"] = mesh.hasSkinning(iMesh);
-			meshJson["mesh"] = mesh.getMesh(iMesh).getResource().getName();
+			meshJson["mesh"] = mesh.getMesh(iMesh).getName();
 			meshJson["primitive"] = static_cast<int>(mesh.get(iMesh).getPrimitiveType());
 			meshJson["shaders"] = std::move(shadersVJson);
 			rMeshesJson.emplace_back(std::move(meshJson));
@@ -1876,7 +1876,7 @@ namespace se::app {
 
 		auto shadersVJson = nlohmann::json::array();
 		terrain.processRenderableShaders([&](const auto& shader) {
-			shadersVJson.push_back(shader.getResource().getName());
+			shadersVJson.push_back(shader.getName());
 		});
 		json["shaders"] = std::move(shadersVJson);
 
@@ -1931,7 +1931,7 @@ namespace se::app {
 		nlohmann::json json;
 
 		if (light.getSource()) {
-			json["sourceName"] = light.getSource().getResource().getName();
+			json["sourceName"] = light.getSource().getName();
 		}
 
 		return json;
@@ -1963,11 +1963,11 @@ namespace se::app {
 		nlohmann::json json;
 
 		if (lightProbe.irradianceMap) {
-			json["irradianceMap"] = lightProbe.irradianceMap.getResource().getName();
+			json["irradianceMap"] = lightProbe.irradianceMap.getName();
 		}
 
 		if (lightProbe.prefilterMap) {
-			json["prefilterMap"] = lightProbe.prefilterMap.getResource().getName();
+			json["prefilterMap"] = lightProbe.prefilterMap.getName();
 		}
 
 		return json;
@@ -2396,7 +2396,7 @@ namespace se::app {
 	{
 		auto forces = nlohmann::json::array();
 		rigidBody.processForces([&](const auto& force) {
-			forces.push_back(force.getResource().getName());
+			forces.push_back(force.getName());
 		});
 
 		nlohmann::json json;
@@ -2523,7 +2523,7 @@ namespace se::app {
 
 			json["root"] = itNodeIndex->second;
 			json["mapNodeJoint"] = std::move(mapNodeJointJson);
-			json["skin"] = skin.getSkin().getResource().getName();
+			json["skin"] = skin.getSkin().getName();
 		}
 
 		return json;
@@ -2590,7 +2590,7 @@ namespace se::app {
 		if (itNodeIndex != data.nodeIndexMap.end()) {
 			auto animatorsJson = nlohmann::json::array();
 			animation.processSAnimators([&](const auto& sAnimator) {
-				animatorsJson.emplace_back(sAnimator.getResource().getName());
+				animatorsJson.emplace_back(sAnimator.getName());
 			});
 
 			json["root"] = itNodeIndex->second;
@@ -2637,17 +2637,17 @@ namespace se::app {
 		nlohmann::json json;
 
 		if (auto mesh = particleSystem.getMesh()) {
-			json["mesh"] = mesh.getResource().getName();
+			json["mesh"] = mesh.getName();
 		}
 
 		auto shadersVJson = nlohmann::json::array();
 		particleSystem.processRenderableShaders([&](const auto& shader) {
-			shadersVJson.push_back(shader.getResource().getName());
+			shadersVJson.push_back(shader.getName());
 		});
 		json["shaders"] = std::move(shadersVJson);
 
 		if (particleSystem.getEmitter()) {
-			json["emitter"] = particleSystem.getEmitter().getResource().getName();
+			json["emitter"] = particleSystem.getEmitter().getName();
 		}
 
 		return json;
@@ -2702,7 +2702,7 @@ namespace se::app {
 		nlohmann::json json;
 
 		if (auto buffer = audioSource.getBuffer()) {
-			json["bufferName"] = buffer.getResource().getName();
+			json["bufferName"] = buffer.getName();
 		}
 
 		return json;
@@ -2734,7 +2734,7 @@ namespace se::app {
 		nlohmann::json json;
 
 		if (auto script = scriptC.getScript()) {
-			json["scriptName"] = script.getResource().getName();
+			json["scriptName"] = script.getName();
 		}
 
 		return json;
@@ -2834,9 +2834,9 @@ namespace se::app {
 
 		data.scene.repository.iterate<T>([&](const Repository::ResourceRef<T>& r) {
 			nlohmann::json resourceJson;
-			resourceJson["name"] = r.getResource().getName();
-			if (r.getResource().isLinked()) {
-				resourceJson["linkedFile"] = r.getResource().getLinkedFile();
+			resourceJson["name"] = r.getName();
+			if (r.isLinked()) {
+				resourceJson["linkedFile"] = r.getLinkedFile();
 			}
 			else {
 				serializeResource<T>(r, data, resourceJson, dataStream);
@@ -2867,7 +2867,7 @@ namespace se::app {
 				if (itLinkedFile != resourceJson.end()) {
 					std::size_t linkedFile = *itLinkedFile;
 					linkedFile = data.linkedScenesMap[linkedFile];
-					r.getResource().setLinkedFile(linkedFile);
+					r.setLinkedFile(static_cast<int>(linkedFile));
 
 					return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: TODO: LINKED FILES NOT IMPLEMENTED YET");
 				}
@@ -2876,10 +2876,10 @@ namespace se::app {
 						return Result(false, "Failed to deserialize " + tag + "[" + std::to_string(i) + "]: " + result.description());
 					}
 
-					r.getResource().setName(itName->get<std::string>().c_str());
+					r.setName(itName->get<std::string>().c_str());
 				}
 
-				r.getResource().setName(itName->get<std::string>().c_str());
+				r.setName(itName->get<std::string>().c_str());
 				r.setFakeUser();
 			}
 		}
@@ -3031,7 +3031,7 @@ namespace se::app {
 	{
 		data.scene.repository.iterate<TextureRef>([&](const auto& texture) {
 			auto p = std::make_shared<std::promise<TexData>>();
-			std::string path = texture.getResource().getPath();
+			std::string path = texture.getPath();
 
 			texture->edit([=](graphics::Texture& tex) {
 				TexData ret;

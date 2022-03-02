@@ -174,8 +174,8 @@ namespace editor {
 				SOMBRA_ERROR_LOG << result.description();
 				return;
 			}
-			auto program3DResource = mRepository->insert(std::make_shared<se::app::ProgramRef>(program3DRef), "program3D");
-			program3DResource.getResource().setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
+			auto program3DResource = mRepository->insert(std::make_shared<se::app::ProgramRef>(program3DRef), "program3D")
+				.setPath("res/shaders/vertex3D.glsl||res/shaders/fragment3D.glsl");
 
 			auto renderer = dynamic_cast<se::graphics::Renderer*>(mExternalTools->graphicsEngine->getRenderGraph().getNode("forwardRendererMesh"));
 			auto stepGrid = mRepository->insert(std::make_shared<se::app::RenderableShaderStep>(*renderer), "stepGrid");

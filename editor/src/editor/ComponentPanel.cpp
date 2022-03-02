@@ -357,7 +357,7 @@ namespace editor {
 
 					std::string name3 = "Environment Map" + getIdPrefix() + "LightProbeComponentNode::ChangeEnvironment";
 					if (addRepoDropdownShowSelected(name3.c_str(), getEditor().getScene()->repository, environmentTexture)) {
-						mEnvironmentTextureName = environmentTexture.getResource().getName();
+						mEnvironmentTextureName = environmentTexture.getName();
 					}
 
 					ImGui::DragInt("Irradiance map resolution", &mIrradianceMapSize, 0.01f, 0, INT_MAX);
@@ -370,17 +370,11 @@ namespace editor {
 					if (ImGui::Button(("Build probe" + getIdPrefix() + "LightProbeComponentNode::BuildProbe").c_str())) {
 						auto irradianceMapRef = TextureUtils::convoluteCubeMap(*environmentTexture, mIrradianceMapSize);
 						lightProbe->irradianceMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(irradianceMapRef));
-						setRepoName<TextureRef>(
-							lightProbe->irradianceMap.getResource(),
-							(mEnvironmentTextureName + "IrradianceMap").c_str(), getEditor().getScene()->repository
-						);
+						setRepoName<TextureRef>(lightProbe->irradianceMap, (mEnvironmentTextureName + "IrradianceMap").c_str());
 
 						auto prefilterMapRef = TextureUtils::prefilterCubeMap(*environmentTexture, mPrefilterMapSize);
 						lightProbe->prefilterMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(prefilterMapRef));
-						setRepoName<TextureRef>(
-							lightProbe->prefilterMap.getResource(),
-							(mEnvironmentTextureName + "PrefilterMap").c_str(), getEditor().getScene()->repository
-						);
+						setRepoName<TextureRef>(lightProbe->prefilterMap, (mEnvironmentTextureName + "PrefilterMap").c_str());
 					}
 					if (!environmentTexture) {
 						ImGui::PopItemFlag();
@@ -886,7 +880,7 @@ namespace editor {
 				auto heightTexture = getEditor().getScene()->repository.findByName<TextureRef>(mHeightTextureName.c_str());
 				std::string name = "Height Map" + getIdPrefix() + "RigidBodyComponentNode::HeightMap";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, heightTexture)) {
-					mHeightTextureName = heightTexture.getResource().getName();
+					mHeightTextureName = heightTexture.getName();
 				}
 
 				ImGui::DragInt("Size X", &mSize1, 0.01f, 0, INT_MAX);
@@ -912,7 +906,7 @@ namespace editor {
 				auto mesh = getEditor().getScene()->repository.findByName<MeshRef>(mMeshName.c_str());
 				std::string name = "Mesh" + getIdPrefix() + "RigidBodyComponentNode::Mesh";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
-					mMeshName = mesh.getResource().getName();
+					mMeshName = mesh.getName();
 				}
 
 				std::string name1 = "Build Triangle Mesh" + getIdPrefix() + "RigidBodyComponentNode::BuildTriangleMesh";
@@ -938,7 +932,7 @@ namespace editor {
 				auto mesh = getEditor().getScene()->repository.findByName<MeshRef>(mMeshName.c_str());
 				std::string name = "Mesh" + getIdPrefix() + "RigidBodyComponentNode::Mesh";
 				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, mesh)) {
-					mMeshName = mesh.getResource().getName();
+					mMeshName = mesh.getName();
 				}
 
 				std::string name1 = "Build Convex Polyhedron" + getIdPrefix() + "RigidBodyComponentNode::BuildConvexPolyhedron";

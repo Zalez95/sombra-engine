@@ -99,12 +99,11 @@ namespace editor {
 	 * repository
 	 *
 	 * @param	value the Resource to set it's name
-	 * @param	name the new name of the Resource
-	 * @param	repository the Repository where the resource is located */
+	 * @param	name the new name of the Resource */
 	template <typename T>
 	void setRepoName(
-		se::app::Resource<T>& resource,
-		const char* name, se::app::Repository& repository
+		se::app::Repository::ResourceRef<T> resource,
+		const char* name
 	);
 
 
