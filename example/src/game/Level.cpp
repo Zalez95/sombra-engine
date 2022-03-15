@@ -177,10 +177,83 @@ namespace game {
 // Public functions
 	Level::Level(Game& game) :
 		IGameScreen(game),
-		mGame(game), mScene("Level", game), mPlayerEntity(se::app::kNullEntity),
+		mGame(game), mScene(nullptr), mPlayerEntity(se::app::kNullEntity),
 		mLogoTexture(nullptr), mReticleTexture(nullptr), mPickText(nullptr)
 	{
 		mGame.getEventManager().subscribe(this, se::app::Topic::Key);
+		mGame.getThreadPool().async([this]() { loadLevel(); });
+		setHandleInput(true);
+	}
+
+
+	Level::~Level()
+	{
+		setHandleInput(false);
+
+		if (mLogoTexture) {
+			mGame.getExternalTools().graphicsEngine->removeRenderable(mLogoTexture);
+			delete mLogoTexture;
+		}
+		if (mReticleTexture) {
+			mGame.getExternalTools().graphicsEngine->removeRenderable(mReticleTexture);
+			delete mReticleTexture;
+		}
+		if (mPickText) {
+			mGame.getExternalTools().graphicsEngine->removeRenderable(mPickText);
+			delete mPickText;
+		}
+
+		mScene->repository.findByName<se::physics::Force>("gravity").setFakeUser(false);
+		mScene->repository.findByName<se::audio::Buffer>("sound").setFakeUser(false);
+		mGame.getRepository().findByName<se::app::TextureRef>("reticle").setFakeUser(false);
+		mGame.getRepository().findByName<se::app::TextureRef>("logo").setFakeUser(false);
+
+		if (mScene) {
+			delete mScene;
+		}
+
+		mGame.getEventManager().unsubscribe(this, se::app::Topic::Key);
+	}
+
+
+	bool Level::notify(const se::app::IEvent& event)
+	{
+		return tryCall(&Level::onKeyEvent, event);
+	}
+
+
+	void Level::setHandleInput(bool handle)
+	{
+		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
+			bool hasControl = query.hasComponentsEnabled<se::app::ScriptComponent>(mPlayerEntity);
+
+			if (handle) {
+				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
+				if (!hasControl) {
+					query.enableComponents<se::app::ScriptComponent>(mPlayerEntity);
+				}
+			}
+			else if (!handle) {
+				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
+				if (hasControl) {
+					query.disableComponents<se::app::ScriptComponent>(mPlayerEntity);
+				}
+			}
+		});
+	}
+
+// Private functions
+	void Level::onKeyEvent(const se::app::KeyEvent& event)
+	{
+		if ((event.getKeyCode() == SE_KEY_ESCAPE) && (event.getState() != se::app::KeyEvent::State::Released)) {
+			mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::AddGameMenu));
+		}
+	}
+
+
+	void Level::loadLevel()
+	{
+		mScene = new se::app::Scene("Level", mGame);
 
 		/*********************************************************************
 		 * GRAPHICS DATA
@@ -206,7 +279,7 @@ namespace game {
 
 		try {
 			// Scene
-			auto result = se::app::SceneSerializer::deserialize("res/map.se", mScene);
+			auto result = se::app::SceneSerializer::deserialize("res/map.se", *mScene);
 			if (!result) {
 				throw std::runtime_error(result.description());
 			}
@@ -257,7 +330,7 @@ namespace game {
 			reticleTexture = mGame.getRepository().insert(std::make_shared<se::app::TextureRef>(texRef), "reticle");
 			reticleTexture.setFakeUser();
 
-			chessTexture = mScene.repository.findByName<se::app::TextureRef>("chessTexture");
+			chessTexture = mScene->repository.findByName<se::app::TextureRef>("chessTexture");
 
 			texRef = graphicsEngine->getContext().create<se::graphics::Texture>(se::graphics::TextureTarget::Texture2D)
 				.edit([=](auto& texture) {
@@ -269,13 +342,13 @@ namespace game {
 						);
 				});
 			texRef = se::app::TextureUtils::equirectangularToCubeMap(texRef, 512);
-			skyTexture = mScene.repository.insert(std::make_shared<se::app::TextureRef>(texRef), "skyTexture");
+			skyTexture = mScene->repository.insert(std::make_shared<se::app::TextureRef>(texRef), "skyTexture");
 
 			// Meshes
 			se::app::RawMesh cubeRawMesh = se::app::MeshLoader::createBoxMesh("Cube", glm::vec3(1.0f));
 			cubeRawMesh.normals = se::app::MeshLoader::calculateNormals(cubeRawMesh.positions, cubeRawMesh.indices);
 			cubeRawMesh.tangents = se::app::MeshLoader::calculateTangents(cubeRawMesh.positions, cubeRawMesh.texCoords, cubeRawMesh.indices);
-			cubeMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), cubeRawMesh)), "cube");
+			cubeMesh = mScene->repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), cubeRawMesh)), "cube");
 
 			se::app::RawMesh planeRawMesh("Plane");
 			planeRawMesh.positions = { {-0.5f,-0.5f, 0.0f}, { 0.5f,-0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}, { 0.5f, 0.5f, 0.0f} };
@@ -283,19 +356,19 @@ namespace game {
 			planeRawMesh.indices = { 0, 1, 2, 1, 3, 2, };
 			planeRawMesh.normals = se::app::MeshLoader::calculateNormals(planeRawMesh.positions, planeRawMesh.indices);
 			planeRawMesh.tangents = se::app::MeshLoader::calculateTangents(planeRawMesh.positions, planeRawMesh.texCoords, planeRawMesh.indices);
-			planeMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), planeRawMesh)), "plane");
+			planeMesh = mScene->repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), planeRawMesh)), "plane");
 
 			// Programs
-			programShadow = mScene.repository.findByName<se::app::ProgramRef>("programShadow");
-			programShadowSkinning = mScene.repository.findByName<se::app::ProgramRef>("programShadowSkinning");
-			programGBufMaterial = mScene.repository.findByName<se::app::ProgramRef>("programGBufMaterial");
+			programShadow = mScene->repository.findByName<se::app::ProgramRef>("programShadow");
+			programShadowSkinning = mScene->repository.findByName<se::app::ProgramRef>("programShadowSkinning");
+			programGBufMaterial = mScene->repository.findByName<se::app::ProgramRef>("programGBufMaterial");
 
 			se::app::ProgramRef programSkyRef;
 			result = se::app::ShaderLoader::createProgram("res/shaders/vertex3D.glsl", nullptr, "res/shaders/fragmentSkyBox.glsl", graphicsEngine->getContext(), programSkyRef);
 			if (!result) {
 				throw std::runtime_error("programSky error: " + std::string(result.description()));
 			}
-			programSky = mScene.repository.insert(std::make_shared<se::app::ProgramRef>(programSkyRef), "programSky");
+			programSky = mScene->repository.insert(std::make_shared<se::app::ProgramRef>(programSkyRef), "programSky");
 
 			// Techniques
 			technique2D = mGame.getRepository().findByName<se::graphics::Technique>("technique2D");
@@ -304,10 +377,10 @@ namespace game {
 			}
 
 			// Shaders
-			stepShadow = mScene.repository.findByName<se::app::RenderableShaderStep>("stepShadow");
+			stepShadow = mScene->repository.findByName<se::app::RenderableShaderStep>("stepShadow");
 
 			skyTexture->edit([](auto& texture) { texture.setTextureUnit(0); });
-			auto stepSky = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*forwardRendererMesh), "stepSky");
+			auto stepSky = mScene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*forwardRendererMesh), "stepSky");
 			stepSky->addResource(programSky)
 				.addResource(skyTexture)
 				.addBindable(graphicsEngine->getContext().create<se::graphics::SetOperation>(se::graphics::Operation::DepthTest, true))
@@ -317,10 +390,10 @@ namespace game {
 						.qedit([pRef = *programSky](auto& q, auto& uniform) { uniform.load(*q.getTBindable(pRef)); })
 				);
 
-			shaderSky = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderSky");
+			shaderSky = mScene->repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderSky");
 			shaderSky->addStep(stepSky);
 
-			auto stepPlane = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepPlane");
+			auto stepPlane = mScene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepPlane");
 			se::app::ShaderLoader::addMaterialBindables(
 				stepPlane,
 				se::app::Material{
@@ -330,11 +403,11 @@ namespace game {
 				programGBufMaterial
 			);
 
-			shaderPlane = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderPlane");
+			shaderPlane = mScene->repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderPlane");
 			shaderPlane->addStep(stepShadow)
 				.addStep(stepPlane);
 
-			auto stepRandom = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepRandom");
+			auto stepRandom = mScene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), "stepRandom");
 			se::app::ShaderLoader::addMaterialBindables(
 				stepRandom,
 				se::app::Material{
@@ -344,7 +417,7 @@ namespace game {
 				programGBufMaterial
 			);
 
-			shaderRandom = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderRandom");
+			shaderRandom = mScene->repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), "shaderRandom");
 			shaderRandom->addStep(stepShadow)
 				.addStep(stepRandom);
 
@@ -354,7 +427,7 @@ namespace game {
 				throw std::runtime_error("Error reading the audio file");
 			}
 
-			sound = mScene.repository.emplace<se::audio::Buffer>()
+			sound = mScene->repository.emplace<se::audio::Buffer>()
 				.setName("sound")
 				.setFakeUser();
 			sound->setData(
@@ -363,37 +436,36 @@ namespace game {
 			);
 
 			// Lights
-			spotLight = mScene.repository.insert(std::make_shared<se::app::LightSource>(mGame.getEventManager(), se::app::LightSource::Type::Spot), "spotLight");
+			spotLight = mScene->repository.insert(std::make_shared<se::app::LightSource>(mGame.getEventManager(), se::app::LightSource::Type::Spot), "spotLight");
 
 			// Forces
-			gravity = mScene.repository.findByName<se::physics::Force>("gravity");
+			gravity = mScene->repository.findByName<se::physics::Force>("gravity");
 			gravity.setFakeUser();
 
 			// Renderable2Ds
 			mLogoTexture = new se::graphics::RenderableSprite({ 1060.0f, 20.0f }, { 200.0f, 200.0f }, glm::vec4(1.0f), *logoTexture);
 			mLogoTexture->addTechnique(technique2D.get());
 			mLogoTexture->setZIndex(255);
+			mGame.getExternalTools().graphicsEngine->addRenderable(mLogoTexture);
 
 			mReticleTexture = new se::graphics::RenderableSprite({ kWidths[0] / 2.0f - 10.0f, kHeights[0] / 2.0f - 10.0f }, { 20.0f, 20.0f }, glm::vec4(1.0f, 1.0f, 1.0f, 0.6f), *reticleTexture);
 			mReticleTexture->addTechnique(technique2D.get());
 			mReticleTexture->setZIndex(255);
+			mGame.getExternalTools().graphicsEngine->addRenderable(mReticleTexture);
 
 			mPickText = new se::graphics::RenderableText({ 0.0f, 700.0f }, { 16.0f, 16.0f }, arial.get(), { 0.0f, 1.0f, 0.0f, 1.0f });
 			mPickText->addTechnique(technique2D.get());
 			mPickText->setZIndex(255);
+			mGame.getExternalTools().graphicsEngine->addRenderable(mPickText);
 
 			// Scripts
 			auto playerControllerSPtr = std::make_shared<PlayerController>(*this, *mPickText);
-			playerController = mScene.repository.insert<se::app::Script>(std::move(playerControllerSPtr), "playerController");
+			playerController = mScene->repository.insert<se::app::Script>(std::move(playerControllerSPtr), "playerController");
 		}
 		catch (std::exception& e) {
 			SOMBRA_ERROR_LOG << "Error: " << e.what();
 			return;
 		}
-
-		mGame.getExternalTools().graphicsEngine->addRenderable(mLogoTexture);
-		mGame.getExternalTools().graphicsEngine->addRenderable(mReticleTexture);
-		mGame.getExternalTools().graphicsEngine->addRenderable(mPickText);
 
 		/*********************************************************************
 		 * GAME DATA
@@ -401,7 +473,7 @@ namespace game {
 		// Player
 		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 			mPlayerEntity = query.addEntity();
-			mScene.entities.push_back(mPlayerEntity);
+			mScene->entities.push_back(mPlayerEntity);
 
 			query.emplaceComponent<se::app::TagComponent>(mPlayerEntity, true, "player");
 
@@ -419,6 +491,7 @@ namespace game {
 
 			se::app::RigidBodyComponent rbComponent(properties);
 			rbComponent.get().setCollider(std::move(collider));
+			rbComponent.addForce(gravity);
 
 			query.addComponent(mPlayerEntity, std::move(rbComponent));
 
@@ -451,7 +524,7 @@ namespace game {
 		// Sky
 		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 			auto skyEntity = query.addEntity();
-			mScene.entities.push_back(skyEntity);
+			mScene->entities.push_back(skyEntity);
 
 			query.emplaceComponent<se::app::TagComponent>(skyEntity, true, "sky");
 
@@ -467,7 +540,7 @@ namespace game {
 		// Plane
 		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 			auto plane = query.addEntity();
-			mScene.entities.push_back(plane);
+			mScene->entities.push_back(plane);
 
 			query.emplaceComponent<se::app::TagComponent>(plane, true, "plane");
 
@@ -493,7 +566,7 @@ namespace game {
 		for (std::size_t i = 0; i < 5; ++i) {
 			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 				auto cube = query.addEntity();
-				mScene.entities.push_back(cube);
+				mScene->entities.push_back(cube);
 
 				query.emplaceComponent<se::app::TagComponent>(cube, true, "non-random-cube-" + std::to_string(i));
 
@@ -512,11 +585,11 @@ namespace game {
 					e1 = cube;
 				}
 				if (i == 2) {
-					se::app::AudioSourceComponent source1;
+					//se::app::AudioSourceComponent source1;
 					//source1.setBuffer(sound);
-					source1.get().setLooping(true);
-					source1.get().play();
-					query.addComponent(cube, std::move(source1));
+					//source1.get().setLooping(true);
+					//source1.get().play();
+					//query.addComponent(cube, std::move(source1));
 				}
 				if (i == 3) {
 					state.angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);
@@ -532,7 +605,7 @@ namespace game {
 				rbComponent.get().setCollider(std::move(collider));
 				query.addComponent(cube, std::move(rbComponent));
 
-				auto stepCube = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
+				auto stepCube = mScene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("stepCube" + std::to_string(i)).c_str());
 				se::app::ShaderLoader::addMaterialBindables(
 					stepCube,
 					se::app::Material{
@@ -542,7 +615,7 @@ namespace game {
 					programGBufMaterial
 				);
 
-				auto shaderCube = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shaderCube" + std::to_string(i)).c_str());
+				auto shaderCube = mScene->repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shaderCube" + std::to_string(i)).c_str());
 				shaderCube->addStep(stepShadow)
 					.addStep(stepCube);
 
@@ -573,7 +646,7 @@ namespace game {
 
 			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 				auto tubeSlice = query.addEntity();
-				mScene.entities.push_back(tubeSlice);
+				mScene->entities.push_back(tubeSlice);
 
 				std::string name = "tubeSlice" + std::to_string(iSlice);
 				query.emplaceComponent<se::app::TagComponent>(tubeSlice, true, name.c_str());
@@ -583,7 +656,7 @@ namespace game {
 				transforms.position = glm::vec3(0.0f, 2.0f, 75.0f) + displacement;
 				query.addComponent(tubeSlice, std::move(transforms));
 
-				auto stepSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("step" + name).c_str());
+				auto stepSlice = mScene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRendererMesh), ("step" + name).c_str());
 				se::app::ShaderLoader::addMaterialBindables(
 					stepSlice,
 					se::app::Material{
@@ -596,12 +669,12 @@ namespace game {
 					programGBufMaterial
 				);
 
-				auto shaderSlice = mScene.repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shader" + name).c_str());
+				auto shaderSlice = mScene->repository.insert(std::make_shared<se::app::RenderableShader>(mGame.getEventManager()), ("shader" + name).c_str());
 				shaderSlice->addStep(stepShadow)
 					.addStep(stepSlice);
 
 				auto tmpRawMesh = se::app::MeshLoader::createRawMesh(heMesh, normals).first;
-				auto sliceMesh = mScene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), tmpRawMesh)), ("mesh" + name).c_str());
+				auto sliceMesh = mScene->repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), tmpRawMesh)), ("mesh" + name).c_str());
 				auto mesh = query.emplaceComponent<se::app::MeshComponent>(tubeSlice);
 				auto rIndex = mesh->add(false, sliceMesh);
 				mesh->addRenderableShader(rIndex, std::move(shaderSlice));
@@ -614,7 +687,7 @@ namespace game {
 		for (std::size_t i = 0; i < kNumCubes; ++i) {
 			mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
 				auto cube = query.addEntity();
-				mScene.entities.push_back(cube);
+				mScene->entities.push_back(cube);
 
 				query.emplaceComponent<se::app::TagComponent>(cube, true, "random-cube-" + std::to_string(i));
 
@@ -638,63 +711,6 @@ namespace game {
 				auto rIndex = mesh->add(false, cubeMesh);
 				mesh->addRenderableShader(rIndex, shaderRandom);
 			});
-		}
-
-		setHandleInput(true);
-	}
-
-
-	Level::~Level()
-	{
-		setHandleInput(false);
-
-		mGame.getExternalTools().graphicsEngine->removeRenderable(mLogoTexture);
-		delete mLogoTexture;
-		mGame.getExternalTools().graphicsEngine->removeRenderable(mReticleTexture);
-		delete mReticleTexture;
-		mGame.getExternalTools().graphicsEngine->removeRenderable(mPickText);
-		delete mPickText;
-
-		mScene.repository.findByName<se::physics::Force>("gravity").setFakeUser(false);
-		mScene.repository.findByName<se::audio::Buffer>("sound").setFakeUser(false);
-		mGame.getRepository().findByName<se::app::TextureRef>("reticle").setFakeUser(false);
-		mGame.getRepository().findByName<se::app::TextureRef>("logo").setFakeUser(false);
-
-		mGame.getEventManager().unsubscribe(this, se::app::Topic::Key);
-	}
-
-
-	bool Level::notify(const se::app::IEvent& event)
-	{
-		return tryCall(&Level::onKeyEvent, event);
-	}
-
-
-	void Level::setHandleInput(bool handle)
-	{
-		mGame.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
-			bool hasControl = query.hasComponentsEnabled<se::app::ScriptComponent>(mPlayerEntity);
-
-			if (handle) {
-				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Camera);
-				if (!hasControl) {
-					query.enableComponent<se::app::ScriptComponent>(mPlayerEntity);
-				}
-			}
-			else if (!handle) {
-				mGame.getExternalTools().windowManager->setCursorMode(se::window::CursorMode::Normal);
-				if (hasControl) {
-					query.disableComponent<se::app::ScriptComponent>(mPlayerEntity);
-				}
-			}
-		});
-	}
-
-// Private functions
-	void Level::onKeyEvent(const se::app::KeyEvent& event)
-	{
-		if ((event.getKeyCode() == SE_KEY_ESCAPE) && (event.getState() != se::app::KeyEvent::State::Released)) {
-			mGame.getStateMachine().submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::AddGameMenu));
 		}
 	}
 

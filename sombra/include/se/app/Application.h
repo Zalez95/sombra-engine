@@ -14,18 +14,7 @@ namespace se::utils { class ThreadPool; }
 
 namespace se::app {
 
-	class InputSystem;
-	class ScriptSystem;
 	class AppRenderer;
-	class LightSystem;
-	class LightProbeSystem;
-	class MeshSystem;
-	class TerrainSystem;
-	class ParticleSystemSystem;
-	class CameraSystem;
-	class PhysicsSystem;
-	class AnimationSystem;
-	class AudioSystem;
 	class GUIManager;
 	class Repository;
 
@@ -93,19 +82,12 @@ namespace se::app {
 		 * their Components */
 		EntityDatabase* mEntityDatabase;
 
-		/** The Systems that hold and update the data of the entities */
-		InputSystem* mInputSystem;
-		ScriptSystem* mScriptSystem;
+		/** The Systems that update the data of the entities, their update
+		 * function will be executed in order */
+		std::vector<ISystem*> mSystems;
+
+		/** The renderer */
 		AppRenderer* mAppRenderer;
-		LightSystem* mLightSystem;
-		LightProbeSystem* mLightProbeSystem;
-		MeshSystem* mMeshSystem;
-		TerrainSystem* mTerrainSystem;
-		ParticleSystemSystem* mParticleSystemSystem;
-		CameraSystem* mCameraSystem;
-		PhysicsSystem* mPhysicsSystem;
-		AnimationSystem* mAnimationSystem;
-		AudioSystem* mAudioSystem;
 
 		/** The GUIManager used for drawing and updating the GUI */
 		GUIManager* mGUIManager;
@@ -162,9 +144,6 @@ namespace se::app {
 		 * @return	true if the Application exited succesfully, false
 		 *			otherwise */
 		bool run();
-
-		/** Retrieves all the user input */
-		virtual void onInput();
 
 		/** Updates the Application managers and systems each main loop
 		 * iteration

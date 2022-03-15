@@ -75,6 +75,28 @@ namespace se::physics {
 	}
 
 
+	HalfEdgeMesh createPrism(const std::array<glm::vec3, 3>& triangle, float height)
+	{
+		HalfEdgeMesh heMesh;
+
+		glm::vec3 v00 = triangle[0], v10 = triangle[1], v20 = triangle[2];
+		glm::vec3 v01(v00.x, v00.y - height, v00.z);
+		glm::vec3 v11(v10.x, v10.y - height, v10.z);
+		glm::vec3 v21(v20.x, v20.y - height, v20.z);
+
+		int iV00 = addVertex(heMesh, v00), iV10 = addVertex(heMesh, v10), iV20 = addVertex(heMesh, v20),
+			iV01 = addVertex(heMesh, v01), iV11 = addVertex(heMesh, v11), iV21 = addVertex(heMesh, v21);
+
+		std::array<int, 3> f1{ iV00, iV10, iV20 };			addFace(heMesh, f1.begin(), f1.end());
+		std::array<int, 3> f2{ iV01, iV21, iV11 };			addFace(heMesh, f2.begin(), f2.end());
+		std::array<int, 4> f3{ iV00, iV01, iV11, iV10 };	addFace(heMesh, f3.begin(), f3.end());
+		std::array<int, 4> f4{ iV10, iV11, iV21, iV20 };	addFace(heMesh, f4.begin(), f4.end());
+		std::array<int, 4> f5{ iV20, iV21, iV01, iV00 };	addFace(heMesh, f5.begin(), f5.end());
+
+		return heMesh;
+	}
+
+
 	HalfEdgeMesh triangulateFaces(const HalfEdgeMesh& originalMesh)
 	{
 		HalfEdgeMesh triangulatedMesh;

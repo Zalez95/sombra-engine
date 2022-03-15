@@ -332,7 +332,14 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that owns the Component */
 		template <typename T>
-		void enableComponent(Entity entity);
+		void enableComponents(Entity entity);
+
+		/** Enables the given Components for the given Entity so the
+		 * Systems can start using them
+		 *
+		 * @param	entity the Entity that owns the Components */
+		template <typename T1, typename T2, typename... Args>
+		void enableComponents(Entity entity);
 
 		/** Checks if an Entity has all the given Components enabled
 		 *
@@ -355,7 +362,14 @@ namespace se::app {
 		 *
 		 * @param	entity the Entity that owns the Component */
 		template <typename T>
-		void disableComponent(Entity entity);
+		void disableComponents(Entity entity);
+
+		/** Disables all the given Components for the given Entity so the
+		 * Systems will no longer use them
+		 *
+		 * @param	entity the Entity that owns the Components */
+		template <typename T1, typename T2, typename... Args>
+		void disableComponents(Entity entity);
 	};
 
 }

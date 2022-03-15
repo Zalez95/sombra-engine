@@ -62,6 +62,10 @@ namespace se::physics {
 		 * it to generate all the contact data */
 		FineCollisionDetector mFineCollisionDetector;
 
+		/** The Colliders that are colliding in the coarse collision detection
+		 * step */
+		std::vector<ColliderPair> mCoarseCollidersColliding;
+
 		/** All the Manifolds that the CollisionDetector can hold */
 		utils::PackedVector<Manifold> mManifolds;
 
@@ -126,6 +130,22 @@ namespace se::physics {
 		 *			if it didn't intersect anything, and a RayCast object with
 		 *			the result of the RayCast */
 		std::pair<Collider*, RayHit> rayCastFirst(const Ray& ray);
+	private:
+		/** Broad/Coarse collision detection step */
+		void broadCollisionDetection();
+
+		/** Narrow/Fine collision detection step */
+		void narrowCollisionDetection();
+
+		/** Executes the narrow/Fine collision detection step for a single
+		 * Collider pair
+		 *
+		 * @param	pair the pair to detect its collisions
+		 * @param	newManifolds a vector where the new Manifolds will be
+		 *			inserted */
+		void singleNarrowCollision(
+			const ColliderPair& pair, std::vector<Manifold>& newManifolds
+		);
 	};
 
 }

@@ -48,17 +48,13 @@ namespace se::app {
 	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
 		mThreadPool(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
 		mRepository(nullptr), mEntityDatabase(nullptr),
-		mInputSystem(nullptr), mScriptSystem(nullptr),
-		mAppRenderer(nullptr), mLightSystem(nullptr), mLightProbeSystem(nullptr),
-		mMeshSystem(nullptr), mTerrainSystem(nullptr), mParticleSystemSystem(nullptr),
-		mCameraSystem(nullptr), mPhysicsSystem(nullptr), mAnimationSystem(nullptr),
-		mAudioSystem(nullptr), mGUIManager(nullptr)
+		mAppRenderer(nullptr), mGUIManager(nullptr)
 	{
 		SOMBRA_INFO_LOG << "Creating the Application";
 
 		try {
 			// We need at least 1 extra thread for loading
-			std::size_t numThreads = std::min(std::thread::hardware_concurrency() - 1, 1u);
+			std::size_t numThreads = std::min(std::thread::hardware_concurrency(), 1u);
 			mThreadPool = new utils::ThreadPool(numThreads);
 
 			// External tools
@@ -100,18 +96,21 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities);
 
 			// Systems
-			mInputSystem = new InputSystem(*this);
-			mScriptSystem = new ScriptSystem(*this);
+			mSystems.push_back(new InputSystem(*this));
+			mSystems.push_back(new ScriptSystem(*this));
+			mSystems.push_back(new AnimationSystem(*this));
+			mSystems.push_back(new PhysicsSystem(*this));
+			mSystems.push_back(new AudioSystem(*this));
 			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
-			mLightSystem = new LightSystem(*this, kShadowSplitLogFactor);
-			mLightProbeSystem = new LightProbeSystem(*this);
-			mMeshSystem = new MeshSystem(*this);
-			mTerrainSystem = new TerrainSystem(*this);
-			mParticleSystemSystem = new ParticleSystemSystem(*this);
-			mCameraSystem = new CameraSystem(*this);
-			mPhysicsSystem = new PhysicsSystem(*this);
-			mAnimationSystem = new AnimationSystem(*this);
-			mAudioSystem = new AudioSystem(*this);
+			mSystems.push_back(mAppRenderer);
+			mSystems.push_back(new CameraSystem(*this));
+			mSystems.push_back(new LightSystem(*this, kShadowSplitLogFactor));
+			mSystems.push_back(new LightProbeSystem(*this));
+			mSystems.push_back(new TerrainSystem(*this));
+			mSystems.push_back(new MeshSystem(*this));
+			mSystems.push_back(new ParticleSystemSystem(*this));
+
+			// GUI
 			mGUIManager = new GUIManager(*this, { windowConfig.width, windowConfig.height });
 
 			SOMBRA_INFO_LOG << "Application created successfully";
@@ -126,22 +125,15 @@ namespace se::app {
 	Application::~Application()
 	{
 		SOMBRA_INFO_LOG << "Deleting the Application";
+
 		if (mEntityDatabase) {
 			mEntityDatabase->executeQuery([](EntityDatabase::Query& query) { query.clearEntities(); });
 		}
+
 		if (mGUIManager) { delete mGUIManager; }
-		if (mAudioSystem) { delete mAudioSystem; }
-		if (mAnimationSystem) { delete mAnimationSystem; }
-		if (mPhysicsSystem) { delete mPhysicsSystem; }
-		if (mCameraSystem) { delete mCameraSystem; }
-		if (mParticleSystemSystem) { delete mParticleSystemSystem; }
-		if (mTerrainSystem) { delete mTerrainSystem; }
-		if (mMeshSystem) { delete mMeshSystem; }
-		if (mLightProbeSystem) { delete mLightProbeSystem; }
-		if (mLightSystem) { delete mLightSystem; }
-		if (mAppRenderer) { delete mAppRenderer; }
-		if (mScriptSystem) { delete mScriptSystem; }
-		if (mInputSystem) { delete mInputSystem; }
+		for (auto itSys = mSystems.rbegin(); itSys != mSystems.rend(); ++itSys) {
+			delete *itSys;
+		}
 		if (mEntityDatabase) { delete mEntityDatabase; }
 		if (mRepository) { delete mRepository; }
 		if (mEventManager) { delete mEventManager; }
@@ -154,6 +146,7 @@ namespace se::app {
 			delete mExternalTools;
 		}
 		if (mThreadPool) { delete mThreadPool; }
+
 		SOMBRA_INFO_LOG << "Application deleted";
 	}
 
@@ -207,9 +200,6 @@ namespace se::app {
 			else {*/
 				lastTP = currentTP;
 
-				// Retrieve the input
-				onInput();
-
 				// Update the Systems
 				onUpdate(deltaTime);
 
@@ -225,89 +215,15 @@ namespace se::app {
 	}
 
 
-	void Application::onInput()
-	{
-		utils::TimeGuard t0("onInput");
-		SOMBRA_DEBUG_LOG << "Init";
-		mExternalTools->windowManager->update();
-		mInputSystem->update();
-		SOMBRA_DEBUG_LOG << "End";
-	}
-
-
 	void Application::onUpdate(float deltaTime)
 	{
 		utils::TimeGuard t0("onUpdate");
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
-		//utils::TaskSet taskSet(*mTaskManager);
-		/*auto scriptTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("scriptsys");
-			mScriptSystem->setDeltaTime(deltaTime);
-			mScriptSystem->update();
-		}//);
-		/*auto animationTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("animsys");
-			mAnimationSystem->setDeltaTime(deltaTime);
-			mAnimationSystem->update();
-		}//);
-		/*auto physicsTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("physicsssys");
-			mPhysicsSystem->setDeltaTime(deltaTime);
-			mPhysicsSystem->update();
-		}//);
-		/*auto audioTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("audiosys");
-			mAudioSystem->setDeltaTime(deltaTime);
-			mAudioSystem->update();
-		}//);
-		/*auto cameraTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("camerasys");
-			mCameraSystem->setDeltaTime(deltaTime);
-			mCameraSystem->update();
-		}//);
-		/*auto lightTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("lightsys");
-			mLightSystem->setDeltaTime(deltaTime);
-			mLightSystem->update();
-		}//);
-		/*auto lightProbeTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("lightProbesys");
-			mLightProbeSystem->setDeltaTime(deltaTime);
-			mLightProbeSystem->update();
-		}//);
-		/*auto rmeshTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("meshsys");
-			mMeshSystem->setDeltaTime(deltaTime);
-			mMeshSystem->update();
-		}//);
-		/*auto rterrainTask = taskSet.createTask([&]() */{
-			utils::TimeGuard t("terrainsys");
-			mTerrainSystem->setDeltaTime(deltaTime);
-			mTerrainSystem->update();
-		}//);
-
-		/*taskSet.depends(animationTask, scriptTask);
-		taskSet.depends(physicsTask, animationTask);
-		taskSet.depends(audioTask, physicsTask);
-		taskSet.depends(cameraTask, physicsTask);
-		taskSet.depends(lightTask, physicsTask);
-		taskSet.depends(lightProbeTask, physicsTask);
-		taskSet.depends(rmeshTask, physicsTask);
-		taskSet.depends(rterrainTask, cameraTask);
-
-		taskSet.submitAndWait();*/
-
-		// The ParticleSystemSystem update function must be called from thread 0
-		{ utils::TimeGuard t("particlessys");
-		mParticleSystemSystem->setDeltaTime(deltaTime);
-		mParticleSystemSystem->update();
-		}
-
-		// The AppRenderer update function must be called from thread 0
-		{ utils::TimeGuard t("mAppRenderer");
-		mAppRenderer->setDeltaTime(deltaTime);
-		mAppRenderer->update();
+		mExternalTools->windowManager->update();
+		for (ISystem* system : mSystems) {
+			system->setDeltaTime(deltaTime);
+			system->update();
 		}
 
 		SOMBRA_DEBUG_LOG << "End";
@@ -318,8 +234,10 @@ namespace se::app {
 	{
 		utils::TimeGuard t0("onRender");
 		SOMBRA_DEBUG_LOG << "Init";
+
 		mAppRenderer->render();
 		mExternalTools->windowManager->swapBuffers();
+
 		SOMBRA_DEBUG_LOG << "End";
 	}
 

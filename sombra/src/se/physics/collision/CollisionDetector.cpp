@@ -15,6 +15,7 @@ namespace se::physics {
 			mParentWorld.getProperties().raycastPrecision
 		)
 	{
+		mCoarseCollidersColliding.reserve(mParentWorld.getProperties().maxCollidingRBs);
 		mManifolds.reserve(mParentWorld.getProperties().maxCollidingRBs);
 		mCollidersManifoldMap.reserve(mParentWorld.getProperties().maxCollidingRBs);
 	}
@@ -55,59 +56,17 @@ namespace se::physics {
 				it = mCollidersManifoldMap.erase(it);
 			}
 			else {
-				// Set the remaining Manifolds' state to not intersecting
+				// Set the remaining Manifolds' state to not intersecting, so
+				// the state of those skipped by the coarse collision detection
+				// are also updated
 				mManifolds[it->second].state.reset(Manifold::State::Intersecting);
 				mManifolds[it->second].state.set(Manifold::State::Updated);
 				++it;
 			}
 		}
 
-		// Broad collision phase
-		mCoarseCollisionDetector.update();
-		mCoarseCollisionDetector.calculateCollisions([this](Collider* collider1, Collider* collider2) {
-			// Skip non updated Colliders and Colliders without any common layer
-			if ((collider1->updated() || collider2->updated())
-				&& ((collider1->getLayers() & collider2->getLayers()).any())
-			) {
-				// Find a Manifold between the given colliders
-				ColliderPair sortedPair = (collider1 <= collider2)? ColliderPair(collider1, collider2)
-										: ColliderPair(collider2, collider1);
-				auto itPairManifold = mCollidersManifoldMap.find(sortedPair);
-
-				// Narrow collision phase
-				if (itPairManifold != mCollidersManifoldMap.end()) {
-					// Set the Manifold back to its old state (if we are at this
-					// stage it was Intersecting)
-					mManifolds[itPairManifold->second].state.set(Manifold::State::Intersecting);
-					mManifolds[itPairManifold->second].state.reset(Manifold::State::Updated);
-
-					// Update the Manifold data
-					mFineCollisionDetector.collide(mManifolds[itPairManifold->second]);
-				}
-				else {
-					// Create a new Manifold
-					if (mManifolds.size() < mManifolds.capacity()) {
-						Manifold manifold(sortedPair.first, sortedPair.second);
-						if (mFineCollisionDetector.collide(manifold)) {
-							auto manifoldIndex = mManifolds.emplace(std::move(manifold)).getIndex();
-							mCollidersManifoldMap.emplace(
-								std::piecewise_construct,
-								std::forward_as_tuple(sortedPair.first, sortedPair.second),
-								std::forward_as_tuple(manifoldIndex)
-							);
-						}
-					}
-					else {
-						SOMBRA_ERROR_LOG << "Can't create more Manifolds";
-					}
-				}
-			}
-		});
-
-		// Reset the updated state of all the Colliders
-		mCoarseCollisionDetector.processColliders([](Collider* collider) {
-			collider->resetUpdatedState();
-		});
+		broadCollisionDetection();
+		narrowCollisionDetection();
 
 		// Notify the ICollisionListeners
 		for (ICollisionListener* listener : mListeners) {
@@ -165,6 +124,101 @@ namespace se::physics {
 		});
 
 		return { collider, rayHit };
+	}
+
+// Private functions
+	void CollisionDetector::broadCollisionDetection()
+	{
+		mCoarseCollisionDetector.update();
+
+		// Store all the Colliders intersecting in mCoarseCollidersColliding
+		mCoarseCollidersColliding.clear();
+		mCoarseCollisionDetector.calculateCollisions([this](Collider* collider1, Collider* collider2) {
+			// Skip non updated Colliders and Colliders without any common layer
+			if ((collider1->updated() || collider2->updated())
+				&& ((collider1->getLayers() & collider2->getLayers()).any())
+			) {
+				mCoarseCollidersColliding.emplace_back(collider1, collider2);
+			}
+		});
+
+		// Reset the updated state of all the Colliders
+		mCoarseCollisionDetector.processColliders([](Collider* collider) {
+			collider->resetUpdatedState();
+		});
+	}
+
+
+	void CollisionDetector::narrowCollisionDetection()
+	{
+		// Execute singleNarrowCollision with the pairs stored in
+		// mCoarseCollidersColliding in parallel
+		std::size_t nThreads = mParentWorld.getProperties().numThreads;
+		std::size_t pairsPerThread = mCoarseCollidersColliding.size() / nThreads;
+		std::vector<std::future<std::vector<Manifold>>> threadFutures(nThreads);
+
+		for (std::size_t iThread = 0; iThread < nThreads; ++iThread) {
+			threadFutures[iThread] = mParentWorld.getThreadPool().async([=]() {
+				std::size_t iStart = iThread * pairsPerThread;
+				std::size_t iEnd = (iThread < nThreads - 1)?
+					(iThread + 1) * pairsPerThread :
+					mCoarseCollidersColliding.size();
+
+				std::vector<Manifold> newManifolds;
+				for (std::size_t i = iStart; i < iEnd; ++i) {
+					singleNarrowCollision(mCoarseCollidersColliding[i], newManifolds);
+				}
+				return newManifolds;
+			});
+		}
+
+		// The new manifolds doesn't repeat and their colliders are
+		// already sorted
+		std::vector<Manifold> newManifolds;
+		for (auto& future : threadFutures) {
+			std::vector<Manifold> thNewManifolds = future.get();
+			newManifolds.insert(newManifolds.end(), thNewManifolds.begin(), thNewManifolds.end());
+		}
+
+		for (auto& newManifold : newManifolds) {
+			if (mManifolds.size() < mManifolds.capacity()) {
+				auto itManifold = mManifolds.emplace(std::move(newManifold));
+				mCollidersManifoldMap.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(itManifold->colliders[0], itManifold->colliders[1]),
+					std::forward_as_tuple(itManifold.getIndex())
+				);
+			}
+			else {
+				SOMBRA_ERROR_LOG << "Can't create more Manifolds";
+				break;
+			}
+		}
+	}
+
+
+	void CollisionDetector::singleNarrowCollision(const ColliderPair& pair, std::vector<Manifold>& newManifolds)
+	{
+		// Find a Manifold between the colliders
+		ColliderPair sortedPair = (pair.first <= pair.second)? pair : ColliderPair(pair.second, pair.first);
+
+		auto itPairManifold = mCollidersManifoldMap.find(sortedPair);
+		if (itPairManifold != mCollidersManifoldMap.end()) {
+			// Set the Manifold back to its old state (if we are at this
+			// stage it was Intersecting in the previous frame)
+			mManifolds[itPairManifold->second].state.set(Manifold::State::Intersecting);
+			mManifolds[itPairManifold->second].state.reset(Manifold::State::Updated);
+
+			// Update the Manifold data
+			mFineCollisionDetector.collide(mManifolds[itPairManifold->second]);
+		}
+		else {
+			// Create a new Manifold
+			Manifold manifold(sortedPair.first, sortedPair.second);
+			if (mFineCollisionDetector.collide(manifold)) {
+				newManifolds.push_back(std::move(manifold));
+			}
+		}
 	}
 
 }

@@ -265,17 +265,17 @@ TEST(FineCollisionDetector, TriangleCPoly1)
 		glm::vec3( 0.072549045f, 0.111764729f, -0.154901952f ),
 		glm::vec3( 0.068627476f, 0.088235318f, -0.154901952f )
 	});
-	glm::mat4 transforms2 = glm::scale(glm::mat4(1.0f), { 100.0f, 10.0f, 100.0f });
-	tr1.setTransforms(transforms2);
+	glm::mat4 transforms1 = glm::scale(glm::mat4(1.0f), { 100.0f, 10.0f, 100.0f });
+	tr1.setTransforms(transforms1);
 
 	BoundingBox bb1({ 1.0f, 1.0f, 1.0f });
-	glm::mat4 transforms1{
+	glm::mat4 transforms2{
 		{0.165384650f, -0.909461260f, 0.381481737f, 0.0f},
 		{0.909961343f, -0.008435368f, -0.414607644f, 0.0f},
 		{0.380287439f, 0.415703356f, 0.826179266f, 0.0f},
 		{6.803552150f, 1.749064920f, -15.065380100f, 1.0f}
 	};
-	bb1.setTransforms(transforms1);
+	bb1.setTransforms(transforms2);
 
 	Manifold manifold(&tr1, &bb1);
 	FineCollisionDetector fineCollisionDetector(
@@ -286,6 +286,46 @@ TEST(FineCollisionDetector, TriangleCPoly1)
 	);
 
 	ASSERT_FALSE(fineCollisionDetector.collide(manifold));
+}
+
+
+TEST(FineCollisionDetector, TriangleTriangle1)
+{
+	TriangleCollider tr1({
+ 		glm::vec3(1.38743401f, -1.00000000f, -1.09146941f),
+ 		glm::vec3(1.38743389f,-0.416275471f, -1.04143333f),
+ 		glm::vec3(1.38743401f, -1.00000000f, -1.04143333f)
+	});
+	glm::mat4 transforms1 = {
+		{ 2.98023224e-07, 0.00000000, 4.99999952, 0.00000000 },
+		{ 0.00000000, 5.00000000, 0.00000000, 0.00000000 },
+		{ -4.99999952, 0.00000000, 2.98023224e-07, 0.00000000 },
+		{ 9.94699955, 4.74100018, -0.0529999994, 1.00000000 }
+	};
+	tr1.setTransforms(transforms1);
+
+	TriangleCollider tr2({
+		glm::vec3(0.0254902244f, 0.088235318f, -0.0607842803f),
+		glm::vec3(0.0294117928f, 0.111764729f, -0.0607842803f),
+		glm::vec3(0.0254902244f, 0.084313750f, -0.0568627119f)
+	});
+	glm::mat4 transforms2 = {
+		{ 8.94069672e-05, 0.00000000, 249.999985, 0.00000000 },
+		{ 0.00000000, 10.0000000, 0.00000000, 0.00000000 },
+		{ -249.999985, 0.00000000, 8.94069672e-05, 0.00000000 },
+		{ 0.00000000, 0.00000000, 0.00000000, 1.00000000 }
+	};
+	tr2.setTransforms(transforms2);
+
+	Manifold manifold(&tr1, &tr2);
+	FineCollisionDetector fineCollisionDetector(
+		kCoarseEpsilon,
+		kMinFDifference, kMaxIterations,
+		kContactPrecision, kContactSeparation,
+		kRaycastPrecision
+	);
+
+	EXPECT_TRUE(fineCollisionDetector.collide(manifold));
 }
 
 

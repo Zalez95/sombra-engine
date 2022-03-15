@@ -16,10 +16,6 @@ namespace se::physics {
 	{
 		assert(minFDifference >= 0.0f && "The minimum face difference must be at least 0");
 		assert(projectionPrecision >= 0.0f && "The precision of the projected points must be at least 0");
-
-		mOverlappingFaces.reserve(2 * mMaxIterations);
-		mHorizon.reserve(2 * mMaxIterations);
-		mFacesToRemove.reserve(2 * mMaxIterations);
 	}
 
 
@@ -180,13 +176,10 @@ namespace se::physics {
 		}
 
 		// Expand the polytope until the closest HEFace is found
-		mOverlappingFaces.clear();
-		mHorizon.clear();
-		mFacesToRemove.clear();
-
 		std::size_t iteration = 0;
 		int iClosestFace = -1;
 		float closestSeparation = std::numeric_limits<float>::max();
+		std::vector<int> overlappingFaces, horizon, facesToRemove;
 		utils::FixedVector<int, 3> closestFaceIndices;
 		do {
 			// 1. Search a new SupportPoint along the HEFace's closest point
@@ -208,20 +201,20 @@ namespace se::physics {
 
 				// 3.2. Calculate the horizon HEEdges and HEFaces to remove
 				// from the current eyePoint perspective
-				mHorizon.clear();
-				mFacesToRemove.clear();
-				calculateHorizon(meshData, polytope.getNormals(), sp.getCSOPosition(), iCurrentFace, mHorizon, mFacesToRemove);
+				horizon.clear();
+				facesToRemove.clear();
+				calculateHorizon(meshData, polytope.getNormals(), sp.getCSOPosition(), iCurrentFace, horizon, facesToRemove);
 
 				// 3.3. Remove all the HEFaces that can be seen from the new
 				// SupportPoint
-				for (int iFaceToRemove : mFacesToRemove) {
+				for (int iFaceToRemove : facesToRemove) {
 					// If we are going to remove the closest HEFace then we
 					// store its indices for recoving it later if necessary
 					if (iClosestFace == iFaceToRemove) {
 						closestFaceIndices.clear();
 						getFaceIndices(polytope.getMesh(), iClosestFace, std::back_inserter(closestFaceIndices));
 						iClosestFace = -1;
-						mOverlappingFaces.clear();
+						overlappingFaces.clear();
 					}
 
 					polytope.removeFace(iFaceToRemove);
@@ -233,7 +226,7 @@ namespace se::physics {
 
 				// 3.4. Add new HEFaces to the Polytope by connecting the
 				// HEEdges of the horizon to the new SupportPoint
-				for (int iHorizonEdge : mHorizon) {
+				for (int iHorizonEdge : horizon) {
 					const HEEdge& currentEdge = meshData.edges[iHorizonEdge];
 					const HEEdge& oppositeEdge = meshData.edges[currentEdge.oppositeEdge];
 
@@ -243,7 +236,7 @@ namespace se::physics {
 
 					// Store the HEFace index if we removed the closest HEFace
 					if (iClosestFace < 0) {
-						mOverlappingFaces.push_back(iNewFace);
+						overlappingFaces.push_back(iNewFace);
 					}
 
 					// Add the HEFace to the facesByDistance vector if its
@@ -275,7 +268,7 @@ namespace se::physics {
 
 		// If we removed the closest HEFace then we have to recover it
 		if (iClosestFace < 0) {
-			for (int iFace : mOverlappingFaces) {
+			for (int iFace : overlappingFaces) {
 				polytope.removeFace(iFace);
 			}
 			iClosestFace = polytope.addFace(closestFaceIndices);

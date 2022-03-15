@@ -4,6 +4,8 @@
 #include <se/utils/MathUtils.h>
 #include <se/physics/collision/TerrainCollider.h>
 #include <se/physics/collision/TriangleCollider.h>
+#include <se/physics/collision/ConvexPolyhedron.h>
+#include <se/physics/collision/HalfEdgeMeshExt.h>
 
 using namespace se::physics;
 static constexpr float kTolerance = 0.000001f;
@@ -21,15 +23,25 @@ TEST(TerrainCollider, getAABB)
 		-0.283075078f, 0.129306909f, 0.134741993f, -0.250951479f, 0.104189257f, -0.422417659f
 	};
 	const int xSize = 6, zSize = 8;
-	const glm::vec3 expectedMinimum(-0.5f, -0.427923002f, -0.5f);
-	const glm::vec3 expectedMaximum(0.5f, 0.49946191f, 0.5f);
+	const glm::vec3 expectedMinimum1(-0.5f, -0.427923002f, -0.5f);
+	const glm::vec3 expectedMaximum1(0.5f, 0.49946191f, 0.5f);
 
 	TerrainCollider tc1;
 	tc1.setHeights(heights, xSize, zSize);
 	AABB aabb1 = tc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], kTolerance);
-		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], kTolerance);
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum1[i], kTolerance);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum1[i], kTolerance);
+	}
+
+	const glm::vec3 expectedMinimum2(-0.5f, -2.927923002f, -0.5f);
+	const glm::vec3 expectedMaximum2(0.5f, 0.49946191f, 0.5f);
+
+	tc1.setPrismHeight(2.5f);
+	AABB aabb2 = tc1.getAABB();
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb2.minimum[i], expectedMinimum2[i], kTolerance);
+		EXPECT_NEAR(aabb2.maximum[i], expectedMaximum2[i], kTolerance);
 	}
 }
 
@@ -50,8 +62,8 @@ TEST(TerrainCollider, getAABBTransforms)
 		-0.283075078f, 0.129306909f, 0.134741993f, -0.250951479f, 0.104189257f, -0.422417659f
 	};
 	const int xSize = 6, zSize = 8;
-	const glm::vec3 expectedMinimum(-9.358484268f, -8.048053741f, -2.782845735f);
-	const glm::vec3 expectedMaximum(3.376655340f, 4.209253787f, 11.290613174f);
+	const glm::vec3 expectedMinimun1(-9.358484268f, -8.048053741f, -2.782845735f);
+	const glm::vec3 expectedMaximun1(3.376655340f, 4.209253787f, 11.290613174f);
 
 	TerrainCollider tc1;
 	tc1.setHeights(heights, xSize, zSize);
@@ -62,8 +74,18 @@ TEST(TerrainCollider, getAABBTransforms)
 
 	AABB aabb1 = tc1.getAABB();
 	for (int i = 0; i < 3; ++i) {
-		EXPECT_NEAR(aabb1.minimum[i], expectedMinimum[i], kTolerance);
-		EXPECT_NEAR(aabb1.maximum[i], expectedMaximum[i], kTolerance);
+		EXPECT_NEAR(aabb1.minimum[i], expectedMinimun1[i], kTolerance);
+		EXPECT_NEAR(aabb1.maximum[i], expectedMaximun1[i], kTolerance);
+	}
+
+	const glm::vec3 expectedMinimum2(-9.358484268f, -14.367498397f, -6.862438201f);
+	const glm::vec3 expectedMaximum2(7.847007274f, 4.209253787f, 11.290613174f);
+
+	tc1.setPrismHeight(2.5f);
+	AABB aabb2 = tc1.getAABB();
+	for (int i = 0; i < 3; ++i) {
+		EXPECT_NEAR(aabb2.minimum[i], expectedMinimum2[i], kTolerance);
+		EXPECT_NEAR(aabb2.maximum[i], expectedMaximum2[i], kTolerance);
 	}
 }
 
@@ -101,8 +123,15 @@ TEST(TerrainCollider, getOverlapingParts1)
 	std::size_t result = 0;
 	tc1.processOverlapingParts(aabb1, kTolerance, [&result](const ConvexCollider&) { result++; });
 
-	std::vector<TriangleCollider> expectedRes = {};
-	ASSERT_EQ(result, expectedRes.size());
+	std::vector<TriangleCollider> expectedRes1 = {};
+	ASSERT_EQ(result, expectedRes1.size());
+
+	result = 0;
+	tc1.setPrismHeight(0.05f);
+	tc1.processOverlapingParts(aabb1, kTolerance, [&result](const ConvexCollider&) { result++; });
+
+	std::vector<TriangleCollider> expectedRes2 = {};
+	ASSERT_EQ(result, expectedRes2.size());
 }
 
 
@@ -125,6 +154,10 @@ TEST(TerrainCollider, updated)
 	tc1.resetUpdatedState();
 	EXPECT_FALSE(tc1.updated());
 	tc1.setTransforms(glm::mat4(1.0f));
+	EXPECT_TRUE(tc1.updated());
+	tc1.resetUpdatedState();
+	EXPECT_FALSE(tc1.updated());
+	tc1.setPrismHeight(1.0f);
 	EXPECT_TRUE(tc1.updated());
 	tc1.resetUpdatedState();
 	EXPECT_FALSE(tc1.updated());
@@ -160,7 +193,7 @@ TEST(TerrainCollider, getOverlapingParts2)
 	glm::mat4 transforms = t * r * s;
 	tc1.setTransforms(transforms);
 
-	std::vector<TriangleCollider> expectedRes = {
+	std::vector<TriangleCollider> expectedRes1 = {
 		TriangleCollider({
 			glm::vec3(-0.5f, 0.240925982f, -0.357142865f),
 			glm::vec3(-0.300000011f, -0.427922993f, -0.357142865f),
@@ -202,21 +235,41 @@ TEST(TerrainCollider, getOverlapingParts2)
 			glm::vec3(-0.300000011f, 0.476726710f, -0.071428574f)
 		})
 	};
-	for (TriangleCollider& cp : expectedRes) {
+	for (TriangleCollider& cp : expectedRes1) {
 		cp.setTransforms(transforms);
 	}
 
 	std::size_t iPart = 0;
 	tc1.processOverlapingParts(aabb1, kTolerance, [&](const ConvexCollider& part) {
 		AABB aabb2 = part.getAABB();
-		AABB aabb3 = expectedRes[iPart].getAABB();
+		AABB aabb3 = expectedRes1[iPart].getAABB();
 		for (int j = 0; j < 3; ++j) {
 			EXPECT_NEAR(aabb2.minimum[j], aabb3.minimum[j], kTolerance);
 			EXPECT_NEAR(aabb2.maximum[j], aabb3.maximum[j], kTolerance);
 		}
 		iPart++;
 	});
-	EXPECT_EQ(iPart, expectedRes.size());
+	EXPECT_EQ(iPart, expectedRes1.size());
+
+	std::vector<ConvexPolyhedron> expectedRes2;
+	for (const auto& triangle : expectedRes1) {
+		ConvexPolyhedron cp( createPrism(triangle.getLocalVertices(), 2.5f) );
+		cp.setTransforms(transforms);
+		expectedRes2.push_back(std::move(cp));
+	}
+
+	iPart = 0;
+	tc1.setPrismHeight(2.5f);
+	tc1.processOverlapingParts(aabb1, kTolerance, [&](const ConvexCollider& part) {
+		AABB aabb2 = part.getAABB();
+		AABB aabb3 = expectedRes2[iPart].getAABB();
+		for (int j = 0; j < 3; ++j) {
+			EXPECT_NEAR(aabb2.minimum[j], aabb3.minimum[j], kTolerance);
+			EXPECT_NEAR(aabb2.maximum[j], aabb3.maximum[j], kTolerance);
+		}
+		iPart++;
+	});
+	EXPECT_EQ(iPart, expectedRes2.size());
 }
 
 
@@ -247,7 +300,7 @@ TEST(TerrainCollider, processIntersectingParts)
 	glm::mat4 transforms = t * r * s;
 	tc1.setTransforms(transforms);
 
-	std::vector<TriangleCollider> expectedRes = {
+	std::vector<TriangleCollider> expectedRes1 = {
 		TriangleCollider({
 			glm::vec3(-0.100000001f, -0.422780156f, -0.071428574f),
 			glm::vec3(-0.100000001f, -0.294798493f, 0.071428574f),
@@ -264,21 +317,31 @@ TEST(TerrainCollider, processIntersectingParts)
 			glm::vec3(-0.300000011f, 0.392135232f, 0.214285716f)
 		})
 	};
-	for (TriangleCollider& cp : expectedRes) {
+	for (TriangleCollider& cp : expectedRes1) {
 		cp.setTransforms(transforms);
 	}
 
-	std::size_t numTris = 0;
+	std::size_t iPart = 0;
 	tc1.processIntersectingParts(ray1, kTolerance, [&](const ConvexCollider& part) {
 		auto tri1 = dynamic_cast<const TriangleCollider*>(&part);
 		ASSERT_TRUE(tri1);
 
-		auto tri2 = std::find_if(expectedRes.begin(), expectedRes.end(), [&](const TriangleCollider& tri) {
+		auto tri2 = std::find_if(expectedRes1.begin(), expectedRes1.end(), [&](const TriangleCollider& tri) {
 			return se::utils::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
 		});
-		EXPECT_TRUE(tri2 != expectedRes.end());
+		EXPECT_TRUE(tri2 != expectedRes1.end());
 
-		numTris++;
+		iPart++;
 	});
-	EXPECT_EQ(expectedRes.size(), numTris);
+	EXPECT_EQ(expectedRes1.size(), iPart);
+
+	iPart = 0;
+	tc1.setPrismHeight(0.05f);
+	tc1.processIntersectingParts(ray1, kTolerance, [&](const ConvexCollider& part) {
+		auto pri1 = dynamic_cast<const ConvexPolyhedron*>(&part);
+		ASSERT_TRUE(pri1);
+
+		iPart++;
+	});
+	EXPECT_EQ(iPart, 4);
 }

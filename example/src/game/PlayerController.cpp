@@ -25,7 +25,7 @@ namespace game {
 	PlayerController::PlayerController(Level& level, se::graphics::RenderableText& pickText) :
 		mLevel(level), mPickText(pickText)
 	{
-		auto& scene = mLevel.getScene();
+		auto scene = mLevel.getScene();
 
 		auto graphicsEngine = mLevel.getGame().getExternalTools().graphicsEngine;
 		auto gBufferRenderer = static_cast<se::graphics::Renderer*>(graphicsEngine->getRenderGraph().getNode("gBufferRendererMesh"));
@@ -52,10 +52,10 @@ namespace game {
 		rawMesh2.normals = se::app::MeshLoader::calculateNormals(rawMesh2.positions, rawMesh2.indices);
 		rawMesh2.tangents = se::app::MeshLoader::calculateTangents(rawMesh2.positions, rawMesh2.texCoords, rawMesh2.indices);
 
-		mTetrahedronMesh = scene.repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), rawMesh2)), "tetrahedronMesh");
+		mTetrahedronMesh = scene->repository.insert(std::make_shared<se::app::MeshRef>(se::app::MeshLoader::createGraphicsMesh(graphicsEngine->getContext(), rawMesh2)), "tetrahedronMesh");
 
-		auto programGBufMaterial = scene.repository.findByName<se::app::ProgramRef>("programGBufMaterial");
-		auto stepYellow = scene.repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRenderer), "stepYellow");
+		auto programGBufMaterial = scene->repository.findByName<se::app::ProgramRef>("programGBufMaterial");
+		auto stepYellow = scene->repository.insert(std::make_shared<se::app::RenderableShaderStep>(*gBufferRenderer), "stepYellow");
 
 		se::app::ShaderLoader::addMaterialBindables(
 			stepYellow,
@@ -66,10 +66,10 @@ namespace game {
 			programGBufMaterial
 		);
 
-		mShaderYellow = scene.repository.insert(std::make_shared<se::app::RenderableShader>(mLevel.getGame().getEventManager()), "shaderYellow");
+		mShaderYellow = scene->repository.insert(std::make_shared<se::app::RenderableShader>(mLevel.getGame().getEventManager()), "shaderYellow");
 		mShaderYellow->addStep(stepYellow);
 
-		mLightYellow = scene.repository.emplace<se::app::LightSource>(mLevel.getGame().getEventManager(), se::app::LightSource::Type::Point)
+		mLightYellow = scene->repository.emplace<se::app::LightSource>(mLevel.getGame().getEventManager(), se::app::LightSource::Type::Point)
 			.setName("yellow");
 		mLightYellow->setColor({ 1.0f, 1.0f, 0.0f });
 	}
@@ -171,7 +171,7 @@ namespace game {
 					glm::vec3 new_y = glm::normalize(glm::cross(new_z, new_x));
 
 					auto pointEntity = query.addEntity();
-					mLevel.getScene().entities.push_back(pointEntity);
+					mLevel.getScene()->entities.push_back(pointEntity);
 
 					se::app::TransformsComponent transforms2;
 					transforms2.position = rayHit.contactPointWorld;

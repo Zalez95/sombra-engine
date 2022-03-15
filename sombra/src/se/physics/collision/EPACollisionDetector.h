@@ -29,9 +29,6 @@ namespace se::physics {
 		/** The precision of the projected point onto a triangle */
 		const float mProjectionPrecision;
 
-		/** The vectors needed for expanding the polytope */
-		std::vector<int> mOverlappingFaces, mHorizon, mFacesToRemove;
-
 	public:		// Functions
 		/** Creates a new EPACollisionDetector
 		 * @param	minFThreshold a threshold value needed for checking if we

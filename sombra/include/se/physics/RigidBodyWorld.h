@@ -2,6 +2,7 @@
 #define RIGID_BODY_WORLD_H
 
 #include <mutex>
+#include "../utils/ThreadPool.h"
 #include "collision/CollisionDetector.h"
 #include "constraints/ConstraintManager.h"
 #include "CollisionSolver.h"
@@ -64,6 +65,9 @@ namespace se::physics {
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run for solving the Constraints */
 		std::size_t maxConstraintIterations = 10;
+
+		/** The number of threads to use */
+		std::size_t numThreads = 8;
 	};
 
 
@@ -76,6 +80,9 @@ namespace se::physics {
 	private:	// Attributes
 		/** All the properties of the RigidBodyWorld */
 		const WorldProperties mProperties;
+
+		/** The thread pool used by the RigidBodyWorld */
+		utils::ThreadPool mThreadPool;
 
 		/** The CollisionDetector used for detecting the collisions between the
 		 * RigidBodies */
@@ -111,6 +118,10 @@ namespace se::physics {
 		/** @return	the WorldProperties of the RigidBodyWorld */
 		const WorldProperties& getProperties() const
 		{ return mProperties; };
+
+		/** @return	the ThreadPool of the RigidBodyWorld */
+		utils::ThreadPool& getThreadPool()
+		{ return mThreadPool; };
 
 		/** @return	the CollisionDetector of the RigidBodyWorld */
 		CollisionDetector& getCollisionDetector()

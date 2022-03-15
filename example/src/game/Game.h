@@ -26,6 +26,7 @@ namespace game {
 	static constexpr float kCollisionSlopRestitution		= 0.5f;
 	static constexpr float kFrictionGravityAcceleration		= 9.8f;
 	static constexpr std::size_t kMaxConstraintIterations	= 10;
+	static constexpr std::size_t kNumPhysicsThreads			= 4;
 	static constexpr float kUpdateTime						= 0.016f;
 
 	enum class GameState : se::utils::StateMachine::State

@@ -308,8 +308,7 @@ namespace se::graphics {
 		 * @param	ref the BindableRef object that points to the Bindable
 		 * @return	an actual pointer to the Bindable object, nullptr if it
 		 *			doesn't exist */
-		Bindable* getBindable(const BindableRef& ref) const
-		{ return mParent.mBindables[ref.getIndex()].bindable.get(); };
+		Bindable* getBindable(const BindableRef& ref) const;
 
 		/** Returns a pointer to the Bindable object pointed by the given
 		 * BindableRef

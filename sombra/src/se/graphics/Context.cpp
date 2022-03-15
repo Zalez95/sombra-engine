@@ -78,6 +78,16 @@ namespace se::graphics {
 	}
 
 
+	Bindable* Context::Query::getBindable(const BindableRef& ref) const
+	{
+		if (ref.getParent() != &mParent) {
+			return nullptr;
+		}
+
+		return mParent.mBindables[ref.getIndex()].bindable.get();
+	}
+
+
 	Context::~Context()
 	{
 		std::scoped_lock lock(mCommandMutex);

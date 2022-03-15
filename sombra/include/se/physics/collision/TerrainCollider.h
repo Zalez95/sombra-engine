@@ -6,22 +6,23 @@
 namespace se::physics {
 
 	class TriangleCollider;
+	class ConvexPolyhedron;
 
 
 	/**
 	 * Class TerrainCollider, it's a Collider used to represent a terrain mesh.
 	 * The triangles of the terrain mesh will be generated from the
-	 * heights of its vertices in Clockwise order, it means that the triangle
-	 * grid will always be created like:
-	 * z
-	 * · — ·
+	 * heights of its vertices in the following order:
+	 * 0 — 1 x
 	 * | / |
-	 * · — · x
+	 * 2 — 3
+	 * z
 	 */
 	class TerrainCollider : public ConcaveCollider
 	{
 	private:	// Nested types
 		using TriangleCallback = std::function<void(const TriangleCollider&)>;
+		using PrismCallback = std::function<void(const ConvexPolyhedron&)>;
 
 	private:	// Attributes
 		/** The positions in the Y axis of the TerrainCollider's vertices in
@@ -29,16 +30,22 @@ namespace se::physics {
 		std::vector<float> mHeights;
 
 		/** The number of vertices of the Terrain in the X axis */
-		std::size_t mXSize;
+		std::size_t mXSize = 0;
 
 		/** The number of vertices of the Terrain in the Z axis */
-		std::size_t mZSize;
+		std::size_t mZSize = 0;
+
+		/** If it's equal to zero, the TerrainCollider will generate triangles
+		 * for @see processOverlapingParts and @see processIntersectingParts, if
+		 * it's larger than zero it will generate ConvexPolyhedrons with a
+		 * triangular prism shape and a height equal to this value */
+		float mPrismHeight = 0.0f;
 
 		/** The transformation matrix of the TerrainCollider */
-		glm::mat4 mTransformsMatrix;
+		glm::mat4 mTransformsMatrix = glm::mat4(1.0f);
 
 		/** The inverse of the transformation matrix of the TerrainCollider */
-		glm::mat4 mInverseTransformsMatrix;
+		glm::mat4 mInverseTransformsMatrix = glm::mat4(1.0f);
 
 		/** The AABB of the TerrainCollider */
 		AABB mAABB;
@@ -46,7 +53,7 @@ namespace se::physics {
 	public:		// Functions
 		/** Creates a new TerrainCollider located at the origin of
 		 * coordinates */
-		TerrainCollider();
+		TerrainCollider() { calculateAABB(); };
 
 		/** @return	the number of vertices in the X axis */
 		std::size_t getXSize() const { return mXSize; };
@@ -67,6 +74,12 @@ namespace se::physics {
 			const float* heights,
 			std::size_t xSize, std::size_t zSize
 		);
+
+		/** @return	the Prism Height of the TerrainCollider */
+		float getPrismHeight() const { return mPrismHeight; };
+
+		/** Updates the prism height of the TerrainCollider */
+		void setPrismHeight(float prismHeight);
 
 		/** @copydoc Collider::clone() */
 		virtual std::unique_ptr<Collider> clone() const override
@@ -110,15 +123,32 @@ namespace se::physics {
 			const TriangleCallback& callback
 		) const;
 
+		/** Calculates the ConvexPolyhedron Prisms located between the given
+		 * indices of the HeightMap, calling the given callback function
+		 *
+		 * @param	iMinX the minimum position in the X Axis
+		 * @param	iMinZ the minimum position in the Z Axis
+		 * @param	iMaxX the maximum position in the X Axis
+		 * @param	iMaxZ the maximum position in the Z Axis
+		 * @param	callback the function to call for each Triangle */
+		void processPrisms(
+			std::size_t iMinX, std::size_t iMinZ,
+			std::size_t iMaxX, std::size_t iMaxZ,
+			const PrismCallback& callback
+		) const;
+
 		/** Checks if the given AABB is inside the given triangle in the Y axis
 		 *
 		 * @param	aabb the AABB in local space
-		 * @param	vertices the vertices of the triangle
+		 * @param	vertices a pointer to the first of the vertices of the
+		 *			convex shape in local space
+		 * @param	vertexCount the number of vertices to check in @see vertices
 		 * @param	epsilon the precision of the check
 		 * @return	true if the AABB (or part of it) is inside the triangle in
 		 *			the Y axis, false otherwise */
 		bool checkYAxis(
-			const AABB& aabb, const std::array<glm::vec3, 3>& vertices,
+			const AABB& aabb,
+			const glm::vec3* vertices, std::size_t vertexCount,
 			float epsilon
 		) const;
 	};

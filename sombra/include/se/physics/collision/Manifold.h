@@ -1,6 +1,7 @@
 #ifndef MANIFOLD_H
 #define MANIFOLD_H
 
+#include <array>
 #include <bitset>
 #include "Contact.h"
 #include "../../utils/FixedVector.h"
@@ -31,7 +32,7 @@ namespace se::physics {
 		std::bitset<State::Count> state;
 
 		/** The colliders of the Manifold */
-		const Collider* colliders[2];
+		std::array<const Collider*, 2> colliders;
 
 		/** All the Contacs the Contact Manifold can hold */
 		utils::FixedVector<Contact, kMaxContacts> contacts;

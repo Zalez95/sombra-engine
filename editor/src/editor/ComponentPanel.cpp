@@ -73,7 +73,7 @@ namespace editor {
 		virtual void enable(Entity entity) override
 		{
 			mPanel.mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
-				query.enableComponent<T>(entity);
+				query.enableComponents<T>(entity);
 			});
 		};
 		virtual bool enabled(Entity entity) override
@@ -87,7 +87,7 @@ namespace editor {
 		virtual void disable(Entity entity) override
 		{
 			mPanel.mEditor.getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
-				query.disableComponent<T>(entity);
+				query.disableComponents<T>(entity);
 			});
 		};
 		virtual void remove(Entity entity) override
@@ -895,6 +895,11 @@ namespace editor {
 					terrain.setHeights(heights.data(), image.width, image.height);
 				}
 				ImGui::TreePop();
+			}
+
+			float prismHeight = terrain.getPrismHeight();
+			if (ImGui::DragFloat("Prism Height", &prismHeight, 0.005f, -FLT_MAX, FLT_MAX, "%.3f", 1.0f)) {
+				terrain.setPrismHeight(prismHeight);
 			}
 		}
 		void drawTriMesh(TriangleMeshCollider& triMesh)

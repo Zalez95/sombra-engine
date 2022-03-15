@@ -19,6 +19,16 @@ namespace se::physics {
 	std::pair<bool, std::string> validateMesh(const HalfEdgeMesh& meshData);
 
 
+	/** Creates a triangular prism HalfEdgeMesh by extruding downwards the given
+	 * Triangle
+	 *
+	 * @param	triangle the triangle base of the prism
+	 * @param	height the height of the prism */
+	HalfEdgeMesh createPrism(
+		const std::array<glm::vec3, 3>& triangle, float height
+	);
+
+
 	/** Creates a new HalfEdgeMesh from the given one with its the polygon
 	 * HEFaces converted to triangles
 	 *

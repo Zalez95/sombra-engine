@@ -26,7 +26,7 @@ namespace game {
 		static constexpr float kZFar				= 2000.0f;
 
 		Game& mGame;
-		se::app::Scene mScene;
+		se::app::Scene* mScene;
 		se::app::Entity mPlayerEntity;
 		se::graphics::RenderableSprite *mLogoTexture, *mReticleTexture;
 		se::graphics::RenderableText* mPickText;
@@ -47,7 +47,7 @@ namespace game {
 		Game& getGame() { return mGame; };
 
 		/** @return	the Scene of the Level */
-		se::app::Scene& getScene() { return mScene; };
+		se::app::Scene* getScene() { return mScene; };
 
 		/** @return	the player Entity of the Level */
 		se::app::Entity getPlayer() const { return mPlayerEntity; };
@@ -65,6 +65,9 @@ namespace game {
 		 *
 		 * @param	event the KeyEvent to handle */
 		void onKeyEvent(const se::app::KeyEvent& event);
+
+		/** Loads the level data */
+		void loadLevel();
 	};
 
 }

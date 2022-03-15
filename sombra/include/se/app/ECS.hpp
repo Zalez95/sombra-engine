@@ -454,7 +454,7 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::Query::enableComponent(Entity entity)
+	void EntityDatabase::Query::enableComponents(Entity entity)
 	{
 		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity)) {
@@ -468,6 +468,14 @@ namespace se::app {
 				}
 			}
 		}
+	}
+
+
+	template <typename T1, typename T2, typename... Args>
+	void EntityDatabase::Query::enableComponents(Entity entity)
+	{
+		enableComponents<T1>(entity);
+		enableComponents<T2, Args...>(entity);
 	}
 
 
@@ -487,7 +495,7 @@ namespace se::app {
 
 
 	template <typename T>
-	void EntityDatabase::Query::disableComponent(Entity entity)
+	void EntityDatabase::Query::disableComponents(Entity entity)
 	{
 		auto& table = mParent.getTable<T>();
 		if (table.hasComponent(entity)) {
@@ -501,6 +509,14 @@ namespace se::app {
 
 			table.disableComponent(entity);
 		}
+	}
+
+
+	template <typename T1, typename T2, typename... Args>
+	void EntityDatabase::Query::disableComponents(Entity entity)
+	{
+		disableComponents<T1>(entity);
+		disableComponents<T2, Args...>(entity);
 	}
 
 // Private functions

@@ -1720,7 +1720,8 @@
                 "layers": "00000000000000000000000000000001",
                 "type": "TerrainCollider",
                 "xSize": 256,
-                "zSize": 256
+                "zSize": 256,
+                "prismHeight": 0.05
             },
             "enabled": true,
             "entity": 5,

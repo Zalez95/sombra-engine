@@ -53,6 +53,7 @@ namespace se::physics {
 
 	void CollisionSolver::removeRigidBody(const RigidBody* rigidBody)
 	{
+		std::scoped_lock lock(mMutex);
 		for (auto itPair = mManifoldConstraintIndicesMap.begin(); itPair != mManifoldConstraintIndicesMap.end();) {
 			if ((rigidBody == itPair->first->colliders[0]->getParent())
 				|| (rigidBody == itPair->first->colliders[1]->getParent())
@@ -78,6 +79,7 @@ namespace se::physics {
 
 	void CollisionSolver::update(float deltaTime)
 	{
+		std::scoped_lock lock(mMutex);
 		for (auto& normalConstraint : mContactNormalConstraints) {
 			normalConstraint.setDeltaTime(deltaTime);
 		}
@@ -86,6 +88,8 @@ namespace se::physics {
 // Private functions
 	void CollisionSolver::handleIntersectingManifold(const Manifold& manifold)
 	{
+		std::scoped_lock lock(mMutex);
+
 		RigidBody* rb1 = manifold.colliders[0]->getParent();
 		RigidBody* rb2 = manifold.colliders[1]->getParent();
 		auto& manifoldConstraintIndices = mManifoldConstraintIndicesMap[&manifold];
@@ -199,6 +203,8 @@ namespace se::physics {
 
 	void CollisionSolver::handleDisjointManifold(const Manifold& manifold)
 	{
+		std::scoped_lock lock(mMutex);
+
 		auto itPair = mManifoldConstraintIndicesMap.find(&manifold);
 		if (itPair != mManifoldConstraintIndicesMap.end()) {
 			for (auto& constraintIndices : itPair->second) {

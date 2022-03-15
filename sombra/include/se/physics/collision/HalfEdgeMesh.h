@@ -137,7 +137,8 @@ namespace se::physics {
 	 *			HEFace
 	 * @return	the index of the new HEFace in the HalfEdgeMesh faces
 	 *			PackedVector (the HEFace is added with the emplace function),
-	 *			-1 if the number of HEVertices is less than 3 */
+	 *			-1 if the number of HEVertices is less than 3
+	 * @note	faces vertex indices must be added in counter-clockwise order */
 	template <class InputIterator>
 	int addFace(
 		HalfEdgeMesh& meshData,

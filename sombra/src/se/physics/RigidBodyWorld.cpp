@@ -5,8 +5,8 @@
 namespace se::physics {
 
 	RigidBodyWorld::RigidBodyWorld(const WorldProperties& properties) :
-		mProperties(properties), mCollisionDetector(*this),
-		mConstraintManager(*this), mCollisionSolver(*this)
+		mProperties(properties), mThreadPool(properties.numThreads),
+		mCollisionDetector(*this), mConstraintManager(*this), mCollisionSolver(*this)
 	{
 		mCollisionDetector.addListener(&mCollisionSolver);
 	}

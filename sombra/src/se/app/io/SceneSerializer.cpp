@@ -2117,6 +2117,7 @@ namespace se::app {
 			json["type"] = "TerrainCollider";
 			json["xSize"] = terrain->getXSize();
 			json["zSize"] = terrain->getZSize();
+			json["prismHeight"] = terrain->getPrismHeight();
 			json["heights"] = data.buffersJson.size() - 1;
 		}
 		else if (auto triangleMesh = dynamic_cast<const TriangleMeshCollider*>(&collider)) {
@@ -2324,11 +2325,17 @@ namespace se::app {
 				return { Result(false, "Missing TerrainCollider \"zSize\" property"), std::nullopt };
 			}
 
+			auto itPrismHeight = json.find("prismHeight");
+			if (itPrismHeight == json.end()) {
+				return { Result(false, "Missing TerrainCollider \"prismHeight\" property"), std::nullopt };
+			}
+
 			MemBuffer buffer;
 			deserializeBuffer(data.buffersJson[heights], data.dataStream, buffer);
 
 			auto terrain = std::make_unique<TerrainCollider>();
 			terrain->setHeights(reinterpret_cast<const float*>(buffer.data()), *itXSize, *itZSize);
+			terrain->setPrismHeight(*itPrismHeight);
 			collider = std::move(terrain);
 		}
 		else if (*itType == "TriangleMeshCollider") {

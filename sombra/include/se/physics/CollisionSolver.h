@@ -46,6 +46,11 @@ namespace se::physics {
 		/** The FrictionConstraints of all the Contacts */
 		utils::PackedVector<FrictionConstraint> mContactFrictionConstraints;
 
+		/** The mutex used for protecting @see mManifoldConstraintIndicesMap,
+		 * @see mContactNormalConstraints and
+		 * @see mContactFrictionConstraints */
+		mutable std::mutex mMutex;
+
 	public:		// Functions
 		/** Creates a new CollisionSolver
 		 *

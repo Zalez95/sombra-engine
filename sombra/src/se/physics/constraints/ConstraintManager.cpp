@@ -121,8 +121,26 @@ namespace se::physics {
 
 		{ // Solve the islands constraints
 			std::scoped_lock lck(mMutex);
-			for (ConstraintIsland& island : mIslands) {
-				island.update(deltaTime);
+
+			std::size_t nThreads = mParentWorld->getProperties().numThreads;
+			std::size_t islandsPerThread = mIslands.size() / nThreads;
+			std::vector<std::future<void>> threadFutures(nThreads);
+
+			for (std::size_t iThread = 0; iThread < nThreads; ++iThread) {
+				threadFutures[iThread] = mParentWorld->getThreadPool().async([=]() {
+					std::size_t iStart = iThread * islandsPerThread;
+					std::size_t iEnd = (iThread < nThreads - 1)?
+						(iThread + 1) * islandsPerThread :
+						mIslands.size();
+
+					for (std::size_t i = iStart; i < iEnd; ++i) {
+						mIslands[i].update(deltaTime);
+					}
+				});
+			}
+
+			for (auto& future : threadFutures) {
+				future.get();
 			}
 		}
 	}

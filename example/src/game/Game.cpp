@@ -19,7 +19,7 @@ namespace game {
 				kMotionBias, kPhysicsWorldAABB, kMaxCollidingRBs, kCoarseCollisionEpsilon, kMaxCollisionIterations,
 				kMinFDifference, kContactPrecision, kContactSeparation, kRaycastPrecision, kCollisionBeta,
 				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
-				kFrictionGravityAcceleration, kMaxConstraintIterations
+				kFrictionGravityAcceleration, kMaxConstraintIterations, kNumPhysicsThreads
 			},
 			kUpdateTime
 		),
