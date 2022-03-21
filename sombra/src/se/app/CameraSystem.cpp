@@ -47,6 +47,7 @@ namespace se::app {
 			.subscribe(this, Topic::Shader);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
 			.set<CameraComponent>()
+			.set<TransformsComponent>()
 			.set<MeshComponent>()
 			.set<TerrainComponent>()
 			.set<ParticleSystemComponent>()
@@ -104,6 +105,7 @@ namespace se::app {
 	void CameraSystem::onNewComponent(Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query)
 	{
 		tryCallC(&CameraSystem::onNewCamera, entity, mask, query);
+		tryCallC(&CameraSystem::onNewTransforms, entity, mask, query);
 		tryCallC(&CameraSystem::onNewMesh, entity, mask, query);
 		tryCallC(&CameraSystem::onNewTerrain, entity, mask, query);
 		tryCallC(&CameraSystem::onNewParticleSys, entity, mask, query);
@@ -123,8 +125,12 @@ namespace se::app {
 
 	void CameraSystem::update()
 	{
-		SOMBRA_DEBUG_LOG << "Updating the Cameras";
-		mEntityDatabase.executeQuery([](EntityDatabase::Query& query) {
+		SOMBRA_DEBUG_LOG << "Start";
+
+		glm::vec3 viewPosition;
+		glm::mat4 viewMatrix, projectionMatrix, viewProjectionMatrix;
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
+			SOMBRA_DEBUG_LOG << "Updating the Cameras";
 			query.iterateEntityComponents<TransformsComponent, CameraComponent>(
 				[&](Entity, TransformsComponent* transforms, CameraComponent* camera) {
 					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::Camera)]) {
@@ -135,11 +141,7 @@ namespace se::app {
 				},
 				true
 			);
-		});
 
-		glm::vec3 viewPosition;
-		glm::mat4 viewMatrix, projectionMatrix, viewProjectionMatrix;
-		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			auto [transforms, camera] = query.getComponents<TransformsComponent, CameraComponent>(mCameraEntity, true);
 			viewPosition = (transforms)? transforms->position : glm::vec3(0.0f);
 			viewMatrix = (camera)? camera->getViewMatrix() : glm::mat4(1.0f);
@@ -179,6 +181,12 @@ namespace se::app {
 		}
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with CameraComponent " << camera << " removed successfully";
+	}
+
+
+	void CameraSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Camera));
 	}
 
 

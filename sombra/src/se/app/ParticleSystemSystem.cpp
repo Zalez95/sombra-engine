@@ -10,7 +10,10 @@ namespace se::app {
 	ParticleSystemSystem::ParticleSystemSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<ParticleSystemComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<ParticleSystemComponent>()
+			.set<TransformsComponent>()
+		);
 	}
 
 
@@ -24,6 +27,7 @@ namespace se::app {
 		Entity entity, const EntityDatabase::ComponentMask& mask, EntityDatabase::Query& query
 	) {
 		tryCallC(&ParticleSystemSystem::onNewParticleSys, entity, mask, query);
+		tryCallC(&ParticleSystemSystem::onNewTransforms, entity, mask, query);
 	}
 
 
@@ -49,7 +53,7 @@ namespace se::app {
 				},
 				true
 			);
-		}).executeQuery([this](EntityDatabase::Query& query) {
+
 			query.iterateComponents<ParticleSystemComponent>(
 				[this](ParticleSystemComponent& particleSystem) {
 					particleSystem.update(mDeltaTime);
@@ -85,6 +89,12 @@ namespace se::app {
 		particleSystem->setup(nullptr, &context, kNullEntity);
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with ParticleSystem " << particleSystem << " removed successfully";
+	}
+
+
+	void ParticleSystemSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::ParticleSystem));
 	}
 
 }

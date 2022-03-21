@@ -17,7 +17,10 @@ namespace se::app {
 			.subscribe(this, Topic::RMesh)
 			.subscribe(this, Topic::RShader)
 			.subscribe(this, Topic::Shader);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<MeshComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<MeshComponent>()
+			.set<TransformsComponent>()
+		);
 
 		mEntityUniforms.reserve(mEntityDatabase.getMaxComponents<MeshComponent>());
 	}
@@ -38,6 +41,23 @@ namespace se::app {
 		return tryCall(&MeshSystem::onRMeshEvent, event)
 			|| tryCall(&MeshSystem::onRenderableShaderEvent, event)
 			|| tryCall(&MeshSystem::onShaderEvent, event);
+	}
+
+
+	void MeshSystem::onNewComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&MeshSystem::onNewMesh, entity, mask, query);
+		tryCallC(&MeshSystem::onNewTransforms, entity, mask, query);
+	}
+
+
+	void MeshSystem::onRemoveComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&MeshSystem::onRemoveMesh, entity, mask, query);
 	}
 
 
@@ -191,6 +211,12 @@ namespace se::app {
 		mesh->setup(nullptr, kNullEntity);
 
 		SOMBRA_INFO_LOG << "Entity " << entity << " with MeshComponent " << mesh << " removed successfully";
+	}
+
+
+	void MeshSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Mesh));
 	}
 
 

@@ -1,3 +1,4 @@
+#include <glm/gtx/string_cast.hpp>
 #include "se/utils/Log.h"
 #include "se/utils/ThreadPool.h"
 #include "se/graphics/GraphicsEngine.h"
@@ -11,13 +12,16 @@ namespace se::app {
 
 	TerrainSystem::TerrainSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application),
-		mCameraEntity(kNullEntity), mCameraUpdated(false)
+		mCameraEntity(kNullEntity), mLastCameraPosition(0.0f)
 	{
 		mApplication.getEventManager()
 			.subscribe(this, Topic::Camera)
 			.subscribe(this, Topic::RShader)
 			.subscribe(this, Topic::Shader);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<TerrainComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<TerrainComponent>()
+			.set<TransformsComponent>()
+		);
 
 		mEntityUniforms.reserve(mEntityDatabase.getMaxComponents<TerrainComponent>());
 	}
@@ -41,6 +45,23 @@ namespace se::app {
 	}
 
 
+	void TerrainSystem::onNewComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&TerrainSystem::onNewTerrain, entity, mask, query);
+		tryCallC(&TerrainSystem::onNewTransforms, entity, mask, query);
+	}
+
+
+	void TerrainSystem::onRemoveComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&TerrainSystem::onRemoveTerrain, entity, mask, query);
+	}
+
+
 	void TerrainSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Terrains";
@@ -50,15 +71,19 @@ namespace se::app {
 
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			std::scoped_lock lock(mMutex);
-			SOMBRA_DEBUG_LOG << "Checking if the camera was updated " << mCameraUpdated;
-
 			auto [camTransforms] = query.getComponents<TransformsComponent>(mCameraEntity, true);
-			if (camTransforms && (camTransforms->updated.any() || mCameraUpdated)) {
+			if (camTransforms) {
 				camPosition = camTransforms->position;
-				cameraUpdated = true;
 			}
 
-			mCameraUpdated = false;
+			if (camPosition == mLastCameraPosition) {
+				SOMBRA_DEBUG_LOG << "Camera position hasn't changed " << glm::to_string(camPosition);
+			}
+			else {
+				mLastCameraPosition = camPosition;
+				cameraUpdated = true;
+				SOMBRA_DEBUG_LOG << "Camera position updated " << glm::to_string(camPosition);
+			}
 		});
 
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
@@ -186,13 +211,18 @@ namespace se::app {
 	}
 
 
+	void TerrainSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Terrain));
+	}
+
+
 	void TerrainSystem::onCameraEvent(const ContainerEvent<Topic::Camera, Entity>& event)
 	{
 		SOMBRA_INFO_LOG << event;
 
 		std::scoped_lock lock(mMutex);
 		mCameraEntity = event.getValue();
-		mCameraUpdated = true;
 		SOMBRA_INFO_LOG << "Entity " << mCameraEntity << " setted as camera";
 	}
 

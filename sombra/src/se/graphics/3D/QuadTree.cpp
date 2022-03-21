@@ -4,57 +4,20 @@
 
 namespace se::graphics {
 
-	QuadTree::Node::Node() :
-		children{ nullptr, nullptr, nullptr, nullptr }, isLeaf(true),
-		parent(nullptr), quarterIndex(0), xzSeparation(0.0f),
-		lod(0), neighboursLods{ -1, -1, -1, -1 } {}
-
-
-	QuadTree::Node::Node(const Node& other) :
-		children{ nullptr, nullptr, nullptr, nullptr }, isLeaf(other.isLeaf),
-		parent(other.parent), quarterIndex(other.quarterIndex), xzSeparation(other.xzSeparation),
-		lod(other.lod), neighboursLods(other.neighboursLods)
-	{
-		for (std::size_t i = 0; i < children.size(); ++i) {
-			if (other.children[i]) {
-				children[i] = std::make_unique<Node>(*other.children[i]);
-				children[i]->parent = this;
-			}
-		}
-	}
-
-
-	QuadTree::Node& QuadTree::Node::operator=(const Node& other)
-	{
-		children = { nullptr, nullptr, nullptr, nullptr };
-		isLeaf = other.isLeaf;
-		parent = other.parent;
-		quarterIndex = other.quarterIndex;
-		xzSeparation = other.xzSeparation;
-		lod = other.lod;
-		neighboursLods = other.neighboursLods;
-		for (std::size_t i = 0; i < children.size(); ++i) {
-			if (other.children[i]) {
-				children[i] = std::make_unique<Node>(*other.children[i]);
-				children[i]->parent = this;
-			}
-		}
-
-		return *this;
-	}
-
-
 	QuadTree::QuadTree(float size, const std::vector<float>& lodDistances) :
 		mSize(size), mLodDistances(lodDistances)
 	{
 		assert(!lodDistances.empty() && "lodDistances must have at least LOD 0");
+
+		mNodes.emplace();
 	}
 
 
 	void QuadTree::setSize(float size)
 	{
 		mSize = size;
-		mRootNode = Node();
+		mNodes.clear();
+		mNodes.emplace();
 	}
 
 
@@ -63,181 +26,182 @@ namespace se::graphics {
 		assert(!lodDistances.empty() && "lodDistances must have at least LOD 0");
 
 		mLodDistances = lodDistances;
-		mRootNode = Node();
+		mNodes.clear();
+		mNodes.emplace();
 	}
 
 
 	void QuadTree::updateHighestLodLocation(const glm::vec3& highestLodLocation)
 	{
-		updateNode(mRootNode, glm::vec2(0.0f), highestLodLocation);
+		updateNode(kIRootNode, glm::vec2(0.0f), highestLodLocation);
 	}
 
 // Private functions
 	void QuadTree::updateNode(
-		Node& node, const glm::vec2& parentLocation, const glm::vec3& highestLodLocation
-	) const
-	{
-		glm::vec2 nodeLocation = parentLocation + node.xzSeparation;
+		int iNode, const glm::vec2& parentLocation, const glm::vec3& highestLodLocation
+	) {
+		glm::vec2 nodeLocation = parentLocation + mNodes[iNode].xzSeparation;
 		float distance = glm::distance(highestLodLocation, { nodeLocation.x, 0.0f, nodeLocation.y });
 
 		// If the distance to the highestLodLocation is closer than the lod one
 		// the node should be splitted
-		if ((node.lod < static_cast<int>(mLodDistances.size()) - 1)
-			&& (distance < mLodDistances[node.lod])
+		if ((mNodes[iNode].lod < static_cast<int>(mLodDistances.size()) - 1)
+			&& (distance < mLodDistances[mNodes[iNode].lod])
 		) {
 			// Split the node if it's a leaf
-			if (node.isLeaf) {
-				split(node);
+			if (mNodes[iNode].isLeaf) {
+				split(iNode);
 			}
 
 			// Update the children nodes
-			for (auto& child : node.children) {
-				updateNode(*child, nodeLocation, highestLodLocation);
+			for (std::size_t iChild = 0; iChild < mNodes[iNode].children.size(); ++iChild) {
+				updateNode(mNodes[iNode].children[iChild], nodeLocation, highestLodLocation);
 			}
 		}
 		else {
-			if (!node.isLeaf) {
+			if (!mNodes[iNode].isLeaf) {
 				// Collapse the children nodes
-				for (auto& child : node.children) {
-					updateNode(*child, nodeLocation, highestLodLocation);
+				for (std::size_t iChild = 0; iChild < mNodes[iNode].children.size(); ++iChild) {
+					updateNode(mNodes[iNode].children[iChild], nodeLocation, highestLodLocation);
 				}
 
 				// Collapse the node if it isn't a leaf and the lod difference
 				// of its children (leaves) with their neighbours allows it
 				if (std::all_of(
-					node.children.begin(), node.children.end(),
-					[](const auto& child) {
+					mNodes[iNode].children.begin(), mNodes[iNode].children.end(),
+					[this](int iChild) {
 						return std::all_of(
-							child->neighboursLods.begin(), child->neighboursLods.end(),
-							[&](int lod) { return lod - child->lod <= 0; }
+							mNodes[iChild].neighboursLods.begin(), mNodes[iChild].neighboursLods.end(),
+							[&](int lod) { return (lod - mNodes[iChild].lod) <= 0; }
 						);
 					}
 				)) {
-					collapse(node);
+					collapse(iNode);
 				}
 			}
 		}
 	}
 
 
-	void QuadTree::split(Node& node) const
+	void QuadTree::split(int iNode)
 	{
 		// Add the children nodes
-		float childSeparation = mSize / static_cast<float>(std::pow(2.0f, node.lod + 2));
+		float childSeparation = mSize / static_cast<float>(std::pow(2.0f, mNodes[iNode].lod + 2));
 		for (unsigned char i = 0; i < 2; ++i) {
 			for (unsigned char j = 0; j < 2; ++j) {
-				auto child = std::make_unique<Node>();
-				child->parent = &node;
-				child->quarterIndex = 2*i + j;
-				child->xzSeparation = { (j? 1 : -1) * childSeparation, (i? 1 : -1) * childSeparation };
-				child->lod = node.lod + 1;
-				node.children[child->quarterIndex] = std::move(child);
+				auto itChild = mNodes.emplace();
+				itChild->parent = iNode;
+				itChild->quarterIndex = 2*i + j;
+				itChild->xzSeparation = { (j? 1 : -1) * childSeparation, (i? 1 : -1) * childSeparation };
+				itChild->lod = mNodes[iNode].lod + 1;
+				mNodes[iNode].children[itChild->quarterIndex] = itChild.getIndex();
 			}
 		}
 
 		// Change the leaf flag value
-		node.isLeaf = false;
+		mNodes[iNode].isLeaf = false;
 
 		// Notifies the neighbour nodes of the update, updating their lods and
 		// dividing them if necessary
-		updateNeighbours(node);
+		updateNeighbours(iNode);
 	}
 
 
-	void QuadTree::collapse(Node& node) const
+	void QuadTree::collapse(int iNode)
 	{
 		// Change the leaf flag value
-		node.isLeaf = true;
+		mNodes[iNode].isLeaf = true;
 
 		// Remove the children nodes recursively
-		node.children = {};
+		mNodes[iNode].children = {};
 
 		// Notifies the neighbour nodes of the update, updating their lods
-		updateNeighbours(node);
+		updateNeighbours(iNode);
 	}
 
 
-	void QuadTree::updateNeighbours(Node& node) const
+	void QuadTree::updateNeighbours(int iNode)
 	{
-		if (node.isLeaf) {
+		if (mNodes[iNode].isLeaf) {
 			for (int i = 0; i < static_cast<int>(Direction::NumDirections); ++i) {
 				Direction d = static_cast<Direction>(i);
 
-				std::vector<Node*> path;
-				node.neighboursLods[static_cast<int>(d)] = -1;
-				for (Node* neighbour : getNeighbours(node, d, true, path)) {
+				std::vector<int> path;
+				mNodes[iNode].neighboursLods[static_cast<int>(d)] = -1;
+				for (int iNeighbour : getNeighbours(iNode, d, true, path)) {
 					// Synch the neighbour lods array
 					path.clear();
-					neighbour->neighboursLods[static_cast<int>(inverse(d))] = -1;
-					for (Node* neighbourNeighbour : getNeighbours(*neighbour, inverse(d), true, path)) {
-						if (neighbourNeighbour->lod > neighbour->neighboursLods[static_cast<int>(inverse(d))]) {
-							neighbour->neighboursLods[static_cast<int>(inverse(d))] = neighbourNeighbour->lod;
+					mNodes[iNeighbour].neighboursLods[static_cast<int>(inverse(d))] = -1;
+					for (int iNeighbourNeighbour : getNeighbours(iNeighbour, inverse(d), true, path)) {
+						if (mNodes[iNeighbourNeighbour].lod > mNodes[iNeighbour].neighboursLods[static_cast<int>(inverse(d))]) {
+							mNodes[iNeighbour].neighboursLods[static_cast<int>(inverse(d))] = mNodes[iNeighbourNeighbour].lod;
 						}
 					}
-					if (neighbour->lod > node.neighboursLods[static_cast<int>(d)]) {
-						node.neighboursLods[static_cast<int>(d)] = neighbour->lod;
+					if (mNodes[iNeighbour].lod > mNodes[iNode].neighboursLods[static_cast<int>(d)]) {
+						mNodes[iNode].neighboursLods[static_cast<int>(d)] = mNodes[iNeighbour].lod;
 					}
 
 					// Split one of the nodes if necessary
-					int lodDifference = node.lod - neighbour->lod;
+					int lodDifference = mNodes[iNode].lod - mNodes[iNeighbour].lod;
 					if (lodDifference > 1) {
-						split(*neighbour);
+						split(iNeighbour);
 					}
 					else if (lodDifference < -1) {
-						split(node);
+						split(iNode);
 					}
 				}
 			}
 		}
 		else {
 			// Update all the children neighbours
-			for (auto& child : node.children) {
-				updateNeighbours(*child);
+			for (std::size_t iChild = 0; iChild < mNodes[iNode].children.size(); ++iChild) {
+				updateNeighbours(mNodes[iNode].children[iChild]);
 			}
 		}
 	}
 
 
-	std::vector<QuadTree::Node*> QuadTree::getNeighbours(
-		Node& currentNode, Direction neighbourDirection,
-		bool isAscending, std::vector<Node*>& ascendingPath
+	std::vector<int> QuadTree::getNeighbours(
+		int iCurrentNode, Direction neighbourDirection,
+		bool isAscending, std::vector<int>& ascendingPath
 	) {
-		std::vector<Node*> ret;
+		std::vector<int> ret;
 
 		if (isAscending) {
-			if (currentNode.lod == 0) {
+			if (mNodes[iCurrentNode].lod == 0) {
 				// No neighbour to notify in that direction
 				ret = {};
 			}
 			else {
 				// Continue ascending until the node isn't in the specified
 				// direction
-				ascendingPath.push_back(&currentNode);
-				bool continueAscending = isAtDirection(currentNode.quarterIndex, neighbourDirection);
-				ret = getNeighbours(*currentNode.parent, neighbourDirection, continueAscending, ascendingPath);
+				ascendingPath.push_back(iCurrentNode);
+				bool continueAscending = isAtDirection(mNodes[iCurrentNode].quarterIndex, neighbourDirection);
+				ret = getNeighbours(mNodes[iCurrentNode].parent, neighbourDirection, continueAscending, ascendingPath);
 			}
 		}
 		else {
-			if (currentNode.isLeaf) {
-				return { &currentNode };
+			if (mNodes[iCurrentNode].isLeaf) {
+				return { iCurrentNode };
 			}
 			else if (ascendingPath.empty()) {
 				// Descent through all the children nodes
-				for (auto& child : currentNode.children) {
-					if (isAtDirection(child->quarterIndex, inverse(neighbourDirection))) {
-						auto childNeighbours = getNeighbours(*child, neighbourDirection, false, ascendingPath);
+				for (std::size_t iiChild = 0; iiChild < mNodes[iCurrentNode].children.size(); ++iiChild) {
+					int iChild = mNodes[iCurrentNode].children[iiChild];
+					if (isAtDirection(mNodes[iChild].quarterIndex, inverse(neighbourDirection))) {
+						auto childNeighbours = getNeighbours(iChild, neighbourDirection, false, ascendingPath);
 						ret.insert(ret.end(), childNeighbours.begin(), childNeighbours.end());
 					}
 				}
 			}
 			else {
 				// Descend following the path
-				Node& pathNode = *ascendingPath.back();
+				int pathINode = ascendingPath.back();
 				ascendingPath.pop_back();
 
-				Direction childDirection = (pathNode.parent == &currentNode)? neighbourDirection : inverse(neighbourDirection);
-				unsigned char childIndex = selectChildren(pathNode.quarterIndex, childDirection);
-				ret = getNeighbours(*currentNode.children[childIndex], neighbourDirection, false, ascendingPath);
+				Direction childDirection = (mNodes[pathINode].parent == iCurrentNode)? neighbourDirection : inverse(neighbourDirection);
+				unsigned char childQIndex = selectChildren(mNodes[pathINode].quarterIndex, childDirection);
+				ret = getNeighbours(mNodes[iCurrentNode].children[childQIndex], neighbourDirection, false, ascendingPath);
 			}
 		}
 
@@ -256,19 +220,19 @@ namespace se::graphics {
 
 	constexpr bool QuadTree::isAtDirection(unsigned char quarterIndex, Direction direction)
 	{
-		return ((direction == Direction::Bottom) && (quarterIndex / 2 == 0))
-			|| ((direction == Direction::Top) && (quarterIndex / 2 == 1))
-			|| ((direction == Direction::Left) && (quarterIndex % 2 == 0))
-			|| ((direction == Direction::Right) && (quarterIndex % 2 == 1));
+		return ((direction == Direction::Bottom) && ((quarterIndex >> 1) == 0))
+			|| ((direction == Direction::Top) && ((quarterIndex >> 1) == 1))
+			|| ((direction == Direction::Left) && ((quarterIndex & 1) == 0))
+			|| ((direction == Direction::Right) && ((quarterIndex & 1) == 1));
 	}
 
 
 	constexpr unsigned char QuadTree::selectChildren(unsigned char quarterIndex, Direction direction)
 	{
-		return (direction == Direction::Bottom)? (quarterIndex % 2)
-			 : (direction == Direction::Top)? 2 + (quarterIndex % 2)
-			 : (direction == Direction::Left)? 2 * (quarterIndex / 2)
-			 : 1 + 2 * (quarterIndex / 2);
+		return (direction == Direction::Bottom)? (quarterIndex & 1)
+			 : (direction == Direction::Top)? 2 + (quarterIndex & 1)
+			 : (direction == Direction::Left)? 2 * (quarterIndex >> 1)
+			 : 1 + 2 * (quarterIndex >> 1);
 	}
 
 }

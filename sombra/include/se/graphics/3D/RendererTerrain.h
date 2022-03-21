@@ -114,11 +114,13 @@ namespace se::graphics {
 		/** Set the given leaf node or its descendants as instances of a patch
 		 * to render
 		 *
-		 * @param	node the QuadTree Node to draw
+		 * @param	renderable the RenderableTerrain that holds the QuadTree
+		 *			nodes to draw
+		 * @param	iNode the index of the QuadTree Node to draw
 		 * @param	parentLocation the location of the parent node relative
 		 *			to the root node */
 		void submitNode(
-			const QuadTree::Node& node,
+			RenderableTerrain* renderable, int iNode,
 			const glm::vec2& parentLocation
 		);
 	};

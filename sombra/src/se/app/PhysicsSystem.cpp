@@ -10,7 +10,10 @@ namespace se::app {
 	PhysicsSystem::PhysicsSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<RigidBodyComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<RigidBodyComponent>()
+			.set<TransformsComponent>()
+		);
 	}
 
 
@@ -20,12 +23,29 @@ namespace se::app {
 	}
 
 
+	void PhysicsSystem::onNewComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&PhysicsSystem::onNewRigidBody, entity, mask, query);
+		tryCallC(&PhysicsSystem::onNewTransforms, entity, mask, query);
+	}
+
+
+	void PhysicsSystem::onRemoveComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&PhysicsSystem::onRemoveRigidBody, entity, mask, query);
+	}
+
+
 	void PhysicsSystem::update()
 	{
 		SOMBRA_DEBUG_LOG << "Start";
 
-		SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 			query.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(
 				[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::RigidBody)]) {
@@ -40,13 +60,11 @@ namespace se::app {
 				},
 				true
 			);
-		});
 
-		SOMBRA_DEBUG_LOG << "Updating the RigidBodyWorld";
-		mApplication.getExternalTools().rigidBodyWorld->update(mDeltaTime);
+			SOMBRA_DEBUG_LOG << "Updating the RigidBodyWorld";
+			mApplication.getExternalTools().rigidBodyWorld->update(mDeltaTime);
 
-		SOMBRA_DEBUG_LOG << "Updating the Entities";
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			SOMBRA_DEBUG_LOG << "Updating the Transforms";
 			query.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(
 				[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
 					if (!rigidBody->get().getStatus(physics::RigidBody::Status::Sleeping)) {
@@ -86,6 +104,12 @@ namespace se::app {
 	{
 		mApplication.getExternalTools().rigidBodyWorld->removeRigidBody(&rigidBody->get());
 		SOMBRA_INFO_LOG << "Entity " << entity << " with RigidBodyComponent " << rigidBody << " removed successfully";
+	}
+
+
+	void PhysicsSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::RigidBody));
 	}
 
 }

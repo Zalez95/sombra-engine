@@ -6,6 +6,7 @@
 namespace se::app {
 
 	class Application;
+	struct TransformsComponent;
 	class RigidBodyComponent;
 
 
@@ -34,15 +35,13 @@ namespace se::app {
 		virtual void onNewComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&PhysicsSystem::onNewRigidBody, entity, mask, query); };
+		) override;
 
 		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&PhysicsSystem::onRemoveRigidBody, entity, mask, query); };
+		) override;
 
 		/** Updates the RigidBodies of the entities */
 		virtual void update() override;
@@ -67,6 +66,17 @@ namespace se::app {
 		 *			and its other Components */
 		void onRemoveRigidBody(
 			Entity entity, RigidBodyComponent* rigidBody, EntityDatabase::Query& query
+		);
+
+		/** Function called when a TransformsComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TransformsComponent
+		 * @param	transforms a pointer to the new TransformsComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTransforms(
+			Entity entity, TransformsComponent* transforms,
+			EntityDatabase::Query& query
 		);
 	};
 

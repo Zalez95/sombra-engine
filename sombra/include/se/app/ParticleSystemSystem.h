@@ -6,6 +6,7 @@
 namespace se::app {
 
 	class Application;
+	struct TransformsComponent;
 	class ParticleSystemComponent;
 
 
@@ -67,6 +68,17 @@ namespace se::app {
 		 *			and its other Components */
 		void onRemoveParticleSys(
 			Entity entity, ParticleSystemComponent* particleSystem,
+			EntityDatabase::Query& query
+		);
+
+		/** Function called when a TransformsComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TransformsComponent
+		 * @param	transforms a pointer to the new TransformsComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTransforms(
+			Entity entity, TransformsComponent* transforms,
 			EntityDatabase::Query& query
 		);
 	};

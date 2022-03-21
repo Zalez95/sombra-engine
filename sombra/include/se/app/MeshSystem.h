@@ -16,6 +16,7 @@
 namespace se::app {
 
 	class Application;
+	struct TransformsComponent;
 
 
 	/**
@@ -87,15 +88,13 @@ namespace se::app {
 		virtual void onNewComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&MeshSystem::onNewMesh, entity, mask, query); };
+		) override;
 
 		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&MeshSystem::onRemoveMesh, entity, mask, query); };
+		) override;
 
 		/** Updates the RenderableMeshes with the Entities */
 		virtual void update() override;
@@ -120,6 +119,17 @@ namespace se::app {
 		 *			and its other Components */
 		void onRemoveMesh(
 			Entity entity, MeshComponent* mesh, EntityDatabase::Query& query
+		);
+
+		/** Function called when a TransformsComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TransformsComponent
+		 * @param	transforms a pointer to the new TransformsComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTransforms(
+			Entity entity, TransformsComponent* transforms,
+			EntityDatabase::Query& query
 		);
 
 		/** Handles the given RMeshEvent by updating the RenderableMeshes

@@ -11,7 +11,10 @@ namespace se::app {
 		ISystem(application.getEntityDatabase()), mApplication(application), mListenerEntity(kNullEntity)
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<AudioSourceComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<AudioSourceComponent>()
+			.set<TransformsComponent>()
+		);
 	}
 
 
@@ -19,6 +22,23 @@ namespace se::app {
 	{
 		mEntityDatabase.removeSystem(this);
 		mApplication.getEventManager().unsubscribe(this, Topic::Camera);
+	}
+
+
+	void AudioSystem::onNewComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&AudioSystem::onNewSource, entity, mask, query);
+		tryCallC(&AudioSystem::onNewTransforms, entity, mask, query);
+	}
+
+
+	void AudioSystem::onRemoveComponent(
+		Entity entity, const EntityDatabase::ComponentMask& mask,
+		EntityDatabase::Query& query
+	) {
+		tryCallC(&AudioSystem::onRemoveSource, entity, mask, query);
 	}
 
 
@@ -78,6 +98,12 @@ namespace se::app {
 	void AudioSystem::onRemoveSource(Entity entity, AudioSourceComponent* source, EntityDatabase::Query&)
 	{
 		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " removed successfully";
+	}
+
+
+	void AudioSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::AudioSource));
 	}
 
 

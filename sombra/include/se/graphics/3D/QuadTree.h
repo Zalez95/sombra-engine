@@ -2,9 +2,9 @@
 #define QUAD_TREE_H
 
 #include <array>
-#include <vector>
 #include <memory>
 #include <glm/glm.hpp>
+#include "../../utils/PackedVector.h"
 
 namespace se::graphics {
 
@@ -19,49 +19,40 @@ namespace se::graphics {
 		/** Struct Node, holds the data of each node of the QuadTree */
 		struct Node
 		{
-			/** Pointers to the 4 child nodes of the current one in the
+			/** The indices of the 4 child nodes of the current one in the
 			 * following order: top-left, top-right, bottom-left,
 			 * bottom-right */
-			std::array<std::unique_ptr<Node>, 4> children;
+			std::array<int, 4> children = { -1, -1, -1, -1 };
 
 			/** If the Node is a leaf Node or not */
-			bool isLeaf;
+			bool isLeaf = true;
 
-			/** A pointer to the parent Node of the current one */
-			Node* parent;
+			/** The index of the parent Node of the current one */
+			int parent = -1;
 
 			/** The index of the current Node in the mChildren array of its
 			 * parent Node */
-			unsigned char quarterIndex;
+			unsigned char quarterIndex = 0;
 
 			/** The separation of the current Node to its parent in the XZ
 			 * plane */
-			glm::vec2 xzSeparation;
+			glm::vec2 xzSeparation = glm::vec2(0.0f);
 
 			/** The level of detal of the current Node */
-			int lod;
+			int lod = 0;
 
 			/** The lods of the neighbour Nodes to the current one */
-			std::array<int, 4> neighboursLods;
-
-			/** Creates a new Node */
-			Node();
-			Node(const Node& other);
-			Node(Node&& other) = default;
-
-			/** Class destructor */
-			~Node() = default;
-
-			/** Assignment operator */
-			Node& operator=(const Node& other);
-			Node& operator=(Node&& other) = default;
+			std::array<int, 4> neighboursLods = { -1, -1, -1, -1 };
 		};
 
 		/** Each of the directions of a Node */
 		enum class Direction : int
 		{ Bottom = 0, Top, Left, Right, NumDirections };
 
-	private:	// Attributes
+	public:		// Attributes
+		/** The index of the root node of the QuadTree */
+		static constexpr int kIRootNode = 0;
+	private:
 		/** The size of the QuadTree in the XZ plane */
 		float mSize;
 
@@ -70,8 +61,8 @@ namespace se::graphics {
 		 * (highest lod) */
 		std::vector<float> mLodDistances;
 
-		/** The root node of the QuadTree */
-		Node mRootNode;
+		/** All the nodes of the QuadTree */
+		utils::PackedVector<Node> mNodes;
 
 	public:		// Functions
 		/** Creates a new QuadTree
@@ -103,7 +94,7 @@ namespace se::graphics {
 		void setLodDistances(const std::vector<float>& lodDistances);
 
 		/** @return	the root Node of the QuadTree */
-		const Node& getRootNode() const { return mRootNode; };
+		const utils::PackedVector<Node>& getNodes() const { return mNodes; };
 
 		/** Updates the QuadTree nodes depending on the distance to the
 		 * highestLodLocation and the level of details
@@ -115,48 +106,48 @@ namespace se::graphics {
 		/** Updates the given node, splitting or collapsing its nodes depending
 		 * on the distance to the highestLodLocation and the level of details
 		 *
-		 * @param	node a pointer to the node to update
+		 * @param	iNode an index to the node to update
 		 * @param	parentLocation the location in of the parent node relative
 		 *			to the root one
 		 * @param	highestLodLocation the location with the highest lod in
 		 *			local space */
 		void updateNode(
-			Node& node, const glm::vec2& parentLocation,
+			int iNode, const glm::vec2& parentLocation,
 			const glm::vec3& highestLodLocation
-		) const;
+		);
 
 		/** Splits the given node and updates its neighbours
 		 *
-		 * @param	node the node to split
+		 * @param	iNode the index of the node to split
 		 * @note	the node must be a leaf */
-		void split(Node& node) const;
+		void split(int iNode);
 
 		/** Collapses the given node and updates its neighbours
 		 *
-		 * @param	node the node to collapse
+		 * @param	iNode the index of the node to collapse
 		 * @param	all the children nodes of the node must be leaves */
-		void collapse(Node& node) const;
+		void collapse(int iNode);
 
-		/** Synchs the lods of the node and its neighbours, and splits the
+		/** Synchs the lods of the given node and its neighbours, and splits the
 		 * nodes if their lod difference is larger than 1
 		 *
-		 * @param	node the node to update with its neighbours */
-		void updateNeighbours(Node& node) const;
+		 * @param	node the index of the node to update with its neighbours */
+		void updateNeighbours(int iNode);
 
 		/** Calculates the neighbours nodes of the given one in the given
 		 * direction
 		 *
-		 * @param	currentNode the node to gets its neighbours
+		 * @param	iCurrentNode the index of the node to gets its neighbours
 		 * @param	neighbourDirection the direction in which the neighbour
 		 *			nodes to retrieve are located
 		 * @param	isAscending the current state of the algorithm. Initially
 		 *			must be set to true
 		 * @param	ascendingPath the visited nodes during the ascend state.
 		 *			Initially must be an empty vector
-		 * @return	a vector with the pointers to all the neighbour nodes */
-		static std::vector<Node*> getNeighbours(
-			Node& currentNode, Direction neighbourDirection,
-			bool isAscending, std::vector<Node*>& ascendingPath
+		 * @return	a vector with the indices to all the neighbour nodes */
+		std::vector<int> getNeighbours(
+			int iCurrentNode, Direction neighbourDirection,
+			bool isAscending, std::vector<int>& ascendingPath
 		);
 
 		/** Calculates the inverse of the given direction

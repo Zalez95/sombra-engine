@@ -8,6 +8,7 @@
 namespace se::app {
 
 	class Application;
+	struct TransformsComponent;
 	class AnimationComponent;
 
 
@@ -69,6 +70,17 @@ namespace se::app {
 		 *			and its other Components */
 		void onRemoveAComponent(
 			Entity entity, AnimationComponent* animationComponent,
+			EntityDatabase::Query& query
+		);
+
+		/** Function called when a TransformsComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TransformsComponent
+		 * @param	transforms a pointer to the new TransformsComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTransforms(
+			Entity entity, TransformsComponent* transforms,
 			EntityDatabase::Query& query
 		);
 	};

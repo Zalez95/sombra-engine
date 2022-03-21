@@ -15,6 +15,7 @@
 namespace se::app {
 
 	class Application;
+	struct TransformsComponent;
 	class TerrainComponent;
 
 
@@ -56,8 +57,8 @@ namespace se::app {
 		/** The camera Entity used for rendering */
 		Entity mCameraEntity;
 
-		/** If the camera was updated or not */
-		bool mCameraUpdated;
+		/** The last position of the camera Entity */
+		glm::vec3 mLastCameraPosition;
 
 		/** The mutex that protects @see mEntityUniforms, @see mCameraEntity and
 		 * @see mCameraUpdated */
@@ -87,15 +88,13 @@ namespace se::app {
 		virtual void onNewComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&TerrainSystem::onNewTerrain, entity, mask, query); };
+		) override;
 
 		/** @copydoc ISystem::onRemoveComponent(Entity, const EntityDatabase::ComponentMask&, EntityDatabase::Query&) */
 		virtual void onRemoveComponent(
 			Entity entity, const EntityDatabase::ComponentMask& mask,
 			EntityDatabase::Query& query
-		) override
-		{ tryCallC(&TerrainSystem::onRemoveTerrain, entity, mask, query); };
+		) override;
 
 		/** Updates the RenderableTerrains with the Entities */
 		virtual void update() override;
@@ -121,6 +120,17 @@ namespace se::app {
 		 *			and its other Components */
 		void onRemoveTerrain(
 			Entity entity, TerrainComponent* terrain,
+			EntityDatabase::Query& query
+		);
+
+		/** Function called when a TransformsComponent is added to an Entity
+		 *
+		 * @param	entity the Entity that holds the TransformsComponent
+		 * @param	transforms a pointer to the new TransformsComponent
+		 * @param	query the Query object used for interacting with the Entity
+		 *			and its other Components */
+		void onNewTransforms(
+			Entity entity, TransformsComponent* transforms,
 			EntityDatabase::Query& query
 		);
 

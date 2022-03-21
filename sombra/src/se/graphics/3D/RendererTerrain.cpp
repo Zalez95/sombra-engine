@@ -150,7 +150,7 @@ namespace se::graphics {
 			renderable->bind(q, pass);
 
 			// Draw the patches
-			submitNode(renderable->getQuadTree().getRootNode(), glm::vec2(0.0f));
+			submitNode(renderable, QuadTree::kIRootNode, glm::vec2(0.0f));
 			mNormal.drawInstances(q);
 			mBottom.drawInstances(q);
 			mTop.drawInstances(q);
@@ -179,8 +179,9 @@ namespace se::graphics {
 	}
 
 
-	void RendererTerrain::submitNode(const QuadTree::Node& node, const glm::vec2& parentLocation)
+	void RendererTerrain::submitNode(RenderableTerrain* renderable, int iNode, const glm::vec2& parentLocation)
 	{
+		const QuadTree::Node& node = renderable->getQuadTree().getNodes()[iNode];
 		glm::vec2 nodeLocation(parentLocation + node.xzSeparation);
 
 		if (node.isLeaf) {
@@ -217,8 +218,8 @@ namespace se::graphics {
 			}
 		}
 		else {
-			for (auto& child : node.children) {
-				submitNode(*child, nodeLocation);
+			for (int iChild : node.children) {
+				submitNode(renderable, iChild, nodeLocation);
 			}
 		}
 	}

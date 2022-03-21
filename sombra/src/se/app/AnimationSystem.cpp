@@ -11,7 +11,10 @@ namespace se::app {
 	AnimationSystem::AnimationSystem(Application& application) :
 		ISystem(application.getEntityDatabase()), mApplication(application)
 	{
-		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask().set<AnimationComponent>());
+		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
+			.set<AnimationComponent>()
+			.set<TransformsComponent>()
+		);
 	}
 
 
@@ -26,6 +29,7 @@ namespace se::app {
 		EntityDatabase::Query& query
 	) {
 		tryCallC(&AnimationSystem::onNewAComponent, entity, mask, query);
+		tryCallC(&AnimationSystem::onNewTransforms, entity, mask, query);
 	}
 
 
@@ -42,7 +46,8 @@ namespace se::app {
 		SOMBRA_DEBUG_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		mEntityDatabase.executeQuery([](EntityDatabase::Query& query) {
+		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			SOMBRA_DEBUG_LOG << "Updating the AnimationComponents";
 			query.iterateEntityComponents<TransformsComponent, AnimationComponent>(
 				[](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
 					if (animation->getRootNode() && !transforms->updated[static_cast<int>(TransformsComponent::Update::Animation)]) {
@@ -68,12 +73,12 @@ namespace se::app {
 				},
 				true
 			);
-		});
 
-		mApplication.getExternalTools().animationEngine->update(mDeltaTime);
+			SOMBRA_DEBUG_LOG << "Updating the AnimationEngine";
+			mApplication.getExternalTools().animationEngine->update(mDeltaTime);
 
-		// Update the Entities with the changes made to the AnimationNodes
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			// Update the Entities with the changes made to the AnimationNodes
+			SOMBRA_DEBUG_LOG << "Updating the Transforms and Skin Components";
 			query.iterateEntityComponents<TransformsComponent, AnimationComponent>(
 				[this](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
 					if (animation->getRootNode() && animation->getRootNode()->getData().animated) {
@@ -116,6 +121,12 @@ namespace se::app {
 	void AnimationSystem::onRemoveAComponent(Entity entity, AnimationComponent* animationComponent, EntityDatabase::Query&)
 	{
 		SOMBRA_INFO_LOG << "Entity " << entity << " with AnimationComponent " << animationComponent << " removed successfully";
+	}
+
+
+	void AnimationSystem::onNewTransforms(Entity, TransformsComponent* transforms, EntityDatabase::Query&)
+	{
+		transforms->updated.reset(static_cast<int>(TransformsComponent::Update::Animation));
 	}
 
 }
