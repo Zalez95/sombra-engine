@@ -1,9 +1,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <AudioFile.h>
 #include <se/animation/SkeletonAnimator.h>
-#include <se/audio/Buffer.h>
+#include <se/audio/DataSource.h>
 #include <se/physics/forces/Gravity.h>
 #include <se/physics/forces/PunctualForce.h>
 #include <se/physics/forces/DirectionalForce.h>
@@ -371,11 +370,11 @@ namespace editor {
 			ImGui::SameLine();
 
 			if (confirmButton(validName)) {
-				auto source = repository.insert(
-					std::make_shared<LightSource>(getEditor().getEventManager(), LightSource::Type::Directional),
+				auto lSource = std::make_shared<LightSource>(getEditor().getEventManager(), LightSource::Type::Directional);
+				setRepoName(
+					repository.insert(std::move(lSource)).setFakeUser(),
 					mNameBuffer.data()
 				);
-				source.setFakeUser();
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -398,39 +397,35 @@ namespace editor {
 	};
 
 
-	class RepositoryPanel::AudioBufferNode : public RepositoryPanel::ImportTypeNode<Buffer>
+	class RepositoryPanel::DataSourceNode : public RepositoryPanel::ImportTypeNode<DataSource>
 	{
 	private:	// Attributes
 		std::array<char, kMaxNameSize> mNameBuffer;
 
 	public:		// Functions
-		AudioBufferNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
-		virtual const char* getName() const override { return "AudioBuffer"; };
+		DataSourceNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
+		virtual const char* getName() const override { return "DataSource"; };
 	protected:
 		virtual bool options(Repository& repository) override
 		{
-			std::string name = "Name" + getIdPrefix() + "AudioBufferNode::name";
+			std::string name = "Name" + getIdPrefix() + "DataSourceNode::name";
 			ImGui::InputText(name.c_str(), mNameBuffer.data(), mNameBuffer.size());
-			bool validName = !repository.findByName<Buffer>(mNameBuffer.data());
+			bool validName = !repository.findByName<DataSource>(mNameBuffer.data());
 			return validName;
 		};
 
 		virtual Result load(Repository& repository, const char* path) override
 		{
-			AudioFile<float> audioFile;
-			if (!audioFile.load(path)) {
-				return Result(false, "Error reading the audio file " + std::string(path));
+			DataSource dSource = DataSource::createFromFile(*getEditor().getExternalTools().audioEngine, path);
+			if (!dSource.good()) {
+				return Result(false, "Error reading the audio file \"" + std::string(path) + "\"");
 			}
 
-			auto bufferSPtr = std::make_shared<Buffer>();
-			bufferSPtr->setData(
-				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
-				FormatId::MonoFloat, audioFile.getSampleRate()
+			auto dataSourceSPtr = std::make_shared<DataSource>(std::move(dSource));
+			setRepoName(
+				repository.insert(std::move(dataSourceSPtr)).setPath(path).setFakeUser(),
+				mNameBuffer.data()
 			);
-
-			auto buffer = repository.insert(std::move(bufferSPtr), mNameBuffer.data())
-				.setPath(path)
-				.setFakeUser();
 
 			return Result();
 		};
@@ -636,9 +631,12 @@ namespace editor {
 					context, program
 				);
 				if (result) {
-					auto programResource = repository.insert(std::make_shared<ProgramRef>(program), mNameBuffer.data())
-						.setFakeUser()
-						.setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str());
+					setRepoName(
+						repository.insert(std::make_shared<ProgramRef>(program))
+							.setPath((mPathVertex + "|" + mPathGeometry + "|" + mPathFragment).c_str())
+							.setFakeUser(),
+						mNameBuffer.data()
+					);
 					mNameBuffer.fill(0);
 					ret = true;
 				}
@@ -1634,8 +1632,11 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validName)) {
-				auto emitter = repository.insert(std::make_shared<RenderableShader>(getEditor().getEventManager()), mNameBuffer.data());
-				emitter.setFakeUser();
+				auto rShaderSPtr = std::make_shared<RenderableShader>(getEditor().getEventManager());
+				setRepoName(
+					repository.insert(std::move(rShaderSPtr)).setFakeUser(),
+					mNameBuffer.data()
+				);
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -1665,7 +1666,7 @@ namespace editor {
 		TextureNode(RepositoryPanel& panel) : ImportTypeNode(panel), mNameBuffer{} {};
 		virtual const char* getName() const override { return "Texture"; };
 	protected:
-		virtual void draw(Repository&, Repository::ResourceRef<TextureRef> texture) override
+		virtual void draw(Repository& repository, Repository::ResourceRef<TextureRef> texture) override
 		{
 			//TODO: ImGui::Image(static_cast<void*>(texture.get().get()), ImVec2{ 200.0f, 200.0f });
 
@@ -1758,9 +1759,10 @@ namespace editor {
 
 				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
 					auto cubeMapRef = TextureUtils::equirectangularToCubeMap(*texture, mCubeMapSize);
-					auto cubeMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(cubeMapRef));
-					cubeMap.setFakeUser(true);
-					setRepoName<TextureRef>(cubeMap, (std::string(texture.getName()) + "CubeMap").c_str());
+					setRepoName(
+						repository.insert(std::make_shared<TextureRef>(cubeMapRef)).setFakeUser(true),
+						(std::string(texture.getName()) + "CubeMap").c_str()
+					);
 				}
 				ImGui::TreePop();
 			}
@@ -1770,9 +1772,10 @@ namespace editor {
 
 				if (ImGui::Button(("Generate" + getIdPrefix() + "TextureNode::equirectangularToCubeMap").c_str())) {
 					auto normalMapRef = TextureUtils::heightmapToNormalMapLocal(*texture, mNormalMapWidth, mNormalMapHeight);
-					auto normalMap = getEditor().getScene()->repository.insert(std::make_shared<TextureRef>(normalMapRef));
-					normalMap.setFakeUser(true);
-					setRepoName<TextureRef>(normalMap, (std::string(texture.getName()) + "NormalMap").c_str());
+					setRepoName(
+						repository.insert(std::make_shared<TextureRef>(normalMapRef)).setFakeUser(true),
+						(std::string(texture.getName()) + "NormalMap").c_str()
+					);
 				}
 				ImGui::TreePop();
 			}
@@ -1831,9 +1834,10 @@ namespace editor {
 				});
 			}
 
-			auto texture = repository.insert(std::make_shared<TextureRef>(textureRef), mNameBuffer.data())
-				.setPath(path)
-				.setFakeUser();
+			setRepoName(
+				repository.insert(std::make_shared<TextureRef>(textureRef)).setPath(path),
+				mNameBuffer.data()
+			);
 
 			return Result();
 		};
@@ -1899,8 +1903,10 @@ namespace editor {
 			}
 			ImGui::SameLine();
 			if (confirmButton(validName)) {
-				auto emitter = repository.insert(std::make_shared<ParticleEmitter>(), mNameBuffer.data());
-				emitter.setFakeUser();
+				setRepoName(
+					repository.insert(std::make_shared<ParticleEmitter>()).setFakeUser(),
+					mNameBuffer.data()
+				);
 				mNameBuffer.fill(0);
 				ret = true;
 			}
@@ -1926,7 +1932,7 @@ namespace editor {
 		mTypes.emplace_back(new SkinNode(*this));
 		mTypes.emplace_back(new LightSourceNode(*this));
 		mTypes.emplace_back(new SkeletonAnimatorNode(*this));
-		mTypes.emplace_back(new AudioBufferNode(*this));
+		mTypes.emplace_back(new DataSourceNode(*this));
 		mTypes.emplace_back(new ForceNode(*this));
 		mTypes.emplace_back(new ProgramNode(*this));
 		mTypes.emplace_back(new RenderableShaderStepNode(*this));

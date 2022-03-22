@@ -3,7 +3,7 @@
 #include "se/app/AudioSystem.h"
 #include "se/app/Application.h"
 #include "se/app/TransformsComponent.h"
-#include "se/app/AudioSourceComponent.h"
+#include "se/app/SoundComponent.h"
 
 namespace se::app {
 
@@ -12,7 +12,7 @@ namespace se::app {
 	{
 		mApplication.getEventManager().subscribe(this, Topic::Camera);
 		mEntityDatabase.addSystem(this, EntityDatabase::ComponentMask()
-			.set<AudioSourceComponent>()
+			.set<SoundComponent>()
 			.set<TransformsComponent>()
 		);
 	}
@@ -29,7 +29,7 @@ namespace se::app {
 		Entity entity, const EntityDatabase::ComponentMask& mask,
 		EntityDatabase::Query& query
 	) {
-		tryCallC(&AudioSystem::onNewSource, entity, mask, query);
+		tryCallC(&AudioSystem::onNewSound, entity, mask, query);
 		tryCallC(&AudioSystem::onNewTransforms, entity, mask, query);
 	}
 
@@ -38,7 +38,7 @@ namespace se::app {
 		Entity entity, const EntityDatabase::ComponentMask& mask,
 		EntityDatabase::Query& query
 	) {
-		tryCallC(&AudioSystem::onRemoveSource, entity, mask, query);
+		tryCallC(&AudioSystem::onRemoveSound, entity, mask, query);
 	}
 
 
@@ -63,15 +63,12 @@ namespace se::app {
 
 		SOMBRA_DEBUG_LOG << "Updating the Sources";
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
-			query.iterateEntityComponents<TransformsComponent, AudioSourceComponent>(
-				[this](Entity, TransformsComponent* transforms, AudioSourceComponent* source) {
+			query.iterateEntityComponents<TransformsComponent, SoundComponent>(
+				[this](Entity, TransformsComponent* transforms, SoundComponent* sound) {
 					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::AudioSource)]) {
-						source->get().setPosition(transforms->position);
-						source->get().setOrientation(
-							glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation,
-							glm::vec3(0.0f, 1.0f, 0.0)
-						);
-						source->get().setVelocity(transforms->velocity);
+						sound->get().setPosition(transforms->position);
+						sound->get().setOrientation(glm::vec3(0.0f, 0.0f, 1.0f) * transforms->orientation);
+						sound->get().setVelocity(transforms->velocity);
 
 						transforms->updated.set(static_cast<int>(TransformsComponent::Update::AudioSource));
 					}
@@ -84,20 +81,22 @@ namespace se::app {
 	}
 
 // Private functions
-	void AudioSystem::onNewSource(Entity entity, AudioSourceComponent* source, EntityDatabase::Query& query)
+	void AudioSystem::onNewSound(Entity entity, SoundComponent* sound, EntityDatabase::Query& query)
 	{
 		auto [transforms] = query.getComponents<TransformsComponent>(entity, true);
 		if (transforms) {
 			transforms->updated.reset(static_cast<int>(TransformsComponent::Update::AudioSource));
 		}
 
-		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " added successfully";
+		sound->get().init(*mApplication.getExternalTools().audioEngine);
+
+		SOMBRA_INFO_LOG << "Entity " << entity << " with SoundComponent " << sound << " added successfully";
 	}
 
 
-	void AudioSystem::onRemoveSource(Entity entity, AudioSourceComponent* source, EntityDatabase::Query&)
+	void AudioSystem::onRemoveSound(Entity entity, SoundComponent* sound, EntityDatabase::Query&)
 	{
-		SOMBRA_INFO_LOG << "Entity " << entity << " with AudioSourceComponent " << source << " removed successfully";
+		SOMBRA_INFO_LOG << "Entity " << entity << " with SoundComponent " << sound << " removed successfully";
 	}
 
 

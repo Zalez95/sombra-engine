@@ -1,7 +1,6 @@
 #include <numeric>
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <AudioFile.h>
 
 #include <se/window/KeyCodes.h>
 #include <se/window/WindowManager.h>
@@ -28,7 +27,7 @@
 #include <se/app/ParticleSystemComponent.h>
 #include <se/app/TransformsComponent.h>
 #include <se/app/RigidBodyComponent.h>
-#include <se/app/AudioSourceComponent.h>
+#include <se/app/SoundComponent.h>
 #include <se/app/Scene.h>
 
 #include <se/graphics/Renderer.h>
@@ -52,7 +51,7 @@
 #include <se/animation/AnimationEngine.h>
 #include <se/animation/SkeletonAnimator.h>
 
-#include <se/audio/Buffer.h>
+#include <se/audio/DataSource.h>
 
 #include <se/utils/Log.h>
 #include <se/app/Repository.h>
@@ -204,7 +203,7 @@ namespace game {
 		}
 
 		mScene->repository.findByName<se::physics::Force>("gravity").setFakeUser(false);
-		mScene->repository.findByName<se::audio::Buffer>("sound").setFakeUser(false);
+		mScene->repository.findByName<se::audio::DataSource>("sound").setFakeUser(false);
 		mGame.getRepository().findByName<se::app::TextureRef>("reticle").setFakeUser(false);
 		mGame.getRepository().findByName<se::app::TextureRef>("logo").setFakeUser(false);
 
@@ -272,7 +271,7 @@ namespace game {
 		se::app::Repository::ResourceRef<se::app::ProgramRef> programSky, programShadow, programShadowSkinning, programGBufMaterial;
 		se::app::Repository::ResourceRef<se::app::RenderableShaderStep> stepShadow;
 		se::app::Repository::ResourceRef<se::app::RenderableShader> shaderSky, shaderPlane, shaderRandom;
-		se::app::Repository::ResourceRef<se::audio::Buffer> sound;
+		se::app::Repository::ResourceRef<se::audio::DataSource> dataSource;
 		se::app::Repository::ResourceRef<se::app::LightSource> spotLight;
 		se::app::Repository::ResourceRef<se::physics::Force> gravity;
 		se::app::Repository::ResourceRef<se::app::Script> playerController;
@@ -373,7 +372,7 @@ namespace game {
 			// Techniques
 			technique2D = mGame.getRepository().findByName<se::graphics::Technique>("technique2D");
 			if (!technique2D) {
-				throw std::runtime_error("Error reading the audio file");
+				throw std::runtime_error("Error creating the technique2D");
 			}
 
 			// Shaders
@@ -422,18 +421,14 @@ namespace game {
 				.addStep(stepRandom);
 
 			// Audio
-			AudioFile<float> audioFile;
-			if (!audioFile.load("res/audio/bounce.wav")) {
+			se::audio::DataSource dSource = se::audio::DataSource::createFromFile(*mGame.getExternalTools().audioEngine, "res/audio/bounce.wav");
+			if (!dSource.good()) {
 				throw std::runtime_error("Error reading the audio file");
 			}
 
-			sound = mScene->repository.emplace<se::audio::Buffer>()
+			dataSource = mScene->repository.emplace<se::audio::DataSource>(std::move(dSource))
 				.setName("sound")
 				.setFakeUser();
-			sound->setData(
-				audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
-				se::audio::FormatId::MonoFloat, audioFile.getSampleRate()
-			);
 
 			// Lights
 			spotLight = mScene->repository.insert(std::make_shared<se::app::LightSource>(mGame.getEventManager(), se::app::LightSource::Type::Spot), "spotLight");
@@ -585,11 +580,10 @@ namespace game {
 					e1 = cube;
 				}
 				if (i == 2) {
-					//se::app::AudioSourceComponent source1;
-					//source1.setBuffer(sound);
-					//source1.get().setLooping(true);
-					//source1.get().play();
-					//query.addComponent(cube, std::move(source1));
+					auto sound = query.emplaceComponent<se::app::SoundComponent>(cube);
+					sound->setDataSource(dataSource);
+					sound->get().setLooping(true);
+					sound->get().play();
 				}
 				if (i == 3) {
 					state.angularVelocity = glm::vec3(0.0f, 10.0f, 0.0f);

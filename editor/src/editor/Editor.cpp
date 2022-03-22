@@ -27,6 +27,7 @@ namespace editor {
 		se::app::Application(
 			se::window::WindowData{ kTitle, kWidth, kHeight },
 			se::physics::WorldProperties(),
+			kAudioDeviceId,
 			kUpdateTime
 		),
 		mImGuiContext(nullptr), mImGuiInput(nullptr), mImGuiRenderer(nullptr),

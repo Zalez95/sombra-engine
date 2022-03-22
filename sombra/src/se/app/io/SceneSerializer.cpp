@@ -3,7 +3,6 @@
 #include <sstream>
 #include <iomanip>
 #include <optional>
-#include <AudioFile.h>
 #include "GLMJSON.h"
 #include "se/physics/forces/Gravity.h"
 #include "se/physics/forces/PunctualForce.h"
@@ -23,7 +22,7 @@
 #include "se/graphics/core/GraphicsOperations.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/graphics/Renderer.h"
-#include "se/audio/Buffer.h"
+#include "se/audio/DataSource.h"
 #include "se/app/graphics/RawMesh.h"
 #include "se/app/io/SceneSerializer.h"
 #include "se/app/io/ShaderLoader.h"
@@ -40,7 +39,7 @@
 #include "se/app/LightComponent.h"
 #include "se/app/LightProbeComponent.h"
 #include "se/app/RigidBodyComponent.h"
-#include "se/app/AudioSourceComponent.h"
+#include "se/app/SoundComponent.h"
 #include "se/app/ScriptComponent.h"
 
 using namespace se::utils;
@@ -1605,16 +1604,16 @@ namespace se::app {
 
 
 	template <>
-	void serializeResource<Buffer>(const Repository::ResourceRef<Buffer>& buffer, SerializeData&, nlohmann::json& json, std::ostream&)
+	void serializeResource<DataSource>(const Repository::ResourceRef<DataSource>& dataSource, SerializeData&, nlohmann::json& json, std::ostream&)
 	{
-		std::string path = buffer.getPath();
+		std::string path = dataSource.getPath();
 		if (!path.empty()) {
 			json["path"] = path;
 		}
 	}
 
 	template <>
-	Result deserializeResource<Buffer>(const nlohmann::json& json, Repository::ResourceRef<Buffer>& buffer, DeserializeData&, Scene& scene)
+	Result deserializeResource<DataSource>(const nlohmann::json& json, Repository::ResourceRef<DataSource>& dataSource, DeserializeData&, Scene& scene)
 	{
 		auto itPath = json.find("path");
 		if (itPath == json.end()) {
@@ -1622,17 +1621,13 @@ namespace se::app {
 		}
 
 		std::string path = *itPath;
-		AudioFile<float> audioFile;
-		if (!audioFile.load(path)) {
-			return Result(false, "Failed to read the audio file");
+		DataSource dSource = DataSource::createFromFile(*scene.application.getExternalTools().audioEngine, path.c_str());
+		if (!dSource.good()) {
+			return Result(false, "Failed to read the audio file located at \"" + path + "\"");
 		}
 
-		buffer = scene.repository.emplace<Buffer>();
-		buffer->setData(
-			audioFile.samples[0].data(), audioFile.samples[0].size() * sizeof(float),
-			FormatId::MonoFloat, audioFile.getSampleRate()
-		);
-		buffer.setPath(path);
+		dataSource = scene.repository.emplace<DataSource>(std::move(dSource));
+		dataSource.setPath(path);
 
 		return Result();
 	}
@@ -2704,34 +2699,34 @@ namespace se::app {
 
 
 	template <>
-	nlohmann::json serializeComponent<AudioSourceComponent>(const AudioSourceComponent& audioSource, SerializeData&, std::ostream&)
+	nlohmann::json serializeComponent<SoundComponent>(const SoundComponent& sound, SerializeData&, std::ostream&)
 	{
 		nlohmann::json json;
 
-		if (auto buffer = audioSource.getBuffer()) {
-			json["bufferName"] = buffer.getName();
+		if (auto dataSource = sound.getDataSource()) {
+			json["dataSourceName"] = dataSource.getName();
 		}
 
 		return json;
 	}
 
 	template <>
-	ResultOptional<AudioSourceComponent> deserializeComponent<AudioSourceComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
+	ResultOptional<SoundComponent> deserializeComponent<SoundComponent>(const nlohmann::json& json, DeserializeData&, Scene& scene)
 	{
-		AudioSourceComponent audioSource;
+		SoundComponent sound;
 
-		auto itBufferName = json.find("bufferName");
-		if (itBufferName != json.end()) {
-			std::string bufferName = *itBufferName;
-			if (auto buffer = scene.repository.findByName<Buffer>(bufferName.c_str())) {
-				audioSource.setBuffer(buffer);
+		auto itDataSourceName = json.find("dataSourceName");
+		if (itDataSourceName != json.end()) {
+			std::string dataSourceName = *itDataSourceName;
+			if (auto dataSource = scene.repository.findByName<DataSource>(dataSourceName.c_str())) {
+				sound.setDataSource(dataSource);
 			}
 			else {
-				return { Result(false, "Buffer \"" + bufferName + "\" not found"), std::nullopt };
+				return { Result(false, "DataSource \"" + dataSourceName + "\" not found"), std::nullopt };
 			}
 		}
 
-		return { Result(), std::move(audioSource) };
+		return { Result(), std::move(sound) };
 	}
 
 
@@ -3093,7 +3088,7 @@ namespace se::app {
 		serializeRVector<RenderableShader>("shaders", data, json, dataStream);
 		serializeRVector<Force>("forces", data, json, dataStream);
 		serializeRVector<ParticleEmitter>("particleEmitter", data, json, dataStream);
-		serializeRVector<Buffer>("audioBuffers", data, json, dataStream);
+		serializeRVector<DataSource>("dataSources", data, json, dataStream);
 	}
 
 	Result deserializeRepository(DeserializeData& data, Scene& scene)
@@ -3108,7 +3103,7 @@ namespace se::app {
 		if (auto result = deserializeRVector<RenderableShader>("shaders", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<Force>("forces", data, scene); !result) { return result; }
 		if (auto result = deserializeRVector<ParticleEmitter>("particleEmitter", data, scene); !result) { return result; }
-		if (auto result = deserializeRVector<Buffer>("audioBuffers", data, scene); !result) { return result; }
+		if (auto result = deserializeRVector<DataSource>("dataSources", data, scene); !result) { return result; }
 		return Result();
 	}
 
@@ -3224,7 +3219,7 @@ namespace se::app {
 		serializeCVector<SkinComponent>("skinComponents", data, json, dataStream);
 		serializeCVector<AnimationComponent>("animationComponents", data, json, dataStream);
 		serializeCVector<ParticleSystemComponent>("particleSystemComponents", data, json, dataStream);
-		serializeCVector<AudioSourceComponent>("audioSourceComponents", data, json, dataStream);
+		serializeCVector<SoundComponent>("SoundComponents", data, json, dataStream);
 		serializeCVector<ScriptComponent>("scriptComponents", data, json, dataStream);
 	}
 
@@ -3241,7 +3236,7 @@ namespace se::app {
 		if (auto result = deserializeCVector<SkinComponent>("skinComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<AnimationComponent>("animationComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<ParticleSystemComponent>("particleSystemComponents", data, scene); !result) { return result; }
-		if (auto result = deserializeCVector<AudioSourceComponent>("audioSourceComponents", data, scene); !result) { return result; }
+		if (auto result = deserializeCVector<SoundComponent>("SoundComponents", data, scene); !result) { return result; }
 		if (auto result = deserializeCVector<ScriptComponent>("scriptComponents", data, scene); !result) { return result; }
 		return Result();
 	}

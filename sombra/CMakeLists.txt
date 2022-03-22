@@ -42,8 +42,8 @@ endif()
 
 # Link the dependencies
 target_link_libraries(Sombra
-	PUBLIC glm AudioFile nlohmann_json::nlohmann_json freetype
-	PRIVATE OpenAL stb glfw glew OpenGL
+	PUBLIC glm miniaudio nlohmann_json::nlohmann_json freetype
+	PRIVATE stb glfw glew OpenGL
 )
 
 # Install the target

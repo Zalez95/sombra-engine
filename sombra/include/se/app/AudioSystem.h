@@ -10,7 +10,7 @@ namespace se::app {
 
 	class Application;
 	struct TransformsComponent;
-	class AudioSourceComponent;
+	class SoundComponent;
 
 
 	/**
@@ -56,30 +56,30 @@ namespace se::app {
 			EntityDatabase::Query& query
 		) override;
 
-		/** Updates the sources data with the Entities */
+		/** Updates the sounds data with the Entities */
 		virtual void update() override;
 	private:
-		/** Function called when a AudioSourceComponent is added to an Entity
+		/** Function called when a SoundComponent is added to an Entity
 		 *
-		 * @param	entity the Entity that holds the AudioSourceComponent
-		 * @param	source a pointer to the new AudioSourceComponent
+		 * @param	entity the Entity that holds the SoundComponent
+		 * @param	sound a pointer to the new SoundComponent
 		 * @param	query the Query object used for interacting with the Entity
 		 *			and its other Components */
-		void onNewSource(
-			Entity entity, AudioSourceComponent* source,
+		void onNewSound(
+			Entity entity, SoundComponent* sound,
 			EntityDatabase::Query& query
 		);
 
-		/** Function called when a AudioSourceComponent is going to be removed
+		/** Function called when a SoundComponent is going to be removed
 		 * from an Entity
 		 *
-		 * @param	entity the Entity that holds the AudioSourceComponent
-		 * @param	source a pointer to the AudioSourceComponent that is going
+		 * @param	entity the Entity that holds the SoundComponent
+		 * @param	sound a pointer to the SoundComponent that is going
 		 *			to be removed
 		 * @param	query the Query object used for interacting with the Entity
 		 *			and its other Components */
-		void onRemoveSource(
-			Entity entity, AudioSourceComponent* source,
+		void onRemoveSound(
+			Entity entity, SoundComponent* sound,
 			EntityDatabase::Query& query
 		);
 

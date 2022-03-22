@@ -1,6 +1,6 @@
 #include "se/animation/AnimationEngine.h"
 #include "se/animation/SkeletonAnimator.h"
-#include "se/audio/Buffer.h"
+#include "se/audio/DataSource.h"
 #include "se/physics/forces/Force.h"
 #include "se/graphics/core/Program.h"
 #include "se/graphics/core/Texture.h"
@@ -31,7 +31,9 @@ namespace se::app {
 			auto tBindable = MeshRef::from(mesh.clone());
 			return std::make_unique<MeshRef>(tBindable);
 		});
-		repository.init<Buffer>();
+		repository.init<DataSource>([](const DataSource& dSource) {
+			return std::make_unique<DataSource>(dSource);
+		});
 		repository.init<Force>([](const Force& force) {
 			return force.clone();
 		});

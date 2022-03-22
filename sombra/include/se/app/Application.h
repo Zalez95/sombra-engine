@@ -99,11 +99,13 @@ namespace se::app {
 		 *			window is going to be created
 		 * @param	physicsWorldProperties the configuration with which the
 		 *			RigidBodyWorld is going to be created
+		 * @param	audioDeviceId the id of the audio device to use
 		 * @param	updateTime the minimum elapsed time between updates in
 		 *			seconds */
 		Application(
 			const window::WindowData& windowConfig,
 			const physics::WorldProperties& physicsWorldProperties,
+			std::size_t audioDeviceId,
 			float updateTime
 		);
 

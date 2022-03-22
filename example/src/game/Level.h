@@ -6,10 +6,6 @@
 #include <se/graphics/2D/RenderableSprite.h>
 #include <se/graphics/2D/RenderableText.h>
 #include <se/app/Scene.h>
-#include <se/audio/Buffer.h>
-#include <se/physics/forces/Force.h>
-#include <se/physics/constraints/Constraint.h>
-#include <se/animation/IAnimator.h>
 #include "IGameScreen.h"
 
 namespace game {

@@ -21,6 +21,7 @@ namespace game {
 				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
 				kFrictionGravityAcceleration, kMaxConstraintIterations, kNumPhysicsThreads
 			},
+			kAudioDeviceId,
 			kUpdateTime
 		),
 		mStateMachine(nullptr), mFPSText(nullptr)

@@ -50,8 +50,9 @@ namespace se::app {
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Scripts";
 
-		std::scoped_lock lock(mMutex);
 		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+			std::scoped_lock lock(mMutex);
+
 			query.iterateComponents<ScriptComponent>(
 				[this](ScriptComponent& script) {
 					script.onUpdate(mDeltaTime, mScriptSharedState);
@@ -66,6 +67,7 @@ namespace se::app {
 // Private functions
 	void ScriptSystem::onNewScript(Entity entity, ScriptComponent* script, EntityDatabase::Query&)
 	{
+		std::scoped_lock lock(mMutex);
 		script->setup(&mApplication.getEventManager(), entity);
 		script->onAdd(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " added successfully";
@@ -74,6 +76,7 @@ namespace se::app {
 
 	void ScriptSystem::onRemoveScript(Entity entity, ScriptComponent* script, EntityDatabase::Query&)
 	{
+		std::scoped_lock lock(mMutex);
 		script->onRemove(mScriptSharedState);
 		SOMBRA_INFO_LOG << "Entity " << entity << " with Script " << script << " removed successfully";
 	}
@@ -126,15 +129,16 @@ namespace se::app {
 	{
 		SOMBRA_INFO_LOG << event;
 
-		std::scoped_lock lock(mMutex);
 		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			auto [script] = query.getComponents<ScriptComponent>(event.getEntity(), true);
 			if (script) {
 				switch (event.getOperation()) {
 					case ScriptEvent::Operation::Add: {
+						std::scoped_lock lock(mMutex);
 						script->onAdd(mScriptSharedState);
 					} break;
 					case ScriptEvent::Operation::Remove: {
+						std::scoped_lock lock(mMutex);
 						script->onRemove(mScriptSharedState);
 					} break;
 				}

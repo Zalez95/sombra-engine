@@ -22,6 +22,7 @@ namespace editor {
 		static constexpr char kTitle[]							= "SOMBRA EDITOR";
 		static constexpr unsigned int kWidth					= 1280;
 		static constexpr unsigned int kHeight					= 720;
+		static constexpr std::size_t kAudioDeviceId				= 0;
 		static constexpr float kUpdateTime						= 0.016f;
 		static constexpr float kFOV								= 60.0f;
 		static constexpr float kZNear							= 0.1f;

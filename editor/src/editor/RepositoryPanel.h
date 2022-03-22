@@ -19,7 +19,7 @@ namespace editor {
 		class SkinNode;
 		class LightSourceNode;
 		class SkeletonAnimatorNode;
-		class AudioBufferNode;
+		class DataSourceNode;
 		class ForceNode;
 		class ProgramNode;
 		class RenderableShaderStepNode;

@@ -26,7 +26,7 @@ namespace editor {
 		class TerrainComponentNode;
 		class RigidBodyComponentNode;
 		class ParticleSystemComponentNode;
-		class AudioSourceComponentNode;
+		class SoundComponentNode;
 		class ScriptComponentNode;
 
 	private:	// Attributes

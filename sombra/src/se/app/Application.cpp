@@ -36,7 +36,7 @@
 #include "se/app/SkinComponent.h"
 #include "se/app/LightComponent.h"
 #include "se/app/RigidBodyComponent.h"
-#include "se/app/AudioSourceComponent.h"
+#include "se/app/SoundComponent.h"
 #include "se/utils/Profiler.h"
 
 namespace se::app {
@@ -44,6 +44,7 @@ namespace se::app {
 	Application::Application(
 		const window::WindowData& windowConfig,
 		const physics::WorldProperties& physicsWorldProperties,
+		std::size_t audioDeviceId,
 		float updateTime
 	) : mUpdateTime(updateTime), mStopRunning(false), mState(AppState::Stopped),
 		mThreadPool(nullptr), mExternalTools(nullptr), mEventManager(nullptr),
@@ -63,7 +64,7 @@ namespace se::app {
 			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
 			mExternalTools->rigidBodyWorld = new physics::RigidBodyWorld(physicsWorldProperties);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
-			mExternalTools->audioEngine = new audio::AudioEngine();
+			mExternalTools->audioEngine = new audio::AudioEngine(audioDeviceId);
 
 			mEventManager = new EventManager();
 
@@ -93,7 +94,7 @@ namespace se::app {
 			mEntityDatabase->addComponentTable<ParticleSystemComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<RigidBodyComponent>(kMaxEntities);
 			mEntityDatabase->addComponentTable<ScriptComponent>(kMaxEntities);
-			mEntityDatabase->addComponentTable<AudioSourceComponent>(kMaxEntities);
+			mEntityDatabase->addComponentTable<SoundComponent>(kMaxEntities);
 
 			// Systems
 			mSystems.push_back(new InputSystem(*this));
@@ -101,8 +102,7 @@ namespace se::app {
 			mSystems.push_back(new AnimationSystem(*this));
 			mSystems.push_back(new PhysicsSystem(*this));
 			mSystems.push_back(new AudioSystem(*this));
-			mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height);
-			mSystems.push_back(mAppRenderer);
+			mSystems.push_back(mAppRenderer = new AppRenderer(*this, windowConfig.width, windowConfig.height));
 			mSystems.push_back(new CameraSystem(*this));
 			mSystems.push_back(new LightSystem(*this, kShadowSplitLogFactor));
 			mSystems.push_back(new LightProbeSystem(*this));
@@ -183,29 +183,24 @@ namespace se::app {
 		 *********************************************************************/
 		mState = AppState::Running;
 		mStopRunning = false;
-		auto lastTP = std::chrono::high_resolution_clock::now();
+		auto lastUpdateTP = std::chrono::high_resolution_clock::now();
 		while (!mStopRunning) {
 			utils::TimeGuard tf("frame");
 
 			// Calculate the elapsed time since the last update
 			auto currentTP = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
-
+			std::chrono::duration<float> durationInSeconds = currentTP - lastUpdateTP;
 			float deltaTime = durationInSeconds.count();
-			/*float waitTime = mUpdateTime - deltaTime;
-			if (waitTime > 0) {
-				SOMBRA_DEBUG_LOG << "Wait " << waitTime << " seconds";
-				std::this_thread::sleep_for( std::chrono::duration<float>(waitTime) );
-			}
-			else {*/
-				lastTP = currentTP;
+
+			if (deltaTime >= mUpdateTime) {
+				lastUpdateTP = currentTP;
 
 				// Update the Systems
 				onUpdate(deltaTime);
+			}
 
-				// Draw
-				onRender();
-			//}
+			// Draw
+			onRender();
 		}
 
 		mState = AppState::Stopped;

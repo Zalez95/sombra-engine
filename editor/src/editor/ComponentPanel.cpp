@@ -15,7 +15,7 @@
 #include <se/app/AnimationComponent.h>
 #include <se/app/ParticleSystemComponent.h>
 #include <se/app/RigidBodyComponent.h>
-#include <se/app/AudioSourceComponent.h>
+#include <se/app/SoundComponent.h>
 #include <se/app/ScriptComponent.h>
 #include <se/app/graphics/TextureUtils.h>
 #include <se/physics/collision/BoundingBox.h>
@@ -1082,27 +1082,27 @@ namespace editor {
 	};
 
 
-	class ComponentPanel::AudioSourceComponentNode : public ComponentPanel::ComponentNode<AudioSourceComponent>
+	class ComponentPanel::SoundComponentNode : public ComponentPanel::ComponentNode<SoundComponent>
 	{
 	public:		// Functions
-		AudioSourceComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
+		SoundComponentNode(ComponentPanel& panel) : ComponentNode(panel) {};
 		virtual const char* getName() const override
-		{ return "AudioSource"; };
+		{ return "Sound"; };
 		virtual void create(Entity entity) override
 		{
 			getEditor().getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
-				query.emplaceComponent<AudioSourceComponent>(entity);
+				query.emplaceComponent<SoundComponent>(entity);
 			});
 		};
 		virtual void draw(Entity entity) override
 		{
 			getEditor().getEntityDatabase().executeQuery([&](se::app::EntityDatabase::Query& query) {
-				auto [audioSource] = query.getComponents<AudioSourceComponent>(entity);
+				auto [sound] = query.getComponents<SoundComponent>(entity);
 
-				auto buffer = audioSource->getBuffer();
-				std::string name = "Buffer" + getIdPrefix() + "AudioSourceComponentNode::Buffer";
-				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, buffer)) {
-					audioSource->setBuffer(buffer);
+				auto dataSource = sound->getDataSource();
+				std::string name = "DataSource" + getIdPrefix() + "SoundComponentNode::DataSource";
+				if (addRepoDropdownShowSelected(name.c_str(), getEditor().getScene()->repository, dataSource)) {
+					sound->setDataSource(dataSource);
 				}
 			});
 		};
@@ -1148,7 +1148,7 @@ namespace editor {
 		mNodes.emplace_back(new TerrainComponentNode(*this));
 		mNodes.emplace_back(new RigidBodyComponentNode(*this));
 		mNodes.emplace_back(new ParticleSystemComponentNode(*this));
-		mNodes.emplace_back(new AudioSourceComponentNode(*this));
+		mNodes.emplace_back(new SoundComponentNode(*this));
 		mNodes.emplace_back(new ScriptComponentNode(*this));
 	}
 
