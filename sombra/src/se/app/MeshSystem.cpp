@@ -61,7 +61,7 @@ namespace se::app {
 	}
 
 
-	void MeshSystem::update()
+	void MeshSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Meshes";
 

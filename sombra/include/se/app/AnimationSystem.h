@@ -45,8 +45,9 @@ namespace se::app {
 			EntityDatabase::Query& query
 		) override;
 
-		/** Updates the Entities' animations */
-		virtual void update() override;
+		/** Updates the Entities' animations
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function that the EntityDatabase will call when an Entity is
 		 * added

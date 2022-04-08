@@ -183,20 +183,26 @@ namespace se::app {
 		 *********************************************************************/
 		mState = AppState::Running;
 		mStopRunning = false;
-		auto lastUpdateTP = std::chrono::high_resolution_clock::now();
-		while (!mStopRunning) {
-			utils::TimeGuard tf("frame");
 
+		/* Based on https://gafferongames.com/post/fix_your_timestep/ */
+		float timeSinceStart = 0.0f, accumulator = 0.0f;
+		auto lastTP = std::chrono::high_resolution_clock::now();
+
+		while (!mStopRunning) {
 			// Calculate the elapsed time since the last update
 			auto currentTP = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<float> durationInSeconds = currentTP - lastUpdateTP;
-			float deltaTime = durationInSeconds.count();
+			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
+			lastTP = currentTP;
 
-			if (deltaTime >= mUpdateTime) {
-				lastUpdateTP = currentTP;
+			float frameTime = std::min(durationInSeconds.count(), 0.25f);
+			accumulator += frameTime;
+
+			while (accumulator >= mUpdateTime) {
+				accumulator -= mUpdateTime;
+				timeSinceStart += mUpdateTime;
 
 				// Update the Systems
-				onUpdate(deltaTime);
+				onUpdate(mUpdateTime, timeSinceStart);
 			}
 
 			// Draw
@@ -210,15 +216,14 @@ namespace se::app {
 	}
 
 
-	void Application::onUpdate(float deltaTime)
+	void Application::onUpdate(float deltaTime, float timeSinceStart)
 	{
 		utils::TimeGuard t0("onUpdate");
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
 		mExternalTools->windowManager->update();
 		for (ISystem* system : mSystems) {
-			system->setDeltaTime(deltaTime);
-			system->update();
+			system->update(deltaTime, timeSinceStart);
 		}
 
 		SOMBRA_DEBUG_LOG << "End";

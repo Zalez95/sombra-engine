@@ -40,11 +40,11 @@ namespace se::app {
 	}
 
 
-	void PhysicsSystem::update()
+	void PhysicsSystem::update(float deltaTime, float)
 	{
 		SOMBRA_DEBUG_LOG << "Start";
 
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			SOMBRA_DEBUG_LOG << "Updating the RigidBodies";
 			query.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(
 				[this](Entity, TransformsComponent* transforms, RigidBodyComponent* rigidBody) {
@@ -62,7 +62,7 @@ namespace se::app {
 			);
 
 			SOMBRA_DEBUG_LOG << "Updating the RigidBodyWorld";
-			mApplication.getExternalTools().rigidBodyWorld->update(mDeltaTime);
+			mApplication.getExternalTools().rigidBodyWorld->update(deltaTime);
 
 			SOMBRA_DEBUG_LOG << "Updating the Transforms";
 			query.iterateEntityComponents<TransformsComponent, RigidBodyComponent>(

@@ -81,10 +81,8 @@ namespace game {
 	protected:
 		/** Updates the Game managers and systems each main loop
 		 * iteration
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void onUpdate(float deltaTime) override;
+		 * @copydoc se::app::Application::update(float, float) */
+		virtual void onUpdate(float deltaTime, float timeSinceStart) override;
 	};
 
 }

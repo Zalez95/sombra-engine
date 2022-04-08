@@ -37,7 +37,7 @@ namespace se::app {
 	}
 
 
-	void LightProbeSystem::update()
+	void LightProbeSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the LightProbes";
 

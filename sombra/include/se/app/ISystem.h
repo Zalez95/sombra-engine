@@ -14,16 +14,13 @@ namespace se::app {
 		 * Components */
 		EntityDatabase& mEntityDatabase;
 
-		/** The elapsed time since the last @see update call */
-		float mDeltaTime;
-
 	public:		// Functions
 		/** Creates a new ISystem
 		 *
 		 * @param	entityDatabase the EntityDatabase that holds all the
 		 *			Entities */
 		ISystem(EntityDatabase& entityDatabase) :
-			mEntityDatabase(entityDatabase), mDeltaTime(0.0f) {};
+			mEntityDatabase(entityDatabase) {};
 
 		/** Class destructor */
 		virtual ~ISystem() = default;
@@ -62,14 +59,13 @@ namespace se::app {
 			EntityDatabase::Query& /*query*/
 		) {};
 
-		/** Sets the delta time of the ISystem
+		/** Function called every clock tick
 		 *
-		 * @param	deltaTime the elapsed time since the last @see update
-		 *			call */
-		void setDeltaTime(float deltaTime) { mDeltaTime = deltaTime; };
-
-		/** Function called every clock tick */
-		virtual void update() {};
+		 * @param	deltaTime the elapsed time since the last update call
+		 *			in seconds
+		 * @param	timeSinceStart the elapsed time since the start of the
+		 *			Application in seconds */
+		virtual void update(float /*deltaTime*/, float /*timeSinceStart*/) {};
 	protected:
 		/** Tries to call the given component handler function with the correct
 		 * Component type

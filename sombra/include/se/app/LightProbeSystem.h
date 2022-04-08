@@ -55,10 +55,8 @@ namespace se::app {
 		) override;
 
 		/** Updates the light sources with the Entities
-		 *
-		 * @note	this function must be called from the thread with the
-		 *			Graphics API context (probably thread 0) */
-		virtual void update() override;
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function called when a LightProbeComponent is added to an Entity
 		 *

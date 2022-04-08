@@ -41,12 +41,12 @@ namespace se::app {
 	}
 
 
-	void AnimationSystem::update()
+	void AnimationSystem::update(float deltaTime, float)
 	{
 		SOMBRA_DEBUG_LOG << "Start";
 
 		// Update the AnimationNodes with the changes made to the Entities
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			SOMBRA_DEBUG_LOG << "Updating the AnimationComponents";
 			query.iterateEntityComponents<TransformsComponent, AnimationComponent>(
 				[](Entity, TransformsComponent* transforms, AnimationComponent* animation) {
@@ -75,7 +75,7 @@ namespace se::app {
 			);
 
 			SOMBRA_DEBUG_LOG << "Updating the AnimationEngine";
-			mApplication.getExternalTools().animationEngine->update(mDeltaTime);
+			mApplication.getExternalTools().animationEngine->update(deltaTime);
 
 			// Update the Entities with the changes made to the AnimationNodes
 			SOMBRA_DEBUG_LOG << "Updating the Transforms and Skin Components";

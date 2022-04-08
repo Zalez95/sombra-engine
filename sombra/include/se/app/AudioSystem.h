@@ -56,8 +56,9 @@ namespace se::app {
 			EntityDatabase::Query& query
 		) override;
 
-		/** Updates the sounds data with the Entities */
-		virtual void update() override;
+		/** Updates the sounds data with the Entities
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function called when a SoundComponent is added to an Entity
 		 *

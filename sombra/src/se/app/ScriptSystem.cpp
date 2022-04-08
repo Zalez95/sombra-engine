@@ -46,16 +46,19 @@ namespace se::app {
 	}
 
 
-	void ScriptSystem::update()
+	void ScriptSystem::update(float deltaTime, float timeSinceStart)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Scripts";
 
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			std::scoped_lock lock(mMutex);
+
+			mScriptSharedState.deltaTime = deltaTime;
+			mScriptSharedState.timeSinceStart = timeSinceStart;
 
 			query.iterateComponents<ScriptComponent>(
 				[this](ScriptComponent& script) {
-					script.onUpdate(mDeltaTime, mScriptSharedState);
+					script.onUpdate(mScriptSharedState);
 				},
 				true
 			);

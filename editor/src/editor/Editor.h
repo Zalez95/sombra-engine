@@ -79,10 +79,8 @@ namespace editor {
 	protected:
 		/** Updates the Editor managers and systems each main loop
 		 * iteration
-		 *
-		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void onUpdate(float deltaTime) override;
+		 * @copydoc se::app::Application::update(float, float) */
+		virtual void onUpdate(float deltaTime, float timeSinceStart) override;
 
 		/** Draws to screen */
 		virtual void onRender() override;

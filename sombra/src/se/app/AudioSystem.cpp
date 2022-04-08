@@ -42,7 +42,7 @@ namespace se::app {
 	}
 
 
-	void AudioSystem::update()
+	void AudioSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the AudioSystem";
 

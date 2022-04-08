@@ -162,7 +162,7 @@ namespace game {
 	}
 
 // Private functions
-	void Game::onUpdate(float deltaTime)
+	void Game::onUpdate(float deltaTime, float timeSinceStart)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
@@ -175,7 +175,7 @@ namespace game {
 		}
 
 		mStateMachine->handleEvents();
-		Application::onUpdate(deltaTime);
+		Application::onUpdate(deltaTime, timeSinceStart);
 	}
 
 }

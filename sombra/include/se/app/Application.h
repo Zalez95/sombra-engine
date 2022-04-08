@@ -151,8 +151,10 @@ namespace se::app {
 		 * iteration
 		 *
 		 * @param	deltaTime the elapsed time since the last update in
-		 *			seconds */
-		virtual void onUpdate(float deltaTime);
+		 *			seconds
+		 * @param	timeSinceStart the elapsed time since the start of the
+		 *			Application in seconds */
+		virtual void onUpdate(float deltaTime, float timeSinceStart);
 
 		/** Draws to screen */
 		virtual void onRender();

@@ -62,7 +62,7 @@ namespace se::app {
 	}
 
 
-	void TerrainSystem::update()
+	void TerrainSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Terrains";
 

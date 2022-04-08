@@ -123,7 +123,7 @@ namespace se::app {
 	}
 
 
-	void CameraSystem::update()
+	void CameraSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Start";
 

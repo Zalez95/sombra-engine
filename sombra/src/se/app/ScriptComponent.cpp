@@ -40,10 +40,10 @@ namespace se::app {
 	}
 
 
-	void ScriptComponent::onUpdate(float elapsedTime, const ScriptSharedState& state)
+	void ScriptComponent::onUpdate(const ScriptSharedState& state)
 	{
 		if (mScript) {
-			mScript->onUpdate(mEntity, elapsedTime, state);
+			mScript->onUpdate(mEntity, state);
 		}
 	}
 

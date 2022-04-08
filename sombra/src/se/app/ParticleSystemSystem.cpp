@@ -38,11 +38,11 @@ namespace se::app {
 	}
 
 
-	void ParticleSystemSystem::update()
+	void ParticleSystemSystem::update(float deltaTime, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the ParticleSystems";
 
-		mEntityDatabase.executeQuery([this](EntityDatabase::Query& query) {
+		mEntityDatabase.executeQuery([&](EntityDatabase::Query& query) {
 			query.iterateEntityComponents<ParticleSystemComponent, TransformsComponent>(
 				[this](Entity, ParticleSystemComponent* particleSystem, TransformsComponent* transforms) {
 					if (!transforms->updated[static_cast<int>(TransformsComponent::Update::ParticleSystem)]) {
@@ -55,8 +55,8 @@ namespace se::app {
 			);
 
 			query.iterateComponents<ParticleSystemComponent>(
-				[this](ParticleSystemComponent& particleSystem) {
-					particleSystem.update(mDeltaTime);
+				[&](ParticleSystemComponent& particleSystem) {
+					particleSystem.update(deltaTime);
 				},
 				true
 			);

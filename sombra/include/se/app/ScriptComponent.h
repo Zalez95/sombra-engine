@@ -22,11 +22,11 @@ namespace se::app {
 		/** Max number of buttons in the keys */
 		static constexpr int kMaxKeys = 512;
 
-		/** An array with the keyboard pressed keys */
-		std::array<bool, kMaxKeys> keys = {};
-
 		/** An array with the mouse pressed keys */
 		std::array<bool, kMaxMouseButtons> mouseButtons = {};
+
+		/** An array with the keyboard pressed keys */
+		std::array<bool, kMaxKeys> keys = {};
 
 		/** The Mouse X coordinate relative to the top left corner of the
 		 * window*/
@@ -53,6 +53,12 @@ namespace se::app {
 
 		/** The EventManager used for creating events */
 		EventManager* eventManager = nullptr;
+
+		/** The elapsed time since the last update in seconds */
+		float deltaTime = 0.0f;
+
+		/** The elapsed time since the start of the Application in seconds */
+		float timeSinceStart = 0.0f;
 	};
 
 
@@ -97,12 +103,9 @@ namespace se::app {
 		/** Function called every clock tick
 		 *
 		 * @param	entity the Entity to update
-		 * @param	elapsedTime the elapsed time in seconds since the last
-		 *			update
 		 * @param	sharedState the current user input state */
 		virtual void onUpdate(
-			Entity /*entity*/, float /*elapsedTime*/,
-			const ScriptSharedState& /*sharedState*/
+			Entity /*entity*/, const ScriptSharedState& /*sharedState*/
 		) {};
 	};
 
@@ -154,10 +157,8 @@ namespace se::app {
 
 		/** Function called every clock tick
 		 *
-		 * @param	elapsedTime the elapsed time in seconds since the last
-		 *			update
 		 * @param	state the current state */
-		void onUpdate(float elapsedTime, const ScriptSharedState& state);
+		void onUpdate(const ScriptSharedState& state);
 	};
 
 }

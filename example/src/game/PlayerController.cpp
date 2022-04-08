@@ -88,7 +88,7 @@ namespace game {
 	}
 
 
-	void PlayerController::onUpdate(se::app::Entity entity, float elapsedTime, const se::app::ScriptSharedState& sharedState)
+	void PlayerController::onUpdate(se::app::Entity entity, const se::app::ScriptSharedState& sharedState)
 	{
 		sharedState.entityDatabase->executeQuery([&](se::app::EntityDatabase::Query& query) {
 			auto [transforms] = query.getComponents<se::app::TransformsComponent>(entity, true);
@@ -107,8 +107,8 @@ namespace game {
 				mLastMouseY = sharedState.mouseY;
 
 				// Multiply the values by the mouse speed
-				float yaw = kMouseSpeed * -elapsedTime * static_cast<float>(mouseMove.x);
-				float pitch = -kMouseSpeed * elapsedTime * static_cast<float>(mouseMove.y);
+				float yaw = kMouseSpeed * -sharedState.deltaTime * static_cast<float>(mouseMove.x);
+				float pitch = -kMouseSpeed * sharedState.deltaTime * static_cast<float>(mouseMove.y);
 
 				// Clamp the pitch
 				float currentPitch = std::asin(forward.y);
@@ -138,7 +138,7 @@ namespace game {
 			if (sharedState.keys[SE_KEY_A]) { direction -= right; }
 			float length = glm::length(direction);
 			if (length > 0.0f) {
-				transforms->velocity += kRunSpeed * elapsedTime * direction / length;
+				transforms->velocity += kRunSpeed * sharedState.deltaTime * direction / length;
 				SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " run velocity (" << glm::to_string(transforms->velocity) << ")";
 				transforms->updated.reset();
 			}
@@ -149,7 +149,7 @@ namespace game {
 			if (sharedState.keys[SE_KEY_LEFT_CONTROL]) { direction -= up; }
 			length = glm::length(direction);
 			if (length > 0.0f) {
-				transforms->velocity += kJumpSpeed * elapsedTime * direction;
+				transforms->velocity += kJumpSpeed * sharedState.deltaTime * direction;
 				SOMBRA_DEBUG_LOG << "Updating the entity " << entity << " jump velocity (" << glm::to_string(transforms->velocity) << ")";
 				transforms->updated.reset();
 			}

@@ -58,8 +58,9 @@ namespace se::app {
 		) override
 		{ tryCallC(&ScriptSystem::onRemoveScript, entity, mask, query); };
 
-		/** Updates the scripts of the Entities */
-		virtual void update() override;
+		/** Updates the scripts of the Entities
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function called when a ScriptComponent is added to an Entity
 		 *

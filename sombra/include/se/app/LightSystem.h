@@ -96,8 +96,9 @@ namespace se::app {
 			EntityDatabase::Query& query
 		) override;
 
-		/** Updates the LightSources with the Entities */
-		virtual void update() override;
+		/** Updates the LightSources with the Entities
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function called when a LightComponent is added to an Entity
 		 *

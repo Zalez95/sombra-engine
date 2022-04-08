@@ -6,7 +6,7 @@
 
 namespace editor {
 
-	void ViewportControl::onUpdate(se::app::Entity entity, float /*elapsedTime*/, const se::app::ScriptSharedState& sharedState)
+	void ViewportControl::onUpdate(se::app::Entity entity, const se::app::ScriptSharedState& sharedState)
 	{
 		sharedState.entityDatabase->executeQuery([&](se::app::EntityDatabase::Query& query) {
 			auto [transforms] = query.getComponents<se::app::TransformsComponent>(entity, true);

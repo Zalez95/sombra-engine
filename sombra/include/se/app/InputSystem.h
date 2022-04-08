@@ -40,8 +40,9 @@ namespace se::app {
 		/** Class destructor */
 		~InputSystem();
 
-		/** Submits all the user input events */
-		virtual void update() override;
+		/** Submits all the user input events
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 
 		/** @copydoc IEventListener::notify(const IEvent&) */
 		virtual bool notify(const IEvent& event) override

@@ -268,11 +268,11 @@ namespace editor {
 	}
 
 // Private functions
-	void Editor::onUpdate(float deltaTime)
+	void Editor::onUpdate(float deltaTime, float timeSinceStart)
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
-		Application::onUpdate(deltaTime);
+		Application::onUpdate(deltaTime, timeSinceStart);
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = deltaTime;

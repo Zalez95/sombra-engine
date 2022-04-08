@@ -54,9 +54,9 @@ namespace game {
 		) override;
 
 		/** @copydoc se::app::Script::onUpdate(
-		 * se::app::Entity, float, const se::app::ScriptSharedState&) */
+		 * se::app::Entity, const se::app::ScriptSharedState&) */
 		virtual void onUpdate(
-			se::app::Entity entity, float elapsedTime,
+			se::app::Entity entity,
 			const se::app::ScriptSharedState& sharedState
 		) override;
 	};

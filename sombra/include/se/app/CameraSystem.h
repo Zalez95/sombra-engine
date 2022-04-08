@@ -83,8 +83,9 @@ namespace se::app {
 			EntityDatabase::Query& query
 		) override;
 
-		/** Updates the Cameras sources with the Entities */
-		virtual void update() override;
+		/** Updates the Cameras sources with the Entities
+		 * @copydoc ISystem::update(float, float) */
+		virtual void update(float deltaTime, float timeSinceStart) override;
 	private:
 		/** Function called when a Camera is added to an Entity
 		 *

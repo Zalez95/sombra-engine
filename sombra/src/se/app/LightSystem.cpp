@@ -289,7 +289,7 @@ namespace se::app {
 	}
 
 
-	void LightSystem::update()
+	void LightSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the Lights";
 

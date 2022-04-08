@@ -97,7 +97,7 @@ namespace se::app {
 	}
 
 
-	void InputSystem::update()
+	void InputSystem::update(float, float)
 	{
 		SOMBRA_DEBUG_LOG << "Updating the InputSystem";
 
