@@ -71,7 +71,9 @@ namespace se::physics {
 		// Notify the ICollisionListeners
 		for (ICollisionListener* listener : mListeners) {
 			for (auto& manifold : mManifolds) {
-				listener->onCollision(manifold);
+				if (listener->filter(manifold.colliders[0]) || listener->filter(manifold.colliders[1])) {
+					listener->onCollision(manifold);
+				}
 			}
 		}
 	}

@@ -23,6 +23,15 @@ namespace se::physics {
 		/** Class destructor */
 		virtual ~ICollisionListener() = default;
 
+		/** Checks whether the @see onCollision function should be called or
+		 * not for the given Collider
+		 *
+		 * @param	collider a pointer to the Collider to filter by
+		 * @return	true if @see onCollision should be called, false
+		 *			otherwise */
+		virtual bool filter(const Collider* /*collider*/) const
+		{ return true; };
+
 		/** Function called per collision Manifold updated
 		 *
 		 * @param	manifold the Manifold updated */

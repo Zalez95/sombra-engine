@@ -129,6 +129,10 @@ namespace se::app {
 		/** The Script to execute */
 		ScriptResource mScript;
 
+		/** A pointer to the data that can be used for storing the per
+		 * entity state of @see mScript */
+		void* mScriptData = nullptr;
+
 	public:		// Functions
 		/** Sets the ScriptComponent attributes
 		 *
@@ -143,6 +147,14 @@ namespace se::app {
 		 *
 		 * @param	script the new Script of the ScriptComponent */
 		void setScript(const ScriptResource& script);
+
+		/** @return	a pointer to the script data of the ScriptComponent */
+		void* getScriptData() const { return mScriptData; };
+
+		/** Sets the script data of the ScriptComponent
+		 *
+		 * @param	data a pointer to the new script data */
+		void setScriptData(void* data) { mScriptData = data; };
 
 		/** Function called when the ScriptComponent is added to an Entity
 		 *
