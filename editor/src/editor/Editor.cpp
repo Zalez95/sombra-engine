@@ -268,27 +268,17 @@ namespace editor {
 	}
 
 // Private functions
-	void Editor::onUpdate(float deltaTime, float timeSinceStart)
+	void Editor::onRender(float deltaTime, float timeSinceStart)
 	{
-		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
-
-		Application::onUpdate(deltaTime, timeSinceStart);
-
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = deltaTime;
-	}
-
-
-	void Editor::onRender()
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
 		ImGuizmo::SetImGuiContext(mImGuiContext);
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
 		// Window
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(viewport->WorkPos);
 		ImGui::SetNextWindowSize(viewport->WorkSize);
 		ImGui::SetNextWindowViewport(viewport->ID);
@@ -321,7 +311,7 @@ namespace editor {
 
 		ImGui::End();
 
-		Application::onRender();
+		Application::onRender(deltaTime, timeSinceStart);
 	}
 
 

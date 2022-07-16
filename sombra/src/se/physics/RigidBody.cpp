@@ -165,6 +165,10 @@ namespace se::physics {
 		mState.transformsMatrix = translation * rotation;
 
 		// Update the inertia tensor of the RigidBody
+		glm::mat3 transformsMat3 = mState.transformsMatrix;
+		mState.invertedInertiaTensorWorld = transformsMat3 * mProperties.invertedInertiaTensor * glm::transpose(transformsMat3);
+
+		// Update the inertia tensor of the RigidBody
 		glm::mat3 inverseTransformsMat3 = glm::inverse(mState.transformsMatrix);
 		mState.invertedInertiaTensorWorld = glm::transpose(inverseTransformsMat3)
 			* mProperties.invertedInertiaTensor

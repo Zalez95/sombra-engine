@@ -62,9 +62,12 @@ namespace se::physics {
 		/** The gravity acceleration value of all the FrictionConstraints */
 		float frictionGravityAcceleration = 9.8f;
 
+		/** The number of substeps executed per update */
+		std::size_t numSubsteps = 4;
+
 		/** The maximum number of iterations that the Gauss-Seidel algorithm
 		 * should run for solving the Constraints */
-		std::size_t maxConstraintIterations = 10;
+		std::size_t maxConstraintIterations = 1;
 
 		/** The number of threads to use */
 		std::size_t numThreads = 8;

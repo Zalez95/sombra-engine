@@ -19,7 +19,8 @@ namespace game {
 				kMotionBias, kPhysicsWorldAABB, kMaxCollidingRBs, kCoarseCollisionEpsilon, kMaxCollisionIterations,
 				kMinFDifference, kContactPrecision, kContactSeparation, kRaycastPrecision, kCollisionBeta,
 				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
-				kFrictionGravityAcceleration, kMaxConstraintIterations, kNumPhysicsThreads
+				kFrictionGravityAcceleration, kNumSubsteps, kMaxConstraintIterations,
+				kNumPhysicsThreads
 			},
 			kAudioDeviceId,
 			kUpdateTime
@@ -139,9 +140,6 @@ namespace game {
 			// Load main menu
 			mStateMachine->submitEvent(static_cast<se::utils::StateMachine::Event>(GameEvent::GoToMainMenu));
 		}
-
-		mAccumulatedTime = 0.0f;
-		mNumFrames = 0;
 	}
 
 
@@ -166,16 +164,15 @@ namespace game {
 	{
 		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
-		mAccumulatedTime += deltaTime;
-		mNumFrames++;
-		if (mAccumulatedTime > 1.0f) {
-			mFPSText->setText(std::to_string(mNumFrames));
-			mAccumulatedTime = 0.0f;
-			mNumFrames = 0;
-		}
-
 		mStateMachine->handleEvents();
 		Application::onUpdate(deltaTime, timeSinceStart);
+	}
+
+
+	void Game::onRender(float deltaTime, float timeSinceStart)
+	{
+		mFPSText->setText(std::to_string(deltaTime) + "ms");
+		Application::onRender(deltaTime, timeSinceStart);
 	}
 
 }

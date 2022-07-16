@@ -77,13 +77,9 @@ namespace editor {
 		/** @copydoc se::app::Application::notify(const IEvent&) */
 		virtual bool notify(const se::app::IEvent&) override;
 	protected:
-		/** Updates the Editor managers and systems each main loop
-		 * iteration
-		 * @copydoc se::app::Application::update(float, float) */
-		virtual void onUpdate(float deltaTime, float timeSinceStart) override;
-
-		/** Draws to screen */
-		virtual void onRender() override;
+		/** Draws to screen
+		 * @copydoc se::app::Application::onRender(float, float) */
+		virtual void onRender(float deltaTime, float timeSinceStart) override;
 
 		/** Handles the given close Event by closing the Editor
 		 *

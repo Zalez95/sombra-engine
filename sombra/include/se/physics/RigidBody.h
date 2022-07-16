@@ -118,8 +118,8 @@ namespace se::physics {
 		 * RigidBody (translation and orientation) in world space */
 		glm::mat4 transformsMatrix = glm::mat4(1.0f);
 
-		/** The inertia tensor of the RigidBody in world space
-		 * @see		RigidBodyProperties.mInvertedInertiaTensor */
+		/** The inverted inertia tensor of the RigidBody in world space
+		 * @see		RigidBodyProperties.invertedInertiaTensor */
 		glm::mat3 invertedInertiaTensorWorld = glm::mat4(1.0f);
 	};
 

@@ -185,7 +185,7 @@ namespace se::app {
 		mStopRunning = false;
 
 		/* Based on https://gafferongames.com/post/fix_your_timestep/ */
-		float timeSinceStart = 0.0f, accumulator = 0.0f;
+		float renderTimeSinceStart = 0.0f, updateTimeSinceStart = 0.0f, updateAccumulator = 0.0f;
 		auto lastTP = std::chrono::high_resolution_clock::now();
 
 		while (!mStopRunning) {
@@ -194,19 +194,20 @@ namespace se::app {
 			std::chrono::duration<float> durationInSeconds = currentTP - lastTP;
 			lastTP = currentTP;
 
-			float frameTime = std::min(durationInSeconds.count(), 0.25f);
-			accumulator += frameTime;
+			float updateFrameTime = std::min(durationInSeconds.count(), 0.25f);
+			updateAccumulator += updateFrameTime;
 
-			while (accumulator >= mUpdateTime) {
-				accumulator -= mUpdateTime;
-				timeSinceStart += mUpdateTime;
+			while (updateAccumulator >= mUpdateTime) {
+				updateAccumulator -= mUpdateTime;
+				updateTimeSinceStart += mUpdateTime;
 
 				// Update the Systems
-				onUpdate(mUpdateTime, timeSinceStart);
+				onUpdate(mUpdateTime, updateTimeSinceStart);
 			}
 
 			// Draw
-			onRender();
+			renderTimeSinceStart += durationInSeconds.count();
+			onRender(durationInSeconds.count(), renderTimeSinceStart);
 		}
 
 		mState = AppState::Stopped;
@@ -230,10 +231,10 @@ namespace se::app {
 	}
 
 
-	void Application::onRender()
+	void Application::onRender(float deltaTime, float)
 	{
 		utils::TimeGuard t0("onRender");
-		SOMBRA_DEBUG_LOG << "Init";
+		SOMBRA_DEBUG_LOG << "Init (" << deltaTime << ")";
 
 		mAppRenderer->render();
 		mExternalTools->windowManager->swapBuffers();

@@ -461,7 +461,6 @@ namespace se::physics {
 			}
 
 			// Update the RigidBody internal state
-			mRigidBodies[i]->updateTransforms();
 			mRigidBodies[i]->setStatus(RigidBody::Status::Sleeping, false);
 		}
 	}

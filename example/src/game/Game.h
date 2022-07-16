@@ -25,7 +25,8 @@ namespace game {
 	static constexpr float kCollisionSlopPenetration		= 0.005f;
 	static constexpr float kCollisionSlopRestitution		= 0.5f;
 	static constexpr float kFrictionGravityAcceleration		= 9.8f;
-	static constexpr std::size_t kMaxConstraintIterations	= 10;
+	static constexpr std::size_t kNumSubsteps				= 4;
+	static constexpr std::size_t kMaxConstraintIterations	= 1;
 	static constexpr std::size_t kNumPhysicsThreads			= 4;
 	static constexpr std::size_t kAudioDeviceId				= 0;
 	static constexpr float kUpdateTime						= 0.016f;
@@ -66,9 +67,6 @@ namespace game {
 		/** The transition table of the StateMachine of the Game*/
 		std::vector<se::utils::StateMachine::Transition> mGameTransitions;
 
-		float mAccumulatedTime;
-		int mNumFrames;
-
 	public:		// Functions
 		/** Creates a new Game */
 		Game();
@@ -81,8 +79,12 @@ namespace game {
 	protected:
 		/** Updates the Game managers and systems each main loop
 		 * iteration
-		 * @copydoc se::app::Application::update(float, float) */
+		 * @copydoc se::app::Application::onUpdate(float, float) */
 		virtual void onUpdate(float deltaTime, float timeSinceStart) override;
+
+		/** Draws to screen
+		 * @copydoc se::app::Application::onRender(float, float) */
+		virtual void onRender(float deltaTime, float timeSinceStart) override;
 	};
 
 }
