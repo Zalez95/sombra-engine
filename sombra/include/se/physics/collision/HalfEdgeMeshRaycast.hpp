@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <algorithm>
+#include "CollisionMath.h"
 #include "HalfEdgeMeshExt.h"
 
 namespace se::physics {
@@ -182,7 +183,7 @@ namespace se::physics {
 								glm::vec3 facePoint = mMesh->vertices[ mMesh->edges[ mMesh->faces[iFace].edge ].vertex ].location;
 								glm::vec3 faceNormal = (*mFaceNormals)[iFace];
 
-								auto [intersects, intersection] = utils::rayPlaneIntersection(ray.origin, ray.direction, facePoint, faceNormal, mEpsilon);
+								auto [intersects, intersection] = rayPlaneIntersection(ray.origin, ray.direction, facePoint, faceNormal, mEpsilon);
 								if (intersects && isPointBetweenHEEdges(*mMesh, mMesh->faces[iFace].edge, faceNormal, intersection)) {
 									float distance = glm::length(intersection - ray.origin);
 									if (distance < returnValue->distance) {

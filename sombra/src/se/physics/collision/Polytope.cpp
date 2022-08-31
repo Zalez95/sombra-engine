@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include "se/physics/collision/CollisionMath.h"
 #include "se/physics/collision/HalfEdgeMeshExt.h"
 #include "Polytope.h"
 
@@ -56,9 +57,9 @@ namespace se::physics {
 		const glm::vec3 p0CSO = mMesh.vertices[faceIndices[0]].location;
 		const glm::vec3 p1CSO = mMesh.vertices[faceIndices[1]].location;
 		const glm::vec3 p2CSO = mMesh.vertices[faceIndices[2]].location;
-		glm::vec3 closestPoint = utils::getClosestPointInPlane(glm::vec3(0.0f), { p0CSO, p1CSO, p2CSO });
+		glm::vec3 closestPoint = getClosestPointInPlane(glm::vec3(0.0f), { p0CSO, p1CSO, p2CSO });
 		float distance = glm::length(closestPoint);
-		auto [inside, closestPointBarycentricCoords] = utils::projectPointOnTriangle(
+		auto [inside, closestPointBarycentricCoords] = projectPointOnTriangle(
 			closestPoint, { p0CSO, p1CSO, p2CSO }, mPrecision
 		);
 		mFaceDistances.emplace(FaceDistanceData{ closestPoint, distance, inside, closestPointBarycentricCoords });

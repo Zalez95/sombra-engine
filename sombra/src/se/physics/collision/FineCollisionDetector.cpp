@@ -1,10 +1,10 @@
 #include <algorithm>
-#include "se/utils/MathUtils.h"
 #include "se/physics/collision/Contact.h"
 #include "se/physics/collision/Manifold.h"
 #include "se/physics/collision/Collider.h"
 #include "se/physics/collision/ConvexCollider.h"
 #include "se/physics/collision/ConcaveCollider.h"
+#include "se/physics/collision/CollisionMath.h"
 #include "se/physics/collision/FineCollisionDetector.h"
 #include "GJKCollisionDetector.h"
 #include "EPACollisionDetector.h"
@@ -308,11 +308,11 @@ namespace se::physics {
 		Contact* contact3 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 vDist1 = c1->worldPosition[0] - utils::getClosestPointInEdge(
+				glm::vec3 vDist1 = c1->worldPosition[0] - getClosestPointInEdge(
 					c1->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
-				glm::vec3 vDist2 = c2->worldPosition[0] - utils::getClosestPointInEdge(
+				glm::vec3 vDist2 = c2->worldPosition[0] - getClosestPointInEdge(
 					c2->worldPosition[0],
 					contact1->worldPosition[0], contact2->worldPosition[0]
 				);
@@ -323,11 +323,11 @@ namespace se::physics {
 		Contact* contact4 = *std::max_element(
 			contacts.begin(), contacts.end(),
 			[&](const Contact* c1, const Contact* c2) {
-				glm::vec3 vDist1 = c1->worldPosition[0] - utils::getClosestPointInPlane(
+				glm::vec3 vDist1 = c1->worldPosition[0] - getClosestPointInPlane(
 					c1->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);
-				glm::vec3 vDist2 = c2->worldPosition[0] - utils::getClosestPointInPlane(
+				glm::vec3 vDist2 = c2->worldPosition[0] - getClosestPointInPlane(
 					c2->worldPosition[0],
 					{ contact1->worldPosition[0], contact2->worldPosition[0], contact3->worldPosition[0] }
 				);

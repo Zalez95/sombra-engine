@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <se/physics/collision/CollisionMath.h>
 #include <se/physics/collision/TriangleMeshCollider.h>
 #include <se/physics/collision/TriangleCollider.h>
 #include "TestMeshes.h"
@@ -142,7 +143,7 @@ TEST(TriangleMeshCollider, getOverlapingParts1)
 		ASSERT_TRUE(tri1);
 
 		auto tri2 = std::find_if(expectedRes.begin(), expectedRes.end(), [&](const TriangleCollider& tri) {
-			return se::utils::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
+			return se::physics::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
 		});
 		EXPECT_TRUE(tri2 != expectedRes.end());
 
@@ -210,7 +211,7 @@ TEST(TriangleMeshCollider, processIntersectingParts)
 		ASSERT_TRUE(tri1);
 
 		auto tri2 = std::find_if(expectedRes.begin(), expectedRes.end(), [&](const TriangleCollider& tri) {
-			return se::utils::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
+			return se::physics::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
 		});
 		EXPECT_TRUE(tri2 != expectedRes.end());
 

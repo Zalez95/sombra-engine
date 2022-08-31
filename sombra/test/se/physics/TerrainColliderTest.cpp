@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <se/utils/MathUtils.h>
+#include <se/physics/collision/CollisionMath.h>
 #include <se/physics/collision/TerrainCollider.h>
 #include <se/physics/collision/TriangleCollider.h>
 #include <se/physics/collision/ConvexPolyhedron.h>
@@ -327,7 +327,7 @@ TEST(TerrainCollider, processIntersectingParts)
 		ASSERT_TRUE(tri1);
 
 		auto tri2 = std::find_if(expectedRes1.begin(), expectedRes1.end(), [&](const TriangleCollider& tri) {
-			return se::utils::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
+			return se::physics::compareTriangles(tri1->getLocalVertices(), tri.getLocalVertices(), kTolerance);
 		});
 		EXPECT_TRUE(tri2 != expectedRes1.end());
 

@@ -1,5 +1,5 @@
 #include <glm/gtc/matrix_access.hpp>
-#include "se/utils/MathUtils.h"
+#include "se/graphics/core/GraphicsMath.h"
 #include "se/graphics/3D/FrustumFilter.h"
 #include "se/graphics/3D/Renderable3D.h"
 
@@ -53,7 +53,7 @@ namespace se::graphics {
 			// Calculate the signed distance from the positive vertex to
 			// the plane, if it's negative the renderable AABB is outside the
 			// frustum and should be culled
-			if (utils::signedDistancePlanePoint(plane, pVertex) < 0.0f) {
+			if (signedDistancePlanePoint(plane, pVertex) < 0.0f) {
 				return false;
 			}
 		}

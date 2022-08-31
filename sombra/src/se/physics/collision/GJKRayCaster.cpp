@@ -1,7 +1,7 @@
 #include <glm/gtc/random.hpp>
 #include <glm/gtc/epsilon.hpp>
-#include "se/utils/MathUtils.h"
 #include "se/physics/collision/ConvexCollider.h"
+#include "se/physics/collision/CollisionMath.h"
 #include "GJKRayCaster.h"
 
 namespace se::physics {
@@ -112,7 +112,7 @@ namespace se::physics {
 		const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
 	) const
 	{
-		auto [inside, originBarycentricCoords] = utils::projectPointOnEdge(
+		auto [inside, originBarycentricCoords] = projectPointOnEdge(
 			glm::vec3(0.0f),
 			{ simplex[0].getCSOPosition(), simplex[1].getCSOPosition() },
 			mEpsilon
@@ -149,7 +149,7 @@ namespace se::physics {
 		const Simplex& simplex, utils::FixedVector<bool, 4>& closestPoints
 	) const
 	{
-		auto [inside, originBarycentricCoords] = utils::projectPointOnTriangle(
+		auto [inside, originBarycentricCoords] = projectPointOnTriangle(
 			glm::vec3(0.0f),
 			{ simplex[0].getCSOPosition(), simplex[1].getCSOPosition(), simplex[2].getCSOPosition() },
 			mEpsilon
@@ -191,7 +191,7 @@ namespace se::physics {
 			int iV1 = i % 3, iV2 = (i + 1) % 3, iV3 = (i + 2) % 3;
 			utils::FixedVector<bool, 4> currentClosestPoints = { false, false, false, false };
 
-			auto [inside, originBarycentricCoords] = utils::projectPointOnTriangle(
+			auto [inside, originBarycentricCoords] = projectPointOnTriangle(
 				glm::vec3(0.0f),
 				{ simplex[iV1].getCSOPosition(), simplex[iV2].getCSOPosition(), simplex[iV3].getCSOPosition() },
 				mEpsilon

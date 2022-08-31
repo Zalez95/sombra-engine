@@ -2,7 +2,7 @@
 #include "se/graphics/3D/Mesh.h"
 #include "se/graphics/3D/RenderableMesh.h"
 #include "se/graphics/core/GraphicsOperations.h"
-#include "se/utils/MathUtils.h"
+#include "se/graphics/core/GraphicsMath.h"
 
 namespace se::graphics {
 
@@ -29,7 +29,7 @@ namespace se::graphics {
 
 			if (mMesh) {
 				auto [localMin, localMax] = q.getTBindable(mMesh)->getBounds();
-				std::tie(mMinimum, mMaximum) = utils::getBoundsWorld(localMin, localMax, mModelMatrix);
+				std::tie(mMinimum, mMaximum) = getBoundsWorld(localMin, localMax, mModelMatrix);
 			}
 			else {
 				mMinimum = mMaximum = {};

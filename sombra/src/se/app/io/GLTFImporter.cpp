@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "GLMJSON.h"
 #include "GLTFImporter.h"
-#include "se/utils/MathUtils.h"
+#include "se/graphics/core/GraphicsMath.h"
 #include "se/graphics/GraphicsEngine.h"
 #include "se/app/TagComponent.h"
 #include "se/app/TransformsComponent.h"
@@ -1520,7 +1520,7 @@ namespace se::app {
 		if (itMatrix != jsonNode.end()) {
 			glm::mat4 matrix;
 			if (toMat(*itMatrix, matrix)) {
-				utils::decompose(
+				graphics::decompose(
 					matrix,
 					node.nodeData.localTransforms.position,
 					node.nodeData.localTransforms.orientation,

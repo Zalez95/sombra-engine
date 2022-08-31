@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <se/app/CameraComponent.h>
 #include <se/app/TransformsComponent.h>
-#include <se/utils/MathUtils.h>
+#include <se/graphics/core/GraphicsMath.h>
 #include "Gizmo.h"
 #include "Editor.h"
 
@@ -51,7 +51,7 @@ namespace editor {
 			if (transforms) {
 				glm::mat4 matrixTransform = se::app::getModelMatrix(*transforms);
 				if (ImGuizmo::Manipulate(glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix), operation, mode, glm::value_ptr(matrixTransform))) {
-					se::utils::decompose(matrixTransform, transforms->position, transforms->orientation, transforms->scale);
+					se::graphics::decompose(matrixTransform, transforms->position, transforms->orientation, transforms->scale);
 					transforms->updated.reset();
 				}
 			}
