@@ -1,8 +1,12 @@
 #include <algorithm>
+#include "se/physics/LogWrapper.h"
 #include "se/physics/RigidBodyWorld.h"
 #include "RigidBodyDynamics.h"
 
 namespace se::physics {
+
+	LogHandler WorldProperties::sDefaultLogHandler = LogHandler();
+
 
 	RigidBodyWorld::RigidBodyWorld(const WorldProperties& properties) :
 		mProperties(properties), mThreadPool(properties.numThreads),
@@ -20,6 +24,8 @@ namespace se::physics {
 
 	void RigidBodyWorld::addRigidBody(RigidBody* rigidBody)
 	{
+		SPHYS_DEBUG_LOG(*this) << "Adding RigidBody " << rigidBody;
+
 		if (!rigidBody) { return; }
 
 		std::scoped_lock lck(mMutex);
@@ -33,11 +39,15 @@ namespace se::physics {
 		if (mRigidBodiesColliders[iRB]) {
 			mCollisionDetector.addCollider(mRigidBodiesColliders[iRB]);
 		}
+
+		SPHYS_DEBUG_LOG(*this) << "Added RigidBody " << rigidBody;
 	}
 
 
 	void RigidBodyWorld::removeRigidBody(RigidBody* rigidBody)
 	{
+		SPHYS_DEBUG_LOG(*this) << "Removing RigidBody " << rigidBody;
+
 		std::scoped_lock lck(mMutex);
 
 		auto it = std::lower_bound(mRigidBodies.begin(), mRigidBodies.end(), rigidBody);
@@ -52,6 +62,8 @@ namespace se::physics {
 
 		mRigidBodiesColliders.erase(mRigidBodiesColliders.begin() + iRB);
 		mRigidBodies.erase(it);
+
+		SPHYS_DEBUG_LOG(*this) << "Removed RigidBody " << rigidBody;
 	}
 
 
@@ -90,11 +102,15 @@ namespace se::physics {
 			// Simulate the RigidBody dynamics
 			for (RigidBody* rigidBody : mRigidBodies) {
 				if ((rigidBody->getProperties().type == RigidBodyProperties::Type::Dynamic)
-					&& isInside(mProperties.worldAABB, rigidBody->getState().position, mProperties.coarseCollisionEpsilon)
 					&& !rigidBody->getStatus(RigidBody::Status::Sleeping)
 				) {
-					RigidBodyDynamics::processForces(*rigidBody);
-					RigidBodyDynamics::integrate(*rigidBody, substepTime);
+					if (isInside(mProperties.worldAABB, rigidBody->getState().position, mProperties.collisionProperties.coarseEpsilon)) {
+						RigidBodyDynamics::processForces(*rigidBody);
+						RigidBodyDynamics::integrate(*rigidBody, substepTime);
+					}
+					else {
+						SPHYS_DEBUG_LOG(*this) << "RigidBody " << rigidBody << " outside world bounds";
+					}
 				}
 			}
 
@@ -120,6 +136,7 @@ namespace se::physics {
 				rigidBody->updateMotion(bias, 10.0f * rigidBody->getProperties().sleepMotion);
 
 				if (rigidBody->getState().motion < rigidBody->getProperties().sleepMotion) {
+					SPHYS_DEBUG_LOG(*this) << "RigidBody " << rigidBody << " is going to sleep";
 					rigidBody->setStatus(RigidBody::Status::Sleeping, true);
 				}
 			}

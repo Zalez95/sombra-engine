@@ -50,7 +50,7 @@ namespace se::physics {
 				iConstraintIsland = iRBIsland[1];
 			}
 			else {					// New island
-				mIslands.emplace_back(mParentWorld->getProperties().maxConstraintIterations);
+				mIslands.emplace_back(mParentWorld->getProperties().constraintProperties.maxIterations);
 				iConstraintIsland = mIslands.size() - 1;
 			}
 		}

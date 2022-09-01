@@ -11,22 +11,16 @@
 namespace se::physics {
 
 	/**
-	 * Struct WorldProperties, holds all the properties of the RigidBodyWorld
+	 * Struct CollisionProperties, holds all the collision detection parameters
 	 */
-	struct WorldProperties
+	struct CollisionProperties
 	{
-		/** The bias value used for updating the RigidBodies' motion value */
-		float motionBias = 0.1f;
-
-		/** The bounds of the World */
-		AABB worldAABB = { glm::vec3(-1000.0f), glm::vec3(1000.0f) };
-
-		/** The maximum number of simultaneous colliding RigidBodies */
-		std::size_t maxCollidingRBs = 128;
+		/** The maximum number of simultaneous intersecting colliders */
+		std::size_t maxCollidersIntersecting = 128;
 
 		/** The epsilon value used during the coarse collision detection step
 		 * for testing intersections with the Colliders AABBs */
-		float coarseCollisionEpsilon = 0.0001f;
+		float coarseEpsilon = 0.0001f;
 
 		/** The maximum number of iterations of the collision/intersection
 		 * algorithms */
@@ -45,32 +39,101 @@ namespace se::physics {
 
 		/** The precision of the calculated ray casts */
 		float raycastPrecision = 0.0000001f;
+	};
 
+
+	/**
+	 * Struct ConstraintProperties, holds all the constraint resolution parameters
+	 */
+	struct ConstraintProperties
+	{
 		/** The velocity of the constraint resolution process of the
-		 * NormalConstraints */
+		 * collision NormalConstraints */
 		float collisionBeta = 0.1f;
 
-		/** The restitution factor of all the NormalConstraints */
+		/** The restitution factor of all the collision
+		 * NormalConstraints */
 		float collisionRestitutionFactor = 0.2f;
 
-		/** The slop penetration value of all the NormalConstraints */
+		/** The slop penetration value of all the collision
+		 * NormalConstraints */
 		float collisionSlopPenetration = 0.005f;
 
-		/** The slop restitution value of all the NormalConstraints */
+		/** The slop restitution value of all the collision
+		 * NormalConstraints */
 		float collisionSlopRestitution = 0.5f;
 
-		/** The gravity acceleration value of all the FrictionConstraints */
+		/** The gravity acceleration value of all the collision
+		 * FrictionConstraints */
 		float frictionGravityAcceleration = 9.8f;
+
+		/** The maximum number of iterations that the Gauss-Seidel algorithm
+		 * should run for solving the Constraints */
+		std::size_t maxIterations = 1;
+	};
+
+
+	/**
+	 * Class LogHandler, it's the class that must be inherited from if someone
+	 * wants to print the RigidBodyWorld traces. The default behavior is to
+	 * not do anything with the traces.
+	 */
+	class LogHandler
+	{
+	public:		// Functions
+		/** Class destructor */
+		virtual ~LogHandler() = default;
+
+		/** Traces error logs
+		 *
+		 * @param	str the trace string to log */
+		virtual void error(const char* /* str */) {};
+
+		/** Traces warning logs
+		 *
+		 * @param	str the trace string to log */
+		virtual void warning(const char* /* str */) {};
+
+		/** Traces info logs
+		 *
+		 * @param	str the trace string to log */
+		virtual void info(const char* /* str */) {};
+
+		/** Traces debug logs
+		 *
+		 * @param	str the trace string to log */
+		virtual void debug(const char* /* str */) {};
+	};
+
+
+	/**
+	 * Struct WorldProperties, holds all the properties of the RigidBodyWorld
+	 */
+	struct WorldProperties
+	{
+		/** The default LogHandler */
+		static LogHandler sDefaultLogHandler;
+
+		/** The bias value used for updating the RigidBodies' motion value */
+		float motionBias = 0.1f;
+
+		/** The bounds of the World */
+		AABB worldAABB = { glm::vec3(-1000.0f), glm::vec3(1000.0f) };
+
+		/** All the collision detection parameters */
+		CollisionProperties collisionProperties;
+
+		/** All the constraint resolution parameters */
+		ConstraintProperties constraintProperties;
 
 		/** The number of substeps executed per update */
 		std::size_t numSubsteps = 4;
 
-		/** The maximum number of iterations that the Gauss-Seidel algorithm
-		 * should run for solving the Constraints */
-		std::size_t maxConstraintIterations = 1;
-
 		/** The number of threads to use */
 		std::size_t numThreads = 8;
+
+		/** The log handler used for printing logs by the RigidBodyWorld */
+		LogHandler* logHandler = &sDefaultLogHandler;
 	};
 
 

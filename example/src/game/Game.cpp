@@ -16,11 +16,16 @@ namespace game {
 		Application(
 			se::window::WindowData{ kTitle, static_cast<int>(kWidths[0]), static_cast<int>(kHeights[0]) },
 			se::physics::WorldProperties{
-				kMotionBias, kPhysicsWorldAABB, kMaxCollidingRBs, kCoarseCollisionEpsilon, kMaxCollisionIterations,
-				kMinFDifference, kContactPrecision, kContactSeparation, kRaycastPrecision, kCollisionBeta,
-				kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
-				kFrictionGravityAcceleration, kNumSubsteps, kMaxConstraintIterations,
-				kNumPhysicsThreads
+				kMotionBias, kPhysicsWorldAABB,
+				{
+					kMaxCollidersIntersecting, kCoarseCollisionEpsilon, kMaxCollisionIterations,
+					kMinFDifference, kContactPrecision, kContactSeparation, kRaycastPrecision
+				},
+				{
+					kCollisionBeta, kCollisionRestitutionFactor, kCollisionSlopPenetration, kCollisionSlopRestitution,
+					kFrictionGravityAcceleration, kMaxConstraintIterations
+				},
+				kNumSubsteps, kNumPhysicsThreads
 			},
 			kAudioDeviceId,
 			kUpdateTime

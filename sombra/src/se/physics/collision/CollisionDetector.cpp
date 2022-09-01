@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "se/utils/Log.h"
+#include "se/physics/LogWrapper.h"
 #include "se/physics/RigidBodyWorld.h"
 #include "se/physics/collision/CollisionDetector.h"
 
@@ -7,17 +7,19 @@ namespace se::physics {
 
 	CollisionDetector::CollisionDetector(RigidBodyWorld& parentWorld) :
 		mParentWorld(parentWorld),
-		mCoarseCollisionDetector(mParentWorld.getProperties().coarseCollisionEpsilon),
+		mCoarseCollisionDetector(mParentWorld.getProperties().collisionProperties.coarseEpsilon),
 		mFineCollisionDetector(
-			mParentWorld.getProperties().coarseCollisionEpsilon,
-			mParentWorld.getProperties().minFDifference, mParentWorld.getProperties().maxIterations,
-			mParentWorld.getProperties().contactPrecision, mParentWorld.getProperties().contactSeparation,
-			mParentWorld.getProperties().raycastPrecision
+			mParentWorld.getProperties().collisionProperties.coarseEpsilon,
+			mParentWorld.getProperties().collisionProperties.minFDifference,
+			mParentWorld.getProperties().collisionProperties.maxIterations,
+			mParentWorld.getProperties().collisionProperties.contactPrecision,
+			mParentWorld.getProperties().collisionProperties.contactSeparation,
+			mParentWorld.getProperties().collisionProperties.raycastPrecision
 		)
 	{
-		mCoarseCollidersColliding.reserve(mParentWorld.getProperties().maxCollidingRBs);
-		mManifolds.reserve(mParentWorld.getProperties().maxCollidingRBs);
-		mCollidersManifoldMap.reserve(mParentWorld.getProperties().maxCollidingRBs);
+		mCoarseCollidersColliding.reserve(mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting);
+		mManifolds.reserve(mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting);
+		mCollidersManifoldMap.reserve(mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting);
 	}
 
 
@@ -79,20 +81,28 @@ namespace se::physics {
 
 	void CollisionDetector::addListener(ICollisionListener* listener)
 	{
+		SPHYS_DEBUG_LOG(mParentWorld) << "Adding listener " << listener;
+
 		if (listener) {
 			std::scoped_lock lck(mMutex);
 			mListeners.push_back(listener);
 		}
+
+		SPHYS_DEBUG_LOG(mParentWorld) << "Added listener " << listener;
 	}
 
 
 	void CollisionDetector::removeListener(ICollisionListener* listener)
 	{
+		SPHYS_DEBUG_LOG(mParentWorld) << "Removing listener " << listener;
+
 		std::scoped_lock lck(mMutex);
 		mListeners.erase(
 			std::remove(mListeners.begin(), mListeners.end(), listener),
 			mListeners.end()
 		);
+
+		SPHYS_DEBUG_LOG(mParentWorld) << "Removed listener " << listener;
 	}
 
 
@@ -190,7 +200,7 @@ namespace se::physics {
 				);
 			}
 			else {
-				SOMBRA_ERROR_LOG << "Can't create more Manifolds";
+				SPHYS_DEBUG_LOG(mParentWorld) << "Can't create more Manifolds";
 				break;
 			}
 		}

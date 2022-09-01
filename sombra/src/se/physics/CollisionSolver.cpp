@@ -1,5 +1,5 @@
 #include <glm/gtx/string_cast.hpp>
-#include "se/utils/Log.h"
+#include "se/physics/LogWrapper.h"
 #include "se/physics/RigidBodyWorld.h"
 #include "se/physics/CollisionSolver.h"
 
@@ -7,9 +7,9 @@ namespace se::physics {
 
 	CollisionSolver::CollisionSolver(RigidBodyWorld& parentWorld) : mParentWorld(parentWorld)
 	{
-		mManifoldConstraintIndicesMap.reserve(4 * mParentWorld.getProperties().maxCollidingRBs / Manifold::kMaxContacts);
-		mContactNormalConstraints.reserve(4 * mParentWorld.getProperties().maxCollidingRBs);
-		mContactFrictionConstraints.reserve(8 * mParentWorld.getProperties().maxCollidingRBs);
+		mManifoldConstraintIndicesMap.reserve(4 * mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting / Manifold::kMaxContacts);
+		mContactNormalConstraints.reserve(4 * mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting);
+		mContactFrictionConstraints.reserve(8 * mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting);
 	}
 
 
@@ -33,7 +33,7 @@ namespace se::physics {
 			if ((rb1->getProperties().type == RigidBodyProperties::Type::Dynamic)
 				|| (rb2->getProperties().type == RigidBodyProperties::Type::Dynamic)
 			) {
-				SOMBRA_DEBUG_LOG << "Handling CollisionEvent between "
+				SPHYS_DEBUG_LOG(mParentWorld) << "Handling CollisionEvent between "
 					<< rb1 << " (p=" << glm::to_string(rb1->getState().position) << ", o=" << glm::to_string(rb1->getState().orientation) << ") and "
 					<< rb2 << " (p=" << glm::to_string(rb2->getState().position) << ", o=" << glm::to_string(rb2->getState().orientation) << ")";
 
@@ -45,7 +45,7 @@ namespace se::physics {
 				}
 			}
 			else {
-				SOMBRA_TRACE_LOG << "Skipping CollisionEvent between static RigidBodies " << rb1 << " and " << rb2;
+				SPHYS_DEBUG_LOG(mParentWorld) << "Skipping CollisionEvent between static RigidBodies " << rb1 << " and " << rb2;
 			}
 		}
 	}
@@ -97,25 +97,27 @@ namespace se::physics {
 
 		int contactsDiff = static_cast<int>(manifold.contacts.size()) - static_cast<int>(manifoldConstraintIndices.size());
 		if (contactsDiff > 0) {
-			if (mContactNormalConstraints.size() + contactsDiff <= 4 * mParentWorld.getProperties().maxCollidingRBs) {
+			if (mContactNormalConstraints.size() + contactsDiff <= 4 * mParentWorld.getProperties().collisionProperties.maxCollidersIntersecting) {
 				float mu1 = rb1->getProperties().frictionCoefficient, mu2 = rb2->getProperties().frictionCoefficient;
 				float mu = std::sqrt(0.5f * (mu1 * mu1 + mu2 * mu2));
-				SOMBRA_DEBUG_LOG << "Using frictionCoefficient=" << mu;
+				SPHYS_DEBUG_LOG(mParentWorld) << "Using frictionCoefficient=" << mu;
 
 				// Increase the number of constraints up to the number of contacts
 				for (std::size_t i = manifoldConstraintIndices.size(); i < manifold.contacts.size(); ++i) {
 					auto itNormalConstraint = mContactNormalConstraints.emplace(
 						std::array{ rb1, rb2 },
-						mParentWorld.getProperties().collisionBeta,
-						mParentWorld.getProperties().collisionRestitutionFactor,
-						mParentWorld.getProperties().collisionSlopPenetration,
-						mParentWorld.getProperties().collisionSlopRestitution
+						mParentWorld.getProperties().constraintProperties.collisionBeta,
+						mParentWorld.getProperties().constraintProperties.collisionRestitutionFactor,
+						mParentWorld.getProperties().constraintProperties.collisionSlopPenetration,
+						mParentWorld.getProperties().constraintProperties.collisionSlopRestitution
 					);
 					auto itFrictionConstraint0 = mContactFrictionConstraints.emplace(
-						std::array{ rb1, rb2 }, mParentWorld.getProperties().frictionGravityAcceleration, mu
+						std::array{ rb1, rb2 },
+						mParentWorld.getProperties().constraintProperties.frictionGravityAcceleration, mu
 					);
 					auto itFrictionConstraint1 = mContactFrictionConstraints.emplace(
-						std::array{ rb1, rb2 }, mParentWorld.getProperties().frictionGravityAcceleration, mu
+						std::array{ rb1, rb2 },
+						mParentWorld.getProperties().constraintProperties.frictionGravityAcceleration, mu
 					);
 
 					mParentWorld.getConstraintManager().addConstraint(&(*itNormalConstraint));
@@ -126,13 +128,13 @@ namespace se::physics {
 						itNormalConstraint.getIndex(), { itFrictionConstraint0.getIndex(), itFrictionConstraint1.getIndex() }
 					});
 
-					SOMBRA_DEBUG_LOG << "Added contact Constraints [" << i << "]";
+					SPHYS_DEBUG_LOG(mParentWorld) << "Added contact Constraints [" << i << "]";
 				}
 
 				updateFrictionMasses = true;
 			}
 			else {
-				SOMBRA_WARN_LOG << "Maximum number of Contacts reached";
+				SPHYS_WARN_LOG(mParentWorld) << "Maximum number of Contacts reached";
 			}
 		}
 		else if (contactsDiff < 0) {
@@ -149,7 +151,7 @@ namespace se::physics {
 
 				manifoldConstraintIndices.pop_back();
 
-				SOMBRA_DEBUG_LOG << "Removed contact Constraints [" << i-1 << "]";
+				SPHYS_DEBUG_LOG(mParentWorld) << "Removed contact Constraints [" << i-1 << "]";
 			}
 
 			updateFrictionMasses = true;
@@ -165,7 +167,7 @@ namespace se::physics {
 				mContactFrictionConstraints[constraintIndices.iFrictionConstraints[1]].calculateConstraintBounds(perContactMass);
 			}
 
-			SOMBRA_DEBUG_LOG << "Updated FrictionConstraint masses to " << perContactMass;
+			SPHYS_DEBUG_LOG(mParentWorld) << "Updated FrictionConstraint masses to " << perContactMass;
 		}
 
 		// Update the constraints data
@@ -193,7 +195,7 @@ namespace se::physics {
 			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[1]].setTangent(tangent2);
 			mContactFrictionConstraints[manifoldConstraintIndices[i].iFrictionConstraints[1]].setConstraintVectors({ r1, r2 });
 
-			SOMBRA_DEBUG_LOG << "Updated contact Constraints [" << i << "]: "
+			SPHYS_DEBUG_LOG(mParentWorld) << "Updated contact Constraints [" << i << "]: "
 				<< "r1=" << glm::to_string(r1) << ", " << "r2=" << glm::to_string(r2) << ", "
 				<< "normal=" << glm::to_string(contact.normal) << ", "
 				<< "tangent1=" << glm::to_string(tangent1) << " and tangent2=" << glm::to_string(tangent2);
@@ -217,11 +219,11 @@ namespace se::physics {
 				mContactFrictionConstraints.erase(mContactFrictionConstraints.begin().setIndex(constraintIndices.iFrictionConstraints[1]));
 			}
 
-			SOMBRA_DEBUG_LOG << "Removed all the contact Constraints (" << itPair->second.size() << ")";
+			SPHYS_DEBUG_LOG(mParentWorld) << "Removed all the contact Constraints (" << itPair->second.size() << ")";
 			mManifoldConstraintIndicesMap.erase(itPair);
 		}
 		else {
-			SOMBRA_WARN_LOG << "Doesn't exists any contact Constraints";
+			SPHYS_WARN_LOG(mParentWorld) << "Doesn't exists any contact Constraints";
 		}
 	}
 

@@ -41,6 +41,23 @@
 
 namespace se::app {
 
+	class RBWLogHandler : public physics::LogHandler
+	{
+	public:		// Functions
+		virtual void error(const char* str) override
+		{ se::utils::Log::getInstance()(se::utils::LogLevel::Error) << str; };
+
+		virtual void warning(const char* str) override
+		{ se::utils::Log::getInstance()(se::utils::LogLevel::Warning) << str; };
+
+		virtual void info(const char* str) override
+		{ se::utils::Log::getInstance()(se::utils::LogLevel::Info) << str; };
+
+		virtual void debug(const char* str) override
+		{ se::utils::Log::getInstance()(se::utils::LogLevel::Debug) << str; };
+	};
+
+
 	Application::Application(
 		const window::WindowData& windowConfig,
 		const physics::WorldProperties& physicsWorldProperties,
@@ -59,10 +76,13 @@ namespace se::app {
 			mThreadPool = new utils::ThreadPool(numThreads);
 
 			// External tools
+			physics::WorldProperties physicsWorldProperties2 = physicsWorldProperties;
+			physicsWorldProperties2.logHandler = new RBWLogHandler();
+
 			mExternalTools = new ExternalTools();
 			mExternalTools->windowManager = new window::WindowManager(windowConfig);
 			mExternalTools->graphicsEngine = new graphics::GraphicsEngine();
-			mExternalTools->rigidBodyWorld = new physics::RigidBodyWorld(physicsWorldProperties);
+			mExternalTools->rigidBodyWorld = new physics::RigidBodyWorld(physicsWorldProperties2);
 			mExternalTools->animationEngine = new animation::AnimationEngine();
 			mExternalTools->audioEngine = new audio::AudioEngine(audioDeviceId);
 
@@ -140,7 +160,11 @@ namespace se::app {
 		if (mExternalTools) {
 			if (mExternalTools->audioEngine) { delete mExternalTools->audioEngine; }
 			if (mExternalTools->animationEngine) { delete mExternalTools->animationEngine; }
-			if (mExternalTools->rigidBodyWorld) { delete mExternalTools->rigidBodyWorld; }
+			if (mExternalTools->rigidBodyWorld) {
+				physics::LogHandler* lh = mExternalTools->rigidBodyWorld->getProperties().logHandler;
+				delete mExternalTools->rigidBodyWorld;
+				delete lh;
+			}
 			if (mExternalTools->graphicsEngine) { delete mExternalTools->graphicsEngine; }
 			if (mExternalTools->windowManager) { delete mExternalTools->windowManager; }
 			delete mExternalTools;
